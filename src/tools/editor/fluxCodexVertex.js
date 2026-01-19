@@ -1588,7 +1588,34 @@ export default class FluxCodexVertex {
           {key: "audioSrc", value: "audionautix-black-fly.mp3"},
           {key: "loop", value: true},
           {key: "thresholdBeat", value: 0.7},
-          {key: "created", value: false},
+          {key: "created", value: false}
+        ],
+        noselfExec: "true"
+      }),
+
+      oscillator: (id, x, y) => ({
+        id, x, y, title: "Oscillator",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "min", type: "number"},
+          {name: "max", type: "number"},
+          {name: "step", type: "number"},
+          {name: "regime", type: "string"},
+          {name: "resist", type: "number"},
+          {name: "resistMode", type: "number"}
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "value", type: "number"}
+        ],
+        fields: [
+          {key: "min", value: 0},
+          {key: "max", value: 10},
+          {key: "step", value: 0.2},
+          {key: "regime", value: 'pingpong'},
+          {key: "resist", value: 0.02},
+          {key: "resistMode", value: 'linear'},
         ],
         noselfExec: "true"
       }),
@@ -2834,6 +2861,10 @@ export default class FluxCodexVertex {
       }
     }
 
+    if(node.title === "Oscillator" && pinName == "value") {
+      return node._returnCache;
+    }
+
     if(node.title === "On Ray Hit") {
       if(pinName === "hitObjectName") {
         return node._returnCache['hitObject']['name'];
@@ -3789,6 +3820,22 @@ export default class FluxCodexVertex {
 
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if(n.title === "Oscillator") {
+        const min = this.getValue(nodeId, "min");
+        const max = this.getValue(nodeId, "max");
+        const step = this.getValue(nodeId, "step");
+        const regime = this.getValue(nodeId, "regime");
+        const resist = this.getValue(nodeId, "resist");
+        const resistMode = this.getValue(nodeId, "resistMode");
+        if(!n._listenerAttached) {
+          n.osc = new OSCILLATOR(min, max, step, {
+            regime: regime,
+            resist: resist,
+            resistMode: resistMode
+          });
+          n._listenerAttached = true;
+        }
+        n._returnCache = n.osc.UPDATE();
       }
 
       this.enqueueOutputs(n, "execOut");

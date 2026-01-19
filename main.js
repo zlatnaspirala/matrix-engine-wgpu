@@ -16,9 +16,9 @@ export let application = new MatrixEngineWGPU({
   application.addLight();
   console.log('light added.')
   application.lightContainer[0].outerCutoff = 0.5;
-  application.lightContainer[0].position[2] = -10;
-  application.lightContainer[0].intensity = 2;
-  application.lightContainer[0].target[2] = -25;
+  application.lightContainer[0].position[2] = -16;
+  application.lightContainer[0].intensity = 5;
+  application.lightContainer[0].target[2] = -20;
   application.lightContainer[0].position[1] = 9;
   application.globalAmbient[0] = 0.7;
   application.globalAmbient[1] = 0.7;
@@ -189,7 +189,7 @@ export let application = new MatrixEngineWGPU({
   application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6)
   application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6)
   application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6)
-  application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3)
+  application.matrixSounds.createAudio('hover', 'res/audios/feel.mp3', 3)
   application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2)
 
   addEventListener('AmmoReady', () => {
@@ -198,7 +198,7 @@ export let application = new MatrixEngineWGPU({
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
-    }, onLoadObj, {scale: [1, 1, 1], swap: [null]})
+    }, onLoadObj, {scale: [0.5, 0.5, 0.5], swap: [null]})
 
     // downloadMeshes({
     //   star1: "./res/meshes/shapes/star1.obj",
@@ -292,7 +292,7 @@ export let application = new MatrixEngineWGPU({
     application.myLoadedMeshes = m;
     // Add logo text top
     application.addMeshObj({
-      position: {x: 0, y: 6, z: -15},
+      position: {x: 0, y: 5, z: -15},
       rotation: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'mainTitle',

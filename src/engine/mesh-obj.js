@@ -660,7 +660,7 @@ export default class MEMeshObj extends Materials {
   updateModelUniformBuffer = () => {
     if(this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, true);
+    const modelMatrix = this.getModelMatrix(this.position, false);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,

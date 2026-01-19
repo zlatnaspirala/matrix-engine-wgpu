@@ -436,59 +436,140 @@ export var scriptManager = {
 };
 
 // GET PULSE VALUES IN REAL TIME
-export function OSCILLATOR(min, max, step, resist) {
-  if(
-    (typeof min === 'string' || typeof min === 'number') &&
-    (typeof max === 'string' || typeof max === 'number') &&
-    (typeof step === 'string' || typeof step === 'number')
-  ) {
-    var ROOT = this;
-    this.min0 = parseFloat(min);
-    this.max0 = parseFloat(max);
-    this.min = this.min0;
-    this.max = this.max0;
-    this.step = parseFloat(step);
-    this.resist = parseFloat(resist) || 0;
-    this.value_ = this.min;
-    this.status = 0;
-    this.on_maximum_value = function() {};
-    this.on_minimum_value = function() {};
-    this.UPDATE = function(STATUS_) {
-      if(STATUS_ !== undefined) return this.value_;
-      // UP
-      if(this.status === 0 && this.value_ < this.max) {
-        this.value_ += this.step;
+export function OSCILLATOR(min, max, step, options) {
+  if(min == null || max == null || step == null) {
+    console.log("OSCILLATOR ERROR");
+    return;
+  }
 
+  var ROOT = this;
+
+  // ---- core values ----
+  this.min0 = parseFloat(min);
+  this.max0 = parseFloat(max);
+  this.min = this.min0;
+  this.max = this.max0;
+
+  this.step = parseFloat(step);
+  this.value_ = this.min;
+  this.status = 0; // 0 up, 1 down
+
+  // ---- options ----
+  options = options || {};
+  this.regime = options.regime || "pingpong";
+  this.resist = parseFloat(options.resist) || 0;          // 0 = infinite
+  this.resistMode = options.resistMode || "linear";       // linear | exp
+  this.stopEpsilon = options.stopEpsilon || 0;            // 0 = never stop
+  this.useDelta = options.useDelta || false;
+
+  // ---- events ----
+  this.on_maximum_value = function() {};
+  this.on_minimum_value = function() {};
+  this.on_stop = function() {};
+
+  // ---- helpers ----
+  this._applyResist = function() {
+    if(this.resist <= 0) return;
+
+    var range = this.max - this.min;
+    if(range <= 0) return;
+
+    var shrink;
+
+    if(this.resistMode === "exp") {
+      shrink = range * this.resist;
+    } else {
+      shrink = (this.max0 - this.min0) * this.resist;
+    }
+
+    this.min += shrink;
+    this.max -= shrink;
+
+    if(this.min > this.max) {
+      var c = (this.min + this.max) * 0.5;
+      this.min = this.max = c;
+    }
+  };
+
+  // ---- UPDATE ----
+  this.UPDATE = function(delta) {
+    var s = this.step;
+    if(this.useDelta && delta !== undefined) {
+      s = s * delta;
+    }
+    // ---------- REGIMES ----------
+    switch(this.regime) {
+      // ===== PING-PONG =====
+      case "pingpong":
+        if(this.status === 0) {
+          this.value_ += s;
+          if(this.value_ >= this.max) {
+            this.value_ = this.max;
+            this.status = 1;
+            ROOT.on_maximum_value();
+          }
+        } else {
+          this.value_ -= s;
+          if(this.value_ <= this.min) {
+            this.value_ = this.min;
+            this.status = 0;
+            this._applyResist();
+            ROOT.on_minimum_value();
+          }
+        }
+        break;
+
+      // ===== ONLY MIN → MAX =====
+      case "onlyFromMinToMax":
+        this.value_ += s;
         if(this.value_ >= this.max) {
-          this.value_ = this.max;
-          this.status = 1;
+          this.value_ = this.min;
+          this._applyResist();
           ROOT.on_maximum_value();
         }
-        return this.value_;
-      }
-      // DOWN
-      if(this.status === 1 && this.value_ > this.min) {
-        this.value_ -= this.step;
+        break;
+
+      // ===== MAX → MIN =====
+      case "fromMaxToMin":
+        this.value_ -= s;
         if(this.value_ <= this.min) {
-          this.value_ = this.min;
-          this.status = 0;
-          if(this.resist > 0) {
-            var shrink = (this.max0 - this.min0) * this.resist;
-            this.min += shrink;
-            this.max -= shrink;
-            if(this.min > this.max) {
-              this.min = this.max = (this.min + this.max) / 2;
-            }
-          }
+          this.value_ = this.max;
+          this._applyResist();
           ROOT.on_minimum_value();
         }
-        return this.value_;
+        break;
+
+      // ===== ONE SHOT =====
+      case "oneShot":
+        this.value_ += s;
+        if(this.value_ >= this.max) {
+          this.value_ = this.max;
+          ROOT.on_stop();
+        }
+        break;
+
+      // ===== SPRING TO CENTER =====
+      case "springCenter":
+        var center = (this.min + this.max) * 0.5;
+        var force = (center - this.value_) * this.resist;
+        this.value_ += force + s;
+
+        if(Math.abs(center - this.value_) < this.stopEpsilon) {
+          this.value_ = center;
+          ROOT.on_stop();
+        }
+        break;
+    }
+
+    // ---- AUTO STOP ----
+    if(this.stopEpsilon > 0) {
+      if((this.max - this.min) < this.stopEpsilon) {
+        ROOT.on_stop();
       }
-      return this.value_;
-    };
-  } else {
-    console.log("OSCILLATOR ERROR");
-  }
+    }
+
+    return this.value_;
+  };
 }
 
 
@@ -696,7 +777,7 @@ export const LOG_FUNNY_BIG_NEON =
   "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" +
   "background:black; padding:14px 18px;";
 
-  export const LOG_FUNNY_EXTRABIG =
+export const LOG_FUNNY_EXTRABIG =
   "font-family: stormfaze; font-size:230px; font-weight:900;" +
   "color:#00ffff;" +
   "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" +

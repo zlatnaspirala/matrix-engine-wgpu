@@ -1365,7 +1365,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/utils.js":46,"./html-content.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/utils.js":48,"./html-content.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1389,9 +1389,9 @@ let application = exports.application = new _world.default({
   application.addLight();
   console.log('light added.');
   application.lightContainer[0].outerCutoff = 0.5;
-  application.lightContainer[0].position[2] = -10;
-  application.lightContainer[0].intensity = 2;
-  application.lightContainer[0].target[2] = -25;
+  application.lightContainer[0].position[2] = -16;
+  application.lightContainer[0].intensity = 5;
+  application.lightContainer[0].target[2] = -20;
   application.lightContainer[0].position[1] = 9;
   application.globalAmbient[0] = 0.7;
   application.globalAmbient[1] = 0.7;
@@ -1575,14 +1575,14 @@ let application = exports.application = new _world.default({
   application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
   application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
   application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
-  application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
+  application.matrixSounds.createAudio('hover', 'res/audios/feel.mp3', 3);
   application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2);
   addEventListener('AmmoReady', () => {
     app.matrixAmmo.speedUpSimulation = 2;
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/jamb/dice.obj"
     }, onLoadObj, {
-      scale: [1, 1, 1],
+      scale: [0.5, 0.5, 0.5],
       swap: [null]
     });
 
@@ -1718,7 +1718,7 @@ let application = exports.application = new _world.default({
     application.addMeshObj({
       position: {
         x: 0,
-        y: 6,
+        y: 5,
         z: -15
       },
       rotation: {
@@ -2149,7 +2149,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":36,"./src/engine/raycast.js":45,"./src/engine/utils.js":46,"./src/world.js":75}],4:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":38,"./src/engine/raycast.js":47,"./src/engine/utils.js":48,"./src/world.js":79}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20421,7 +20421,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":61,"./engine":31,"./matrix-class":41,"wgpu-matrix":18}],21:[function(require,module,exports){
+},{"../shaders/shaders":63,"./engine":32,"./matrix-class":43,"wgpu-matrix":18}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20459,7 +20459,54 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":46}],22:[function(require,module,exports){
+},{"./utils":48}],22:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TextureCache = void 0;
+// TextureCache.js
+class TextureCache {
+  constructor(device) {
+    this.device = device;
+    this.cache = new Map(); // path -> Promise<TextureEntry>
+  }
+  async get(path, format) {
+    if (this.cache.has(path)) {
+      return this.cache.get(path); // reuse promise
+    }
+    const promise = this.#load(path, format);
+    this.cache.set(path, promise);
+    return promise;
+  }
+  async #load(path, format) {
+    const response = await fetch(path);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+    const texture = this.device.createTexture({
+      size: [imageBitmap.width, imageBitmap.height, 1],
+      format,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.device.queue.copyExternalImageToTexture({
+      source: imageBitmap
+    }, {
+      texture
+    }, [imageBitmap.width, imageBitmap.height]);
+    const sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    return {
+      texture,
+      sampler
+    };
+  }
+}
+exports.TextureCache = TextureCache;
+
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20884,7 +20931,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":61,"./engine":31,"./matrix-class":41,"wgpu-matrix":18}],23:[function(require,module,exports){
+},{"../shaders/shaders":63,"./engine":32,"./matrix-class":43,"wgpu-matrix":18}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21047,7 +21094,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":49,"wgpu-matrix":18}],24:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":51,"wgpu-matrix":18}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21266,7 +21313,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":50,"../utils":46,"wgpu-matrix":18}],25:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":52,"../utils":48,"wgpu-matrix":18}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21437,7 +21484,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":51,"wgpu-matrix":18}],26:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":53,"wgpu-matrix":18}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21678,7 +21725,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":63,"../geometry-factory.js":32,"wgpu-matrix":18}],27:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":65,"../geometry-factory.js":34,"wgpu-matrix":18}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21935,7 +21982,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":63,"../geometry-factory.js":32,"wgpu-matrix":18}],28:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":65,"../geometry-factory.js":34,"wgpu-matrix":18}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22125,7 +22172,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":62,"../geometry-factory.js":32,"wgpu-matrix":18}],29:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":64,"../geometry-factory.js":34,"wgpu-matrix":18}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22288,7 +22335,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":49,"wgpu-matrix":18}],30:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":51,"wgpu-matrix":18}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22431,7 +22478,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":64,"wgpu-matrix":18}],31:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":66,"wgpu-matrix":18}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22987,7 +23034,356 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":46,"wgpu-matrix":18}],32:[function(require,module,exports){
+},{"./utils":48,"wgpu-matrix":18}],33:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.physicsBodiesGenerator = physicsBodiesGenerator;
+exports.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid;
+exports.physicsBodiesGeneratorPyramid = physicsBodiesGeneratorPyramid;
+exports.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower;
+exports.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall;
+exports.stabilizeTowerBody = stabilizeTowerBody;
+var _fluxCodexVertex = require("../../tools/editor/fluxCodexVertex");
+var _loaderObj = require("../loader-obj");
+// general function for stabilisation 
+function stabilizeTowerBody(body) {
+  body.setDamping(0.8, 0.95);
+  body.setSleepingThresholds(0.4, 0.4);
+  body.setAngularFactor(new Ammo.btVector3(0.1, 0.1, 0.1));
+  body.setFriction(1.0);
+  body.setRollingFriction(0.8);
+  // body.setSpinningFriction(0.8);
+}
+
+/**
+ * @description Generator can be used also from visual scripting.
+ * Work only for physics bodie variant.
+ * @param {string} material 
+ * @enum "standard", "power"
+ */
+function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, name = "gen1", geometry = "Cube", raycast = false, scale = [1, 1, 1], sum = 100, delay = 500, mesh = null) {
+  let engine = this;
+  const inputCube = {
+    mesh: "./res/meshes/blender/cube.obj"
+  };
+  const inputSphere = {
+    mesh: "./res/meshes/blender/sphere.obj"
+  };
+  function handler(m) {
+    let RAY = {
+      enabled: raycast == true ? true : false,
+      radius: 1
+    };
+    for (var x = 0; x < sum; x++) {
+      setTimeout(() => {
+        engine.addMeshObj({
+          material: {
+            type: material
+          },
+          position: pos,
+          rotation: rot,
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturePath],
+          name: name + '_' + x,
+          mesh: m.mesh,
+          physics: {
+            enabled: true,
+            geometry: geometry
+          },
+          raycast: RAY
+        });
+        // cache
+        const o = app.getSceneObjectByName(cubeName);
+        _fluxCodexVertex.runtimeCacheObjs.push(o);
+      }, x * delay);
+    }
+  }
+  if (geometry == "Cube") {
+    (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+      scale: scale
+    });
+  } else if (geometry == "Sphere") {
+    (0, _loaderObj.downloadMeshes)(inputSphere, handler, {
+      scale: scale
+    });
+  }
+}
+
+/**
+ * @description Generate a wall of physics cubes
+ * @param {string} material
+ * @param {object} pos        starting position {x,y,z}
+ * @param {object} rot
+ * @param {string} texturePath
+ * @param {string} name       base name
+ * @param {string} size       "WIDTHxHEIGHT" → e.g. "10x3"
+ * @param {boolean} raycast
+ * @param {Array} scale
+ * @param {number} spacing    distance between cubes
+ */
+function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
+  const engine = this;
+  const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
+  const inputCube = {
+    mesh: "./res/meshes/blender/cube.obj"
+  };
+  function handler(m) {
+    let index = 0;
+    const RAY = {
+      enabled: !!raycast,
+      radius: 1
+    };
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const cubeName = `${name}_${index}`;
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: {
+              type: material
+            },
+            position: {
+              x: pos.x + x * spacing,
+              y: pos.y + y * spacing - 2.8,
+              z: pos.z
+            },
+            rotation: rot,
+            rotationSpeed: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            texturesPaths: [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              scale: scale,
+              enabled: true,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          // const b = app.matrixAmmo.getBodyByName(cubeName);
+          // stabilizeTowerBody(b);
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          _fluxCodexVertex.runtimeCacheObjs.push(o);
+        }, index * delay);
+        index++;
+      }
+    }
+  }
+  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+    scale
+  });
+}
+
+/**
+ * @description Generate a pyramid of physics cubes
+ * @param {object} pos       base position {x,y,z}
+ * @param {object} rot
+ * @param {string} texturePath
+ * @param {string} name
+ * @param {number} levels    number of pyramid levels
+ * @param {boolean} raycast
+ * @param {Array} scale
+ * @param {number} spacing
+ */
+function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2, delay = 500) {
+  const engine = this;
+  const inputCube = {
+    mesh: "./res/meshes/blender/cube.obj"
+  };
+  function handler(m) {
+    let index = 0;
+    const RAY = {
+      enabled: !!raycast,
+      radius: 1
+    };
+    for (let y = 0; y < levels; y++) {
+      const rowCount = levels - y;
+      const xOffset = (rowCount - 1) * spacing * 0.5;
+      for (let x = 0; x < rowCount; x++) {
+        const cubeName = `${name}_${index}`;
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: {
+              type: material
+            },
+            position: {
+              x: pos.x + x * spacing - xOffset,
+              y: pos.y + y * spacing,
+              z: pos.z
+            },
+            rotation: rot,
+            rotationSpeed: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            texturesPaths: [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              scale: scale,
+              enabled: true,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          _fluxCodexVertex.runtimeCacheObjs.push(o);
+        }, delay);
+        index++;
+      }
+    }
+  }
+  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+    scale
+  });
+}
+
+/**
+ * @description Generate a full 3D pyramid of physics cubes
+ * @param {object} pos       base position {x,y,z}
+ * @param {object} rot
+ * @param {string} texturePath
+ * @param {string} name
+ * @param {number} levels    number of pyramid levels
+ * @param {boolean} raycast
+ * @param {Array} scale
+ * @param {number} spacing
+ */
+function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = {
+      mesh: "./res/meshes/blender/cube.obj"
+    };
+    levels = parseFloat(levels);
+    function handler(m) {
+      let index = 0;
+      const totalCubes = levels * (levels + 1) * (2 * levels + 1) / 6;
+      const lastIndex = totalCubes - 1;
+      const RAY = {
+        enabled: !!raycast,
+        radius: 1
+      };
+      const objects = [];
+      for (let y = 0; y < levels; y++) {
+        const sizeX = levels - y;
+        const sizeZ = levels - y;
+        const xOffset = (sizeX - 1) * spacing * 0.5;
+        const zOffset = (sizeZ - 1) * spacing * 0.5;
+        for (let x = 0; x < sizeX; x++) {
+          for (let z = 0; z < sizeZ; z++) {
+            const cubeName = `${name}_${index}`;
+            const currentIndex = index;
+            setTimeout(() => {
+              engine.addMeshObj({
+                material: {
+                  type: material
+                },
+                position: {
+                  x: pos.x + x * spacing - xOffset,
+                  y: pos.y + y * spacing,
+                  z: pos.z + z * spacing - zOffset
+                },
+                rotation: rot,
+                rotationSpeed: {
+                  x: 0,
+                  y: 0,
+                  z: 0
+                },
+                texturesPaths: [texturePath],
+                name: cubeName,
+                mesh: m.mesh,
+                physics: {
+                  scale: scale,
+                  enabled: true,
+                  geometry: "Cube"
+                },
+                raycast: RAY
+              });
+              const b = app.matrixAmmo.getBodyByName(cubeName);
+              stabilizeTowerBody(b);
+              const o = app.getSceneObjectByName(cubeName);
+              _fluxCodexVertex.runtimeCacheObjs.push(o);
+              objects.push(o.name);
+              if (currentIndex === lastIndex) {
+                // console.log("Last cube added!");
+                resolve(objects);
+              }
+            }, delay * index);
+            index++;
+          }
+        }
+      }
+    }
+    (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+      scale
+    });
+  });
+}
+function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePath, name = "towerCube", height = 10, raycast = false, scale = [1, 1, 1], spacing = 2) {
+  const engine = this;
+  const inputCube = {
+    mesh: "./res/meshes/blender/cube.obj"
+  };
+  function handler(m) {
+    const RAY = {
+      enabled: !!raycast,
+      radius: 1
+    };
+    for (let y = 0; y < height; y++) {
+      const cubeName = `${name}_${y}`;
+      setTimeout(() => {
+        engine.addMeshObj({
+          material: {
+            type: material
+          },
+          position: {
+            x: pos.x,
+            y: pos.y + y * spacing,
+            z: pos.z
+          },
+          rotation: rot,
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturePath],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            scale: scale,
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+        const b = app.matrixAmmo.getBodyByName(cubeName);
+        stabilizeTowerBody(b);
+        // cache
+        const o = app.getSceneObjectByName(cubeName);
+        _fluxCodexVertex.runtimeCacheObjs.push(o);
+      }, delay);
+    }
+  }
+  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+    scale
+  });
+}
+
+},{"../../tools/editor/fluxCodexVertex":76,"../loader-obj":38}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23299,7 +23695,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],33:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23591,7 +23987,7 @@ class MaterialsInstanced {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind.");
+      console.log("%c✅video bind.", LOG_FUNNY_ARCADE);
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -23826,7 +24222,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":53,"../../shaders/fragment.wgsl.metal":54,"../../shaders/fragment.wgsl.normalmap":55,"../../shaders/fragment.wgsl.pong":56,"../../shaders/fragment.wgsl.power":57,"../../shaders/instanced/fragment.instanced.wgsl":58}],34:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":55,"../../shaders/fragment.wgsl.metal":56,"../../shaders/fragment.wgsl.normalmap":57,"../../shaders/fragment.wgsl.pong":58,"../../shaders/fragment.wgsl.power":59,"../../shaders/instanced/fragment.instanced.wgsl":60}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24525,7 +24921,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
       };
-      this.getModelMatrix = pos => {
+      this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
         _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
@@ -24535,9 +24931,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // Apply scale if you have it, e.g.:
-        // console.warn('what is csle comes from user level not glb ', this.scale)
-        if (this.glb || this.objAnim) {
+        if ((this.glb || this.objAnim) && useScale == true) {
           _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
         return modelMatrix;
@@ -24815,7 +25209,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":52,"../../shaders/instanced/vertex.instanced.wgsl":59,"../effects/energy-bar":23,"../effects/flame":25,"../effects/flame-emmiter":24,"../effects/gen":28,"../effects/gen-tex":26,"../effects/gen-tex2":27,"../effects/mana-bar":29,"../effects/pointerEffect":30,"../loaders/bvh-instaced":37,"../matrix-class":41,"../utils":46,"./materials-instanced":33,"wgpu-matrix":18}],35:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":54,"../../shaders/instanced/vertex.instanced.wgsl":61,"../effects/energy-bar":24,"../effects/flame":26,"../effects/flame-emmiter":25,"../effects/gen":29,"../effects/gen-tex":27,"../effects/gen-tex2":28,"../effects/mana-bar":30,"../effects/pointerEffect":31,"../loaders/bvh-instaced":39,"../matrix-class":43,"../utils":48,"./materials-instanced":35,"wgpu-matrix":18}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25142,7 +25536,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":60,"../shaders/vertexShadow.wgsl":67,"./behavior":21,"./utils":46,"wgpu-matrix":18}],36:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":62,"../shaders/vertexShadow.wgsl":69,"./behavior":21,"./utils":48,"wgpu-matrix":18}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25610,7 +26004,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],37:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26151,7 +26545,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":34,"./webgpu-gltf.js":39,"wgpu-matrix":18}],38:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":36,"./webgpu-gltf.js":41,"wgpu-matrix":18}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26673,7 +27067,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":42,"./webgpu-gltf.js":39,"bvh-loader":4,"wgpu-matrix":18}],39:[function(require,module,exports){
+},{"../mesh-obj":44,"./webgpu-gltf.js":41,"bvh-loader":4,"wgpu-matrix":18}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27254,7 +27648,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":7}],40:[function(require,module,exports){
+},{"gl-matrix":7}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27266,6 +27660,7 @@ var _fragmentWgsl = require("../shaders/fragment.wgsl.metal");
 var _fragmentWgsl2 = require("../shaders/fragment.wgsl.normalmap");
 var _fragmentWgsl3 = require("../shaders/fragment.wgsl.pong");
 var _fragmentWgsl4 = require("../shaders/fragment.wgsl.power");
+var _utils = require("./utils");
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -27274,8 +27669,9 @@ var _fragmentWgsl4 = require("../shaders/fragment.wgsl.power");
  * @email zlatnaspirala@gmail.com
  */
 class Materials {
-  constructor(device, material, glb) {
+  constructor(device, material, glb, textureCache) {
     this.device = device;
+    this.textureCache = textureCache;
     this.glb = glb;
     this.material = material;
     this.isVideo = false;
@@ -27380,6 +27776,29 @@ class Materials {
       });
     }
   }
+  createDummyTexture(device, size = 256) {
+    const data = new Uint8Array(size * size * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i + 0] = 0;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = 255;
+    }
+    const texture = device.createTexture({
+      size: [size, size],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    device.queue.writeTexture({
+      texture
+    }, data, {
+      bytesPerRow: size * 4
+    }, {
+      width: size,
+      height: size
+    });
+    return texture;
+  }
 
   /**
   * Change ONLY base color texture (binding = 3)
@@ -27435,27 +27854,40 @@ class Materials {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
+
+  // async loadTex0(texturesPaths) {
+  //   this.sampler = this.device.createSampler({
+  //     magFilter: 'linear',
+  //     minFilter: 'linear',
+  //   });
+  //   return new Promise(async (resolve) => {
+  //     const response = await fetch(texturesPaths[0]);
+  //     const imageBitmap = await createImageBitmap(await response.blob());
+  //     this.texture0 = this.device.createTexture({
+  //       size: [imageBitmap.width, imageBitmap.height, 1], // REMOVED 1
+  //       format: this.getFormat(),
+  //       usage:
+  //         GPUTextureUsage.TEXTURE_BINDING |
+  //         GPUTextureUsage.COPY_DST |
+  //         GPUTextureUsage.RENDER_ATTACHMENT,
+  //     });
+  //     this.device.queue.copyExternalImageToTexture(
+  //       {source: imageBitmap},
+  //       {texture: this.texture0},
+  //       [imageBitmap.width, imageBitmap.height]
+  //     );
+  //     resolve()
+  //   })
+  // }
+
   async loadTex0(texturesPaths) {
-    this.sampler = this.device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear'
-    });
-    return new Promise(async resolve => {
-      const response = await fetch(texturesPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = this.device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        // REMOVED 1
-        format: this.getFormat(),
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture({
-        source: imageBitmap
-      }, {
-        texture: this.texture0
-      }, [imageBitmap.width, imageBitmap.height]);
-      resolve();
-    });
+    const path = texturesPaths[0];
+    const {
+      texture,
+      sampler
+    } = await this.textureCache.get(path, this.getFormat());
+    this.texture0 = texture;
+    this.sampler = sampler;
   }
   async loadVideoTexture(arg) {
     this.videoIsReady = 'MAYBE';
@@ -27506,7 +27938,7 @@ class Materials {
       this.video = document.createElement('video');
       this.video.autoplay = true;
       this.video.muted = true;
-      this.video.playsInline = true;
+      this.video.crossOrigin = 'anonymous';
       this.video.style.display = 'none';
       document.body.append(this.video);
       const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
@@ -27518,33 +27950,50 @@ class Materials {
       await this.video.play();
       this.isVideo = true;
     } else if (arg.type === 'canvas2d-inline') {
+      // console.log('what is arg', arg);
       // Miniature inline-drawn canvas created dynamically
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+      canvas.style.position = 'absolute';
+      canvas.style.left = '-1000px';
+      canvas.style.top = '0';
+      // canvas.style.zIndex = '10000';
+      document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
       if (typeof arg.canvaInlineProgram === 'function') {
-        // Start drawing loop
         const drawLoop = () => {
-          arg.canvaInlineProgram(ctx, canvas);
+          ctx.save();
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+          ctx.restore();
           requestAnimationFrame(drawLoop);
         };
         drawLoop();
+      } else {
+        ctx.fillStyle = '#0ce325ff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       this.video = document.createElement('video');
+      this.video.style.position = 'absolute';
+      // this.video.style.zIndex = '1';
+      this.video.style.left = '0px';
+      this.video.style.top = '0';
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.style.display = 'none';
+      this.video.srcObject = canvas.captureStream(60);
       document.body.append(this.video);
-      this.isVideo = true;
-      const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
-      if (!stream) {
-        console.error('❌ Cannot capture stream from inline canvas');
-        return;
-      }
-      this.video.srcObject = stream;
       await this.video.play();
+      await new Promise(resolve => {
+        const check = () => {
+          if (this.video.readyState >= 2) resolve();else requestAnimationFrame(check);
+        };
+        check();
+      });
+      // console.log('Canvas video stream READY');
+      this.isVideo = true;
     }
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
@@ -27552,9 +28001,14 @@ class Materials {
     });
     // ✅ Now - maybe noT
     this.createLayoutForRender();
+    this.createBindGroupForRender();
+    // dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
+    if (!this.video || this.video.readyState < 2) {
+      // console.info('this.video.readyState', this.video.readyState)
+      return;
+    }
     if (!this.externalTexture) {
       // create it once
       this.externalTexture = this.device.importExternalTexture({
@@ -27562,7 +28016,7 @@ class Materials {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind.");
+      console.log("%c✅video bind.", _utils.LOG_FUNNY_ARCADE);
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -27600,9 +28054,9 @@ class Materials {
       textureResource = textureView;
     }
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
+      if (!textureResource) console.log("%c❗Missing res texture ", _utils.LOG_FUNNY_ARCADE);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if (!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+      // if(!this.shadowDepthTextureView) // console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
       if (typeof textureResource === 'undefined') {
         this.updateVideoTexture();
       }
@@ -27798,7 +28252,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":53,"../shaders/fragment.wgsl.metal":54,"../shaders/fragment.wgsl.normalmap":55,"../shaders/fragment.wgsl.pong":56,"../shaders/fragment.wgsl.power":57}],41:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":55,"../shaders/fragment.wgsl.metal":56,"../shaders/fragment.wgsl.normalmap":57,"../shaders/fragment.wgsl.pong":58,"../shaders/fragment.wgsl.power":59,"./utils":48}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28183,7 +28637,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":46}],42:[function(require,module,exports){
+},{"./utils":48}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28201,7 +28655,7 @@ var _pointerEffect = require("./effects/pointerEffect");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile);
+    super(device, o.material, _glbFile, o.textureCache);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
@@ -28231,6 +28685,10 @@ class MEMeshObj extends _materials.default {
     }
     // console.log('Material class arg:', o.material)
     this.material = o.material;
+    addEventListener('update-pipeine', () => {
+      this.setupPipeline();
+      // alert('setup pipeline');
+    });
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -28394,7 +28852,7 @@ class MEMeshObj extends _materials.default {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+    console.log(`%cMesh loaded: ${o.name}`, _utils.LOG_FUNNY_ARCADE);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -28747,7 +29205,7 @@ class MEMeshObj extends _materials.default {
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
       };
-      this.getModelMatrix = pos => {
+      this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
         _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
@@ -28757,11 +29215,12 @@ class MEMeshObj extends _materials.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // console.warn('what is csle comes from user level not glb ', this.scale)
-        if (this.glb || this.objAnim) {
-          // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        // if(this.glb || this.objAnim) {
+        //   // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        // }
+        if (useScale == true) {
+          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
-        // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
@@ -28821,7 +29280,7 @@ class MEMeshObj extends _materials.default {
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position);
+    const modelMatrix = this.getModelMatrix(this.position, false);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
   createGPUBuffer(dataArray, usage) {
@@ -28975,10 +29434,68 @@ class MEMeshObj extends _materials.default {
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
+  destroy = () => {
+    if (this._destroyed) return;
+    this._destroyed = true;
+
+    // --- GPU Buffers ---
+    this.vertexBuffer?.destroy();
+    this.vertexNormalsBuffer?.destroy();
+    this.vertexTexCoordsBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.modelUniformBuffer?.destroy();
+    this.sceneUniformBuffer?.destroy();
+    this.bonesBuffer?.destroy();
+    this.selectedBuffer?.destroy();
+
+    // Skinning
+    this.mesh?.weightsBuffer?.destroy();
+    this.mesh?.jointsBuffer?.destroy();
+    this.mesh?.tangentsBuffer?.destroy();
+
+    // Dummy skin buffers
+    this.joints?.buffer?.destroy();
+    this.weights?.buffer?.destroy();
+
+    // Obj sequence animation buffers
+    if (this.objAnim?.meshList) {
+      for (const k in this.objAnim.meshList) {
+        const m = this.objAnim.meshList[k];
+        m.vertexBuffer?.destroy();
+        m.vertexNormalsBuffer?.destroy();
+        m.vertexTexCoordsBuffer?.destroy();
+        m.indexBuffer?.destroy();
+      }
+    }
+    if (this.effects?.pointer?.destroy) {
+      this.effects.pointer.destroy();
+    }
+    this.pipeline = null;
+    this.modelBindGroup = null;
+    this.sceneBindGroupForRender = null;
+    this.selectedBindGroup = null;
+    this.material = null;
+    this.mesh = null;
+    this.objAnim = null;
+    this.drawElements = () => {};
+    this.drawElementsAnim = () => {};
+    this.drawShadows = () => {};
+    let testPB = app.matrixAmmo.getBodyByName(this.name);
+    if (testPB !== null) {
+      try {
+        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        // global fix later
+        console.warn("Physics cleanup done for ", this.name);
+      } catch (e) {
+        console.warn("Physics cleanup error:", e);
+      }
+    }
+    console.info(`🧹 MEMeshObj destroyed: ${this.name}`);
+  };
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":52,"../shaders/vertex.wgsl":65,"../shaders/vertex.wgsl.normalmap":66,"./effects/pointerEffect":30,"./materials":40,"./matrix-class":41,"./utils":46,"wgpu-matrix":18}],43:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":54,"../shaders/vertex.wgsl":67,"../shaders/vertex.wgsl.normalmap":68,"./effects/pointerEffect":31,"./materials":42,"./matrix-class":43,"./utils":48,"wgpu-matrix":18}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29000,25 +29517,27 @@ class METoolTip {
     tooltip.style.opacity = '0';
     tooltip.style.transition = 'opacity 0.2s ease';
     tooltip.style.zIndex = '9999';
+    tooltip.style.whiteSpace = 'pre-line';
     document.body.appendChild(tooltip);
+    this.tooltip = tooltip;
   }
   attachTooltip(element, text) {
     element.addEventListener('mouseenter', e => {
-      tooltip.textContent = text;
-      tooltip.style.opacity = '1';
+      this.tooltip.textContent = text;
+      this.tooltip.style.opacity = '1';
     });
     element.addEventListener('mousemove', e => {
-      tooltip.style.left = e.clientX + 12 + 'px';
-      tooltip.style.top = e.clientY + 12 + 'px';
+      this.tooltip.style.left = e.clientX + 12 + 'px';
+      this.tooltip.style.top = e.clientY + 12 + 'px';
     });
     element.addEventListener('mouseleave', () => {
-      tooltip.style.opacity = '0';
+      this.tooltip.style.opacity = '0';
     });
   }
 }
 exports.METoolTip = METoolTip;
 
-},{}],44:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29400,12 +29919,13 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.addRaycastsAABBListener = addRaycastsAABBListener;
 exports.addRaycastsListener = addRaycastsListener;
 exports.computeAABB = computeAABB;
 exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
@@ -29588,14 +30108,62 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
     }
   });
 }
+function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) {
+    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+    return;
+  }
+  canvas.addEventListener(eventName, event => {
+    const camera = app.cameras[app.mainCameraParams.type];
+    const {
+      rayOrigin,
+      rayDirection,
+      screen
+    } = getRayFromMouse(event, canvas, camera);
+    let closestHit = null;
+    for (const object of app.mainRenderBundle) {
+      if (!object.raycast?.enabled) continue;
+      const {
+        boxMin,
+        boxMax
+      } = computeWorldVertsAndAABB(object);
+      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+      if (!hitAABB) continue;
+      const hit = hitAABB;
+      if (hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = {
+          ...hit,
+          hitObject: object
+        };
+        if (touchCoordinate.stopOnFirstDetectedHit) break;
+      }
+    }
+    if (closestHit) {
+      dispatchRayHitEvent(canvas, {
+        hitObject: closestHit.hitObject,
+        hitPoint: closestHit.hitPoint,
+        hitNormal: closestHit.hitNormal || null,
+        hitDistance: closestHit.t,
+        rayOrigin,
+        rayDirection,
+        screenCoords: screen,
+        camera,
+        timestamp: performance.now(),
+        button: event.button,
+        eventName: eventName
+      });
+    }
+  });
+}
 
-},{"wgpu-matrix":18}],46:[function(require,module,exports){
+},{"wgpu-matrix":18}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_ARCADE = exports.LOG_FUNNY = exports.LOGO_FRAMES = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -30077,42 +30645,131 @@ var scriptManager = exports.scriptManager = {
 };
 
 // GET PULSE VALUES IN REAL TIME
-function OSCILLATOR(min, max, step) {
-  if ((typeof min === 'string' || typeof min === 'number') && (typeof max === 'string' || typeof max === 'number') && (typeof step === 'string' || typeof step === 'number')) {
-    var ROOT = this;
-    this.min = parseFloat(min);
-    this.max = parseFloat(max);
-    this.step = parseFloat(step);
-    this.value_ = parseFloat(min);
-    this.status = 0;
-    this.on_maximum_value = function () {};
-    this.on_minimum_value = function () {};
-    this.UPDATE = function (STATUS_) {
-      if (STATUS_ === undefined) {
-        if (this.status == 0 && this.value_ < this.max) {
-          this.value_ = this.value_ + this.step;
+function OSCILLATOR(min, max, step, options) {
+  if (min == null || max == null || step == null) {
+    console.log("OSCILLATOR ERROR");
+    return;
+  }
+  var ROOT = this;
+
+  // ---- core values ----
+  this.min0 = parseFloat(min);
+  this.max0 = parseFloat(max);
+  this.min = this.min0;
+  this.max = this.max0;
+  this.step = parseFloat(step);
+  this.value_ = this.min;
+  this.status = 0; // 0 up, 1 down
+
+  // ---- options ----
+  options = options || {};
+  this.regime = options.regime || "pingpong";
+  this.resist = parseFloat(options.resist) || 0; // 0 = infinite
+  this.resistMode = options.resistMode || "linear"; // linear | exp
+  this.stopEpsilon = options.stopEpsilon || 0; // 0 = never stop
+  this.useDelta = options.useDelta || false;
+
+  // ---- events ----
+  this.on_maximum_value = function () {};
+  this.on_minimum_value = function () {};
+  this.on_stop = function () {};
+
+  // ---- helpers ----
+  this._applyResist = function () {
+    if (this.resist <= 0) return;
+    var range = this.max - this.min;
+    if (range <= 0) return;
+    var shrink;
+    if (this.resistMode === "exp") {
+      shrink = range * this.resist;
+    } else {
+      shrink = (this.max0 - this.min0) * this.resist;
+    }
+    this.min += shrink;
+    this.max -= shrink;
+    if (this.min > this.max) {
+      var c = (this.min + this.max) * 0.5;
+      this.min = this.max = c;
+    }
+  };
+
+  // ---- UPDATE ----
+  this.UPDATE = function (delta) {
+    var s = this.step;
+    if (this.useDelta && delta !== undefined) {
+      s = s * delta;
+    }
+    // ---------- REGIMES ----------
+    switch (this.regime) {
+      // ===== PING-PONG =====
+      case "pingpong":
+        if (this.status === 0) {
+          this.value_ += s;
           if (this.value_ >= this.max) {
             this.value_ = this.max;
             this.status = 1;
             ROOT.on_maximum_value();
           }
-          return this.value_;
-        } else if (this.status == 1 && this.value_ > this.min) {
-          this.value_ = this.value_ - this.step;
+        } else {
+          this.value_ -= s;
           if (this.value_ <= this.min) {
             this.value_ = this.min;
             this.status = 0;
+            this._applyResist();
             ROOT.on_minimum_value();
           }
-          return this.value_;
         }
-      } else {
-        return this.value_;
+        break;
+
+      // ===== ONLY MIN → MAX =====
+      case "onlyFromMinToMax":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.min;
+          this._applyResist();
+          ROOT.on_maximum_value();
+        }
+        break;
+
+      // ===== MAX → MIN =====
+      case "fromMaxToMin":
+        this.value_ -= s;
+        if (this.value_ <= this.min) {
+          this.value_ = this.max;
+          this._applyResist();
+          ROOT.on_minimum_value();
+        }
+        break;
+
+      // ===== ONE SHOT =====
+      case "oneShot":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.max;
+          ROOT.on_stop();
+        }
+        break;
+
+      // ===== SPRING TO CENTER =====
+      case "springCenter":
+        var center = (this.min + this.max) * 0.5;
+        var force = (center - this.value_) * this.resist;
+        this.value_ += force + s;
+        if (Math.abs(center - this.value_) < this.stopEpsilon) {
+          this.value_ = center;
+          ROOT.on_stop();
+        }
+        break;
+    }
+
+    // ---- AUTO STOP ----
+    if (this.stopEpsilon > 0) {
+      if (this.max - this.min < this.stopEpsilon) {
+        ROOT.on_stop();
       }
-    };
-  } else {
-    console.log("OSCILLATOR ERROR");
-  }
+    }
+    return this.value_;
+  };
 }
 
 // this is class not func ecma5
@@ -30280,8 +30937,14 @@ function quaternion_rotation_matrix(Q) {
 const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
 const LOG_MATRIX = exports.LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
-const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
 const LOG_FUNNY_SMALL = exports.LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
+const LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_TERMINAL = "font-family: monospace; font-size:15px; font-weight:bold;" + "color:#33ff33;" + "text-shadow: 2px 2px 0 #003300;" + "background:#000; padding:10px 14px;";
+const LOG_FUNNY_ARCADE = exports.LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;" + "color:#ffffff;" + "text-shadow: 2px 2px 6px #000;" + "background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+const LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;" + "color:#ffffff;" + "text-shadow: 2px 2px 6px #000;" + "background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+const LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
+const LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
+const LOGO_FRAMES = exports.LOGO_FRAMES = [` M                 `, ` MA                 `, ` MAT                `, ` MATR               `, ` MATRI              `, ` MATRIX             `, ` MATRIX-E           `, ` MATRIX-ENG         `, ` MATRIX-ENGI        `, ` MATRIX-ENGIN       `, ` MATRIX-ENGINE      `, ` MATRIX-ENGINE-     `, ` MATRIX-ENGINE-W    `, ` MATRIX-ENGINE-WG   `, ` MATRIX-ENGINE-WGPU `];
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -30618,7 +31281,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30643,7 +31306,7 @@ class MultiLang {
   loadMultilang = async function (lang = 'en') {
     if (lang == 'rs') lang = 'sr'; // exc
     lang = 'res/multilang/' + lang + '.json';
-    console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
+    console.info(`%cMultilang: ${lang}`, _utils.LOG_FUNNY_ARCADE);
     try {
       const r = await fetch(lang, {
         headers: {
@@ -30660,7 +31323,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":19,"../engine/utils":46}],48:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":19,"../engine/utils":48}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30671,7 +31334,9 @@ var _utils = require("../engine/utils");
 class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-    _utils.scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs", undefined, undefined, this.init);
+
+    // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
+    _utils.scriptManager.LOAD("ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
     this.speedUpSimulation = 1;
@@ -30683,7 +31348,7 @@ class MatrixAmmo {
       this.rigidBodies = [];
       this.Ammo = Ammo;
       this.lastUpdate = 0;
-      console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
+      console.log("%c Ammo core loaded.", _utils.LOG_FUNNY_ARCADE);
       this.initPhysics();
       // simulate async
       setTimeout(() => {
@@ -30798,12 +31463,12 @@ class MatrixAmmo {
     this.rigidBodies.push(body);
     return body;
   }
-  setBodyVelocity(body, x, y, z) {
+  setBodyVelocity = (body, x, y, z) => {
     var tbv30 = new Ammo.btVector3();
     tbv30.setValue(x, y, z);
     body.setLinearVelocity(tbv30);
-  }
-  setKinematicTransform(body, x, y, z, rx, ry, rz) {
+  };
+  setKinematicTransform = (body, x, y, z, rx, ry, rz) => {
     if (typeof rx == 'undefined') {
       var rx = 0;
     }
@@ -30833,8 +31498,8 @@ class MatrixAmmo {
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-  }
-  getBodyByName(name) {
+  };
+  getBodyByName = name => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if (item.name == name) {
@@ -30842,8 +31507,8 @@ class MatrixAmmo {
       }
     });
     return b;
-  }
-  getNameByBody(body) {
+  };
+  getNameByBody = body => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if (item.kB == body.kB) {
@@ -30851,8 +31516,8 @@ class MatrixAmmo {
       }
     });
     return b;
-  }
-  deactivatePhysics(body) {
+  };
+  deactivatePhysics = body => {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
     // 1. Remove from world
@@ -30873,7 +31538,7 @@ class MatrixAmmo {
     this.matrixAmmo.dynamicsWorld.addRigidBody(body);
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
-  }
+  };
   detectCollision() {
     // console.log('override this')
     return;
@@ -30944,7 +31609,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":46}],49:[function(require,module,exports){
+},{"../engine/utils":48}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30990,7 +31655,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31116,7 +31781,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31204,7 +31869,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31294,7 +31959,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31525,7 +32190,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31703,7 +32368,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],55:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31948,7 +32613,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32168,7 +32833,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],57:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32336,7 +33001,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],58:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32572,7 +33237,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],59:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32676,7 +33341,7 @@ fn main(
   return output;
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32713,7 +33378,7 @@ fn main(
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32771,7 +33436,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],62:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32829,7 +33494,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32916,7 +33581,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],64:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32974,7 +33639,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],65:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33060,7 +33725,7 @@ fn main(
   return output;
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33171,7 +33836,7 @@ fn main(
   return output;
 }`;
 
-},{}],67:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33199,7 +33864,94 @@ fn main(
 }
 `;
 
-},{}],68:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MatrixMusicAsset = exports.AudioAssetManager = void 0;
+class AudioAssetManager {
+  constructor() {
+    this.assets = new Map();
+    this.loading = new Map();
+  }
+  load(path, options = {}) {
+    if (this.assets.has(path)) {
+      return Promise.resolve(this.assets.get(path));
+    }
+    if (this.loading.has(path)) {
+      return this.loading.get(path);
+    }
+    const asset = new MatrixMusicAsset({
+      path,
+      ...options
+    });
+    const promise = asset.init().then(a => {
+      this.assets.set(path, a);
+      this.loading.delete(path);
+      return a;
+    });
+    this.loading.set(path, promise);
+    return promise;
+  }
+}
+exports.AudioAssetManager = AudioAssetManager;
+class MatrixMusicAsset {
+  constructor({
+    path,
+    autoplay = true,
+    containerId = null
+  }) {
+    this.path = path;
+    this.autoplay = autoplay;
+    this.containerId = containerId;
+    this.audio = null;
+    this.ctx = null;
+    this.source = null;
+    this.gain = null;
+    this.filter = null;
+    this.analyser = null;
+    this.frequencyData = null;
+    this.ready = false;
+  }
+  async init() {
+    this.audio = document.createElement("audio");
+    this.audio.id = this.path;
+    this.audio.src = `res/audios/${this.path}`;
+    this.audio.autoplay = this.autoplay;
+    this.audio.playsInline = true;
+    this.audio.controls = true;
+    (this.containerId ? document.getElementById(this.containerId) : document.body)?.appendChild(this.audio);
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AudioCtx();
+    if (this.ctx.state === "suspended") {
+      await this.ctx.resume();
+    }
+    this.source = this.ctx.createMediaElementSource(this.audio);
+    this.gain = this.ctx.createGain();
+    this.filter = this.ctx.createBiquadFilter();
+    this.analyser = this.ctx.createAnalyser();
+    this.filter.frequency.value = 5000;
+    this.analyser.fftSize = 2048;
+    this.source.connect(this.gain).connect(this.filter).connect(this.ctx.destination);
+    this.source.connect(this.analyser);
+    this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
+    try {
+      await this.audio.play();
+    } catch {}
+    this.ready = true;
+    return this;
+  }
+  updateFFT() {
+    if (!this.ready) return null;
+    this.analyser.getByteFrequencyData(this.frequencyData);
+    return this.frequencyData;
+  }
+}
+exports.MatrixMusicAsset = MatrixMusicAsset;
+
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33269,7 +34021,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],69:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33283,7 +34035,7 @@ class MEEditorClient {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
       if (typeOfRun == 'created from editor') {
-        console.info('created from editor - watch <signal>');
+        console.log("%cCreated from editor. Watch <signal>", _utils.LOG_FUNNY_ARCADE);
         let o = {
           action: "watch",
           name: name
@@ -33297,12 +34049,12 @@ class MEEditorClient {
         o = JSON.stringify(o);
         this.ws.send(o);
       }
-      console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
+      console.log("%c[EDITOR][WS OPEN]", _utils.LOG_FUNNY_ARCADE);
     };
     this.ws.onmessage = event => {
       try {
         const data = JSON.parse(event.data);
-        console.log("%c[WS MESSAGE]", "color: yellow", data);
+        console.log("%c[EDITOR][WS MESSAGE]", _utils.LOG_FUNNY_ARCADE, data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
           setTimeout(() => location.assign(data.name + ".html"), 2000);
         } else if (data.payload && data.payload == "stop-watch done") {
@@ -33312,24 +34064,19 @@ class MEEditorClient {
             detail: data
           }));
         } else if (data.projects) {
-          data.payload.forEach(item => {
-            console.log('.....' + item.name);
-            if (item.name != 'readme.md') {
-              let txt = `Project list: \n
-                - ${item.name}  \n
-               \n
-               Choose project name:
-              `;
-              let projectName = prompt(txt);
-              if (projectName !== null) {
-                console.log("Project name:", projectName);
-                projectName += ".html";
-                location.assign(projectName);
-              } else {
-                console.error('Something wrong with load project input!');
-              }
-            }
-          });
+          const projects = data.payload.filter(item => item.name !== 'readme.md').map(item => item.name.trim());
+          if (projects.length === 0) {
+            console.warn('No projects found');
+            return;
+          }
+          const txt = "Project list: \n" + projects.map(p => `- ${p}`).join("\n") + "\n" + "  Choose project name:";
+          const projectName = prompt(txt);
+          if (projectName) {
+            console.log("Project name:", projectName);
+            location.assign(projectName + ".html");
+          } else {
+            console.error('Project loading cancelled');
+          }
         } else if (data.details) {
           document.dispatchEvent(new CustomEvent('file-detail-data', {
             detail: data
@@ -33340,7 +34087,11 @@ class MEEditorClient {
             detail: {}
           })), 1000);
         } else {
-          _utils.mb.show("from editor:" + data.payload);
+          if (data.methodSaves && data.ok == true) {
+            _utils.mb.show("Graph saved ✅");
+          } else {
+            _utils.mb.show("From editorX:" + data.ok);
+          }
         }
       } catch (e) {
         console.error("[WS ERROR PARSE]", e);
@@ -33405,7 +34156,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('file-detail', e => {
-      console.info('file-detail <signal>');
+      console.info('%c[file-detail <signal>]', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "file-detail",
         name: e.detail.name,
@@ -33415,8 +34166,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.addCube', e => {
-      console.log("[web.editor.addCube]: ", e.detail);
-      console.info('addCube <signal>');
+      console.info('%c[web.editor.addCube]', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addCube",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33426,8 +34176,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.addSphere', e => {
-      console.log("[web.editor.addSphere]: ", e.detail);
-      console.info('addSphere <signal>');
+      console.info('%c[web.editor.addSphere]', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addSphere",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33437,7 +34186,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('save-methods', e => {
-      console.info('save script <signal>');
+      console.info('%cSave methods <signal>', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "save-methods",
         methodsContainer: e.detail.methodsContainer
@@ -33445,9 +34194,17 @@ class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener('save-graph', e => {
+      console.info('%cSave graph <signal>', _utils.LOG_FUNNY_ARCADE);
+      let o = {
+        action: "save-graph",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
     document.addEventListener('web.editor.addGlb', e => {
-      console.log("[web.editor.addGlb]: ", e.detail);
-      console.info('addGlb <signal>');
+      console.log("%c[web.editor.addGlb]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addGlb",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33457,8 +34214,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.addObj', e => {
-      console.log("[web.editor.addObj]: ", e.detail);
-      console.info('addObj <signal>');
+      console.log("%c[web.editor.addObj]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addObj",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33481,8 +34237,7 @@ class MEEditorClient {
 
     // delete obj
     document.addEventListener('web.editor.delete', e => {
-      console.log("[web.editor.delete]: ", e.detail.prefix);
-      console.info('delete-obj <signal>');
+      console.log("%c[web.editor.delete]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "delete-obj",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33492,8 +34247,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.update.pos', e => {
-      console.log("[web.editor.update.pos]: ", e.detail);
-      console.info('web.editor.update.pos <signal>');
+      console.log("%c[web.editor.update.pos]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "updatePos",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33503,8 +34257,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.update.rot', e => {
-      console.log("[web.editor.update.rot]: ", e.detail);
-      console.info('web.editor.update.rot <signal>');
+      console.log("%c[web.editor.update.rot]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "updateRot",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33514,8 +34267,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.update.scale', e => {
-      console.log("[web.editor.update.scale]: ", e.detail);
-      console.info('web.editor.update.scale <signal>');
+      console.log("%c[web.editor.update.scale]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "updateScale",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -33528,7 +34280,774 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":46}],70:[function(require,module,exports){
+},{"../../engine/utils":48}],73:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.CurveEditor = exports.CurveData = void 0;
+var _utils = require("../../engine/utils");
+/**
+ * @description
+ * Matrix-Engine-Wgpu Curve Editor
+ */
+
+class CurveEditor {
+  constructor({
+    width = 651,
+    height = 300,
+    samples = 128
+  } = {}) {
+    this.curveStore = new CurveStore();
+    this.width = width;
+    this.height = height;
+    this.samples = samples;
+    this.keys = [{
+      time: 0,
+      value: 0,
+      inTangent: 0,
+      outTangent: 0
+    }, {
+      time: 1,
+      value: 0,
+      inTangent: 0,
+      outTangent: 0
+    }];
+    this.valueMin = -1;
+    this.valueMax = 1;
+    this.padLeft = 32;
+    this.padBottom = 18;
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.ctx = this.canvas.getContext("2d");
+    this.zeroY = Math.round(this.height * 0.5) + 0.5;
+    this.graphHeight = this.height - this.padBottom;
+    this.snapEnabled = true;
+    this.snapSteps = 20;
+    this.snapValueSteps = 20;
+    this.name = "Curve";
+    this.currentValue = 0;
+    // fix
+    this.value = 0;
+    this.activeKey = null;
+    this.dragMode = null;
+    this._grabDX = 0;
+    this._grabDY = 0;
+    this.time = 0;
+    this.loop = true;
+    this.speed = 1;
+    this.isGraphRunning = false;
+    this._editorOpen = false;
+    this._createPopup();
+    this._bindMouse();
+    this._buildToolbar();
+    this._enableDrag();
+    this.length = 1.0;
+    this._lastTime = performance.now();
+    this._runner = null;
+    this.baked = this.bake(samples);
+    setTimeout(() => this.draw(), 100);
+  }
+  _valueToY(v) {
+    const n = (v - this.valueMin) / (this.valueMax - this.valueMin);
+    return (1 - n) * this.graphHeight;
+  }
+  _yToValue(y) {
+    const n = 1 - y / this.height;
+    return this.valueMin + n * (this.valueMax - this.valueMin);
+  }
+  _snap(value, steps) {
+    if (!this.snapEnabled) return value;
+    const range = this.valueMax - this.valueMin;
+    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
+  }
+
+  // VALUE EVALUATION (HERMITE)
+  getValue(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < this.keys.length - 1; i++) {
+      const k0 = this.keys[i];
+      const k1 = this.keys[i + 1];
+      if (t >= k0.time && t <= k1.time) {
+        const dt = k1.time - k0.time;
+        const u = (t - k0.time) / dt;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const m0 = k0.outTangent * dt;
+        const m1 = k1.inTangent * dt;
+        return (2 * u3 - 3 * u2 + 1) * k0.value + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * k1.value + (u3 - u2) * m1;
+      }
+    }
+    return this.keys.at(-1).value;
+  }
+
+  // DRAW
+  draw() {
+    const padLeft = 32;
+    const padBottom = 18;
+    const ctx = this.ctx;
+    const w = this.width - padLeft;
+    const h = this.height - padBottom;
+    ctx.save();
+    ctx.translate(padLeft, 0);
+    ctx.clearRect(-50, -50, w + padLeft + 50, h + padBottom + 50);
+    ctx.fillStyle = "#0b0f14";
+    ctx.fillRect(0, 0, w, h);
+
+    // grid
+    ctx.strokeStyle = "#1c2533";
+    for (let i = 0; i <= 10; i++) {
+      const x = i / 10 * w;
+      const y = i / 10 * h;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // ===== Y AXIS LABELS =====
+    ctx.fillStyle = "#9aa7b2";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("+1", -6, this._valueToY(0.9));
+    ctx.fillText("0", -6, this._valueToY(0));
+    ctx.fillText("-1", -6, this._valueToY(-0.9));
+    const zeroY = this._valueToY(0);
+    ctx.strokeStyle = "#2e3b4e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, zeroY);
+    ctx.lineTo(w, zeroY);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+
+    // curve
+    ctx.strokeStyle = "#4fc3f7";
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      // const x = t * w;
+      const x = t * w;
+      const y = this._valueToY(this.getValue(t));
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // keys + tangents
+    this.keys.forEach(k => {
+      const x = this._timeToX(k.time);
+      const y = this._valueToY(k.value);
+
+      // tangents
+      ctx.strokeStyle = "#888";
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 30, y - k.outTangent * 30);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 30, y + k.inTangent * 30);
+      ctx.stroke();
+
+      // key circle
+      ctx.fillStyle = "#ffcc00";
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    // PLAYHEAD
+    const playX = this._timeToX(this.time);
+    const playY = this._valueToY(this.getValueNow());
+    // vertical line
+    ctx.strokeStyle = "#ff5555";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playX, 0);
+    ctx.lineTo(playX, h);
+    ctx.stroke();
+
+    // dot
+    ctx.fillStyle = "#ff5555";
+    ctx.beginPath();
+    ctx.arc(playX, playY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.restore();
+
+    // ===== X AXIS LABELS =====
+    ctx.fillStyle = "#ffffffff";
+    ctx.font = "13px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const y = this.height - padBottom + 2;
+    ctx.fillText("0s", padLeft, y);
+    ctx.fillText((this.length * 0.5).toFixed(2) + "s", padLeft + w * 0.5, y);
+    ctx.fillText(this.length.toFixed(2) + "s", padLeft + w, y);
+    this._updateToolbar();
+  }
+  _getMouse(e) {
+    const r = this.canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - r.left - this.padLeft,
+      y: e.clientY - r.top
+    };
+  }
+  _bindMouse() {
+    const hitKey = (mx, my) => {
+      return this.keys.find(k => {
+        const x = this._timeToX(k.time);
+        const y = this._valueToY(k.value);
+        const HIT_RADIUS = 20;
+        return Math.hypot(mx - x, my - y) <= HIT_RADIUS;
+      });
+    };
+    const hitPlayhead = (mx, my) => {
+      if (this.isGraphRunning) return false;
+      const w = this.width - this.padLeft;
+      const playX = this._timeToX(this.time);
+      const playY = this._valueToY(this.getValueNow());
+      return Math.hypot(mx - playX, my - playY) < 8;
+    };
+    this.canvas.addEventListener("mousedown", e => {
+      const {
+        x: mx,
+        y: my
+      } = this._getMouse(e);
+      if (hitPlayhead(mx, my)) {
+        this.activeKey = 'playhead';
+        this.dragMode = 'playhead';
+        return;
+      }
+      const k = hitKey(mx, my);
+      if (k) {
+        const w = this.width - this.padLeft;
+        const kx = k.time * w;
+        const ky = this._valueToY(k.value);
+        this._grabDX = mx - kx;
+        this._grabDY = my - ky;
+        this.activeKey = k;
+        this.dragMode = e.shiftKey ? "tangent" : "key";
+      }
+    });
+    window.addEventListener("mousemove", e => {
+      if (!this.activeKey) return;
+      const {
+        x: mx,
+        y: my
+      } = this._getMouse(e);
+      if (this.dragMode === 'playhead' && this.activeKey === 'playhead') {
+        const w = this.width - this.padLeft;
+        let t = Math.max(0, Math.min(1, mx / w));
+        t = this._snap(t, this.snapSteps);
+        this.time = t;
+        this.draw();
+        return;
+      }
+      if (this.dragMode === "key") {
+        const w = this.width - this.padLeft;
+        // let t = (mx - this._grabDX) / w;
+        let t = (mx - this._grabDX) / w;
+        t = Math.max(0, Math.min(1 - 1e-6, t));
+        let v = this._yToValue(my - this._grabDY);
+        v = Math.max(this.valueMin, Math.min(this.valueMax, v));
+        v = this._snap(v, this.snapValueSteps);
+        t = this._snap(t, this.snapSteps);
+        v = this._snap(v, this.snapValueSteps);
+        this.activeKey.time = t;
+        this.activeKey.value = v;
+        this.keys.sort((a, b) => a.time - b.time);
+      }
+      if (this.dragMode === "tangent") {
+        const dx = mx / r.width - this.activeKey.time;
+        const dy = 1 - my / r.height - this.activeKey.value;
+        this.activeKey.outTangent = dy / dx || 0;
+        this.activeKey.inTangent = this.activeKey.outTangent;
+      }
+      this.draw();
+      this._reBake();
+    });
+    window.addEventListener("mouseup", () => {
+      this.activeKey = null;
+      this.dragMode = null;
+    });
+    this.canvas.addEventListener("dblclick", e => {
+      const {
+        x,
+        y
+      } = this._getMouse(e);
+      const w = this.width - this.padLeft;
+      const t = Math.max(0, Math.min(1, x / w));
+      const v = this._yToValue(y);
+      this.keys.push({
+        time: t,
+        value: v,
+        inTangent: 0,
+        outTangent: 0
+      });
+      this.keys.sort((a, b) => a.time - b.time);
+      this._reBake();
+      this.draw();
+    });
+
+    // delete key
+    this.canvas.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      const {
+        x: mx,
+        y: my
+      } = this._getMouse(e);
+      const k = hitKey(mx, my);
+      if (k && this.keys.length > 2) {
+        this.keys = this.keys.filter(x => x !== k);
+        this.draw();
+        this._reBake();
+      }
+    });
+  }
+  _timeToX(t) {
+    const w = this.width - this.padLeft;
+    const R = 4;
+    let x = t * w;
+
+    // clamp so circle is fully inside canvas
+    return Math.min(Math.max(x, R), w - R);
+  }
+
+  // BAKING
+  bake(samples = this.samples) {
+    const data = new Float32Array(samples);
+    for (let i = 0; i < samples; i++) {
+      const t = i / (samples - 1);
+      data[i] = this.getValue(t);
+    }
+    return data;
+  }
+  _reBake() {
+    this.baked = this.bake(this.samples);
+  }
+  exec(delta) {
+    if (!this.isGraphRunning) return this.value;
+    this.time += delta / this.length * this.speed;
+    if (this.loop && this.time > 1) this.time = 0;
+    if (!this.loop && this.time > 1) {
+      this.time = 1;
+      this.stop();
+    }
+    const idx = Math.floor(this.time * (this.samples - 1));
+    this.value = this.baked[idx];
+    this.draw();
+    return this.value;
+  }
+
+  // SYNTETIC FOR NOW 
+  play() {
+    if (this.isGraphRunning) return;
+    this.isGraphRunning = true;
+    this._lastTime = performance.now();
+    this._runner = setInterval(() => {
+      const now = performance.now();
+      const delta = (now - this._lastTime) / 1000;
+      this._lastTime = now;
+      this.exec(delta);
+    }, 16); // ~60fps
+  }
+  stop() {
+    this.isGraphRunning = false;
+    if (this._runner) {
+      clearInterval(this._runner);
+      this._runner = null;
+    }
+    this.draw();
+  }
+  getValueNow() {
+    return this.value;
+  }
+  _createPopup() {
+    this.popup = document.createElement("div");
+    this.popup.id = "curve-editor";
+    Object.assign(this.popup.style, {
+      position: "fixed",
+      top: "20%",
+      left: "20%",
+      transform: "translate(-50%,-50%)",
+      background: "#111",
+      border: "1px solid #333",
+      padding: "5px",
+      display: "none",
+      zIndex: 999999,
+      width: '650px',
+      height: '409px',
+      paddingLeft: '2px',
+      paddingRight: '2px'
+    });
+    this.toolbarTitle = document.createElement("div");
+    this.toolbarTitle.style.cssText = `
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:4px 6px;
+      background:#121822;
+      border-bottom:1px solid #1c2533;
+      font-size:12px;
+      margin-bottom: 5px;
+    `;
+    this.toolbarTitle.innerHTML = `<h3>Curve Editor</h3>`;
+    this.popup.appendChild(this.toolbarTitle);
+    this.popup.appendChild(this.canvas);
+    document.body.appendChild(this.popup);
+  }
+  toggleEditor() {
+    console.log('_editorOpen');
+    this._editorOpen = !this._editorOpen;
+    this.popup.style.display = this._editorOpen ? "block" : "none";
+    this.draw();
+  }
+  _buildToolbar() {
+    this.root = document.createElement("div");
+    this.root.style.cssText = `
+    background:#0b0f14;
+    border:1px solid #1c2533;
+    font-family:monospace;
+    color:#cfd8dc;
+    width:${this.width}px;
+  `;
+
+    // Toolbar
+    this.toolbar = document.createElement("div");
+    this.toolbar.style.cssText = `
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:4px 6px;
+    background:#121822;
+    border-bottom:1px solid #1c2533;
+    font-size:12px;
+  `;
+    this.nameInput = document.createElement("input");
+    // console.log(this.name)
+    this.nameInput.value = this.name;
+    this.nameInput.disabled = true;
+    this.nameInput.style.cssText = `
+    width:80px;
+    background:#0b0f14;
+    border:1px solid #1c2533;
+    color:#fff;
+    padding:2px 4px;
+  `;
+    this.nameInput.onchange = () => this.name = this.nameInput.value;
+    this.playBtn = document.createElement("button");
+    this.playBtn.textContent = "▶";
+    this.playBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 8px;
+      cursor:pointer;
+    `;
+    this.playBtn.onclick = () => {
+      this.isGraphRunning ? this.stop() : this.play();
+    };
+    this.lengthInput = document.createElement("input");
+    this.lengthInput.type = "number";
+    this.lengthInput.value = this.length;
+    this.lengthInput.step = "0.1";
+    this.lengthInput.style.cssText = `
+      width:60px;
+      background:#0b0f14;
+      border:1px solid #1c2533;
+      color:#fff;
+      padding:2px 4px;
+    `;
+    this.lengthInput.onchange = () => {
+      this.length = Math.max(0.01, parseFloat(this.lengthInput.value));
+    };
+
+    // Time label
+    this.timeLabel = document.createElement("span");
+
+    // Value label
+    this.valueLabel = document.createElement("span");
+
+    // Running indicator
+    this.runLabel = document.createElement("span");
+
+    // Snap toggle
+    this.snapBtn = document.createElement("button");
+    this.snapBtn.textContent = "Snap";
+    this.snapBtn.style.cssText = `
+    background:#1c2533;
+    color:#fff;
+    border:none;
+    padding:2px 6px;
+    cursor:pointer;
+  `;
+    this.snapBtn.onclick = () => {
+      this.snapEnabled = !this.snapEnabled;
+      this.snapBtn.style.opacity = this.snapEnabled ? "1" : "0.4";
+    };
+    const lenLabel = document.createElement("span");
+    lenLabel.textContent = "Len";
+
+    // Reset button
+    this.resetBtn = document.createElement("button");
+    this.resetBtn.textContent = "Reset";
+    this.resetBtn.style.cssText = this.snapBtn.style.cssText;
+    this.resetBtn.onclick = () => {
+      this.time = 0;
+      this.draw();
+    };
+    this.saveBtn = document.createElement("button");
+    this.saveBtn.textContent = "💾 Save";
+    this.saveBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 6px;
+      cursor:pointer;
+    `;
+    this.saveBtn.onclick = () => {
+      let curve = this.curveStore.getByName(this.name);
+      if (!curve) {
+        curve = new CurveData(this.name);
+        this.curveStore.curves.push(curve);
+      }
+      curve.keys = this.keys.map(k => ({
+        ...k
+      }));
+      curve.length = this.length;
+      curve.loop = this.loop;
+      curve.bake(this.samples);
+      this.curveStore.save(curve);
+      (0, _utils.byId)('saveMainGraphDOM').click();
+      console.log(`%c Curve [${this.name}] saved`, "color:#4caf50;font-weight:bold");
+    };
+    this.hideBtn = document.createElement("button");
+    this.hideBtn.textContent = "Hide";
+    this.hideBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 6px;
+      cursor:pointer;
+    `;
+    this.hideBtn.onclick = () => {
+      this.toggleEditor();
+      console.log(`%c Curve [${this.name}] saved!`, _utils.LOG_FUNNY_ARCADE);
+    };
+    this.toolbar.append(this.nameInput, this.playBtn, lenLabel, this.lengthInput, this.timeLabel, this.valueLabel, this.runLabel, this.snapBtn, this.resetBtn, this.saveBtn, this.hideBtn);
+    this.root.append(this.toolbar);
+    this.popup.appendChild(this.root);
+  }
+  _updateToolbar = () => {
+    this.currentValue = this.getValueNow();
+    const timeSec = this.time * this.length;
+    this.timeLabel.textContent = `T: ${timeSec.toFixed(2)}s`;
+    this.valueLabel.textContent = `V: ${this.currentValue.toFixed(3)}`;
+    this.runLabel.textContent = this.isGraphRunning ? "ACTIVE" : "STOPED";
+    this.runLabel.style.color = this.isGraphRunning ? "#4caf50" : "#ff9800";
+    this.playBtn.textContent = this.isGraphRunning ? "⏸" : "▶";
+  };
+  _enableDrag() {
+    const el = this.popup;
+    const handle = this.toolbar;
+    const handle2 = this.toolbarTitle;
+    let isDown = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    handle.style.cursor = "move";
+    handle2.style.cursor = "move";
+    handle.addEventListener("mousedown", e => {
+      isDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = el.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      document.body.style.userSelect = "none";
+    });
+    handle2.addEventListener("mousedown", e => {
+      isDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = el.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      document.body.style.userSelect = "none";
+    });
+    window.addEventListener("mousemove", e => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      el.style.left = startLeft + dx + "px";
+      el.style.top = startTop + dy + "px";
+      el.style.transform = "none";
+    });
+    window.addEventListener("mouseup", () => {
+      isDown = false;
+      document.body.style.userSelect = "";
+    });
+  }
+  bindCurve(curve, meta = {}) {
+    // console.log("BIND curve", curve, meta);
+    this.curve = curve;
+    this.keys = curve.keys;
+    this.length = curve.length;
+    this.loop = curve.loop;
+    this.name = meta.idNode;
+    this.nameInput.value = this.name;
+    this.lengthInput.value = this.length;
+    this.idNode = meta.idNode ?? null;
+    this.time = 0;
+    this._reBake();
+    this.draw();
+  }
+}
+
+/**
+ * @description
+ * Data class
+ **/
+exports.CurveEditor = CurveEditor;
+class CurveData {
+  constructor(name) {
+    this.name = name;
+    this.keys = [{
+      time: 0,
+      value: 0,
+      inTangent: 0,
+      outTangent: 0
+    }, {
+      time: 1,
+      value: 1,
+      inTangent: 0,
+      outTangent: 0
+    }];
+    this.length = 1;
+    this.loop = true;
+    this.samples = 128;
+    this.baked = null;
+  }
+  getValue(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < this.keys.length - 1; i++) {
+      const k0 = this.keys[i];
+      const k1 = this.keys[i + 1];
+      if (t >= k0.time && t <= k1.time) {
+        const dt = k1.time - k0.time;
+        const u = (t - k0.time) / dt;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const m0 = k0.outTangent * dt;
+        const m1 = k1.inTangent * dt;
+        return (2 * u3 - 3 * u2 + 1) * k0.value + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * k1.value + (u3 - u2) * m1;
+      }
+    }
+    return this.keys.at(-1).value;
+  }
+
+  // bake real values, not normalized 0-1
+  bake(samples = this.samples) {
+    this.baked = new Float32Array(samples);
+    for (let i = 0; i < samples; i++) {
+      const t = i / (samples - 1);
+      this.baked[i] = this.getValue(t);
+    }
+  }
+  evaluate(time01) {
+    if (!this.baked) {
+      console.warn("Curve not baked!");
+      return 0;
+    }
+    let t = time01;
+    if (this.loop) t = t % 1;else t = Math.min(1, Math.max(0, t));
+    const idx = Math.floor(t * (this.baked.length - 1));
+    return this.baked[idx];
+  }
+}
+exports.CurveData = CurveData;
+class CurveStore {
+  constructor() {
+    this.CURVE_STORAGE_KEY = "PROJECT_NAME";
+    this.curves = [];
+    this.load();
+  }
+  has(name) {
+    return this.curves.some(c => c.name === name);
+  }
+  getOrCreate(curveArg) {
+    let curve = this.curves.find(c => c.name === curveArg.name);
+    if (curve) return curve;
+    console.log("PUSH in getOrCreate");
+    curve = new CurveData(curveArg.name);
+    this.curves.push(curve);
+    return curve;
+  }
+  getByName(name) {
+    return this.curves.find(c => c.name === name) || null;
+  }
+  add(curve) {
+    this.curves.push(curve);
+    this.save();
+  }
+  removeByName(name) {
+    this.curves = this.curves.filter(c => c.name !== name);
+    this.save();
+  }
+  getAll() {
+    return this.curves;
+  }
+
+  // SAVE / LOAD
+  save() {
+    console.log('TEST SAVE', this.curves);
+    const data = {
+      version: 1,
+      curves: this.curves
+    };
+    localStorage.setItem(this.CURVE_STORAGE_KEY, JSON.stringify(data));
+  }
+
+  // saveCurve(curveData) {
+  //   const idx = this.curves.findIndex(c => c.name === curveData.name);
+  //   if(idx >= 0) {
+  //     this.curves[idx] = curveData;
+  //   } else {
+  //     this.curves.push(curveData);
+  //   }
+  //   this.save();
+  // }
+
+  load() {
+    const raw = localStorage.getItem(this.CURVE_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (!data.curves) return;
+      this.curves = data.curves.map(c => this._fromJSON(c));
+    } catch (e) {
+      console.warn("CurveStore load failed", e);
+      this.curves = [];
+    }
+  }
+  _fromJSON(obj) {
+    const c = new CurveData(obj.name);
+    c.keys = obj.keys || [];
+    c.length = obj.length ?? 1;
+    c.loop = !!obj.loop;
+    return c;
+  }
+}
+
+},{"../../engine/utils":48}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33556,7 +35075,7 @@ class Editor {
       // Visual Scripting
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
-        this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager);
+        this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager, projName);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
         }, 3000);
@@ -33582,8 +35101,10 @@ class Editor {
     // setTimeout(() => FCV.style.display = 'none' , 200);
     FCV.innerHTML = `
     <div id="leftBar">
-      <h3>Events/Func</h3>
+      <span>Events/Func</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onDraw')">Event: onDraw</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onKey')">Event: onKey</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
@@ -33593,9 +35114,9 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
@@ -33610,18 +35131,45 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
 
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
-      <hr>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
-      <hr>
+
+      <span>Data mod</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('curveTimeline')">Curve Timeline</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('oscillator')">Oscillator</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
+
+
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-      <hr>
       <span>Media</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
+
+      <span>Physics</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
+
+      <span>String Operations</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
+
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
@@ -33630,7 +35178,6 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>COMPARISON</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
@@ -33639,14 +35186,13 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear All</button>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+      <button style="color: lime;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button style="color: lime;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
 
       <pre id="log" aria-live="polite"></pre>
     </div>
@@ -33661,7 +35207,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"./client":69,"./editor.provider":71,"./fluxCodexVertex":72,"./hud":73,"./methodsManager":74}],71:[function(require,module,exports){
+},{"./client":72,"./editor.provider":75,"./fluxCodexVertex":76,"./hud":77,"./methodsManager":78}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33889,15 +35435,17 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":36,"../../engine/loaders/webgpu-gltf":39}],72:[function(require,module,exports){
+},{"../../engine/loader-obj":38,"../../engine/loaders/webgpu-gltf":41}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
+exports.runtimeCacheObjs = exports.default = void 0;
 var _ToolTip = require("../../engine/plugin/tooltip/ToolTip");
 var _utils = require("../../engine/utils");
+var _audioAsset = require("../../sounds/audioAsset");
+var _curveEditor = require("./curve-editor");
 /**
  * @description
  * Flux Codex Vertex use visual scripting model.
@@ -33936,10 +35484,14 @@ var _utils = require("../../engine/utils");
  * - MPL applies ONLY to this file
  */
 
+// Engine agnostic
+let runtimeCacheObjs = exports.runtimeCacheObjs = [];
 class FluxCodexVertex {
-  constructor(boardId, boardWrapId, logId, methodsManager) {
+  constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
     this.toolTip = new _ToolTip.METoolTip();
+    this.curveEditor = new _curveEditor.CurveEditor();
+    this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
     this.variables = {
       number: {},
@@ -33972,6 +35524,20 @@ class FluxCodexVertex {
       panStart: [0, 0],
       zoom: 1
     };
+    this.clearRuntime = () => {
+      app.graphUpdate = () => {};
+      // stop sepcial onDraw node
+      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter(n => n.title == "On Draw"), _utils.LOG_FUNNY_ARCADE);
+      let allOnDraws = Object.values(this.nodes).filter(n => n.title == "On Draw");
+      for (var x = 0; x < allOnDraws.length; x++) {
+        allOnDraws[x]._listenerAttached = false;
+      }
+      for (let x = 0; x < runtimeCacheObjs.length; x++) {
+        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
+        app.removeSceneObjectByName(runtimeCacheObjs[x].name);
+      }
+      (0, _utils.byId)("graph-status").innerHTML = '⚫';
+    };
     this.setZoom = z => {
       this.state.zoom = Math.max(0.2, Math.min(2.5, z));
       this.board.style.transform = `scale(${this.state.zoom})`;
@@ -33991,8 +35557,8 @@ class FluxCodexVertex {
     this.bindGlobalListeners();
     this._varInputs = {};
 
-    // EXTRA TIME 
-    setTimeout(() => this.init(), 4000);
+    // EXTRA TIME
+    setTimeout(() => this.init(), 3000);
     document.addEventListener("keydown", e => {
       if (e.key == "F6") {
         e.preventDefault();
@@ -34019,13 +35585,19 @@ class FluxCodexVertex {
       this.handleGetSubObject(node, value);
       if (field !== "path") return;
     });
+
+    // only node no need to write intro files
     document.addEventListener('web.editor.addMp3', e => {
       console.log("[web.editor.addMp3]: ", e.detail);
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       this.addNode('audioMP3', e.detail);
-      // this.core.
+    });
+
+    // curve editor stuff
+    document.addEventListener('show-curve-editor', e => {
+      console.log('show-showCurveEditorBtn editor ', e);
+      this.curveEditor.toggleEditor();
     });
   }
   createContextMenu() {
@@ -34076,6 +35648,7 @@ class FluxCodexVertex {
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
@@ -34089,10 +35662,8 @@ class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
-    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
-    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -34245,13 +35816,25 @@ class FluxCodexVertex {
     hideVPopup.innerText = `Hide`;
     hideVPopup.classList.add("btn4");
     hideVPopup.style.margin = "8px 8px 8px 8px";
-    hideVPopup.style.width = "100px";
+    hideVPopup.style.width = "200px";
     hideVPopup.style.fontWeight = "bold";
     hideVPopup.style.webkitTextStrokeWidth = "0px";
     hideVPopup.addEventListener("click", () => {
       (0, _utils.byId)("varsPopup").style.display = "none";
     });
     popup.appendChild(hideVPopup);
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Save`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => {
+      this.compileGraph();
+    });
+    popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
@@ -34274,23 +35857,23 @@ class FluxCodexVertex {
           padding: "4px",
           cursor: "pointer",
           borderBottom: "1px solid #222",
-          color: colors[type] || "#fff"
+          color: colors[type] || "#fff",
+          placeContent: "space-around"
         });
         const label = document.createElement("span");
         label.textContent = `${name} (${type})`;
-        label.style.minWidth = "120px";
+        label.style.width = "20%";
         let input;
         if (type === "object") {
           input = document.createElement("textarea");
           input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
-          input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
           input.value = this.variables[type][name] ?? "";
-          input.style.width = "";
         }
+        input.style.width = "30%";
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, {
           background: "#000",
@@ -34465,6 +36048,12 @@ class FluxCodexVertex {
       name: "return",
       type: "value"
     });
+
+    // test 
+    node.outputs.push({
+      name: "reference",
+      type: "function"
+    });
     node.attachedMethod = methodItem.name;
     node.fn = fn;
     this.updateNodeDOM(node.id);
@@ -34590,10 +36179,10 @@ class FluxCodexVertex {
       if (node.attachedMethod) select.value = node.attachedMethod;
       select.onchange = e => {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        console.log('test reference::::', selected);
         if (selected) this.adaptNodeToMethod(node, selected);
       };
     } else if (node.category === "functions") {
-      console.log('!!!updateDOMNODE restoreDynamicFunctionNode', this.restoreDynamicFunctionNode);
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     } else if (node.category === "reffunctions") {
@@ -34844,6 +36433,8 @@ class FluxCodexVertex {
       el.className = "node " + (spec.title.toLowerCase() || "");
     } else if (spec.title == "Play MP3") {
       el.className = "node " + "audios";
+    } else if (spec.title == "Curve") {
+      el.className = "node " + "curve";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -34886,6 +36477,16 @@ class FluxCodexVertex {
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
+    if (spec.title == "Curve") {
+      const c = new _curveEditor.CurveData(spec.id);
+      let curve = this.curveEditor.curveStore.getOrCreate(c);
+      spec.curve = curve;
+      console.log(`%c Create DOM corotine Node [CURVE] ${spec.curve}`, _utils.LOG_FUNNY_ARCADE);
+      this.curveEditor.bindCurve(spec.curve, {
+        name: spec.id,
+        idNode: spec.id
+      });
+    }
     if (spec.comment) {
       const textarea = document.createElement("textarea");
       // textarea.style
@@ -34923,7 +36524,6 @@ class FluxCodexVertex {
       spec.fields.forEach(f => {
         const input = document.createElement("input");
         input.type = "number";
-        console.log("?????????????");
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
@@ -34957,6 +36557,7 @@ class FluxCodexVertex {
       select.addEventListener("change", e => {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
         if (selected) {
+          console.log('test reference', selected);
           this.adaptNodeToMethod(spec, selected);
         }
       });
@@ -34991,7 +36592,7 @@ class FluxCodexVertex {
     }
     if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
-      select.id = spec._id;
+      select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
@@ -35033,6 +36634,11 @@ class FluxCodexVertex {
       e.stopPropagation();
       this.selectNode(spec.id);
       this.updateNodeDOM(spec.id);
+    });
+    el.addEventListener("dblclick", e => {
+      e.stopPropagation();
+      console.log('DBL ' + spec.id);
+      this.onNodeDoubleClick(spec);
     });
     return el;
   }
@@ -35132,6 +36738,487 @@ class FluxCodexVertex {
         }],
         noselfExec: "true"
       }),
+      generator: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Generator",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "geometry",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "sum",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:0, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "geometry",
+          value: "Cube"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "sum",
+          value: 10
+        }, {
+          key: "delay",
+          value: 500
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      generatorWall: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Generator Wall",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "size",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "spacing",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:0, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "size",
+          value: "10x3"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "spacing",
+          value: 10
+        }, {
+          key: "delay",
+          value: 500
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      generatorPyramid: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Generator Pyramid",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "levels",
+          type: "number"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "spacing",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "complete",
+          type: "action"
+        }, {
+          name: "objectNames",
+          type: "object"
+        }],
+        fields: [{
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:0, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "levels",
+          value: "5"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "spacing",
+          value: 10
+        }, {
+          key: "delay",
+          value: 500
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      setForceOnHit: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Force On Hit",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "rayDirection",
+          type: "object"
+        }, {
+          name: "strength",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [],
+        noselfExec: "true"
+      }),
+      setVideoTexture: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Video Texture",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "VideoTextureArg",
+          type: "object"
+        }, {
+          name: "muteAudio",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "objectName",
+          value: "standard"
+        }, {
+          key: "VideoTextureArg",
+          value: "{type: 'video', src: 'res/videos/tunel.mp4'}"
+        }, {
+          key: "muteAudio",
+          value: true
+        }],
+        noselfExec: "true"
+      }),
+      setCanvasInlineTexture: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set CanvasInline",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "canvaInlineProgram",
+          type: "function"
+        }, {
+          name: "specialCanvas2dArg",
+          type: "object"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "objectName",
+          value: "standard"
+        }, {
+          key: "canvaInlineProgram",
+          value: "function (ctx, canvas) {}"
+        }, {
+          key: "specialCanvas2dArg",
+          value: "{ hue: 200, glow: 10, text: 'Hello programmer', fontSize: 60, flicker: 0.05, }"
+        }],
+        noselfExec: "true"
+      }),
+      audioReactiveNode: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Audio Reactive Node",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "audioSrc",
+          type: "string"
+        }, {
+          name: "loop",
+          type: "boolean"
+        }, {
+          name: "thresholdBeat",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "low",
+          type: "number"
+        }, {
+          name: "mid",
+          type: "number"
+        }, {
+          name: "high",
+          type: "number"
+        }, {
+          name: "energy",
+          type: "number"
+        }, {
+          name: "beat",
+          type: "boolean"
+        }],
+        fields: [{
+          key: "audioSrc",
+          value: "audionautix-black-fly.mp3"
+        }, {
+          key: "loop",
+          value: true
+        }, {
+          key: "thresholdBeat",
+          value: 0.7
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      oscillator: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Oscillator",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "min",
+          type: "number"
+        }, {
+          name: "max",
+          type: "number"
+        }, {
+          name: "step",
+          type: "number"
+        }, {
+          name: "regime",
+          type: "string"
+        }, {
+          name: "resist",
+          type: "number"
+        }, {
+          name: "resistMode",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "value",
+          type: "number"
+        }],
+        fields: [{
+          key: "min",
+          value: 0
+        }, {
+          key: "max",
+          value: 10
+        }, {
+          key: "step",
+          value: 0.2
+        }, {
+          key: "regime",
+          value: 'pingpong'
+        }, {
+          key: "resist",
+          value: 0.02
+        }, {
+          key: "resistMode",
+          value: 'linear'
+        }],
+        noselfExec: "true"
+      }),
+      curveTimeline: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Curve",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "delta",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "value",
+          type: "number"
+        }],
+        fields: [{
+          key: "name",
+          value: "Curve1"
+        }],
+        curve: {},
+        noselfExec: "true"
+      }),
       eventCustom: (id, x, y) => ({
         id,
         x,
@@ -35189,8 +37276,98 @@ class FluxCodexVertex {
           name: "exec",
           type: "action"
         }, {
+          name: "hitObjectName",
+          type: "string"
+        }, {
+          name: "screenCoords",
+          type: "object"
+        }, {
+          name: "rayOrigin",
+          type: "object"
+        }, {
+          name: "rayDirection",
+          type: "object"
+        }, {
           name: "hitObject",
           type: "object"
+        }, {
+          name: "hitNormal",
+          type: "object"
+        }, {
+          name: "hitDistance",
+          type: "object"
+        }, {
+          name: "eventName",
+          type: "object"
+        }, {
+          name: "button",
+          type: "number"
+        }, {
+          name: "timestamp",
+          type: "number"
+        }],
+        noselfExec: 'true',
+        _listenerAttached: false
+      }),
+      onDraw: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "On Draw",
+        category: "event",
+        inputs: [],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "delta",
+          type: "number"
+        }, {
+          name: "skip",
+          type: "number"
+        }],
+        fields: [{
+          key: "skip",
+          value: 5
+        }],
+        noselfExec: 'true',
+        _listenerAttached: false
+      }),
+      onKey: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "On Key",
+        category: "event",
+        inputs: [],
+        outputs: [{
+          name: "keyDown",
+          type: "action"
+        }, {
+          name: "keyUp",
+          type: "action"
+        }, {
+          name: "isHeld",
+          type: "boolean"
+        }, {
+          name: "anyKeyDown",
+          type: "action"
+        }, {
+          name: "keyCode",
+          type: "string"
+        }, {
+          name: "shift",
+          type: "action"
+        }, {
+          name: "ctrl",
+          type: "action"
+        }, {
+          name: "alt",
+          type: "action"
+        }],
+        fields: [{
+          key: "key",
+          value: "W"
         }],
         noselfExec: 'true',
         _listenerAttached: false
@@ -35301,6 +37478,214 @@ class FluxCodexVertex {
           value: "1000"
         }],
         builtIn: true
+      }),
+      // string operation
+      startsWith: (id, x, y) => ({
+        id,
+        title: "Starts With [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "prefix",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
+      }),
+      endsWith: (id, x, y) => ({
+        id,
+        title: "Ends With [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "suffix",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
+      }),
+      includes: (id, x, y) => ({
+        id,
+        title: "Includes [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "search",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
+      }),
+      toUpperCase: (id, x, y) => ({
+        id,
+        title: "To Upper Case [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      toLowerCase: (id, x, y) => ({
+        id,
+        title: "To Lower Case [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      trim: (id, x, y) => ({
+        id,
+        title: "Trim [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      length: (id, x, y) => ({
+        id,
+        title: "String Length",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "number"
+        }]
+      }),
+      substring: (id, x, y) => ({
+        id,
+        title: "Substring [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "start",
+          type: "number"
+        }, {
+          name: "end",
+          type: "number"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      replace: (id, x, y) => ({
+        id,
+        title: "Replace [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "search",
+          type: "string"
+        }, {
+          name: "replace",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      split: (id, x, y) => ({
+        id,
+        title: "Split [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "separator",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "array"
+        }]
+      }),
+      concat: (id, x, y) => ({
+        id,
+        title: "Concat [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "a",
+          type: "string"
+        }, {
+          name: "b",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      isEmpty: (id, x, y) => ({
+        id,
+        title: "Is Empty [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
       }),
       // Math
       add: (id, x, y) => ({
@@ -35693,6 +38078,29 @@ class FluxCodexVertex {
           key: "literal",
           value: ""
         }]
+      }),
+      getNumberLiteral: (id, x, y) => ({
+        id,
+        title: "getNumberLiteral",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "value",
+          type: "number"
+        }],
+        fields: [{
+          key: "value",
+          value: 1
+        }],
+        noselfExec: "true"
       }),
       comment: (id, x, y) => ({
         id,
@@ -36494,7 +38902,6 @@ class FluxCodexVertex {
       const pos = this.getValue(nodeId, "position");
       if (!pos) return;
       pos.onTargetPositionReach = () => {
-        console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
       n._listenerAttached = true;
@@ -36503,13 +38910,68 @@ class FluxCodexVertex {
       if (n._listenerAttached) return;
       app.reference.addRaycastsListener();
       const handler = e => {
-        n._returnCache = e.detail?.hitObject ?? e.detail;
+        n._returnCache = e.detail;
         this.enqueueOutputs(n, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
       n._eventHandler = handler;
       n._listenerAttached = true;
       return;
+    } else if (n.title == "On Draw") {
+      // console.log('ON DRAW INIT ONLE !!!!!', n.fields.find(f => f.key === "skip")?.value);
+      if (n._listenerAttached) return;
+      let skip = n.fields.find(f => f.key === "skip")?.value;
+      if (typeof n._frameCounter === "undefined") {
+        n._frameCounter = 0;
+      }
+      const graph = this;
+      app.graphUpdate = function (delta) {
+        n._frameCounter++;
+        if (skip > 0 && n._frameCounter < skip) return;
+        n._frameCounter = 0;
+        // console.info('.....', delta)
+        n._returnCache = delta;
+        graph.enqueueOutputs(n, "exec");
+      };
+      n._listenerAttached = true;
+      return;
+    } else if (n.title == "On Key") {
+      if (n._listenerAttached) return;
+      const graph = this;
+      n._isHeld = false;
+      window.addEventListener("keydown", e => {
+        n.lastKey = e.key;
+        graph.enqueueOutputs(n, "anyKeyDown");
+        if (e.ctrlKey == true) graph.enqueueOutputs(n, "ctrl");
+        if (e.altKey == true) graph.enqueueOutputs(n, "alt");
+        if (e.shiftKey == true) graph.enqueueOutputs(n, "shift");
+        const keyValue = n.fields.find(f => f.key === "key")?.value;
+        if (!keyValue) return;
+        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
+          // node._pressed = true;
+          n._isHeld = true;
+          graph.enqueueOutputs(n, "keyDown");
+        }
+      });
+      window.addEventListener("keyup", e => {
+        console.log('ON e.shiftKey !!!!!', e.shiftKey);
+        console.log('ON e.altKey !!!!!', e.altKey);
+        console.log('ON e.ctrltKey !!!!!', e.ctrlKey);
+        const keyValue = n.fields.find(f => f.key === "key")?.value;
+        if (!keyValue) return;
+        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
+          // node._pressed = true;
+          n._isHeld = false;
+          graph.enqueueOutputs(n, "keyUp");
+        }
+      });
+      window.addEventListener("blur", () => {
+        if (n._isHeld) {
+          n._isHeld = false;
+          graph.enqueueOutputs(n, "keyUp");
+        }
+      });
+      n._listenerAttached = true;
     }
   }
   _executeAttachedMethod(n) {
@@ -36535,9 +38997,53 @@ class FluxCodexVertex {
     }
     if (!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
+    if (node.title === "Function" && pinName === "reference") {
+      if (typeof node.fn === 'undefined') {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === node.attachedMethod);
+        if (selected) {
+          node.fn = this.methodsManager.compileFunction(selected.code);
+        } else {
+          console.warn('Node: Function PinName: reference [reference not found at methodsContainer]');
+        }
+      }
+      return node.fn;
+    }
+    if (node.title === "On Draw") if (pinName == "delta") return node._returnCache;
+    if (node.title === "On Key" && pinName == "isHeld") return node._isHeld;
+    if (node.title === "On Key" && pinName == "keyCode") return node.lastKey;
+    if (node.title === "Generator Pyramid" && pinName == "objectNames") return node._returnCache;
+    if (node.title === "Audio Reactive Node") {
+      if (pinName === "low") {
+        return node._returnCache[0];
+      } else if (pinName === "mid") {
+        return node._returnCache[1];
+      } else if (pinName === "high") {
+        return node._returnCache[2];
+      } else if (pinName === "energy") {
+        return node._returnCache[3];
+      } else if (pinName === "beat") {
+        return node._returnCache[4];
+      }
+    }
+    if (node.title === "Oscillator" && pinName == "value") {
+      return node._returnCache;
+    }
+    if (node.title === "On Ray Hit") {
+      if (pinName === "hitObjectName") {
+        return node._returnCache['hitObject']['name'];
+      } else {
+        return node._returnCache[pinName];
+      }
+    }
     if (node.title === "if" && pinName === "condition") {
       let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
-      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      let t;
+      try {
+        t = this.getValue(testLink.from.node, testLink.from.pin);
+      } catch (err) {
+        console.log(`IF NODE ${node.id} have no conditional pin connected - default is false... fix this in FluxCodexVertex graph editor.`);
+        return false;
+      }
       if (typeof t !== 'undefined') {
         return t;
       }
@@ -36546,10 +39052,6 @@ class FluxCodexVertex {
         return node.fields?.find(f => f.key === "condition")?.value;
       }
       // ?
-    }
-    if (node.title === "On Ray Hit" && pinName === "hitObject") {
-      console.info('get value ray hit', node._returnCache);
-      return node._returnCache;
     }
     if (node.title === "Custom Event" && pinName === "detail") {
       console.warn("[Custom Event]  getvalue");
@@ -36578,10 +39080,10 @@ class FluxCodexVertex {
       }
       return value;
     }
-    const field = node.fields?.find(f => f.key === pinName);
-    if (field) return field.value;
     const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
+    const field = node.fields?.find(f => f.key === pinName);
+    if (field) return field.value;
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
     if (node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
@@ -36637,9 +39139,52 @@ class FluxCodexVertex {
     }
 
     // console.log("GETVALUE COMPARE!")
-    if (["math", "value", "compare"].includes(node.category)) {
+    if (["math", "value", "compare", "stringOperation"].includes(node.category)) {
       let result;
       switch (node.title) {
+        case "Starts With [string]":
+          console.log('test startsWith');
+          result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
+          break;
+        case "Ends With [string]":
+          result = this.getValue(nodeId, "input")?.endsWith(this.getValue(nodeId, "suffix"));
+          break;
+        case "Includes [string]":
+          result = this.getValue(nodeId, "input")?.includes(this.getValue(nodeId, "search"));
+          break;
+        case "Equals [string]":
+          result = this.getValue(nodeId, "a") === this.getValue(nodeId, "b");
+          break;
+        case "Not Equals [string]":
+          result = this.getValue(nodeId, "a") !== this.getValue(nodeId, "b");
+          break;
+        case "To Upper Case [string]":
+          result = this.getValue(nodeId, "input")?.toUpperCase();
+          break;
+        case "To Lower Case [string]":
+          result = this.getValue(nodeId, "input")?.toLowerCase();
+          break;
+        case "Trim [string]":
+          result = this.getValue(nodeId, "input")?.trim();
+          break;
+        case "String Length":
+          result = this.getValue(nodeId, "input")?.length ?? 0;
+          break;
+        case "Substring [string]":
+          result = this.getValue(nodeId, "input")?.substring(this.getValue(nodeId, "start"), this.getValue(nodeId, "end"));
+          break;
+        case "Replace [string]":
+          result = this.getValue(nodeId, "input")?.replace(this.getValue(nodeId, "search"), this.getValue(nodeId, "replace"));
+          break;
+        case "Split [string]":
+          result = this.getValue(nodeId, "input")?.split(this.getValue(nodeId, "separator"));
+          break;
+        case "Concat [string]":
+          result = (this.getValue(nodeId, "a") ?? "") + (this.getValue(nodeId, "b") ?? "");
+          break;
+        case "Is Empty [string]":
+          result = !this.getValue(nodeId, "input") || this.getValue(nodeId, "input").length === 0;
+          break;
         case "Add":
           result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -36670,11 +39215,8 @@ class FluxCodexVertex {
         case "A == B":
           let varA = this.getValue(nodeId, "A");
           let varB = this.getValue(nodeId, "B");
-          console.log('TEST DEEP TEST ');
           if (typeof varA == "object") {
-            console.log('TEST DEEP ');
             const r = this.deepEqual(varA, varB);
-            console.log('TEST DEEP ', r);
             result = r;
           } else {
             result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
@@ -36761,7 +39303,7 @@ class FluxCodexVertex {
     args.forEach(arg => {
       node.inputs.push({
         name: arg,
-        type: "value"
+        type: "any"
       });
     });
     if (this.hasReturn(fn)) {
@@ -36863,7 +39405,7 @@ class FluxCodexVertex {
       if (link) {
         const fromNode = this.nodes[link.from.node];
         if (fromNode._returnCache === undefined && fromNode._subCache === undefined) {
-          this.triggerNode(fromNode.id);
+          // this.triggerNode(fromNode.id);
         }
         if (fromNode._returnCache) arr = fromNode._returnCache;
         if (fromNode._subCache) arr = fromNode._subCache;
@@ -36953,16 +39495,13 @@ class FluxCodexVertex {
       pos.onTargetPositionReach = () => {
         this.triggerNode(n);
         this.enqueueOutputs(n, "exec");
-        // alert(" TARGET REACh ");
       };
-      console.log('**************rrrrrrrrrr***************');
       n._listenerAttached = true;
       return;
     }
 
     // functionDinamic execution
     if (n.category === "functions") {
-      console.log('TRIGGER n.category === functions ');
       // bloomPass is created in post time - make always update
       n.accessObject = eval(n.accessObjectLiteral);
       if (n.fn === undefined) {
@@ -36977,7 +39516,7 @@ class FluxCodexVertex {
       return;
     }
     if (n.category === "event" && typeof n.noselfExec === 'undefined') {
-      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>EXEC :  ', n.title);
+      console.log('EMPTY EXEC :  ', n.title);
       this.enqueueOutputs(n, "exec");
       return;
     }
@@ -36994,14 +39533,22 @@ class FluxCodexVertex {
         if (n.title == "Set Object") {
           if (value == 0) {
             let varliteral = n.fields?.find(f => f.key === "literal");
-            console.log("set object  varliteral.value ", varliteral.value);
+            // console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            // ??
           }
         } else {
-          console.log("set object ", value);
-          this.variables[type][varField.value] = {
-            value
-          };
+          if (value == 0) {
+            let varliteral = n.fields?.find(f => f.key === "literal");
+            // console.log("set object  varliteral.value ", varliteral.value);
+            this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            value = JSON.parse(varliteral.value);
+          } else {
+            console.log("set object ", value);
+            this.variables[type][varField.value] = {
+              value
+            };
+          }
         }
         this.notifyVariableChanged(type, varField.value);
         // Update matching getter nodes instantly
@@ -37085,7 +39632,7 @@ class FluxCodexVertex {
             n.displayEl.textContent = String(val);
           }
         }
-        console.info(`[Print] ${label}`, val);
+        console.info(`%c[Print] ${label}` + val, _utils.LOG_FUNNY_ARCADE);
       } else if (n.title === "SetTimeout") {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
@@ -37095,19 +39642,292 @@ class FluxCodexVertex {
         const src = this.getValue(nodeId, "src");
         const clones = Number(this.getValue(nodeId, "clones")) || 1;
         if (!key || !src) {
-          console.warn("[Play MP3] Missing key or src");
+          console.info(`%c[Play MP3] Missing key or src...`, _utils.LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
         const createdField = n.fields.find(f => f.key === "created");
         if (!createdField.value) {
-          console.log('!AUDIO ONCE!');
+          createdField.disabled = true;
           app.matrixSounds.createAudio(key, src, clones);
           createdField.value = true;
         }
         app.matrixSounds.play(key);
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if (n.title === "Generator") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const geo = this.getValue(nodeId, "geometry");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let sum = this.getValue(nodeId, "sum");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          console.log('!GEN! ONCE!');
+          app.physicsBodiesGenerator(mat, pos, rot, texturePath, name, geo, raycast, scale, sum, delay);
+          // createdField.value = true;
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Generator Wall") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          // console.log('!GEN WALL! ONCE!');
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          // createdField.value = true;
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Generator Pyramid") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const levels = this.getValue(nodeId, "levels");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay).then(objects => {
+            // console.log('!GEN PYRAMID COMPLETE!');
+            n._returnCache = objects;
+            this.enqueueOutputs(n, "complete");
+          });
+          // createdField.value = true;
+        }
+        // sync
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Force On Hit") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const strength = this.getValue(nodeId, "strength");
+        const rayDirection = this.getValue(nodeId, "rayDirection");
+        if (!objectName || !rayDirection || !strength) {
+          console.warn("[Set Force On Hit] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let b = app.matrixAmmo.getBodyByName(objectName);
+        const i = new Ammo.btVector3(rayDirection[0] * strength, rayDirection[1] * strength, rayDirection[2] * strength);
+        b.applyCentralImpulse(i);
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Video Texture") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let videoTextureArg = this.getValue(nodeId, "VideoTextureArg");
+        if (!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+
+        // console.warn("[Set Video Texture] arg:", videoTextureArg);
+        if (typeof videoTextureArg != 'object') {
+          // console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
+          if (typeof videoTextureArg == 'string') {
+            eval("videoTextureArg = " + videoTextureArg);
+          }
+          if (typeof videoTextureArg === "undefined" || videoTextureArg === null) videoTextureArg = {
+            type: "video",
+            // video , camera  //not tested canvas2d, canvas2dinline
+            src: "res/videos/tunel.mp4"
+          };
+        }
+        let o = app.getSceneObjectByName(objectName);
+        o.loadVideoTexture(videoTextureArg);
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set CanvasInline") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
+        let specialCanvas2dArg = this.getValue(nodeId, "specialCanvas2dArg");
+        if (!objectName) {
+          console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, _utils.LOG_FUNNY_ARCADE);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        // console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
+        if (typeof specialCanvas2dArg == 'string') {
+          eval("specialCanvas2dArg = " + specialCanvas2dArg);
+        }
+        if (typeof canvaInlineProgram != 'function') {
+          // console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
+          if (typeof canvaInlineProgram == 'string') {
+            canvaInlineProgram = eval("canvaInlineProgram = " + canvaInlineProgram);
+          }
+          if (typeof canvaInlineProgram === "undefined" || canvaInlineProgram === null) canvaInlineProgram = function (ctx, canvas) {};
+        }
+        let o = app.getSceneObjectByName(objectName);
+        if (typeof o === 'undefined') {
+          console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, _utils.LOG_FUNNY_ARCADE);
+          _utils.mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
+          return;
+        }
+        // mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
+        o.loadVideoTexture({
+          type: "canvas2d-inline",
+          canvaInlineProgram: canvaInlineProgram,
+          specialCanvas2dArg: specialCanvas2dArg ? specialCanvas2dArg : undefined
+        });
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Curve") {
+        const cName = this.getValue(nodeId, "name");
+        const cDelta = this.getValue(nodeId, "delta");
+        if (!cName) {
+          console.log(`%c Node [CURVE] probably name is missing...`, _utils.LOG_FUNNY_ARCADE);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let curve = this.curveEditor.curveStore.getByName(nodeId);
+        if (!curve) {
+          console.warn("Curve not found:", cName);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        if (!curve.baked) {
+          console.log(`%cNode [CURVE] ${curve} bake.`, _utils.LOG_FUNNY_ARCADE);
+          curve.bake();
+        }
+        n.curve = curve;
+        const t01 = cDelta / curve.length;
+        // smooth
+        // const t01 = curve.loop
+        // ? (cDelta / curve.length) % 1
+        // : Math.min(1, Math.max(0, cDelta / curve.length));
+        let V = n.curve.evaluate(t01);
+        n._returnCache = V;
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "getNumberLiteral") {
+        const literailNum = this.getValue(nodeId, "number");
+        n._returnCache = literailNum;
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Audio Reactive Node") {
+        const src = this.getValue(nodeId, "audioSrc");
+        const loop = this.getValue(nodeId, "loop");
+        const thresholdBeat = this.getValue(nodeId, "thresholdBeat");
+        const createdField = n.fields.find(f => f.key === "created");
+        if (!n._audio && !n._loading) {
+          n._loading = true;
+          createdField.value = true;
+          createdField.disabled = true;
+          app.audioManager.load(src).then(asset => {
+            asset.audio.loop = loop;
+            n._audio = asset;
+            n._energyHistory = [];
+            n._beatCooldown = 0;
+            n._loading = false;
+          });
+          return;
+        }
+        if (!n._audio || !n._audio.ready) return;
+        const data = n._audio.updateFFT();
+        if (!data) return;
+        let low = 0,
+          mid = 0,
+          high = 0;
+        for (let i = 0; i < 16; i++) low += data[i];
+        for (let i = 16; i < 64; i++) mid += data[i];
+        for (let i = 64; i < 128; i++) high += data[i];
+        low /= 16;
+        mid /= 48;
+        high /= 64;
+        const energy = (low + mid + high) / 3;
+        const hist = n._energyHistory;
+        hist.push(low);
+        if (hist.length > 30) hist.shift();
+        let avg = 0;
+        for (let i = 0; i < hist.length; i++) avg += hist[i];
+        avg /= hist.length;
+        let beat = false;
+        if (low > avg * thresholdBeat && n._beatCooldown <= 0) {
+          beat = true;
+          n._beatCooldown = 10;
+        }
+        if (n._beatCooldown > 0) n._beatCooldown--;
+        n._returnCache = [low, mid, high, energy, beat];
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Oscillator") {
+        const min = this.getValue(nodeId, "min");
+        const max = this.getValue(nodeId, "max");
+        const step = this.getValue(nodeId, "step");
+        const regime = this.getValue(nodeId, "regime");
+        const resist = this.getValue(nodeId, "resist");
+        const resistMode = this.getValue(nodeId, "resistMode");
+        if (!n._listenerAttached) {
+          n.osc = new _utils.OSCILLATOR(min, max, step, {
+            regime: regime,
+            resist: resist,
+            resistMode: resistMode
+          });
+          n._listenerAttached = true;
+        }
+        n._returnCache = n.osc.UPDATE();
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -37131,15 +39951,12 @@ class FluxCodexVertex {
     } else if (n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
-      // sceneObjectName
       if (texpath) {
-        // console.log('textPath', texpath)
         // console.log('sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(() => {
           setTimeout(() => obj.changeTexture(obj.texture0), 200);
         });
-        // pos.setSpeed(this.getValue(nodeId, "thrust"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -37214,11 +40031,16 @@ class FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     }
-    console.log("BEFORE COMPARE ");
-    if (["math", "value", "compare"].includes(n.category)) {
+
+    // console.log("BEFORE COMPARE ");
+    if (["math", "value", "compare", "stringOperation"].includes(n.category)) {
       console.log("BEFORE COMPARE ");
       let result;
       switch (n.title) {
+        case "Starts With [string]":
+          // console.log('test startsWith');
+          result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
+          break;
         case "Add":
           result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -37249,11 +40071,8 @@ class FluxCodexVertex {
         case "A == B":
           let varA = this.getValue(nodeId, "A");
           let varB = this.getValue(nodeId, "B");
-          console.log('TEST DEEP TEST ');
           if (typeof varA == "object") {
-            console.log('TEST DEEP ');
             const r = this.deepEqual(varA, varB);
-            console.log('TEST DEEP ', r);
             result = r;
           } else {
             result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
@@ -37409,11 +40228,18 @@ class FluxCodexVertex {
     });
   }
   runGraph() {
-    (0, _utils.byId)("app").style.opacity = 0.4;
-    // this.updateValueDisplays();
+    // console.log('this.nodes', Object.values(this.nodes));
+    if ((0, _utils.byId)("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
+      // Just dummy thoughts — this is wrong.
+      // Every data in DOMs is good to use like status flas or any others calls.
+      if (_utils.mb) _utils.mb.show('FluxCodexVertex not ready yet...');
+      return;
+    }
+    (0, _utils.byId)("app").style.opacity = 0.5;
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => n._returnCache = undefined);
     Object.values(this.nodes).filter(n => n.category === "event" && n.title === "onLoad").forEach(n => this.triggerNode(n.id));
+    (0, _utils.byId)("graph-status").innerHTML = '🔴';
   }
   compileGraph() {
     const bundle = {
@@ -37429,22 +40255,33 @@ class FluxCodexVertex {
       if (key === 'accessObject') return undefined;
       if (key === '_returnCache') return undefined;
       if (key === '_listenerAttached') return false;
+      if (key === '_audio') return undefined;
+      if (key === '_loading') return false;
+      if (key === '_energyHistory') return undefined;
+      if (key === '_beatCooldown') return 0;
       return value;
     }
-    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
-    this.log("Graph saved to LocalStorage!");
+    let d = JSON.stringify(bundle, saveReplacer);
+    localStorage.setItem(this.SAVE_KEY, d);
+    document.dispatchEvent(new CustomEvent('save-graph', {
+      detail: d
+    }));
+    this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
-    let ask = confirm("⚠️ Delete all nodes , are you sure ?");
+    let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if (ask) {
-      localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
-      location.reload(true);
+      this.clearAllNodes();
+      localStorage.removeItem(this.SAVE_KEY);
+      this.compileGraph(); // not just save empty
+      // location.reload(true);
     }
   }
   clearAllNodes() {
     // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
     // Clear data
+    this.nodes = [];
     this.nodes.length = 0;
     this.links.length = 0;
     // Clear state
@@ -37530,11 +40367,20 @@ class FluxCodexVertex {
     this._importInput = input;
   }
   init() {
-    const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
-    if (saved) {
+    const saved = localStorage.getItem(this.SAVE_KEY);
+    if (saved || app.graph) {
       try {
-        const data = JSON.parse(saved);
-        // console.log("data.variables", data.variables);
+        let data;
+        try {
+          data = JSON.parse(saved);
+          if (data == null) {
+            console.warn("⚠️ No cache for graph, load from module!");
+            data = app.graph;
+          }
+        } catch (e) {
+          console.warn("⚠️ No cache for graph, load from module!");
+          data = app.graph;
+        }
         if (data.variables) {
           this.variables = data.variables;
           this._refreshVarsList(this._varsPopup.children[1]);
@@ -37551,16 +40397,11 @@ class FluxCodexVertex {
           if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
             spec.displayEl = domEl.querySelector(".value-display");
           }
-          // if(spec.category === "action" && spec.title === "Function") {
           this.updateNodeDOM(spec.id);
-          // }
         });
         this.updateLinks();
-        // TEST FIX SELF CALL TRIGGER
-        // this.updateValueDisplays();
-
         this.restoreConnectionsRuntime();
-        this.log("Restored graph.");
+        this.log("Loaded graph.");
         return;
       } catch (e) {
         console.error("Failed to load graph from storage:", e);
@@ -37586,17 +40427,28 @@ class FluxCodexVertex {
     this.compileGraph();
     return;
   }
+
+  // test
+  onNodeDoubleClick(node) {
+    console.log(`%c Node [CURVE  func] ${node.curve}`, _utils.LOG_FUNNY_ARCADE);
+    if (node.title !== "Curve") return;
+    this.curveEditor.bindCurve(node.curve, {
+      name: node.id,
+      idNode: node.id
+    });
+    this.curveEditor.toggleEditor(true);
+  }
 }
 exports.default = FluxCodexVertex;
-FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
 
-},{"../../engine/plugin/tooltip/ToolTip":43,"../../engine/utils":46}],73:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":45,"../../engine/utils":48,"../../sounds/audioAsset":70,"./curve-editor":73}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _ToolTip = require("../../engine/plugin/tooltip/ToolTip.js");
 var _utils = require("../../engine/utils.js");
 /**
  * @Author NIkola Lukic
@@ -37609,6 +40461,7 @@ class EditorHud {
     this.core = core;
     this.sceneContainer = null;
     this.FS = new _utils.FullscreenManager();
+    this.toolTip = new _ToolTip.METoolTip();
     if (a == 'infly') {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
@@ -37658,12 +40511,11 @@ class EditorHud {
         }
       } else if (ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
         let objName = prompt("📦 Enter uniq name: ");
-        let name = prompt("📦 OBJ file : ", getPATH);
         if (confirm("⚛ Enable physics (Ammo)?")) {
           // infly 
           let o = {
             physics: true,
-            path: name,
+            path: getPATH,
             index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
@@ -37673,7 +40525,7 @@ class EditorHud {
           // infly
           let o = {
             physics: false,
-            path: name,
+            path: getPATH,
             index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
@@ -37758,8 +40610,8 @@ class EditorHud {
       <div class="dropdown">
       <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
-      <div class="drop-item">🛠️ Build</div>
       <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
+      <div id="start-prod-build" class="drop-item">🛠️ Build for production</div>
       </div>
     </div>
 
@@ -37782,12 +40634,12 @@ class EditorHud {
            <p>📽️Camera</p>
            <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
            <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <div> Position :  </br>
+           <!--div> Position :  </br>
             \n 
             X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
             Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
             Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div>
+           </div-->
         </div>
       </div>
     </div>
@@ -37796,19 +40648,24 @@ class EditorHud {
     <div class="top-item">
       <div class="top-btn">Script ▾</div>
       <div class="dropdown">
-        <div id="showVisualCodeEditorBtn" class="drop-item">
+        <div id="showVisualCodeEditorBtn" class="drop-item btn4">
            <span>Visual Scripting</span>
            <small>⌨️FluxCodexVertex</small>
            <small>⌨️Press F6 for run</small>
         </div>
-        <div id="showCodeVARSBtn" class="drop-item">
+        <div id="showCodeVARSBtn" class="drop-item btn4">
            <span>Variable editor</span>
-           <small>⌨️Visual Script tool</small>
+           <small>🔧Visual Script tool</small>
         </div>
-        <div id="showCodeEditorBtn" class="drop-item">
+        <div id="showCodeEditorBtn" class="drop-item btn4">
            <span>Show code editor</span>
-           <small>⌨️Function raw edit</small>
+           <small>👩‍💻Function raw edit</small>
            <small>Custom Functions</small>
+        </div>
+        <div id="showCurveEditorBtn" class="drop-item btn4">
+           <span>Show curve editor</span>
+           <small>📈Timeline curve editor</small>
+           <small> </small>
         </div>
       </div>
     </div>
@@ -37841,6 +40698,13 @@ class EditorHud {
         <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
       </div>
     </div>
+
+    <div class="btn2">
+      <button class="btn" id="saveMainGraphDOM">SAVE GRAPH</button>
+      <button class="btn" id="runMainGraphDOM">RUN [F6]</button>
+      <button class="btn" id="stopMainGraphDOM">STOP</button>
+      <span id="graph-status">⚫</span>
+    </div>
   `;
     document.body.appendChild(this.editorMenu);
 
@@ -37859,6 +40723,24 @@ class EditorHud {
       });
     });
 
+    // run top many
+
+    (0, _utils.byId)('saveMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.compileGraph();
+    });
+    (0, _utils.byId)('runMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.runGraph();
+    });
+    this.toolTip.attachTooltip((0, _utils.byId)('saveMainGraphDOM'), "Any changes in graph must be saved.");
+    this.toolTip.attachTooltip((0, _utils.byId)('runMainGraphDOM'), "Run main graph, sometimes engine need refresh.");
+    this.toolTip.attachTooltip((0, _utils.byId)('stopMainGraphDOM'), "Stop main graph, clear dynamic created objects.");
+    (0, _utils.byId)('stopMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.clearRuntime();
+    });
+
     // Close on outside tap
     document.addEventListener("click", e => {
       if (!this.editorMenu.contains(e.target)) {
@@ -37870,6 +40752,7 @@ class EditorHud {
     (0, _utils.byId)('fullScreenBtn').addEventListener('click', () => {
       this.FS.request();
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('fullScreenBtn'), "Just editor gui part for fullscreen - not fullscreen for real program.");
     (0, _utils.byId)('hideEditorBtn').addEventListener('click', () => {
       this.editorMenu.style.display = 'none';
       this.assetsBox.style.display = 'none';
@@ -37880,20 +40763,24 @@ class EditorHud {
     (0, _utils.byId)('bg-transparent').addEventListener('click', () => {
       (0, _utils.byId)('boardWrap').style.backgroundImage = 'none';
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('bg-transparent'), "Make visible both (mix) graphs and render.");
     (0, _utils.byId)('bg-tradicional').addEventListener('click', () => {
       // byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
       (0, _utils.byId)('boardWrap').style.backgroundImage = '';
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('bg-tradicional'), "Make visible graphs layout only.");
     if ((0, _utils.byId)('stop-watch')) (0, _utils.byId)('stop-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('stop-watch', {
         detail: {}
       }));
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('stop-watch'), "Stops JavaScript compilers. Use this when working with Git, for example, to avoid unnecessary builds.");
     if ((0, _utils.byId)('start-watch')) (0, _utils.byId)('start-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('start-watch', {
         detail: {}
       }));
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('start-watch'), "Start watch builds for JavaScript compilers.No need at start up - watcher already started on backend of editor.");
     if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
       let name = prompt("📦 Project name :", "MyProject1");
       let features = {
@@ -37914,8 +40801,15 @@ class EditorHud {
         }
       }));
     });
+    if ((0, _utils.byId)('cnpBtn')) this.toolTip.attachTooltip((0, _utils.byId)('cnpBtn'), "Create new project. You must input project name.");
     (0, _utils.byId)('start-refresh').onclick = () => {
       location.reload(true);
+    };
+    if ((0, _utils.byId)('start-refresh')) this.toolTip.attachTooltip((0, _utils.byId)('start-refresh'), "Simple refresh page.");
+    (0, _utils.byId)('start-prod-build').onclick = () => {
+      //
+      console.log('.......start-prod-build.......');
+      console.log('................................');
     };
 
     // OBJECT LEVEL
@@ -37929,6 +40823,7 @@ class EditorHud {
         detail: o
       }));
     });
+    if ((0, _utils.byId)('addCube')) this.toolTip.attachTooltip((0, _utils.byId)('addCube'), "Create Cube scene object with no physics.If you wanna objects who will be in kinematic also in physics regime (switching) then you need to use CubePhysics.");
     if ((0, _utils.byId)('addSphere')) (0, _utils.byId)('addSphere').addEventListener('click', () => {
       let objName = prompt("📦 Enter uniq name: ");
       let o = {
@@ -37976,6 +40871,12 @@ class EditorHud {
     (0, _utils.byId)('showCodeEditorBtn').addEventListener('click', e => {
       console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {
+        detail: {}
+      }));
+    });
+    (0, _utils.byId)('showCurveEditorBtn').addEventListener('click', e => {
+      console.log('show-showCurveEditorBtn editor ', e);
+      document.dispatchEvent(new CustomEvent('show-curve-editor', {
         detail: {}
       }));
     });
@@ -38052,8 +40953,15 @@ class EditorHud {
         }
       }));
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('folderTitle'), `This represent real folders files present intro res folder (what ever is there).\n
+    From assets box you can add glb or obj files direct with simple click. Everyting will be saved automatic.\n
+    Support for mp3 adding by click also. No support for mp4 - mp4 can be added from 'Set Textures' node.
+
+    `);
+    // folderTitle
+
     document.addEventListener('la', e => {
-      console.log('root folder ', e.detail.rootFolder);
+      console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, _utils.LOG_FUNNY_ARCADE);
       (0, _utils.byId)('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);
       (0, _utils.byId)('res-folder').innerHTML = '';
       e.detail.payload.forEach(i => {
@@ -38740,7 +41648,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":46}],74:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip.js":45,"../../engine/utils.js":48}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38761,10 +41669,8 @@ class MethodsManager {
     this.methodsContainer = [];
     this.createUI();
     this.loadMethods(editorType).then(r => {
-      console.log('r: ', r);
       this.methodsContainer = r;
       this.refreshSelect();
-      console.log('r: ', r);
       this.select.click();
     });
     document.addEventListener('show-method-editor', () => {
@@ -38779,7 +41685,8 @@ class MethodsManager {
     return new Promise(async (resolve, reject) => {
       if (editorType == 'created from editor') {
         const page = location.pathname.split("/").pop().replace(".html", "");
-        const file = `../src/tools/editor/gen/${page}/methods.js`;
+        // const file = `../projects/${page}/methods.js`;
+        const file = `./${page}_methods.js`;
         let module;
         try {
           module = await import(file);
@@ -38829,7 +41736,6 @@ class MethodsManager {
       border-radius:8px;
       color:#ddd; 
       font-family: monospace;
-      width:95%;
     `;
     this.select = document.createElement("select");
     this.select.style.cssText = `
@@ -38840,7 +41746,6 @@ class MethodsManager {
       border:1px solid #555;
       margin-bottom:10px;
     `;
-    this.wrapper.appendChild(this.select);
     this.select.onchange = () => {
       console.log("CHANGE SCRIPT SELECT");
       const index = this.select.selectedIndex;
@@ -38855,6 +41760,18 @@ class MethodsManager {
       const method = this.methodsContainer[index];
       if (method) this.openEditor(method);
     };
+    this.managerTitle = document.createElement("p");
+    this.managerTitle.innerText = "Custom Method Box";
+    this.managerTitle.style.cssText = `
+      width:100%;
+      padding:6px;
+      margin-top: -10px;
+      color:#fff;
+      background: unset;
+      font-size: 140%;
+      font-family: 'stormfaze';
+    `;
+    this.wrapper.appendChild(this.managerTitle);
 
     // BUTTON Add new
     this.btnNew = document.createElement("button");
@@ -38862,13 +41779,14 @@ class MethodsManager {
     this.btnNew.style.cssText = `
       width:30%;
       padding:6px;
-      background:#444;
+      margin-left:10px;
+      background:rgb(20 94 171);
       color:#fff;
       border:1px solid #555;
       cursor:pointer;
     `;
     this.btnNew.onclick = () => this.openEditor();
-    this.wrapper.appendChild(this.btnNew);
+    this.wrapper.appendChild(this.select);
 
     // Popup Editor
     this.popup = document.createElement("div");
@@ -38881,7 +41799,8 @@ class MethodsManager {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:400px;
+      width:30%;
+      height: 75%;
       z-index:999;
     `;
     this.popup.appendChild(this.wrapper);
@@ -38899,36 +41818,41 @@ class MethodsManager {
         cursor:pointer;
       `;
     this.btnRemove.onclick = () => this.removeMethod();
-    this.popup.appendChild(this.btnRemove);
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
-      width:100%; 
-      height:160px; 
-      background:#1e1e1e; 
+      width:99%; 
+      height:78%; 
+      background:#1e1e1e;
+      font-size: larger;
       color:#fff; 
       border:1px solid #555;
-      box-shadow: inset 0px 0px 16px 0px #3F51B5;
-      -webkit-text-stroke-color: #03A9F4;
+      box-shadow: inset 0px 0px 10px 0px #3F51B5;
+      -webkit-text-stroke-width:0;
     `;
+    // -webkit-text-stroke-color: #03A9F4;
     this.popup.appendChild(this.textarea);
     this.btnSave = document.createElement("button");
     this.btnSave.innerText = "Save method";
     this.btnSave.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
-      background:#555;
+      margin-left:10px;
+      background:rgb(45 133 0);
       color:#fff;
       border:1px solid #666;
       cursor:pointer;
     `;
     this.btnSave.onclick = () => this.saveMethod();
     this.popup.appendChild(this.btnSave);
+    this.popup.appendChild(this.btnRemove);
+    this.popup.appendChild(this.btnNew);
     this.btnExit = document.createElement("button");
     this.btnExit.innerText = "Hide";
     this.btnExit.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
+      margin-left:10px;
       background:#555;
       color:#fff;
       border:1px solid #666;
@@ -39041,7 +41965,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],75:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39065,6 +41989,9 @@ var _editor = require("./tools/editor/editor.js");
 var _meshObjInstances = _interopRequireDefault(require("./engine/instanced/mesh-obj-instances.js"));
 var _bloom = require("./engine/postprocessing/bloom.js");
 var _raycast = require("./engine/raycast.js");
+var _phisicsBodies = require("./engine/generators/phisicsBodies.js");
+var _coreCache = require("./engine/core-cache.js");
+var _audioAsset = require("./sounds/audioAsset.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -39096,6 +42023,7 @@ class MatrixEngineWGPU {
     depthStoreOp: 'store'
   };
   matrixSounds = new _sounds.MatrixSounds();
+  audioManager = new _audioAsset.AudioAssetManager();
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
       this.options = {
@@ -39132,6 +42060,16 @@ class MatrixEngineWGPU {
         responseCoef: 2000
       };
     }
+
+    // in case of optimisation
+    if (typeof options.dontUsePhysics == 'undefined') {
+      this.physicsBodiesGenerator = _phisicsBodies.physicsBodiesGenerator.bind(this);
+      this.physicsBodiesGeneratorWall = _phisicsBodies.physicsBodiesGeneratorWall.bind(this);
+      this.physicsBodiesGeneratorPyramid = _phisicsBodies.physicsBodiesGeneratorPyramid.bind(this);
+      this.physicsBodiesGeneratorTower = _phisicsBodies.physicsBodiesGeneratorTower.bind(this);
+      this.physicsBodiesGeneratorDeepPyramid = _phisicsBodies.physicsBodiesGeneratorDeepPyramid.bind(this);
+    }
+    this.logLoopError = false;
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
@@ -39253,8 +42191,65 @@ class MatrixEngineWGPU {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
     this.run(callback);
+
+    // let ff = 0;
+    // const logoAnim = setInterval(() => {
+    //   console.clear();
+    //   console.log(
+    //     "%c" + LOGO_FRAMES[ff],
+    //     LOG_FUNNY_BIG_NEON
+    //   );
+    //   console.log(
+    //     "%cMatrix Engine WGPU • WebGPU Power Unleashed\n" +
+    //     "https://github.com/zlatnaspirala/matrix-engine-wgpu",
+    //     LOG_FUNNY_ARCADE
+    //   );
+    //   ff = (ff + 1) % LOGO_FRAMES.length;
+    // }, 190);
+
+    // stop after few seconds (optional)
+    // setTimeout(() => {
+    //   // clearInterval(logoAnim);
+    //   console.clear();
+    // }, 3200);
+    console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
+    console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
+    console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.8.7 ", _utils.LOG_FUNNY);
+    console.log("%c👽 ", _utils.LOG_FUNNY_EXTRABIG);
+    console.log("%cMatrix Engine WGPU - Port is open.\n" + "Creative power loaded with visual scripting.\n" + "Last features : audioReactiveNode, onDraw , onKey , curve editor.\n" + "No tracking. No hype. Just solutions. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
+    console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff() {
+    // OPTIMISATION
+    this.textureCache = new _coreCache.TextureCache(this.device);
+    this._destroyQueue = new Set();
+    this.flushDestroyQueue = () => {
+      if (!this._destroyQueue.size) return;
+      this._destroyQueue.forEach(name => {
+        this.removeSceneObjectByName(name);
+      });
+      this._destroyQueue.clear();
+    };
+    this.destroyByPrefix = prefix => {
+      const toDestroy = [];
+      for (const obj of this.mainRenderBundle) {
+        if (obj.name.startsWith(prefix)) {
+          toDestroy.push(obj.name);
+        }
+      }
+      toDestroy.forEach(name => this._destroyQueue.add(name));
+    };
+    this.destroyBySufix = sufix => {
+      const toDestroy = [];
+      for (const obj of this.mainRenderBundle) {
+        if (obj.name.endsWith(sufix)) {
+          toDestroy.push(obj.name);
+        }
+      }
+      toDestroy.forEach(name => this._destroyQueue.add(name));
+    };
+
     // Just syntetic to help visual scripting part
     this.bloomPass = {
       enabled: false,
@@ -39263,7 +42258,6 @@ class MatrixEngineWGPU {
       setBlurRadius: v => {},
       setThreshold: v => {}
     };
-    //------------------ TEST
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: 'rgba16float',
@@ -39313,8 +42307,6 @@ class MatrixEngineWGPU {
         }] // rgba16float  bgra8unorm
       }
     });
-    //------------------ TEST
-
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
       size: this.MAX_SPOTLIGHTS * 144,
@@ -39410,32 +42402,19 @@ class MatrixEngineWGPU {
   removeSceneObjectByName = name => {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
     if (index === -1) {
-      console.warn("Scene object not found:", name);
+      console.warn("%cScene object not found:" + name, _utils.LOG_FUNNY_ARCADE);
       return false;
     }
-
-    // Get object
     const obj = this.mainRenderBundle[index];
     let testPB = app.matrixAmmo.getBodyByName(obj.name);
     if (testPB !== null) {
       try {
         this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
       } catch (e) {
-        console.warn("Physics cleanup error:", e);
+        console.warn("%cPhysics cleanup error:" + e, _utils.LOG_FUNNY_ARCADE);
       }
     }
-
-    // if(obj.destroy && typeof obj.destroy === "function") {
-    //   try {
-    //     obj.destroy();  // user-defined GPU cleanup
-    //   } catch(e) {
-    //     console.warn("Destroy() cleanup failed:", e);
-    //   }
-    // }
-
-    // Remove from render bundle
     this.mainRenderBundle.splice(index, 1);
-    console.log("Removed scene object:", name);
     return true;
   };
 
@@ -39643,7 +42622,7 @@ class MatrixEngineWGPU {
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
-    console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
+    console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
@@ -39745,6 +42724,7 @@ class MatrixEngineWGPU {
         }
       };
     }
+    o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
@@ -39775,68 +42755,48 @@ class MatrixEngineWGPU {
       this._rafId = null;
     }
 
-    // 2️⃣ Clear scene objects (GPU safe)
+    // 2️⃣ Destroy scene objects
     for (const obj of this.mainRenderBundle) {
       try {
-        // if(obj.destroy) obj.destroy(); // optional per-object cleanup
+        obj?.destroy?.();
       } catch (e) {
-        console.warn('Object destroy error:', e);
+        console.warn('Object destroy error:', obj?.name, e);
       }
     }
     this.mainRenderBundle.length = 0;
 
-    // 3️⃣ Physics cleanup
-    if (this.matrixAmmo) {
-      try {
-        this.matrixAmmo.destroy?.();
-        this.matrixAmmo = null;
-      } catch (e) {
-        console.warn('Physics destroy error:', e);
-      }
-    }
+    // 3️⃣ Physics
+    this.matrixAmmo?.destroy?.();
+    this.matrixAmmo = null;
 
-    // 4️⃣ Editor cleanup
-    if (this.editor) {
-      try {
-        this.editor.destroy?.();
-      } catch (e) {
-        console.warn('Editor destroy error:', e);
-      }
-      this.editor = null;
-    }
+    // 4️⃣ Editor
+    this.editor?.destroy?.();
+    this.editor = null;
 
-    // 5️⃣ Remove input handlers
-    if (this.inputHandler?.destroy) {
-      this.inputHandler.destroy();
-    }
+    // 5️⃣ Input
+    this.inputHandler?.destroy?.();
     this.inputHandler = null;
 
-    // 6️⃣ GPU resources
-    try {
-      this.mainDepthTexture?.destroy();
-      this.shadowTextureArray?.destroy();
-      this.shadowVideoTexture?.destroy();
-    } catch (e) {}
+    // 6️⃣ GLOBAL GPU RESOURCES
+    this.mainDepthTexture?.destroy();
+    this.shadowTextureArray?.destroy();
+    this.shadowVideoTexture?.destroy();
     this.mainDepthTexture = null;
     this.shadowTextureArray = null;
     this.shadowVideoTexture = null;
 
-    // 7️⃣ Lose WebGPU context (IMPORTANT)
+    // 7️⃣ Lose WebGPU context
     try {
       this.context?.unconfigure?.();
-    } catch (e) {}
+    } catch {}
 
-    // 8️⃣ Remove canvas
-    if (this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
-    }
+    // 8️⃣ Canvas
+    this.canvas?.remove();
     this.canvas = null;
     this.device = null;
     this.context = null;
     this.adapter = null;
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
-    // this.mainRenderBundle = [];
-    // this.canvas.remove();
   };
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore
@@ -39939,21 +42899,21 @@ class MatrixEngineWGPU {
       // Loop over each mesh
 
       for (const mesh of this.mainRenderBundle) {
-        // mesh.position.update()
+        now = performance.now() / 1000;
+        deltaTime = now - (this.lastTime || now);
+        this.lastTime = now;
         if (mesh.update) {
-          now = performance.now() / 1000; // seconds
-          deltaTime = now - (this.lastTime || now);
-          this.lastTime = now;
           mesh.update(deltaTime); // glb
         }
         pass.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log('✅shadowVideoView', this.shadowVideoView);
+              console.log("%c✅shadowVideoView ${this.shadowVideoView}", _utils.LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
+              pass.setPipeline(mesh.pipeline); // new
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
               m.setupPipeline();
@@ -40025,13 +42985,15 @@ class MatrixEngineWGPU {
       }));
       pass.draw(6);
       pass.end();
+      this.graphUpdate(now);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      if (this.logLoopError) console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
+  graphUpdate = delta => {};
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
     if (this.matrixAmmo.rigidBodies && this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
@@ -40146,6 +43108,7 @@ class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
+    o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -40312,4 +43275,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":20,"./engine/cube.js":22,"./engine/engine.js":31,"./engine/instanced/mesh-obj-instances.js":34,"./engine/lights.js":35,"./engine/loader-obj.js":36,"./engine/loaders/bvh-instaced.js":37,"./engine/loaders/bvh.js":38,"./engine/mesh-obj.js":42,"./engine/postprocessing/bloom.js":44,"./engine/raycast.js":45,"./engine/utils.js":46,"./multilang/lang.js":47,"./physics/matrix-ammo.js":48,"./sounds/sounds.js":68,"./tools/editor/editor.js":70,"wgpu-matrix":18}]},{},[3]);
+},{"./engine/ball.js":20,"./engine/core-cache.js":22,"./engine/cube.js":23,"./engine/engine.js":32,"./engine/generators/phisicsBodies.js":33,"./engine/instanced/mesh-obj-instances.js":36,"./engine/lights.js":37,"./engine/loader-obj.js":38,"./engine/loaders/bvh-instaced.js":39,"./engine/loaders/bvh.js":40,"./engine/mesh-obj.js":44,"./engine/postprocessing/bloom.js":46,"./engine/raycast.js":47,"./engine/utils.js":48,"./multilang/lang.js":49,"./physics/matrix-ammo.js":50,"./sounds/audioAsset.js":70,"./sounds/sounds.js":71,"./tools/editor/editor.js":74,"wgpu-matrix":18}]},{},[3]);

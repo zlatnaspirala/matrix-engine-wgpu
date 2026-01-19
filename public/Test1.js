@@ -2345,54 +2345,117 @@ var scriptManager = {
     });
   }
 };
-function OSCILLATOR(min2, max2, step, resist) {
-  if ((typeof min2 === "string" || typeof min2 === "number") && (typeof max2 === "string" || typeof max2 === "number") && (typeof step === "string" || typeof step === "number")) {
-    var ROOT = this;
-    this.min0 = parseFloat(min2);
-    this.max0 = parseFloat(max2);
-    this.min = this.min0;
-    this.max = this.max0;
-    this.step = parseFloat(step);
-    this.resist = parseFloat(resist) || 0;
-    this.value_ = this.min;
-    this.status = 0;
-    this.on_maximum_value = function() {
-    };
-    this.on_minimum_value = function() {
-    };
-    this.UPDATE = function(STATUS_) {
-      if (STATUS_ !== void 0) return this.value_;
-      if (this.status === 0 && this.value_ < this.max) {
-        this.value_ += this.step;
+function OSCILLATOR(min2, max2, step, options2) {
+  if (min2 == null || max2 == null || step == null) {
+    console.log("OSCILLATOR ERROR");
+    return;
+  }
+  var ROOT = this;
+  this.min0 = parseFloat(min2);
+  this.max0 = parseFloat(max2);
+  this.min = this.min0;
+  this.max = this.max0;
+  this.step = parseFloat(step);
+  this.value_ = this.min;
+  this.status = 0;
+  options2 = options2 || {};
+  this.regime = options2.regime || "pingpong";
+  this.resist = parseFloat(options2.resist) || 0;
+  this.resistMode = options2.resistMode || "linear";
+  this.stopEpsilon = options2.stopEpsilon || 0;
+  this.useDelta = options2.useDelta || false;
+  this.on_maximum_value = function() {
+  };
+  this.on_minimum_value = function() {
+  };
+  this.on_stop = function() {
+  };
+  this._applyResist = function() {
+    if (this.resist <= 0) return;
+    var range = this.max - this.min;
+    if (range <= 0) return;
+    var shrink;
+    if (this.resistMode === "exp") {
+      shrink = range * this.resist;
+    } else {
+      shrink = (this.max0 - this.min0) * this.resist;
+    }
+    this.min += shrink;
+    this.max -= shrink;
+    if (this.min > this.max) {
+      var c = (this.min + this.max) * 0.5;
+      this.min = this.max = c;
+    }
+  };
+  this.UPDATE = function(delta) {
+    var s = this.step;
+    if (this.useDelta && delta !== void 0) {
+      s = s * delta;
+    }
+    switch (this.regime) {
+      // ===== PING-PONG =====
+      case "pingpong":
+        if (this.status === 0) {
+          this.value_ += s;
+          if (this.value_ >= this.max) {
+            this.value_ = this.max;
+            this.status = 1;
+            ROOT.on_maximum_value();
+          }
+        } else {
+          this.value_ -= s;
+          if (this.value_ <= this.min) {
+            this.value_ = this.min;
+            this.status = 0;
+            this._applyResist();
+            ROOT.on_minimum_value();
+          }
+        }
+        break;
+      // ===== ONLY MIN → MAX =====
+      case "onlyFromMinToMax":
+        this.value_ += s;
         if (this.value_ >= this.max) {
-          this.value_ = this.max;
-          this.status = 1;
+          this.value_ = this.min;
+          this._applyResist();
           ROOT.on_maximum_value();
         }
-        return this.value_;
-      }
-      if (this.status === 1 && this.value_ > this.min) {
-        this.value_ -= this.step;
+        break;
+      // ===== MAX → MIN =====
+      case "fromMaxToMin":
+        this.value_ -= s;
         if (this.value_ <= this.min) {
-          this.value_ = this.min;
-          this.status = 0;
-          if (this.resist > 0) {
-            var shrink = (this.max0 - this.min0) * this.resist;
-            this.min += shrink;
-            this.max -= shrink;
-            if (this.min > this.max) {
-              this.min = this.max = (this.min + this.max) / 2;
-            }
-          }
+          this.value_ = this.max;
+          this._applyResist();
           ROOT.on_minimum_value();
         }
-        return this.value_;
+        break;
+      // ===== ONE SHOT =====
+      case "oneShot":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.max;
+          ROOT.on_stop();
+        }
+        break;
+      // ===== SPRING TO CENTER =====
+      case "springCenter":
+        var center = (this.min + this.max) * 0.5;
+        var force = (center - this.value_) * this.resist;
+        this.value_ += force + s;
+        if (Math.abs(center - this.value_) < this.stopEpsilon) {
+          this.value_ = center;
+          ROOT.on_stop();
+        }
+        break;
+    }
+    if (this.stopEpsilon > 0) {
+      if (this.max - this.min < this.stopEpsilon) {
+        ROOT.on_stop();
       }
-      return this.value_;
-    };
-  } else {
-    console.log("OSCILLATOR ERROR");
-  }
+    }
+    return this.value_;
+  };
 }
 var byId = function(id2) {
   return document.getElementById(id2);
@@ -6994,7 +7057,7 @@ var MEMeshObj = class extends Materials {
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
-    const modelMatrix = this.getModelMatrix(this.position, true);
+    const modelMatrix = this.getModelMatrix(this.position, false);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,
@@ -18302,6 +18365,35 @@ var FluxCodexVertex = class {
         ],
         noselfExec: "true"
       }),
+      oscillator: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Oscillator",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "min", type: "number" },
+          { name: "max", type: "number" },
+          { name: "step", type: "number" },
+          { name: "regime", type: "string" },
+          { name: "resist", type: "number" },
+          { name: "resistMode", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" },
+          { name: "value", type: "number" }
+        ],
+        fields: [
+          { key: "min", value: 0 },
+          { key: "max", value: 10 },
+          { key: "step", value: 0.2 },
+          { key: "regime", value: "pingpong" },
+          { key: "resist", value: 0.02 },
+          { key: "resistMode", value: "linear" }
+        ],
+        noselfExec: "true"
+      }),
       curveTimeline: (id2, x2, y2) => ({
         id: id2,
         x: x2,
@@ -19615,6 +19707,9 @@ var FluxCodexVertex = class {
         return node2._returnCache[4];
       }
     }
+    if (node2.title === "Oscillator" && pinName == "value") {
+      return node2._returnCache;
+    }
     if (node2.title === "On Ray Hit") {
       if (pinName === "hitObjectName") {
         return node2._returnCache["hitObject"]["name"];
@@ -20437,6 +20532,22 @@ var FluxCodexVertex = class {
         n._returnCache = [low, mid, high, energy, beat];
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if (n.title === "Oscillator") {
+        const min2 = this.getValue(nodeId, "min");
+        const max2 = this.getValue(nodeId, "max");
+        const step = this.getValue(nodeId, "step");
+        const regime = this.getValue(nodeId, "regime");
+        const resist = this.getValue(nodeId, "resist");
+        const resistMode = this.getValue(nodeId, "resistMode");
+        if (!n._listenerAttached) {
+          n.osc = new OSCILLATOR(min2, max2, step, {
+            regime,
+            resist,
+            resistMode
+          });
+          n._listenerAttached = true;
+        }
+        n._returnCache = n.osc.UPDATE();
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -22415,6 +22526,7 @@ var Editor = class {
 
       <span>Data mod</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('curveTimeline')">Curve Timeline</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('oscillator')">Oscillator</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
 
 
