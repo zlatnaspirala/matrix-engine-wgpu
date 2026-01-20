@@ -21100,6 +21100,8 @@ var FragmentShaderGraph = class {
       if (!drag) return;
       el2.style.left = e.clientX - ox + "px";
       el2.style.top = e.clientY - oy + "px";
+      node2.x = e.clientX - ox;
+      node2.y = e.clientY - oy;
       connectionLayer.redrawAll();
     });
     el2.addEventListener("pointerup", () => drag = false);
@@ -21273,12 +21275,8 @@ var ConnectionLayer = class {
     const toNode = this.graph.nodes.find((n2) => n2.id === inPin.dataset.node);
     const fromPin = outPin.dataset.pin;
     const toPin = inPin.dataset.pin;
-    this.graph.connections = this.graph.connections.filter(
-      (c) => !(c.toNode === toNode && c.toPin === toPin)
-    );
-    const conn = { fromNode, fromPin, toNode, toPin };
-    this.graph.connections.push(conn);
-    this.redrawConnection(conn);
+    this.graph.connect(fromNode, fromPin, toNode, toPin);
+    this.redrawAll();
   }
   redrawAll() {
     [...this.svg.children].forEach((p) => p.remove());
@@ -21385,6 +21383,7 @@ function openFragmentShaderEditor(id2 = "fragShader") {
 .nodeShader-body {
   display:flex;
   gap:8px;
+  justify-content: space-between;
 }
 
 .nodeShader-inputs {
@@ -21439,6 +21438,8 @@ svg path {
       x2 = p.x;
       y2 = p.y;
     }
+    node2.x = x2;
+    node2.y = y2;
     const el2 = document.createElement("div");
     el2.className = "nodeShader";
     el2.style.left = x2 + "px";
@@ -21484,6 +21485,7 @@ svg path {
       inputsContainer.appendChild(row2);
     });
     const outputContainer = document.createElement("div");
+    outputContainer.style.width = "100%";
     body2.appendChild(outputContainer);
     const { row: outRow, pin: outPin } = createPinRow("out", "output");
     outputContainer.appendChild(outRow);
@@ -21504,7 +21506,8 @@ svg path {
     graph.makeDraggable(el2, node2, connectionLayer);
   }
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Del") {
+    console.log("TTTTTTTTTTTTTTTT");
+    if (e.key === "Delete") {
       const sel = document.querySelector(".nodeShader.selected");
       if (!sel) return;
       const nodeId2 = sel.dataset.nodeId;
@@ -21520,19 +21523,20 @@ svg path {
       });
       sel.remove();
       graph.nodes = graph.nodes.filter((n2) => n2 !== node2);
+      graph.connectionLayer.redrawConnection();
     }
   });
-  addNode(new FragOutputNode(), 500, 200);
-  addNode(new UVNode(), 200, 100);
   btn("Add TextureSampler", () => addNode(new TextureSamplerNode()));
   btn("Add MultiplyColor", () => addNode(new MultiplyColorNode()));
   btn("Add Grayscale", () => addNode(new GrayscaleNode()));
   btn("Add Contrast", () => addNode(new ContrastNode()));
   btn("Add Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
   btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
+  btn("Add FragmentColorOut", () => addNode(new FragOutputNode()));
   btn("Compile", () => console.log(graph.compile()));
   btn("Save Graph", () => saveGraph(graph));
   btn("Load Graph", () => loadGraph("fragShaderGraph", graph, addNode));
+  loadGraph("fragShaderGraph", graph, addNode);
   return graph;
 }
 function serializeGraph(graph) {
@@ -21540,6 +21544,8 @@ function serializeGraph(graph) {
     nodes: graph.nodes.map((n2) => ({
       id: n2.id,
       type: n2.type,
+      x: n2.x ?? 100,
+      y: n2.y ?? 100,
       fnName: n2.fnName,
       code: n2.code,
       name: n2.name
@@ -21553,10 +21559,13 @@ function serializeGraph(graph) {
   });
 }
 function saveGraph(graph, key = "fragShaderGraph") {
+  console.log("befopre save", graph);
   localStorage.setItem(key, serializeGraph(graph));
   console.log("Shader graph saved");
 }
 function loadGraph(key, graph, addNodeUI) {
+  graph.nodes.length = 0;
+  graph.connections.length = 0;
   const data = JSON.parse(localStorage.getItem(key));
   if (!data) return;
   const map = {};
@@ -21586,19 +21595,21 @@ function loadGraph(key, graph, addNodeUI) {
         break;
     }
     node2.id = n2.id;
-    graph.addNode(node2);
     map[n2.id] = node2;
-    addNodeUI(node2);
+    addNodeUI(node2, n2.x, n2.y);
   });
   data.connections.forEach((c) => {
-    graph.connections.push({
-      fromNode: map[c.from],
-      fromPin: c.fromPin,
-      toNode: map[c.to],
-      toPin: c.toPin
-    });
+    const fromNode = map[c.from];
+    const toNode = map[c.to];
+    const fromPin = c.fromPin;
+    const toPin = c.toPin;
+    graph.connect(fromNode, fromPin, toNode, toPin);
+    const path = graph.connectionLayer.path();
+    path.dataset.from = `${fromNode.id}:${fromPin}`;
+    path.dataset.to = `${toNode.id}:${toPin}`;
+    graph.connectionLayer.svg.appendChild(path);
+    graph.connectionLayer.redrawAll(path);
   });
-  graph.connectionLayer.redrawAll();
 }
 
 // ../hud.js

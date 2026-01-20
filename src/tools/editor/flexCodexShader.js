@@ -29,7 +29,6 @@ export class FragmentShaderGraph {
   }
 
   connect(fromNode, fromPin, toNode, toPin) {
-    // single input rule
     this.connections = this.connections.filter(
       c => !(c.toNode === toNode && c.toPin === toPin)
     );
@@ -64,22 +63,25 @@ export class FragmentShaderGraph {
 
   makeDraggable(el, node, connectionLayer) {
     let ox = 0, oy = 0, drag = false;
-
     el.addEventListener("pointerdown", e => {
       drag = true;
       ox = e.clientX - el.offsetLeft;
       oy = e.clientY - el.offsetTop;
       el.setPointerCapture(e.pointerId);
     });
-
     el.addEventListener("pointermove", e => {
       if(!drag) return;
       el.style.left = (e.clientX - ox) + "px";
       el.style.top = (e.clientY - oy) + "px";
-      connectionLayer.redrawAll(); // ✅ CORRECT
+      node.x = (e.clientX - ox);
+      node.y = (e.clientY - oy);
+      connectionLayer.redrawAll();
     });
-
     el.addEventListener("pointerup", () => drag = false);
+
+    ///////////
+    
+    ///////////
   }
 
 }
@@ -300,16 +302,11 @@ class ConnectionLayer {
     const fromPin = outPin.dataset.pin;
     const toPin = inPin.dataset.pin;
 
-    // Single input rule
-    this.graph.connections = this.graph.connections.filter(
-      c => !(c.toNode === toNode && c.toPin === toPin)
-    );
+    // update graph ONLY
+    this.graph.connect(fromNode, fromPin, toNode, toPin);
 
-    const conn = {fromNode, fromPin, toNode, toPin};
-    this.graph.connections.push(conn);
-
-    // Draw SVG path
-    this.redrawConnection(conn);
+    // redraw everything ONCE
+    this.redrawAll();
   }
 
   redrawAll() {
@@ -434,6 +431,7 @@ export function openFragmentShaderEditor(id = "fragShader") {
 .nodeShader-body {
   display:flex;
   gap:8px;
+  justify-content: space-between;
 }
 
 .nodeShader-inputs {
@@ -496,6 +494,9 @@ svg path {
       y = p.y;
     }
 
+    node.x = x;
+    node.y = y;
+
     const el = document.createElement("div");
     el.className = "nodeShader";
     el.style.left = x + "px";
@@ -523,9 +524,6 @@ svg path {
     body.className = "nodeShader-body";
     el.appendChild(body);
 
-
-
-    // --- Helper: create pin row ---
     function createPinRow(pinName, type = "input") {
       const row = document.createElement("div");
       row.className = "pinShader-row";
@@ -549,7 +547,6 @@ svg path {
       return {row, pin};
     }
 
-    // --- Inputs ---
     const inputsContainer = document.createElement("div");
     inputsContainer.className = "nodeShader-inputs";
     body.appendChild(inputsContainer);
@@ -557,18 +554,15 @@ svg path {
     Object.keys(node.inputs || {}).forEach(pinName => {
       const {row, pin} = createPinRow(pinName, "input");
       inputsContainer.appendChild(row);
-      // inputs don't attach pointerdown (only outputs)
     });
 
-    // --- Output ---
     const outputContainer = document.createElement("div");
+    outputContainer.style.width = '100%';
     body.appendChild(outputContainer);
-
     const {row: outRow, pin: outPin} = createPinRow("out", "output");
     outputContainer.appendChild(outRow);
-    connectionLayer.attach(outPin); // attach drag only to output
+    connectionLayer.attach(outPin);
 
-    // --- Inline function UI ---
     if(node.type === "InlineFunction") {
       const nameInput = document.createElement("input");
       nameInput.value = node.fnName;
@@ -589,7 +583,8 @@ svg path {
 
 
   document.addEventListener("keydown", e => {
-    if(e.key === "Del") {
+    console.log('TTTTTTTTTTTTTTTT');
+    if(e.key === "Delete") {
       const sel = document.querySelector(".nodeShader.selected");
       if(!sel) return;
 
@@ -614,24 +609,30 @@ svg path {
 
       // remove from graph.nodes
       graph.nodes = graph.nodes.filter(n => n !== node);
+
+      // ??????????????
+      graph.connectionLayer.redrawConnection();
     }
   });
 
   /* DEFAULT NODES */
-  addNode(new FragOutputNode(), 500, 200);
-  addNode(new UVNode(), 200, 100);
+  // addNode(new FragOutputNode(), 500, 200);
+  // addNode(new UVNode(), 200, 100);
 
-  /* MENU BUTTONS */
   btn("Add TextureSampler", () => addNode(new TextureSamplerNode()));
   btn("Add MultiplyColor", () => addNode(new MultiplyColorNode()));
   btn("Add Grayscale", () => addNode(new GrayscaleNode()));
   btn("Add Contrast", () => addNode(new ContrastNode()));
   btn("Add Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
   btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
+  btn("Add FragmentColorOut", () => addNode(new FragOutputNode()));
 
   btn("Compile", () => console.log(graph.compile()));
   btn("Save Graph", () => saveGraph(graph));
   btn("Load Graph", () => loadGraph("fragShaderGraph", graph, addNode));
+
+  //load
+  loadGraph("fragShaderGraph", graph, addNode);
   return graph;
 }
 
@@ -640,6 +641,8 @@ function serializeGraph(graph) {
     nodes: graph.nodes.map(n => ({
       id: n.id,
       type: n.type,
+      x: n.x ?? 100,
+      y: n.y ?? 100,
       fnName: n.fnName,
       code: n.code,
       name: n.name
@@ -654,15 +657,19 @@ function serializeGraph(graph) {
 }
 
 function saveGraph(graph, key = "fragShaderGraph") {
+  console.log('befopre save', graph)
   localStorage.setItem(key, serializeGraph(graph));
   console.log("Shader graph saved");
 }
 
 function loadGraph(key, graph, addNodeUI) {
+  graph.nodes.length = 0;
+  graph.connections.length = 0;
+  // graph.connectionLayer.svg.innerHTML = "";
   const data = JSON.parse(localStorage.getItem(key));
   if(!data) return;
-
   const map = {};
+  // recreate nodes
   data.nodes.forEach(n => {
     let node;
     switch(n.type) {
@@ -675,21 +682,23 @@ function loadGraph(key, graph, addNodeUI) {
       case "UV": node = new UVNode(); break;
     }
     node.id = n.id;
-    graph.addNode(node);
     map[n.id] = node;
-    addNodeUI(node);
+    addNodeUI(node, n.x, n.y);
   });
 
+  // recreate connections
   data.connections.forEach(c => {
-    graph.connections.push({
-      fromNode: map[c.from],
-      fromPin: c.fromPin,
-      toNode: map[c.to],
-      toPin: c.toPin
-    });
+    const fromNode = map[c.from];
+    const toNode = map[c.to];
+    const fromPin = c.fromPin;
+    const toPin = c.toPin;
+    graph.connect(fromNode, fromPin, toNode, toPin);
+    const path = graph.connectionLayer.path();
+    path.dataset.from = `${fromNode.id}:${fromPin}`;
+    path.dataset.to = `${toNode.id}:${toPin}`;
+    graph.connectionLayer.svg.appendChild(path);
+    graph.connectionLayer.redrawAll(path);
   });
-
-  // redraw all paths
-  graph.connectionLayer.redrawAll();
 }
+
 
