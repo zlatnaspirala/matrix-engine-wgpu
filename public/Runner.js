@@ -7773,11 +7773,11 @@ var downloadMeshes = function(nameAndURLs, completionCallback, inputArg) {
   var error = false;
   if (typeof inputArg === "undefined") {
     var inputArg = {
-      scale: [0.1, 0.1, 0.1],
+      scale: [1, 1, 1],
       swap: [null]
     };
   }
-  if (typeof inputArg.scale === "undefined") inputArg.scale = [0.1, 0.1, 0.1];
+  if (typeof inputArg.scale === "undefined") inputArg.scale = [1, 1, 1];
   if (typeof inputArg.swap === "undefined") inputArg.swap = [null];
   var meshes = {};
   for (var mesh_name in nameAndURLs) {
@@ -7798,7 +7798,7 @@ var downloadMeshes = function(nameAndURLs, completionCallback, inputArg) {
                 console.error("An error has occurred and one or meshes has not been downloaded. The execution of the script has terminated.");
                 throw "";
               }
-              completionCallback(meshes);
+              completionCallback(meshes, inputArg.scale);
             }
           };
         })(mesh_name)
@@ -7908,12 +7908,13 @@ var SpotLight = class {
   outerCutoff;
   spotlightUniformBuffer;
   constructor(camera, inputHandler, device, indexx, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
+    aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {
       return "light" + indexx;
     };
     this.fov = fov;
-    this.aspect = aspect;
+    this.aspect = 1;
     this.near = near;
     this.far = far;
     this.camera = camera;
@@ -8112,6 +8113,9 @@ var SpotLight = class {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: "less",
+        depthBias: 2,
+        // Constant bias (try 1-4)
+        depthBiasSlopeScale: 2,
         format: "depth32float"
       },
       primitive: this.primitive
@@ -23878,13 +23882,13 @@ var MatrixEngineWGPU = class {
       this.editor.editorHud.updateSceneContainer();
     }
   };
-  run(callback) {
+  async run(callback) {
     setTimeout(() => {
       requestAnimationFrame(this.frame);
-    }, 500);
+    }, 1e3);
     setTimeout(() => {
       callback(this);
-    }, 20);
+    }, 1);
   }
   destroyProgram = () => {
     console.warn("%c[MatrixEngineWGPU] Destroy program", "color: orange");
