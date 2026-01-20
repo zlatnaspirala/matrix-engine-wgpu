@@ -1,5 +1,7 @@
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip.js";
 import {byId, FullscreenManager, isMobile, jsonHeaders, LOG_FUNNY_ARCADE, mb} from "../../engine/utils.js";
+import {openFragmentShaderEditor} from "./flexCodexShader.js";
+
 /**
  * @Author NIkola Lukic
  * @description
@@ -226,6 +228,11 @@ export default class EditorHud {
            <small>📈Timeline curve editor</small>
            <small> </small>
         </div>
+        <div id="showShaderEditorBtn" class="drop-item btn4">
+           <span>Show shader editor</span>
+           <small>Shader editor</small>
+           <small> </small>
+        </div>
       </div>
     </div>
 
@@ -285,7 +292,7 @@ export default class EditorHud {
     });
 
     // run top many
-    
+
     byId('saveMainGraphDOM').addEventListener('click', () => {
       // global for now.
       app.editor.fluxCodexVertex.compileGraph();
@@ -462,7 +469,17 @@ export default class EditorHud {
       console.log('show-showCurveEditorBtn editor ', e);
       document.dispatchEvent(new CustomEvent('show-curve-editor', {detail: {}}));
     });
-    
+
+    byId('showShaderEditorBtn').addEventListener('click', (e) => {
+      console.log('show-showCurveEditorBtn editor ', e);
+      if(byId('shaderDOM') === null) {
+        app.shaderGraph = openFragmentShaderEditor();
+      } else if(byId('shaderDOM').style.display === 'flex') {
+        byId('shaderDOM').style.display = 'none';
+      } else {
+        byId('shaderDOM').style.display = 'flex'
+      }
+    });
 
     byId('showVisualCodeEditorBtn').addEventListener('click', (e) => {
       if(byId('app').style.display == 'flex') {

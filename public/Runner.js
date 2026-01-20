@@ -21044,6 +21044,288 @@ var FluxCodexVertex = class {
   }
 };
 
+// ../flexCodexShader.js
+var FragmentShaderRegistry = {};
+var FragmentShaderGraph = class {
+  constructor(id2) {
+    this.id = id2;
+    this.nodes = [];
+    this.connections = [];
+  }
+  addNode(node2) {
+    node2.graph = this;
+    this.nodes.push(node2);
+    return node2;
+  }
+  connect(fromNode, fromPin, toNode, toPin) {
+    this.connections = this.connections.filter(
+      (c) => !(c.toNode === toNode && c.toPin === toPin)
+    );
+    this.connections.push({ fromNode, fromPin, toNode, toPin });
+  }
+  getInput(node2, pin) {
+    return this.connections.find(
+      (c) => c.toNode === node2 && c.toPin === pin
+    );
+  }
+  compile() {
+    const wgsl = FragmentCompiler.compile(this);
+    FragmentShaderRegistry[this.id] = wgsl;
+    return wgsl;
+  }
+};
+var CompileContext = class {
+  constructor(graph) {
+    this.graph = graph;
+    this.cache = /* @__PURE__ */ new Map();
+    this.bindings = [];
+  }
+  resolve(node2, pin) {
+    const key = `${node2.id}:${pin}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+    const conn = this.graph.getInput(node2, pin);
+    const expr = conn ? this.resolve(conn.fromNode, conn.fromPin) : node2.default(pin);
+    const out = node2.compute(pin, expr, this);
+    this.cache.set(key, out);
+    return out;
+  }
+};
+var FragmentCompiler = class {
+  static compile(graph) {
+    const ctx = new CompileContext(graph);
+    const out = graph.nodes.find((n2) => n2.type === "FragOutput");
+    if (!out) throw "FragOutput node missing";
+    const color = ctx.resolve(out, "color");
+    return `
+@fragment
+fn fs_main(input: VSOut) -> @location(0) vec4<f32> {
+  return ${color};
+}
+`;
+  }
+};
+var NODE_ID = 0;
+var ShaderNode = class {
+  constructor(type2) {
+    this.id = "N" + NODE_ID++;
+    this.type = type2;
+    this.inputs = {};
+  }
+  default(pin) {
+    return this.inputs[pin]?.default ?? "0.0";
+  }
+  compute(_, v) {
+    return v;
+  }
+};
+var FragOutputNode = class extends ShaderNode {
+  constructor() {
+    super("FragOutput");
+    this.inputs = { color: { default: "vec4(1.0)" } };
+  }
+};
+var UVNode = class extends ShaderNode {
+  constructor() {
+    super("UV");
+  }
+  compute() {
+    return "input.uv";
+  }
+};
+var InlineWGSLNode = class extends ShaderNode {
+  constructor(code = "vec4(1.0)") {
+    super("InlineWGSL");
+    this.code = code;
+  }
+  compute() {
+    return `(${this.code})`;
+  }
+};
+var TextureSamplerNode = class extends ShaderNode {
+  constructor(name2 = "tex0") {
+    super("TextureSampler");
+    this.name = name2;
+    this.inputs = { uv: { default: "input.uv" } };
+  }
+  compute(_, __, ctx) {
+    if (!ctx.bindings.includes(this.name)) {
+      ctx.bindings.push(this.name);
+    }
+    return `textureSample(${this.name}_tex, ${this.name}_smp, ${ctx.resolve(this, "uv")})`;
+  }
+};
+var MultiplyColorNode = class extends ShaderNode {
+  constructor() {
+    super("MultiplyColor");
+    this.inputs = {
+      a: { default: "vec4(1.0)" },
+      b: { default: "vec4(1.0)" }
+    };
+  }
+  compute(_, __, ctx) {
+    return `(${ctx.resolve(this, "a")} * ${ctx.resolve(this, "b")})`;
+  }
+};
+var GrayscaleNode = class extends ShaderNode {
+  constructor() {
+    super("Grayscale");
+    this.inputs = { color: { default: "vec4(1.0)" } };
+  }
+  compute(_, __, ctx) {
+    const c = ctx.resolve(this, "color");
+    return `vec4(vec3(dot(${c}.rgb,vec3(0.299,0.587,0.114))),${c}.a)`;
+  }
+};
+var ContrastNode = class extends ShaderNode {
+  constructor() {
+    super("Contrast");
+    this.inputs = {
+      color: { default: "vec4(1.0)" },
+      contrast: { default: "1.0" }
+    };
+  }
+  compute(_, __, ctx) {
+    const c = ctx.resolve(this, "color");
+    const k = ctx.resolve(this, "contrast");
+    return `vec4(((${c}.rgb-0.5)*${k}+0.5),${c}.a)`;
+  }
+};
+var ConnectionLayer = class {
+  constructor(svg, graph) {
+    this.svg = svg;
+    this.graph = graph;
+    this.temp = null;
+    this.from = null;
+    document.addEventListener("pointermove", (e) => this.move(e));
+    document.addEventListener("pointerup", (e) => this.up(e));
+  }
+  attach(pin) {
+    pin.onpointerdown = (e) => {
+      if (pin.dataset.type !== "output") return;
+      e.stopPropagation();
+      this.from = pin;
+      this.temp = this.path();
+      this.svg.appendChild(this.temp);
+    };
+  }
+  move(e) {
+    if (!this.temp) return;
+    this.draw(this.temp, this.center(this.from), { x: e.clientX, y: e.clientY });
+  }
+  up(e) {
+    if (!this.temp) return;
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    if (t?.classList.contains("pin") && t.dataset.type === "input") {
+      this.finalize(this.from, t);
+    }
+    this.temp.remove();
+    this.temp = this.from = null;
+  }
+  finalize(a, b) {
+    const fn = a.dataset.node, fp = a.dataset.pin;
+    const tn = b.dataset.node, tp = b.dataset.pin;
+    this.graph.connect(
+      this.graph.nodes.find((n2) => n2.id === fn),
+      fp,
+      this.graph.nodes.find((n2) => n2.id === tn),
+      tp
+    );
+    const p = this.path();
+    p.dataset.from = `${fn}:${fp}`;
+    p.dataset.to = `${tn}:${tp}`;
+    this.svg.appendChild(p);
+    this.redraw(p);
+  }
+  redrawAll() {
+    [...this.svg.children].forEach((p) => this.redraw(p));
+  }
+  redraw(p) {
+    const [fn, fp] = p.dataset.from.split(":");
+    const [tn, tp] = p.dataset.to.split(":");
+    const a = document.querySelector(`.pin.output[data-node="${fn}"][data-pin="${fp}"]`);
+    const b = document.querySelector(`.pin.input[data-node="${tn}"][data-pin="${tp}"]`);
+    if (a && b) this.draw(p, this.center(a), this.center(b));
+  }
+  path() {
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("stroke", "#6aa9ff");
+    p.setAttribute("stroke-width", "2");
+    p.setAttribute("fill", "none");
+    return p;
+  }
+  draw(p, a, b) {
+    const d = Math.abs(b.x - a.x) * 0.45;
+    p.setAttribute("d", `M${a.x},${a.y} C${a.x + d},${a.y} ${b.x - d},${b.y} ${b.x},${b.y}`);
+  }
+  center(el2) {
+    const r2 = el2.getBoundingClientRect();
+    return { x: r2.left + r2.width / 2, y: r2.top + r2.height / 2 };
+  }
+};
+function openFragmentShaderEditor(id2 = "fragShader") {
+  const graph = new FragmentShaderGraph(id2);
+  const root = document.createElement("div");
+  root.style.cssText = `
+    position:fixed; inset:30px;
+    background:#0b0e14; color:#eee;
+    display:flex; font-family:monospace;
+  `;
+  const menu = document.createElement("div");
+  menu.style.cssText = `
+    width:180px; border-right:1px solid #222;
+    padding:8px; background:#0f1320;
+  `;
+  const btn = (txt, fn) => {
+    const b = document.createElement("button");
+    b.textContent = txt;
+    b.style.cssText = "width:100%;margin:4px 0";
+    b.onclick = fn;
+    menu.appendChild(b);
+  };
+  const area = document.createElement("div");
+  area.style.cssText = "flex:1;position:relative";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.style.cssText = "position:absolute;inset:0;pointer-events:none";
+  area.appendChild(svg);
+  root.appendChild(menu);
+  root.appendChild(area);
+  document.body.appendChild(root);
+  const connections = new ConnectionLayer(svg, graph);
+  function addNode(node2, x2 = 200, y2 = 100) {
+    graph.addNode(node2);
+    const el2 = document.createElement("div");
+    el2.className = "node";
+    el2.style.cssText = `position:absolute;left:${x2}px;top:${y2}px;background:#151a2a;padding:6px;border-radius:6px`;
+    el2.textContent = node2.type;
+    area.appendChild(el2);
+    Object.keys(node2.inputs || {}).forEach((k) => {
+      const p = document.createElement("div");
+      p.className = "pin input";
+      p.dataset.node = node2.id;
+      p.dataset.pin = k;
+      p.dataset.type = "input";
+      el2.appendChild(p);
+    });
+    const out = document.createElement("div");
+    out.className = "pin output";
+    out.dataset.node = node2.id;
+    out.dataset.pin = "out";
+    out.dataset.type = "output";
+    el2.appendChild(out);
+    connections.attach(out);
+    el2.onpointermove = () => connections.redrawAll();
+  }
+  addNode(new FragOutputNode(), 500, 200);
+  addNode(new UVNode(), 200, 100);
+  btn("Add TextureSampler", () => addNode(new TextureSamplerNode()));
+  btn("Add MultiplyColor", () => addNode(new MultiplyColorNode()));
+  btn("Add Grayscale", () => addNode(new GrayscaleNode()));
+  btn("Add Contrast", () => addNode(new ContrastNode()));
+  btn("Add Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
+  btn("Compile", () => console.log(graph.compile()));
+  return graph;
+}
+
 // ../hud.js
 var EditorHud = class {
   constructor(core, a) {
@@ -21254,6 +21536,11 @@ var EditorHud = class {
            <small>\u{1F4C8}Timeline curve editor</small>
            <small> </small>
         </div>
+        <div id="showShaderEditorBtn" class="drop-item btn4">
+           <span>Show shader editor</span>
+           <small>Shader editor</small>
+           <small> </small>
+        </div>
       </div>
     </div>
 
@@ -21442,6 +21729,10 @@ var EditorHud = class {
     byId("showCurveEditorBtn").addEventListener("click", (e) => {
       console.log("show-showCurveEditorBtn editor ", e);
       document.dispatchEvent(new CustomEvent("show-curve-editor", { detail: {} }));
+    });
+    byId("showShaderEditorBtn").addEventListener("click", (e) => {
+      console.log("show-showCurveEditorBtn editor ", e);
+      openFragmentShaderEditor();
     });
     byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
       if (byId("app").style.display == "flex") {
