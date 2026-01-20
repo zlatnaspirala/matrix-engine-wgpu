@@ -1,19 +1,12 @@
-/* ============================================================
-   Fragment Shader Graph Editor
-   WebGPU / WGSL
-   Single Source – Graph + UI + Compiler + Visuals
-   ============================================================ */
+import {LOG_FUNNY_ARCADE} from "../../engine/utils.js";
 
 export const FragmentShaderRegistry = {};
-
-/* ===================== GRAPH MODEL ===================== */
 
 export class FragmentShaderGraph {
   constructor(id) {
     this.id = id;
     this.nodes = [];
     this.connections = [];
-
     // pos of node
     this.spawnX = 80;
     this.spawnY = 80;
@@ -23,7 +16,7 @@ export class FragmentShaderGraph {
   }
 
   addNode(node) {
-    node.graph = this;
+    node.shaderGraph = this;
     this.nodes.push(node);
     return node;
   }
@@ -46,18 +39,14 @@ export class FragmentShaderGraph {
     FragmentShaderRegistry[this.id] = wgsl;
     return wgsl;
   }
-
   nextSpawn() {
     const x = this.spawnX + this.spawnCol * this.spawnStepX;
     const y = this.spawnY;
-
     this.spawnCol++;
-
     if(this.spawnCol >= 3) {
       this.spawnCol = 0;
       this.spawnY += this.spawnStepY;
     }
-
     return {x, y};
   }
 
@@ -78,35 +67,36 @@ export class FragmentShaderGraph {
       connectionLayer.redrawAll();
     });
     el.addEventListener("pointerup", () => drag = false);
-
-    ///////////
-    
-    ///////////
   }
-
 }
 
-/* ===================== COMPILER ===================== */
-
 class CompileContext {
-  constructor(graph) {
-    this.graph = graph;
+  constructor(shaderGraph) {
+    this.shaderGraph = shaderGraph;
     this.cache = new Map();
+    this.code = [];
     this.functions = new Map();
+    this.tmpIndex = 0;
+  }
+
+  temp(type, expr) {
+    const name = `t${this.tmpIndex++}`;
+    this.code.push(`let ${name}: ${type} = ${expr};`);
+    return name;
   }
 
   resolve(node, pin) {
     const key = `${node.id}:${pin}`;
     if(this.cache.has(key)) return this.cache.get(key);
 
-    const conn = this.graph.getInput(node, pin);
-    const expr = conn
+    const conn = this.shaderGraph.getInput(node, pin);
+    const value = conn
       ? this.resolve(conn.fromNode, conn.fromPin)
       : node.default(pin);
 
-    const out = node.compute(pin, expr, this);
-    this.cache.set(key, out);
-    return out;
+    const result = node.build(pin, value, this);
+    this.cache.set(key, result.out);
+    return result.out;
   }
 
   registerFunction(name, code) {
@@ -116,48 +106,42 @@ class CompileContext {
   }
 }
 
+
 class FragmentCompiler {
-  static compile(graph) {
-    const ctx = new CompileContext(graph);
-    const out = graph.nodes.find(n => n.type === "FragOutput");
-    if(!out) throw "FragOutput node missing";
-
+  static compile(shaderGraph) {
+    const ctx = new CompileContext(shaderGraph);
+    const out = shaderGraph.nodes.find(n => n.type === "FragOutput");
+    if (!out) throw "FragOutput node missing";
     const color = ctx.resolve(out, "color");
-
-    const fnBlock = [...ctx.functions.values()].join("\n\n");
-
     return `
-${fnBlock}
+${[...ctx.functions.values()].join("\n\n")}
 
 @fragment
-fn fs_main(input: VSOut) -> @location(0) vec4<f32> {
+fn fs_main(input: FragmentInput) -> @location(0) vec4f {
+${ctx.code.map(l => "  " + l).join("\n")}
   return ${color};
 }
 `;
   }
 }
 
-/* ===================== NODE BASE ===================== */
-
 let NODE_ID = 0;
-
 export class ShaderNode {
   constructor(type) {
     this.id = "N" + NODE_ID++;
     this.type = type;
     this.inputs = {};
   }
-
   default(pin) {
     return this.inputs[pin]?.default ?? "0.0";
   }
-
-  compute(_, v) {
-    return v;
+  build(_, value, ctx) {
+    return {
+      out: value,
+      type: "f32"
+    };
   }
 }
-
-/* ===================== CORE NODES ===================== */
 
 export class FragOutputNode extends ShaderNode {
   constructor() {
@@ -167,8 +151,16 @@ export class FragOutputNode extends ShaderNode {
 }
 
 export class UVNode extends ShaderNode {
-  constructor() {super("UV");}
-  compute() {return "input.uv";}
+  constructor() {
+    super("UV");
+  }
+
+  build() {
+    return {
+      out: "input.uv",
+      type: "vec2f"
+    };
+  }
 }
 
 export class TimeNode extends ShaderNode {
@@ -176,20 +168,16 @@ export class TimeNode extends ShaderNode {
   compute() {return "globals.time";}
 }
 
-/* ===================== INLINE WGSL ===================== */
-
 export class InlineFunctionNode extends ShaderNode {
   constructor(name = "customFn", code = "") {
     super("InlineFunction");
     this.fnName = name;
     this.code = code;
-
     this.inputs = {
       a: {default: "input.uv"},
       b: {default: "globals.time"}
     };
   }
-
   compute(_, __, ctx) {
     ctx.registerFunction(this.fnName, this.code);
     const a = ctx.resolve(this, "a");
@@ -198,24 +186,20 @@ export class InlineFunctionNode extends ShaderNode {
   }
 }
 
-/* ===================== TEXTURE SAMPLER ===================== */
-
 export class TextureSamplerNode extends ShaderNode {
   constructor(name = "tex0") {
     super("TextureSampler");
     this.name = name;
     this.inputs = {uv: {default: "input.uv"}};
   }
-
-  compute(_, __, ctx) {
-    if(!ctx.bindings.includes(this.name)) {
-      ctx.bindings.push(this.name);
-    }
-    return `textureSample(${this.name}_tex, ${this.name}_smp, ${ctx.resolve(this, "uv")})`;
+  build(_, __, ctx) {
+    const uv = ctx.resolve(this, "uv");
+    return {
+      out: ctx.temp("vec4f", `textureSample(meshTexture, meshSampler, ${uv})`),
+      type: "vec4f"
+    };
   }
 }
-
-/* ===================== COLOR OPS ===================== */
 
 export class MultiplyColorNode extends ShaderNode {
   constructor() {
@@ -225,10 +209,35 @@ export class MultiplyColorNode extends ShaderNode {
       b: {default: "vec4(1.0)"}
     };
   }
-  compute(_, __, ctx) {
-    return `(${ctx.resolve(this, "a")} * ${ctx.resolve(this, "b")})`;
+  build(_, __, ctx) {
+    const a = ctx.resolve(this, "a");
+    const b = ctx.resolve(this, "b");
+    const t = ctx.temp("f32", `${a} * ${b}`);
+    return {out: t, type: "f32"};
   }
 }
+
+export class ClampNode extends ShaderNode {
+  constructor() {
+    super("Clamp");
+    this.inputs = {
+      x: { default: "0.0" },
+      min: { default: "0.0" },
+      max: { default: "1.0" }
+    };
+  }
+
+  build(_, __, ctx) {
+    const x = ctx.resolve(this, "x");
+    const min = ctx.resolve(this, "min");
+    const max = ctx.resolve(this, "max");
+    return {
+      out: ctx.temp("f32", `clamp(${x}, ${min}, ${max})`),
+      type: "f32"
+    };
+  }
+}
+
 
 export class GrayscaleNode extends ShaderNode {
   constructor() {
@@ -256,19 +265,15 @@ export class ContrastNode extends ShaderNode {
   }
 }
 
-/* ===================== VISUAL CONNECTIONS ===================== */
-
 class ConnectionLayer {
-  constructor(svg, graph) {
+  constructor(svg, shaderGraph) {
     this.svg = svg;
-    this.graph = graph;
+    this.shaderGraph = shaderGraph;
     this.temp = null;
     this.from = null;
-
     document.addEventListener("pointermove", e => this.move(e));
     document.addEventListener("pointerup", e => this.up(e));
   }
-
   attach(pin) {
     pin.onpointerdown = e => {
       e.stopPropagation();
@@ -286,32 +291,25 @@ class ConnectionLayer {
 
   up(e) {
     if(!this.temp || !this.from) return;
-
     const t = document.elementFromPoint(e.clientX, e.clientY);
     if(t?.classList.contains("pinShader") && t.dataset.type === "input") {
       this.finalize(this.from, t);
     }
-
     this.temp.remove();
     this.temp = this.from = null;
   }
-
   finalize(outPin, inPin) {
-    const fromNode = this.graph.nodes.find(n => n.id === outPin.dataset.node);
-    const toNode = this.graph.nodes.find(n => n.id === inPin.dataset.node);
+    const fromNode = this.shaderGraph.nodes.find(n => n.id === outPin.dataset.node);
+    const toNode = this.shaderGraph.nodes.find(n => n.id === inPin.dataset.node);
     const fromPin = outPin.dataset.pin;
     const toPin = inPin.dataset.pin;
-
-    // update graph ONLY
-    this.graph.connect(fromNode, fromPin, toNode, toPin);
-
-    // redraw everything ONCE
+    this.shaderGraph.connect(fromNode, fromPin, toNode, toPin);
     this.redrawAll();
   }
 
   redrawAll() {
     [...this.svg.children].forEach(p => p.remove()); // remove old paths
-    this.graph.connections.forEach(c => this.redrawConnection(c));
+    this.shaderGraph.connections.forEach(c => this.redrawConnection(c));
   }
 
   redrawConnection(conn) {
@@ -348,19 +346,16 @@ class ConnectionLayer {
   }
 }
 
-
-/* ===================== UI: POPUP + LEFT MENU ===================== */
-
 export function openFragmentShaderEditor(id = "fragShader") {
-  const graph = new FragmentShaderGraph(id);
+  const shaderGraph = new FragmentShaderGraph(id);
 
   const root = document.createElement("div");
   root.id = "shaderDOM";
   root.style.cssText = `
-    position:fixed; left: 20%; top:5%;
+    position:fixed; left: 17.5%; top:4%;
     background:#0b0e14; color:#eee;
     display:flex; font-family:monospace;
-    width:75%;height:80%
+    width:300%;height:90%
   `;
 
   /* LEFT MENU */
@@ -387,16 +382,14 @@ export function openFragmentShaderEditor(id = "fragShader") {
   svg.style.top = "0";
   svg.style.width = "100%";
   svg.style.height = "100%";
-  svg.style.pointerEvents = "none"; // so SVG doesn’t block node events
-
+  svg.style.pointerEvents = "none";
   area.appendChild(svg);
   root.appendChild(menu);
   root.appendChild(area);
   document.body.appendChild(root);
-
   const style = document.createElement("style");
   style.textContent = `
-#shaderDOM { z-index:9999 }
+#shaderDOM { z-index:2 }
 
 .nodeShader {
   position:absolute;
@@ -479,47 +472,33 @@ svg path {
 `;
   document.head.appendChild(style);
 
+  const connectionLayer = new ConnectionLayer(svg, shaderGraph);
 
-  const connectionLayer = new ConnectionLayer(svg, graph);
-
-  /* ADD NODE HELPERS */
-  /* ===================== ADD NODE ===================== */
-  /* ===================== ADD NODE ===================== */
   function addNode(node, x, y) {
-    graph.addNode(node);
-
+    shaderGraph.addNode(node);
     if(x == null || y == null) {
-      const p = graph.nextSpawn();
+      const p = shaderGraph.nextSpawn();
       x = p.x;
       y = p.y;
     }
-
     node.x = x;
     node.y = y;
-
     const el = document.createElement("div");
     el.className = "nodeShader";
     el.style.left = x + "px";
     el.style.top = y + "px";
     area.appendChild(el);
-
-    el.tabIndex = 0; // allow div to be focused
+    el.tabIndex = 0;
     el.addEventListener("click", e => {
       e.stopPropagation();
-      // remove selection from all nodes
       document.querySelectorAll(".nodeShader.selected").forEach(n => n.classList.remove("selected"));
       el.classList.add("selected");
     });
-
     el.dataset.nodeId = node.id;
-
-    // --- Node title ---
     const title = document.createElement("div");
     title.className = "node-title";
     title.textContent = node.type;
     el.appendChild(title);
-
-    // --- Node body ---
     const body = document.createElement("div");
     body.className = "nodeShader-body";
     el.appendChild(body);
@@ -577,23 +556,25 @@ svg path {
       el.appendChild(ta);
     }
 
-    graph.connectionLayer = connectionLayer;
-    graph.makeDraggable(el, node, connectionLayer);
+    shaderGraph.connectionLayer = connectionLayer;
+    shaderGraph.makeDraggable(el, node, connectionLayer);
   }
 
 
   document.addEventListener("keydown", e => {
-    console.log('TTTTTTTTTTTTTTTT');
     if(e.key === "Delete") {
       const sel = document.querySelector(".nodeShader.selected");
       if(!sel) return;
 
       const nodeId = sel.dataset.nodeId; // assign this when creating node
-      const node = graph.nodes.find(n => n.id === nodeId);
+      const node = shaderGraph.nodes.find(n => n.id === nodeId);
+
+      console.log('TTTTTTTTTTTTTTTT', node);
+
       if(!node) return;
 
       // remove connections involving this node
-      graph.connections = graph.connections.filter(
+      shaderGraph.connections = shaderGraph.connections.filter(
         c => c.fromNode !== node && c.toNode !== node
       );
 
@@ -607,17 +588,13 @@ svg path {
       // remove node DOM
       sel.remove();
 
-      // remove from graph.nodes
-      graph.nodes = graph.nodes.filter(n => n !== node);
+      // remove from shaderGraph.nodes
+      shaderGraph.nodes = shaderGraph.nodes.filter(n => n !== node);
 
       // ??????????????
-      graph.connectionLayer.redrawConnection();
+      shaderGraph.connectionLayer.redrawConnection();
     }
   });
-
-  /* DEFAULT NODES */
-  // addNode(new FragOutputNode(), 500, 200);
-  // addNode(new UVNode(), 200, 100);
 
   btn("Add TextureSampler", () => addNode(new TextureSamplerNode()));
   btn("Add MultiplyColor", () => addNode(new MultiplyColorNode()));
@@ -626,19 +603,19 @@ svg path {
   btn("Add Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
   btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
   btn("Add FragmentColorOut", () => addNode(new FragOutputNode()));
+  btn("Compile", () => console.log(shaderGraph.compile()));
+  btn("Save Graph", () => saveGraph(shaderGraph));
+  btn("Load Graph", () => loadGraph("fragShaderGraph", shaderGraph, addNode));
 
-  btn("Compile", () => console.log(graph.compile()));
-  btn("Save Graph", () => saveGraph(graph));
-  btn("Load Graph", () => loadGraph("fragShaderGraph", graph, addNode));
-
-  //load
-  loadGraph("fragShaderGraph", graph, addNode);
-  return graph;
+  loadGraph("fragShaderGraph", shaderGraph, addNode);
+  console.log(shaderGraph.nodes);
+  if (shaderGraph.nodes.length == 0) addNode(new FragOutputNode(), 500, 200);
+  return shaderGraph;
 }
 
-function serializeGraph(graph) {
+function serializeGraph(shaderGraph) {
   return JSON.stringify({
-    nodes: graph.nodes.map(n => ({
+    nodes: shaderGraph.nodes.map(n => ({
       id: n.id,
       type: n.type,
       x: n.x ?? 100,
@@ -647,7 +624,7 @@ function serializeGraph(graph) {
       code: n.code,
       name: n.name
     })),
-    connections: graph.connections.map(c => ({
+    connections: shaderGraph.connections.map(c => ({
       from: c.fromNode.id,
       fromPin: c.fromPin,
       to: c.toNode.id,
@@ -656,20 +633,17 @@ function serializeGraph(graph) {
   });
 }
 
-function saveGraph(graph, key = "fragShaderGraph") {
-  console.log('befopre save', graph)
-  localStorage.setItem(key, serializeGraph(graph));
-  console.log("Shader graph saved");
+function saveGraph(shaderGraph, key = "fragShaderGraph") {
+  localStorage.setItem(key, serializeGraph(shaderGraph));
+  console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE);
 }
 
-function loadGraph(key, graph, addNodeUI) {
-  graph.nodes.length = 0;
-  graph.connections.length = 0;
-  // graph.connectionLayer.svg.innerHTML = "";
+function loadGraph(key, shaderGraph, addNodeUI) {
+  shaderGraph.nodes.length = 0;
+  shaderGraph.connections.length = 0;
   const data = JSON.parse(localStorage.getItem(key));
   if(!data) return;
   const map = {};
-  // recreate nodes
   data.nodes.forEach(n => {
     let node;
     switch(n.type) {
@@ -685,20 +659,16 @@ function loadGraph(key, graph, addNodeUI) {
     map[n.id] = node;
     addNodeUI(node, n.x, n.y);
   });
-
-  // recreate connections
   data.connections.forEach(c => {
     const fromNode = map[c.from];
     const toNode = map[c.to];
     const fromPin = c.fromPin;
     const toPin = c.toPin;
-    graph.connect(fromNode, fromPin, toNode, toPin);
-    const path = graph.connectionLayer.path();
+    shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+    const path = shaderGraph.connectionLayer.path();
     path.dataset.from = `${fromNode.id}:${fromPin}`;
     path.dataset.to = `${toNode.id}:${toPin}`;
-    graph.connectionLayer.svg.appendChild(path);
-    graph.connectionLayer.redrawAll(path);
+    shaderGraph.connectionLayer.svg.appendChild(path);
+    shaderGraph.connectionLayer.redrawAll(path);
   });
 }
-
-
