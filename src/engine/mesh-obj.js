@@ -33,6 +33,8 @@ export default class MEMeshObj extends Materials {
       typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
+
+    this.useScale = false;
     // console.log('Material class arg:', o.material)
     this.material = o.material;
     addEventListener('update-pipeine', () => {
@@ -660,7 +662,7 @@ export default class MEMeshObj extends Materials {
   updateModelUniformBuffer = () => {
     if(this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, false);
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,

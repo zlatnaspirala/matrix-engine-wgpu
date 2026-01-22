@@ -168,6 +168,14 @@ export default class Materials {
     this.createBindGroupForRender();
   }
 
+  changeMaterial(newType = 'graph', graphShader) {
+    this.material.fromGraph = graphShader;
+    this.material.type = newType;
+    console.log('NOW CALL SETUP PIPELINE');
+
+  }
+
+
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if(this.material.type == 'standard') {
@@ -180,6 +188,9 @@ export default class Materials {
       return fragmentWGSLMetal;
     } else if(this.material.type == 'normalmap') {
       return fragmentWGSLNormalMap;
+    } else if (this.material.type == 'graph') {
+      //
+      return this.material.fromGraph;
     }
     console.warn('Unknown material type:', this.material?.type);
     return fragmentWGSL; // fallback

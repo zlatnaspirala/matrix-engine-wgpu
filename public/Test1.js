@@ -5778,6 +5778,11 @@ var Materials = class {
     this.isVideo = false;
     this.createBindGroupForRender();
   }
+  changeMaterial(newType = "graph", graphShader) {
+    this.material.fromGraph = graphShader;
+    this.material.type = newType;
+    console.log("NOW CALL SETUP PIPELINE");
+  }
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSL;
@@ -5789,6 +5794,8 @@ var Materials = class {
       return fragmentWGSLMetal;
     } else if (this.material.type == "normalmap") {
       return fragmentWGSLNormalMap;
+    } else if (this.material.type == "graph") {
+      return this.material.fromGraph;
     }
     console.warn("Unknown material type:", this.material?.type);
     return fragmentWGSL;
@@ -6528,6 +6535,7 @@ var MEMeshObj = class extends Materials {
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
     }
+    this.useScale = false;
     this.material = o2.material;
     addEventListener("update-pipeine", () => {
       this.setupPipeline();
@@ -7057,7 +7065,7 @@ var MEMeshObj = class extends Materials {
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
-    const modelMatrix = this.getModelMatrix(this.position, false);
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,
@@ -16169,6 +16177,9 @@ var EditorProvider = class {
           console.log("changes not saved.");
       }
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+      if (e.detail.property == "no info") {
+        sceneObj[e.detail.propertyId] = parseFloat(e.detail.value);
+      }
       if (sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {
@@ -21044,6 +21055,127 @@ var FluxCodexVertex = class {
   }
 };
 
+// ../flexCodexShaderAdapter.js
+function graphAdapter(compilerResult) {
+  const { functions, locals, outputs, flags } = compilerResult;
+  const userFunctions = functions.join("\n\n");
+  const userLocals = locals.join("\n");
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  const normal = outputs.normal || "normalize(input.fragNorm)";
+  const emissive = outputs.emissive || "vec3f(0.0)";
+  return `
+/* === Engine uniforms === */
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// \u2705 Graph custom functions
+${userFunctions}
+
+// Fragment input
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// PBR helpers
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+// computeLighting / computeShadow expected to exist in engine
+@fragment
+fn fs_main(input: FragmentInput) -> @location(0) vec4f {
+  // Locals from nodes
+  ${userLocals}
+
+  // Material and engine data
+  let materialData = getPBRMaterial(input.uv);
+  let baseColor: vec3f = ${baseColor};
+  let finalAlpha: f32 = ${alpha};
+  let normal: vec3f = ${normal};
+  let emissive: vec3f = ${emissive};
+
+  // Lighting / Shadows
+  var lighting: vec3f = vec3f(1.0);
+  if (${flags.usesLighting}) {
+    lighting = computeLighting(input);
+  }
+
+  var shadow: f32 = 1.0;
+  if (${flags.usesShadows}) {
+    shadow = computeShadow(input);
+  }
+
+  // Compute final color
+  let graphColor: vec4f = vec4f(baseColor + emissive, finalAlpha);
+  return vec4f(graphColor.rgb * lighting * shadow, graphColor.a);
+}
+`;
+}
+
 // ../flexCodexShader.js
 var FragmentShaderRegistry = {};
 var FragmentShaderGraph = class {
@@ -21058,7 +21190,6 @@ var FragmentShaderGraph = class {
     this.spawnCol = 0;
   }
   addNode(node2) {
-    node2.shaderGraph = this;
     this.nodes.push(node2);
     return node2;
   }
@@ -21111,45 +21242,67 @@ var CompileContext = class {
   constructor(shaderGraph) {
     this.shaderGraph = shaderGraph;
     this.cache = /* @__PURE__ */ new Map();
-    this.code = [];
+    this.locals = [];
     this.functions = /* @__PURE__ */ new Map();
     this.tmpIndex = 0;
+    this.outputs = {
+      baseColor: null,
+      emissive: null,
+      alpha: null,
+      normal: null
+    };
+    this.flags = {
+      usesLighting: true,
+      usesShadows: true,
+      usesTexture: false,
+      usesTime: false,
+      overridesNormal: false
+    };
   }
   temp(type2, expr) {
     const name2 = `t${this.tmpIndex++}`;
-    this.code.push(`let ${name2}: ${type2} = ${expr};`);
+    this.locals.push(`let ${name2}: ${type2} = ${expr};`);
     return name2;
-  }
-  resolve(node2, pin) {
-    const key = `${node2.id}:${pin}`;
-    if (this.cache.has(key)) return this.cache.get(key);
-    const conn = this.shaderGraph.getInput(node2, pin);
-    const value = conn ? this.resolve(conn.fromNode, conn.fromPin) : node2.default(pin);
-    const result2 = node2.build(pin, value, this);
-    this.cache.set(key, result2.out);
-    return result2.out;
   }
   registerFunction(name2, code) {
     if (!this.functions.has(name2)) {
       this.functions.set(name2, code);
     }
   }
+  resolve(node2, pin) {
+    const key = `${node2.id}:${pin}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+    if (this.resolving === void 0) this.resolving = /* @__PURE__ */ new Set();
+    if (this.resolving.has(key)) {
+      console.warn("Cyclic dependency detected:", key);
+      return node2.default(pin);
+    }
+    this.resolving.add(key);
+    const conn = this.shaderGraph.getInput(node2, pin);
+    const value = conn ? this.resolve(conn.fromNode, conn.fromPin) : node2.inputs[pin].default;
+    const result2 = node2.build(pin, value, this);
+    this.cache.set(key, result2.out);
+    this.resolving.delete(key);
+    return result2.out;
+  }
 };
 var FragmentCompiler = class {
   static compile(shaderGraph) {
     const ctx = new CompileContext(shaderGraph);
-    const out = shaderGraph.nodes.find((n2) => n2.type === "FragOutput");
-    if (!out) throw "FragOutput node missing";
-    const color = ctx.resolve(out, "color");
-    return `
-${[...ctx.functions.values()].join("\n\n")}
-
-@fragment
-fn fs_main(input: FragmentInput) -> @location(0) vec4f {
-${ctx.code.map((l) => "  " + l).join("\n")}
-  return ${color};
-}
-`;
+    shaderGraph.nodes.forEach((n2) => {
+      if (n2.type.endsWith("Output")) {
+        ctx.resolve(n2, Object.keys(n2.inputs)[0]);
+      }
+    });
+    if (!ctx.outputs.baseColor && !ctx.outputs.emissive) {
+      throw new Error("ShaderGraph: No visual output");
+    }
+    return {
+      functions: [...ctx.functions.values()],
+      locals: ctx.locals,
+      outputs: ctx.outputs,
+      flags: ctx.flags
+    };
   }
 };
 var NODE_ID = 0;
@@ -21169,10 +21322,46 @@ var ShaderNode = class {
     };
   }
 };
-var FragOutputNode = class extends ShaderNode {
+var BaseColorOutputNode = class extends ShaderNode {
   constructor() {
-    super("FragOutput");
-    this.inputs = { color: { default: "vec4(1.0)" } };
+    super("BaseColorOutput");
+    this.inputs = { color: { default: "vec3f(1.0)" } };
+  }
+  build = (_, __, ctx) => {
+    ctx.outputs.baseColor = ctx.resolve(this, "color");
+    return { out: ctx.outputs.baseColor };
+  };
+};
+var EmissiveOutputNode = class extends ShaderNode {
+  constructor() {
+    super("EmissiveOutput");
+    this.inputs = { color: { default: "vec3f(0.0)" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.emissive = ctx.resolve(this, "color");
+    ctx.flags.usesLighting = false;
+    return { out: ctx.outputs.emissive };
+  }
+};
+var AlphaOutputNode = class extends ShaderNode {
+  constructor() {
+    super("AlphaOutput");
+    this.inputs = { alpha: { default: "1.0" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.alpha = ctx.resolve(this, "alpha");
+    return { out: ctx.outputs.alpha };
+  }
+};
+var NormalOutputNode = class extends ShaderNode {
+  constructor() {
+    super("NormalOutput");
+    this.inputs = { normal: { default: "input.normal" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.normal = ctx.resolve(this, "normal");
+    ctx.flags.overridesNormal = true;
+    return { out: ctx.outputs.normal };
   }
 };
 var UVNode = class extends ShaderNode {
@@ -21228,7 +21417,7 @@ var MultiplyColorNode = class extends ShaderNode {
   build(_, __, ctx) {
     const a = ctx.resolve(this, "a");
     const b = ctx.resolve(this, "b");
-    const t = ctx.temp("f32", `${a} * ${b}`);
+    const t = ctx.temp("vec4f", `${a} * ${b}`);
     return { out: t, type: "f32" };
   }
 };
@@ -21352,6 +21541,35 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   };
   const area = document.createElement("div");
   area.style.cssText = "flex:1;position:relative";
+  let pan = { active: false, ox: 0, oy: 0 };
+  area.addEventListener("pointerdown", (e) => {
+    if (e.target !== area) return;
+    pan.active = true;
+    pan.ox = e.clientX;
+    pan.oy = e.clientY;
+    area.setPointerCapture(e.pointerId);
+  });
+  area.addEventListener("pointermove", (e) => {
+    if (!pan.active) return;
+    const dx = e.clientX - pan.ox;
+    const dy = e.clientY - pan.oy;
+    pan.ox = e.clientX;
+    pan.oy = e.clientY;
+    shaderGraph.nodes.forEach((n2) => {
+      n2.x += dx;
+      n2.y += dy;
+      const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
+      if (el2) {
+        el2.style.left = n2.x + "px";
+        el2.style.top = n2.y + "px";
+      }
+    });
+    connectionLayer.redrawAll();
+  });
+  area.addEventListener("pointerup", (e) => {
+    pan.active = false;
+    area.releasePointerCapture(e.pointerId);
+  });
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.style.position = "absolute";
   svg.style.left = "0";
@@ -21549,13 +21767,22 @@ svg path {
   btn("Add Contrast", () => addNode(new ContrastNode()));
   btn("Add Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
   btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
-  btn("Add FragmentColorOut", () => addNode(new FragOutputNode()));
-  btn("Compile", () => console.log(shaderGraph.compile()));
+  btn("Add BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
+  btn("Add EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+  btn("Add AlphaOutputNode", () => addNode(new AlphaOutputNode()));
+  btn("Add NormalOutputNode", () => addNode(new NormalOutputNode()));
+  btn("Compile", () => {
+    console.log(shaderGraph.compile());
+    let r2 = shaderGraph.compile();
+    const graphGenShaderWGSL = graphAdapter(r2);
+    console.log(graphGenShaderWGSL);
+    app.mainRenderBundle[0].changeMaterial("graph", graphGenShaderWGSL);
+  });
   btn("Save Graph", () => saveGraph(shaderGraph));
   btn("Load Graph", () => loadGraph("fragShaderGraph", shaderGraph, addNode));
   loadGraph("fragShaderGraph", shaderGraph, addNode);
   console.log(shaderGraph.nodes);
-  if (shaderGraph.nodes.length == 0) addNode(new FragOutputNode(), 500, 200);
+  if (shaderGraph.nodes.length == 0) addNode(new BaseColorOutputNode(), 500, 200);
   return shaderGraph;
 }
 function serializeGraph(shaderGraph) {
@@ -21567,7 +21794,8 @@ function serializeGraph(shaderGraph) {
       y: n2.y ?? 100,
       fnName: n2.fnName,
       code: n2.code,
-      name: n2.name
+      name: n2.name,
+      inputs: Object.fromEntries(Object.entries(n2.inputs || {}).map(([k, v]) => [k, { default: v.default }]))
     })),
     connections: shaderGraph.connections.map((c) => ({
       from: c.fromNode.id,
@@ -21587,14 +21815,13 @@ function loadGraph(key, shaderGraph, addNodeUI) {
   const data = JSON.parse(localStorage.getItem(key));
   if (!data) return;
   const map = {};
-  data.nodes.forEach((n2) => {
-    let node2;
-    switch (n2.type) {
+  data.nodes.forEach((node2) => {
+    switch (node2.type) {
       case "InlineFunction":
-        node2 = new InlineFunctionNode(n2.fnName, n2.code);
+        node2 = new InlineFunctionNode(node2.fnName, node2.code);
         break;
       case "TextureSampler":
-        node2 = new TextureSamplerNode(n2.name);
+        node2 = new TextureSamplerNode(node2.name);
         break;
       case "MultiplyColor":
         node2 = new MultiplyColorNode();
@@ -21608,13 +21835,25 @@ function loadGraph(key, shaderGraph, addNodeUI) {
       case "FragOutput":
         node2 = new FragOutputNode();
         break;
+      case "BaseColorOutput":
+        node2 = new BaseColorOutputNode();
+        break;
+      case "EmissiveOutputNode":
+        node2 = new EmissiveOutputNode();
+        break;
+      case "AlphaOutputNode":
+        node2 = new AlphaOutputNode();
+        break;
+      case "NormalOutputNode":
+        node2 = new NormalOutputNode();
+        break;
       case "UV":
         node2 = new UVNode();
         break;
     }
-    node2.id = n2.id;
-    map[n2.id] = node2;
-    addNodeUI(node2, n2.x, n2.y);
+    console.log("loaded : " + node2.id);
+    map[node2.id] = node2;
+    addNodeUI(node2, node2.x, node2.y);
   });
   data.connections.forEach((c) => {
     const fromNode = map[c.from];
@@ -22448,7 +22687,7 @@ var SceneObjectProperty = class {
     this.subObjectsProps = [];
     this.propName = document.createElement("div");
     this.propName.style.width = "100%";
-    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody") {
+    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody" || propName == "useScale") {
       this.propName.style.overflow = "hidden";
       this.propName.style.height = "20px";
       this.propName.style.borderBottom = "solid lime 2px";
@@ -22473,6 +22712,8 @@ var SceneObjectProperty = class {
       } else if (propName == "maxInstances") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if (propName == "useScale") {
+        this.propName.innerHTML = this.readBool(currSceneObj, propName);
       } else if (propName == "texturesPaths") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
@@ -22567,6 +22808,27 @@ var SceneObjectProperty = class {
       this.addEditorDeleteAction(currSceneObj, parentDOM);
     } else {
     }
+  }
+  readBool(currSceneObj, rootKey) {
+    return `
+    <input type="checkbox"
+      class="inputEditor"
+      name="${rootKey}"
+      onchange="
+        console.log(this.checked, 'checkbox change fired');
+        document.dispatchEvent(
+          new CustomEvent('web.editor.input', {
+            detail: {
+              inputFor: ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"},
+              propertyId: ${currSceneObj ? "'" + rootKey + "'" : "'no info'"},
+              property: 'no info',
+              value: this.checked
+            }
+          })
+        );
+      "
+    />
+  `;
   }
   exploreSubObject(subobj, rootKey, currSceneObj) {
     let a = [];
@@ -24977,13 +25239,7 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").scale[0] = 15;
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").scale[2] = 15;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").scale[1] = 0.01;
       }, 800);
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
         let texturesPaths = ["./res/meshes/blender/cube.png"];
@@ -25097,9 +25353,6 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("R_BOX").scale[1] = 4;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-3.5);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_2").position.SetY(3);
@@ -25245,6 +25498,15 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("CAMERA_JUMPER").scale[1] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-1.5);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").scale[0] = 17;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").scale[1] = 0;
       }, 800);
     });
   }

@@ -697,16 +697,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         return modelMatrix;
       };
 
-      // looks like affect on transformations for now const 0
-      // const modelMatrix = mat4.translation([0, 0, 0]);
-      // const modelData = modelMatrix;
-      // this.device.queue.writeBuffer(
-      //   this.modelUniformBuffer,
-      //   0,
-      //   modelData.buffer,
-      //   modelData.byteOffset,
-      //   modelData.byteLength
-      // );
       this.done = true;
       try {
         this.setupPipeline();
@@ -801,18 +791,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     // console.log('✅Pipelines done');
   };
 
-  updateModelUniformBuffer = () => {
-    // if(this.done == false) return;
-    // Per-object model matrix only
-    // const modelMatrix = this.getModelMatrix(this.position);
-    // this.device.queue.writeBuffer(
-    //   this.modelUniformBuffer,
-    //   0,
-    //   modelMatrix.buffer,
-    //   modelMatrix.byteOffset,
-    //   modelMatrix.byteLength
-    // );
-  }
+  updateModelUniformBuffer = () => {  }
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {

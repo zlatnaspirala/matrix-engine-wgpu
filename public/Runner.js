@@ -5778,6 +5778,11 @@ var Materials = class {
     this.isVideo = false;
     this.createBindGroupForRender();
   }
+  changeMaterial(newType = "graph", graphShader) {
+    this.material.fromGraph = graphShader;
+    this.material.type = newType;
+    console.log("NOW CALL SETUP PIPELINE");
+  }
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSL;
@@ -5789,6 +5794,8 @@ var Materials = class {
       return fragmentWGSLMetal;
     } else if (this.material.type == "normalmap") {
       return fragmentWGSLNormalMap;
+    } else if (this.material.type == "graph") {
+      return this.material.fromGraph;
     }
     console.warn("Unknown material type:", this.material?.type);
     return fragmentWGSL;
@@ -6528,6 +6535,7 @@ var MEMeshObj = class extends Materials {
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
     }
+    this.useScale = false;
     this.material = o2.material;
     addEventListener("update-pipeine", () => {
       this.setupPipeline();
@@ -7057,7 +7065,7 @@ var MEMeshObj = class extends Materials {
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
-    const modelMatrix = this.getModelMatrix(this.position, false);
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,
@@ -16169,6 +16177,9 @@ var EditorProvider = class {
           console.log("changes not saved.");
       }
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+      if (e.detail.property == "no info") {
+        sceneObj[e.detail.propertyId] = parseFloat(e.detail.value);
+      }
       if (sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {
@@ -21044,6 +21055,127 @@ var FluxCodexVertex = class {
   }
 };
 
+// ../flexCodexShaderAdapter.js
+function graphAdapter(compilerResult) {
+  const { functions, locals, outputs, flags } = compilerResult;
+  const userFunctions = functions.join("\n\n");
+  const userLocals = locals.join("\n");
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  const normal = outputs.normal || "normalize(input.fragNorm)";
+  const emissive = outputs.emissive || "vec3f(0.0)";
+  return `
+/* === Engine uniforms === */
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// \u2705 Graph custom functions
+${userFunctions}
+
+// Fragment input
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// PBR helpers
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+// computeLighting / computeShadow expected to exist in engine
+@fragment
+fn fs_main(input: FragmentInput) -> @location(0) vec4f {
+  // Locals from nodes
+  ${userLocals}
+
+  // Material and engine data
+  let materialData = getPBRMaterial(input.uv);
+  let baseColor: vec3f = ${baseColor};
+  let finalAlpha: f32 = ${alpha};
+  let normal: vec3f = ${normal};
+  let emissive: vec3f = ${emissive};
+
+  // Lighting / Shadows
+  var lighting: vec3f = vec3f(1.0);
+  if (${flags.usesLighting}) {
+    lighting = computeLighting(input);
+  }
+
+  var shadow: f32 = 1.0;
+  if (${flags.usesShadows}) {
+    shadow = computeShadow(input);
+  }
+
+  // Compute final color
+  let graphColor: vec4f = vec4f(baseColor + emissive, finalAlpha);
+  return vec4f(graphColor.rgb * lighting * shadow, graphColor.a);
+}
+`;
+}
+
 // ../flexCodexShader.js
 var FragmentShaderRegistry = {};
 var FragmentShaderGraph = class {
@@ -21058,7 +21190,6 @@ var FragmentShaderGraph = class {
     this.spawnCol = 0;
   }
   addNode(node2) {
-    node2.graph = this;
     this.nodes.push(node2);
     return node2;
   }
@@ -21100,47 +21231,78 @@ var FragmentShaderGraph = class {
       if (!drag) return;
       el2.style.left = e.clientX - ox + "px";
       el2.style.top = e.clientY - oy + "px";
+      node2.x = e.clientX - ox;
+      node2.y = e.clientY - oy;
       connectionLayer.redrawAll();
     });
     el2.addEventListener("pointerup", () => drag = false);
   }
 };
 var CompileContext = class {
-  constructor(graph) {
-    this.graph = graph;
+  constructor(shaderGraph) {
+    this.shaderGraph = shaderGraph;
     this.cache = /* @__PURE__ */ new Map();
+    this.locals = [];
     this.functions = /* @__PURE__ */ new Map();
+    this.tmpIndex = 0;
+    this.outputs = {
+      baseColor: null,
+      emissive: null,
+      alpha: null,
+      normal: null
+    };
+    this.flags = {
+      usesLighting: true,
+      usesShadows: true,
+      usesTexture: false,
+      usesTime: false,
+      overridesNormal: false
+    };
   }
-  resolve(node2, pin) {
-    const key = `${node2.id}:${pin}`;
-    if (this.cache.has(key)) return this.cache.get(key);
-    const conn = this.graph.getInput(node2, pin);
-    const expr = conn ? this.resolve(conn.fromNode, conn.fromPin) : node2.default(pin);
-    const out = node2.compute(pin, expr, this);
-    this.cache.set(key, out);
-    return out;
+  temp(type2, expr) {
+    const name2 = `t${this.tmpIndex++}`;
+    this.locals.push(`let ${name2}: ${type2} = ${expr};`);
+    return name2;
   }
   registerFunction(name2, code) {
     if (!this.functions.has(name2)) {
       this.functions.set(name2, code);
     }
   }
+  resolve(node2, pin) {
+    const key = `${node2.id}:${pin}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+    if (this.resolving === void 0) this.resolving = /* @__PURE__ */ new Set();
+    if (this.resolving.has(key)) {
+      console.warn("Cyclic dependency detected:", key);
+      return node2.default(pin);
+    }
+    this.resolving.add(key);
+    const conn = this.shaderGraph.getInput(node2, pin);
+    const value = conn ? this.resolve(conn.fromNode, conn.fromPin) : node2.inputs[pin].default;
+    const result2 = node2.build(pin, value, this);
+    this.cache.set(key, result2.out);
+    this.resolving.delete(key);
+    return result2.out;
+  }
 };
 var FragmentCompiler = class {
-  static compile(graph) {
-    const ctx = new CompileContext(graph);
-    const out = graph.nodes.find((n2) => n2.type === "FragOutput");
-    if (!out) throw "FragOutput node missing";
-    const color = ctx.resolve(out, "color");
-    const fnBlock = [...ctx.functions.values()].join("\n\n");
-    return `
-${fnBlock}
-
-@fragment
-fn fs_main(input: VSOut) -> @location(0) vec4<f32> {
-  return ${color};
-}
-`;
+  static compile(shaderGraph) {
+    const ctx = new CompileContext(shaderGraph);
+    shaderGraph.nodes.forEach((n2) => {
+      if (n2.type.endsWith("Output")) {
+        ctx.resolve(n2, Object.keys(n2.inputs)[0]);
+      }
+    });
+    if (!ctx.outputs.baseColor && !ctx.outputs.emissive) {
+      throw new Error("ShaderGraph: No visual output");
+    }
+    return {
+      functions: [...ctx.functions.values()],
+      locals: ctx.locals,
+      outputs: ctx.outputs,
+      flags: ctx.flags
+    };
   }
 };
 var NODE_ID = 0;
@@ -21153,22 +21315,64 @@ var ShaderNode = class {
   default(pin) {
     return this.inputs[pin]?.default ?? "0.0";
   }
-  compute(_, v) {
-    return v;
+  build(_, value, ctx) {
+    return {
+      out: value,
+      type: "f32"
+    };
   }
 };
-var FragOutputNode = class extends ShaderNode {
+var BaseColorOutputNode = class extends ShaderNode {
   constructor() {
-    super("FragOutput");
-    this.inputs = { color: { default: "vec4(1.0)" } };
+    super("BaseColorOutput");
+    this.inputs = { color: { default: "vec3f(1.0)" } };
+  }
+  build = (_, __, ctx) => {
+    ctx.outputs.baseColor = ctx.resolve(this, "color");
+    return { out: ctx.outputs.baseColor };
+  };
+};
+var EmissiveOutputNode = class extends ShaderNode {
+  constructor() {
+    super("EmissiveOutput");
+    this.inputs = { color: { default: "vec3f(0.0)" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.emissive = ctx.resolve(this, "color");
+    ctx.flags.usesLighting = false;
+    return { out: ctx.outputs.emissive };
+  }
+};
+var AlphaOutputNode = class extends ShaderNode {
+  constructor() {
+    super("AlphaOutput");
+    this.inputs = { alpha: { default: "1.0" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.alpha = ctx.resolve(this, "alpha");
+    return { out: ctx.outputs.alpha };
+  }
+};
+var NormalOutputNode = class extends ShaderNode {
+  constructor() {
+    super("NormalOutput");
+    this.inputs = { normal: { default: "input.normal" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.normal = ctx.resolve(this, "normal");
+    ctx.flags.overridesNormal = true;
+    return { out: ctx.outputs.normal };
   }
 };
 var UVNode = class extends ShaderNode {
   constructor() {
     super("UV");
   }
-  compute() {
-    return "input.uv";
+  build() {
+    return {
+      out: "input.uv",
+      type: "vec2f"
+    };
   }
 };
 var InlineFunctionNode = class extends ShaderNode {
@@ -21194,11 +21398,12 @@ var TextureSamplerNode = class extends ShaderNode {
     this.name = name2;
     this.inputs = { uv: { default: "input.uv" } };
   }
-  compute(_, __, ctx) {
-    if (!ctx.bindings.includes(this.name)) {
-      ctx.bindings.push(this.name);
-    }
-    return `textureSample(${this.name}_tex, ${this.name}_smp, ${ctx.resolve(this, "uv")})`;
+  build(_, __, ctx) {
+    const uv = ctx.resolve(this, "uv");
+    return {
+      out: ctx.temp("vec4f", `textureSample(meshTexture, meshSampler, ${uv})`),
+      type: "vec4f"
+    };
   }
 };
 var MultiplyColorNode = class extends ShaderNode {
@@ -21209,8 +21414,11 @@ var MultiplyColorNode = class extends ShaderNode {
       b: { default: "vec4(1.0)" }
     };
   }
-  compute(_, __, ctx) {
-    return `(${ctx.resolve(this, "a")} * ${ctx.resolve(this, "b")})`;
+  build(_, __, ctx) {
+    const a = ctx.resolve(this, "a");
+    const b = ctx.resolve(this, "b");
+    const t = ctx.temp("vec4f", `${a} * ${b}`);
+    return { out: t, type: "f32" };
   }
 };
 var GrayscaleNode = class extends ShaderNode {
@@ -21238,9 +21446,9 @@ var ContrastNode = class extends ShaderNode {
   }
 };
 var ConnectionLayer = class {
-  constructor(svg, graph) {
+  constructor(svg, shaderGraph) {
     this.svg = svg;
-    this.graph = graph;
+    this.shaderGraph = shaderGraph;
     this.temp = null;
     this.from = null;
     document.addEventListener("pointermove", (e) => this.move(e));
@@ -21269,20 +21477,16 @@ var ConnectionLayer = class {
     this.temp = this.from = null;
   }
   finalize(outPin, inPin) {
-    const fromNode = this.graph.nodes.find((n2) => n2.id === outPin.dataset.node);
-    const toNode = this.graph.nodes.find((n2) => n2.id === inPin.dataset.node);
+    const fromNode = this.shaderGraph.nodes.find((n2) => n2.id === outPin.dataset.node);
+    const toNode = this.shaderGraph.nodes.find((n2) => n2.id === inPin.dataset.node);
     const fromPin = outPin.dataset.pin;
     const toPin = inPin.dataset.pin;
-    this.graph.connections = this.graph.connections.filter(
-      (c) => !(c.toNode === toNode && c.toPin === toPin)
-    );
-    const conn = { fromNode, fromPin, toNode, toPin };
-    this.graph.connections.push(conn);
-    this.redrawConnection(conn);
+    this.shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+    this.redrawAll();
   }
   redrawAll() {
     [...this.svg.children].forEach((p) => p.remove());
-    this.graph.connections.forEach((c) => this.redrawConnection(c));
+    this.shaderGraph.connections.forEach((c) => this.redrawConnection(c));
   }
   redrawConnection(conn) {
     const path = this.path();
@@ -21314,14 +21518,14 @@ var ConnectionLayer = class {
   }
 };
 function openFragmentShaderEditor(id2 = "fragShader") {
-  const graph = new FragmentShaderGraph(id2);
+  const shaderGraph = new FragmentShaderGraph(id2);
   const root = document.createElement("div");
   root.id = "shaderDOM";
   root.style.cssText = `
-    position:fixed; left: 20%; top:5%;
+    position:fixed; left: 17.5%; top:4%;
     background:#0b0e14; color:#eee;
     display:flex; font-family:monospace;
-    width:75%;height:80%
+    width:300%;height:90%
   `;
   const menu = document.createElement("div");
   menu.style.cssText = `
@@ -21337,6 +21541,35 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   };
   const area = document.createElement("div");
   area.style.cssText = "flex:1;position:relative";
+  let pan = { active: false, ox: 0, oy: 0 };
+  area.addEventListener("pointerdown", (e) => {
+    if (e.target !== area) return;
+    pan.active = true;
+    pan.ox = e.clientX;
+    pan.oy = e.clientY;
+    area.setPointerCapture(e.pointerId);
+  });
+  area.addEventListener("pointermove", (e) => {
+    if (!pan.active) return;
+    const dx = e.clientX - pan.ox;
+    const dy = e.clientY - pan.oy;
+    pan.ox = e.clientX;
+    pan.oy = e.clientY;
+    shaderGraph.nodes.forEach((n2) => {
+      n2.x += dx;
+      n2.y += dy;
+      const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
+      if (el2) {
+        el2.style.left = n2.x + "px";
+        el2.style.top = n2.y + "px";
+      }
+    });
+    connectionLayer.redrawAll();
+  });
+  area.addEventListener("pointerup", (e) => {
+    pan.active = false;
+    area.releasePointerCapture(e.pointerId);
+  });
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.style.position = "absolute";
   svg.style.left = "0";
@@ -21350,7 +21583,7 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   document.body.appendChild(root);
   const style = document.createElement("style");
   style.textContent = `
-#shaderDOM { z-index:9999 }
+#shaderDOM { z-index:2 }
 
 .nodeShader {
   position:absolute;
@@ -21385,6 +21618,7 @@ function openFragmentShaderEditor(id2 = "fragShader") {
 .nodeShader-body {
   display:flex;
   gap:8px;
+  justify-content: space-between;
 }
 
 .nodeShader-inputs {
@@ -21431,14 +21665,16 @@ svg path {
 
 `;
   document.head.appendChild(style);
-  const connectionLayer = new ConnectionLayer(svg, graph);
+  const connectionLayer = new ConnectionLayer(svg, shaderGraph);
   function addNode(node2, x2, y2) {
-    graph.addNode(node2);
+    shaderGraph.addNode(node2);
     if (x2 == null || y2 == null) {
-      const p = graph.nextSpawn();
+      const p = shaderGraph.nextSpawn();
       x2 = p.x;
       y2 = p.y;
     }
+    node2.x = x2;
+    node2.y = y2;
     const el2 = document.createElement("div");
     el2.className = "nodeShader";
     el2.style.left = x2 + "px";
@@ -21501,17 +21737,18 @@ svg path {
       ta.oninput = () => node2.code = ta.value;
       el2.appendChild(ta);
     }
-    graph.connectionLayer = connectionLayer;
-    graph.makeDraggable(el2, node2, connectionLayer);
+    shaderGraph.connectionLayer = connectionLayer;
+    shaderGraph.makeDraggable(el2, node2, connectionLayer);
   }
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Del") {
+    if (e.key === "Delete") {
       const sel = document.querySelector(".nodeShader.selected");
       if (!sel) return;
       const nodeId2 = sel.dataset.nodeId;
-      const node2 = graph.nodes.find((n2) => n2.id === nodeId2);
+      const node2 = shaderGraph.nodes.find((n2) => n2.id === nodeId2);
+      console.log("TTTTTTTTTTTTTTTT", node2);
       if (!node2) return;
-      graph.connections = graph.connections.filter(
+      shaderGraph.connections = shaderGraph.connections.filter(
         (c) => c.fromNode !== node2 && c.toNode !== node2
       );
       [...svg.querySelectorAll("path")].forEach((p) => {
@@ -21520,32 +21757,47 @@ svg path {
         }
       });
       sel.remove();
-      graph.nodes = graph.nodes.filter((n2) => n2 !== node2);
+      shaderGraph.nodes = shaderGraph.nodes.filter((n2) => n2 !== node2);
+      shaderGraph.connectionLayer.redrawConnection();
     }
   });
-  addNode(new FragOutputNode(), 500, 200);
-  addNode(new UVNode(), 200, 100);
   btn("Add TextureSampler", () => addNode(new TextureSamplerNode()));
   btn("Add MultiplyColor", () => addNode(new MultiplyColorNode()));
   btn("Add Grayscale", () => addNode(new GrayscaleNode()));
   btn("Add Contrast", () => addNode(new ContrastNode()));
   btn("Add Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
   btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
-  btn("Compile", () => console.log(graph.compile()));
-  btn("Save Graph", () => saveGraph(graph));
-  btn("Load Graph", () => loadGraph("fragShaderGraph", graph, addNode));
-  return graph;
+  btn("Add BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
+  btn("Add EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+  btn("Add AlphaOutputNode", () => addNode(new AlphaOutputNode()));
+  btn("Add NormalOutputNode", () => addNode(new NormalOutputNode()));
+  btn("Compile", () => {
+    console.log(shaderGraph.compile());
+    let r2 = shaderGraph.compile();
+    const graphGenShaderWGSL = graphAdapter(r2);
+    console.log(graphGenShaderWGSL);
+    app.mainRenderBundle[0].changeMaterial("graph", graphGenShaderWGSL);
+  });
+  btn("Save Graph", () => saveGraph(shaderGraph));
+  btn("Load Graph", () => loadGraph("fragShaderGraph", shaderGraph, addNode));
+  loadGraph("fragShaderGraph", shaderGraph, addNode);
+  console.log(shaderGraph.nodes);
+  if (shaderGraph.nodes.length == 0) addNode(new BaseColorOutputNode(), 500, 200);
+  return shaderGraph;
 }
-function serializeGraph(graph) {
+function serializeGraph(shaderGraph) {
   return JSON.stringify({
-    nodes: graph.nodes.map((n2) => ({
+    nodes: shaderGraph.nodes.map((n2) => ({
       id: n2.id,
       type: n2.type,
+      x: n2.x ?? 100,
+      y: n2.y ?? 100,
       fnName: n2.fnName,
       code: n2.code,
-      name: n2.name
+      name: n2.name,
+      inputs: Object.fromEntries(Object.entries(n2.inputs || {}).map(([k, v]) => [k, { default: v.default }]))
     })),
-    connections: graph.connections.map((c) => ({
+    connections: shaderGraph.connections.map((c) => ({
       from: c.fromNode.id,
       fromPin: c.fromPin,
       to: c.toNode.id,
@@ -21553,22 +21805,23 @@ function serializeGraph(graph) {
     }))
   });
 }
-function saveGraph(graph, key = "fragShaderGraph") {
-  localStorage.setItem(key, serializeGraph(graph));
-  console.log("Shader graph saved");
+function saveGraph(shaderGraph, key = "fragShaderGraph") {
+  localStorage.setItem(key, serializeGraph(shaderGraph));
+  console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
 }
-function loadGraph(key, graph, addNodeUI) {
+function loadGraph(key, shaderGraph, addNodeUI) {
+  shaderGraph.nodes.length = 0;
+  shaderGraph.connections.length = 0;
   const data = JSON.parse(localStorage.getItem(key));
   if (!data) return;
   const map = {};
-  data.nodes.forEach((n2) => {
-    let node2;
-    switch (n2.type) {
+  data.nodes.forEach((node2) => {
+    switch (node2.type) {
       case "InlineFunction":
-        node2 = new InlineFunctionNode(n2.fnName, n2.code);
+        node2 = new InlineFunctionNode(node2.fnName, node2.code);
         break;
       case "TextureSampler":
-        node2 = new TextureSamplerNode(n2.name);
+        node2 = new TextureSamplerNode(node2.name);
         break;
       case "MultiplyColor":
         node2 = new MultiplyColorNode();
@@ -21582,26 +21835,37 @@ function loadGraph(key, graph, addNodeUI) {
       case "FragOutput":
         node2 = new FragOutputNode();
         break;
+      case "BaseColorOutput":
+        node2 = new BaseColorOutputNode();
+        break;
+      case "EmissiveOutputNode":
+        node2 = new EmissiveOutputNode();
+        break;
+      case "AlphaOutputNode":
+        node2 = new AlphaOutputNode();
+        break;
+      case "NormalOutputNode":
+        node2 = new NormalOutputNode();
+        break;
       case "UV":
         node2 = new UVNode();
         break;
     }
-    node2.id = n2.id;
-    graph.addNode(node2);
-    map[n2.id] = node2;
-    addNodeUI(node2);
+    console.log("loaded : " + node2.id);
+    map[node2.id] = node2;
+    addNodeUI(node2, node2.x, node2.y);
   });
   data.connections.forEach((c) => {
     const fromNode = map[c.from];
     const toNode = map[c.to];
     const fromPin = c.fromPin;
     const toPin = c.toPin;
-    graph.connections.push({ fromNode, fromPin, toNode, toPin });
-    const path = graph.connectionLayer.path();
+    shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+    const path = shaderGraph.connectionLayer.path();
     path.dataset.from = `${fromNode.id}:${fromPin}`;
     path.dataset.to = `${toNode.id}:${toPin}`;
-    graph.connectionLayer.svg.appendChild(path);
-    graph.connectionLayer.redraw(path);
+    shaderGraph.connectionLayer.svg.appendChild(path);
+    shaderGraph.connectionLayer.redrawAll(path);
   });
 }
 
@@ -22423,7 +22687,7 @@ var SceneObjectProperty = class {
     this.subObjectsProps = [];
     this.propName = document.createElement("div");
     this.propName.style.width = "100%";
-    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody") {
+    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody" || propName == "useScale") {
       this.propName.style.overflow = "hidden";
       this.propName.style.height = "20px";
       this.propName.style.borderBottom = "solid lime 2px";
@@ -22448,6 +22712,8 @@ var SceneObjectProperty = class {
       } else if (propName == "maxInstances") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if (propName == "useScale") {
+        this.propName.innerHTML = this.readBool(currSceneObj, propName);
       } else if (propName == "texturesPaths") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
@@ -22542,6 +22808,27 @@ var SceneObjectProperty = class {
       this.addEditorDeleteAction(currSceneObj, parentDOM);
     } else {
     }
+  }
+  readBool(currSceneObj, rootKey) {
+    return `
+    <input type="checkbox"
+      class="inputEditor"
+      name="${rootKey}"
+      onchange="
+        console.log(this.checked, 'checkbox change fired');
+        document.dispatchEvent(
+          new CustomEvent('web.editor.input', {
+            detail: {
+              inputFor: ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"},
+              propertyId: ${currSceneObj ? "'" + rootKey + "'" : "'no info'"},
+              property: 'no info',
+              value: this.checked
+            }
+          })
+        );
+      "
+    />
+  `;
   }
   exploreSubObject(subobj, rootKey, currSceneObj) {
     let a = [];

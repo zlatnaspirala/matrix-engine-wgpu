@@ -41,28 +41,11 @@ let app = new MatrixEngineWGPU(
 
 
 
-      // ME START FLOOR updateScale0
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').scale[0] = 15;
-      }, 800);
-      // ME END FLOOR updateScale0
-
       // ME START FLOOR updateScale2
       setTimeout(() => {
         app.getSceneObjectByName('FLOOR').scale[2] = 15;
       }, 800);
       // ME END FLOOR updateScale2
-
-      // ME START FLOOR updateScale1
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').scale[1] = 0.01;
-      }, 800);
-      // ME END FLOOR updateScale1
-
-
-
-
-
 
       // ME START L_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
@@ -236,12 +219,6 @@ let app = new MatrixEngineWGPU(
         app.getSceneObjectByName('R_BOX').scale[1] = 4;
       }, 800);
       // ME END R_BOX updateScale1
-
-      // ME START FLOOR updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').position.SetY(-3.5);
-      }, 800);
-      // ME END FLOOR updatePosy
 
       // ME START REEL_2 updatePosy
       setTimeout(() => {
@@ -493,6 +470,24 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('CAMERA_JUMPER').scale[1] = 2;
  }, 800);
  // ME END CAMERA_JUMPER updateScale1
+ 
+               // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-1.5);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+     // ME START FLOOR updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').scale[0] = 17;
+ }, 800);
+ // ME END FLOOR updateScale0
+ 
+         // ME START FLOOR updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').scale[1] = 0;
+ }, 800);
+ // ME END FLOOR updateScale1
  
  // [MAIN_REPLACE2]
 

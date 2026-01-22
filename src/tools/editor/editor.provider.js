@@ -68,6 +68,11 @@ export default class EditorProvider {
       // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+
+      if (e.detail.property == "no info") {
+        sceneObj[e.detail.propertyId] = parseFloat(e.detail.value);
+      }
+
       if(sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {

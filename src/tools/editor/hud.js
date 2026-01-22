@@ -943,7 +943,7 @@ class SceneObjectProperty {
     if(propName == "device" || propName == "position" || propName == "rotation"
       || propName == "raycast" || propName == "entityArgPass" || propName == "scale"
       || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb"
-      || propName == "itIsPhysicsBody"
+      || propName == "itIsPhysicsBody" || propName == "useScale"
     ) {
       this.propName.style.overflow = 'hidden';
       this.propName.style.height = '20px';
@@ -970,6 +970,8 @@ class SceneObjectProperty {
       } else if(propName == "maxInstances") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if(propName == "useScale") {
+        this.propName.innerHTML = this.readBool(currSceneObj, propName);
       } else if(propName == "texturesPaths") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
@@ -1084,6 +1086,29 @@ class SceneObjectProperty {
       // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
     }
   }
+
+
+readBool(currSceneObj, rootKey) {
+  return `
+    <input type="checkbox"
+      class="inputEditor"
+      name="${rootKey}"
+      onchange="
+        console.log(this.checked, 'checkbox change fired');
+        document.dispatchEvent(
+          new CustomEvent('web.editor.input', {
+            detail: {
+              inputFor: ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"},
+              propertyId: ${currSceneObj ? "'" + rootKey + "'" : "'no info'"},
+              property: 'no info',
+              value: this.checked
+            }
+          })
+        );
+      "
+    />
+  `;
+}
 
   exploreSubObject(subobj, rootKey, currSceneObj) {
     let a = []; let __ = [];
