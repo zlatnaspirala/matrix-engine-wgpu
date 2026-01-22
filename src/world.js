@@ -93,7 +93,7 @@ export default class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
 
-    this.logLoopError = false;
+    this.logLoopError = true;
 
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
@@ -803,19 +803,18 @@ export default class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-      const currentTextureView = this.context.getCurrentTexture().createView();
+      // with no postprocessing 
+      // const currentTextureView = this.context.getCurrentTexture().createView();
       // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
 
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
-
       for(const mesh of this.mainRenderBundle) {
         now = performance.now() / 1000;
         deltaTime = now - (this.lastTime || now);
         this.lastTime = now;
         if(mesh.update) {
-
           mesh.update(deltaTime); // glb
         }
         pass.setPipeline(mesh.pipeline);

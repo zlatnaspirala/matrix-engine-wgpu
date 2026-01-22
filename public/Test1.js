@@ -4656,6 +4656,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -4880,6 +4883,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -5047,6 +5053,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -5286,6 +5295,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -5499,6 +5511,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -6537,6 +6552,11 @@ var MEMeshObj = class extends Materials {
     }
     this.useScale = false;
     this.material = o2.material;
+    this.time = 0;
+    this.deltaTImeAdapter = 1e3;
+    this.update = (time) => {
+      this.time = time * this.deltaTImeAdapter;
+    };
     addEventListener("update-pipeine", () => {
       this.setupPipeline();
     });
@@ -6896,7 +6916,8 @@ var MEMeshObj = class extends Materials {
       });
       this.sceneUniformBuffer = this.device.createBuffer({
         label: "sceneUniformBuffer per mesh",
-        size: 176,
+        size: 192,
+        //192, // ⬅️ was 176
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -6965,12 +6986,13 @@ var MEMeshObj = class extends Materials {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
+        const sceneData = new Float32Array(48);
         sceneData.set(spotLight.viewProjMatrix, 0);
         sceneData.set(camVP, 16);
         sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
+        sceneData.set([this.time, dt, 0, 0], 44);
         device.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
@@ -14650,6 +14672,11 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       o2.material.useTextureFromGlb = false;
     }
     this.material = o2.material;
+    this.time = 0;
+    this.deltaTImeAdapter = 1e3;
+    this.update = (time) => {
+      this.time = time * this.deltaTImeAdapter;
+    };
     this.mesh = o2.mesh;
     if (_glbFile != null) {
       if (typeof this.mesh == "undefined") {
@@ -15191,12 +15218,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
+        const sceneData = new Float32Array(48);
         sceneData.set(spotLight.viewProjMatrix, 0);
         sceneData.set(camVP, 16);
         sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
+        sceneData.set([this.time, dt, 0, 0], 44);
         device.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
@@ -21165,6 +21193,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 // PREDEFINED
@@ -21264,20 +21295,15 @@ var FragmentShaderGraph = class {
     this.spawnCol = 0;
   }
   addNode(node2) {
-    console.log("nodes detect bug 1", node2);
     this.nodes.push(node2);
     return node2;
   }
   connect(fromNode, fromPin, toNode, toPin) {
-    this.connections = this.connections.filter(
-      (c) => !(c.toNode === toNode && c.toPin === toPin)
-    );
+    this.connections = this.connections.filter((c) => !(c.toNode === toNode && c.toPin === toPin));
     this.connections.push({ fromNode, fromPin, toNode, toPin });
   }
   getInput(node2, pin) {
-    return this.connections.find(
-      (c) => c.toNode === node2 && c.toPin === pin
-    );
+    return this.connections.find((c) => c.toNode === node2 && c.toPin === pin);
   }
   compile() {
     const wgsl = FragmentCompiler.compile(this);
@@ -21350,7 +21376,6 @@ var CompileContext = class {
     let value;
     if (conn) {
       value = this.resolve(conn.fromNode, conn.fromPin);
-      console.log("value = this.resolve(conn.fromNode, conn.fromPin); ", value);
     } else {
       if (node2.inputs && pin in node2.inputs) {
         value = node2.inputs[pin].default;
@@ -21531,6 +21556,28 @@ var UVNode = class extends ShaderNode {
     };
   }
 };
+var CameraPosNode = class extends ShaderNode {
+  constructor() {
+    super("CameraPos");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.cameraPos",
+      type: "vec3f"
+    };
+  }
+};
+var TimeNode = class extends ShaderNode {
+  constructor() {
+    super("Time");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.time",
+      type: "f32"
+    };
+  }
+};
 var InlineFunctionNode = class extends ShaderNode {
   constructor(name2 = "customFn", code = "") {
     super("InlineFunction");
@@ -21633,6 +21680,425 @@ var ContrastNode = class extends ShaderNode {
     };
   }
 };
+var FloatNode = class extends ShaderNode {
+  constructor(value = 1) {
+    super("Float");
+    this.value = value;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `${this.value}`,
+      type: "f32"
+    };
+  }
+};
+var Vec2Node = class extends ShaderNode {
+  constructor(x2 = 0, y2 = 0) {
+    super("Vec2");
+    this.x = x2;
+    this.y = y2;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec2f(${this.x}, ${this.y})`,
+      type: "vec2f"
+    };
+  }
+};
+var Vec3Node = class extends ShaderNode {
+  constructor(x2 = 0, y2 = 0, z = 0) {
+    super("Vec3");
+    this.x = x2;
+    this.y = y2;
+    this.z = z;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec3f(${this.x}, ${this.y}, ${this.z})`,
+      type: "vec3f"
+    };
+  }
+};
+var Vec4Node = class extends ShaderNode {
+  constructor(x2 = 0, y2 = 0, z = 0, w = 1) {
+    super("Vec4");
+    this.x = x2;
+    this.y = y2;
+    this.z = z;
+    this.w = w;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec4f(${this.x}, ${this.y}, ${this.z}, ${this.w})`,
+      type: "vec4f"
+    };
+  }
+};
+var ColorNode = class extends ShaderNode {
+  constructor(r2 = 1, g = 1, b = 1, a = 1) {
+    super("Color");
+    this.r = r2;
+    this.g = g;
+    this.b = b;
+    this.a = a;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec4f(${this.r}, ${this.g}, ${this.b}, ${this.a})`,
+      type: "vec4f"
+    };
+  }
+};
+var AddNode = class extends ShaderNode {
+  constructor() {
+    super("Add");
+    this.inputs = {
+      a: { default: "0.0" },
+      b: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} + ${b}`),
+      type: "f32"
+    };
+  }
+};
+var SubtractNode = class extends ShaderNode {
+  constructor() {
+    super("Subtract");
+    this.inputs = {
+      a: { default: "0.0" },
+      b: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} - ${b}`),
+      type: "f32"
+    };
+  }
+};
+var MultiplyNode = class extends ShaderNode {
+  constructor() {
+    super("Multiply");
+    this.inputs = {
+      a: { default: "1.0" },
+      b: { default: "1.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} * ${b}`),
+      type: "f32"
+    };
+  }
+};
+var DivideNode = class extends ShaderNode {
+  constructor() {
+    super("Divide");
+    this.inputs = {
+      a: { default: "1.0" },
+      b: { default: "1.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} / ${b}`),
+      type: "f32"
+    };
+  }
+};
+var PowerNode = class extends ShaderNode {
+  constructor() {
+    super("Power");
+    this.inputs = {
+      base: { default: "1.0" },
+      exponent: { default: "2.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connBase = ctx.shaderGraph.getInput(this, "base");
+    const connExp = ctx.shaderGraph.getInput(this, "exponent");
+    const base = connBase ? ctx.resolve(connBase.fromNode, connBase.fromPin) : this.inputs.base.default;
+    const exp = connExp ? ctx.resolve(connExp.fromNode, connExp.fromPin) : this.inputs.exponent.default;
+    return {
+      out: ctx.temp("f32", `pow(${base}, ${exp})`),
+      type: "f32"
+    };
+  }
+};
+var LerpNode = class extends ShaderNode {
+  constructor() {
+    super("Lerp");
+    this.inputs = {
+      a: { default: "0.0" },
+      b: { default: "1.0" },
+      t: { default: "0.5" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const connT = ctx.shaderGraph.getInput(this, "t");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    const t = connT ? ctx.resolve(connT.fromNode, connT.fromPin) : this.inputs.t.default;
+    return {
+      out: ctx.temp("f32", `mix(${a}, ${b}, ${t})`),
+      type: "f32"
+    };
+  }
+};
+var SinNode = class extends ShaderNode {
+  constructor() {
+    super("Sin");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `sin(${val})`),
+      type: "f32"
+    };
+  }
+};
+var CosNode = class extends ShaderNode {
+  constructor() {
+    super("Cos");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `cos(${val})`),
+      type: "f32"
+    };
+  }
+};
+var DotProductNode = class extends ShaderNode {
+  constructor() {
+    super("DotProduct");
+    this.inputs = {
+      a: { default: "vec3f(0.0)" },
+      b: { default: "vec3f(0.0)" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `dot(${a}, ${b})`),
+      type: "f32"
+    };
+  }
+};
+var NormalizeNode = class extends ShaderNode {
+  constructor() {
+    super("Normalize");
+    this.inputs = {
+      vector: { default: "vec3f(1.0)" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    return {
+      out: ctx.temp("vec3f", `normalize(${vec})`),
+      type: "vec3f"
+    };
+  }
+};
+var LengthNode = class extends ShaderNode {
+  constructor() {
+    super("Length");
+    this.inputs = {
+      vector: { default: "vec3f(0.0)" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    return {
+      out: ctx.temp("f32", `length(${vec})`),
+      type: "f32"
+    };
+  }
+};
+var SplitVec4Node = class extends ShaderNode {
+  constructor() {
+    super("SplitVec4");
+    this.inputs = {
+      vector: { default: "vec4f(0.0)" }
+    };
+  }
+  build(pin, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    if (!this._temp) {
+      this._temp = ctx.temp("vec4f", vec);
+    }
+    switch (pin) {
+      case "x":
+        return { out: `${this._temp}.x`, type: "f32" };
+      case "y":
+        return { out: `${this._temp}.y`, type: "f32" };
+      case "z":
+        return { out: `${this._temp}.z`, type: "f32" };
+      case "w":
+        return { out: `${this._temp}.w`, type: "f32" };
+      default:
+        return { out: this._temp, type: "vec4f" };
+    }
+  }
+};
+var CombineVec4Node = class extends ShaderNode {
+  constructor() {
+    super("CombineVec4");
+    this.inputs = {
+      x: { default: "0.0" },
+      y: { default: "0.0" },
+      z: { default: "0.0" },
+      w: { default: "1.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const connY = ctx.shaderGraph.getInput(this, "y");
+    const connZ = ctx.shaderGraph.getInput(this, "z");
+    const connW = ctx.shaderGraph.getInput(this, "w");
+    const x2 = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    const y2 = connY ? ctx.resolve(connY.fromNode, connY.fromPin) : this.inputs.y.default;
+    const z = connZ ? ctx.resolve(connZ.fromNode, connZ.fromPin) : this.inputs.z.default;
+    const w = connW ? ctx.resolve(connW.fromNode, connW.fromPin) : this.inputs.w.default;
+    return {
+      out: ctx.temp("vec4f", `vec4f(${x2}, ${y2}, ${z}, ${w})`),
+      type: "vec4f"
+    };
+  }
+};
+var FracNode = class extends ShaderNode {
+  constructor() {
+    super("Frac");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `fract(${val})`),
+      type: "f32"
+    };
+  }
+};
+var SmoothstepNode = class extends ShaderNode {
+  constructor() {
+    super("Smoothstep");
+    this.inputs = {
+      edge0: { default: "0.0" },
+      edge1: { default: "1.0" },
+      x: { default: "0.5" }
+    };
+  }
+  build(_, __, ctx) {
+    const connEdge0 = ctx.shaderGraph.getInput(this, "edge0");
+    const connEdge1 = ctx.shaderGraph.getInput(this, "edge1");
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const edge0 = connEdge0 ? ctx.resolve(connEdge0.fromNode, connEdge0.fromPin) : this.inputs.edge0.default;
+    const edge1 = connEdge1 ? ctx.resolve(connEdge1.fromNode, connEdge1.fromPin) : this.inputs.edge1.default;
+    const x2 = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    return {
+      out: ctx.temp("f32", `smoothstep(${edge0}, ${edge1}, ${x2})`),
+      type: "f32"
+    };
+  }
+};
+var OneMinusNode = class extends ShaderNode {
+  constructor() {
+    super("OneMinus");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `1.0 - ${val}`),
+      type: "f32"
+    };
+  }
+};
+var FragmentPositionNode = class extends ShaderNode {
+  constructor() {
+    super("FragmentPosition");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "input.fragPos",
+      type: "vec3f"
+    };
+  }
+};
+var FragmentNormalNode = class extends ShaderNode {
+  constructor() {
+    super("FragmentNormal");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "input.fragNorm",
+      type: "vec3f"
+    };
+  }
+};
+var ViewDirectionNode = class extends ShaderNode {
+  constructor() {
+    super("ViewDirection");
+  }
+  build(_, __, ctx) {
+    return {
+      out: ctx.temp("vec3f", "normalize(scene.cameraPos - input.fragPos)"),
+      type: "vec3f"
+    };
+  }
+};
+var GlobalAmbientNode = class extends ShaderNode {
+  constructor() {
+    super("GlobalAmbient");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.globalAmbient",
+      type: "vec3f"
+    };
+  }
+};
 var ConnectionLayer = class {
   constructor(svg, shaderGraph) {
     this.svg = svg;
@@ -21712,13 +22178,13 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   root.style.cssText = `
     position:fixed; left: 17.5%; top:4%;
     background:#0b0e14; color:#eee;
-    display:flex; font-family:monospace;
+    display:flex; font-family:system-ui;
     width:300%;height:90%
   `;
   const menu = document.createElement("div");
   menu.style.cssText = `
     width:180px; border-right:1px solid #222;
-    padding:8px; background:#0f1320;
+    padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
   `;
   const btn = (txt, fn) => {
     const b = document.createElement("button");
@@ -21784,7 +22250,7 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   background:#151a2a;
   border:1px solid #222;
   border-radius:6px;
-  padding:6px 8px;
+  padding:0;
   color:#eee;
   cursor:move;
 }
@@ -21794,24 +22260,44 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   box-shadow: 0 0 8px #ff8800;
 }
 
-.nodeShader .title {
+.nodeShader .node-title {
+  -webkit-text-stroke-width: 0.2px;
   display: block;
   padding: 6px 8px;
-  font-family: monospace;
   font-size: 13px;
   line-height: 1.2;
   color: #ffffff;
-  background: #333;
+  background: #1f2937;
   white-space: nowrap;
   position: relative;
   z-index: 10;
   user-select: none;
+  border-radius: 6px 6px 0 0;
+  border-bottom: 1px solid #333;
+}
+
+.node-properties {
+  padding: 6px 8px;
+  background: #1a1f2e;
+  border-bottom: 1px solid #333;
+}
+
+.node-properties input,
+.node-properties textarea {
+  font-family: monospace;
+}
+
+.node-properties input:focus,
+.node-properties textarea:focus {
+  outline: none;
+  border-color: #6aa9ff;
 }
 
 .nodeShader-body {
   display:flex;
   gap:8px;
   justify-content: space-between;
+  padding: 6px 8px;
 }
 
 .nodeShader-inputs {
@@ -21840,7 +22326,6 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   flex-shrink: 0;
 }
 
- 
 .pinShader.input {  margin-left: -6px; background: #ff6a6a; }
 .pinShader.output { margin-right: -6px; background: #6aa9ff; }
 
@@ -21855,7 +22340,6 @@ function openFragmentShaderEditor(id2 = "fragShader") {
 svg path {
   pointer-events:none;
 }
-
 `;
   document.head.appendChild(style);
   const connectionLayer = new ConnectionLayer(svg, shaderGraph);
@@ -21884,6 +22368,60 @@ svg path {
     title.className = "node-title";
     title.textContent = node2.type;
     el2.appendChild(title);
+    const propsContainer = document.createElement("div");
+    propsContainer.className = "node-properties";
+    propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
+    function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
+      const row2 = document.createElement("div");
+      row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
+      const labelEl = document.createElement("label");
+      labelEl.textContent = label + ":";
+      labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
+      const input = document.createElement("input");
+      input.type = type2;
+      input.value = value;
+      input.step = step;
+      input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
+      input.addEventListener("input", () => {
+        const val = type2 === "number" ? parseFloat(input.value) : input.value;
+        node2[propName] = val;
+      });
+      input.addEventListener("pointerdown", (e) => e.stopPropagation());
+      row2.appendChild(labelEl);
+      row2.appendChild(input);
+      propsContainer.appendChild(row2);
+    }
+    if (node2.type === "Float") {
+      addPropertyInput("Value", "value", node2.value);
+    } else if (node2.type === "Vec2") {
+      addPropertyInput("X", "x", node2.x);
+      addPropertyInput("Y", "y", node2.y);
+    } else if (node2.type === "Vec3") {
+      addPropertyInput("X", "x", node2.x);
+      addPropertyInput("Y", "y", node2.y);
+      addPropertyInput("Z", "z", node2.z);
+    } else if (node2.type === "Vec4") {
+      addPropertyInput("X", "x", node2.x);
+      addPropertyInput("Y", "y", node2.y);
+      addPropertyInput("Z", "z", node2.z);
+      addPropertyInput("W", "w", node2.w);
+    } else if (node2.type === "Color") {
+      addPropertyInput("R", "r", node2.r);
+      addPropertyInput("G", "g", node2.g);
+      addPropertyInput("B", "b", node2.b);
+      addPropertyInput("A", "a", node2.a);
+    } else if (node2.type === "InlineFunction") {
+      addPropertyInput("Name", "fnName", node2.fnName, "text");
+      const ta = document.createElement("textarea");
+      ta.value = node2.code;
+      ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
+      ta.oninput = () => node2.code = ta.value;
+      ta.onpointerdown = (e) => e.stopPropagation();
+      propsContainer.appendChild(ta);
+    }
+    if (propsContainer.children.length > 0) {
+      el2.appendChild(propsContainer);
+    }
     const body2 = document.createElement("div");
     body2.className = "nodeShader-body";
     el2.appendChild(body2);
@@ -21918,18 +22456,6 @@ svg path {
     const { row: outRow, pin: outPin } = createPinRow("out", "output");
     outputContainer.appendChild(outRow);
     connectionLayer.attach(outPin);
-    if (node2.type === "InlineFunction") {
-      const nameInput = document.createElement("input");
-      nameInput.value = node2.fnName;
-      nameInput.oninput = () => node2.fnName = nameInput.value;
-      el2.appendChild(nameInput);
-      const ta = document.createElement("textarea");
-      ta.value = node2.code;
-      ta.style.width = "220px";
-      ta.style.height = "100px";
-      ta.oninput = () => node2.code = ta.value;
-      el2.appendChild(ta);
-    }
     shaderGraph.connectionLayer = connectionLayer;
     shaderGraph.makeDraggable(el2, node2, connectionLayer);
   }
@@ -21954,18 +22480,44 @@ svg path {
       shaderGraph.connectionLayer.redrawConnection();
     }
   });
-  btn("Add TextureSampler", () => addNode(new TextureSamplerNode()));
-  btn("Add MultiplyColor", () => addNode(new MultiplyColorNode()));
-  btn("Add Grayscale", () => addNode(new GrayscaleNode()));
-  btn("Add Contrast", () => addNode(new ContrastNode()));
-  btn("Add Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
-  btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
-  btn("Add BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
-  btn("Add EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
-  btn("Add LightShadowNode", () => addNode(new LightShadowNode()));
-  btn("Add LightToColorNode", () => addNode(new LightToColorNode()));
-  btn("Add AlphaOutputNode", () => addNode(new AlphaOutputNode()));
-  btn("Add NormalOutputNode", () => addNode(new NormalOutputNode()));
+  btn("CameraPos", () => addNode(new CameraPosNode()));
+  btn("Time", () => addNode(new TimeNode()));
+  btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
+  btn("TextureSampler", () => addNode(new TextureSamplerNode()));
+  btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
+  btn("Grayscale", () => addNode(new GrayscaleNode()));
+  btn("Contrast", () => addNode(new ContrastNode()));
+  btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
+  btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
+  btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
+  btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+  btn("LightShadowNode", () => addNode(new LightShadowNode()));
+  btn("LightToColorNode", () => addNode(new LightToColorNode()));
+  btn("AlphaOutputNode", () => addNode(new AlphaOutputNode()));
+  btn("NormalOutputNode", () => addNode(new NormalOutputNode()));
+  btn("Float", () => {
+    const val = prompt("Enter float value:", "1.0");
+    addNode(new FloatNode(parseFloat(val) || 1));
+  });
+  btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
+  btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
+  btn("Add", () => addNode(new AddNode()));
+  btn("Multiply", () => addNode(new MultiplyNode()));
+  btn("Power", () => addNode(new PowerNode()));
+  btn("Lerp", () => addNode(new LerpNode()));
+  btn("Sin", () => addNode(new SinNode()));
+  btn("Cos", () => addNode(new CosNode()));
+  btn("Normalize", () => addNode(new NormalizeNode()));
+  btn("DotProduct", () => addNode(new DotProductNode()));
+  btn("Length", () => addNode(new LengthNode()));
+  btn("Frac", () => addNode(new FracNode()));
+  btn("OneMinus", () => addNode(new OneMinusNode()));
+  btn("Smoothstep", () => addNode(new SmoothstepNode()));
+  btn("FragPosition", () => addNode(new FragmentPositionNode()));
+  btn("FragNormal", () => addNode(new FragmentNormalNode()));
+  btn("ViewDirection", () => addNode(new ViewDirectionNode()));
+  btn("SplitVec4", () => addNode(new SplitVec4Node()));
+  btn("CombineVec4", () => addNode(new CombineVec4Node()));
   btn("Compile", () => {
     let r2 = shaderGraph.compile();
     const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
@@ -21989,6 +22541,12 @@ function serializeGraph(shaderGraph) {
       fnName: n2.fnName,
       code: n2.code,
       name: n2.name,
+      // ✅ Save all node properties
+      value: n2.value,
+      r: n2.r,
+      g: n2.g,
+      b: n2.b,
+      a: n2.a,
       inputs: Object.fromEntries(Object.entries(n2.inputs || {}).map(([k, v]) => [k, { default: v.default }]))
     })),
     connections: shaderGraph.connections.map((c) => ({
@@ -22011,9 +22569,17 @@ function loadGraph(key, shaderGraph, addNodeUI) {
   const map = {};
   data.nodes.forEach((node2) => {
     const saveId = node2.id;
+    const saveX = node2.x;
+    const saveY = node2.y;
     switch (node2.type) {
       case "FragmentOutput":
         node2 = new FragmentOutputNode();
+        break;
+      case "CameraPos":
+        node2 = new CameraPosNode();
+        break;
+      case "Time":
+        node2 = new TimeNode();
         break;
       case "InlineFunction":
         node2 = new InlineFunctionNode(node2.fnName, node2.code);
@@ -22054,8 +22620,79 @@ function loadGraph(key, shaderGraph, addNodeUI) {
       case "UV":
         node2 = new UVNode();
         break;
+      case "Float":
+        node2 = new FloatNode(node2.value ?? 1);
+        break;
+      case "Vec2":
+        node2 = new Vec2Node(node2.x ?? 0, node2.y ?? 0);
+        break;
+      case "Vec3":
+        node2 = new Vec3Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0);
+        break;
+      case "Vec4":
+        node2 = new Vec4Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0, node2.w ?? 1);
+        break;
+      case "Color":
+        node2 = new ColorNode(node2.r ?? 1, node2.g ?? 1, node2.b ?? 1, node2.a ?? 1);
+        break;
+      case "Add":
+        node2 = new AddNode();
+        break;
+      case "Subtract":
+        node2 = new SubtractNode();
+        break;
+      case "Multiply":
+        node2 = new MultiplyNode();
+        break;
+      case "Divide":
+        node2 = new DivideNode();
+        break;
+      case "Power":
+        node2 = new PowerNode();
+        break;
+      case "Sin":
+        node2 = new SinNode();
+        break;
+      case "Cos":
+        node2 = new CosNode();
+        break;
+      case "Normalize":
+        node2 = new NormalizeNode();
+        break;
+      case "DotProduct":
+        node2 = new DotProductNode();
+        break;
+      case "Lerp":
+        node2 = new LerpNode();
+        break;
+      case "Frac":
+        node2 = new FracNode();
+        break;
+      case "OneMinus":
+        node2 = new OneMinusNode();
+        break;
+      case "Smoothstep":
+        node2 = new SmoothstepNode();
+        break;
+      case "FragmentPosition":
+        node2 = new FragmentPositionNode();
+        break;
+      case "ViewDirection":
+        node2 = new ViewDirectionNode();
+        break;
+      case "SplitVec4":
+        node2 = new SplitVec4Node();
+        break;
+      case "CombineVec4":
+        node2 = new CombineVec4Node();
+        break;
+      case "GlobalAmbient":
+        node2 = new GlobalAmbientNode();
+        break;
     }
     node2.id = saveId;
+    node2.x = saveX;
+    node2.y = saveY;
     console.log("Loaded: " + node2);
     map[node2.id] = node2;
     addNodeUI(node2, node2.x, node2.y);
@@ -24393,7 +25030,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower.bind(this);
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
-    this.logLoopError = false;
+    this.logLoopError = true;
     if (typeof options2.dontUsePhysics == "undefined") {
       this.matrixAmmo = new MatrixAmmo();
     }
@@ -25087,7 +25724,6 @@ var MatrixEngineWGPU = class {
         }
         shadowPass.end();
       }
-      const currentTextureView = this.context.getCurrentTexture().createView();
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       for (const mesh of this.mainRenderBundle) {

@@ -45,6 +45,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     // console.log('Material class arg:', o.material)
     this.material = o.material;
 
+    this.time = 0;
+    this.deltaTImeAdapter = 1000;
+    this.update = (time) => {
+      this.time = time * this.deltaTImeAdapter;
+    }
+
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -658,7 +664,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
+        const sceneData = new Float32Array(48);
         // Light VP
         sceneData.set(spotLight.viewProjMatrix, 0);
         // Camera VP
@@ -668,6 +674,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         // Light position + padding
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        sceneData.set([this.time, dt, 0, 0], 44);
         device.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
@@ -791,7 +798,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     // console.log('✅Pipelines done');
   };
 
-  updateModelUniformBuffer = () => {  }
+  updateModelUniformBuffer = () => {}
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {
