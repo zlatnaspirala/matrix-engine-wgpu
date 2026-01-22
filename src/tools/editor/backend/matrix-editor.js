@@ -178,6 +178,8 @@ wss.on("connection", ws => {
         updateRot(msg, ws);
       } else if(msg.action == "updateScale") {
         updateScale(msg, ws);
+      } else if(msg.action == "useScale") {
+        useScale(msg, ws);
       }
 
     } catch(err) {
@@ -663,6 +665,26 @@ async function updateScale(msg, ws) {
     saveScript(objScript, text, ws);
   })
 }
+
+async function useScale(msg, ws) {
+  //  // inputFor: "Cube_0" property: "0 1 2" propertyId: "scale" value: "1"
+  console.log('msg usescale update :', msg);
+  const content = new CodeBuilder();
+  content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+  content.addLine(` setTimeout(() => {`);
+  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').useScale = ${msg.data.value};`);
+  content.addLine(` }, 800);`);
+  content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = removeSceneBlock(text, (msg.action + msg.data.property), msg.data.inputFor);
+    text = text.replace('// [MAIN_REPLACE2]', `${content.toString()} \n // [MAIN_REPLACE2]`);
+    saveScript(objScript, text, ws);
+  })
+}
+
 // Delete object script code
 async function deleteSceneObject(n, ws) {
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");

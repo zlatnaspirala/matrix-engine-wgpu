@@ -69,8 +69,12 @@ export default class EditorProvider {
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
 
-      if (e.detail.property == "no info") {
-        sceneObj[e.detail.propertyId] = parseFloat(e.detail.value);
+      if(e.detail.property == "no info") {
+        // console.warn("What is useScale !!! ", e.detail.value);
+        sceneObj[e.detail.propertyId] = e.detail.value;
+
+        if(e.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent('web.editor.update.useScale', {detail: e.detail}));
+        return;
       }
 
       if(sceneObj) {

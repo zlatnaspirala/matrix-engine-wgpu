@@ -273,5 +273,16 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('web.editor.update.useScale', (e) => {
+      console.log("%c[web.editor.update.useScale]: " + e.detail, LOG_FUNNY_ARCADE);
+      let o = {
+        action: "useScale",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
   }
 }

@@ -19,6 +19,7 @@ import {addRaycastsListener} from "./engine/raycast.js";
 import {physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/phisicsBodies.js";
 import {TextureCache} from "./engine/core-cache.js";
 import {AudioAssetManager} from "./sounds/audioAsset.js";
+import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
 
 /**
  * @description
@@ -37,7 +38,8 @@ export default class MatrixEngineWGPU {
     BVHPlayerInstances,
     BVHPlayer,
     downloadMeshes,
-    addRaycastsListener
+    addRaycastsListener,
+    graphAdapter
   }
 
   mainRenderBundle = [];

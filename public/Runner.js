@@ -5781,7 +5781,7 @@ var Materials = class {
   changeMaterial(newType = "graph", graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
-    console.log("NOW CALL SETUP PIPELINE");
+    this.setupPipeline();
   }
   getMaterial() {
     if (this.material.type == "standard") {
@@ -16126,6 +16126,16 @@ var MEEditorClient = class {
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
+    document.addEventListener("web.editor.update.useScale", (e) => {
+      console.log("%c[web.editor.update.useScale]: " + e.detail, LOG_FUNNY_ARCADE2);
+      let o2 = {
+        action: "useScale",
+        projectName: location.href.split("/public/")[1].split(".")[0],
+        data: e.detail
+      };
+      o2 = JSON.stringify(o2);
+      this.ws.send(o2);
+    });
   }
 };
 
@@ -16178,7 +16188,9 @@ var EditorProvider = class {
       }
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (e.detail.property == "no info") {
-        sceneObj[e.detail.propertyId] = parseFloat(e.detail.value);
+        sceneObj[e.detail.propertyId] = e.detail.value;
+        if (e.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent("web.editor.update.useScale", { detail: e.detail }));
+        return;
       }
       if (sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
@@ -21056,19 +21068,95 @@ var FluxCodexVertex = class {
 };
 
 // ../flexCodexShaderAdapter.js
-function graphAdapter(compilerResult) {
-  const { functions, locals, outputs, flags } = compilerResult;
-  const userFunctions = functions.join("\n\n");
-  const userLocals = locals.join("\n");
+function graphAdapter(compilerResult, nodes) {
+  const { structs, uniforms, functions, locals, outputs, mainLines } = compilerResult;
+  console.log("what os node in adapter", nodes);
+  const globals = /* @__PURE__ */ new Set();
+  globals.add("const PI: f32 = 3.141592653589793;");
+  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
   const baseColor = outputs.baseColor || "vec3f(1.0)";
   const alpha = outputs.alpha || "1.0";
   const normal = outputs.normal || "normalize(input.fragNorm)";
   const emissive = outputs.emissive || "vec3f(0.0)";
+  for (const node2 of nodes) {
+    if (node2.type === "LightShadowNode") {
+      functions.add(`
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    // coneAtten = 1.0;
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    // return (diffuse + specular) * radiance * NdotL * coneAtten;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+`);
+      mainLines.push(`       `);
+    }
+  }
   return `
 /* === Engine uniforms === */
-override shadowDepthTextureSize: f32 = 1024.0;
-const PI: f32 = 3.141592653589793;
 
+// DINAMIC GLOBALS
+${[...globals].join("\n")}
+
+// DINAMIC STRUCTS
+${[...structs].join("\n")}
+
+// PREDEFINED
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -21080,6 +21168,7 @@ struct Scene {
     padding3             : f32,
 };
 
+// PREDEFINED
 struct SpotLight {
     position      : vec3f,
     _pad1         : f32,
@@ -21098,6 +21187,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
+// PREDEFINED
 struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
@@ -21106,14 +21196,17 @@ struct MaterialPBR {
     _pad2           : f32,
 };
 
+// PREDEFINED
 struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
 };
 
+// PREDEFINED
 const MAX_SPOTLIGHTS = 20u;
 
+// PREDEFINED
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -21124,10 +21217,13 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
-// \u2705 Graph custom functions
-${userFunctions}
+// \u2705 Graph custom uniforms
+${[...uniforms].join("\n")}
 
-// Fragment input
+// \u2705 Graph custom functions
+${functions.join("\n\n")}
+
+// PREDEFINED Fragment input
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
     @location(1) fragPos   : vec3f,
@@ -21135,7 +21231,7 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
-// PBR helpers
+// PREDEFINED PBR helpers
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let texColor = textureSample(meshTexture, meshSampler, uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
@@ -21145,33 +21241,23 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     return PBRMaterialData(baseColor, metallic, roughness);
 }
 
-// computeLighting / computeShadow expected to exist in engine
 @fragment
-fn fs_main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> @location(0) vec4f {
   // Locals from nodes
-  ${userLocals}
+  ${locals.join("\n  ")}
 
-  // Material and engine data
-  let materialData = getPBRMaterial(input.uv);
+  // PREDEFINED
   let baseColor: vec3f = ${baseColor};
   let finalAlpha: f32 = ${alpha};
   let normal: vec3f = ${normal};
   let emissive: vec3f = ${emissive};
 
-  // Lighting / Shadows
-  var lighting: vec3f = vec3f(1.0);
-  if (${flags.usesLighting}) {
-    lighting = computeLighting(input);
-  }
-
-  var shadow: f32 = 1.0;
-  if (${flags.usesShadows}) {
-    shadow = computeShadow(input);
-  }
+  // Main
+  ${mainLines.join("\n  ")}
 
   // Compute final color
-  let graphColor: vec4f = vec4f(baseColor + emissive, finalAlpha);
-  return vec4f(graphColor.rgb * lighting * shadow, graphColor.a);
+  let finalColor: vec4f = vec4f(baseColor + emissive, finalAlpha);
+  return vec4f(finalColor.rgb, finalColor.a);
 }
 `;
 }
@@ -21242,21 +21328,18 @@ var CompileContext = class {
   constructor(shaderGraph) {
     this.shaderGraph = shaderGraph;
     this.cache = /* @__PURE__ */ new Map();
-    this.locals = [];
+    this.structs = [];
+    this.uniforms = [];
     this.functions = /* @__PURE__ */ new Map();
+    this.locals = [];
+    this.mainLines = [];
     this.tmpIndex = 0;
     this.outputs = {
       baseColor: null,
       emissive: null,
       alpha: null,
-      normal: null
-    };
-    this.flags = {
-      usesLighting: true,
-      usesShadows: true,
-      usesTexture: false,
-      usesTime: false,
-      overridesNormal: false
+      normal: null,
+      lights: null
     };
   }
   temp(type2, expr) {
@@ -21272,16 +21355,23 @@ var CompileContext = class {
   resolve(node2, pin) {
     const key = `${node2.id}:${pin}`;
     if (this.cache.has(key)) return this.cache.get(key);
-    if (this.resolving === void 0) this.resolving = /* @__PURE__ */ new Set();
+    if (!this.resolving) this.resolving = /* @__PURE__ */ new Set();
     if (this.resolving.has(key)) {
       console.warn("Cyclic dependency detected:", key);
       return node2.default(pin);
     }
     this.resolving.add(key);
     const conn = this.shaderGraph.getInput(node2, pin);
-    const value = conn ? this.resolve(conn.fromNode, conn.fromPin) : node2.inputs[pin].default;
+    let value;
+    if (conn) {
+      value = this.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      value = node2.inputs?.[pin]?.default ?? node2.default(pin);
+    }
     const result2 = node2.build(pin, value, this);
-    this.cache.set(key, result2.out);
+    if (result2?.out !== void 0) {
+      this.cache.set(key, result2.out);
+    }
     this.resolving.delete(key);
     return result2.out;
   }
@@ -21298,10 +21388,12 @@ var FragmentCompiler = class {
       throw new Error("ShaderGraph: No visual output");
     }
     return {
+      structs: ctx.structs,
+      uniforms: ctx.uniforms,
       functions: [...ctx.functions.values()],
       locals: ctx.locals,
       outputs: ctx.outputs,
-      flags: ctx.flags
+      mainLines: ctx.mainLines
     };
   }
 };
@@ -21339,7 +21431,6 @@ var EmissiveOutputNode = class extends ShaderNode {
   }
   build(_, __, ctx) {
     ctx.outputs.emissive = ctx.resolve(this, "color");
-    ctx.flags.usesLighting = false;
     return { out: ctx.outputs.emissive };
   }
 };
@@ -21360,8 +21451,43 @@ var NormalOutputNode = class extends ShaderNode {
   }
   build(_, __, ctx) {
     ctx.outputs.normal = ctx.resolve(this, "normal");
-    ctx.flags.overridesNormal = true;
     return { out: ctx.outputs.normal };
+  }
+};
+var LightShadowNode = class extends ShaderNode {
+  constructor() {
+    super("LightShadowNode");
+    this.inputs = { intensity: { default: "1" } };
+  }
+  build(_, __, ctx) {
+    ctx.locals.push(`
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+
+    // \u2705 now we declare materialData
+    let materialData = getPBRMaterial(input.uv);
+
+    var lightContribution = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let bias = spotlights[i].shadowBias;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+        // let visibility = 1.0;
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        lightContribution += contrib * visibility;
+    }
+`);
+    ctx.outputs.lights = "lightContribution";
+    return {
+      out: "lightContribution",
+      type: "vec3f"
+    };
   }
 };
 var UVNode = class extends ShaderNode {
@@ -21535,7 +21661,10 @@ function openFragmentShaderEditor(id2 = "fragShader") {
   const btn = (txt, fn) => {
     const b = document.createElement("button");
     b.textContent = txt;
-    b.style.cssText = "width:100%;margin:4px 0";
+    b.style.cssText = "width:100%;margin:4px 0;";
+    if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
+    b.classList.add("btn");
+    b.classList.add("btnLeftBox");
     b.onclick = fn;
     menu.appendChild(b);
   };
@@ -21769,13 +21898,13 @@ svg path {
   btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
   btn("Add BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
   btn("Add EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+  btn("Add LightShadowNode", () => addNode(new LightShadowNode()));
   btn("Add AlphaOutputNode", () => addNode(new AlphaOutputNode()));
   btn("Add NormalOutputNode", () => addNode(new NormalOutputNode()));
   btn("Compile", () => {
-    console.log(shaderGraph.compile());
     let r2 = shaderGraph.compile();
-    const graphGenShaderWGSL = graphAdapter(r2);
-    console.log(graphGenShaderWGSL);
+    const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + graphGenShaderWGSL);
     app.mainRenderBundle[0].changeMaterial("graph", graphGenShaderWGSL);
   });
   btn("Save Graph", () => saveGraph(shaderGraph));
@@ -21847,11 +21976,14 @@ function loadGraph(key, shaderGraph, addNodeUI) {
       case "NormalOutputNode":
         node2 = new NormalOutputNode();
         break;
+      case "LightShadowNode":
+        node2 = new LightShadowNode();
+        break;
       case "UV":
         node2 = new UVNode();
         break;
     }
-    console.log("loaded : " + node2.id);
+    console.log("Loaded: " + node2.id);
     map[node2.id] = node2;
     addNodeUI(node2, node2.x, node2.y);
   });
@@ -22713,7 +22845,7 @@ var SceneObjectProperty = class {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
       } else if (propName == "useScale") {
-        this.propName.innerHTML = this.readBool(currSceneObj, propName);
+        this.propName.innerHTML = `<div style="display:flex;" >useScale  + ${this.readBool(currSceneObj, propName)} </div>`;
       } else if (propName == "texturesPaths") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
@@ -22814,6 +22946,7 @@ var SceneObjectProperty = class {
     <input type="checkbox"
       class="inputEditor"
       name="${rootKey}"
+      ${currSceneObj[rootKey] == true ? "checked" : ""}
       onchange="
         console.log(this.checked, 'checkbox change fired');
         document.dispatchEvent(
@@ -24133,7 +24266,8 @@ var MatrixEngineWGPU = class {
     BVHPlayerInstances,
     BVHPlayer,
     downloadMeshes,
-    addRaycastsListener
+    addRaycastsListener,
+    graphAdapter
   };
   mainRenderBundle = [];
   lightContainer = [];

@@ -171,10 +171,8 @@ export default class Materials {
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
-    console.log('NOW CALL SETUP PIPELINE');
-
+    this.setupPipeline();
   }
-
 
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);

@@ -18,6 +18,7 @@ export class FragmentShaderGraph {
 
   addNode(node) {
     // node.shaderGraph = this;
+    console.log('nodes detect bug 1', node)
     this.nodes.push(node);
     return node;
   }
@@ -40,6 +41,7 @@ export class FragmentShaderGraph {
     FragmentShaderRegistry[this.id] = wgsl;
     return wgsl;
   }
+
   nextSpawn() {
     const x = this.spawnX + this.spawnCol * this.spawnStepX;
     const y = this.spawnY;
@@ -74,32 +76,17 @@ export class FragmentShaderGraph {
 class CompileContext {
   constructor(shaderGraph) {
     this.shaderGraph = shaderGraph;
-
     this.cache = new Map();
 
-    // WGSL code collected inside main()
-    this.locals = [];
-
-    // Helper functions
+    this.structs = [];
+    this.uniforms = [];
     this.functions = new Map();
+    this.locals = [];
+    this.mainLines = [];
 
     this.tmpIndex = 0;
-
-    // Multi-output channels (STEP 7)
     this.outputs = {
-      baseColor: null,
-      emissive: null,
-      alpha: null,
-      normal: null
-    };
-
-    // Feature flags
-    this.flags = {
-      usesLighting: true,
-      usesShadows: true,
-      usesTexture: false,
-      usesTime: false,
-      overridesNormal: false
+      outColor: null
     };
   }
 
@@ -119,25 +106,41 @@ class CompileContext {
     const key = `${node.id}:${pin}`;
     if(this.cache.has(key)) return this.cache.get(key);
 
-    // Recursion guard
-    if(this.resolving === undefined) this.resolving = new Set();
+    if(!this.resolving) this.resolving = new Set();
     if(this.resolving.has(key)) {
       console.warn("Cyclic dependency detected:", key);
-      return node.default(pin); // fallback
+      return node.default?.(pin) ?? "0.0";
     }
     this.resolving.add(key);
 
     const conn = this.shaderGraph.getInput(node, pin);
-    const value = conn
-      ? this.resolve(conn.fromNode, conn.fromPin)
-      :  node.inputs[pin].default;
+
+    let value;
+
+    if(conn) {
+      value = this.resolve(conn.fromNode, conn.fromPin);
+      console.log('value = this.resolve(conn.fromNode, conn.fromPin); ', value)
+    } else {
+      // ✅ ONLY inputs have defaults
+      if(node.inputs && pin in node.inputs) {
+        value = node.inputs[pin].default;
+      } else {
+        // 🔥 OUTPUT PIN → no default
+        value = undefined;
+      }
+    }
 
     const result = node.build(pin, value, this);
-    this.cache.set(key, result.out);
+
+    if(result?.out !== undefined) {
+      this.cache.set(key, result.out);
+    }
 
     this.resolving.delete(key);
     return result.out;
   }
+
+
 }
 
 class FragmentCompiler {
@@ -148,14 +151,16 @@ class FragmentCompiler {
         ctx.resolve(n, Object.keys(n.inputs)[0]);
       }
     });
-    if(!ctx.outputs.baseColor && !ctx.outputs.emissive) {
+    if(!ctx.outputs.outColor) {
       throw new Error("ShaderGraph: No visual output");
     }
     return {
+      structs: ctx.structs,
+      uniforms: ctx.uniforms,
       functions: [...ctx.functions.values()],
       locals: ctx.locals,
       outputs: ctx.outputs,
-      flags: ctx.flags
+      mainLines: ctx.mainLines
     };
   }
 }
@@ -178,14 +183,43 @@ export class ShaderNode {
   }
 }
 
+export class FragmentOutputNode extends ShaderNode {
+  constructor() {
+    super("FragmentOutput");
+    this.inputs = {color: {default: "vec4f(1.0)"}};
+  }
+
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "color");
+    let value;
+    if(conn) {
+      // Resolve the node connected to this input
+      value = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      // No connection → use default
+      value = this.inputs.color.default;
+    }
+    ctx.outputs.outColor = value;
+    console.log('From FragmentOutputNode ctx.outputs.outColor', ctx.outputs.outColor);
+    return {out: ctx.outputs.outColor, type: "vec4f"};
+  }
+}
+
 export class BaseColorOutputNode extends ShaderNode {
   constructor() {
     super("BaseColorOutput");
     this.inputs = {color: {default: "vec3f(1.0)"}};
   }
 
-  build = (_, __, ctx) => {
-    ctx.outputs.baseColor = ctx.resolve(this, "color");
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "color");
+    let value;
+    if(conn) {
+      value = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      value = this.inputs.color.default;
+    }
+    ctx.outputs.baseColor = value;
     return {out: ctx.outputs.baseColor};
   }
 }
@@ -198,7 +232,6 @@ export class EmissiveOutputNode extends ShaderNode {
 
   build(_, __, ctx) {
     ctx.outputs.emissive = ctx.resolve(this, "color");
-    ctx.flags.usesLighting = false; // emissive bypass
     return {out: ctx.outputs.emissive};
   }
 }
@@ -223,8 +256,85 @@ export class NormalOutputNode extends ShaderNode {
 
   build(_, __, ctx) {
     ctx.outputs.normal = ctx.resolve(this, "normal");
-    ctx.flags.overridesNormal = true;
     return {out: ctx.outputs.normal};
+  }
+}
+
+// sTANDARD SOME STUFF ARE PREDEFINED ALREADY IN ADAPTER
+export class LightShadowNode extends ShaderNode {
+  constructor() {
+    super("LightShadowNode");
+    this.inputs = {intensity: {default: "1"}};
+  }
+
+  build(_, __, ctx) {
+    // Generate the light calculation code as a string
+    const lightCalcCode = `
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+    let materialData = getPBRMaterial(input.uv);
+    var lightContribution = vec3f(0.0);
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let bias = spotlights[i].shadowBias;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        lightContribution += contrib * visibility;
+    }`;
+    
+    ctx.locals.push(lightCalcCode);
+    
+    // Return the variable name that downstream nodes can use
+    return {
+      out: "lightContribution",
+      type: "vec3f"
+    };
+  }
+}
+
+// export class LightToColorNode extends ShaderNode {
+//   constructor() {
+//     super("LightToColor");
+//     this.inputs = {
+//       light: {default: "vec3f(1.0)"}
+//     };
+//   }
+
+//   build(pin, value, ctx) {
+//     // Use the value parameter if provided, otherwise resolve
+//     const l = value !== undefined ? value : ctx.resolve(this, "light");
+//     return {
+//       out: `vec4f(${l}, 1.0)`,
+//       type: "vec4f"
+//     };
+//   }
+// }
+export class LightToColorNode extends ShaderNode {
+  constructor() {
+    super("LightToColor");
+    this.inputs = {
+      light: {default: "vec3f(1.0)"}
+    };
+  }
+
+  build(pin, value, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "light");
+    let l;
+    if(conn) {
+      l = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      l = this.inputs.light.default;
+    }
+    // Use ctx.temp() to create a temporary variable
+    const result = ctx.temp("vec4f", `vec4f(${l}, 1.0)`);
+    return {
+      out: result,
+      type: "vec4f"
+    };
   }
 }
 
@@ -242,8 +352,16 @@ export class UVNode extends ShaderNode {
 }
 
 export class TimeNode extends ShaderNode {
-  constructor() {super("Time");}
-  compute() {return "scene.time";}
+  constructor() {
+    super("Time");
+  }
+  
+  build(_, __, ctx) {
+    return {
+      out: "scene.time",
+      type: "f32"
+    };
+  }
 }
 
 export class InlineFunctionNode extends ShaderNode {
@@ -256,11 +374,20 @@ export class InlineFunctionNode extends ShaderNode {
       b: {default: "globals.time"}
     };
   }
-  compute(_, __, ctx) {
+  
+  build(_, __, ctx) {
     ctx.registerFunction(this.fnName, this.code);
-    const a = ctx.resolve(this, "a");
-    const b = ctx.resolve(this, "b");
-    return `${this.fnName}(${a}, ${b})`;
+    
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    
+    return {
+      out: ctx.temp("vec4f", `${this.fnName}(${a}, ${b})`),
+      type: "vec4f"  // Adjust type based on your function's actual return type
+    };
   }
 }
 
@@ -271,7 +398,14 @@ export class TextureSamplerNode extends ShaderNode {
     this.inputs = {uv: {default: "input.uv"}};
   }
   build(_, __, ctx) {
-    const uv = ctx.resolve(this, "uv");
+    const conn = ctx.shaderGraph.getInput(this, "uv");
+    let uv;
+    if(conn) {
+      uv = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      uv = this.inputs.uv.default;
+    }
+    
     return {
       out: ctx.temp("vec4f", `textureSample(meshTexture, meshSampler, ${uv})`),
       type: "vec4f"
@@ -288,10 +422,26 @@ export class MultiplyColorNode extends ShaderNode {
     };
   }
   build(_, __, ctx) {
-    const a = ctx.resolve(this, "a");
-    const b = ctx.resolve(this, "b");
+    // Resolve each input properly
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    
+    let a, b;
+    
+    if(connA) {
+      a = ctx.resolve(connA.fromNode, connA.fromPin);
+    } else {
+      a = this.inputs.a.default;
+    }
+    
+    if(connB) {
+      b = ctx.resolve(connB.fromNode, connB.fromPin);
+    } else {
+      b = this.inputs.b.default;
+    }
+    
     const t = ctx.temp("vec4f", `${a} * ${b}`);
-    return {out: t, type: "f32"};
+    return {out: t, type: "vec4f"};
   }
 }
 
@@ -306,9 +456,14 @@ export class ClampNode extends ShaderNode {
   }
 
   build(_, __, ctx) {
-    const x = ctx.resolve(this, "x");
-    const min = ctx.resolve(this, "min");
-    const max = ctx.resolve(this, "max");
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const connMin = ctx.shaderGraph.getInput(this, "min");
+    const connMax = ctx.shaderGraph.getInput(this, "max");
+    
+    const x = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    const min = connMin ? ctx.resolve(connMin.fromNode, connMin.fromPin) : this.inputs.min.default;
+    const max = connMax ? ctx.resolve(connMax.fromNode, connMax.fromPin) : this.inputs.max.default;
+    
     return {
       out: ctx.temp("f32", `clamp(${x}, ${min}, ${max})`),
       type: "f32"
@@ -316,18 +471,22 @@ export class ClampNode extends ShaderNode {
   }
 }
 
-
 export class GrayscaleNode extends ShaderNode {
   constructor() {
     super("Grayscale");
     this.inputs = {color: {default: "vec4(1.0)"}};
   }
-  compute(_, __, ctx) {
-    const c = ctx.resolve(this, "color");
-    return `vec4(vec3(dot(${c}.rgb,vec3(0.299,0.587,0.114))),${c}.a)`;
+  
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "color");
+    const c = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.color.default;
+    
+    return {
+      out: ctx.temp("vec4f", `vec4(vec3(dot(${c}.rgb,vec3(0.299,0.587,0.114))),${c}.a)`),
+      type: "vec4f"
+    };
   }
 }
-
 export class ContrastNode extends ShaderNode {
   constructor() {
     super("Contrast");
@@ -336,12 +495,21 @@ export class ContrastNode extends ShaderNode {
       contrast: {default: "1.0"}
     };
   }
-  compute(_, __, ctx) {
-    const c = ctx.resolve(this, "color");
-    const k = ctx.resolve(this, "contrast");
-    return `vec4(((${c}.rgb-0.5)*${k}+0.5),${c}.a)`;
+  
+  build(_, __, ctx) {
+    const connColor = ctx.shaderGraph.getInput(this, "color");
+    const connContrast = ctx.shaderGraph.getInput(this, "contrast");
+    
+    const c = connColor ? ctx.resolve(connColor.fromNode, connColor.fromPin) : this.inputs.color.default;
+    const k = connContrast ? ctx.resolve(connContrast.fromNode, connContrast.fromPin) : this.inputs.contrast.default;
+    
+    return {
+      out: ctx.temp("vec4f", `vec4(((${c}.rgb-0.5)*${k}+0.5),${c}.a)`),
+      type: "vec4f"
+    };
   }
 }
+
 
 class ConnectionLayer {
   constructor(svg, shaderGraph) {
@@ -446,7 +614,15 @@ export function openFragmentShaderEditor(id = "fragShader") {
   const btn = (txt, fn) => {
     const b = document.createElement("button");
     b.textContent = txt;
-    b.style.cssText = "width:100%;margin:4px 0";
+
+    b.style.cssText = "width:100%;margin:4px 0;";
+
+    if(txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
+
+    b.classList.add("btn");
+    b.classList.add("btnLeftBox");
+
+
     b.onclick = fn;
     menu.appendChild(b);
   };
@@ -454,6 +630,8 @@ export function openFragmentShaderEditor(id = "fragShader") {
   /* GRAPH AREA */
   const area = document.createElement("div");
   area.style.cssText = "flex:1;position:relative";
+  area.classList.add('fancy-grid-bg');
+  area.classList.add('dark');
 
   let pan = {active: false, ox: 0, oy: 0};
   area.addEventListener("pointerdown", e => {
@@ -696,12 +874,8 @@ svg path {
         }
       });
 
-      // remove node DOM
       sel.remove();
-
-      // remove from shaderGraph.nodes
       shaderGraph.nodes = shaderGraph.nodes.filter(n => n !== node);
-
       // ??????????????
       shaderGraph.connectionLayer.redrawConnection();
     }
@@ -715,20 +889,18 @@ svg path {
   btn("Add Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
   btn("Add BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
   btn("Add EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+  btn("Add LightShadowNode", () => addNode(new LightShadowNode()));
+  btn("Add LightToColorNode", () => addNode(new LightToColorNode()));
+
   btn("Add AlphaOutputNode", () => addNode(new AlphaOutputNode()));
   btn("Add NormalOutputNode", () => addNode(new NormalOutputNode()));
 
-
   btn("Compile", () => {
-    //
-    console.log(shaderGraph.compile());
     let r = shaderGraph.compile();
-    const graphGenShaderWGSL = graphAdapter(r);
-    console.log(graphGenShaderWGSL);
-
-    // hard code
-    app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL)
-
+    const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+    console.log("test compile ", graphGenShaderWGSL)
+    // hard code THIS IS OK FOR NOW LEAVE IT !!
+    app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL);
   });
 
   btn("Save Graph", () => saveGraph(shaderGraph));
@@ -736,7 +908,7 @@ svg path {
 
   loadGraph("fragShaderGraph", shaderGraph, addNode);
   console.log(shaderGraph.nodes);
-  if(shaderGraph.nodes.length == 0) addNode(new BaseColorOutputNode(), 500, 200);
+  if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   return shaderGraph;
 }
 
@@ -761,7 +933,6 @@ function serializeGraph(shaderGraph) {
   });
 }
 
-
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
   localStorage.setItem(key, serializeGraph(shaderGraph));
   console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE);
@@ -774,7 +945,9 @@ function loadGraph(key, shaderGraph, addNodeUI) {
   if(!data) return;
   const map = {};
   data.nodes.forEach(node => {
+    const saveId = node.id;
     switch(node.type) {
+      case "FragmentOutput": node = new FragmentOutputNode(); break;
       case "InlineFunction": node = new InlineFunctionNode(node.fnName, node.code); break;
       case "TextureSampler": node = new TextureSamplerNode(node.name); break;
       case "MultiplyColor": node = new MultiplyColorNode(); break;
@@ -785,22 +958,29 @@ function loadGraph(key, shaderGraph, addNodeUI) {
       case "EmissiveOutputNode": node = new EmissiveOutputNode(); break;
       case "AlphaOutputNode": node = new AlphaOutputNode(); break;
       case "NormalOutputNode": node = new NormalOutputNode(); break;
+      case "LightShadowNode": node = new LightShadowNode(); break;
+      case "LightToColor": node = new LightToColorNode(); break;
       case "UV": node = new UVNode(); break;
     }
-    console.log("loaded : " + node.id)
+    node.id = saveId;
+    console.log("Loaded: " + node)
     map[node.id] = node;
     addNodeUI(node, node.x, node.y);
   });
-  data.connections.forEach(c => {
+  setTimeout(() => data.connections.forEach(c => {
     const fromNode = map[c.from];
     const toNode = map[c.to];
     const fromPin = c.fromPin;
     const toPin = c.toPin;
+    if(!fromNode || !toNode) {
+      console.warn("Skipping connection due to missing node", c);
+      return;
+    }
     shaderGraph.connect(fromNode, fromPin, toNode, toPin);
     const path = shaderGraph.connectionLayer.path();
     path.dataset.from = `${fromNode.id}:${fromPin}`;
     path.dataset.to = `${toNode.id}:${toPin}`;
     shaderGraph.connectionLayer.svg.appendChild(path);
     shaderGraph.connectionLayer.redrawAll(path);
-  });
+  }), 100);
 }

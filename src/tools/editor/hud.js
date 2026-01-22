@@ -971,7 +971,7 @@ class SceneObjectProperty {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
       } else if(propName == "useScale") {
-        this.propName.innerHTML = this.readBool(currSceneObj, propName);
+        this.propName.innerHTML = `<div style="display:flex;" >useScale  + ${this.readBool(currSceneObj, propName)} </div>`;
       } else if(propName == "texturesPaths") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
@@ -1087,12 +1087,12 @@ class SceneObjectProperty {
     }
   }
 
-
-readBool(currSceneObj, rootKey) {
-  return `
+  readBool(currSceneObj, rootKey) {
+    return `
     <input type="checkbox"
       class="inputEditor"
       name="${rootKey}"
+      ${currSceneObj[rootKey] == true ? "checked" : ""}
       onchange="
         console.log(this.checked, 'checkbox change fired');
         document.dispatchEvent(
@@ -1108,7 +1108,7 @@ readBool(currSceneObj, rootKey) {
       "
     />
   `;
-}
+  }
 
   exploreSubObject(subobj, rootKey, currSceneObj) {
     let a = []; let __ = [];
