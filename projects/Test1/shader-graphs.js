@@ -13,10 +13,22 @@ export default [
   },
   {
     "name": "MyShader123",
-    "content": "{\"nodes\":[],\"connections\":[]}"
+    "content": "{\"nodes\":[{\"id\":\"N0\",\"type\":\"FragmentOutput\",\"x\":465,\"y\":471,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}},{\"id\":\"N1\",\"type\":\"Multiply\",\"x\":45,\"y\":351,\"inputs\":{\"a\":{\"default\":\"1.0\"},\"b\":{\"default\":\"1.0\"}}}],\"connections\":[{\"from\":\"N1\",\"fromPin\":\"out\",\"to\":\"N0\",\"toPin\":\"color\"}]}"
   },
   {
     "name": "MyShader1234",
+    "content": "{\"nodes\":[],\"connections\":[]}"
+  },
+  {
+    "name": "NIK",
+    "content": "{\"nodes\":[],\"connections\":[]}"
+  },
+  {
+    "name": "NIK1",
+    "content": "{\"nodes\":[{\"id\":\"N0\",\"type\":\"FragmentOutput\",\"x\":628,\"y\":532,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}},{\"id\":\"N1\",\"type\":\"Contrast\",\"x\":80,\"y\":215,\"inputs\":{\"color\":{\"default\":\"vec4(1.0)\"},\"contrast\":{\"default\":\"1.0\"}}}],\"connections\":[{\"from\":\"N1\",\"fromPin\":\"out\",\"to\":\"N0\",\"toPin\":\"color\"}]}"
+  },
+  {
+    "name": "NIK3",
     "content": "{\"nodes\":[],\"connections\":[]}"
   }
 ];

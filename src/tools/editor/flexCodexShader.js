@@ -72,9 +72,9 @@ export class FragmentShaderGraph {
     if(this.connectionLayer) {
       this.connectionLayer.svg.innerHTML = '';
     }
-    const container = document.getElementById(this.id);
+    const container = document.getElementsByClassName("fancy-grid-bg dark");
     if(container) {
-      const nodeElements = container.querySelectorAll('.node');
+      const nodeElements = container[0].querySelectorAll('.nodeShader');
       nodeElements.forEach(el => el.remove());
     }
     this.connectionLayer.redrawAll();
@@ -1653,6 +1653,7 @@ svg path {
     }
   });
 
+  btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
   btn("CameraPos", () => addNode(new CameraPosNode()));
   btn("Time", () => addNode(new TimeNode()));
   btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
@@ -1699,10 +1700,9 @@ svg path {
   btn("SplitVec4", () => addNode(new SplitVec4Node()));
   btn("CombineVec4", () => addNode(new CombineVec4Node()));
 
-
   btn("Create New", () => {
     shaderGraph.clear();
-    let nameOfGraphMaterital = prompt("You must define name of shader graph:", "MyShader1");
+    let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
     // console.log("test create new ", nameOfGraphMaterital);
     if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
       const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
@@ -1719,18 +1719,10 @@ svg path {
   });
 
   btn("DELETE", () => {
-    // console.log("test create new ", nameOfGraphMaterital);
-    const exist = loadGraph(shaderGraph.id, shaderGraph, addNode);
-    if(exist == false) {
-      shaderGraph.id = nameOfGraphMaterital;
-      // saveGraph(shaderGraph, nameOfGraphMaterital);
-      console.log("ALREADY NOT EXIST SHADER:" + exist);
-      return;
-    } else {
-      // shaderGraph.clear();
-      console.log("ALREADY EXIST SHADER, please use diff name" + exist);
-      return;
-    }
+    console.log("test DELETE", shaderGraph.id);
+    // const exist = loadGraph(shaderGraph.id, shaderGraph, addNode);
+    // shaderGraph.id
+    console.log("DELET SHADER:");
   });
 
   btn("Compile", () => {
@@ -1745,19 +1737,23 @@ svg path {
     saveGraph(shaderGraph, shaderGraph.id);
   });
 
-  btn("Load Graph", () => loadGraph("fragShaderGraph", shaderGraph, addNode));
+  btn("Load Graph", () => {
+    shaderGraph.clear();
+    let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
+    const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+    if(exist === false) {
+      alert("⚠️Graph no exist!⚠️");
+    }
+  });
 
-  let nameOfGraphMaterital = prompt("You must define name of shader graph:", "MyShader1");
+  //
+  let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
   if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
     shaderGraph.id = nameOfGraphMaterital;
     const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-    console.log("ON INIT :::::::::::::::" + exist);
     if(exist == false) {
       saveGraph(shaderGraph, nameOfGraphMaterital);
       console.log("SAVED NEW SHADER::::" + exist);
-    } else {
-      console.log("LOAD EXIST SHADER::::" + exist);
-      loadGraph(nameOfGraphMaterital, shaderGraph);
     }
   }
   if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
