@@ -194,6 +194,16 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('save-shader-graph', (e) => {
+      console.info('%cSave shader-graph <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "save-shader-graph",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
     document.addEventListener('web.editor.addGlb', (e) => {
       console.log("%c[web.editor.addGlb]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {

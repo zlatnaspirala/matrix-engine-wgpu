@@ -340,7 +340,7 @@ export class TimeNode extends ShaderNode {
   constructor() {
     super("Time");
   }
-  
+
   build(_, __, ctx) {
     return {
       out: "scene.time",
@@ -1157,7 +1157,7 @@ export class GlobalAmbientNode extends ShaderNode {
   constructor() {
     super("GlobalAmbient");
   }
-  
+
   build(_, __, ctx) {
     return {
       out: "scene.globalAmbient",
@@ -1662,7 +1662,7 @@ svg path {
   btn("Compile", () => {
     let r = shaderGraph.compile();
     const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-    console.log("test compile ", graphGenShaderWGSL)
+    console.log("test compile ", graphGenShaderWGSL);
     // hard code THIS IS OK FOR NOW LEAVE IT !!
     app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL);
   });
@@ -1701,7 +1701,16 @@ function serializeGraph(shaderGraph) {
 }
 
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
-  localStorage.setItem(key, serializeGraph(shaderGraph));
+  const content = serializeGraph(shaderGraph);
+  localStorage.setItem(key, content);
+
+  document.dispatchEvent(new CustomEvent('save-shader-graph', {
+    detail: {
+      name: key,
+      content: content
+    }
+  }));
+
   console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE);
 }
 
@@ -1790,3 +1799,70 @@ function loadGraph(key, shaderGraph, addNodeUI) {
     shaderGraph.connectionLayer.redrawAll(path);
   }), 100);
 }
+
+// Manager
+export class ShaderGraphManager {
+  constructor() {
+    this.graphs = [];
+    this.currentGraphName = null;
+  }
+
+  add(name, graphData = null) {
+    if(this.graphs.find(g => g.name === name)) {
+      throw new Error(`Graph "${name}" already exists`);
+    }
+
+    const graph = {
+      name: name,
+      data: graphData
+    };
+
+    this.graphs.push(graph);
+    this.currentGraphName = name;
+
+    console.log(`%cGraph "${name}" added to container`, "color: #4CAF50; font-weight: bold");
+    return this;
+  }
+
+  load(name) {
+    console.log(`%cLoad Graph "${name}" loaded into editor`, "color: #2196F3; font-weight: bold");
+    const graph = this.graphs.find(g => g.name === name);
+
+    if(!graph) {
+      throw new Error(`Graph "${name}" not found in container`);
+    }
+
+    // loadGraph(name, graph.data);
+    this.currentGraphName = name;
+
+    console.log(`%cGraph "${name}" loaded into editor`, "color: #2196F3; font-weight: bold");
+    return this;
+  }
+
+  // Delete graph from container
+  delete(name) {
+    const index = this.graphs.findIndex(g => g.name === name);
+    if(index === -1) {
+      throw new Error(`Graph "${name}" not found`);
+    }
+    this.graphs.splice(index, 1);
+
+    if(this.currentGraphName === name) {
+      this.currentGraphName = null;
+      // this.editor.clear();
+    }
+
+    console.log(`%cGraph "${name}" deleted from container`, "color: #F44336; font-weight: bold");
+    return this;
+  }
+
+  getCurrent() {return this.currentGraphName}
+  getAll() {return this.graphs}
+
+  loadFromFile(graphsArray) {
+    this.graphs = graphsArray;
+    console.log(`%cLoaded ${graphsArray.length} graphs from file`, "color: #9C27B0; font-weight: bold");
+    return this;
+  }
+}
+

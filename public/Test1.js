@@ -16092,6 +16092,15 @@ var MEEditorClient = class {
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
+    document.addEventListener("save-shader-graph", (e) => {
+      console.info("%cSave shader-graph <signal>", LOG_FUNNY_ARCADE2);
+      let o2 = {
+        action: "save-shader-graph",
+        graphData: e.detail
+      };
+      o2 = JSON.stringify(o2);
+      this.ws.send(o2);
+    });
     document.addEventListener("web.editor.addGlb", (e) => {
       console.log("%c[web.editor.addGlb]: " + e.detail, LOG_FUNNY_ARCADE2);
       let o2 = {
@@ -22558,7 +22567,14 @@ function serializeGraph(shaderGraph) {
   });
 }
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
-  localStorage.setItem(key, serializeGraph(shaderGraph));
+  const content = serializeGraph(shaderGraph);
+  localStorage.setItem(key, content);
+  document.dispatchEvent(new CustomEvent("save-shader-graph", {
+    detail: {
+      name: key,
+      content
+    }
+  }));
   console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
 }
 function loadGraph(key, shaderGraph, addNodeUI) {

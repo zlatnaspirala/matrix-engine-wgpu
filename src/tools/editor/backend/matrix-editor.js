@@ -11,6 +11,7 @@ import path from "path";
 import {WebSocketServer} from "ws";
 import {DEFAULT_GRAPH_JS} from "./graph.js";
 import {DEFAUL_METHODS} from "./methods.js";
+import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
@@ -24,13 +25,12 @@ const watchers = new Map();
 
 const wss = new WebSocketServer({port: 1243});
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
-console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
-console.log("\x1b[93m%s\x1b[0m", "- Start you new project                 -");
-console.log("\x1b[93m%s\x1b[0m", "- Load project                          -");
-console.log("\x1b[93m%s\x1b[0m", "- Add Cube [mesh]                       -");
-console.log("\x1b[93m%s\x1b[0m", "- Add Obj  [mesh]                       -");
-console.log("\x1b[93m%s\x1b[0m", "- Add Glb  [skinned-mesh]               -");
-console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+console.log("\x1b[93m%s\x1b[0m", "- Start you new project                  -");
+console.log("\x1b[93m%s\x1b[0m", "- Load project                           -");
+console.log("\x1b[93m%s\x1b[0m", "- When you create a project next time    -");
+console.log("\x1b[93m%s\x1b[0m", "- you can go directly to /MyProject.html -");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
@@ -47,6 +47,14 @@ async function buildAllProjectsOnStartup() {
       await fs.writeFile(graphFile, DEFAULT_GRAPH_JS, "utf8");
       console.log(`🧠 Created default graph.js for ${projectName}`);
     }
+    // Shader graph
+    const shaderGraphFile = path.join(PROJECTS_DIR, projectName, "shader-graph.js");
+    try {
+      await fs.access(shaderGraphFile);
+    } catch {
+      await fs.writeFile(shaderGraphFile, DEFAULT_SHADER_GRAPH_JS, "utf8");
+      console.log(`🧠 Created default shader graph.js for ${projectName}`);
+    }
     const mname = projectName + "_methods.js";
     const methodsFile = path.join(PUBLIC_DIR, mname);
     try {
@@ -55,8 +63,6 @@ async function buildAllProjectsOnStartup() {
       await fs.writeFile(methodsFile, DEFAUL_METHODS, "utf8");
       console.log(`🧠 Created default methods.js for ${projectName}`);
     }
-    //
-    //
     try {
       await fs.access(entry);
     } catch {
@@ -170,6 +176,8 @@ wss.on("connection", ws => {
         saveMethods(msg, ws);
       } else if(msg.action == "save-graph") {
         saveGraph(msg, ws);
+      } else if(msg.action == "save-shader-graph") {
+        saveShaderGraph(msg, ws);
       } else if(msg.action == "delete-obj") {
         deleteSceneObject(msg, ws);
       } else if(msg.action == "updatePos") {
@@ -517,6 +525,40 @@ async function saveGraph(msg, ws) {
     }));
     console.log("Saved graph.js");
   });
+}
+
+async function saveShaderGraph(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, {recursive: true});
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    // Extract array from "export default [...];"
+    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    if(match) {
+      graphs = JSON.parse(match[1]);
+    }
+  } catch(err) {
+    console.log("No existing shader-graphs.js, creating new");
+  }
+  // const newGraph = JSON.parse(msg.graphData);
+  const newGraph = msg.graphData;
+  // Find and update, or add new
+  const existingIndex = graphs.findIndex(g => g.name === newGraph.name);
+  if(existingIndex !== -1) {
+    graphs[existingIndex] = newGraph;
+  } else {
+    graphs.push(newGraph);
+  }
+  const content = `export default ${JSON.stringify(graphs, null, 2)};\n`;
+  await fs.writeFile(file, content, "utf8");
+  ws.send(JSON.stringify({
+    ok: true,
+    methodSaves: 'OK',
+    graphName: newGraph.name
+  }));
+  console.log(`Saved shader graph: ${newGraph.name}`);
 }
 
 function getNameFromPath(p) {
