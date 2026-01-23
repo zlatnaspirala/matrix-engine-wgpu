@@ -48,7 +48,7 @@ async function buildAllProjectsOnStartup() {
       console.log(`🧠 Created default graph.js for ${projectName}`);
     }
     // Shader graph
-    const shaderGraphFile = path.join(PROJECTS_DIR, projectName, "shader-graph.js");
+    const shaderGraphFile = path.join(PROJECTS_DIR, projectName, "shader-graphs.js");
     try {
       await fs.access(shaderGraphFile);
     } catch {

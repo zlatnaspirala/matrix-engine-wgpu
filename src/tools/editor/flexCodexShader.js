@@ -1703,14 +1703,12 @@ function serializeGraph(shaderGraph) {
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
   const content = serializeGraph(shaderGraph);
   localStorage.setItem(key, content);
-
   document.dispatchEvent(new CustomEvent('save-shader-graph', {
     detail: {
       name: key,
       content: content
     }
   }));
-
   console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE);
 }
 
