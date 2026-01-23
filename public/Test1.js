@@ -15980,6 +15980,10 @@ var MEEditorClient = class {
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
+          }
+          if (data.methodLoads && data.ok == true) {
+            mb.show("Graph loads \u2705", data);
+            dispatchEvent("on-graph-load", { detail: data.graph });
           } else {
             mb.show("From editorX:" + data.ok);
           }
@@ -16097,6 +16101,15 @@ var MEEditorClient = class {
       let o2 = {
         action: "save-shader-graph",
         graphData: e.detail
+      };
+      o2 = JSON.stringify(o2);
+      this.ws.send(o2);
+    });
+    document.addEventListener("load-shader-graph", (e) => {
+      console.info("%cLoad shader-graph <signal>", LOG_FUNNY_ARCADE2);
+      let o2 = {
+        action: "load-shader-graph",
+        name: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -22657,6 +22670,13 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
 function loadGraph(key, shaderGraph, addNodeUI) {
   shaderGraph.nodes.length = 0;
   shaderGraph.connections.length = 0;
+  document.addEventListener("on-graph-load", (e) => {
+    console.log("on-graph-load: " + e);
+  });
+  document.dispatchEvent(new CustomEvent("load-shader-graph", {
+    detail: { name: key }
+  }));
+  return;
   const data = JSON.parse(localStorage.getItem(key));
   if (!data) return false;
   const map = {};

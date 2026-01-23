@@ -66,6 +66,9 @@ export class MEEditorClient {
         } else {
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");
+          } if(data.methodLoads && data.ok == true) {
+            mb.show("Graph loads ✅", data);
+            dispatchEvent('on-graph-load', {detail: data.graph})
           } else {
             mb.show("From editorX:" + data.ok);
           }
@@ -199,6 +202,16 @@ export class MEEditorClient {
       let o = {
         action: "save-shader-graph",
         graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('load-shader-graph', (e) => {
+      console.info('%cLoad shader-graph <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "load-shader-graph",
+        name: e.detail
       };
       o = JSON.stringify(o);
       this.ws.send(o);

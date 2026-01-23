@@ -1746,7 +1746,7 @@ svg path {
     }
   });
 
-  //
+  // Init
   let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
   if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
     shaderGraph.id = nameOfGraphMaterital;
@@ -1799,6 +1799,19 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
 function loadGraph(key, shaderGraph, addNodeUI) {
   shaderGraph.nodes.length = 0;
   shaderGraph.connections.length = 0;
+  // Editor is not aware where is project file 
+  // It is in generated file&folder event projectName is defined
+  // Its not good to write import for project file here in middle of engine core...
+
+  document.addEventListener('on-graph-load', (e)=>{
+    console.log("on-graph-load: " + e)
+  })
+  document.dispatchEvent(new CustomEvent('load-shader-graph', {
+    detail: {name: key}
+  }));
+
+
+  return;
   const data = JSON.parse(localStorage.getItem(key));
   if(!data) return false;
   const map = {};

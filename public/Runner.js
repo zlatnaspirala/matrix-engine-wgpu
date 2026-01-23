@@ -15980,6 +15980,10 @@ var MEEditorClient = class {
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
+          }
+          if (data.methodLoads && data.ok == true) {
+            mb.show("Graph loads \u2705", data);
+            dispatchEvent("on-graph-load", { detail: data.graph });
           } else {
             mb.show("From editorX:" + data.ok);
           }
@@ -16097,6 +16101,15 @@ var MEEditorClient = class {
       let o2 = {
         action: "save-shader-graph",
         graphData: e.detail
+      };
+      o2 = JSON.stringify(o2);
+      this.ws.send(o2);
+    });
+    document.addEventListener("load-shader-graph", (e) => {
+      console.info("%cLoad shader-graph <signal>", LOG_FUNNY_ARCADE2);
+      let o2 = {
+        action: "load-shader-graph",
+        name: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -21347,6 +21360,22 @@ var FragmentShaderGraph = class {
     });
     el2.addEventListener("pointerup", () => drag = false);
   }
+  clear() {
+    this.nodes = [];
+    this.connections = [];
+    this.spawnX = 80;
+    this.spawnY = 80;
+    this.spawnCol = 0;
+    if (this.connectionLayer) {
+      this.connectionLayer.svg.innerHTML = "";
+    }
+    const container = document.getElementsByClassName("fancy-grid-bg dark");
+    if (container) {
+      const nodeElements = container[0].querySelectorAll(".nodeShader");
+      nodeElements.forEach((el2) => el2.remove());
+    }
+    this.connectionLayer.redrawAll();
+  }
 };
 var CompileContext = class {
   constructor(shaderGraph) {
@@ -22108,6 +22137,30 @@ var GlobalAmbientNode = class extends ShaderNode {
     };
   }
 };
+var InlineWGSLNode = class {
+  constructor(code = "return vec4f(1.0, 0.0, 0.0, 1.0);") {
+    this.id = nodeId++;
+    this.type = "InlineWGSL";
+    this.code = code;
+    this.label = "Inline WGSL";
+    this.inputs = {};
+    this.outputs = {
+      result: { type: "vec4f" }
+    };
+  }
+  build(pin, value, ctx) {
+    if (pin === "result") {
+      const fnName = `inlineWGSL_${this.id}`;
+      const fnCode = `
+fn ${fnName}() -> vec4f {
+  ${this.code}
+}`;
+      ctx.registerFunction(fnName, fnCode);
+      const out = ctx.temp("vec4f", `${fnName}()`);
+      return { out };
+    }
+  }
+};
 var ConnectionLayer = class {
   constructor(svg, shaderGraph) {
     this.svg = svg;
@@ -22200,6 +22253,7 @@ function openFragmentShaderEditor(id2 = "fragShader") {
     b.textContent = txt;
     b.style.cssText = "width:100%;margin:4px 0;";
     if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
+    if (txt == "Create New") b.style.cssText += "color: lime;";
     b.classList.add("btn");
     b.classList.add("btnLeftBox");
     b.onclick = fn;
@@ -22489,6 +22543,7 @@ svg path {
       shaderGraph.connectionLayer.redrawConnection();
     }
   });
+  btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
   btn("CameraPos", () => addNode(new CameraPosNode()));
   btn("Time", () => addNode(new TimeNode()));
   btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
@@ -22527,6 +22582,25 @@ svg path {
   btn("ViewDirection", () => addNode(new ViewDirectionNode()));
   btn("SplitVec4", () => addNode(new SplitVec4Node()));
   btn("CombineVec4", () => addNode(new CombineVec4Node()));
+  btn("Create New", () => {
+    shaderGraph.clear();
+    let nameOfGraphMaterital2 = prompt("You must define a name for shader graph:", "MyShader1");
+    if (nameOfGraphMaterital2 && nameOfGraphMaterital2 !== "") {
+      const exist = loadGraph(nameOfGraphMaterital2, shaderGraph, addNode);
+      if (exist == false) {
+        shaderGraph.id = nameOfGraphMaterital2;
+        saveGraph(shaderGraph, nameOfGraphMaterital2);
+        console.log("SAVED NEW SHADER::::" + exist);
+      } else {
+        console.log("ALREADY EXIST SHADER, please use diff name" + exist);
+        return;
+      }
+    }
+  });
+  btn("DELETE", () => {
+    console.log("test DELETE", shaderGraph.id);
+    console.log("DELET SHADER:");
+  });
   btn("Compile", () => {
     let r2 = shaderGraph.compile();
     const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
@@ -22536,18 +22610,21 @@ svg path {
   btn("Save Graph", () => {
     saveGraph(shaderGraph, shaderGraph.id);
   });
-  btn("Load Graph", () => loadGraph("fragShaderGraph", shaderGraph, addNode));
-  let nameOfGraphMaterital = prompt("You must define name of shader graph:", "MyShader1");
+  btn("Load Graph", () => {
+    shaderGraph.clear();
+    let nameOfGraphMaterital2 = prompt("Choose Name:", "MyShader1");
+    const exist = loadGraph(nameOfGraphMaterital2, shaderGraph, addNode);
+    if (exist === false) {
+      alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
+    }
+  });
+  let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
   if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
     shaderGraph.id = nameOfGraphMaterital;
     const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-    console.log("ON INIT :::::::::::::::" + exist);
     if (exist == false) {
       saveGraph(shaderGraph, nameOfGraphMaterital);
       console.log("SAVED NEW SHADER::::" + exist);
-    } else {
-      console.log("LOAD EXIST SHADER::::" + exist);
-      loadGraph(nameOfGraphMaterital, shaderGraph);
     }
   }
   if (shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
@@ -22593,6 +22670,13 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
 function loadGraph(key, shaderGraph, addNodeUI) {
   shaderGraph.nodes.length = 0;
   shaderGraph.connections.length = 0;
+  document.addEventListener("on-graph-load", (e) => {
+    console.log("on-graph-load: " + e);
+  });
+  document.dispatchEvent(new CustomEvent("load-shader-graph", {
+    detail: { name: key }
+  }));
+  return;
   const data = JSON.parse(localStorage.getItem(key));
   if (!data) return false;
   const map = {};

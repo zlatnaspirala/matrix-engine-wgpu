@@ -178,6 +178,8 @@ wss.on("connection", ws => {
         saveGraph(msg, ws);
       } else if(msg.action == "save-shader-graph") {
         saveShaderGraph(msg, ws);
+      } else if(msg.action == "load-shader-graph") {
+        loadShaderGraph(msg, ws);
       } else if(msg.action == "delete-obj") {
         deleteSceneObject(msg, ws);
       } else if(msg.action == "updatePos") {
@@ -486,15 +488,7 @@ async function saveMethods(msg, ws) {
     "export default " +
     JSON.stringify(msg.methodsContainer, null, 2) +
     ";\n";
-  fs.writeFile(file, content, "utf8").then((e) => {
-    // ws.send(JSON.stringify({
-    //   ok: true,
-    //   methodSaves: 'OK'
-    // }));
-    console.log("Saved methods.js");
-  });
-  //
-
+  fs.writeFile(file, content, "utf8").then((e) => {console.log("Saved methods.js")});
   let name = PROJECT_NAME + "_methods.js"
   const finalPack = path.join(PUBLIC_DIR, name);
   const contentPublic =
@@ -502,14 +496,12 @@ async function saveMethods(msg, ws) {
     JSON.stringify(msg.methodsContainer, null, 2) +
     ";\n";
   fs.writeFile(finalPack, contentPublic, "utf8").then((e) => {
-    ws.send(JSON.stringify({
-      ok: true,
-      methodSaves: 'OK'
-    }));
+    ws.send(JSON.stringify({ok: true, methodSaves: 'OK'}));
     console.log("Saved methods.js");
   });
 }
 
+// FluxCodexVertex
 async function saveGraph(msg, ws) {
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
@@ -519,10 +511,7 @@ async function saveGraph(msg, ws) {
     msg.graphData +
     ";\n";
   fs.writeFile(file, content, "utf8").then((e) => {
-    ws.send(JSON.stringify({
-      ok: true,
-      methodSaves: 'OK'
-    }));
+    ws.send(JSON.stringify({ok: true, methodSaves: 'OK'}));
     console.log("Saved graph.js");
   });
 }
@@ -557,6 +546,37 @@ async function saveShaderGraph(msg, ws) {
     ok: true,
     methodSaves: 'OK',
     graphName: newGraph.name
+  }));
+  console.log(`Saved shader graph: ${newGraph.name}`);
+}
+
+async function loadShaderGraph(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, {recursive: true});
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    // Extract array from "export default [...];"
+    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    if(match) {
+      graphs = JSON.parse(match[1]);
+    }
+  } catch(err) {
+    console.log("No existing shader-graphs.js, creating new");
+  }
+  let newGraph;
+  // Find and update, or add new
+  const existingIndex = graphs.findIndex(g => g.name === msg.name);
+  if(existingIndex !== -1) {
+    newGraph = graphs[existingIndex];
+  } else {
+    newGraph = null;
+  }
+  ws.send(JSON.stringify({
+    ok: true,
+    methodLoads: 'OK',
+    graph: newGraph
   }));
   console.log(`Saved shader graph: ${newGraph.name}`);
 }
