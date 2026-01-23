@@ -22533,10 +22533,23 @@ svg path {
     console.log("test compile ", graphGenShaderWGSL);
     app.mainRenderBundle[0].changeMaterial("graph", graphGenShaderWGSL);
   });
-  btn("Save Graph", () => saveGraph(shaderGraph));
+  btn("Save Graph", () => {
+    saveGraph(shaderGraph, shaderGraph.id);
+  });
   btn("Load Graph", () => loadGraph("fragShaderGraph", shaderGraph, addNode));
-  loadGraph("fragShaderGraph", shaderGraph, addNode);
-  console.log(shaderGraph.nodes);
+  let nameOfGraphMaterital = prompt("You must define name of shader graph:", "MyShader1");
+  if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+    shaderGraph.id = nameOfGraphMaterital;
+    const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+    console.log("ON INIT :::::::::::::::" + exist);
+    if (exist == false) {
+      saveGraph(shaderGraph, nameOfGraphMaterital);
+      console.log("SAVED NEW SHADER::::" + exist);
+    } else {
+      console.log("LOAD EXIST SHADER::::" + exist);
+      loadGraph(nameOfGraphMaterital, shaderGraph);
+    }
+  }
   if (shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   return shaderGraph;
 }
@@ -22581,7 +22594,7 @@ function loadGraph(key, shaderGraph, addNodeUI) {
   shaderGraph.nodes.length = 0;
   shaderGraph.connections.length = 0;
   const data = JSON.parse(localStorage.getItem(key));
-  if (!data) return;
+  if (!data) return false;
   const map = {};
   data.nodes.forEach((node2) => {
     const saveId = node2.id;
@@ -22729,6 +22742,7 @@ function loadGraph(key, shaderGraph, addNodeUI) {
     shaderGraph.connectionLayer.svg.appendChild(path);
     shaderGraph.connectionLayer.redrawAll(path);
   }), 100);
+  return true;
 }
 
 // ../hud.js

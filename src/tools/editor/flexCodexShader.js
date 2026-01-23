@@ -62,6 +62,23 @@ export class FragmentShaderGraph {
     });
     el.addEventListener("pointerup", () => drag = false);
   }
+
+  clear() {
+    this.nodes = [];
+    this.connections = [];
+    this.spawnX = 80;
+    this.spawnY = 80;
+    this.spawnCol = 0;
+    if(this.connectionLayer) {
+      this.connectionLayer.svg.innerHTML = '';
+    }
+    const container = document.getElementById(this.id);
+    if(container) {
+      const nodeElements = container.querySelectorAll('.node');
+      nodeElements.forEach(el => el.remove());
+    }
+    this.connectionLayer.redrawAll();
+  }
 }
 
 class CompileContext {
@@ -496,10 +513,7 @@ export class ContrastNode extends ShaderNode {
   }
 }
 
-// ============================================
 // CONSTANT/LITERAL NODES
-// ============================================
-
 export class FloatNode extends ShaderNode {
   constructor(value = 1.0) {
     super("Float");
@@ -804,10 +818,6 @@ export class LerpNode extends ShaderNode {
     };
   }
 }
-
-// ============================================
-// TRIGONOMETRY NODES
-// ============================================
 
 export class SinNode extends ShaderNode {
   constructor() {
@@ -1166,6 +1176,35 @@ export class GlobalAmbientNode extends ShaderNode {
   }
 }
 
+export class InlineWGSLNode {
+  constructor(code = "return vec4f(1.0, 0.0, 0.0, 1.0);") {
+    this.id = nodeId++;
+    this.type = "InlineWGSL";
+    this.code = code;
+    this.label = "Inline WGSL";
+
+    this.inputs = {};
+    this.outputs = {
+      result: {type: "vec4f"}
+    };
+  }
+
+  build(pin, value, ctx) {
+    if(pin === "result") {
+      const fnName = `inlineWGSL_${this.id}`;
+
+      const fnCode = `
+fn ${fnName}() -> vec4f {
+  ${this.code}
+}`;
+
+      ctx.registerFunction(fnName, fnCode);
+      const out = ctx.temp("vec4f", `${fnName}()`);
+
+      return {out};
+    }
+  }
+}
 class ConnectionLayer {
   constructor(svg, shaderGraph) {
     this.svg = svg;
@@ -1273,6 +1312,7 @@ export function openFragmentShaderEditor(id = "fragShader") {
     b.style.cssText = "width:100%;margin:4px 0;";
 
     if(txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
+    if(txt == "Create New") b.style.cssText += "color: lime;";
 
     b.classList.add("btn");
     b.classList.add("btnLeftBox");
@@ -1659,6 +1699,40 @@ svg path {
   btn("SplitVec4", () => addNode(new SplitVec4Node()));
   btn("CombineVec4", () => addNode(new CombineVec4Node()));
 
+
+  btn("Create New", () => {
+    shaderGraph.clear();
+    let nameOfGraphMaterital = prompt("You must define name of shader graph:", "MyShader1");
+    // console.log("test create new ", nameOfGraphMaterital);
+    if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+      const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+      // console.log("create new test if exist :::::::::::::::" + exist);
+      if(exist == false) {
+        shaderGraph.id = nameOfGraphMaterital;
+        saveGraph(shaderGraph, nameOfGraphMaterital);
+        console.log("SAVED NEW SHADER::::" + exist);
+      } else {
+        console.log("ALREADY EXIST SHADER, please use diff name" + exist);
+        return;
+      }
+    }
+  });
+
+  btn("DELETE", () => {
+    // console.log("test create new ", nameOfGraphMaterital);
+    const exist = loadGraph(shaderGraph.id, shaderGraph, addNode);
+    if(exist == false) {
+      shaderGraph.id = nameOfGraphMaterital;
+      // saveGraph(shaderGraph, nameOfGraphMaterital);
+      console.log("ALREADY NOT EXIST SHADER:" + exist);
+      return;
+    } else {
+      // shaderGraph.clear();
+      console.log("ALREADY EXIST SHADER, please use diff name" + exist);
+      return;
+    }
+  });
+
   btn("Compile", () => {
     let r = shaderGraph.compile();
     const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
@@ -1667,11 +1741,25 @@ svg path {
     app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL);
   });
 
-  btn("Save Graph", () => saveGraph(shaderGraph));
+  btn("Save Graph", () => {
+    saveGraph(shaderGraph, shaderGraph.id);
+  });
+
   btn("Load Graph", () => loadGraph("fragShaderGraph", shaderGraph, addNode));
 
-  loadGraph("fragShaderGraph", shaderGraph, addNode);
-  console.log(shaderGraph.nodes);
+  let nameOfGraphMaterital = prompt("You must define name of shader graph:", "MyShader1");
+  if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+    shaderGraph.id = nameOfGraphMaterital;
+    const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+    console.log("ON INIT :::::::::::::::" + exist);
+    if(exist == false) {
+      saveGraph(shaderGraph, nameOfGraphMaterital);
+      console.log("SAVED NEW SHADER::::" + exist);
+    } else {
+      console.log("LOAD EXIST SHADER::::" + exist);
+      loadGraph(nameOfGraphMaterital, shaderGraph);
+    }
+  }
   if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   return shaderGraph;
 }
@@ -1716,7 +1804,7 @@ function loadGraph(key, shaderGraph, addNodeUI) {
   shaderGraph.nodes.length = 0;
   shaderGraph.connections.length = 0;
   const data = JSON.parse(localStorage.getItem(key));
-  if(!data) return;
+  if(!data) return false;
   const map = {};
   data.nodes.forEach(node => {
     const saveId = node.id;
@@ -1739,21 +1827,11 @@ function loadGraph(key, shaderGraph, addNodeUI) {
       case "LightShadowNode": node = new LightShadowNode(); break;
       case "LightToColor": node = new LightToColorNode(); break;
       case "UV": node = new UVNode(); break;
-      case "Float":
-        node = new FloatNode(node.value ?? 1.0);
-        break;
-      case "Vec2":
-        node = new Vec2Node(node.x ?? 0, node.y ?? 0);
-        break;
-      case "Vec3":
-        node = new Vec3Node(node.x ?? 0, node.y ?? 0, node.z ?? 0);
-        break;
-      case "Vec4":
-        node = new Vec4Node(node.x ?? 0, node.y ?? 0, node.z ?? 0, node.w ?? 1);
-        break;
-      case "Color":
-        node = new ColorNode(node.r ?? 1, node.g ?? 1, node.b ?? 1, node.a ?? 1);
-        break;
+      case "Float": node = new FloatNode(node.value ?? 1.0); break;
+      case "Vec2": node = new Vec2Node(node.x ?? 0, node.y ?? 0); break;
+      case "Vec3": node = new Vec3Node(node.x ?? 0, node.y ?? 0, node.z ?? 0); break;
+      case "Vec4": node = new Vec4Node(node.x ?? 0, node.y ?? 0, node.z ?? 0, node.w ?? 1); break;
+      case "Color": node = new ColorNode(node.r ?? 1, node.g ?? 1, node.b ?? 1, node.a ?? 1); break;
       case "Add": node = new AddNode(); break;
       case "Subtract": node = new SubtractNode(); break;
       case "Multiply": node = new MultiplyNode(); break;
@@ -1796,71 +1874,71 @@ function loadGraph(key, shaderGraph, addNodeUI) {
     shaderGraph.connectionLayer.svg.appendChild(path);
     shaderGraph.connectionLayer.redrawAll(path);
   }), 100);
+  return true;
 }
 
-// Manager
-export class ShaderGraphManager {
-  constructor() {
-    this.graphs = [];
-    this.currentGraphName = null;
-  }
+// // Manager
+// export class ShaderGraphManager {
+//   constructor() {
+//     this.graphs = [];
+//     this.currentGraphName = null;
+//   }
 
-  add(name, graphData = null) {
-    if(this.graphs.find(g => g.name === name)) {
-      throw new Error(`Graph "${name}" already exists`);
-    }
+//   add(name, graphData = null) {
+//     if(this.graphs.find(g => g.name === name)) {
+//       throw new Error(`Graph "${name}" already exists`);
+//     }
 
-    const graph = {
-      name: name,
-      data: graphData
-    };
+//     const graph = {
+//       name: name,
+//       data: graphData
+//     };
 
-    this.graphs.push(graph);
-    this.currentGraphName = name;
+//     this.graphs.push(graph);
+//     this.currentGraphName = name;
 
-    console.log(`%cGraph "${name}" added to container`, "color: #4CAF50; font-weight: bold");
-    return this;
-  }
+//     console.log(`%cGraph "${name}" added to container`, "color: #4CAF50; font-weight: bold");
+//     return this;
+//   }
 
-  load(name) {
-    console.log(`%cLoad Graph "${name}" loaded into editor`, "color: #2196F3; font-weight: bold");
-    const graph = this.graphs.find(g => g.name === name);
+//   load(name) {
+//     console.log(`%cLoad Graph "${name}" loaded into editor`, "color: #2196F3; font-weight: bold");
+//     const graph = this.graphs.find(g => g.name === name);
 
-    if(!graph) {
-      throw new Error(`Graph "${name}" not found in container`);
-    }
+//     if(!graph) {
+//       throw new Error(`Graph "${name}" not found in container`);
+//     }
 
-    // loadGraph(name, graph.data);
-    this.currentGraphName = name;
+//     // loadGraph(name, graph.data);
+//     this.currentGraphName = name;
 
-    console.log(`%cGraph "${name}" loaded into editor`, "color: #2196F3; font-weight: bold");
-    return this;
-  }
+//     console.log(`%cGraph "${name}" loaded into editor`, "color: #2196F3; font-weight: bold");
+//     return this;
+//   }
 
-  // Delete graph from container
-  delete(name) {
-    const index = this.graphs.findIndex(g => g.name === name);
-    if(index === -1) {
-      throw new Error(`Graph "${name}" not found`);
-    }
-    this.graphs.splice(index, 1);
+//   // Delete graph from container
+//   delete(name) {
+//     const index = this.graphs.findIndex(g => g.name === name);
+//     if(index === -1) {
+//       throw new Error(`Graph "${name}" not found`);
+//     }
+//     this.graphs.splice(index, 1);
 
-    if(this.currentGraphName === name) {
-      this.currentGraphName = null;
-      // this.editor.clear();
-    }
+//     if(this.currentGraphName === name) {
+//       this.currentGraphName = null;
+//       // this.editor.clear();
+//     }
 
-    console.log(`%cGraph "${name}" deleted from container`, "color: #F44336; font-weight: bold");
-    return this;
-  }
+//     console.log(`%cGraph "${name}" deleted from container`, "color: #F44336; font-weight: bold");
+//     return this;
+//   }
 
-  getCurrent() {return this.currentGraphName}
-  getAll() {return this.graphs}
+//   getCurrent() {return this.currentGraphName}
+//   getAll() {return this.graphs}
 
-  loadFromFile(graphsArray) {
-    this.graphs = graphsArray;
-    console.log(`%cLoaded ${graphsArray.length} graphs from file`, "color: #9C27B0; font-weight: bold");
-    return this;
-  }
-}
-
+//   loadFromFile(graphsArray) {
+//     this.graphs = graphsArray;
+//     console.log(`%cLoaded ${graphsArray.length} graphs from file`, "color: #9C27B0; font-weight: bold");
+//     return this;
+//   }
+// }
