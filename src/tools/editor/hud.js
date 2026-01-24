@@ -461,17 +461,16 @@ export default class EditorHud {
     })
 
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
-      console.log('show-method-editor ', e);
+      // console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
 
     byId('showCurveEditorBtn').addEventListener('click', (e) => {
-      console.log('show-showCurveEditorBtn editor ', e);
+      // console.log('show-showCurveEditorBtn editor ', e);
       document.dispatchEvent(new CustomEvent('show-curve-editor', {detail: {}}));
     });
 
     byId('showShaderEditorBtn').addEventListener('click', (e) => {
-      console.log('show-showCurveEditorBtn editor ', e);
       if(byId('shaderDOM') === null) {
         app.shaderGraph = openFragmentShaderEditor();
       } else if(byId('shaderDOM').style.display === 'flex') {

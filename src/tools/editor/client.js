@@ -1,9 +1,7 @@
 import {LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_TERMINAL, mb} from "../../engine/utils";
 
 export class MEEditorClient {
-
   ws = null;
-
   constructor(typeOfRun, name) {
     this.ws = new WebSocket("ws://localhost:1243");
 
@@ -66,13 +64,14 @@ export class MEEditorClient {
         } else {
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");
+            // console.log('Graph saved ✅ test ', data.graphs)
+            document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.graphs}));
           }
           if(data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list ✅", data);
             document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.shaderGraphs}));
           } else if(data.methodLoads && data.ok == true) {
             mb.show("Graph loads ✅", data);
-            console.log('TEST NET ')
             document.dispatchEvent(new CustomEvent('on-graph-load', {detail: data.graph}));
           }
           else {
@@ -330,6 +329,5 @@ export class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
-
   }
 }

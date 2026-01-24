@@ -15980,6 +15980,7 @@ var MEEditorClient = class {
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
+            console.log("Graph saved \u2705 test ", data.graphs);
           }
           if (data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list \u2705", data);
@@ -16113,6 +16114,15 @@ var MEEditorClient = class {
       console.info("%cLoad shader-graph <signal>", LOG_FUNNY_ARCADE2);
       let o2 = {
         action: "load-shader-graph",
+        name: e.detail
+      };
+      o2 = JSON.stringify(o2);
+      this.ws.send(o2);
+    });
+    document.addEventListener("delete-shader-graph", (e) => {
+      console.info("%cDelete shader-graph <signal>", LOG_FUNNY_ARCADE2);
+      let o2 = {
+        action: "delete-shader-graph",
         name: e.detail
       };
       o2 = JSON.stringify(o2);
@@ -21354,6 +21364,7 @@ var FragmentShaderGraph = class {
     this.spawnStepX = 220;
     this.spawnStepY = 140;
     this.spawnCol = 0;
+    this.runtimeList = [];
     this.runtime_memory = [];
     this.onGraphLoadAttached = false;
   }
@@ -22273,7 +22284,7 @@ var ConnectionLayer = class {
     };
   }
 };
-function openFragmentShaderEditor(id2 = "fragShader") {
+async function openFragmentShaderEditor(id2 = "fragShader") {
   const shaderGraph2 = new FragmentShaderGraph(id2);
   const root = document.createElement("div");
   root.id = "shaderDOM";
@@ -22294,6 +22305,7 @@ function openFragmentShaderEditor(id2 = "fragShader") {
     b2.style.cssText = "width:100%;margin:4px 0;";
     if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
     if (txt == "Create New") b2.style.cssText += "color: lime;";
+    if (txt == "Delete") b2.style.cssText += "color: red;";
     b2.classList.add("btn");
     b2.classList.add("btnLeftBox");
     b2.onclick = fn;
@@ -22621,16 +22633,16 @@ svg path {
   btn("ViewDirection", () => addNode(new ViewDirectionNode()));
   btn("SplitVec4", () => addNode(new SplitVec4Node()));
   btn("CombineVec4", () => addNode(new CombineVec4Node()));
-  btn("Create New", () => {
+  btn("Create New", async () => {
     shaderGraph2.clear();
-    let nameOfGraphMaterital2 = prompt("You must define a name for shader graph:", "MyShader1");
-    if (nameOfGraphMaterital2 && nameOfGraphMaterital2 !== "") {
-      const exist = loadGraph(nameOfGraphMaterital2, shaderGraph2, addNode);
-      if (exist == false) {
-        shaderGraph2.id = nameOfGraphMaterital2;
-        saveGraph(shaderGraph2, nameOfGraphMaterital2);
-      } else {
+    let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
+    if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
+      if (exist === true) {
         console.info("ALREADY EXIST SHADER, please use diff name" + exist);
+      } else {
+        shaderGraph2.id = nameOfGraphMaterital;
+        saveGraph(shaderGraph2, nameOfGraphMaterital);
       }
     }
   });
@@ -22642,22 +22654,23 @@ svg path {
   btn("Save Graph", () => {
     saveGraph(shaderGraph2, shaderGraph2.id);
   });
-  btn("Load Graph", () => {
+  btn("Load Graph", async () => {
     shaderGraph2.clear();
-    let nameOfGraphMaterital2 = prompt("Choose Name:", "MyShader1");
-    const exist = loadGraph(nameOfGraphMaterital2, shaderGraph2, addNode);
+    let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
+    const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
     if (exist === false) {
       alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
     }
   });
-  btn("DELETE", () => {
-    console.log("test DELETE", shaderGraph2.id);
-    console.log("DELET SHADER:");
+  btn("Delete", () => {
+    console.log("[DELETE]", shaderGraph2.id);
+    document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph2.id }));
   });
   const b = document.createElement("select");
   b.style.cssText = "width:100%;margin:4px 0;";
   b.classList.add("btn");
   b.classList.add("btnLeftBox");
+  b.style.webkitTextStrokeWidth = 0;
   menu.appendChild(b);
   document.addEventListener("on-shader-graphs-list", (e) => {
     const shaders = e.detail;
@@ -22673,10 +22686,12 @@ svg path {
       placeholder2.selected = true;
       b.appendChild(placeholder2);
     }
+    shaderGraph2.runtimeList = [];
     shaders.forEach((shader, index) => {
       const opt = document.createElement("option");
       opt.value = index;
       opt.textContent = shader.name;
+      shaderGraph2.runtimeList.push(shader.name);
       b.appendChild(opt);
     });
     if (__ == 1) {
@@ -22691,15 +22706,20 @@ svg path {
     }
   });
   document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
-  let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
-  if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-    shaderGraph2.id = nameOfGraphMaterital;
-    const exist = loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
-    if (exist == false) {
-      saveGraph(shaderGraph2, nameOfGraphMaterital);
-      console.log("NEW SHADER:[SAVED]" + exist);
+  setTimeout(async () => {
+    console.log(shaderGraph2.runtimeList);
+    if (shaderGraph2.runtimeList.length > 0) {
+      shaderGraph2.id = shaderGraph2.runtimeList[0];
+      const exist = await loadGraph(shaderGraph2.id, shaderGraph2, addNode);
+      console.log("Load by defoul first" + exist);
+      if (exist == false) {
+        saveGraph(shaderGraph2, shaderGraph2.id);
+        console.log("NEW SHADER:[SAVED]" + exist);
+      }
+    } else {
+      alert("no saved graphs");
     }
-  }
+  }, 400);
   return shaderGraph2;
 }
 function serializeGraph(shaderGraph2) {
@@ -22740,12 +22760,17 @@ function saveGraph(shaderGraph2, key = "fragShaderGraph") {
   console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
 }
 async function loadGraph(key, shaderGraph2, addNodeUI) {
-  shaderGraph2.nodes.length = 0;
-  shaderGraph2.connections.length = 0;
   if (shaderGraph2.onGraphLoadAttached === false) {
     shaderGraph2.onGraphLoadAttached = true;
     document.addEventListener("on-graph-load", (e) => {
+      if (e.detail == null) {
+        alert("Graph no exist!");
+        return;
+      }
+      shaderGraph2.nodes.length = 0;
+      shaderGraph2.connections.length = 0;
       console.log("on-graph-load: " + e.detail.name);
+      shaderGraph2.id = e.detail.name;
       let data = JSON.parse(e.detail.content);
       if (!data) return false;
       const map = {};

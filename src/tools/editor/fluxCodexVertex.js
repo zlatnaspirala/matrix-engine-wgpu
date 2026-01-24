@@ -160,7 +160,7 @@ export default class FluxCodexVertex {
 
     // curve editor stuff
     document.addEventListener('show-curve-editor', (e) => {
-      console.log('show-showCurveEditorBtn editor ', e);
+      // console.log('show-showCurveEditorBtn editor ', e);
       this.curveEditor.toggleEditor();
     });
   }

@@ -549,7 +549,8 @@ async function saveShaderGraph(msg, ws) {
   ws.send(JSON.stringify({
     ok: true,
     methodSaves: 'OK',
-    graphName: newGraph.name
+    graphName: newGraph.name,
+    graphs: graphs
   }));
   console.log(`Saved shader graph: ${newGraph.name}`);
 }

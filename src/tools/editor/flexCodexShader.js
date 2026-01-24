@@ -51,11 +51,22 @@ export class FragmentShaderGraph {
     this.spawnStepY = 140;
     this.spawnCol = 0;
 
+    this.runtimeList = [];
     this.runtime_memory = [];
     this.onGraphLoadAttached = false;
   }
 
-  addNode(node) {this.nodes.push(node); return node;}
+  addNode(node) {
+    console.log('PUSH NODE', node)
+    if(node.type === "FragmentOutput") {
+      const exists = this.nodes.some(n => n.type === "FragmentOutput");
+      if(exists) {
+        console.warn("FragmentOutput already exists");
+        return null;
+      }
+    }
+    this.nodes.push(node); return node;
+  }
 
   connect(fromNode, fromPin, toNode, toPin) {
     this.connections = this.connections.filter(c => !(c.toNode === toNode && c.toPin === toPin));
@@ -250,38 +261,38 @@ export class FragmentOutputNode extends ShaderNode {
   }
 }
 
-export class BaseColorOutputNode extends ShaderNode {
-  constructor() {
-    super("BaseColorOutput");
-    this.inputs = {color: {default: "vec3f(1.0)"}};
-  }
+// export class BaseColorOutputNode extends ShaderNode {
+//   constructor() {
+//     super("BaseColorOutput");
+//     this.inputs = {color: {default: "vec3f(1.0)"}};
+//   }
 
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "color");
-    let value;
-    if(conn) {
-      value = ctx.resolve(conn.fromNode, conn.fromPin);
-    } else {
-      value = this.inputs.color.default;
-    }
-    ctx.outputs.baseColor = value;
-    return {out: ctx.outputs.baseColor};
-  }
-}
+//   build(_, __, ctx) {
+//     const conn = ctx.shaderGraph.getInput(this, "color");
+//     let value;
+//     if(conn) {
+//       value = ctx.resolve(conn.fromNode, conn.fromPin);
+//     } else {
+//       value = this.inputs.color.default;
+//     }
+//     ctx.outputs.baseColor = value;
+//     return {out: ctx.outputs.baseColor};
+//   }
+// }
 
-export class EmissiveOutputNode extends ShaderNode {
-  constructor() {
-    super("EmissiveOutput");
-    this.inputs = {color: {default: "vec3f(0.0)"}};
-  }
+// export class EmissiveOutputNode extends ShaderNode {
+//   constructor() {
+//     super("EmissiveOutput");
+//     this.inputs = {color: {default: "vec3f(0.0)"}};
+//   }
 
-  build(_, __, ctx) {
-    ctx.outputs.emissive = ctx.resolve(this, "color");
-    return {out: ctx.outputs.emissive};
-  }
-}
+//   build(_, __, ctx) {
+//     ctx.outputs.emissive = ctx.resolve(this, "color");
+//     return {out: ctx.outputs.emissive};
+//   }
+// }
 
-export class AlphaOutputNode extends ShaderNode {
+export class AlphaOutput extends ShaderNode {
   constructor() {
     super("AlphaOutput");
     this.inputs = {alpha: {default: "1.0"}};
@@ -293,7 +304,7 @@ export class AlphaOutputNode extends ShaderNode {
   }
 }
 
-export class NormalOutputNode extends ShaderNode {
+export class NormalOutput extends ShaderNode {
   constructor() {
     super("NormalOutput");
     this.inputs = {normal: {default: "input.normal"}};
@@ -1315,7 +1326,7 @@ class ConnectionLayer {
   }
 }
 
-export function openFragmentShaderEditor(id = "fragShader") {
+export async function openFragmentShaderEditor(id = "fragShader") {
   const shaderGraph = new FragmentShaderGraph(id);
   const root = document.createElement("div");
   root.id = "shaderDOM";
@@ -1328,7 +1339,7 @@ export function openFragmentShaderEditor(id = "fragShader") {
   /* LEFT MENU */
   const menu = document.createElement("div");
   menu.style.cssText = `
-    width:180px; border-right:1px solid #222;
+    width:200px; border-right:1px solid #222;
     padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
   `;
   const btn = (txt, fn) => {
@@ -1337,6 +1348,7 @@ export function openFragmentShaderEditor(id = "fragShader") {
     b.style.cssText = "width:100%;margin:4px 0;";
     if(txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
     if(txt == "Create New") b.style.cssText += "color: lime;";
+    if(txt == "Delete") b.style.cssText += "color: red;";
     b.classList.add("btn");
     b.classList.add("btnLeftBox");
     b.onclick = fn;
@@ -1492,7 +1504,8 @@ svg path {
   const connectionLayer = new ConnectionLayer(svg, shaderGraph);
 
   function addNode(node, x, y) {
-    shaderGraph.addNode(node);
+    const test = shaderGraph.addNode(node);
+    if (test == null) return;
     if(x == null || y == null) {
       const p = shaderGraph.nextSpawn();
       x = p.x;
@@ -1671,12 +1684,12 @@ svg path {
   btn("Contrast", () => addNode(new ContrastNode()));
   btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
   btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
-  btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
-  btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+  // btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
+  // btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
   btn("LightShadowNode", () => addNode(new LightShadowNode()));
   btn("LightToColorNode", () => addNode(new LightToColorNode()));
-  btn("AlphaOutputNode", () => addNode(new AlphaOutputNode()));
-  btn("NormalOutputNode", () => addNode(new NormalOutputNode()));
+  btn("AlphaOutput", () => addNode(new AlphaOutput()));
+  btn("NormalOutput", () => addNode(new NormalOutput()));
   // Constants
   btn("Float", () => {
     const val = prompt("Enter float value:", "1.0");
@@ -1708,17 +1721,16 @@ svg path {
   btn("SplitVec4", () => addNode(new SplitVec4Node()));
   btn("CombineVec4", () => addNode(new CombineVec4Node()));
 
-  btn("Create New", () => {
+  btn("Create New", async () => {
     shaderGraph.clear();
     let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
     if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-      const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-      if(exist == false) {
+      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+      if(exist === true) {
+        console.info("ALREADY EXIST SHADER, please use diff name" + exist);
+      } else {
         shaderGraph.id = nameOfGraphMaterital;
         saveGraph(shaderGraph, nameOfGraphMaterital);
-        // console.log("[SAVED]");
-      } else {
-        console.info("ALREADY EXIST SHADER, please use diff name" + exist);
       }
     }
   });
@@ -1735,16 +1747,16 @@ svg path {
     saveGraph(shaderGraph, shaderGraph.id);
   });
 
-  btn("Load Graph", () => {
+  btn("Load Graph", async () => {
     shaderGraph.clear();
     let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
-    const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+    const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
     if(exist === false) {
       alert("⚠️Graph no exist!⚠️");
     }
   });
 
-  btn("DELETE", () => {
+  btn("Delete", () => {
     console.log("[DELETE]", shaderGraph.id);
     document.dispatchEvent(new CustomEvent('delete-shader-graph', {detail: shaderGraph.id}));
   });
@@ -1753,15 +1765,16 @@ svg path {
   // direct connection with FluxCOdexVertex vs ShaderGraph
   // document.addEventListener("give-me-shader", () => {  });
   const b = document.createElement("select");
+  b.id = "shader-graphs-list";
   b.style.cssText = "width:100%;margin:4px 0;";
   b.classList.add("btn");
   b.classList.add("btnLeftBox");
+  b.style.webkitTextStrokeWidth = 0;
   menu.appendChild(b);
 
   document.addEventListener("on-shader-graphs-list", (e) => {
     const shaders = e.detail;
     b.innerHTML = "";
-
     var __ = 0;
     if(!byId("shader-graphs-list-dom")) {
       __ = 1;
@@ -1774,10 +1787,12 @@ svg path {
       b.appendChild(placeholder);
     }
 
+    shaderGraph.runtimeList = [];
     shaders.forEach((shader, index) => {
       const opt = document.createElement("option");
       opt.value = index;
       opt.textContent = shader.name;
+      shaderGraph.runtimeList.push(shader.name);
       b.appendChild(opt);
     });
 
@@ -1798,15 +1813,24 @@ svg path {
 
   document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
   // Init
-  let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
-  if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-    shaderGraph.id = nameOfGraphMaterital;
-    const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-    if(exist == false) {
-      saveGraph(shaderGraph, nameOfGraphMaterital);
-      console.log("NEW SHADER:[SAVED]" + exist);
+  setTimeout(async () => {
+    // let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
+    // if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+    console.log(shaderGraph.runtimeList)
+    if(shaderGraph.runtimeList.length > 0) {
+      // load first
+      shaderGraph.id = shaderGraph.runtimeList[0];
+      const exist = await loadGraph(shaderGraph.id, shaderGraph, addNode);
+      console.log("Load by defoul first" + exist);
+      if(exist == false) {
+        saveGraph(shaderGraph, shaderGraph.id);
+        console.log("NEW SHADER:[SAVED]" + exist);
+      }
+    } else {
+      alert('no saved graphs');
     }
-  }
+    // }
+  }, 400);
   // if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   return shaderGraph;
 }
@@ -1849,15 +1873,20 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
 
 async function loadGraph(key, shaderGraph, addNodeUI) {
   // shaderGraph.clear();
-  shaderGraph.nodes.length = 0;
-  shaderGraph.connections.length = 0;
   // Editor is not aware where is project file 
   // It is in generated file&folder event projectName is defined
   // Its not good to write import for project file here in middle of engine core...
   if(shaderGraph.onGraphLoadAttached === false) {
     shaderGraph.onGraphLoadAttached = true;
     document.addEventListener('on-graph-load', (e) => {
-      console.log("on-graph-load: " + e.detail.name);
+      if(e.detail == null) {
+        alert("Graph no exist!");
+        return;
+      }
+      shaderGraph.nodes.length = 0;
+      shaderGraph.connections.length = 0;
+      // console.log("on-graph-load: " + e.detail.name);
+      shaderGraph.id = e.detail.name;
       let data = JSON.parse(e.detail.content);
       // console.log("on-graph-load: " + data)
       if(!data) return false;
@@ -1875,11 +1904,8 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
           case "MultiplyColor": node = new MultiplyColorNode(); break;
           case "Grayscale": node = new GrayscaleNode(); break;
           case "Contrast": node = new ContrastNode(); break;
-          case "FragOutput": node = new FragOutputNode(); break;
-          case "BaseColorOutput": node = new BaseColorOutputNode(); break;
-          case "EmissiveOutputNode": node = new EmissiveOutputNode(); break;
-          case "AlphaOutputNode": node = new AlphaOutputNode(); break;
-          case "NormalOutputNode": node = new NormalOutputNode(); break;
+          case "AlphaOutput": node = new AlphaOutput(); break;
+          case "NormalOutput": node = new NormalOutput(); break;
           case "LightShadowNode": node = new LightShadowNode(); break;
           case "LightToColor": node = new LightToColorNode(); break;
           case "UV": node = new UVNode(); break;
@@ -1910,7 +1936,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
         node.id = saveId;
         node.x = saveX;
         node.y = saveY;
-        console.log("Loaded: " + node)
+        console.log("Loaded:" + node)
         map[node.id] = node;
         addNodeUI(node, node.x, node.y);
       });

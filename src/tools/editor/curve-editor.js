@@ -776,8 +776,7 @@ class CurveStore {
   getOrCreate(curveArg) {
     let curve = this.curves.find(c => c.name === curveArg.name);
     if(curve) return curve;
-
-    console.log("PUSH in getOrCreate")
+    // console.log("PUSH in getOrCreate")
     curve = new CurveData(curveArg.name);
     this.curves.push(curve);
     return curve;
