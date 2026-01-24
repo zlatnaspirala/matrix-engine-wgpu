@@ -15981,9 +15981,12 @@ var MEEditorClient = class {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
           }
-          if (data.methodLoads && data.ok == true) {
+          if (data.methodLoads && data.ok == true && data.shaderGraphs) {
+            mb.show("Graphs list \u2705", data);
+            document.dispatchEvent(new CustomEvent("on-shader-graphs-list", { detail: data.shaderGraphs }));
+          } else if (data.methodLoads && data.ok == true) {
             mb.show("Graph loads \u2705", data);
-            dispatchEvent("on-graph-load", { detail: data.graph });
+            document.dispatchEvent(new CustomEvent("on-graph-load", { detail: data.graph }));
           } else {
             mb.show("From editorX:" + data.ok);
           }
@@ -16110,6 +16113,14 @@ var MEEditorClient = class {
       let o2 = {
         action: "load-shader-graph",
         name: e.detail
+      };
+      o2 = JSON.stringify(o2);
+      this.ws.send(o2);
+    });
+    document.addEventListener("get-shader-graphs", () => {
+      console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE2);
+      let o2 = {
+        action: "get-shader-graphs"
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -22249,15 +22260,15 @@ function openFragmentShaderEditor(id2 = "fragShader") {
     padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
   `;
   const btn = (txt, fn) => {
-    const b = document.createElement("button");
-    b.textContent = txt;
-    b.style.cssText = "width:100%;margin:4px 0;";
-    if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
-    if (txt == "Create New") b.style.cssText += "color: lime;";
-    b.classList.add("btn");
-    b.classList.add("btnLeftBox");
-    b.onclick = fn;
-    menu.appendChild(b);
+    const b2 = document.createElement("button");
+    b2.textContent = txt;
+    b2.style.cssText = "width:100%;margin:4px 0;";
+    if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
+    if (txt == "Create New") b2.style.cssText += "color: lime;";
+    b2.classList.add("btn");
+    b2.classList.add("btnLeftBox");
+    b2.onclick = fn;
+    menu.appendChild(b2);
   };
   const area = document.createElement("div");
   area.style.cssText = "flex:1;position:relative";
@@ -22528,7 +22539,6 @@ svg path {
       if (!sel) return;
       const nodeId2 = sel.dataset.nodeId;
       const node2 = shaderGraph.nodes.find((n2) => n2.id === nodeId2);
-      console.log("TTTTTTTTTTTTTTTT", node2);
       if (!node2) return;
       shaderGraph.connections = shaderGraph.connections.filter(
         (c) => c.fromNode !== node2 && c.toNode !== node2
@@ -22618,16 +22628,51 @@ svg path {
       alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
     }
   });
+  const b = document.createElement("select");
+  b.style.cssText = "width:100%;margin:4px 0;";
+  b.classList.add("btn");
+  b.classList.add("btnLeftBox");
+  b.onchange = (e) => {
+  };
+  menu.appendChild(b);
+  document.addEventListener("on-shader-graphs-list", (e) => {
+    const shaders = e.detail;
+    b.innerHTML = "";
+    const placeholder2 = document.createElement("option");
+    placeholder2.textContent = "Select shader graph";
+    placeholder2.value = "";
+    placeholder2.disabled = true;
+    placeholder2.selected = true;
+    b.appendChild(placeholder2);
+    shaders.forEach((shader, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.textContent = shader.name;
+      b.appendChild(opt);
+    });
+    b.onchange = (event) => {
+      const selectedIndex = event.target.value;
+      const selectedShader = shaders[selectedIndex];
+      console.log("Selected shader:", selectedShader.name);
+      console.log("Graph content:", selectedShader.content);
+      const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+      if (exist) {
+        console.log("Loaded shader...");
+      } else {
+        alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
+      }
+    };
+  });
+  document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
   let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
   if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
     shaderGraph.id = nameOfGraphMaterital;
     const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
     if (exist == false) {
       saveGraph(shaderGraph, nameOfGraphMaterital);
-      console.log("SAVED NEW SHADER::::" + exist);
+      console.log("NEW SHADER:[SAVED]" + exist);
     }
   }
-  if (shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   return shaderGraph;
 }
 function serializeGraph(shaderGraph) {
@@ -22671,162 +22716,159 @@ function loadGraph(key, shaderGraph, addNodeUI) {
   shaderGraph.nodes.length = 0;
   shaderGraph.connections.length = 0;
   document.addEventListener("on-graph-load", (e) => {
-    console.log("on-graph-load: " + e);
+    console.log("on-graph-load: " + e.detail.name);
+    let data = JSON.parse(e.detail.content);
+    if (!data) return false;
+    const map = {};
+    data.nodes.forEach((node2) => {
+      const saveId = node2.id;
+      const saveX = node2.x;
+      const saveY = node2.y;
+      switch (node2.type) {
+        case "FragmentOutput":
+          node2 = new FragmentOutputNode();
+          break;
+        case "CameraPos":
+          node2 = new CameraPosNode();
+          break;
+        case "Time":
+          node2 = new TimeNode();
+          break;
+        case "InlineFunction":
+          node2 = new InlineFunctionNode(node2.fnName, node2.code);
+          break;
+        case "TextureSampler":
+          node2 = new TextureSamplerNode(node2.name);
+          break;
+        case "MultiplyColor":
+          node2 = new MultiplyColorNode();
+          break;
+        case "Grayscale":
+          node2 = new GrayscaleNode();
+          break;
+        case "Contrast":
+          node2 = new ContrastNode();
+          break;
+        case "FragOutput":
+          node2 = new FragOutputNode();
+          break;
+        case "BaseColorOutput":
+          node2 = new BaseColorOutputNode();
+          break;
+        case "EmissiveOutputNode":
+          node2 = new EmissiveOutputNode();
+          break;
+        case "AlphaOutputNode":
+          node2 = new AlphaOutputNode();
+          break;
+        case "NormalOutputNode":
+          node2 = new NormalOutputNode();
+          break;
+        case "LightShadowNode":
+          node2 = new LightShadowNode();
+          break;
+        case "LightToColor":
+          node2 = new LightToColorNode();
+          break;
+        case "UV":
+          node2 = new UVNode();
+          break;
+        case "Float":
+          node2 = new FloatNode(node2.value ?? 1);
+          break;
+        case "Vec2":
+          node2 = new Vec2Node(node2.x ?? 0, node2.y ?? 0);
+          break;
+        case "Vec3":
+          node2 = new Vec3Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0);
+          break;
+        case "Vec4":
+          node2 = new Vec4Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0, node2.w ?? 1);
+          break;
+        case "Color":
+          node2 = new ColorNode(node2.r ?? 1, node2.g ?? 1, node2.b ?? 1, node2.a ?? 1);
+          break;
+        case "Add":
+          node2 = new AddNode();
+          break;
+        case "Subtract":
+          node2 = new SubtractNode();
+          break;
+        case "Multiply":
+          node2 = new MultiplyNode();
+          break;
+        case "Divide":
+          node2 = new DivideNode();
+          break;
+        case "Power":
+          node2 = new PowerNode();
+          break;
+        case "Sin":
+          node2 = new SinNode();
+          break;
+        case "Cos":
+          node2 = new CosNode();
+          break;
+        case "Normalize":
+          node2 = new NormalizeNode();
+          break;
+        case "DotProduct":
+          node2 = new DotProductNode();
+          break;
+        case "Lerp":
+          node2 = new LerpNode();
+          break;
+        case "Frac":
+          node2 = new FracNode();
+          break;
+        case "OneMinus":
+          node2 = new OneMinusNode();
+          break;
+        case "Smoothstep":
+          node2 = new SmoothstepNode();
+          break;
+        case "FragmentPosition":
+          node2 = new FragmentPositionNode();
+          break;
+        case "ViewDirection":
+          node2 = new ViewDirectionNode();
+          break;
+        case "SplitVec4":
+          node2 = new SplitVec4Node();
+          break;
+        case "CombineVec4":
+          node2 = new CombineVec4Node();
+          break;
+        case "GlobalAmbient":
+          node2 = new GlobalAmbientNode();
+          break;
+      }
+      node2.id = saveId;
+      node2.x = saveX;
+      node2.y = saveY;
+      console.log("Loaded: " + node2);
+      map[node2.id] = node2;
+      addNodeUI(node2, node2.x, node2.y);
+    });
+    setTimeout(() => data.connections.forEach((c) => {
+      const fromNode = map[c.from];
+      const toNode = map[c.to];
+      const fromPin = c.fromPin;
+      const toPin = c.toPin;
+      if (!fromNode || !toNode) {
+        console.warn("Skipping connection due to missing node", c);
+        return;
+      }
+      shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+      const path = shaderGraph.connectionLayer.path();
+      path.dataset.from = `${fromNode.id}:${fromPin}`;
+      path.dataset.to = `${toNode.id}:${toPin}`;
+      shaderGraph.connectionLayer.svg.appendChild(path);
+      shaderGraph.connectionLayer.redrawAll(path);
+    }), 100);
+    return true;
   });
-  document.dispatchEvent(new CustomEvent("load-shader-graph", {
-    detail: { name: key }
-  }));
-  return;
-  const data = JSON.parse(localStorage.getItem(key));
-  if (!data) return false;
-  const map = {};
-  data.nodes.forEach((node2) => {
-    const saveId = node2.id;
-    const saveX = node2.x;
-    const saveY = node2.y;
-    switch (node2.type) {
-      case "FragmentOutput":
-        node2 = new FragmentOutputNode();
-        break;
-      case "CameraPos":
-        node2 = new CameraPosNode();
-        break;
-      case "Time":
-        node2 = new TimeNode();
-        break;
-      case "InlineFunction":
-        node2 = new InlineFunctionNode(node2.fnName, node2.code);
-        break;
-      case "TextureSampler":
-        node2 = new TextureSamplerNode(node2.name);
-        break;
-      case "MultiplyColor":
-        node2 = new MultiplyColorNode();
-        break;
-      case "Grayscale":
-        node2 = new GrayscaleNode();
-        break;
-      case "Contrast":
-        node2 = new ContrastNode();
-        break;
-      case "FragOutput":
-        node2 = new FragOutputNode();
-        break;
-      case "BaseColorOutput":
-        node2 = new BaseColorOutputNode();
-        break;
-      case "EmissiveOutputNode":
-        node2 = new EmissiveOutputNode();
-        break;
-      case "AlphaOutputNode":
-        node2 = new AlphaOutputNode();
-        break;
-      case "NormalOutputNode":
-        node2 = new NormalOutputNode();
-        break;
-      case "LightShadowNode":
-        node2 = new LightShadowNode();
-        break;
-      case "LightToColor":
-        node2 = new LightToColorNode();
-        break;
-      case "UV":
-        node2 = new UVNode();
-        break;
-      case "Float":
-        node2 = new FloatNode(node2.value ?? 1);
-        break;
-      case "Vec2":
-        node2 = new Vec2Node(node2.x ?? 0, node2.y ?? 0);
-        break;
-      case "Vec3":
-        node2 = new Vec3Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0);
-        break;
-      case "Vec4":
-        node2 = new Vec4Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0, node2.w ?? 1);
-        break;
-      case "Color":
-        node2 = new ColorNode(node2.r ?? 1, node2.g ?? 1, node2.b ?? 1, node2.a ?? 1);
-        break;
-      case "Add":
-        node2 = new AddNode();
-        break;
-      case "Subtract":
-        node2 = new SubtractNode();
-        break;
-      case "Multiply":
-        node2 = new MultiplyNode();
-        break;
-      case "Divide":
-        node2 = new DivideNode();
-        break;
-      case "Power":
-        node2 = new PowerNode();
-        break;
-      case "Sin":
-        node2 = new SinNode();
-        break;
-      case "Cos":
-        node2 = new CosNode();
-        break;
-      case "Normalize":
-        node2 = new NormalizeNode();
-        break;
-      case "DotProduct":
-        node2 = new DotProductNode();
-        break;
-      case "Lerp":
-        node2 = new LerpNode();
-        break;
-      case "Frac":
-        node2 = new FracNode();
-        break;
-      case "OneMinus":
-        node2 = new OneMinusNode();
-        break;
-      case "Smoothstep":
-        node2 = new SmoothstepNode();
-        break;
-      case "FragmentPosition":
-        node2 = new FragmentPositionNode();
-        break;
-      case "ViewDirection":
-        node2 = new ViewDirectionNode();
-        break;
-      case "SplitVec4":
-        node2 = new SplitVec4Node();
-        break;
-      case "CombineVec4":
-        node2 = new CombineVec4Node();
-        break;
-      case "GlobalAmbient":
-        node2 = new GlobalAmbientNode();
-        break;
-    }
-    node2.id = saveId;
-    node2.x = saveX;
-    node2.y = saveY;
-    console.log("Loaded: " + node2);
-    map[node2.id] = node2;
-    addNodeUI(node2, node2.x, node2.y);
-  });
-  setTimeout(() => data.connections.forEach((c) => {
-    const fromNode = map[c.from];
-    const toNode = map[c.to];
-    const fromPin = c.fromPin;
-    const toPin = c.toPin;
-    if (!fromNode || !toNode) {
-      console.warn("Skipping connection due to missing node", c);
-      return;
-    }
-    shaderGraph.connect(fromNode, fromPin, toNode, toPin);
-    const path = shaderGraph.connectionLayer.path();
-    path.dataset.from = `${fromNode.id}:${fromPin}`;
-    path.dataset.to = `${toNode.id}:${toPin}`;
-    shaderGraph.connectionLayer.svg.appendChild(path);
-    shaderGraph.connectionLayer.redrawAll(path);
-  }), 100);
-  return true;
+  document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: key }));
 }
 
 // ../hud.js

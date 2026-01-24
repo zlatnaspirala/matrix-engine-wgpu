@@ -66,13 +66,17 @@ export class MEEditorClient {
         } else {
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");
-          } if(data.methodLoads && data.ok == true) {
+          }
+          if(data.methodLoads && data.ok == true && data.shaderGraphs) {
+            mb.show("Graphs list ✅", data);
+            document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.shaderGraphs}));
+          } else if(data.methodLoads && data.ok == true) {
             mb.show("Graph loads ✅", data);
-            dispatchEvent('on-graph-load', {detail: data.graph})
-          } else {
+            document.dispatchEvent(new CustomEvent('on-graph-load', {detail: data.graph}));
+          }
+          else {
             mb.show("From editorX:" + data.ok);
           }
-
         }
       } catch(e) {
         console.error("[WS ERROR PARSE]", e);
@@ -212,6 +216,15 @@ export class MEEditorClient {
       let o = {
         action: "load-shader-graph",
         name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('get-shader-graphs', () => {
+      console.info('%cget-shader-graphs <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "get-shader-graphs"
       };
       o = JSON.stringify(o);
       this.ws.send(o);

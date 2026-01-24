@@ -180,6 +180,8 @@ wss.on("connection", ws => {
         saveShaderGraph(msg, ws);
       } else if(msg.action == "load-shader-graph") {
         loadShaderGraph(msg, ws);
+      } else if(msg.action == "get-shader-graphs") {
+        getShaderGraphs(msg, ws);
       } else if(msg.action == "delete-obj") {
         deleteSceneObject(msg, ws);
       } else if(msg.action == "updatePos") {
@@ -578,7 +580,27 @@ async function loadShaderGraph(msg, ws) {
     methodLoads: 'OK',
     graph: newGraph
   }));
-  console.log(`Saved shader graph: ${newGraph.name}`);
+  console.log(`Saved shader graph: ${newGraph}`);
+}
+
+async function getShaderGraphs(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, {recursive: true});
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    if(match) graphs = JSON.parse(match[1])
+  } catch(err) {
+    console.log("No existing shader-graphs.js, creating new");
+  }
+  ws.send(JSON.stringify({
+    ok: true,
+    methodLoads: 'OK',
+    shaderGraphs: graphs
+  }));
+  console.log(`Saved shader graph: ${newGraph}`);
 }
 
 function getNameFromPath(p) {
