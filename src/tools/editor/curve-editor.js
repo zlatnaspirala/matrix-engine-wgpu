@@ -443,7 +443,7 @@ export class CurveEditor {
   }
 
   toggleEditor() {
-    console.log('_editorOpen')
+    // console.log('_editorOpen')
     this._editorOpen = !this._editorOpen;
     this.popup.style.display = this._editorOpen ? "block" : "none";
     this.draw();

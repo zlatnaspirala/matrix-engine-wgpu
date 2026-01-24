@@ -2171,6 +2171,19 @@ export default class FluxCodexVertex {
         exposeProps: ["name", "position", "rotation", "scale"],
       }),
 
+      getShaderGraph: (id, x, y) => ({
+        noExec: true, id,
+        title: "Get Shader Graph", x, y,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{key: "selectedObject", value: ""}],
+        builtIn: true,
+        accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
+        exposeProps: ["name", "position", "rotation", "scale"],
+      }),
+
       getSceneLight: (id, x, y) => ({
         noExec: true, id,
         title: "Get Scene Light", x, y,
@@ -3877,13 +3890,13 @@ export default class FluxCodexVertex {
       const shaderGraphName = this.getValue(nodeId, "shaderGraphName");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(shaderGraphName) {
-        console.log('sceneObjectName shader graph setup.......', sceneObjectName)
+        console.log('CRAZZY .......', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
-            let r = app.shaderGraph.compile();
-            const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-            console.log("test compile ", graphGenShaderWGSL);
-            // hard code THIS IS OK FOR NOW LEAVE IT !!
-            obj.changeMaterial('graph', graphGenShaderWGSL);
+        let r = app.shaderGraph.compile();
+        const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+        console.log("test compile ", graphGenShaderWGSL);
+        // hard code THIS IS OK FOR NOW LEAVE IT !!
+        obj.changeMaterial('graph', graphGenShaderWGSL);
       }
       this.enqueueOutputs(n, "execOut");
       return;

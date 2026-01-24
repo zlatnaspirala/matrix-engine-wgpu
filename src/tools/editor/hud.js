@@ -461,18 +461,21 @@ export default class EditorHud {
     })
 
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
-      // console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
 
     byId('showCurveEditorBtn').addEventListener('click', (e) => {
-      // console.log('show-showCurveEditorBtn editor ', e);
       document.dispatchEvent(new CustomEvent('show-curve-editor', {detail: {}}));
     });
 
     byId('showShaderEditorBtn').addEventListener('click', (e) => {
+      if(byId('app').style.display == 'flex') {
+        byId('app').style.display = 'none';
+      }
       if(byId('shaderDOM') === null) {
-        app.shaderGraph = openFragmentShaderEditor();
+        openFragmentShaderEditor().then((e) => {
+          app.shaderGraph = e;
+        });
       } else if(byId('shaderDOM').style.display === 'flex') {
         byId('shaderDOM').style.display = 'none';
       } else {
@@ -481,6 +484,9 @@ export default class EditorHud {
     });
 
     byId('showVisualCodeEditorBtn').addEventListener('click', (e) => {
+      if(byId('shaderDOM') && byId('shaderDOM').style.display == 'flex') {
+        byId('shaderDOM').style.display = 'none';
+      }
       if(byId('app').style.display == 'flex') {
         byId('app').style.display = 'none';
       } else {

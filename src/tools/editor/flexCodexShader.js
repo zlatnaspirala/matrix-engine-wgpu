@@ -50,14 +50,12 @@ export class FragmentShaderGraph {
     this.spawnStepX = 220;
     this.spawnStepY = 140;
     this.spawnCol = 0;
-
     this.runtimeList = [];
     this.runtime_memory = [];
     this.onGraphLoadAttached = false;
   }
 
   addNode(node) {
-    console.log('PUSH NODE', node)
     if(node.type === "FragmentOutput") {
       const exists = this.nodes.some(n => n.type === "FragmentOutput");
       if(exists) {
@@ -1327,80 +1325,81 @@ class ConnectionLayer {
 }
 
 export async function openFragmentShaderEditor(id = "fragShader") {
-  const shaderGraph = new FragmentShaderGraph(id);
-  const root = document.createElement("div");
-  root.id = "shaderDOM";
-  root.style.cssText = `
+  return new Promise((resolve, reject) => {
+    const shaderGraph = new FragmentShaderGraph(id);
+    const root = document.createElement("div");
+    root.id = "shaderDOM";
+    root.style.cssText = `
     position:fixed; left: 17.5%; top:4%;
     background:#0b0e14; color:#eee;
     display:flex; font-family:system-ui;
     width:300%;height:90%
   `;
-  /* LEFT MENU */
-  const menu = document.createElement("div");
-  menu.style.cssText = `
+    /* LEFT MENU */
+    const menu = document.createElement("div");
+    menu.style.cssText = `
     width:200px; border-right:1px solid #222;
     padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
   `;
-  const btn = (txt, fn) => {
-    const b = document.createElement("button");
-    b.textContent = txt;
-    b.style.cssText = "width:100%;margin:4px 0;";
-    if(txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
-    if(txt == "Create New") b.style.cssText += "color: lime;";
-    if(txt == "Delete") b.style.cssText += "color: red;";
-    b.classList.add("btn");
-    b.classList.add("btnLeftBox");
-    b.onclick = fn;
-    menu.appendChild(b);
-  };
-  /* GRAPH AREA */
-  const area = document.createElement("div");
-  area.style.cssText = "flex:1;position:relative";
-  area.classList.add('fancy-grid-bg');
-  area.classList.add('dark');
-  let pan = {active: false, ox: 0, oy: 0};
-  area.addEventListener("pointerdown", e => {
-    if(e.target !== area) return;
-    pan.active = true;
-    pan.ox = e.clientX;
-    pan.oy = e.clientY;
-    area.setPointerCapture(e.pointerId);
-  });
-  area.addEventListener("pointermove", e => {
-    if(!pan.active) return;
-    const dx = e.clientX - pan.ox;
-    const dy = e.clientY - pan.oy;
-    pan.ox = e.clientX;
-    pan.oy = e.clientY;
-    shaderGraph.nodes.forEach(n => {
-      n.x += dx;
-      n.y += dy;
-      const el = document.querySelector(`.nodeShader[data-node-id="${n.id}"]`);
-      if(el) {
-        el.style.left = n.x + "px";
-        el.style.top = n.y + "px";
-      }
+    const btn = (txt, fn) => {
+      const b = document.createElement("button");
+      b.textContent = txt;
+      b.style.cssText = "width:100%;margin:4px 0;";
+      if(txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
+      if(txt == "Create New") b.style.cssText += "color: lime;";
+      if(txt == "Delete") b.style.cssText += "color: red;";
+      b.classList.add("btn");
+      b.classList.add("btnLeftBox");
+      b.onclick = fn;
+      menu.appendChild(b);
+    };
+    /* GRAPH AREA */
+    const area = document.createElement("div");
+    area.style.cssText = "flex:1;position:relative";
+    area.classList.add('fancy-grid-bg');
+    area.classList.add('dark');
+    let pan = {active: false, ox: 0, oy: 0};
+    area.addEventListener("pointerdown", e => {
+      if(e.target !== area) return;
+      pan.active = true;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      area.setPointerCapture(e.pointerId);
     });
-    connectionLayer.redrawAll();
-  });
-  area.addEventListener("pointerup", e => {
-    pan.active = false;
-    area.releasePointerCapture(e.pointerId);
-  });
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.style.position = "absolute";
-  svg.style.left = "0";
-  svg.style.top = "0";
-  svg.style.width = "100%";
-  svg.style.height = "100%";
-  svg.style.pointerEvents = "none";
-  area.appendChild(svg);
-  root.appendChild(menu);
-  root.appendChild(area);
-  document.body.appendChild(root);
-  const style = document.createElement("style");
-  style.textContent = `
+    area.addEventListener("pointermove", e => {
+      if(!pan.active) return;
+      const dx = e.clientX - pan.ox;
+      const dy = e.clientY - pan.oy;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      shaderGraph.nodes.forEach(n => {
+        n.x += dx;
+        n.y += dy;
+        const el = document.querySelector(`.nodeShader[data-node-id="${n.id}"]`);
+        if(el) {
+          el.style.left = n.x + "px";
+          el.style.top = n.y + "px";
+        }
+      });
+      connectionLayer.redrawAll();
+    });
+    area.addEventListener("pointerup", e => {
+      pan.active = false;
+      area.releasePointerCapture(e.pointerId);
+    });
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position = "absolute";
+    svg.style.left = "0";
+    svg.style.top = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    area.appendChild(svg);
+    root.appendChild(menu);
+    root.appendChild(area);
+    document.body.appendChild(root);
+    const style = document.createElement("style");
+    style.textContent = `
 #shaderDOM { z-index:2 }
 
 .nodeShader {
@@ -1500,339 +1499,336 @@ svg path {
   pointer-events:none;
 }
 `;
-  document.head.appendChild(style);
-  const connectionLayer = new ConnectionLayer(svg, shaderGraph);
+    document.head.appendChild(style);
+    const connectionLayer = new ConnectionLayer(svg, shaderGraph);
 
-  function addNode(node, x, y) {
-    const test = shaderGraph.addNode(node);
-    if (test == null) return;
-    if(x == null || y == null) {
-      const p = shaderGraph.nextSpawn();
-      x = p.x;
-      y = p.y;
-    }
-    node.x = x;
-    node.y = y;
-    const el = document.createElement("div");
-    el.className = "nodeShader";
-    el.style.left = x + "px";
-    el.style.top = y + "px";
-    area.appendChild(el);
-    el.tabIndex = 0;
-    el.addEventListener("click", e => {
-      e.stopPropagation();
-      document.querySelectorAll(".nodeShader.selected").forEach(n => n.classList.remove("selected"));
-      el.classList.add("selected");
-    });
-    el.dataset.nodeId = node.id;
-
-    const title = document.createElement("div");
-    title.className = "node-title";
-    title.textContent = node.type;
-    el.appendChild(title);
-
-    // ✅ ADD INPUT FIELDS FOR NODE PROPERTIES
-    const propsContainer = document.createElement("div");
-    propsContainer.className = "node-properties";
-    propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-
-    // Helper to create labeled input
-    function addPropertyInput(label, propName, value, type = "number", step = "0.01") {
-      const row = document.createElement("div");
-      row.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
-
-      const labelEl = document.createElement("label");
-      labelEl.textContent = label + ":";
-      labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
-
-      const input = document.createElement("input");
-      input.type = type;
-      input.value = value;
-      input.step = step;
-      input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
-
-      input.addEventListener("input", () => {
-        const val = type === "number" ? parseFloat(input.value) : input.value;
-        node[propName] = val;
+    function addNode(node, x, y) {
+      const test = shaderGraph.addNode(node);
+      if(test == null) return;
+      if(x == null || y == null) {
+        const p = shaderGraph.nextSpawn();
+        x = p.x;
+        y = p.y;
+      }
+      node.x = x;
+      node.y = y;
+      const el = document.createElement("div");
+      el.className = "nodeShader";
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      area.appendChild(el);
+      el.tabIndex = 0;
+      el.addEventListener("click", e => {
+        e.stopPropagation();
+        document.querySelectorAll(".nodeShader.selected").forEach(n => n.classList.remove("selected"));
+        el.classList.add("selected");
       });
+      el.dataset.nodeId = node.id;
 
-      input.addEventListener("pointerdown", e => e.stopPropagation());
+      const title = document.createElement("div");
+      title.className = "node-title";
+      title.textContent = node.type;
+      el.appendChild(title);
 
-      row.appendChild(labelEl);
-      row.appendChild(input);
-      propsContainer.appendChild(row);
-    }
+      // ✅ ADD INPUT FIELDS FOR NODE PROPERTIES
+      const propsContainer = document.createElement("div");
+      propsContainer.className = "node-properties";
+      propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
 
-    // ✅ ADD PROPERTIES BASED ON NODE TYPE
-    if(node.type === "Float") {
-      addPropertyInput("Value", "value", node.value);
-    }
-    else if(node.type === "Vec2") {
-      addPropertyInput("X", "x", node.x);
-      addPropertyInput("Y", "y", node.y);
-    }
-    else if(node.type === "Vec3") {
-      addPropertyInput("X", "x", node.x);
-      addPropertyInput("Y", "y", node.y);
-      addPropertyInput("Z", "z", node.z);
-    }
-    else if(node.type === "Vec4") {
-      addPropertyInput("X", "x", node.x);
-      addPropertyInput("Y", "y", node.y);
-      addPropertyInput("Z", "z", node.z);
-      addPropertyInput("W", "w", node.w);
-    }
-    else if(node.type === "Color") {
-      addPropertyInput("R", "r", node.r);
-      addPropertyInput("G", "g", node.g);
-      addPropertyInput("B", "b", node.b);
-      addPropertyInput("A", "a", node.a);
-    }
-    else if(node.type === "InlineFunction") {
-      addPropertyInput("Name", "fnName", node.fnName, "text");
+      // Helper to create labeled input
+      function addPropertyInput(label, propName, value, type = "number", step = "0.01") {
+        const row = document.createElement("div");
+        row.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
 
-      const ta = document.createElement("textarea");
-      ta.value = node.code;
-      ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
-      ta.oninput = () => (node.code = ta.value);
-      ta.onpointerdown = e => e.stopPropagation();
-      propsContainer.appendChild(ta);
-    }
+        const labelEl = document.createElement("label");
+        labelEl.textContent = label + ":";
+        labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
 
-    if(propsContainer.children.length > 0) {
-      el.appendChild(propsContainer);
-    }
+        const input = document.createElement("input");
+        input.type = type;
+        input.value = value;
+        input.step = step;
+        input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
 
-    const body = document.createElement("div");
-    body.className = "nodeShader-body";
-    el.appendChild(body);
+        input.addEventListener("input", () => {
+          const val = type === "number" ? parseFloat(input.value) : input.value;
+          node[propName] = val;
+        });
 
-    function createPinRow(pinName, type = "input") {
-      const row = document.createElement("div");
-      row.className = "pinShader-row";
+        input.addEventListener("pointerdown", e => e.stopPropagation());
 
-      const pin = document.createElement("div");
-      pin.className = "pinShader " + (type === "input" ? "input" : "output");
-      pin.dataset.node = node.id;
-      pin.dataset.pin = pinName;
-      pin.dataset.type = type;
-
-      const label = document.createElement("div");
-      label.className = "pinShader-label";
-      label.textContent = pinName;
-
-      if(type === "input") row.append(pin, label);
-      else {
-        row.style.justifyContent = "flex-end";
-        row.append(label, pin);
+        row.appendChild(labelEl);
+        row.appendChild(input);
+        propsContainer.appendChild(row);
       }
 
-      return {row, pin};
-    }
+      // ✅ ADD PROPERTIES BASED ON NODE TYPE
+      if(node.type === "Float") {
+        addPropertyInput("Value", "value", node.value);
+      }
+      else if(node.type === "Vec2") {
+        addPropertyInput("X", "x", node.x);
+        addPropertyInput("Y", "y", node.y);
+      }
+      else if(node.type === "Vec3") {
+        addPropertyInput("X", "x", node.x);
+        addPropertyInput("Y", "y", node.y);
+        addPropertyInput("Z", "z", node.z);
+      }
+      else if(node.type === "Vec4") {
+        addPropertyInput("X", "x", node.x);
+        addPropertyInput("Y", "y", node.y);
+        addPropertyInput("Z", "z", node.z);
+        addPropertyInput("W", "w", node.w);
+      }
+      else if(node.type === "Color") {
+        addPropertyInput("R", "r", node.r);
+        addPropertyInput("G", "g", node.g);
+        addPropertyInput("B", "b", node.b);
+        addPropertyInput("A", "a", node.a);
+      }
+      else if(node.type === "InlineFunction") {
+        addPropertyInput("Name", "fnName", node.fnName, "text");
 
-    const inputsContainer = document.createElement("div");
-    inputsContainer.className = "nodeShader-inputs";
-    body.appendChild(inputsContainer);
+        const ta = document.createElement("textarea");
+        ta.value = node.code;
+        ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
+        ta.oninput = () => (node.code = ta.value);
+        ta.onpointerdown = e => e.stopPropagation();
+        propsContainer.appendChild(ta);
+      }
 
-    Object.keys(node.inputs || {}).forEach(pinName => {
-      const {row, pin} = createPinRow(pinName, "input");
-      inputsContainer.appendChild(row);
-    });
+      if(propsContainer.children.length > 0) {
+        el.appendChild(propsContainer);
+      }
 
-    const outputContainer = document.createElement("div");
-    outputContainer.style.width = '100%';
-    body.appendChild(outputContainer);
-    const {row: outRow, pin: outPin} = createPinRow("out", "output");
-    outputContainer.appendChild(outRow);
-    connectionLayer.attach(outPin);
+      const body = document.createElement("div");
+      body.className = "nodeShader-body";
+      el.appendChild(body);
 
-    shaderGraph.connectionLayer = connectionLayer;
-    shaderGraph.makeDraggable(el, node, connectionLayer);
-  }
+      function createPinRow(pinName, type = "input") {
+        const row = document.createElement("div");
+        row.className = "pinShader-row";
 
-  document.addEventListener("keydown", e => {
-    if(e.key === "Delete") {
-      const sel = document.querySelector(".nodeShader.selected");
-      if(!sel) return;
-      const nodeId = sel.dataset.nodeId;
-      const node = shaderGraph.nodes.find(n => n.id === nodeId);
-      if(!node) return;
-      // remove connections involving this node
-      shaderGraph.connections = shaderGraph.connections.filter(
-        c => c.fromNode !== node && c.toNode !== node
-      );
-      // remove SVG paths
-      [...svg.querySelectorAll("path")].forEach(p => {
-        if(p.dataset.from?.startsWith(nodeId + ":") || p.dataset.to?.startsWith(nodeId + ":")) {
-          p.remove();
+        const pin = document.createElement("div");
+        pin.className = "pinShader " + (type === "input" ? "input" : "output");
+        pin.dataset.node = node.id;
+        pin.dataset.pin = pinName;
+        pin.dataset.type = type;
+
+        const label = document.createElement("div");
+        label.className = "pinShader-label";
+        label.textContent = pinName;
+
+        if(type === "input") row.append(pin, label);
+        else {
+          row.style.justifyContent = "flex-end";
+          row.append(label, pin);
         }
-      });
-      sel.remove();
-      shaderGraph.nodes = shaderGraph.nodes.filter(n => n !== node);
-      // ?
-      shaderGraph.connectionLayer.redrawConnection();
-    }
-  });
 
-  btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
-  btn("CameraPos", () => addNode(new CameraPosNode()));
-  btn("Time", () => addNode(new TimeNode()));
-  btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
-  btn("TextureSampler", () => addNode(new TextureSamplerNode()));
-  btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
-  btn("Grayscale", () => addNode(new GrayscaleNode()));
-  btn("Contrast", () => addNode(new ContrastNode()));
-  btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
-  btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
-  // btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
-  // btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
-  btn("LightShadowNode", () => addNode(new LightShadowNode()));
-  btn("LightToColorNode", () => addNode(new LightToColorNode()));
-  btn("AlphaOutput", () => addNode(new AlphaOutput()));
-  btn("NormalOutput", () => addNode(new NormalOutput()));
-  // Constants
-  btn("Float", () => {
-    const val = prompt("Enter float value:", "1.0");
-    addNode(new FloatNode(parseFloat(val) || 1.0));
-  });
-  btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
-  btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
-  // Math
-  btn("Add", () => addNode(new AddNode()));
-  btn("Multiply", () => addNode(new MultiplyNode()));
-  btn("Power", () => addNode(new PowerNode()));
-  btn("Lerp", () => addNode(new LerpNode()));
-  // Trig
-  btn("Sin", () => addNode(new SinNode()));
-  btn("Cos", () => addNode(new CosNode()));
-  // Vector
-  btn("Normalize", () => addNode(new NormalizeNode()));
-  btn("DotProduct", () => addNode(new DotProductNode()));
-  btn("Length", () => addNode(new LengthNode()));
-  // Utility
-  btn("Frac", () => addNode(new FracNode()));
-  btn("OneMinus", () => addNode(new OneMinusNode()));
-  btn("Smoothstep", () => addNode(new SmoothstepNode()));
-  // Inputs
-  btn("FragPosition", () => addNode(new FragmentPositionNode()));
-  btn("FragNormal", () => addNode(new FragmentNormalNode()));
-  btn("ViewDirection", () => addNode(new ViewDirectionNode()));
-  // Channel ops
-  btn("SplitVec4", () => addNode(new SplitVec4Node()));
-  btn("CombineVec4", () => addNode(new CombineVec4Node()));
-
-  btn("Create New", async () => {
-    shaderGraph.clear();
-    let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
-    if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-      if(exist === true) {
-        console.info("ALREADY EXIST SHADER, please use diff name" + exist);
-      } else {
-        shaderGraph.id = nameOfGraphMaterital;
-        saveGraph(shaderGraph, nameOfGraphMaterital);
+        return {row, pin};
       }
-    }
-  });
 
-  btn("Compile", () => {
-    let r = shaderGraph.compile();
-    const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-    console.log("test compile ", graphGenShaderWGSL);
-    // hard code THIS IS OK FOR NOW LEAVE IT !!
-    // app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL);
-  });
+      const inputsContainer = document.createElement("div");
+      inputsContainer.className = "nodeShader-inputs";
+      body.appendChild(inputsContainer);
 
-  btn("Save Graph", () => {
-    saveGraph(shaderGraph, shaderGraph.id);
-  });
+      Object.keys(node.inputs || {}).forEach(pinName => {
+        const {row, pin} = createPinRow(pinName, "input");
+        inputsContainer.appendChild(row);
+      });
 
-  btn("Load Graph", async () => {
-    shaderGraph.clear();
-    let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
-    const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-    if(exist === false) {
-      alert("⚠️Graph no exist!⚠️");
-    }
-  });
+      const outputContainer = document.createElement("div");
+      outputContainer.style.width = '100%';
+      body.appendChild(outputContainer);
+      const {row: outRow, pin: outPin} = createPinRow("out", "output");
+      outputContainer.appendChild(outRow);
+      connectionLayer.attach(outPin);
 
-  btn("Delete", () => {
-    console.log("[DELETE]", shaderGraph.id);
-    document.dispatchEvent(new CustomEvent('delete-shader-graph', {detail: shaderGraph.id}));
-  });
-
-  // gobal for now next:
-  // direct connection with FluxCOdexVertex vs ShaderGraph
-  // document.addEventListener("give-me-shader", () => {  });
-  const b = document.createElement("select");
-  b.id = "shader-graphs-list";
-  b.style.cssText = "width:100%;margin:4px 0;";
-  b.classList.add("btn");
-  b.classList.add("btnLeftBox");
-  b.style.webkitTextStrokeWidth = 0;
-  menu.appendChild(b);
-
-  document.addEventListener("on-shader-graphs-list", (e) => {
-    const shaders = e.detail;
-    b.innerHTML = "";
-    var __ = 0;
-    if(!byId("shader-graphs-list-dom")) {
-      __ = 1;
-      const placeholder = document.createElement("option");
-      placeholder.id = "shader-graphs-list-dom";
-      placeholder.textContent = "Select shader";
-      placeholder.value = "";
-      placeholder.disabled = true;
-      placeholder.selected = true;
-      b.appendChild(placeholder);
+      shaderGraph.connectionLayer = connectionLayer;
+      shaderGraph.makeDraggable(el, node, connectionLayer);
     }
 
-    shaderGraph.runtimeList = [];
-    shaders.forEach((shader, index) => {
-      const opt = document.createElement("option");
-      opt.value = index;
-      opt.textContent = shader.name;
-      shaderGraph.runtimeList.push(shader.name);
-      b.appendChild(opt);
+    document.addEventListener("keydown", e => {
+      if(e.key === "Delete") {
+        const sel = document.querySelector(".nodeShader.selected");
+        if(!sel) return;
+        const nodeId = sel.dataset.nodeId;
+        const node = shaderGraph.nodes.find(n => n.id === nodeId);
+        if(!node) return;
+        // remove connections involving this node
+        shaderGraph.connections = shaderGraph.connections.filter(
+          c => c.fromNode !== node && c.toNode !== node
+        );
+        // remove SVG paths
+        [...svg.querySelectorAll("path")].forEach(p => {
+          if(p.dataset.from?.startsWith(nodeId + ":") || p.dataset.to?.startsWith(nodeId + ":")) {
+            p.remove();
+          }
+        });
+        sel.remove();
+        shaderGraph.nodes = shaderGraph.nodes.filter(n => n !== node);
+        // ?
+        shaderGraph.connectionLayer.redrawConnection();
+      }
     });
 
-    if(__ == 1) {
-      b.onchange = (event) => {
-        shaderGraph.clear();
-        const selectedIndex = event.target.value;
-        const selectedShader = shaders[selectedIndex];
-        console.log("Selected shader:", selectedShader.name);
-        // console.log("Graph content:", selectedShader.content);
-        // There is a other way - compile and assign - no cache policy
-        // const exist = loadGraph(selectedShader.name, shaderGraph, addNode);
-        document.dispatchEvent(new CustomEvent('load-shader-graph', {detail: selectedShader.name}));
-        console.log("shaderGraph ???", shaderGraph);
-      };
-    }
-  });
+    btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
+    btn("CameraPos", () => addNode(new CameraPosNode()));
+    btn("Time", () => addNode(new TimeNode()));
+    btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
+    btn("TextureSampler", () => addNode(new TextureSamplerNode()));
+    btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
+    btn("Grayscale", () => addNode(new GrayscaleNode()));
+    btn("Contrast", () => addNode(new ContrastNode()));
+    btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
+    btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
+    // btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
+    // btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+    btn("LightShadowNode", () => addNode(new LightShadowNode()));
+    btn("LightToColorNode", () => addNode(new LightToColorNode()));
+    btn("AlphaOutput", () => addNode(new AlphaOutput()));
+    btn("NormalOutput", () => addNode(new NormalOutput()));
+    // Constants
+    btn("Float", () => {
+      const val = prompt("Enter float value:", "1.0");
+      addNode(new FloatNode(parseFloat(val) || 1.0));
+    });
+    btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
+    btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
+    // Math
+    btn("Add", () => addNode(new AddNode()));
+    btn("Multiply", () => addNode(new MultiplyNode()));
+    btn("Power", () => addNode(new PowerNode()));
+    btn("Lerp", () => addNode(new LerpNode()));
+    // Trig
+    btn("Sin", () => addNode(new SinNode()));
+    btn("Cos", () => addNode(new CosNode()));
+    // Vector
+    btn("Normalize", () => addNode(new NormalizeNode()));
+    btn("DotProduct", () => addNode(new DotProductNode()));
+    btn("Length", () => addNode(new LengthNode()));
+    // Utility
+    btn("Frac", () => addNode(new FracNode()));
+    btn("OneMinus", () => addNode(new OneMinusNode()));
+    btn("Smoothstep", () => addNode(new SmoothstepNode()));
+    // Inputs
+    btn("FragPosition", () => addNode(new FragmentPositionNode()));
+    btn("FragNormal", () => addNode(new FragmentNormalNode()));
+    btn("ViewDirection", () => addNode(new ViewDirectionNode()));
+    // Channel ops
+    btn("SplitVec4", () => addNode(new SplitVec4Node()));
+    btn("CombineVec4", () => addNode(new CombineVec4Node()));
 
-  document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
-  // Init
-  setTimeout(async () => {
-    // let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
-    // if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-    console.log(shaderGraph.runtimeList)
-    if(shaderGraph.runtimeList.length > 0) {
-      // load first
-      shaderGraph.id = shaderGraph.runtimeList[0];
-      const exist = await loadGraph(shaderGraph.id, shaderGraph, addNode);
-      console.log("Load by defoul first" + exist);
-      if(exist == false) {
-        saveGraph(shaderGraph, shaderGraph.id);
-        console.log("NEW SHADER:[SAVED]" + exist);
+    btn("Create New", async () => {
+      shaderGraph.clear();
+      let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
+      if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+        if(exist === true) {
+          console.info("ALREADY EXIST SHADER, please use diff name" + exist);
+        } else {
+          shaderGraph.id = nameOfGraphMaterital;
+          saveGraph(shaderGraph, nameOfGraphMaterital);
+        }
       }
-    } else {
-      alert('no saved graphs');
-    }
-    // }
-  }, 400);
-  // if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
-  return shaderGraph;
+    });
+
+    btn("Compile", () => {
+      let r = shaderGraph.compile();
+      const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+      console.log("test compile ", graphGenShaderWGSL);
+      // hard code THIS IS OK FOR NOW LEAVE IT !!
+      // app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL);
+    });
+
+    btn("Save Graph", () => {
+      saveGraph(shaderGraph, shaderGraph.id);
+    });
+
+    btn("Load Graph", async () => {
+      shaderGraph.clear();
+      let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
+      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+      if(exist === false) {
+        alert("⚠️Graph no exist!⚠️");
+      }
+    });
+
+    btn("Delete", () => {
+      console.log("[DELETE]", shaderGraph.id);
+      document.dispatchEvent(new CustomEvent('delete-shader-graph', {detail: shaderGraph.id}));
+    });
+
+    // gobal for now next:
+    // direct connection with FluxCOdexVertex vs ShaderGraph
+    // document.addEventListener("give-me-shader", () => {  });
+    const b = document.createElement("select");
+    b.id = "shader-graphs-list";
+    b.style.cssText = "width:100%;margin:4px 0;";
+    b.classList.add("btn");
+    b.classList.add("btnLeftBox");
+    b.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(b);
+
+    document.addEventListener("on-shader-graphs-list", (e) => {
+      const shaders = e.detail;
+      b.innerHTML = "";
+      var __ = 0;
+      if(!byId("shader-graphs-list-dom")) {
+        __ = 1;
+        const placeholder = document.createElement("option");
+        placeholder.id = "shader-graphs-list-dom";
+        placeholder.textContent = "Select shader";
+        placeholder.value = "";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        b.appendChild(placeholder);
+      }
+
+      shaderGraph.runtimeList = [];
+      shaders.forEach((shader, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = shader.name;
+        shaderGraph.runtimeList.push(shader.name);
+        b.appendChild(opt);
+      });
+
+      if(__ == 1) {
+        b.onchange = (event) => {
+          shaderGraph.clear();
+          const selectedIndex = event.target.value;
+          const selectedShader = shaders[selectedIndex];
+          console.log("Selected shader:", selectedShader.name);
+          // console.log("Graph content:", selectedShader.content);
+          // There is a other way - compile and assign - no cache policy
+          // const exist = loadGraph(selectedShader.name, shaderGraph, addNode);
+          document.dispatchEvent(new CustomEvent('load-shader-graph', {detail: selectedShader.name}));
+          console.log("shaderGraph ???", shaderGraph);
+        };
+      }
+    });
+
+    document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
+    // Init
+    setTimeout(async () => {
+      console.log(shaderGraph.runtimeList)
+      if(shaderGraph.runtimeList.length > 0) {
+        // load first
+        shaderGraph.id = shaderGraph.runtimeList[0];
+        const exist = await loadGraph(shaderGraph.id, shaderGraph, addNode);
+        if(exist == false) {
+          saveGraph(shaderGraph, shaderGraph.id);
+          console.log("NEW SHADER:[SAVED]" + exist);
+        }
+      } else {
+        alert('no saved graphs');
+      }
+      resolve(shaderGraph);
+    }, 400);
+    // if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
+  })
 }
 
 function serializeGraph(shaderGraph) {

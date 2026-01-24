@@ -65,6 +65,8 @@ export class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Get shader graph</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setGraphMaterial')">Set Graph Material</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
@@ -134,7 +136,7 @@ export class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
-      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save Graph</button>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear All</button>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
