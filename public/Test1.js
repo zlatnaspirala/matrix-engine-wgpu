@@ -19327,9 +19327,9 @@ var FluxCodexVertex = class {
         outputs: [],
         fields: [{ key: "selectedObject", value: "" }],
         builtIn: true,
-        accessObject: window.app?.mainRenderBundle,
-        accessObjectLiteral: "window.app?.mainRenderBundle",
-        exposeProps: ["name", "position", "rotation", "scale"]
+        accessObject: window.app?.shaderGraph,
+        accessObjectLiteral: "window.app?.shaderGraph",
+        exposeProps: ["id"]
       }),
       getSceneLight: (id2, x2, y2) => ({
         noExec: true,
@@ -21376,7 +21376,7 @@ var FragmentShaderGraph = class {
     this.spawnStepY = 140;
     this.spawnCol = 0;
     this.runtimeList = [];
-    this.runtime_memory = [];
+    this.runtime_memory = {};
     this.onGraphLoadAttached = false;
   }
   addNode(node2) {
@@ -22684,6 +22684,9 @@ svg path {
         opt.value = index;
         opt.textContent = shader.name;
         shaderGraph2.runtimeList.push(shader.name);
+        console.log("Graph content shader:", shader.content);
+        let data = JSON.parse(shader.content);
+        console.log("test compile ", data);
         b.appendChild(opt);
       });
       if (__ == 1) {
@@ -22901,7 +22904,7 @@ async function loadGraph(key, shaderGraph2, addNodeUI) {
         path.dataset.to = `${toNode.id}:${toPin}`;
         shaderGraph2.connectionLayer.svg.appendChild(path);
         shaderGraph2.connectionLayer.redrawAll(path);
-      }), 100);
+      }), 50);
       return true;
     });
   }

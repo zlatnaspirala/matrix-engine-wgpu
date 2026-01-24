@@ -51,7 +51,7 @@ export class FragmentShaderGraph {
     this.spawnStepY = 140;
     this.spawnCol = 0;
     this.runtimeList = [];
-    this.runtime_memory = [];
+    this.runtime_memory = {};
     this.onGraphLoadAttached = false;
   }
 
@@ -1792,6 +1792,20 @@ svg path {
         opt.value = index;
         opt.textContent = shader.name;
         shaderGraph.runtimeList.push(shader.name);
+
+        console.log("Graph content shader:", shader.content);
+        // shaderGraph.runtime_memory[shader.name] = 
+        ////////////////////
+        let data = JSON.parse(shader.content)
+        console.log("test compile ", data);
+
+        // shaderGraph
+        // let r = shaderGraph.compile();
+        // const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+        // console.log("test compile ", graphGenShaderWGSL);
+
+
+        /////////////////
         b.appendChild(opt);
       });
 
@@ -1951,7 +1965,11 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
         path.dataset.to = `${toNode.id}:${toPin}`;
         shaderGraph.connectionLayer.svg.appendChild(path);
         shaderGraph.connectionLayer.redrawAll(path);
-      }), 100);
+
+        // let r = shaderGraph.compile();
+        // const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+        // console.log("test compile ", graphGenShaderWGSL);
+      }), 50);
       return true;
     });
   }

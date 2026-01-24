@@ -2179,9 +2179,9 @@ export default class FluxCodexVertex {
         outputs: [],
         fields: [{key: "selectedObject", value: ""}],
         builtIn: true,
-        accessObject: window.app?.mainRenderBundle,
-        accessObjectLiteral: "window.app?.mainRenderBundle",
-        exposeProps: ["name", "position", "rotation", "scale"],
+        accessObject: window.app?.shaderGraph,
+        accessObjectLiteral: "window.app?.shaderGraph",
+        exposeProps: ["id"],
       }),
 
       getSceneLight: (id, x, y) => ({
