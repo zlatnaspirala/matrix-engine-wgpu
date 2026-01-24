@@ -5,7 +5,7 @@ export default [
   },
   {
     "name": "MyShader1",
-    "content": "{\"nodes\":[{\"id\":\"N2\",\"type\":\"FragmentOutput\",\"x\":485,\"y\":385,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}},{\"id\":\"N3\",\"type\":\"LightToColor\",\"x\":264,\"y\":313,\"inputs\":{\"light\":{\"default\":\"vec3f(1.0)\"}}},{\"id\":\"N4\",\"type\":\"LightShadowNode\",\"x\":44,\"y\":233,\"inputs\":{\"intensity\":{\"default\":\"1\"}}}],\"connections\":[{\"from\":\"N4\",\"fromPin\":\"out\",\"to\":\"N3\",\"toPin\":\"light\"},{\"from\":\"N3\",\"fromPin\":\"out\",\"to\":\"N2\",\"toPin\":\"color\"}]}"
+    "content": "{\"nodes\":[{\"id\":\"N1\",\"type\":\"FragmentOutput\",\"x\":470,\"y\":279,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}}],\"connections\":[]}"
   },
   {
     "name": "MyShader12",

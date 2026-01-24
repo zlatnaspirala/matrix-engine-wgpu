@@ -39,6 +39,7 @@ import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
+import {graphAdapter} from "./flexCodexShaderAdapter";
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -231,6 +232,7 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setGraphMaterial')">Set Graph Material</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -2253,6 +2255,18 @@ export default class FluxCodexVertex {
         outputs: [{name: "execOut", type: "action"}],
       }),
 
+      setGraphMaterial: (id, x, y) => ({
+        id, x, y,
+        title: "Set Graph Material",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "shaderGraphName", semantic: "string"},
+          {name: "sceneObjectName", semantic: "string"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
       getSpeed: (id, x, y) => ({
         id, x, y,
         title: "Get Speed",
@@ -3856,6 +3870,20 @@ export default class FluxCodexVertex {
         // this.getValue(nodeId, "thrust")
         console.log('pos.getSpeed()', pos.getSpeed())
         n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Graph Material") {
+      const shaderGraphName = this.getValue(nodeId, "shaderGraphName");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if(shaderGraphName) {
+        console.log('sceneObjectName shader graph setup.......', sceneObjectName)
+        let obj = app.getSceneObjectByName(sceneObjectName);
+            let r = app.shaderGraph.compile();
+            const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+            console.log("test compile ", graphGenShaderWGSL);
+            // hard code THIS IS OK FOR NOW LEAVE IT !!
+            obj.changeMaterial('graph', graphGenShaderWGSL);
       }
       this.enqueueOutputs(n, "execOut");
       return;

@@ -180,6 +180,8 @@ wss.on("connection", ws => {
         saveShaderGraph(msg, ws);
       } else if(msg.action == "load-shader-graph") {
         loadShaderGraph(msg, ws);
+      } else if(msg.action == "delete-shader-graph") {
+        deleteShaderGraph(msg, ws);
       } else if(msg.action == "get-shader-graphs") {
         getShaderGraphs(msg, ws);
       } else if(msg.action == "delete-obj") {
@@ -600,7 +602,39 @@ async function getShaderGraphs(msg, ws) {
     methodLoads: 'OK',
     shaderGraphs: graphs
   }));
-  console.log(`Saved shader graph: ${newGraph}`);
+}
+
+async function deleteShaderGraph(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, { recursive: true });
+
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    if (match) {
+      graphs = JSON.parse(match[1]);
+    }
+  } catch (err) {
+    console.log("shader-graphs.js not found or empty");
+  }
+
+  // 🔥 DELETE BY NAME
+  const beforeCount = graphs.length;
+  graphs = graphs.filter(g => g.name !== msg.name);
+  const afterCount = graphs.length;
+
+  // rewrite file
+  const out = `export default ${JSON.stringify(graphs, null, 2)};`;
+  await fs.writeFile(file, out, "utf8");
+
+  ws.send(JSON.stringify({
+    ok: true,
+    methodLoads: 'OK',
+    shaderGraphs: graphs
+  }));
 }
 
 function getNameFromPath(p) {

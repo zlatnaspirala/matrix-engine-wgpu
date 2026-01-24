@@ -72,6 +72,7 @@ export class MEEditorClient {
             document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.shaderGraphs}));
           } else if(data.methodLoads && data.ok == true) {
             mb.show("Graph loads ✅", data);
+            console.log('TEST NET ')
             document.dispatchEvent(new CustomEvent('on-graph-load', {detail: data.graph}));
           }
           else {
@@ -215,6 +216,16 @@ export class MEEditorClient {
       console.info('%cLoad shader-graph <signal>', LOG_FUNNY_ARCADE);
       let o = {
         action: "load-shader-graph",
+        name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+     document.addEventListener('delete-shader-graph', (e) => {
+      console.info('%cDelete shader-graph <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "delete-shader-graph",
         name: e.detail
       };
       o = JSON.stringify(o);

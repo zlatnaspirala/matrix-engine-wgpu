@@ -15986,6 +15986,7 @@ var MEEditorClient = class {
             document.dispatchEvent(new CustomEvent("on-shader-graphs-list", { detail: data.shaderGraphs }));
           } else if (data.methodLoads && data.ok == true) {
             mb.show("Graph loads \u2705", data);
+            console.log("TEST NET ");
             document.dispatchEvent(new CustomEvent("on-graph-load", { detail: data.graph }));
           } else {
             mb.show("From editorX:" + data.ok);
@@ -17136,6 +17137,192 @@ var CurveStore = class {
   }
 };
 
+// ../flexCodexShaderAdapter.js
+function graphAdapter(compilerResult, nodes) {
+  const { structs, uniforms, functions, locals, outputs, mainLines } = compilerResult;
+  console.log("what os node in adapter", nodes);
+  const globals = /* @__PURE__ */ new Set();
+  globals.add("const PI: f32 = 3.141592653589793;");
+  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  const normal = outputs.normal || "normalize(input.fragNorm)";
+  const emissive = outputs.emissive || "vec3f(0.0)";
+  for (const node2 of nodes) {
+    if (node2.type === "LightShadowNode") {
+      functions.push(`
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    // coneAtten = 1.0;
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    // return (diffuse + specular) * radiance * NdotL * coneAtten;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+`);
+    }
+  }
+  return `
+/* === Engine uniforms === */
+
+// DINAMIC GLOBALS
+${[...globals].join("\n")}
+
+// DINAMIC STRUCTS
+${[...structs].join("\n")}
+
+// PREDEFINED
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+// PREDEFINED
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+// PREDEFINED
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+// PREDEFINED
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+// PREDEFINED
+const MAX_SPOTLIGHTS = 20u;
+
+// PREDEFINED
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// \u2705 Graph custom uniforms
+${[...uniforms].join("\n")}
+
+// \u2705 Graph custom functions
+${functions.join("\n\n")}
+
+// PREDEFINED Fragment input
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// PREDEFINED PBR helpers
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+  // Locals
+  ${locals.join("\n  ")}
+  ${mainLines.join("\n  ")}
+  return ${outputs.outColor};
+}
+`;
+}
+
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
 var FluxCodexVertex = class {
@@ -17294,6 +17481,7 @@ var FluxCodexVertex = class {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setGraphMaterial')">Set Graph Material</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -19228,6 +19416,19 @@ var FluxCodexVertex = class {
         ],
         outputs: [{ name: "execOut", type: "action" }]
       }),
+      setGraphMaterial: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Graph Material",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "shaderGraphName", semantic: "string" },
+          { name: "sceneObjectName", semantic: "string" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
       getSpeed: (id2, x2, y2) => ({
         id: id2,
         x: x2,
@@ -20654,6 +20855,19 @@ var FluxCodexVertex = class {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Graph Material") {
+      const shaderGraphName = this.getValue(nodeId, "shaderGraphName");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if (shaderGraphName) {
+        console.log("sceneObjectName shader graph setup.......", sceneObjectName);
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        let r2 = app.shaderGraph.compile();
+        const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
+        console.log("test compile ", graphGenShaderWGSL);
+        obj.changeMaterial("graph", graphGenShaderWGSL);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if (n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
@@ -21128,192 +21342,6 @@ var FluxCodexVertex = class {
   }
 };
 
-// ../flexCodexShaderAdapter.js
-function graphAdapter(compilerResult, nodes) {
-  const { structs, uniforms, functions, locals, outputs, mainLines } = compilerResult;
-  console.log("what os node in adapter", nodes);
-  const globals = /* @__PURE__ */ new Set();
-  globals.add("const PI: f32 = 3.141592653589793;");
-  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
-  const baseColor = outputs.baseColor || "vec3f(1.0)";
-  const alpha = outputs.alpha || "1.0";
-  const normal = outputs.normal || "normalize(input.fragNorm)";
-  const emissive = outputs.emissive || "vec3f(0.0)";
-  for (const node2 of nodes) {
-    if (node2.type === "LightShadowNode") {
-      functions.push(`
-fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-
-    // coneAtten = 1.0;
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
-
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
-
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
-
-    let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
-}
-
-fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
-}
-`);
-    }
-  }
-  return `
-/* === Engine uniforms === */
-
-// DINAMIC GLOBALS
-${[...globals].join("\n")}
-
-// DINAMIC STRUCTS
-${[...structs].join("\n")}
-
-// PREDEFINED
-struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
-};
-
-// PREDEFINED
-struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
-};
-
-// PREDEFINED
-struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
-};
-
-// PREDEFINED
-struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-};
-
-// PREDEFINED
-const MAX_SPOTLIGHTS = 20u;
-
-// PREDEFINED
-@group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-
-// \u2705 Graph custom uniforms
-${[...uniforms].join("\n")}
-
-// \u2705 Graph custom functions
-${functions.join("\n\n")}
-
-// PREDEFINED Fragment input
-struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-};
-
-// PREDEFINED PBR helpers
-fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
-}
-
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-  // Locals
-  ${locals.join("\n  ")}
-  ${mainLines.join("\n  ")}
-  return ${outputs.outColor};
-}
-`;
-}
-
 // ../flexCodexShader.js
 var FragmentShaderRegistry = {};
 var FragmentShaderGraph = class {
@@ -21326,6 +21354,8 @@ var FragmentShaderGraph = class {
     this.spawnStepX = 220;
     this.spawnStepY = 140;
     this.spawnCol = 0;
+    this.runtime_memory = [];
+    this.onGraphLoadAttached = false;
   }
   addNode(node2) {
     this.nodes.push(node2);
@@ -21389,8 +21419,8 @@ var FragmentShaderGraph = class {
   }
 };
 var CompileContext = class {
-  constructor(shaderGraph) {
-    this.shaderGraph = shaderGraph;
+  constructor(shaderGraph2) {
+    this.shaderGraph = shaderGraph2;
     this.cache = /* @__PURE__ */ new Map();
     this.structs = [];
     this.uniforms = [];
@@ -21441,9 +21471,9 @@ var CompileContext = class {
   }
 };
 var FragmentCompiler = class {
-  static compile(shaderGraph) {
-    const ctx = new CompileContext(shaderGraph);
-    shaderGraph.nodes.forEach((n2) => {
+  static compile(shaderGraph2) {
+    const ctx = new CompileContext(shaderGraph2);
+    shaderGraph2.nodes.forEach((n2) => {
       if (n2.type.endsWith("Output")) {
         ctx.resolve(n2, Object.keys(n2.inputs)[0]);
       }
@@ -21646,7 +21676,6 @@ var InlineFunctionNode = class extends ShaderNode {
     return {
       out: ctx.temp("vec4f", `${this.fnName}(${a}, ${b})`),
       type: "vec4f"
-      // Adjust type based on your function's actual return type
     };
   }
 };
@@ -22173,9 +22202,9 @@ fn ${fnName}() -> vec4f {
   }
 };
 var ConnectionLayer = class {
-  constructor(svg, shaderGraph) {
+  constructor(svg, shaderGraph2) {
     this.svg = svg;
-    this.shaderGraph = shaderGraph;
+    this.shaderGraph = shaderGraph2;
     this.temp = null;
     this.from = null;
     document.addEventListener("pointermove", (e) => this.move(e));
@@ -22245,7 +22274,7 @@ var ConnectionLayer = class {
   }
 };
 function openFragmentShaderEditor(id2 = "fragShader") {
-  const shaderGraph = new FragmentShaderGraph(id2);
+  const shaderGraph2 = new FragmentShaderGraph(id2);
   const root = document.createElement("div");
   root.id = "shaderDOM";
   root.style.cssText = `
@@ -22288,7 +22317,7 @@ function openFragmentShaderEditor(id2 = "fragShader") {
     const dy = e.clientY - pan.oy;
     pan.ox = e.clientX;
     pan.oy = e.clientY;
-    shaderGraph.nodes.forEach((n2) => {
+    shaderGraph2.nodes.forEach((n2) => {
       n2.x += dx;
       n2.y += dy;
       const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
@@ -22416,11 +22445,11 @@ svg path {
 }
 `;
   document.head.appendChild(style);
-  const connectionLayer = new ConnectionLayer(svg, shaderGraph);
+  const connectionLayer = new ConnectionLayer(svg, shaderGraph2);
   function addNode(node2, x2, y2) {
-    shaderGraph.addNode(node2);
+    shaderGraph2.addNode(node2);
     if (x2 == null || y2 == null) {
-      const p = shaderGraph.nextSpawn();
+      const p = shaderGraph2.nextSpawn();
       x2 = p.x;
       y2 = p.y;
     }
@@ -22530,17 +22559,17 @@ svg path {
     const { row: outRow, pin: outPin } = createPinRow("out", "output");
     outputContainer.appendChild(outRow);
     connectionLayer.attach(outPin);
-    shaderGraph.connectionLayer = connectionLayer;
-    shaderGraph.makeDraggable(el2, node2, connectionLayer);
+    shaderGraph2.connectionLayer = connectionLayer;
+    shaderGraph2.makeDraggable(el2, node2, connectionLayer);
   }
   document.addEventListener("keydown", (e) => {
     if (e.key === "Delete") {
       const sel = document.querySelector(".nodeShader.selected");
       if (!sel) return;
       const nodeId2 = sel.dataset.nodeId;
-      const node2 = shaderGraph.nodes.find((n2) => n2.id === nodeId2);
+      const node2 = shaderGraph2.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
-      shaderGraph.connections = shaderGraph.connections.filter(
+      shaderGraph2.connections = shaderGraph2.connections.filter(
         (c) => c.fromNode !== node2 && c.toNode !== node2
       );
       [...svg.querySelectorAll("path")].forEach((p) => {
@@ -22549,8 +22578,8 @@ svg path {
         }
       });
       sel.remove();
-      shaderGraph.nodes = shaderGraph.nodes.filter((n2) => n2 !== node2);
-      shaderGraph.connectionLayer.redrawConnection();
+      shaderGraph2.nodes = shaderGraph2.nodes.filter((n2) => n2 !== node2);
+      shaderGraph2.connectionLayer.redrawConnection();
     }
   });
   btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
@@ -22593,91 +22622,89 @@ svg path {
   btn("SplitVec4", () => addNode(new SplitVec4Node()));
   btn("CombineVec4", () => addNode(new CombineVec4Node()));
   btn("Create New", () => {
-    shaderGraph.clear();
+    shaderGraph2.clear();
     let nameOfGraphMaterital2 = prompt("You must define a name for shader graph:", "MyShader1");
     if (nameOfGraphMaterital2 && nameOfGraphMaterital2 !== "") {
-      const exist = loadGraph(nameOfGraphMaterital2, shaderGraph, addNode);
+      const exist = loadGraph(nameOfGraphMaterital2, shaderGraph2, addNode);
       if (exist == false) {
-        shaderGraph.id = nameOfGraphMaterital2;
-        saveGraph(shaderGraph, nameOfGraphMaterital2);
-        console.log("SAVED NEW SHADER::::" + exist);
+        shaderGraph2.id = nameOfGraphMaterital2;
+        saveGraph(shaderGraph2, nameOfGraphMaterital2);
       } else {
-        console.log("ALREADY EXIST SHADER, please use diff name" + exist);
-        return;
+        console.info("ALREADY EXIST SHADER, please use diff name" + exist);
       }
     }
   });
-  btn("DELETE", () => {
-    console.log("test DELETE", shaderGraph.id);
-    console.log("DELET SHADER:");
-  });
   btn("Compile", () => {
-    let r2 = shaderGraph.compile();
-    const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
+    let r2 = shaderGraph2.compile();
+    const graphGenShaderWGSL = graphAdapter(r2, shaderGraph2.nodes);
     console.log("test compile ", graphGenShaderWGSL);
-    app.mainRenderBundle[0].changeMaterial("graph", graphGenShaderWGSL);
   });
   btn("Save Graph", () => {
-    saveGraph(shaderGraph, shaderGraph.id);
+    saveGraph(shaderGraph2, shaderGraph2.id);
   });
   btn("Load Graph", () => {
-    shaderGraph.clear();
+    shaderGraph2.clear();
     let nameOfGraphMaterital2 = prompt("Choose Name:", "MyShader1");
-    const exist = loadGraph(nameOfGraphMaterital2, shaderGraph, addNode);
+    const exist = loadGraph(nameOfGraphMaterital2, shaderGraph2, addNode);
     if (exist === false) {
       alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
     }
+  });
+  btn("DELETE", () => {
+    console.log("test DELETE", shaderGraph2.id);
+    console.log("DELET SHADER:");
   });
   const b = document.createElement("select");
   b.style.cssText = "width:100%;margin:4px 0;";
   b.classList.add("btn");
   b.classList.add("btnLeftBox");
-  b.onchange = (e) => {
-  };
   menu.appendChild(b);
   document.addEventListener("on-shader-graphs-list", (e) => {
     const shaders = e.detail;
     b.innerHTML = "";
-    const placeholder2 = document.createElement("option");
-    placeholder2.textContent = "Select shader graph";
-    placeholder2.value = "";
-    placeholder2.disabled = true;
-    placeholder2.selected = true;
-    b.appendChild(placeholder2);
+    var __ = 0;
+    if (!byId("shader-graphs-list-dom")) {
+      __ = 1;
+      const placeholder2 = document.createElement("option");
+      placeholder2.id = "shader-graphs-list-dom";
+      placeholder2.textContent = "Select shader";
+      placeholder2.value = "";
+      placeholder2.disabled = true;
+      placeholder2.selected = true;
+      b.appendChild(placeholder2);
+    }
     shaders.forEach((shader, index) => {
       const opt = document.createElement("option");
       opt.value = index;
       opt.textContent = shader.name;
       b.appendChild(opt);
     });
-    b.onchange = (event) => {
-      const selectedIndex = event.target.value;
-      const selectedShader = shaders[selectedIndex];
-      console.log("Selected shader:", selectedShader.name);
-      console.log("Graph content:", selectedShader.content);
-      const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-      if (exist) {
-        console.log("Loaded shader...");
-      } else {
-        alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
-      }
-    };
+    if (__ == 1) {
+      b.onchange = (event) => {
+        shaderGraph2.clear();
+        const selectedIndex = event.target.value;
+        const selectedShader = shaders[selectedIndex];
+        console.log("Selected shader:", selectedShader.name);
+        document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: selectedShader.name }));
+        console.log("shaderGraph ???", shaderGraph2);
+      };
+    }
   });
   document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
   let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
   if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-    shaderGraph.id = nameOfGraphMaterital;
-    const exist = loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+    shaderGraph2.id = nameOfGraphMaterital;
+    const exist = loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
     if (exist == false) {
-      saveGraph(shaderGraph, nameOfGraphMaterital);
+      saveGraph(shaderGraph2, nameOfGraphMaterital);
       console.log("NEW SHADER:[SAVED]" + exist);
     }
   }
-  return shaderGraph;
+  return shaderGraph2;
 }
-function serializeGraph(shaderGraph) {
+function serializeGraph(shaderGraph2) {
   return JSON.stringify({
-    nodes: shaderGraph.nodes.map((n2) => ({
+    nodes: shaderGraph2.nodes.map((n2) => ({
       id: n2.id,
       type: n2.type,
       x: n2.x ?? 100,
@@ -22693,7 +22720,7 @@ function serializeGraph(shaderGraph) {
       a: n2.a,
       inputs: Object.fromEntries(Object.entries(n2.inputs || {}).map(([k, v]) => [k, { default: v.default }]))
     })),
-    connections: shaderGraph.connections.map((c) => ({
+    connections: shaderGraph2.connections.map((c) => ({
       from: c.fromNode.id,
       fromPin: c.fromPin,
       to: c.toNode.id,
@@ -22701,8 +22728,8 @@ function serializeGraph(shaderGraph) {
     }))
   });
 }
-function saveGraph(shaderGraph, key = "fragShaderGraph") {
-  const content = serializeGraph(shaderGraph);
+function saveGraph(shaderGraph2, key = "fragShaderGraph") {
+  const content = serializeGraph(shaderGraph2);
   localStorage.setItem(key, content);
   document.dispatchEvent(new CustomEvent("save-shader-graph", {
     detail: {
@@ -22712,162 +22739,165 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
   }));
   console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
 }
-function loadGraph(key, shaderGraph, addNodeUI) {
-  shaderGraph.nodes.length = 0;
-  shaderGraph.connections.length = 0;
-  document.addEventListener("on-graph-load", (e) => {
-    console.log("on-graph-load: " + e.detail.name);
-    let data = JSON.parse(e.detail.content);
-    if (!data) return false;
-    const map = {};
-    data.nodes.forEach((node2) => {
-      const saveId = node2.id;
-      const saveX = node2.x;
-      const saveY = node2.y;
-      switch (node2.type) {
-        case "FragmentOutput":
-          node2 = new FragmentOutputNode();
-          break;
-        case "CameraPos":
-          node2 = new CameraPosNode();
-          break;
-        case "Time":
-          node2 = new TimeNode();
-          break;
-        case "InlineFunction":
-          node2 = new InlineFunctionNode(node2.fnName, node2.code);
-          break;
-        case "TextureSampler":
-          node2 = new TextureSamplerNode(node2.name);
-          break;
-        case "MultiplyColor":
-          node2 = new MultiplyColorNode();
-          break;
-        case "Grayscale":
-          node2 = new GrayscaleNode();
-          break;
-        case "Contrast":
-          node2 = new ContrastNode();
-          break;
-        case "FragOutput":
-          node2 = new FragOutputNode();
-          break;
-        case "BaseColorOutput":
-          node2 = new BaseColorOutputNode();
-          break;
-        case "EmissiveOutputNode":
-          node2 = new EmissiveOutputNode();
-          break;
-        case "AlphaOutputNode":
-          node2 = new AlphaOutputNode();
-          break;
-        case "NormalOutputNode":
-          node2 = new NormalOutputNode();
-          break;
-        case "LightShadowNode":
-          node2 = new LightShadowNode();
-          break;
-        case "LightToColor":
-          node2 = new LightToColorNode();
-          break;
-        case "UV":
-          node2 = new UVNode();
-          break;
-        case "Float":
-          node2 = new FloatNode(node2.value ?? 1);
-          break;
-        case "Vec2":
-          node2 = new Vec2Node(node2.x ?? 0, node2.y ?? 0);
-          break;
-        case "Vec3":
-          node2 = new Vec3Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0);
-          break;
-        case "Vec4":
-          node2 = new Vec4Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0, node2.w ?? 1);
-          break;
-        case "Color":
-          node2 = new ColorNode(node2.r ?? 1, node2.g ?? 1, node2.b ?? 1, node2.a ?? 1);
-          break;
-        case "Add":
-          node2 = new AddNode();
-          break;
-        case "Subtract":
-          node2 = new SubtractNode();
-          break;
-        case "Multiply":
-          node2 = new MultiplyNode();
-          break;
-        case "Divide":
-          node2 = new DivideNode();
-          break;
-        case "Power":
-          node2 = new PowerNode();
-          break;
-        case "Sin":
-          node2 = new SinNode();
-          break;
-        case "Cos":
-          node2 = new CosNode();
-          break;
-        case "Normalize":
-          node2 = new NormalizeNode();
-          break;
-        case "DotProduct":
-          node2 = new DotProductNode();
-          break;
-        case "Lerp":
-          node2 = new LerpNode();
-          break;
-        case "Frac":
-          node2 = new FracNode();
-          break;
-        case "OneMinus":
-          node2 = new OneMinusNode();
-          break;
-        case "Smoothstep":
-          node2 = new SmoothstepNode();
-          break;
-        case "FragmentPosition":
-          node2 = new FragmentPositionNode();
-          break;
-        case "ViewDirection":
-          node2 = new ViewDirectionNode();
-          break;
-        case "SplitVec4":
-          node2 = new SplitVec4Node();
-          break;
-        case "CombineVec4":
-          node2 = new CombineVec4Node();
-          break;
-        case "GlobalAmbient":
-          node2 = new GlobalAmbientNode();
-          break;
-      }
-      node2.id = saveId;
-      node2.x = saveX;
-      node2.y = saveY;
-      console.log("Loaded: " + node2);
-      map[node2.id] = node2;
-      addNodeUI(node2, node2.x, node2.y);
+async function loadGraph(key, shaderGraph2, addNodeUI) {
+  shaderGraph2.nodes.length = 0;
+  shaderGraph2.connections.length = 0;
+  if (shaderGraph2.onGraphLoadAttached === false) {
+    shaderGraph2.onGraphLoadAttached = true;
+    document.addEventListener("on-graph-load", (e) => {
+      console.log("on-graph-load: " + e.detail.name);
+      let data = JSON.parse(e.detail.content);
+      if (!data) return false;
+      const map = {};
+      data.nodes.forEach((node2) => {
+        const saveId = node2.id;
+        const saveX = node2.x;
+        const saveY = node2.y;
+        switch (node2.type) {
+          case "FragmentOutput":
+            node2 = new FragmentOutputNode();
+            break;
+          case "CameraPos":
+            node2 = new CameraPosNode();
+            break;
+          case "Time":
+            node2 = new TimeNode();
+            break;
+          case "InlineFunction":
+            node2 = new InlineFunctionNode(node2.fnName, node2.code);
+            break;
+          case "TextureSampler":
+            node2 = new TextureSamplerNode(node2.name);
+            break;
+          case "MultiplyColor":
+            node2 = new MultiplyColorNode();
+            break;
+          case "Grayscale":
+            node2 = new GrayscaleNode();
+            break;
+          case "Contrast":
+            node2 = new ContrastNode();
+            break;
+          case "FragOutput":
+            node2 = new FragOutputNode();
+            break;
+          case "BaseColorOutput":
+            node2 = new BaseColorOutputNode();
+            break;
+          case "EmissiveOutputNode":
+            node2 = new EmissiveOutputNode();
+            break;
+          case "AlphaOutputNode":
+            node2 = new AlphaOutputNode();
+            break;
+          case "NormalOutputNode":
+            node2 = new NormalOutputNode();
+            break;
+          case "LightShadowNode":
+            node2 = new LightShadowNode();
+            break;
+          case "LightToColor":
+            node2 = new LightToColorNode();
+            break;
+          case "UV":
+            node2 = new UVNode();
+            break;
+          case "Float":
+            node2 = new FloatNode(node2.value ?? 1);
+            break;
+          case "Vec2":
+            node2 = new Vec2Node(node2.x ?? 0, node2.y ?? 0);
+            break;
+          case "Vec3":
+            node2 = new Vec3Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0);
+            break;
+          case "Vec4":
+            node2 = new Vec4Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0, node2.w ?? 1);
+            break;
+          case "Color":
+            node2 = new ColorNode(node2.r ?? 1, node2.g ?? 1, node2.b ?? 1, node2.a ?? 1);
+            break;
+          case "Add":
+            node2 = new AddNode();
+            break;
+          case "Subtract":
+            node2 = new SubtractNode();
+            break;
+          case "Multiply":
+            node2 = new MultiplyNode();
+            break;
+          case "Divide":
+            node2 = new DivideNode();
+            break;
+          case "Power":
+            node2 = new PowerNode();
+            break;
+          case "Sin":
+            node2 = new SinNode();
+            break;
+          case "Cos":
+            node2 = new CosNode();
+            break;
+          case "Normalize":
+            node2 = new NormalizeNode();
+            break;
+          case "DotProduct":
+            node2 = new DotProductNode();
+            break;
+          case "Lerp":
+            node2 = new LerpNode();
+            break;
+          case "Frac":
+            node2 = new FracNode();
+            break;
+          case "OneMinus":
+            node2 = new OneMinusNode();
+            break;
+          case "Smoothstep":
+            node2 = new SmoothstepNode();
+            break;
+          case "FragmentPosition":
+            node2 = new FragmentPositionNode();
+            break;
+          case "ViewDirection":
+            node2 = new ViewDirectionNode();
+            break;
+          case "SplitVec4":
+            node2 = new SplitVec4Node();
+            break;
+          case "CombineVec4":
+            node2 = new CombineVec4Node();
+            break;
+          case "GlobalAmbient":
+            node2 = new GlobalAmbientNode();
+            break;
+        }
+        node2.id = saveId;
+        node2.x = saveX;
+        node2.y = saveY;
+        console.log("Loaded: " + node2);
+        map[node2.id] = node2;
+        addNodeUI(node2, node2.x, node2.y);
+      });
+      setTimeout(() => data.connections.forEach((c) => {
+        const fromNode = map[c.from];
+        const toNode = map[c.to];
+        const fromPin = c.fromPin;
+        const toPin = c.toPin;
+        if (!fromNode || !toNode) {
+          console.warn("Skipping connection due to missing node", c);
+          return;
+        }
+        shaderGraph2.connect(fromNode, fromPin, toNode, toPin);
+        const path = shaderGraph2.connectionLayer.path();
+        path.dataset.from = `${fromNode.id}:${fromPin}`;
+        path.dataset.to = `${toNode.id}:${toPin}`;
+        shaderGraph2.connectionLayer.svg.appendChild(path);
+        shaderGraph2.connectionLayer.redrawAll(path);
+      }), 100);
+      return true;
     });
-    setTimeout(() => data.connections.forEach((c) => {
-      const fromNode = map[c.from];
-      const toNode = map[c.to];
-      const fromPin = c.fromPin;
-      const toPin = c.toPin;
-      if (!fromNode || !toNode) {
-        console.warn("Skipping connection due to missing node", c);
-        return;
-      }
-      shaderGraph.connect(fromNode, fromPin, toNode, toPin);
-      const path = shaderGraph.connectionLayer.path();
-      path.dataset.from = `${fromNode.id}:${fromPin}`;
-      path.dataset.to = `${toNode.id}:${toPin}`;
-      shaderGraph.connectionLayer.svg.appendChild(path);
-      shaderGraph.connectionLayer.redrawAll(path);
-    }), 100);
-    return true;
-  });
+  }
   document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: key }));
 }
 
