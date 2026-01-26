@@ -1841,7 +1841,7 @@ svg path {
         console.log('no saved graphs');
       }
       resolve(shaderGraph);
-    }, 400);
+    }, 1250);
     // if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   })
 }

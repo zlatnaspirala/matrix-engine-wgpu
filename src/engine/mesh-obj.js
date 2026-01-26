@@ -43,9 +43,9 @@ export default class MEMeshObj extends Materials {
     this.material = o.material;
 
     this.time = 0;
-    this.deltaTImeAdapter = 1000;
+    this.deltaTImeAdapter = 10;
     this.updateTime = (time) => {
-      this.time = time * this.deltaTImeAdapter;
+      this.time += time * this.deltaTImeAdapter;
     }
 
     addEventListener('update-pipeine', () => {this.setupPipeline()})
@@ -624,58 +624,7 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline = () => {
-    console.log(" this.waterBindGroupLayout", this.waterBindGroupLayout)
     this.createBindGroupForRender();
-    // this.pipeline = this.device.createRenderPipeline({
-    //   label: 'Mesh Pipeline ✅',
-    //   layout: this.device.createPipelineLayout({
-    //     label: 'createPipelineLayout Mesh [simple mesh]',
-    //     bindGroupLayouts: [
-    //       this.bglForRender,
-    //       this.uniformBufferBindGroupLayout,
-    //       this.selectedBindGroupLayout,
-    //       this.waterBindGroupLayout]
-    //   }),
-    //   vertex: {
-    //     entryPoint: 'main',
-    //     module: this.device.createShaderModule({
-    //       code: (this.material.type == 'normalmap') ? vertexWGSL_NM : vertexWGSL,
-    //     }),
-    //     buffers: this.vertexBuffers,
-    //   },
-    //   fragment: {
-    //     entryPoint: 'main',
-    //     module: this.device.createShaderModule({
-    //       code: (this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()),
-    //     }),
-    //     targets: [
-    //       {
-    //         format: 'rgba16float',
-    //         blend: {
-    //           color: {
-    //             srcFactor: 'src-alpha',
-    //             dstFactor: 'one-minus-src-alpha',
-    //             operation: 'add',
-    //           },
-    //           alpha: {
-    //             srcFactor: 'one',
-    //             dstFactor: 'one-minus-src-alpha',
-    //             operation: 'add',
-    //           },
-    //         },
-    //       },
-    //     ],
-    //     constants: {
-    //       shadowDepthTextureSize: this.shadowDepthTextureSize,
-    //     },
-    //   },
-    //   depthStencil: {
-    //     depthWriteEnabled: false,
-    //     depthCompare: 'less',
-    //     format: 'depth24plus',
-    //   },
-    //   primitive: this.primitive
-    // });
     this.pipeline = this.device.createRenderPipeline({
       label: 'Mesh Pipeline ✅[OPAQUE]',
       layout: this.device.createPipelineLayout({
@@ -702,7 +651,7 @@ export default class MEMeshObj extends Materials {
         targets: [
           {
             format: 'rgba16float',
-            blend: undefined,       // ❌ NO blending
+            blend: undefined
           },
         ],
         constants: {
@@ -710,7 +659,7 @@ export default class MEMeshObj extends Materials {
         },
       },
       depthStencil: {
-        depthWriteEnabled: true,  // ✅ depth writes
+        depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth24plus',
       },
@@ -762,13 +711,13 @@ export default class MEMeshObj extends Materials {
         },
       },
       depthStencil: {
-        depthWriteEnabled: false,  // ❌ do NOT write depth
-        depthCompare: 'less',      // still test depth
+        depthWriteEnabled: false,
+        depthCompare: 'less',
         format: 'depth24plus',
       },
       primitive: this.primitive,
     });
-    console.log('✅Set Pipelines done');
+    // console.log('✅Set Pipelines done');
   }
 
   getMainPipeline = () => {

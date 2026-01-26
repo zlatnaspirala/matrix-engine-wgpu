@@ -775,7 +775,7 @@ export default class FluxCodexVertex {
 
     if(node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
-      console.log('!TEST! ??? BEFORE')
+      // console.log('!TEST! ??? BEFORE')
       if(select) {
         console.log('!TEST! ???')
         // const objects = spec.accessObject || [];

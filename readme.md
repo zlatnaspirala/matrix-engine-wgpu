@@ -294,6 +294,9 @@ With last glb feature materials become part of engine also.
 material: {type: 'standard'}
 material: {type: 'pong'}
 material: {type: 'power'}
+material: {type: 'water'}
+material: {type: 'metal'}
+
 
 - Standard is fully supported with lights shadow cast down (not for anims yet)
 - Pong
@@ -312,6 +315,34 @@ Change only textures (no recreation of pipeline)
 ```js
 await app.mainRenderBundle[0].loadTex0(["res/icons/editor/chatgpt-gen-bg.png"]);
 app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
+```
+
+Setup Blend (For water mat use blend!)
+```js
+app.mainRenderBundle[0].setBlend(0.5);
+```
+
+Examples for setup water params:
+```js
+app.mainRenderBundle[0].updateWaterParams(
+  [0.0, 0.1, 0.3],      // Deep: navy
+  [0.2, 0.6, 0.9],      // Shallow: blue
+  2.0,                   // Wave speed: fast continuous
+  1.8,                   // Wave scale: rolling waves
+  0.5,                   // Wave height: tall active waves
+  1.5,                   // Fresnel: strong
+  50.0                   // Specular: soft highlights
+);
+
+app.mainRenderBundle[0].updateWaterParams(
+  [0.0, 0.3, 0.5],      // Deep: medium blue
+  [0.3, 0.8, 1.0],      // Shallow: bright cyan
+  1.2,                   // Wave speed: gentle continuous (changed from 0.6)
+  2.5,                   // Wave scale: smooth ripples (changed from 5.0)
+  0.3,                   // Wave height: visible movement
+  2.5,                   // Fresnel: moderate reflection
+  100.0                  // Specular: sharp sparkles
+);
 ```
 
 ### Bloom post processing

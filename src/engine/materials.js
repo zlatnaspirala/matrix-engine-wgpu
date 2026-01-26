@@ -172,7 +172,7 @@ export default class Materials {
         specularPower,
         0.0  // padding
       ]);
-      device.queue.writeBuffer(waterParamsBuffer, 0, data);
+      this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     }
   }
 

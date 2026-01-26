@@ -372,7 +372,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         },
         // joint indices
         {
-          arrayStride: 4 * 4, // vec4<u32> = 4 * 4 bytes
+          arrayStride: 4 * 4,
           attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]
         },
         // weights

@@ -103,37 +103,49 @@ fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, t
     );
 }
 
+// Simpler sine wave for smoother animation
+fn sineWave(pos: vec2f, direction: vec2f, amplitude: f32, frequency: f32, time: f32) -> vec3f {
+    let d = normalize(direction);
+    let phase = dot(d, pos) * frequency - time;
+    
+    return vec3f(
+        d.x * amplitude * cos(phase),
+        amplitude * sin(phase),
+        d.y * amplitude * cos(phase)
+    );
+}
+
 // Calculate water normal from multiple waves
 fn calculateWaterNormal(worldPos: vec3f, time: f32) -> vec3f {
     let pos = worldPos.xz * waterParams.waveScale;
     let t = time * waterParams.waveSpeed;
     
-    // Multiple wave directions for complex motion
-    let wave1 = gerstnerWave(pos, vec2f(1.0, 0.0), 0.25, 2.0, t);
-    let wave2 = gerstnerWave(pos, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1);
-    let wave3 = gerstnerWave(pos, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9);
-    let wave4 = gerstnerWave(pos, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3);
+    // Use smoother sine waves instead of Gerstner for better animation
+    let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
+    let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
+    let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
+    let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
     
-    // Sum waves and calculate tangent vectors
+    // Sum waves
     let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
     
-    // Numerical derivative for normal
-    let eps = 0.01;
+    // Calculate tangent vectors using small step size
+    let eps = 0.1;
     let posX = worldPos + vec3f(eps, 0.0, 0.0);
     let posZ = worldPos + vec3f(0.0, 0.0, eps);
     
     let offsetX = (
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.25, 2.0, t) +
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1) +
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9) +
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3)
+        sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
     ) * waterParams.waveHeight;
     
     let offsetZ = (
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.25, 2.0, t) +
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1) +
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9) +
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3)
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
     ) * waterParams.waveHeight;
     
     let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
@@ -207,9 +219,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let finalColor = ambient + diffuse + specular + foam + causticsColor;
     
     // MUCH more transparent - alpha between 0.2 and 0.5
-    // let alpha = mix(0.2, 0.5, fresnel);
-    let alpha = mix(0.1, 0.3, fresnel); // Super transparent
-
+    let alpha = mix(0.2, 0.5, fresnel);
+    
     // Make the color more vibrant so it's visible even when transparent
     let vibrantColor = finalColor * 1.5;
     

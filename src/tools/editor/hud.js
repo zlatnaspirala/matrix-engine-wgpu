@@ -23,7 +23,7 @@ export default class EditorHud {
         byId('shaderDOM').style.display = 'none';
         app.shaderGraph = e;
         console.log('AUTO INIT app.shaderGraph', app.shaderGraph)
-      }), 100);
+      }), 10);
     } else if(a == "pre editor") {
       this.createTopMenuPre();
     } else {

@@ -35,14 +35,10 @@ let app = new MatrixEngineWGPU(
       }, {scale: [1, 1, 1]});
       // ME END Cube_0 addCube
 
- 
-
-
       // ME START L_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
         let texturesPaths = ['./res/meshes/blender/cube.png'];
         app.addMeshObj({
-          material: {type: 'water'},
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
           name: 'L_BOX',
@@ -52,9 +48,6 @@ let app = new MatrixEngineWGPU(
         });
       }, {scale: [1, 1, 1]});
       // ME END L_BOX addCube
-
-
-
 
       // ME START R_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
@@ -521,6 +514,60 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('monster-MutantMesh-0').useScale = true;
  }, 800);
  // ME END monster-MutantMesh-0 useScaleno info
+ 
+  // ME START L_BOX useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').useScale = true;
+ }, 800);
+ // ME END L_BOX useScaleno info
+ 
+  // ME START REEL_1 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_1').useScale = true;
+ }, 800);
+ // ME END REEL_1 useScaleno info
+ 
+  // ME START R_BOX useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').useScale = true;
+ }, 800);
+ // ME END R_BOX useScaleno info
+ 
+  // ME START BANNER2 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').useScale = true;
+ }, 800);
+ // ME END BANNER2 useScaleno info
+ 
+  // ME START CAMERA_JUMPER useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('CAMERA_JUMPER').useScale = true;
+ }, 800);
+ // ME END CAMERA_JUMPER useScaleno info
+ 
+  // ME START REEL_2 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').useScale = true;
+ }, 800);
+ // ME END REEL_2 useScaleno info
+ 
+  // ME START REEL_3 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_3').useScale = true;
+ }, 800);
+ // ME END REEL_3 useScaleno info
+ 
+  // ME START BANNER3 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').useScale = true;
+ }, 800);
+ // ME END BANNER3 useScaleno info
+ 
+  // ME START BANNER1 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').useScale = true;
+ }, 800);
+ // ME END BANNER1 useScaleno info
  
  // [MAIN_REPLACE2]
 
