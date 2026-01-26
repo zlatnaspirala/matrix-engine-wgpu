@@ -4,6 +4,7 @@ import {fragmentWGSLNormalMap} from "../../shaders/fragment.wgsl.normalmap";
 import {fragmentWGSLPong} from "../../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../../shaders/fragment.wgsl.power";
 import {fragmentWGSLInstanced} from "../../shaders/instanced/fragment.instanced.wgsl";
+import {fragmentWaterWGSL} from "../../shaders/water/water-c.wgls";
 
 /**
  * @description
@@ -122,6 +123,81 @@ export default class MaterialsInstanced {
         minFilter: 'linear',
       });
     }
+
+    this.createBufferForWater();
+  }
+
+  createBufferForWater = () => {
+    // new water test
+    this.waterBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Water MAT Bind Group Layout for main pass',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.waterParamsBuffer = this.device.createBuffer({
+      size: 48,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.waterParamsData = new Float32Array([
+      0.0, 0.2, 0.4,       // deepColor (vec3f)
+      0.5,                 // waveSpeed
+      0.0, 0.5, 0.7,       // shallowColor (vec3f)
+      4.0,                 // waveScale
+      0.15,                // waveHeight
+      3.0,                 // fresnelPower
+      128.0,               // specularPower
+      0.0                  // padding
+    ]);
+    this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    this.waterBindGroup = this.device.createBindGroup({
+      layout: this.waterBindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {buffer: this.waterParamsBuffer}
+      }]
+    });
+    // To update values at runtime:
+    this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
+      const data = new Float32Array([
+        deepColor[0], deepColor[1], deepColor[2],
+        waveSpeed,
+        shallowColor[0], shallowColor[1], shallowColor[2],
+        waveScale,
+        waveHeight,
+        fresnelPower,
+        specularPower,
+        0.0  // padding
+      ]);
+      device.queue.writeBuffer(waterParamsBuffer, 0, data);
+    }
+  }
+
+  changeTexture(newTexture) {
+    // Accept GPUTexture OR GPUTextureView
+    if(newTexture instanceof GPUTexture) {
+      this.texture0 = newTexture;
+    } else {
+      this.texture0 = {createView: () => newTexture};
+    }
+    this.isVideo = false;
+    // Recreate bind group only
+    this.createBindGroupForRender();
+  }
+
+  changeMaterial(newType = 'graph', graphShader) {
+    this.material.fromGraph = graphShader;
+    this.material.type = newType;
+    this.setupPipeline();
+  }
+
+  setBlend = (alpha) => {
+    this.material.useBlend = true;
+    this.setupMaterialPBR([1, 1, 1, alpha]);
   }
 
   getMaterial() {
@@ -136,8 +212,12 @@ export default class MaterialsInstanced {
       return fragmentWGSLMetal;
     } else if(this.material.type == 'normalmap') {
       return fragmentWGSLNormalMap;
+    } else if(this.material.type == 'water') {
+      return fragmentWaterWGSL;
+    } else if(this.material.type == 'graph') {
+      return this.material.fromGraph;
     }
-    console.warn('Unknown material type:', this.material?.type);
+    console.warn('Unknown material type use standard:', this.material?.type);
     return fragmentWGSL; // fallback
   }
 
@@ -150,15 +230,17 @@ export default class MaterialsInstanced {
       return 'rgba8unorm';
     }
   }
-  // not affect all fs
-  setupMaterialPBR(metallicFactor) {
-    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const roughnessFactor = 0.5;   // some gloss
-    const pad = [0.0, 0.0];
+
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
+    if(!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
+    if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    if(!roughnessFactor) roughnessFactor = 0.5;
+    const pad = [0.0];
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
+      0.5,
       ...pad
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);

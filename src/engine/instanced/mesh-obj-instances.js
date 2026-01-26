@@ -1,4 +1,4 @@
-import {mat4, vec3} from 'wgpu-matrix';
+import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
 import {degToRad, genName, LOG_FUNNY_SMALL} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
@@ -18,12 +18,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device, o.material, _glbFile);
     if(typeof o.name === 'undefined') o.name = genName(3);
-    if(typeof o.raycast === 'undefined') {
-      this.raycast = {enabled: false, radius: 2};
-    } else {
+    if(typeof o.raycast === 'undefined') {this.raycast = {enabled: false, radius: 2}} else {
       this.raycast = o.raycast;
     }
-    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
+
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -35,21 +33,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
-
     this.blendInstanced = false;
 
-    if(typeof o.material.useTextureFromGlb === 'undefined' ||
-      typeof o.material.useTextureFromGlb !== "boolean") {
+    if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-    // console.log('Material class arg:', o.material)
-    this.material = o.material;
 
-    this.time = 0;
-    this.deltaTImeAdapter = 1000;
-    this.update = (time) => {
-      this.time = time * this.deltaTImeAdapter;
+    if(typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
+      o.material.useBlend = false;
     }
+
+    this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -71,7 +65,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       //N
       const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
       const normalsUint8 = norView.buffer;
-      const byteOffsetN = norView.byteOffset || 0; // if your loader provides it
+      const byteOffsetN = norView.byteOffset || 0;
       const byteLengthN = normalsUint8.byteLength;
       const normals = new Float32Array(
         normalsUint8.buffer,
@@ -83,7 +77,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
       const bufferView = accessor.view;
       const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-      const count = accessor.count * 2; // VEC2 = 2 floats per vertex
+      const count = accessor.count * 2;
       const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
       this.mesh.textures = uvFloatArray;
@@ -187,7 +181,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
         this.mesh.tangentsBuffer.unmap();
       } else {
-        // 🟢 dummy fallback
+        // Dummy
         const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
         for(let i = 0;i < dummyTangents.length;i += 4) {
           dummyTangents[i + 0] = 1.0; // T = (1,0,0)
@@ -208,7 +202,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     } else {
       this.mesh.uvs = this.mesh.textures;
     }
-    // console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -393,8 +386,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             {shaderLocation: 5, format: "float32x4", offset: 0}
           ]
         });
-      } else {
-        // for non glb - non skinned use basic shaders
       }
 
       // Note: The frontFace and cullMode values have no effect on the 
@@ -885,6 +876,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     if(this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
+
+    pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);

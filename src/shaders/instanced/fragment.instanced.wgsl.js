@@ -43,6 +43,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -76,7 +77,12 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = mrTex.b * material.metallicFactor;
     let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    
+    // ✅ Get alpha from texture and material factor
+    // let alpha = texColor.a * material.baseColorFactor.a;
+    let alpha = material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -192,6 +198,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // ✅ now we declare materialData
     let materialData = getPBRMaterial(input.uv);
 
+    // ✅ Early discard for fully transparent pixels (alpha cutoff)
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
+
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -223,6 +234,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         finalColor += glowColor * fresnel * 0.1;
     }
 
-    let alpha = input.colorMult.a; // use alpha for blending
+    // let alpha = input.colorMult.a; // use alpha for blending
+    // return vec4f(finalColor, alpha);
+
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // ✅ Return color with alpha from material
     return vec4f(finalColor, alpha);
 }`;

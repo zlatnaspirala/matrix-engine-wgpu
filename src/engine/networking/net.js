@@ -127,8 +127,8 @@ export class MatrixStream {
       })
     })
 
-    this.buttonCloseSession.remove();
-    // this.buttonCloseSession.addEventListener('click', closeSession);
+    // this.buttonCloseSession.remove();
+    this.buttonCloseSession.addEventListener('click', closeSession);
 
     this.buttonLeaveSession.addEventListener('click', () => {
       console.log(`%cLEAVE SESSION`, REDLOG)

@@ -35,16 +35,14 @@ let app = new MatrixEngineWGPU(
       }, {scale: [1, 1, 1]});
       // ME END Cube_0 addCube
 
-
-
-
-
+ 
 
 
       // ME START L_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
         let texturesPaths = ['./res/meshes/blender/cube.png'];
         app.addMeshObj({
+          material: {type: 'water'},
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
           name: 'L_BOX',
@@ -500,6 +498,29 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('FLOOR').useScale = true;
  }, 800);
  // ME END FLOOR useScaleno info
+ 
+ 
+       
+       // ME START monster
+ var glbFile01 = await fetch('res/meshes/glb/monster.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+   texturesPaths = ['./res/meshes/blender/cube.png']; 
+    app.addGlbObj({ 
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     scale: [2, 2, 2],
+     name:  app.getNameFromPath('res/meshes/glb/monster.glb'),
+     material: {type: 'standard', useTextureFromGlb: true},
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }, null, glbFile01);
+ // ME END monster
+ 
+
+         // ME START monster-MutantMesh-0 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').useScale = true;
+ }, 800);
+ // ME END monster-MutantMesh-0 useScaleno info
  
  // [MAIN_REPLACE2]
 

@@ -775,19 +775,20 @@ export default class FluxCodexVertex {
 
     if(node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
+      console.log('!TEST! ??? BEFORE')
       if(select) {
         console.log('!TEST! ???')
-        const objects = spec.accessObject || [];
-        objects.forEach(obj => {
-          const opt = document.createElement("option");
-          opt.value = obj.name;
-          opt.textContent = obj.name;
-          select.appendChild(opt);
-        });
-        const selected = this._getSceneSelectedName(node);
-        if(selected) {
-          select.value = selected;
-        }
+        // const objects = spec.accessObject || [];
+        // objects.forEach(obj => {
+        //   const opt = document.createElement("option");
+        //   opt.value = obj.name;
+        //   opt.textContent = obj.name;
+        //   select.appendChild(opt);
+        // });
+        // const selected = this._getSceneSelectedName(node);
+        // if(selected) {
+        //   select.value = selected;
+        // }
       }
     } else if(node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
@@ -1288,6 +1289,34 @@ export default class FluxCodexVertex {
         const name = e.target.value;
         spec.fields[0].value = name;
         this.updateSceneObjectPins(spec, name);
+      });
+      el.appendChild(select);
+    } else if(spec.title === "Get Shader Graph") {
+      const select = document.createElement("select");
+      select.id = spec._id ? spec._id : spec.id;
+      select.style.width = "100%";
+      select.style.marginTop = "6px";
+      // Populate scene objects
+      if(spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "-- Select Shader --";
+      placeholder.value = "";
+      select.appendChild(placeholder);
+
+      console.log('WORKS objects', spec.fields[0].value);
+
+
+      spec.accessObject.runtimeList.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      // if(spec.fields[0].value) select.value = 0;
+      select.addEventListener("change", e => {
+        const name = e.target.value;
+        spec.fields[0].value = name;
+        console.log('WORKS SPEC ', spec);
       });
       el.appendChild(select);
     }
@@ -2174,14 +2203,19 @@ export default class FluxCodexVertex {
       getShaderGraph: (id, x, y) => ({
         noExec: true, id,
         title: "Get Shader Graph", x, y,
-        category: "scene",
-        inputs: [],
-        outputs: [],
-        fields: [{key: "selectedObject", value: ""}],
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {objectName: "objectName", type: "string"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "selectedShader", value: ""},
+          {key: "objectName", value: "FLOOR"}
+        ],
         builtIn: true,
         accessObject: window.app?.shaderGraph,
-        accessObjectLiteral: "window.app?.shaderGraph",
-        exposeProps: ["id"],
+        accessObjectLiteral: "window.app?.shaderGraph"
       }),
 
       getSceneLight: (id, x, y) => ({
@@ -2964,8 +2998,6 @@ export default class FluxCodexVertex {
       const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
       const selects = dom.querySelectorAll("select"); // returns NodeList
       let select = selects[0];
-      // alert()
-      // if((select.options.length-1) != node.accessObject.length) {
       select.innerHTML = ``;
       if(select) {
         node.accessObject.forEach(obj => {
@@ -2975,19 +3007,14 @@ export default class FluxCodexVertex {
           select.appendChild(opt);
         });
       }
-
       if(node.fields[0].value) select.value = node.fields[0].value;
-      // console.log('>>>>>>>>>>>>>>>>>>>>>')
-
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
       if(!out) return undefined;
-
       if(pinName.indexOf('.') != -1) {
         return this.resolvePath(obj, pinName);
       }
-
       return obj[pinName];
     } else if(node.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
@@ -3863,8 +3890,19 @@ export default class FluxCodexVertex {
           n._listenerAttached = true;
         }
         n._returnCache = n.osc.UPDATE();
+      } else if(n.title === "Get Shader Graph") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let selectedShader = this.getValue(nodeId, "selectedShader");
+        if(!objectName) {
+          console.warn("[Get Shader Graph] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let o = app.getSceneObjectByName(objectName);
+        o.changeMaterial("graph", selectedShader);
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
-
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -4437,7 +4475,6 @@ export default class FluxCodexVertex {
     return;
   }
 
-  // test
   onNodeDoubleClick(node) {
     console.log(`%c Node [CURVE  func] ${node.curve}`, LOG_FUNNY_ARCADE);
     if(node.title !== "Curve") return;

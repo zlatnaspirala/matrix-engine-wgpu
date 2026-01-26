@@ -1738,8 +1738,22 @@ svg path {
       let r = shaderGraph.compile();
       const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
       console.log("test compile ", graphGenShaderWGSL);
+      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
       // hard code THIS IS OK FOR NOW LEAVE IT !!
       // app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL);
+    });
+
+    btn("Compile All", () => {
+      for(let x = 0;x < shaderGraph.runtimeList.length;x++) {
+        setTimeout(() => {
+          byId('shader-graphs-list').selectedIndex = x + 1;
+          const event = new Event('change', {bubbles: true});
+          byId('shader-graphs-list').dispatchEvent(event);
+          if(shaderGraph.runtimeList.length == x) {
+            console.log('LAST');
+          }
+        }, 500 * x);
+      }
     });
 
     btn("Save Graph", () => {
@@ -1792,20 +1806,7 @@ svg path {
         opt.value = index;
         opt.textContent = shader.name;
         shaderGraph.runtimeList.push(shader.name);
-
-        console.log("Graph content shader:", shader.content);
-        // shaderGraph.runtime_memory[shader.name] = 
-        ////////////////////
-        let data = JSON.parse(shader.content)
-        console.log("test compile ", data);
-
-        // shaderGraph
-        // let r = shaderGraph.compile();
-        // const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-        // console.log("test compile ", graphGenShaderWGSL);
-
-
-        /////////////////
+        // console.log("Graph content shader:", shader.content);
         b.appendChild(opt);
       });
 
@@ -1837,7 +1838,7 @@ svg path {
           console.log("NEW SHADER:[SAVED]" + exist);
         }
       } else {
-        alert('no saved graphs');
+        console.log('no saved graphs');
       }
       resolve(shaderGraph);
     }, 400);
@@ -1965,11 +1966,12 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
         path.dataset.to = `${toNode.id}:${toPin}`;
         shaderGraph.connectionLayer.svg.appendChild(path);
         shaderGraph.connectionLayer.redrawAll(path);
-
-        // let r = shaderGraph.compile();
-        // const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-        // console.log("test compile ", graphGenShaderWGSL);
       }), 50);
+      // compile every loaded
+      let r = shaderGraph.compile();
+      const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+      // console.log("test compile ", graphGenShaderWGSL);
+      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
       return true;
     });
   }

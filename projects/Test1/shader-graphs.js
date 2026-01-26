@@ -5,7 +5,7 @@ export default [
   },
   {
     "name": "MyShader1",
-    "content": "{\"nodes\":[],\"connections\":[]}"
+    "content": "{\"nodes\":[{\"id\":\"N8\",\"type\":\"FragmentOutput\",\"x\":560,\"y\":334,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}},{\"id\":\"N9\",\"type\":\"Time\",\"x\":225,\"y\":166,\"inputs\":{}}],\"connections\":[]}"
   },
   {
     "name": "nikola",
@@ -13,6 +13,6 @@ export default [
   },
   {
     "name": "nidza",
-    "content": "{\"nodes\":[],\"connections\":[]}"
+    "content": "{\"nodes\":[{\"id\":\"N5\",\"type\":\"FragmentOutput\",\"x\":440,\"y\":297,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}}],\"connections\":[]}"
   }
 ];

@@ -19,6 +19,11 @@ export default class EditorHud {
     } else if(a == "created from editor") {
       this.createTopMenu();
       this.createAssets();
+      setTimeout(() => openFragmentShaderEditor().then((e) => {
+        byId('shaderDOM').style.display = 'none';
+        app.shaderGraph = e;
+        console.log('AUTO INIT app.shaderGraph', app.shaderGraph)
+      }), 100);
     } else if(a == "pre editor") {
       this.createTopMenuPre();
     } else {

@@ -3406,9 +3406,9 @@ var RPGCamera = class extends CameraBase {
 
 // ../../../engine/ball.js
 var MEBall = class {
-  constructor(canvas, device, context, o2) {
+  constructor(canvas, device2, context, o2) {
     this.context = context;
-    this.device = device;
+    this.device = device2;
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o2.cameras;
     this.scale = o2.scale;
@@ -3442,9 +3442,9 @@ var MEBall = class {
     this.rotation.rotationSpeed.x = o2.rotationSpeed.x;
     this.rotation.rotationSpeed.y = o2.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o2.rotationSpeed.z;
-    this.shaderModule = device.createShaderModule({ code: UNLIT_SHADER });
+    this.shaderModule = device2.createShaderModule({ code: UNLIT_SHADER });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.pipeline = device.createRenderPipeline({
+    this.pipeline = device2.createRenderPipeline({
       layout: "auto",
       vertex: {
         module: this.shaderModule,
@@ -3499,13 +3499,13 @@ var MEBall = class {
         format: "depth24plus"
       }
     });
-    this.depthTexture = device.createTexture({
+    this.depthTexture = device2.createTexture({
       size: [canvas.width, canvas.height],
       format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.uniformBufferSize = 4 * 16;
-    this.uniformBuffer = device.createBuffer({
+    this.uniformBuffer = device2.createBuffer({
       size: this.uniformBufferSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
@@ -3515,9 +3515,9 @@ var MEBall = class {
       useRenderBundles: true,
       asteroidCount: 15
     };
-    this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(this.texturesPaths, device).then(() => {
-        this.sampler = device.createSampler({
+    this.loadTex0(this.texturesPaths, device2).then(() => {
+      this.loadTex1(this.texturesPaths, device2).then(() => {
+        this.sampler = device2.createSampler({
           magFilter: "linear",
           minFilter: "linear"
         });
@@ -3548,7 +3548,7 @@ var MEBall = class {
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = mat4Impl.perspective(2 * Math.PI / 5, aspect, 1, 100);
         this.modelViewProjectionMatrix = mat4Impl.create();
-        this.frameBindGroup = device.createBindGroup({
+        this.frameBindGroup = device2.createBindGroup({
           layout: this.pipeline.getBindGroupLayout(0),
           entries: [
             {
@@ -3655,17 +3655,17 @@ var MEBall = class {
     mat4Impl.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(texPaths, device) {
+  async loadTex1(texPaths, device2) {
     return new Promise(async (resolve) => {
       const response = await fetch(texPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
-      this.moonTexture = device.createTexture({
+      this.moonTexture = device2.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       var moonTexture = this.moonTexture;
-      device.queue.copyExternalImageToTexture(
+      device2.queue.copyExternalImageToTexture(
         { source: imageBitmap },
         { texture: moonTexture },
         [imageBitmap.width, imageBitmap.height]
@@ -3673,18 +3673,18 @@ var MEBall = class {
       resolve();
     });
   }
-  async loadTex0(paths, device) {
+  async loadTex0(paths, device2) {
     return new Promise(async (resolve) => {
       const response = await fetch(paths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       console.log("loadTex0 WHAT IS THIS -> ", this);
-      this.texture0 = device.createTexture({
+      this.texture0 = device2.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       var texture0 = this.texture0;
-      device.queue.copyExternalImageToTexture(
+      device2.queue.copyExternalImageToTexture(
         { source: imageBitmap },
         { texture: texture0 },
         [imageBitmap.width, imageBitmap.height]
@@ -3789,8 +3789,8 @@ var SphereLayout = {
   uvOffset: 6 * 4
 };
 var MECube = class {
-  constructor(canvas, device, context, o2) {
-    this.device = device;
+  constructor(canvas, device2, context, o2) {
+    this.device = device2;
     this.context = context;
     this.entityArgPass = o2.entityArgPass;
     this.inputHandler = createInputHandler(window, canvas);
@@ -3801,7 +3801,7 @@ var MECube = class {
       responseCoef: o2.mainCameraParams.responseCoef
     };
     this.lastFrameMS = 0;
-    this.shaderModule = device.createShaderModule({
+    this.shaderModule = device2.createShaderModule({
       code: UNLIT_SHADER
     });
     this.texturesPaths = [];
@@ -3824,7 +3824,7 @@ var MECube = class {
     this.rotation.rotationSpeed.y = o2.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o2.rotationSpeed.z;
     this.scale = o2.scale;
-    this.pipeline = device.createRenderPipeline({
+    this.pipeline = device2.createRenderPipeline({
       layout: "auto",
       vertex: {
         module: this.shaderModule,
@@ -3863,13 +3863,13 @@ var MECube = class {
         format: "depth24plus"
       }
     });
-    this.depthTexture = device.createTexture({
+    this.depthTexture = device2.createTexture({
       size: [canvas.width, canvas.height],
       format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.uniformBufferSize = 4 * 16;
-    this.uniformBuffer = device.createBuffer({
+    this.uniformBuffer = device2.createBuffer({
       size: this.uniformBufferSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
@@ -3879,9 +3879,9 @@ var MECube = class {
       useRenderBundles: true,
       asteroidCount: 15
     };
-    this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(this.texturesPaths, device).then(() => {
-        this.sampler = device.createSampler({
+    this.loadTex0(this.texturesPaths, device2).then(() => {
+      this.loadTex1(this.texturesPaths, device2).then(() => {
+        this.sampler = device2.createSampler({
           magFilter: "linear",
           minFilter: "linear"
         });
@@ -3915,7 +3915,7 @@ var MECube = class {
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = mat4Impl.perspective(2 * Math.PI / 5, aspect, 1, 1e3);
         this.modelViewProjectionMatrix = mat4Impl.create();
-        this.frameBindGroup = device.createBindGroup({
+        this.frameBindGroup = device2.createBindGroup({
           layout: this.pipeline.getBindGroupLayout(0),
           entries: [
             {
@@ -4026,17 +4026,17 @@ var MECube = class {
     mat4Impl.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(textPath, device) {
+  async loadTex1(textPath, device2) {
     return new Promise(async (resolve) => {
       const response = await fetch(textPath[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
-      this.moonTexture = device.createTexture({
+      this.moonTexture = device2.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       var moonTexture = this.moonTexture;
-      device.queue.copyExternalImageToTexture(
+      device2.queue.copyExternalImageToTexture(
         { source: imageBitmap },
         { texture: moonTexture },
         [imageBitmap.width, imageBitmap.height]
@@ -4044,18 +4044,18 @@ var MECube = class {
       resolve();
     });
   }
-  async loadTex0(texturesPaths, device) {
+  async loadTex0(texturesPaths, device2) {
     return new Promise(async (resolve) => {
       const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       console.log("WHAT IS THIS ", this);
-      this.texture0 = device.createTexture({
+      this.texture0 = device2.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       var texture0 = this.texture0;
-      device.queue.copyExternalImageToTexture(
+      device2.queue.copyExternalImageToTexture(
         { source: imageBitmap },
         { texture: texture0 },
         [imageBitmap.width, imageBitmap.height]
@@ -4691,6 +4691,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -4723,7 +4724,12 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = mrTex.b * material.metallicFactor;
     let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    
+    // \u2705 Get alpha from texture and material factor
+    // let alpha = texColor.a * material.baseColorFactor.a;
+    let alpha = material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -4765,7 +4771,6 @@ fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mater
         return vec3f(0.0);
     }
     return material.baseColor * light.color * light.intensity * NdotL;
-    // return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
@@ -4776,7 +4781,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let epsilon = light.innerCutoff - light.outerCutoff;
     var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    // coneAtten = 1.0;
     if (coneAtten <= 0.0 || NdotL <= 0.0) {
         return vec3f(0.0);
     }
@@ -4806,7 +4810,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let diffuse = kD * material.baseColor.rgb / PI;
 
     let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
     return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
@@ -4836,8 +4839,13 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    // \u2705 now we declare materialData
+    // \u2705 Get material with alpha
     let materialData = getPBRMaterial(input.uv);
+    
+    // \u2705 Early discard for fully transparent pixels (alpha cutoff)
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
 
     var lightContribution = vec3f(0.0);
 
@@ -4850,7 +4858,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let lightDir = normalize(spotlights[i].position - input.fragPos);
         let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        // let visibility = 1.0;
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
@@ -4867,7 +4874,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         finalColor += glowColor * fresnel * 0.1;
     }
 
-    return vec4f(finalColor, 1.0);
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // \u2705 Return color with alpha from material
+    return vec4f(finalColor, alpha);
 }`;
 
 // ../../../shaders/fragment.wgsl.metal.js
@@ -4918,6 +4927,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,  // \u2705 Added alpha
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -4945,11 +4955,13 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let texColor = textureSample(meshTexture, meshSampler, uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    // let metallic = mrTex.b * material.metallicFactor;
-    // let roughness = mrTex.g * material.roughnessFactor;
     let metallic = material.metallicFactor;
     let roughness = material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    
+    // \u2705 Get alpha from texture and material factor
+    let alpha = texColor.a * material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -5005,37 +5017,46 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let materialData = getPBRMaterial(input.uv);
+    
+    // \u2705 Early discard for fully transparent pixels
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
+    
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
-   var Lo = vec3f(0.0);
-  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-    let L = normalize(spotlights[i].position - input.fragPos);
-    let H = normalize(V + L);
-    let distance = length(spotlights[i].position - input.fragPos);
-    let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+    var Lo = vec3f(0.0);
+    
+    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let L = normalize(spotlights[i].position - input.fragPos);
+        let H = normalize(V + L);
+        let distance = length(spotlights[i].position - input.fragPos);
+        let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
 
-    let NdotL = max(dot(N, L), 0.0);
+        let NdotL = max(dot(N, L), 0.0);
 
-    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
 
-    let NDF = distributionGGX(N, H, materialData.roughness);
-    let G   = geometrySmith(N, V, L, materialData.roughness);
-    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+        let NDF = distributionGGX(N, H, materialData.roughness);
+        let G   = geometrySmith(N, V, L, materialData.roughness);
+        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+        let kS = F;
+        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
 
-    let diffuse  = kD * materialData.baseColor / PI;
-    let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+        let diffuse  = kD * materialData.baseColor / PI;
+        let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
 
-    // Combine diffuse + specular and multiply by NdotL and radiance
-    Lo += (diffuse + specular) * radiance * NdotL;
-}
+        // Combine diffuse + specular and multiply by NdotL and radiance
+        Lo += (diffuse + specular) * radiance * NdotL;
+    }
 
-let ambient = scene.globalAmbient * materialData.baseColor;
-var color = ambient + Lo;
-return vec4f(color, 1.0);
+    let ambient = scene.globalAmbient * materialData.baseColor;
+    var color = ambient + Lo;
+    
+    // \u2705 Return color with alpha from material
+    return vec4f(color, materialData.alpha);
 }
 `;
 
@@ -5657,10 +5678,229 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
+// ../../../shaders/water/water-c.wgls.js
+var fragmentWaterWGSL = `
+/* === Engine uniforms === */
+
+// DINAMIC GLOBALS
+const PI: f32 = 3.141592653589793;
+override shadowDepthTextureSize: f32 = 1024.0;
+
+// DINAMIC STRUCTS
+
+
+// PREDEFINED
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+// PREDEFINED
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+// PREDEFINED
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+// PREDEFINED
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+// PREDEFINED
+const MAX_SPOTLIGHTS = 20u;
+
+// PREDEFINED
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// \u2705 Graph custom uniforms
+struct WaterParams {
+    deepColor     : vec3f,
+    waveSpeed     : f32,
+    shallowColor  : vec3f,
+    waveScale     : f32,
+    waveHeight    : f32,
+    fresnelPower  : f32,
+    specularPower : f32,
+    _pad1         : f32,
+};
+
+@group(3) @binding(0) var<uniform> waterParams: WaterParams;
+
+// \u2705 Graph custom functions
+
+// Gerstner wave function for realistic water waves
+fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, time: f32) -> vec3f {
+    let k = 2.0 * PI / wavelength;
+    let c = sqrt(9.8 / k);
+    let d = normalize(direction);
+    let f = k * (dot(d, pos) - c * time);
+    let a = steepness / k;
+    
+    return vec3f(
+        d.x * a * cos(f),
+        a * sin(f),
+        d.y * a * cos(f)
+    );
+}
+
+// Calculate water normal from multiple waves
+fn calculateWaterNormal(worldPos: vec3f, time: f32) -> vec3f {
+    let pos = worldPos.xz * waterParams.waveScale;
+    let t = time * waterParams.waveSpeed;
+    
+    // Multiple wave directions for complex motion
+    let wave1 = gerstnerWave(pos, vec2f(1.0, 0.0), 0.25, 2.0, t);
+    let wave2 = gerstnerWave(pos, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1);
+    let wave3 = gerstnerWave(pos, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9);
+    let wave4 = gerstnerWave(pos, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3);
+    
+    // Sum waves and calculate tangent vectors
+    let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
+    
+    // Numerical derivative for normal
+    let eps = 0.01;
+    let posX = worldPos + vec3f(eps, 0.0, 0.0);
+    let posZ = worldPos + vec3f(0.0, 0.0, eps);
+    
+    let offsetX = (
+        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.25, 2.0, t) +
+        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1) +
+        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9) +
+        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3)
+    ) * waterParams.waveHeight;
+    
+    let offsetZ = (
+        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.25, 2.0, t) +
+        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1) +
+        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9) +
+        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3)
+    ) * waterParams.waveHeight;
+    
+    let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
+    let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
+    
+    return normalize(cross(tangentZ, tangentX));
+}
+
+// Fresnel effect for water reflections
+fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
+}
+
+// PREDEFINED Fragment input
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// PREDEFINED PBR helpers
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    // Calculate animated water normal
+    let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
+    
+    // View direction
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+    
+    // Fresnel effect (0 = looking straight down, 1 = grazing angle)
+    let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+    
+    // Light direction
+    let lightDir = normalize(scene.lightPos - input.fragPos);
+    
+    // Diffuse lighting
+    let diff = max(dot(waterNormal, lightDir), 0.0);
+    
+    // Specular (sun reflection on water)
+    let halfDir = normalize(lightDir + viewDir);
+    let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+    
+    // Mix deep and shallow water colors based on fresnel
+    let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+    
+    // Enhanced lighting for more visible effect
+    let ambient = scene.globalAmbient * waterColor * 0.3;
+    let diffuse = diff * waterColor * 1.2;
+    let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
+    
+    // Enhanced foam on wave peaks
+    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+    
+    // Add some caustics-like effect based on waves
+    let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
+                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+    let causticsColor = waterColor * caustics;
+    
+    // Final color with enhanced effects
+    let finalColor = ambient + diffuse + specular + foam + causticsColor;
+    
+    // MUCH more transparent - alpha between 0.2 and 0.5
+    // let alpha = mix(0.2, 0.5, fresnel);
+    let alpha = mix(0.1, 0.3, fresnel); // Super transparent
+
+    // Make the color more vibrant so it's visible even when transparent
+    let vibrantColor = finalColor * 1.5;
+    
+    return vec4f(vibrantColor, alpha);
+}`;
+
 // ../../../engine/materials.js
 var Materials = class {
-  constructor(device, material, glb, textureCache) {
-    this.device = device;
+  constructor(device2, material, glb, textureCache) {
+    this.device = device2;
     this.textureCache = textureCache;
     this.glb = glb;
     this.material = material;
@@ -5720,11 +5960,13 @@ var Materials = class {
     const baseColorFactor = [1, 1, 1, 1];
     const metallicFactor = 0.1;
     const roughnessFactor = 0.5;
-    const pad = [0, 0];
+    const alphaFactor = 0.8;
+    const pad = [0];
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
+      alphaFactor,
       ...pad
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
@@ -5737,10 +5979,9 @@ var Materials = class {
           magFilter: "linear",
           minFilter: "linear"
         });
-      } else {
       }
     } else {
-      this.normalDummyTex = device.createTexture({
+      this.normalDummyTex = device2.createTexture({
         size: [1, 1, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
@@ -5758,8 +5999,73 @@ var Materials = class {
         minFilter: "linear"
       });
     }
+    this.createBufferForWater();
   }
-  createDummyTexture(device, size2 = 256) {
+  createBufferForWater = () => {
+    this.waterBindGroupLayout = this.device.createBindGroupLayout({
+      label: "Water MAT Bind Group Layout for main pass",
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "uniform"
+        }
+      }]
+    });
+    this.waterParamsBuffer = this.device.createBuffer({
+      size: 48,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.waterParamsData = new Float32Array([
+      0,
+      0.2,
+      0.4,
+      // deepColor (vec3f)
+      0.5,
+      // waveSpeed
+      0,
+      0.5,
+      0.7,
+      // shallowColor (vec3f)
+      4,
+      // waveScale
+      0.15,
+      // waveHeight
+      3,
+      // fresnelPower
+      128,
+      // specularPower
+      0
+      // padding
+    ]);
+    this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    this.waterBindGroup = this.device.createBindGroup({
+      layout: this.waterBindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: { buffer: this.waterParamsBuffer }
+      }]
+    });
+    this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
+      const data = new Float32Array([
+        deepColor[0],
+        deepColor[1],
+        deepColor[2],
+        waveSpeed,
+        shallowColor[0],
+        shallowColor[1],
+        shallowColor[2],
+        waveScale,
+        waveHeight,
+        fresnelPower,
+        specularPower,
+        0
+        // padding
+      ]);
+      device.queue.writeBuffer(waterParamsBuffer, 0, data);
+    };
+  };
+  createDummyTexture(device2, size2 = 256) {
     const data = new Uint8Array(size2 * size2 * 4);
     for (let i = 0; i < data.length; i += 4) {
       data[i + 0] = 0;
@@ -5767,12 +6073,12 @@ var Materials = class {
       data[i + 2] = 255;
       data[i + 3] = 255;
     }
-    const texture = device.createTexture({
+    const texture = device2.createTexture({
       size: [size2, size2],
       format: "rgba8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
-    device.queue.writeTexture(
+    device2.queue.writeTexture(
       { texture },
       data,
       { bytesPerRow: size2 * 4 },
@@ -5781,9 +6087,10 @@ var Materials = class {
     return texture;
   }
   /**
-  * Change ONLY base color texture (binding = 3)
-  * Does NOT rebuild pipeline or layout
-  */
+   * @description 
+   * Change ONLY base color texture (binding = 3)
+   * Does NOT rebuild pipeline or layout
+   **/
   changeTexture(newTexture) {
     if (newTexture instanceof GPUTexture) {
       this.texture0 = newTexture;
@@ -5798,6 +6105,10 @@ var Materials = class {
     this.material.type = newType;
     this.setupPipeline();
   }
+  setBlend = (alpha) => {
+    this.material.useBlend = true;
+    this.setupMaterialPBR([1, 1, 1, alpha]);
+  };
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSL;
@@ -5809,6 +6120,8 @@ var Materials = class {
       return fragmentWGSLMetal;
     } else if (this.material.type == "normalmap") {
       return fragmentWGSLNormalMap;
+    } else if (this.material.type == "water") {
+      return fragmentWaterWGSL;
     } else if (this.material.type == "graph") {
       return this.material.fromGraph;
     }
@@ -5824,15 +6137,16 @@ var Materials = class {
       return "rgba8unorm";
     }
   }
-  // not affect all fs
-  setupMaterialPBR(metallicFactor) {
-    const baseColorFactor = [1, 1, 1, 1];
-    const roughnessFactor = 0.5;
-    const pad = [0, 0];
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
+    if (!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
+    if (!baseColorFactor) baseColorFactor = [1, 1, 1, 1];
+    if (!roughnessFactor) roughnessFactor = 0.5;
+    const pad = [0];
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
+      0.5,
       ...pad
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
@@ -5841,30 +6155,6 @@ var Materials = class {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-  // async loadTex0(texturesPaths) {
-  //   this.sampler = this.device.createSampler({
-  //     magFilter: 'linear',
-  //     minFilter: 'linear',
-  //   });
-  //   return new Promise(async (resolve) => {
-  //     const response = await fetch(texturesPaths[0]);
-  //     const imageBitmap = await createImageBitmap(await response.blob());
-  //     this.texture0 = this.device.createTexture({
-  //       size: [imageBitmap.width, imageBitmap.height, 1], // REMOVED 1
-  //       format: this.getFormat(),
-  //       usage:
-  //         GPUTextureUsage.TEXTURE_BINDING |
-  //         GPUTextureUsage.COPY_DST |
-  //         GPUTextureUsage.RENDER_ATTACHMENT,
-  //     });
-  //     this.device.queue.copyExternalImageToTexture(
-  //       {source: imageBitmap},
-  //       {texture: this.texture0},
-  //       [imageBitmap.width, imageBitmap.height]
-  //     );
-  //     resolve()
-  //   })
-  // }
   async loadTex0(texturesPaths) {
     const path = texturesPaths[0];
     const { texture, sampler } = await this.textureCache.get(path, this.getFormat());
@@ -6404,8 +6694,8 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/pointerEffect.js
 var PointerEffect = class {
-  constructor(device, format) {
-    this.device = device;
+  constructor(device2, format) {
+    this.device = device2;
     this.format = format;
     this.enabled = true;
     this._initPipeline();
@@ -6526,8 +6816,8 @@ var PointerEffect = class {
 
 // ../../../engine/mesh-obj.js
 var MEMeshObj = class extends Materials {
-  constructor(canvas, device, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o2.material, _glbFile, o2.textureCache);
+  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+    super(device2, o2.material, _glbFile, o2.textureCache);
     if (typeof o2.name === "undefined") o2.name = genName(3);
     if (typeof o2.raycast === "undefined") {
       this.raycast = { enabled: false, radius: 2 };
@@ -6540,7 +6830,7 @@ var MEMeshObj = class extends Materials {
     this.name = o2.name;
     this.done = false;
     this.canvas = canvas;
-    this.device = device;
+    this.device = device2;
     this.context = context;
     this.entityArgPass = o2.entityArgPass;
     this.clearColor = "red";
@@ -6549,6 +6839,9 @@ var MEMeshObj = class extends Materials {
     this.globalAmbient = [...globalAmbient];
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
+    }
+    if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
+      o2.material.useBlend = false;
     }
     this.useScale = false;
     this.material = o2.material;
@@ -6888,18 +7181,18 @@ var MEMeshObj = class extends Materials {
         // typical for shadow passes
         frontFace: "ccw"
       };
-      this.selectedBuffer = device.createBuffer({
+      this.selectedBuffer = device2.createBuffer({
         size: 4,
         // just one float
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
+      this.selectedBindGroupLayout = device2.createBindGroupLayout({
         label: "selectedBindGroupLayout mesh",
         entries: [
           { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
         ]
       });
-      this.selectedBindGroup = device.createBindGroup({
+      this.selectedBindGroup = device2.createBindGroup({
         label: "selectedBindGroup mesh",
         layout: this.selectedBindGroupLayout,
         entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
@@ -6944,7 +7237,7 @@ var MEMeshObj = class extends Materials {
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
-      this.bonesBuffer = device.createBuffer({
+      this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
         size: alignTo256(64 * MAX_BONES),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -6977,7 +7270,7 @@ var MEMeshObj = class extends Materials {
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.pointer = new PointerEffect(device, pf, this, true);
+        this.effects.pointer = new PointerEffect(device2, pf, this, true);
       }
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
@@ -6993,7 +7286,7 @@ var MEMeshObj = class extends Materials {
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
         sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(
+        device2.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
           sceneData.buffer,
@@ -7044,33 +7337,36 @@ var MEMeshObj = class extends Materials {
     });
   }
   setupPipeline = () => {
+    console.log(" this.waterBindGroupLayout", this.waterBindGroupLayout);
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
-      label: "Mesh Pipeline \u2705",
+      label: "Mesh Pipeline \u2705[OPAQUE]",
       layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout Mesh",
+        label: "PipelineLayout Opaque",
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.selectedBindGroupLayout
+          this.selectedBindGroupLayout,
+          this.waterBindGroupLayout
         ]
       }),
       vertex: {
         entryPoint: "main",
         module: this.device.createShaderModule({
-          code: this.material.type == "normalmap" ? vertexWGSL_NM : vertexWGSL
+          code: this.material.type === "normalmap" ? vertexWGSL_NM : vertexWGSL
         }),
         buffers: this.vertexBuffers
       },
       fragment: {
         entryPoint: "main",
         module: this.device.createShaderModule({
-          code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()
+          code: this.isVideo === true ? fragmentVideoWGSL : this.getMaterial()
         }),
         targets: [
           {
-            format: "rgba16float"
-            //this.presentationFormat,
+            format: "rgba16float",
+            blend: void 0
+            // ❌ NO blending
           }
         ],
         constants: {
@@ -7079,11 +7375,69 @@ var MEMeshObj = class extends Materials {
       },
       depthStencil: {
         depthWriteEnabled: true,
+        // ✅ depth writes
         depthCompare: "less",
         format: "depth24plus"
       },
       primitive: this.primitive
     });
+    this.pipelineTransparent = this.device.createRenderPipeline({
+      label: "Mesh Pipeline Transparent",
+      layout: this.device.createPipelineLayout({
+        label: "PipelineLayout Transparent",
+        bindGroupLayouts: [
+          this.bglForRender,
+          this.uniformBufferBindGroupLayout,
+          this.selectedBindGroupLayout,
+          this.waterBindGroupLayout
+        ]
+      }),
+      vertex: {
+        entryPoint: "main",
+        module: this.device.createShaderModule({
+          code: this.material.type === "normalmap" ? vertexWGSL_NM : vertexWGSL
+        }),
+        buffers: this.vertexBuffers
+      },
+      fragment: {
+        entryPoint: "main",
+        module: this.device.createShaderModule({
+          code: this.isVideo === true ? fragmentVideoWGSL : this.getMaterial()
+        }),
+        targets: [
+          {
+            format: "rgba16float",
+            blend: {
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              },
+              alpha: {
+                srcFactor: "one",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              }
+            }
+          }
+        ],
+        constants: {
+          shadowDepthTextureSize: this.shadowDepthTextureSize
+        }
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        // ❌ do NOT write depth
+        depthCompare: "less",
+        // still test depth
+        format: "depth24plus"
+      },
+      primitive: this.primitive
+    });
+    console.log("\u2705Set Pipelines done");
+  };
+  getMainPipeline = () => {
+    return this.pipeline;
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
@@ -7165,6 +7519,7 @@ var MEMeshObj = class extends Materials {
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
+    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -7937,7 +8292,7 @@ var SpotLight = class {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, indexx, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device2, indexx, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
     aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {
@@ -7968,7 +8323,7 @@ var SpotLight = class {
     this.updateProjection = function() {
       this.projectionMatrix = mat4Impl.perspective(this.fov, this.aspect, this.near, this.far);
     };
-    this.device = device;
+    this.device = device2;
     this.viewProjMatrix = mat4Impl.multiply(this.projectionMatrix, this.viewMatrix);
     this.fov = fov;
     this.aspect = aspect;
@@ -7992,7 +8347,7 @@ var SpotLight = class {
       format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
-    this.shadowSampler = device.createSampler({
+    this.shadowSampler = device2.createSampler({
       label: "shadowSampler[light]",
       compare: "less",
       magFilter: "linear",
@@ -11222,8 +11577,8 @@ var GLTFBufferView = class {
   addUsage(usage) {
     this.usage = this.usage | usage;
   }
-  upload(device) {
-    var buf = device.createBuffer({
+  upload(device2) {
+    var buf = device2.createBuffer({
       size: alignTo(this.buffer.byteLength, 4),
       usage: this.usage,
       mappedAtCreation: true
@@ -11281,8 +11636,8 @@ var GLTFNode = class {
     this.bindGroup = null;
     this.children = n2.children || [];
   }
-  upload(device) {
-    var buf = device.createBuffer(
+  upload(device2) {
+    var buf = device2.createBuffer(
       { size: 4 * 4 * 4, usage: GPUBufferUsage.UNIFORM, mappedAtCreation: true }
     );
     new Float32Array(buf.getMappedRange()).set(this.transform);
@@ -11379,8 +11734,8 @@ var GLTFMaterial = class {
     this.bindGroupLayout = null;
     this.bindGroup = null;
   }
-  upload(device) {
-    var buf = device.createBuffer(
+  upload(device2) {
+    var buf = device2.createBuffer(
       { size: 3 * 4 * 4, usage: GPUBufferUsage.UNIFORM, mappedAtCreation: true }
     );
     var mappingView = new Float32Array(buf.getMappedRange());
@@ -11408,15 +11763,15 @@ var GLTFMaterial = class {
         resource: this.baseColorTexture.imageView
       });
     }
-    this.bindGroupLayout = device.createBindGroupLayout({ entries: layoutEntries });
-    this.bindGroup = device.createBindGroup({
+    this.bindGroupLayout = device2.createBindGroupLayout({ entries: layoutEntries });
+    this.bindGroup = device2.createBindGroup({
       layout: this.bindGroupLayout,
       entries: bindGroupEntries
     });
   }
 };
 var GLTFSampler = class {
-  constructor(sampler, device) {
+  constructor(sampler, device2) {
     var magFilter = sampler["magFilter"] === void 0 || sampler["magFilter"] == GLTFTextureFilter.LINEAR ? "linear" : "nearest";
     var minFilter = sampler["minFilter"] === void 0 || sampler["minFilter"] == GLTFTextureFilter.LINEAR ? "linear" : "nearest";
     var wrapS = "repeat";
@@ -11439,7 +11794,7 @@ var GLTFSampler = class {
         wrapT = "mirror-repeat";
       }
     }
-    this.sampler = device.createSampler({
+    this.sampler = device2.createSampler({
       magFilter,
       minFilter,
       addressModeU: wrapS,
@@ -11466,7 +11821,7 @@ var GLBModel = class {
     this.glbBinaryBuffer = glbBinaryBuffer;
   }
 };
-async function uploadGLBModel(buffer, device) {
+async function uploadGLBModel(buffer, device2) {
   const header2 = new Uint32Array(buffer, 0, 5);
   if (header2[0] !== 1179937895) {
     alert("This does not appear to be a glb file?");
@@ -11492,12 +11847,12 @@ async function uploadGLBModel(buffer, device) {
       );
       const blob = new Blob([view.buffer], { type: imgJson["mime/type"] });
       const img = await createImageBitmap(blob);
-      const gpuImg = device.createTexture({
+      const gpuImg = device2.createTexture({
         size: [img.width, img.height, 1],
         format: "rgba8unorm-srgb",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
-      device.queue.copyExternalImageToTexture(
+      device2.queue.copyExternalImageToTexture(
         { source: img },
         { texture: gpuImg },
         [img.width, img.height, 1]
@@ -11506,9 +11861,9 @@ async function uploadGLBModel(buffer, device) {
     }
   }
   glbJsonData.glbTextures = images;
-  const defaultSampler = new GLTFSampler({}, device);
+  const defaultSampler = new GLTFSampler({}, device2);
   const samplers = (glbJsonData.samplers || []).map(
-    (s) => new GLTFSampler(s, device)
+    (s) => new GLTFSampler(s, device2)
   );
   const textures = (glbJsonData.textures || []).map((tex) => {
     const sampler = tex.sampler !== void 0 ? samplers[tex.sampler] : defaultSampler;
@@ -11568,9 +11923,9 @@ async function uploadGLBModel(buffer, device) {
     });
     return new GLTFMesh(mesh.name, primitives);
   });
-  for (const bv of bufferViews) if (bv.needsUpload) bv.upload(device);
-  defaultMaterial.upload(device);
-  for (const m of materials) m.upload(device);
+  for (const bv of bufferViews) if (bv.needsUpload) bv.upload(device2);
+  defaultMaterial.upload(device2);
+  for (const m of materials) m.upload(device2);
   const skins = (glbJsonData.skins || []).map((skin) => ({
     name: skin.name,
     joints: skin.joints,
@@ -11584,7 +11939,7 @@ async function uploadGLBModel(buffer, device) {
     const meshObj = n2.mesh !== void 0 ? meshes[n2.mesh] : null;
     const node2 = new GLTFNode(n2.name, meshObj, readNodeTransform(n2), n2);
     if (n2.skin !== void 0) node2.skin = n2.skin;
-    node2.upload(device);
+    node2.upload(device2);
     nodes.push(node2);
   }
   for (let i = 0; i < gltfNodes.length; i++) {
@@ -11607,7 +11962,7 @@ async function uploadGLBModel(buffer, device) {
     noSkinMeshNodes = nodes.filter((n2) => n2.mesh);
   } else {
     skinnedMeshNodes.forEach((n2) => {
-      n2.sceneUniformBuffer = device.createBuffer({
+      n2.sceneUniformBuffer = device2.createBuffer({
         size: 44 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
@@ -11620,8 +11975,8 @@ async function uploadGLBModel(buffer, device) {
 // ../../../engine/loaders/bvh.js
 var animBVH = new bvh_loader_default();
 var BVHPlayer = class extends MEMeshObj {
-  constructor(o2, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
-    super(canvas, device, context, o2, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+  constructor(o2, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device2, context, inputHandler, globalAmbient) {
+    super(canvas, device2, context, o2, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
     this.bvh = {};
     this.glb = glb;
     this.currentFrame = 0;
@@ -12072,6 +12427,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -12105,7 +12461,12 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = mrTex.b * material.metallicFactor;
     let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    
+    // \u2705 Get alpha from texture and material factor
+    // let alpha = texColor.a * material.baseColorFactor.a;
+    let alpha = material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -12221,6 +12582,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // \u2705 now we declare materialData
     let materialData = getPBRMaterial(input.uv);
 
+    // \u2705 Early discard for fully transparent pixels (alpha cutoff)
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
+
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -12252,14 +12618,18 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         finalColor += glowColor * fresnel * 0.1;
     }
 
-    let alpha = input.colorMult.a; // use alpha for blending
+    // let alpha = input.colorMult.a; // use alpha for blending
+    // return vec4f(finalColor, alpha);
+
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // \u2705 Return color with alpha from material
     return vec4f(finalColor, alpha);
 }`;
 
 // ../../../engine/instanced/materials-instanced.js
 var MaterialsInstanced = class {
-  constructor(device, material, glb) {
-    this.device = device;
+  constructor(device2, material, glb) {
+    this.device = device2;
     this.glb = glb;
     this.material = material;
     this.isVideo = false;
@@ -12338,7 +12708,7 @@ var MaterialsInstanced = class {
       } else {
       }
     } else {
-      this.normalDummyTex = device.createTexture({
+      this.normalDummyTex = device2.createTexture({
         size: [1, 1, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
@@ -12356,7 +12726,90 @@ var MaterialsInstanced = class {
         minFilter: "linear"
       });
     }
+    this.createBufferForWater();
   }
+  createBufferForWater = () => {
+    this.waterBindGroupLayout = this.device.createBindGroupLayout({
+      label: "Water MAT Bind Group Layout for main pass",
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "uniform"
+        }
+      }]
+    });
+    this.waterParamsBuffer = this.device.createBuffer({
+      size: 48,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.waterParamsData = new Float32Array([
+      0,
+      0.2,
+      0.4,
+      // deepColor (vec3f)
+      0.5,
+      // waveSpeed
+      0,
+      0.5,
+      0.7,
+      // shallowColor (vec3f)
+      4,
+      // waveScale
+      0.15,
+      // waveHeight
+      3,
+      // fresnelPower
+      128,
+      // specularPower
+      0
+      // padding
+    ]);
+    this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    this.waterBindGroup = this.device.createBindGroup({
+      layout: this.waterBindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: { buffer: this.waterParamsBuffer }
+      }]
+    });
+    this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
+      const data = new Float32Array([
+        deepColor[0],
+        deepColor[1],
+        deepColor[2],
+        waveSpeed,
+        shallowColor[0],
+        shallowColor[1],
+        shallowColor[2],
+        waveScale,
+        waveHeight,
+        fresnelPower,
+        specularPower,
+        0
+        // padding
+      ]);
+      device.queue.writeBuffer(waterParamsBuffer, 0, data);
+    };
+  };
+  changeTexture(newTexture) {
+    if (newTexture instanceof GPUTexture) {
+      this.texture0 = newTexture;
+    } else {
+      this.texture0 = { createView: () => newTexture };
+    }
+    this.isVideo = false;
+    this.createBindGroupForRender();
+  }
+  changeMaterial(newType = "graph", graphShader) {
+    this.material.fromGraph = graphShader;
+    this.material.type = newType;
+    this.setupPipeline();
+  }
+  setBlend = (alpha) => {
+    this.material.useBlend = true;
+    this.setupMaterialPBR([1, 1, 1, alpha]);
+  };
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSLInstanced;
@@ -12368,8 +12821,12 @@ var MaterialsInstanced = class {
       return fragmentWGSLMetal;
     } else if (this.material.type == "normalmap") {
       return fragmentWGSLNormalMap;
+    } else if (this.material.type == "water") {
+      return fragmentWaterWGSL;
+    } else if (this.material.type == "graph") {
+      return this.material.fromGraph;
     }
-    console.warn("Unknown material type:", this.material?.type);
+    console.warn("Unknown material type use standard:", this.material?.type);
     return fragmentWGSL;
   }
   getFormat() {
@@ -12381,15 +12838,16 @@ var MaterialsInstanced = class {
       return "rgba8unorm";
     }
   }
-  // not affect all fs
-  setupMaterialPBR(metallicFactor) {
-    const baseColorFactor = [1, 1, 1, 1];
-    const roughnessFactor = 0.5;
-    const pad = [0, 0];
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
+    if (!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
+    if (!baseColorFactor) baseColorFactor = [1, 1, 1, 1];
+    if (!roughnessFactor) roughnessFactor = 0.5;
+    const pad = [0];
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
+      0.5,
       ...pad
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
@@ -13228,8 +13686,8 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen.js
 var GenGeo = class {
-  constructor(device, format, type2 = "sphere", scale4 = 1) {
-    this.device = device;
+  constructor(device2, format, type2 = "sphere", scale4 = 1) {
+    this.device = device2;
     this.format = format;
     const geom = GeometryFactory.create(type2, scale4);
     this.vertexData = geom.positions;
@@ -13405,8 +13863,8 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 
 // ../../../engine/effects/energy-bar.js
 var HPBarEffect = class {
-  constructor(device, format) {
-    this.device = device;
+  constructor(device2, format) {
+    this.device = device2;
     this.format = format;
     this.progress = 1;
     this.color = [0.1, 0.9, 0.1, 1];
@@ -13533,8 +13991,8 @@ var HPBarEffect = class {
 
 // ../../../engine/effects/mana-bar.js
 var MANABarEffect = class {
-  constructor(device, format) {
-    this.device = device;
+  constructor(device2, format) {
+    this.device = device2;
     this.format = format;
     this.progress = 1;
     this.color = [0.1, 0.1, 0.9, 1];
@@ -13746,8 +14204,8 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/flame.js
 var FlameEffect = class {
-  constructor(device, format) {
-    this.device = device;
+  constructor(device2, format) {
+    this.device = device2;
     this.format = format;
     this.time = 0;
     this.intensity = 12;
@@ -13996,8 +14454,8 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/flame-emmiter.js
 var FlameEmitter = class {
-  constructor(device, format, maxParticles = 20) {
-    this.device = device;
+  constructor(device2, format, maxParticles = 20) {
+    this.device = device2;
     this.format = format;
     this.time = 0;
     this.intensity = 3;
@@ -14283,8 +14741,8 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen-tex.js
 var GenGeoTexture = class {
-  constructor(device, format, type2 = "sphere", path, scale4 = 1) {
-    this.device = device;
+  constructor(device2, format, type2 = "sphere", path, scale4 = 1) {
+    this.device = device2;
     this.format = format;
     const geom = GeometryFactory.create(type2, scale4);
     this.vertexData = geom.positions;
@@ -14462,8 +14920,8 @@ var GenGeoTexture = class {
 
 // ../../../engine/effects/gen-tex2.js
 var GenGeoTexture2 = class {
-  constructor(device, format, type2 = "sphere", path, scale4 = 1) {
-    this.device = device;
+  constructor(device2, format, type2 = "sphere", path, scale4 = 1) {
+    this.device = device2;
     this.format = format;
     const geom = GeometryFactory.create(type2, scale4);
     this.vertexData = geom.positions;
@@ -14648,8 +15106,8 @@ var GenGeoTexture2 = class {
 
 // ../../../engine/instanced/mesh-obj-instances.js
 var MEMeshObjInstances = class extends MaterialsInstanced {
-  constructor(canvas, device, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o2.material, _glbFile);
+  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+    super(device2, o2.material, _glbFile);
     if (typeof o2.name === "undefined") o2.name = genName(3);
     if (typeof o2.raycast === "undefined") {
       this.raycast = { enabled: false, radius: 2 };
@@ -14660,7 +15118,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this.name = o2.name;
     this.done = false;
     this.canvas = canvas;
-    this.device = device;
+    this.device = device2;
     this.context = context;
     this.entityArgPass = o2.entityArgPass;
     this.clearColor = "red";
@@ -14671,12 +15129,10 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
     }
+    if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
+      o2.material.useBlend = false;
+    }
     this.material = o2.material;
-    this.time = 0;
-    this.deltaTImeAdapter = 1e3;
-    this.update = (time) => {
-      this.time = time * this.deltaTImeAdapter;
-    };
     this.mesh = o2.mesh;
     if (_glbFile != null) {
       if (typeof this.mesh == "undefined") {
@@ -15002,17 +15458,17 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         // typical for shadow passes
         frontFace: "ccw"
       };
-      this.selectedBuffer = device.createBuffer({
+      this.selectedBuffer = device2.createBuffer({
         size: 4,
         // just one float
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
+      this.selectedBindGroupLayout = device2.createBindGroupLayout({
         entries: [
           { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
         ]
       });
-      this.selectedBindGroup = device.createBindGroup({
+      this.selectedBindGroup = device2.createBindGroup({
         layout: this.selectedBindGroupLayout,
         entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
       });
@@ -15039,7 +15495,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         });
       }
       this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-      this.instanceBuffer = device.createBuffer({
+      this.instanceBuffer = device2.createBuffer({
         size: this.instanceData.byteLength,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
@@ -15067,7 +15523,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.instanceData.set(ghost, offset);
           this.instanceData.set(t.currentColor, offset + 16);
         }
-        device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+        device2.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
       };
       this.updateInstances = (newCount) => {
         if (newCount > this.maxInstances) {
@@ -15076,7 +15532,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         }
         this.instanceCount = newCount;
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-        this.instanceBuffer = device.createBuffer({
+        this.instanceBuffer = device2.createBuffer({
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
@@ -15147,7 +15603,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
-      this.bonesBuffer = device.createBuffer({
+      this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
         size: alignTo256(64 * MAX_BONES),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -15186,29 +15642,29 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device, pf, this, true);
+          this.effects.pointer = new PointerEffect(device2, pf, this, true);
         }
         if (typeof this.pointerEffect.ballEffect !== "undefined" && this.pointerEffect.ballEffect == true) {
-          this.effects.ballEffect = new GenGeo(device, pf, "sphere");
+          this.effects.ballEffect = new GenGeo(device2, pf, "sphere");
         }
         if (typeof this.pointerEffect.energyBar !== "undefined" && this.pointerEffect.energyBar == true) {
-          this.effects.energyBar = new HPBarEffect(device, pf);
-          this.effects.manaBar = new MANABarEffect(device, pf);
+          this.effects.energyBar = new HPBarEffect(device2, pf);
+          this.effects.manaBar = new MANABarEffect(device2, pf);
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device, pf);
+          this.effects.flameEffect = new FlameEffect(device2, pf);
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device, pf);
+          this.effects.flameEmitter = new FlameEmitter(device2, pf);
         }
         if (typeof this.pointerEffect.circlePlane !== "undefined" && this.pointerEffect.circlePlane == true) {
-          this.effects.circlePlane = new GenGeo(device, pf, "circlePlane");
+          this.effects.circlePlane = new GenGeo(device2, pf, "circlePlane");
         }
         if (typeof this.pointerEffect.circlePlaneTex !== "undefined" && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlaneTex = new GenGeoTexture(device, pf, "ring", this.pointerEffect.circlePlaneTexPath);
+          this.effects.circlePlaneTex = new GenGeoTexture(device2, pf, "ring", this.pointerEffect.circlePlaneTexPath);
         }
         if (typeof this.pointerEffect.circle !== "undefined" && this.pointerEffect.circlePlaneTexPath !== "undefined") {
-          this.effects.circle = new GenGeoTexture2(device, pf, "circle2", this.pointerEffect.circlePlaneTexPath);
+          this.effects.circle = new GenGeoTexture2(device2, pf, "circle2", this.pointerEffect.circlePlaneTexPath);
         }
       }
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
@@ -15225,7 +15681,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
         sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(
+        device2.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
           sceneData.buffer,
@@ -15416,6 +15872,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
+    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -15496,8 +15953,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
 
 // ../../../engine/loaders/bvh-instaced.js
 var BVHPlayerInstances = class extends MEMeshObjInstances {
-  constructor(o2, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
-    super(canvas, device, context, o2, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+  constructor(o2, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device2, context, inputHandler, globalAmbient) {
+    super(canvas, device2, context, o2, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
     this.bvh = {};
     this.glb = glb;
     this.currentFrame = 0;
@@ -15980,14 +16437,13 @@ var MEEditorClient = class {
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
-            console.log("Graph saved \u2705 test ", data.graphs);
+            document.dispatchEvent(new CustomEvent("on-shader-graphs-list", { detail: data.graphs }));
           }
           if (data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list \u2705", data);
             document.dispatchEvent(new CustomEvent("on-shader-graphs-list", { detail: data.shaderGraphs }));
           } else if (data.methodLoads && data.ok == true) {
             mb.show("Graph loads \u2705", data);
-            console.log("TEST NET ");
             document.dispatchEvent(new CustomEvent("on-graph-load", { detail: data.graph }));
           } else {
             mb.show("From editorX:" + data.ok);
@@ -16825,7 +17281,6 @@ var CurveEditor = class {
     document.body.appendChild(this.popup);
   }
   toggleEditor() {
-    console.log("_editorOpen");
     this._editorOpen = !this._editorOpen;
     this.popup.style.display = this._editorOpen ? "block" : "none";
     this.draw();
@@ -17089,7 +17544,6 @@ var CurveStore = class {
   getOrCreate(curveArg) {
     let curve = this.curves.find((c) => c.name === curveArg.name);
     if (curve) return curve;
-    console.log("PUSH in getOrCreate");
     curve = new CurveData(curveArg.name);
     this.curves.push(curve);
     return curve;
@@ -17283,6 +17737,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32
 };
 
 // PREDEFINED
@@ -17426,7 +17881,6 @@ var FluxCodexVertex = class {
       this.addNode("audioMP3", e.detail);
     });
     document.addEventListener("show-curve-editor", (e) => {
-      console.log("show-showCurveEditorBtn editor ", e);
       this.curveEditor.toggleEditor();
     });
   }
@@ -17945,19 +18399,9 @@ var FluxCodexVertex = class {
     outputs.forEach((pin) => right2.appendChild(this._pinElement(pin, true, nodeId2)));
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Light" || node2.title === "Get Scene Animation") {
       const select2 = el2.querySelector("select.scene-select");
+      console.log("!TEST! ??? BEFORE");
       if (select2) {
         console.log("!TEST! ???");
-        const objects2 = spec.accessObject || [];
-        objects2.forEach((obj) => {
-          const opt = document.createElement("option");
-          opt.value = obj.name;
-          opt.textContent = obj.name;
-          select2.appendChild(opt);
-        });
-        const selected = this._getSceneSelectedName(node2);
-        if (selected) {
-          select2.value = selected;
-        }
       }
     } else if (node2.category === "action" && node2.title === "Function") {
       let select2 = el2.querySelector("select.method-select");
@@ -18347,6 +18791,29 @@ var FluxCodexVertex = class {
         const name2 = e.target.value;
         spec.fields[0].value = name2;
         this.updateSceneObjectPins(spec, name2);
+      });
+      el.appendChild(select);
+    } else if (spec.title === "Get Shader Graph") {
+      const select = document.createElement("select");
+      select.id = spec._id ? spec._id : spec.id;
+      select.style.width = "100%";
+      select.style.marginTop = "6px";
+      if (spec.accessObject === void 0) spec.accessObject = eval(spec.accessObjectLiteral);
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "-- Select Shader --";
+      placeholder.value = "";
+      select.appendChild(placeholder);
+      console.log("WORKS objects", spec.fields[0].value);
+      spec.accessObject.runtimeList.forEach((name2) => {
+        const opt = document.createElement("option");
+        opt.value = name2;
+        opt.textContent = name2;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", (e) => {
+        const name2 = e.target.value;
+        spec.fields[0].value = name2;
+        console.log("WORKS SPEC ", spec);
       });
       el.appendChild(select);
     }
@@ -19319,6 +19786,26 @@ var FluxCodexVertex = class {
         accessObject: window.app?.mainRenderBundle,
         accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: ["name", "position", "rotation", "scale"]
+      }),
+      getShaderGraph: (id2, x2, y2) => ({
+        noExec: true,
+        id: id2,
+        title: "Get Shader Graph",
+        x: x2,
+        y: y2,
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { objectName: "objectName", type: "string" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }],
+        fields: [
+          { key: "selectedShader", value: "" },
+          { key: "objectName", value: "FLOOR" }
+        ],
+        builtIn: true,
+        accessObject: window.app?.shaderGraph,
+        accessObjectLiteral: "window.app?.shaderGraph"
       }),
       getSceneLight: (id2, x2, y2) => ({
         noExec: true,
@@ -20847,6 +21334,18 @@ var FluxCodexVertex = class {
           n._listenerAttached = true;
         }
         n._returnCache = n.osc.UPDATE();
+      } else if (n.title === "Get Shader Graph") {
+        const objectName2 = this.getValue(nodeId, "objectName");
+        let selectedShader = this.getValue(nodeId, "selectedShader");
+        if (!objectName2) {
+          console.warn("[Get Shader Graph] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let o2 = app.getSceneObjectByName(objectName2);
+        o2.changeMaterial("graph", selectedShader);
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -20869,7 +21368,7 @@ var FluxCodexVertex = class {
       const shaderGraphName = this.getValue(nodeId, "shaderGraphName");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (shaderGraphName) {
-        console.log("sceneObjectName shader graph setup.......", sceneObjectName);
+        console.log("CRAZZY .......", sceneObjectName);
         let obj = app.getSceneObjectByName(sceneObjectName);
         let r2 = app.shaderGraph.compile();
         const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
@@ -21340,7 +21839,6 @@ var FluxCodexVertex = class {
     this.compileGraph();
     return;
   }
-  // test
   onNodeDoubleClick(node2) {
     console.log(`%c Node [CURVE  func] ${node2.curve}`, LOG_FUNNY_ARCADE2);
     if (node2.title !== "Curve") return;
@@ -21365,10 +21863,17 @@ var FragmentShaderGraph = class {
     this.spawnStepY = 140;
     this.spawnCol = 0;
     this.runtimeList = [];
-    this.runtime_memory = [];
+    this.runtime_memory = {};
     this.onGraphLoadAttached = false;
   }
   addNode(node2) {
+    if (node2.type === "FragmentOutput") {
+      const exists = this.nodes.some((n2) => n2.type === "FragmentOutput");
+      if (exists) {
+        console.warn("FragmentOutput already exists");
+        return null;
+      }
+    }
     this.nodes.push(node2);
     return node2;
   }
@@ -21537,34 +22042,7 @@ var FragmentOutputNode = class extends ShaderNode {
     return { out: ctx.outputs.outColor, type: "vec4f" };
   }
 };
-var BaseColorOutputNode = class extends ShaderNode {
-  constructor() {
-    super("BaseColorOutput");
-    this.inputs = { color: { default: "vec3f(1.0)" } };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "color");
-    let value;
-    if (conn) {
-      value = ctx.resolve(conn.fromNode, conn.fromPin);
-    } else {
-      value = this.inputs.color.default;
-    }
-    ctx.outputs.baseColor = value;
-    return { out: ctx.outputs.baseColor };
-  }
-};
-var EmissiveOutputNode = class extends ShaderNode {
-  constructor() {
-    super("EmissiveOutput");
-    this.inputs = { color: { default: "vec3f(0.0)" } };
-  }
-  build(_, __, ctx) {
-    ctx.outputs.emissive = ctx.resolve(this, "color");
-    return { out: ctx.outputs.emissive };
-  }
-};
-var AlphaOutputNode = class extends ShaderNode {
+var AlphaOutput = class extends ShaderNode {
   constructor() {
     super("AlphaOutput");
     this.inputs = { alpha: { default: "1.0" } };
@@ -21574,7 +22052,7 @@ var AlphaOutputNode = class extends ShaderNode {
     return { out: ctx.outputs.alpha };
   }
 };
-var NormalOutputNode = class extends ShaderNode {
+var NormalOutput = class extends ShaderNode {
   constructor() {
     super("NormalOutput");
     this.inputs = { normal: { default: "input.normal" } };
@@ -22285,78 +22763,79 @@ var ConnectionLayer = class {
   }
 };
 async function openFragmentShaderEditor(id2 = "fragShader") {
-  const shaderGraph2 = new FragmentShaderGraph(id2);
-  const root = document.createElement("div");
-  root.id = "shaderDOM";
-  root.style.cssText = `
+  return new Promise((resolve, reject) => {
+    const shaderGraph2 = new FragmentShaderGraph(id2);
+    const root = document.createElement("div");
+    root.id = "shaderDOM";
+    root.style.cssText = `
     position:fixed; left: 17.5%; top:4%;
     background:#0b0e14; color:#eee;
     display:flex; font-family:system-ui;
     width:300%;height:90%
   `;
-  const menu = document.createElement("div");
-  menu.style.cssText = `
-    width:180px; border-right:1px solid #222;
+    const menu = document.createElement("div");
+    menu.style.cssText = `
+    width:200px; border-right:1px solid #222;
     padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
   `;
-  const btn = (txt, fn) => {
-    const b2 = document.createElement("button");
-    b2.textContent = txt;
-    b2.style.cssText = "width:100%;margin:4px 0;";
-    if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
-    if (txt == "Create New") b2.style.cssText += "color: lime;";
-    if (txt == "Delete") b2.style.cssText += "color: red;";
-    b2.classList.add("btn");
-    b2.classList.add("btnLeftBox");
-    b2.onclick = fn;
-    menu.appendChild(b2);
-  };
-  const area = document.createElement("div");
-  area.style.cssText = "flex:1;position:relative";
-  area.classList.add("fancy-grid-bg");
-  area.classList.add("dark");
-  let pan = { active: false, ox: 0, oy: 0 };
-  area.addEventListener("pointerdown", (e) => {
-    if (e.target !== area) return;
-    pan.active = true;
-    pan.ox = e.clientX;
-    pan.oy = e.clientY;
-    area.setPointerCapture(e.pointerId);
-  });
-  area.addEventListener("pointermove", (e) => {
-    if (!pan.active) return;
-    const dx = e.clientX - pan.ox;
-    const dy = e.clientY - pan.oy;
-    pan.ox = e.clientX;
-    pan.oy = e.clientY;
-    shaderGraph2.nodes.forEach((n2) => {
-      n2.x += dx;
-      n2.y += dy;
-      const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
-      if (el2) {
-        el2.style.left = n2.x + "px";
-        el2.style.top = n2.y + "px";
-      }
+    const btn = (txt, fn) => {
+      const b2 = document.createElement("button");
+      b2.textContent = txt;
+      b2.style.cssText = "width:100%;margin:4px 0;";
+      if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
+      if (txt == "Create New") b2.style.cssText += "color: lime;";
+      if (txt == "Delete") b2.style.cssText += "color: red;";
+      b2.classList.add("btn");
+      b2.classList.add("btnLeftBox");
+      b2.onclick = fn;
+      menu.appendChild(b2);
+    };
+    const area = document.createElement("div");
+    area.style.cssText = "flex:1;position:relative";
+    area.classList.add("fancy-grid-bg");
+    area.classList.add("dark");
+    let pan = { active: false, ox: 0, oy: 0 };
+    area.addEventListener("pointerdown", (e) => {
+      if (e.target !== area) return;
+      pan.active = true;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      area.setPointerCapture(e.pointerId);
     });
-    connectionLayer.redrawAll();
-  });
-  area.addEventListener("pointerup", (e) => {
-    pan.active = false;
-    area.releasePointerCapture(e.pointerId);
-  });
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.style.position = "absolute";
-  svg.style.left = "0";
-  svg.style.top = "0";
-  svg.style.width = "100%";
-  svg.style.height = "100%";
-  svg.style.pointerEvents = "none";
-  area.appendChild(svg);
-  root.appendChild(menu);
-  root.appendChild(area);
-  document.body.appendChild(root);
-  const style = document.createElement("style");
-  style.textContent = `
+    area.addEventListener("pointermove", (e) => {
+      if (!pan.active) return;
+      const dx = e.clientX - pan.ox;
+      const dy = e.clientY - pan.oy;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      shaderGraph2.nodes.forEach((n2) => {
+        n2.x += dx;
+        n2.y += dy;
+        const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
+        if (el2) {
+          el2.style.left = n2.x + "px";
+          el2.style.top = n2.y + "px";
+        }
+      });
+      connectionLayer.redrawAll();
+    });
+    area.addEventListener("pointerup", (e) => {
+      pan.active = false;
+      area.releasePointerCapture(e.pointerId);
+    });
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position = "absolute";
+    svg.style.left = "0";
+    svg.style.top = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    area.appendChild(svg);
+    root.appendChild(menu);
+    root.appendChild(area);
+    document.body.appendChild(root);
+    const style = document.createElement("style");
+    style.textContent = `
 #shaderDOM { z-index:2 }
 
 .nodeShader {
@@ -22456,271 +22935,284 @@ svg path {
   pointer-events:none;
 }
 `;
-  document.head.appendChild(style);
-  const connectionLayer = new ConnectionLayer(svg, shaderGraph2);
-  function addNode(node2, x2, y2) {
-    shaderGraph2.addNode(node2);
-    if (x2 == null || y2 == null) {
-      const p = shaderGraph2.nextSpawn();
-      x2 = p.x;
-      y2 = p.y;
-    }
-    node2.x = x2;
-    node2.y = y2;
-    const el2 = document.createElement("div");
-    el2.className = "nodeShader";
-    el2.style.left = x2 + "px";
-    el2.style.top = y2 + "px";
-    area.appendChild(el2);
-    el2.tabIndex = 0;
-    el2.addEventListener("click", (e) => {
-      e.stopPropagation();
-      document.querySelectorAll(".nodeShader.selected").forEach((n2) => n2.classList.remove("selected"));
-      el2.classList.add("selected");
-    });
-    el2.dataset.nodeId = node2.id;
-    const title = document.createElement("div");
-    title.className = "node-title";
-    title.textContent = node2.type;
-    el2.appendChild(title);
-    const propsContainer = document.createElement("div");
-    propsContainer.className = "node-properties";
-    propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-    function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
-      const row2 = document.createElement("div");
-      row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
-      const labelEl = document.createElement("label");
-      labelEl.textContent = label + ":";
-      labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
-      const input = document.createElement("input");
-      input.type = type2;
-      input.value = value;
-      input.step = step;
-      input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
-      input.addEventListener("input", () => {
-        const val = type2 === "number" ? parseFloat(input.value) : input.value;
-        node2[propName] = val;
-      });
-      input.addEventListener("pointerdown", (e) => e.stopPropagation());
-      row2.appendChild(labelEl);
-      row2.appendChild(input);
-      propsContainer.appendChild(row2);
-    }
-    if (node2.type === "Float") {
-      addPropertyInput("Value", "value", node2.value);
-    } else if (node2.type === "Vec2") {
-      addPropertyInput("X", "x", node2.x);
-      addPropertyInput("Y", "y", node2.y);
-    } else if (node2.type === "Vec3") {
-      addPropertyInput("X", "x", node2.x);
-      addPropertyInput("Y", "y", node2.y);
-      addPropertyInput("Z", "z", node2.z);
-    } else if (node2.type === "Vec4") {
-      addPropertyInput("X", "x", node2.x);
-      addPropertyInput("Y", "y", node2.y);
-      addPropertyInput("Z", "z", node2.z);
-      addPropertyInput("W", "w", node2.w);
-    } else if (node2.type === "Color") {
-      addPropertyInput("R", "r", node2.r);
-      addPropertyInput("G", "g", node2.g);
-      addPropertyInput("B", "b", node2.b);
-      addPropertyInput("A", "a", node2.a);
-    } else if (node2.type === "InlineFunction") {
-      addPropertyInput("Name", "fnName", node2.fnName, "text");
-      const ta = document.createElement("textarea");
-      ta.value = node2.code;
-      ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
-      ta.oninput = () => node2.code = ta.value;
-      ta.onpointerdown = (e) => e.stopPropagation();
-      propsContainer.appendChild(ta);
-    }
-    if (propsContainer.children.length > 0) {
-      el2.appendChild(propsContainer);
-    }
-    const body2 = document.createElement("div");
-    body2.className = "nodeShader-body";
-    el2.appendChild(body2);
-    function createPinRow(pinName, type2 = "input") {
-      const row2 = document.createElement("div");
-      row2.className = "pinShader-row";
-      const pin = document.createElement("div");
-      pin.className = "pinShader " + (type2 === "input" ? "input" : "output");
-      pin.dataset.node = node2.id;
-      pin.dataset.pin = pinName;
-      pin.dataset.type = type2;
-      const label = document.createElement("div");
-      label.className = "pinShader-label";
-      label.textContent = pinName;
-      if (type2 === "input") row2.append(pin, label);
-      else {
-        row2.style.justifyContent = "flex-end";
-        row2.append(label, pin);
+    document.head.appendChild(style);
+    const connectionLayer = new ConnectionLayer(svg, shaderGraph2);
+    function addNode(node2, x2, y2) {
+      const test = shaderGraph2.addNode(node2);
+      if (test == null) return;
+      if (x2 == null || y2 == null) {
+        const p = shaderGraph2.nextSpawn();
+        x2 = p.x;
+        y2 = p.y;
       }
-      return { row: row2, pin };
-    }
-    const inputsContainer = document.createElement("div");
-    inputsContainer.className = "nodeShader-inputs";
-    body2.appendChild(inputsContainer);
-    Object.keys(node2.inputs || {}).forEach((pinName) => {
-      const { row: row2, pin } = createPinRow(pinName, "input");
-      inputsContainer.appendChild(row2);
-    });
-    const outputContainer = document.createElement("div");
-    outputContainer.style.width = "100%";
-    body2.appendChild(outputContainer);
-    const { row: outRow, pin: outPin } = createPinRow("out", "output");
-    outputContainer.appendChild(outRow);
-    connectionLayer.attach(outPin);
-    shaderGraph2.connectionLayer = connectionLayer;
-    shaderGraph2.makeDraggable(el2, node2, connectionLayer);
-  }
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Delete") {
-      const sel = document.querySelector(".nodeShader.selected");
-      if (!sel) return;
-      const nodeId2 = sel.dataset.nodeId;
-      const node2 = shaderGraph2.nodes.find((n2) => n2.id === nodeId2);
-      if (!node2) return;
-      shaderGraph2.connections = shaderGraph2.connections.filter(
-        (c) => c.fromNode !== node2 && c.toNode !== node2
-      );
-      [...svg.querySelectorAll("path")].forEach((p) => {
-        if (p.dataset.from?.startsWith(nodeId2 + ":") || p.dataset.to?.startsWith(nodeId2 + ":")) {
-          p.remove();
+      node2.x = x2;
+      node2.y = y2;
+      const el2 = document.createElement("div");
+      el2.className = "nodeShader";
+      el2.style.left = x2 + "px";
+      el2.style.top = y2 + "px";
+      area.appendChild(el2);
+      el2.tabIndex = 0;
+      el2.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.querySelectorAll(".nodeShader.selected").forEach((n2) => n2.classList.remove("selected"));
+        el2.classList.add("selected");
+      });
+      el2.dataset.nodeId = node2.id;
+      const title = document.createElement("div");
+      title.className = "node-title";
+      title.textContent = node2.type;
+      el2.appendChild(title);
+      const propsContainer = document.createElement("div");
+      propsContainer.className = "node-properties";
+      propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
+      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
+        const row2 = document.createElement("div");
+        row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
+        const labelEl = document.createElement("label");
+        labelEl.textContent = label + ":";
+        labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
+        const input = document.createElement("input");
+        input.type = type2;
+        input.value = value;
+        input.step = step;
+        input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
+        input.addEventListener("input", () => {
+          const val = type2 === "number" ? parseFloat(input.value) : input.value;
+          node2[propName] = val;
+        });
+        input.addEventListener("pointerdown", (e) => e.stopPropagation());
+        row2.appendChild(labelEl);
+        row2.appendChild(input);
+        propsContainer.appendChild(row2);
+      }
+      if (node2.type === "Float") {
+        addPropertyInput("Value", "value", node2.value);
+      } else if (node2.type === "Vec2") {
+        addPropertyInput("X", "x", node2.x);
+        addPropertyInput("Y", "y", node2.y);
+      } else if (node2.type === "Vec3") {
+        addPropertyInput("X", "x", node2.x);
+        addPropertyInput("Y", "y", node2.y);
+        addPropertyInput("Z", "z", node2.z);
+      } else if (node2.type === "Vec4") {
+        addPropertyInput("X", "x", node2.x);
+        addPropertyInput("Y", "y", node2.y);
+        addPropertyInput("Z", "z", node2.z);
+        addPropertyInput("W", "w", node2.w);
+      } else if (node2.type === "Color") {
+        addPropertyInput("R", "r", node2.r);
+        addPropertyInput("G", "g", node2.g);
+        addPropertyInput("B", "b", node2.b);
+        addPropertyInput("A", "a", node2.a);
+      } else if (node2.type === "InlineFunction") {
+        addPropertyInput("Name", "fnName", node2.fnName, "text");
+        const ta = document.createElement("textarea");
+        ta.value = node2.code;
+        ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
+        ta.oninput = () => node2.code = ta.value;
+        ta.onpointerdown = (e) => e.stopPropagation();
+        propsContainer.appendChild(ta);
+      }
+      if (propsContainer.children.length > 0) {
+        el2.appendChild(propsContainer);
+      }
+      const body2 = document.createElement("div");
+      body2.className = "nodeShader-body";
+      el2.appendChild(body2);
+      function createPinRow(pinName, type2 = "input") {
+        const row2 = document.createElement("div");
+        row2.className = "pinShader-row";
+        const pin = document.createElement("div");
+        pin.className = "pinShader " + (type2 === "input" ? "input" : "output");
+        pin.dataset.node = node2.id;
+        pin.dataset.pin = pinName;
+        pin.dataset.type = type2;
+        const label = document.createElement("div");
+        label.className = "pinShader-label";
+        label.textContent = pinName;
+        if (type2 === "input") row2.append(pin, label);
+        else {
+          row2.style.justifyContent = "flex-end";
+          row2.append(label, pin);
         }
+        return { row: row2, pin };
+      }
+      const inputsContainer = document.createElement("div");
+      inputsContainer.className = "nodeShader-inputs";
+      body2.appendChild(inputsContainer);
+      Object.keys(node2.inputs || {}).forEach((pinName) => {
+        const { row: row2, pin } = createPinRow(pinName, "input");
+        inputsContainer.appendChild(row2);
       });
-      sel.remove();
-      shaderGraph2.nodes = shaderGraph2.nodes.filter((n2) => n2 !== node2);
-      shaderGraph2.connectionLayer.redrawConnection();
+      const outputContainer = document.createElement("div");
+      outputContainer.style.width = "100%";
+      body2.appendChild(outputContainer);
+      const { row: outRow, pin: outPin } = createPinRow("out", "output");
+      outputContainer.appendChild(outRow);
+      connectionLayer.attach(outPin);
+      shaderGraph2.connectionLayer = connectionLayer;
+      shaderGraph2.makeDraggable(el2, node2, connectionLayer);
     }
-  });
-  btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
-  btn("CameraPos", () => addNode(new CameraPosNode()));
-  btn("Time", () => addNode(new TimeNode()));
-  btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
-  btn("TextureSampler", () => addNode(new TextureSamplerNode()));
-  btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
-  btn("Grayscale", () => addNode(new GrayscaleNode()));
-  btn("Contrast", () => addNode(new ContrastNode()));
-  btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
-  btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
-  btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
-  btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
-  btn("LightShadowNode", () => addNode(new LightShadowNode()));
-  btn("LightToColorNode", () => addNode(new LightToColorNode()));
-  btn("AlphaOutputNode", () => addNode(new AlphaOutputNode()));
-  btn("NormalOutputNode", () => addNode(new NormalOutputNode()));
-  btn("Float", () => {
-    const val = prompt("Enter float value:", "1.0");
-    addNode(new FloatNode(parseFloat(val) || 1));
-  });
-  btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
-  btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
-  btn("Add", () => addNode(new AddNode()));
-  btn("Multiply", () => addNode(new MultiplyNode()));
-  btn("Power", () => addNode(new PowerNode()));
-  btn("Lerp", () => addNode(new LerpNode()));
-  btn("Sin", () => addNode(new SinNode()));
-  btn("Cos", () => addNode(new CosNode()));
-  btn("Normalize", () => addNode(new NormalizeNode()));
-  btn("DotProduct", () => addNode(new DotProductNode()));
-  btn("Length", () => addNode(new LengthNode()));
-  btn("Frac", () => addNode(new FracNode()));
-  btn("OneMinus", () => addNode(new OneMinusNode()));
-  btn("Smoothstep", () => addNode(new SmoothstepNode()));
-  btn("FragPosition", () => addNode(new FragmentPositionNode()));
-  btn("FragNormal", () => addNode(new FragmentNormalNode()));
-  btn("ViewDirection", () => addNode(new ViewDirectionNode()));
-  btn("SplitVec4", () => addNode(new SplitVec4Node()));
-  btn("CombineVec4", () => addNode(new CombineVec4Node()));
-  btn("Create New", async () => {
-    shaderGraph2.clear();
-    let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
-    if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
-      if (exist === true) {
-        console.info("ALREADY EXIST SHADER, please use diff name" + exist);
-      } else {
-        shaderGraph2.id = nameOfGraphMaterital;
-        saveGraph(shaderGraph2, nameOfGraphMaterital);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Delete") {
+        const sel = document.querySelector(".nodeShader.selected");
+        if (!sel) return;
+        const nodeId2 = sel.dataset.nodeId;
+        const node2 = shaderGraph2.nodes.find((n2) => n2.id === nodeId2);
+        if (!node2) return;
+        shaderGraph2.connections = shaderGraph2.connections.filter(
+          (c) => c.fromNode !== node2 && c.toNode !== node2
+        );
+        [...svg.querySelectorAll("path")].forEach((p) => {
+          if (p.dataset.from?.startsWith(nodeId2 + ":") || p.dataset.to?.startsWith(nodeId2 + ":")) {
+            p.remove();
+          }
+        });
+        sel.remove();
+        shaderGraph2.nodes = shaderGraph2.nodes.filter((n2) => n2 !== node2);
+        shaderGraph2.connectionLayer.redrawConnection();
       }
-    }
-  });
-  btn("Compile", () => {
-    let r2 = shaderGraph2.compile();
-    const graphGenShaderWGSL = graphAdapter(r2, shaderGraph2.nodes);
-    console.log("test compile ", graphGenShaderWGSL);
-  });
-  btn("Save Graph", () => {
-    saveGraph(shaderGraph2, shaderGraph2.id);
-  });
-  btn("Load Graph", async () => {
-    shaderGraph2.clear();
-    let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
-    const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
-    if (exist === false) {
-      alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
-    }
-  });
-  btn("Delete", () => {
-    console.log("[DELETE]", shaderGraph2.id);
-    document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph2.id }));
-  });
-  const b = document.createElement("select");
-  b.style.cssText = "width:100%;margin:4px 0;";
-  b.classList.add("btn");
-  b.classList.add("btnLeftBox");
-  b.style.webkitTextStrokeWidth = 0;
-  menu.appendChild(b);
-  document.addEventListener("on-shader-graphs-list", (e) => {
-    const shaders = e.detail;
-    b.innerHTML = "";
-    var __ = 0;
-    if (!byId("shader-graphs-list-dom")) {
-      __ = 1;
-      const placeholder2 = document.createElement("option");
-      placeholder2.id = "shader-graphs-list-dom";
-      placeholder2.textContent = "Select shader";
-      placeholder2.value = "";
-      placeholder2.disabled = true;
-      placeholder2.selected = true;
-      b.appendChild(placeholder2);
-    }
-    shaderGraph2.runtimeList = [];
-    shaders.forEach((shader, index) => {
-      const opt = document.createElement("option");
-      opt.value = index;
-      opt.textContent = shader.name;
-      shaderGraph2.runtimeList.push(shader.name);
-      b.appendChild(opt);
     });
-    if (__ == 1) {
-      b.onchange = (event) => {
-        shaderGraph2.clear();
-        const selectedIndex = event.target.value;
-        const selectedShader = shaders[selectedIndex];
-        console.log("Selected shader:", selectedShader.name);
-        document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: selectedShader.name }));
-        console.log("shaderGraph ???", shaderGraph2);
-      };
-    }
-  });
-  document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
-  setTimeout(async () => {
-    console.log(shaderGraph2.runtimeList);
-    if (shaderGraph2.runtimeList.length > 0) {
-      shaderGraph2.id = shaderGraph2.runtimeList[0];
-      const exist = await loadGraph(shaderGraph2.id, shaderGraph2, addNode);
-      console.log("Load by defoul first" + exist);
-      if (exist == false) {
-        saveGraph(shaderGraph2, shaderGraph2.id);
-        console.log("NEW SHADER:[SAVED]" + exist);
+    btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
+    btn("CameraPos", () => addNode(new CameraPosNode()));
+    btn("Time", () => addNode(new TimeNode()));
+    btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
+    btn("TextureSampler", () => addNode(new TextureSamplerNode()));
+    btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
+    btn("Grayscale", () => addNode(new GrayscaleNode()));
+    btn("Contrast", () => addNode(new ContrastNode()));
+    btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
+    btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
+    btn("LightShadowNode", () => addNode(new LightShadowNode()));
+    btn("LightToColorNode", () => addNode(new LightToColorNode()));
+    btn("AlphaOutput", () => addNode(new AlphaOutput()));
+    btn("NormalOutput", () => addNode(new NormalOutput()));
+    btn("Float", () => {
+      const val = prompt("Enter float value:", "1.0");
+      addNode(new FloatNode(parseFloat(val) || 1));
+    });
+    btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
+    btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
+    btn("Add", () => addNode(new AddNode()));
+    btn("Multiply", () => addNode(new MultiplyNode()));
+    btn("Power", () => addNode(new PowerNode()));
+    btn("Lerp", () => addNode(new LerpNode()));
+    btn("Sin", () => addNode(new SinNode()));
+    btn("Cos", () => addNode(new CosNode()));
+    btn("Normalize", () => addNode(new NormalizeNode()));
+    btn("DotProduct", () => addNode(new DotProductNode()));
+    btn("Length", () => addNode(new LengthNode()));
+    btn("Frac", () => addNode(new FracNode()));
+    btn("OneMinus", () => addNode(new OneMinusNode()));
+    btn("Smoothstep", () => addNode(new SmoothstepNode()));
+    btn("FragPosition", () => addNode(new FragmentPositionNode()));
+    btn("FragNormal", () => addNode(new FragmentNormalNode()));
+    btn("ViewDirection", () => addNode(new ViewDirectionNode()));
+    btn("SplitVec4", () => addNode(new SplitVec4Node()));
+    btn("CombineVec4", () => addNode(new CombineVec4Node()));
+    btn("Create New", async () => {
+      shaderGraph2.clear();
+      let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
+      if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
+        if (exist === true) {
+          console.info("ALREADY EXIST SHADER, please use diff name" + exist);
+        } else {
+          shaderGraph2.id = nameOfGraphMaterital;
+          saveGraph(shaderGraph2, nameOfGraphMaterital);
+        }
       }
-    } else {
-      alert("no saved graphs");
-    }
-  }, 400);
-  return shaderGraph2;
+    });
+    btn("Compile", () => {
+      let r2 = shaderGraph2.compile();
+      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph2.nodes);
+      console.log("test compile ", graphGenShaderWGSL);
+      shaderGraph2.runtime_memory[shaderGraph2.id] = graphGenShaderWGSL;
+    });
+    btn("Compile All", () => {
+      for (let x2 = 0; x2 < shaderGraph2.runtimeList.length; x2++) {
+        setTimeout(() => {
+          byId("shader-graphs-list").selectedIndex = x2 + 1;
+          const event = new Event("change", { bubbles: true });
+          byId("shader-graphs-list").dispatchEvent(event);
+          if (shaderGraph2.runtimeList.length == x2) {
+            console.log("LAST");
+          }
+        }, 500 * x2);
+      }
+    });
+    btn("Save Graph", () => {
+      saveGraph(shaderGraph2, shaderGraph2.id);
+    });
+    btn("Load Graph", async () => {
+      shaderGraph2.clear();
+      let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
+      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
+      if (exist === false) {
+        alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
+      }
+    });
+    btn("Delete", () => {
+      console.log("[DELETE]", shaderGraph2.id);
+      document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph2.id }));
+    });
+    const b = document.createElement("select");
+    b.id = "shader-graphs-list";
+    b.style.cssText = "width:100%;margin:4px 0;";
+    b.classList.add("btn");
+    b.classList.add("btnLeftBox");
+    b.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(b);
+    document.addEventListener("on-shader-graphs-list", (e) => {
+      const shaders = e.detail;
+      b.innerHTML = "";
+      var __ = 0;
+      if (!byId("shader-graphs-list-dom")) {
+        __ = 1;
+        const placeholder2 = document.createElement("option");
+        placeholder2.id = "shader-graphs-list-dom";
+        placeholder2.textContent = "Select shader";
+        placeholder2.value = "";
+        placeholder2.disabled = true;
+        placeholder2.selected = true;
+        b.appendChild(placeholder2);
+      }
+      shaderGraph2.runtimeList = [];
+      shaders.forEach((shader, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = shader.name;
+        shaderGraph2.runtimeList.push(shader.name);
+        b.appendChild(opt);
+      });
+      if (__ == 1) {
+        b.onchange = (event) => {
+          shaderGraph2.clear();
+          const selectedIndex = event.target.value;
+          const selectedShader = shaders[selectedIndex];
+          console.log("Selected shader:", selectedShader.name);
+          document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: selectedShader.name }));
+          console.log("shaderGraph ???", shaderGraph2);
+        };
+      }
+    });
+    document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
+    setTimeout(async () => {
+      console.log(shaderGraph2.runtimeList);
+      if (shaderGraph2.runtimeList.length > 0) {
+        shaderGraph2.id = shaderGraph2.runtimeList[0];
+        const exist = await loadGraph(shaderGraph2.id, shaderGraph2, addNode);
+        if (exist == false) {
+          saveGraph(shaderGraph2, shaderGraph2.id);
+          console.log("NEW SHADER:[SAVED]" + exist);
+        }
+      } else {
+        console.log("no saved graphs");
+      }
+      resolve(shaderGraph2);
+    }, 400);
+  });
 }
 function serializeGraph(shaderGraph2) {
   return JSON.stringify({
@@ -22769,7 +23261,6 @@ async function loadGraph(key, shaderGraph2, addNodeUI) {
       }
       shaderGraph2.nodes.length = 0;
       shaderGraph2.connections.length = 0;
-      console.log("on-graph-load: " + e.detail.name);
       shaderGraph2.id = e.detail.name;
       let data = JSON.parse(e.detail.content);
       if (!data) return false;
@@ -22803,20 +23294,11 @@ async function loadGraph(key, shaderGraph2, addNodeUI) {
           case "Contrast":
             node2 = new ContrastNode();
             break;
-          case "FragOutput":
-            node2 = new FragOutputNode();
+          case "AlphaOutput":
+            node2 = new AlphaOutput();
             break;
-          case "BaseColorOutput":
-            node2 = new BaseColorOutputNode();
-            break;
-          case "EmissiveOutputNode":
-            node2 = new EmissiveOutputNode();
-            break;
-          case "AlphaOutputNode":
-            node2 = new AlphaOutputNode();
-            break;
-          case "NormalOutputNode":
-            node2 = new NormalOutputNode();
+          case "NormalOutput":
+            node2 = new NormalOutput();
             break;
           case "LightShadowNode":
             node2 = new LightShadowNode();
@@ -22900,7 +23382,7 @@ async function loadGraph(key, shaderGraph2, addNodeUI) {
         node2.id = saveId;
         node2.x = saveX;
         node2.y = saveY;
-        console.log("Loaded: " + node2);
+        console.log("Loaded:" + node2);
         map[node2.id] = node2;
         addNodeUI(node2, node2.x, node2.y);
       });
@@ -22919,7 +23401,10 @@ async function loadGraph(key, shaderGraph2, addNodeUI) {
         path.dataset.to = `${toNode.id}:${toPin}`;
         shaderGraph2.connectionLayer.svg.appendChild(path);
         shaderGraph2.connectionLayer.redrawAll(path);
-      }), 100);
+      }), 50);
+      let r2 = shaderGraph2.compile();
+      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph2.nodes);
+      shaderGraph2.runtime_memory[shaderGraph2.id] = graphGenShaderWGSL;
       return true;
     });
   }
@@ -22938,6 +23423,11 @@ var EditorHud = class {
     } else if (a == "created from editor") {
       this.createTopMenu();
       this.createAssets();
+      setTimeout(() => openFragmentShaderEditor().then((e) => {
+        byId("shaderDOM").style.display = "none";
+        app.shaderGraph = e;
+        console.log("AUTO INIT app.shaderGraph", app.shaderGraph);
+      }), 100);
     } else if (a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -23323,17 +23813,19 @@ var EditorHud = class {
       this.core.cameras.WASD.yaw = e.target.value;
     });
     byId("showCodeEditorBtn").addEventListener("click", (e) => {
-      console.log("show-method-editor ", e);
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });
     byId("showCurveEditorBtn").addEventListener("click", (e) => {
-      console.log("show-showCurveEditorBtn editor ", e);
       document.dispatchEvent(new CustomEvent("show-curve-editor", { detail: {} }));
     });
     byId("showShaderEditorBtn").addEventListener("click", (e) => {
-      console.log("show-showCurveEditorBtn editor ", e);
+      if (byId("app").style.display == "flex") {
+        byId("app").style.display = "none";
+      }
       if (byId("shaderDOM") === null) {
-        app.shaderGraph = openFragmentShaderEditor();
+        openFragmentShaderEditor().then((e2) => {
+          app.shaderGraph = e2;
+        });
       } else if (byId("shaderDOM").style.display === "flex") {
         byId("shaderDOM").style.display = "none";
       } else {
@@ -23341,6 +23833,9 @@ var EditorHud = class {
       }
     });
     byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
+      if (byId("shaderDOM") && byId("shaderDOM").style.display == "flex") {
+        byId("shaderDOM").style.display = "none";
+      }
       if (byId("app").style.display == "flex") {
         byId("app").style.display = "none";
       } else {
@@ -24432,6 +24927,8 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Get shader graph</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setGraphMaterial')">Set Graph Material</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
@@ -24501,7 +24998,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
-      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save Graph</button>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear All</button>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
@@ -24522,15 +25019,15 @@ var Editor = class {
 
 // ../../../engine/postprocessing/bloom.js
 var BloomPass = class {
-  constructor(width, height, device, intensity = 1.5) {
+  constructor(width, height, device2, intensity = 1.5) {
     this.enabled = false;
-    this.device = device;
+    this.device = device2;
     this.width = width;
     this.height = height;
     this.brightTex = this._createTexture();
     this.blurTexA = this._createTexture();
     this.blurTexB = this._createTexture();
-    this.sampler = device.createSampler({
+    this.sampler = device2.createSampler({
       magFilter: "linear",
       minFilter: "linear"
     });
@@ -25148,8 +25645,8 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
 
 // ../../../engine/core-cache.js
 var TextureCache = class {
-  constructor(device) {
-    this.device = device;
+  constructor(device2) {
+    this.device = device2;
     this.cache = /* @__PURE__ */ new Map();
   }
   async get(path, format) {
@@ -25938,6 +26435,7 @@ var MatrixEngineWGPU = class {
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       for (const mesh of this.mainRenderBundle) {
+        if (mesh.material?.useBlend === true) continue;
         now = performance.now() / 1e3;
         deltaTime2 = now - (this.lastTime || now);
         this.lastTime = now;
@@ -25953,6 +26451,31 @@ var MatrixEngineWGPU = class {
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
               pass.setPipeline(mesh.pipeline);
+            } else {
+              m.shadowDepthTextureView = this.shadowArrayView;
+              m.setupPipeline();
+            }
+          }
+        }
+        mesh.drawElements(pass, this.lightContainer);
+      }
+      for (const mesh of this.mainRenderBundle) {
+        if (mesh.material?.useBlend !== true) continue;
+        now = performance.now() / 1e3;
+        deltaTime2 = now - (this.lastTime || now);
+        this.lastTime = now;
+        if (mesh.update) {
+          mesh.update(deltaTime2);
+        }
+        pass.setPipeline(mesh.pipelineTransparent);
+        if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
+          for (const m of this.mainRenderBundle) {
+            if (m.isVideo == true) {
+              console.log("%c\u2705shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE2);
+              m.shadowDepthTextureView = this.shadowVideoView;
+              m.FINISH_VIDIO_INIT = true;
+              m.setupPipeline();
+              pass.setPipeline(mesh.pipelineTransparent);
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
               m.setupPipeline();

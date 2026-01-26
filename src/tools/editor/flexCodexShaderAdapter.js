@@ -143,6 +143,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32
 };
 
 // PREDEFINED

@@ -45,6 +45,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,  // ✅ Added alpha
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -72,11 +73,13 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let texColor = textureSample(meshTexture, meshSampler, uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    // let metallic = mrTex.b * material.metallicFactor;
-    // let roughness = mrTex.g * material.roughnessFactor;
     let metallic = material.metallicFactor;
     let roughness = material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    
+    // ✅ Get alpha from texture and material factor
+    let alpha = texColor.a * material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -132,43 +135,45 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let materialData = getPBRMaterial(input.uv);
+    
+    // ✅ Early discard for fully transparent pixels
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
+    
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
-   var Lo = vec3f(0.0);
-  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-    let L = normalize(spotlights[i].position - input.fragPos);
-    let H = normalize(V + L);
-    let distance = length(spotlights[i].position - input.fragPos);
-    let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+    var Lo = vec3f(0.0);
+    
+    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let L = normalize(spotlights[i].position - input.fragPos);
+        let H = normalize(V + L);
+        let distance = length(spotlights[i].position - input.fragPos);
+        let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
 
-    let NdotL = max(dot(N, L), 0.0);
+        let NdotL = max(dot(N, L), 0.0);
 
-    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
 
-    let NDF = distributionGGX(N, H, materialData.roughness);
-    let G   = geometrySmith(N, V, L, materialData.roughness);
-    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+        let NDF = distributionGGX(N, H, materialData.roughness);
+        let G   = geometrySmith(N, V, L, materialData.roughness);
+        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+        let kS = F;
+        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
 
-    let diffuse  = kD * materialData.baseColor / PI;
-    let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+        let diffuse  = kD * materialData.baseColor / PI;
+        let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
 
-    // Combine diffuse + specular and multiply by NdotL and radiance
-    Lo += (diffuse + specular) * radiance * NdotL;
-}
+        // Combine diffuse + specular and multiply by NdotL and radiance
+        Lo += (diffuse + specular) * radiance * NdotL;
+    }
 
-let ambient = scene.globalAmbient * materialData.baseColor;
-var color = ambient + Lo;
-return vec4f(color, 1.0);
+    let ambient = scene.globalAmbient * materialData.baseColor;
+    var color = ambient + Lo;
+    
+    // ✅ Return color with alpha from material
+    return vec4f(color, materialData.alpha);
 }
 `;
-
-
-// let N = normalize(input.fragNorm);
-// let L = normalize(spotlights[0].position - input.fragPos);
-// let NdotL = max(dot(N,L),0.0);
-// let radiance = spotlights[0].color * 10.0; // test high intensity
-// Lo += materialData.baseColor * radiance * NdotL;

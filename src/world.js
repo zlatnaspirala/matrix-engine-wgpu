@@ -809,14 +809,14 @@ export default class MatrixEngineWGPU {
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
 
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      // Loop over each mesh
+      // opaque
       for(const mesh of this.mainRenderBundle) {
+        if(mesh.material?.useBlend === true) continue;
         now = performance.now() / 1000;
         deltaTime = now - (this.lastTime || now);
         this.lastTime = now;
-        if(mesh.update) {
-          mesh.update(deltaTime); // glb
-        }
+        if(mesh.update) {mesh.update(deltaTime)}
+        if(mesh.updateTime) {mesh.updateTime(deltaTime)}
         pass.setPipeline(mesh.pipeline);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
@@ -834,12 +834,35 @@ export default class MatrixEngineWGPU {
         }
         mesh.drawElements(pass, this.lightContainer);
       }
+ 
+      // blend
+      for(const mesh of this.mainRenderBundle) {
+        if(mesh.material?.useBlend !== true) continue;
+        now = performance.now() / 1000;
+        deltaTime = now - (this.lastTime || now);
+        this.lastTime = now;
+        if(mesh.update) {mesh.update(deltaTime)}
+        if(mesh.updateTime) {mesh.updateTime(deltaTime)}
+        pass.setPipeline(mesh.pipelineTransparent);
+        if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
+          for(const m of this.mainRenderBundle) {
+            if(m.isVideo == true) {
+              console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+              m.shadowDepthTextureView = this.shadowVideoView;
+              m.FINISH_VIDIO_INIT = true;
+              m.setupPipeline();
+              pass.setPipeline(mesh.pipelineTransparent);
+            } else {
+              m.shadowDepthTextureView = this.shadowArrayView;
+              m.setupPipeline();
+            }
+          }
+        }
+        mesh.drawElements(pass, this.lightContainer);
+      }
       pass.end();
 
-      // 3) resolve collisions AFTER positions changed
       if(this.collisionSystem) this.collisionSystem.update();
-      // 4) render / send network updates / animations etc
-
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{view: this.sceneTextureView, loadOp: 'load', storeOp: 'store'}],
