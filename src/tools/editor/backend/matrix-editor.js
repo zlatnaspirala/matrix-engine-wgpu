@@ -28,8 +28,12 @@ console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localh
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- Start you new project                  -");
 console.log("\x1b[93m%s\x1b[0m", "- Load project                           -");
+console.log("\x1b[93m%s\x1b[0m", "- from ./public/matrix-engine.html       -");
 console.log("\x1b[93m%s\x1b[0m", "- When you create a project next time    -");
 console.log("\x1b[93m%s\x1b[0m", "- you can go directly to /MyProject.html -");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCodexVertex Graph and FragmentShader Graph");
+console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 async function buildAllProjectsOnStartup() {
@@ -334,7 +338,10 @@ async function buildProject(projectName, ws, payload) {
     format: "esm",
     sourcemap: true,
     platform: "browser",
-    minify: false
+    minify: false,
+    logOverride: {
+      'direct-eval': 'silent',
+    }
   });
   await context.watch();
   console.log(`Watching & bundling ${projectName} → ${outfile}`);
@@ -522,6 +529,7 @@ async function saveGraph(msg, ws) {
   });
 }
 
+// FLUXCODEXSHADER
 async function saveShaderGraph(msg, ws) {
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   await fs.mkdir(folderPerProject, {recursive: true});
@@ -530,7 +538,7 @@ async function saveShaderGraph(msg, ws) {
   try {
     const existingContent = await fs.readFile(file, "utf8");
     // Extract array from "export default [...];"
-    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
     }
@@ -565,7 +573,7 @@ async function loadShaderGraph(msg, ws) {
   try {
     const existingContent = await fs.readFile(file, "utf8");
     // Extract array from "export default [...];"
-    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
     }
@@ -595,7 +603,7 @@ async function getShaderGraphs(msg, ws) {
   let graphs = [];
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) graphs = JSON.parse(match[1])
   } catch(err) {
     console.log("No existing shader-graphs.js, creating new");
@@ -616,7 +624,7 @@ async function deleteShaderGraph(msg, ws) {
 
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
     }
@@ -630,7 +638,7 @@ async function deleteShaderGraph(msg, ws) {
   const afterCount = graphs.length;
 
   // rewrite file
-  const out = `export default ${JSON.stringify(graphs, null, 2)};`;
+  const out = `export default shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};`;
   await fs.writeFile(file, out, "utf8");
 
   ws.send(JSON.stringify({

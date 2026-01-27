@@ -1707,10 +1707,8 @@ svg path {
     btn("Compile", () => {
       let r = shaderGraph.compile();
       const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-      console.log("test compile ", graphGenShaderWGSL);
+      // console.log("test compile ", graphGenShaderWGSL);
       shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
-      // hard code THIS IS OK FOR NOW LEAVE IT !!
-      // app.mainRenderBundle[0].changeMaterial('graph', graphGenShaderWGSL);
     });
 
     btn("Compile All", () => {
@@ -1837,7 +1835,6 @@ function serializeGraph(shaderGraph) {
       fnName: n.fnName,
       code: n.code,
       name: n.name,
-      // ✅ Save all node properties
       value: n.value,
       r: n.r, g: n.g, b: n.b, a: n.a,
       inputs: Object.fromEntries(Object.entries(n.inputs || {}).map(([k, v]) => [k, {default: v.default}]))
@@ -1847,7 +1844,8 @@ function serializeGraph(shaderGraph) {
       fromPin: c.fromPin,
       to: c.toNode.id,
       toPin: c.toPin
-    }))
+    })),
+    final: shaderGraph.runtime_memory[shaderGraph.id] ? shaderGraph.runtime_memory[shaderGraph.id] : null
   });
 }
 
@@ -1855,6 +1853,7 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
   let content = serializeGraph(shaderGraph);
   localStorage.setItem(key, content);
   console.log('test compile content', shaderGraph.runtime_memory[key]);
+  console.log('test compile content', content);
   if (shaderGraph.runtime_memory[key]) {
     // content.runtime_memory = shaderGraph.runtime_memory[key];
   } else {
@@ -1954,11 +1953,13 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
         shaderGraph.connectionLayer.svg.appendChild(path);
         shaderGraph.connectionLayer.redrawAll(path);
       }), 50);
+
       // compile every loaded
       let r = shaderGraph.compile();
       const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-      // console.log("test compile ", graphGenShaderWGSL);
+      console.log("test compile shaderGraph.final ", shaderGraph.final);
       shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
+
       return true;
     });
   }

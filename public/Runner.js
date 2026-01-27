@@ -17854,7 +17854,6 @@ var FluxCodexVertex = class {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-    setTimeout(() => this.init(), 3e3);
     document.addEventListener("keydown", (e) => {
       if (e.key == "F6") {
         e.preventDefault();
@@ -17885,6 +17884,7 @@ var FluxCodexVertex = class {
     document.addEventListener("show-curve-editor", (e) => {
       this.curveEditor.toggleEditor();
     });
+    setTimeout(() => this.init(), 3300);
   }
   createContextMenu() {
     let CMenu = document.createElement("div");
@@ -21336,7 +21336,7 @@ var FluxCodexVertex = class {
           return;
         }
         let o2 = app.getSceneObjectByName(objectName2);
-        o2.changeMaterial("graph", selectedShader);
+        o2.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -21354,19 +21354,6 @@ var FluxCodexVertex = class {
       if (pos2?.getSpeed) {
         console.log("pos.getSpeed()", pos2.getSpeed());
         n._returnCache = pos2.getSpeed();
-      }
-      this.enqueueOutputs(n, "execOut");
-      return;
-    } else if (n.title === "Set Graph Material") {
-      const shaderGraphName = this.getValue(nodeId, "shaderGraphName");
-      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
-      if (shaderGraphName) {
-        console.log("CRAZZY .......", sceneObjectName);
-        let obj = app.getSceneObjectByName(sceneObjectName);
-        let r2 = app.shaderGraph.compile();
-        const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
-        console.log("test compile ", graphGenShaderWGSL);
-        obj.changeMaterial("graph", graphGenShaderWGSL);
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -21933,8 +21920,8 @@ var FragmentShaderGraph = class {
   }
 };
 var CompileContext = class {
-  constructor(shaderGraph2) {
-    this.shaderGraph = shaderGraph2;
+  constructor(shaderGraph) {
+    this.shaderGraph = shaderGraph;
     this.cache = /* @__PURE__ */ new Map();
     this.structs = [];
     this.uniforms = [];
@@ -21985,9 +21972,9 @@ var CompileContext = class {
   }
 };
 var FragmentCompiler = class {
-  static compile(shaderGraph2) {
-    const ctx = new CompileContext(shaderGraph2);
-    shaderGraph2.nodes.forEach((n2) => {
+  static compile(shaderGraph) {
+    const ctx = new CompileContext(shaderGraph);
+    shaderGraph.nodes.forEach((n2) => {
       if (n2.type.endsWith("Output")) {
         ctx.resolve(n2, Object.keys(n2.inputs)[0]);
       }
@@ -22688,9 +22675,9 @@ fn ${fnName}() -> vec4f {
   }
 };
 var ConnectionLayer = class {
-  constructor(svg, shaderGraph2) {
+  constructor(svg, shaderGraph) {
     this.svg = svg;
-    this.shaderGraph = shaderGraph2;
+    this.shaderGraph = shaderGraph;
     this.temp = null;
     this.from = null;
     document.addEventListener("pointermove", (e) => this.move(e));
@@ -22761,7 +22748,7 @@ var ConnectionLayer = class {
 };
 async function openFragmentShaderEditor(id2 = "fragShader") {
   return new Promise((resolve, reject) => {
-    const shaderGraph2 = new FragmentShaderGraph(id2);
+    const shaderGraph = new FragmentShaderGraph(id2);
     const root = document.createElement("div");
     root.id = "shaderDOM";
     root.style.cssText = `
@@ -22806,7 +22793,7 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
       const dy = e.clientY - pan.oy;
       pan.ox = e.clientX;
       pan.oy = e.clientY;
-      shaderGraph2.nodes.forEach((n2) => {
+      shaderGraph.nodes.forEach((n2) => {
         n2.x += dx;
         n2.y += dy;
         const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
@@ -22934,12 +22921,12 @@ svg path {
 }
 `;
     document.head.appendChild(style);
-    const connectionLayer = new ConnectionLayer(svg, shaderGraph2);
+    const connectionLayer = new ConnectionLayer(svg, shaderGraph);
     function addNode(node2, x2, y2) {
-      const test = shaderGraph2.addNode(node2);
+      const test = shaderGraph.addNode(node2);
       if (test == null) return;
       if (x2 == null || y2 == null) {
-        const p = shaderGraph2.nextSpawn();
+        const p = shaderGraph.nextSpawn();
         x2 = p.x;
         y2 = p.y;
       }
@@ -23049,17 +23036,17 @@ svg path {
       const { row: outRow, pin: outPin } = createPinRow("out", "output");
       outputContainer.appendChild(outRow);
       connectionLayer.attach(outPin);
-      shaderGraph2.connectionLayer = connectionLayer;
-      shaderGraph2.makeDraggable(el2, node2, connectionLayer);
+      shaderGraph.connectionLayer = connectionLayer;
+      shaderGraph.makeDraggable(el2, node2, connectionLayer);
     }
     document.addEventListener("keydown", (e) => {
       if (e.key === "Delete") {
         const sel = document.querySelector(".nodeShader.selected");
         if (!sel) return;
         const nodeId2 = sel.dataset.nodeId;
-        const node2 = shaderGraph2.nodes.find((n2) => n2.id === nodeId2);
+        const node2 = shaderGraph.nodes.find((n2) => n2.id === nodeId2);
         if (!node2) return;
-        shaderGraph2.connections = shaderGraph2.connections.filter(
+        shaderGraph.connections = shaderGraph.connections.filter(
           (c) => c.fromNode !== node2 && c.toNode !== node2
         );
         [...svg.querySelectorAll("path")].forEach((p) => {
@@ -23068,8 +23055,8 @@ svg path {
           }
         });
         sel.remove();
-        shaderGraph2.nodes = shaderGraph2.nodes.filter((n2) => n2 !== node2);
-        shaderGraph2.connectionLayer.redrawConnection();
+        shaderGraph.nodes = shaderGraph.nodes.filter((n2) => n2 !== node2);
+        shaderGraph.connectionLayer.redrawConnection();
       }
     });
     btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
@@ -23110,50 +23097,49 @@ svg path {
     btn("SplitVec4", () => addNode(new SplitVec4Node()));
     btn("CombineVec4", () => addNode(new CombineVec4Node()));
     btn("Create New", async () => {
-      shaderGraph2.clear();
+      shaderGraph.clear();
       let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
       if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
+        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
         if (exist === true) {
           console.info("ALREADY EXIST SHADER, please use diff name" + exist);
         } else {
-          shaderGraph2.id = nameOfGraphMaterital;
-          saveGraph(shaderGraph2, nameOfGraphMaterital);
+          shaderGraph.id = nameOfGraphMaterital;
+          saveGraph(shaderGraph, nameOfGraphMaterital);
         }
       }
     });
     btn("Compile", () => {
-      let r2 = shaderGraph2.compile();
-      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph2.nodes);
-      console.log("test compile ", graphGenShaderWGSL);
-      shaderGraph2.runtime_memory[shaderGraph2.id] = graphGenShaderWGSL;
+      let r2 = shaderGraph.compile();
+      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
+      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
     });
     btn("Compile All", () => {
-      for (let x2 = 0; x2 < shaderGraph2.runtimeList.length; x2++) {
+      for (let x2 = 0; x2 < shaderGraph.runtimeList.length; x2++) {
         setTimeout(() => {
           byId("shader-graphs-list").selectedIndex = x2 + 1;
           const event = new Event("change", { bubbles: true });
           byId("shader-graphs-list").dispatchEvent(event);
-          if (shaderGraph2.runtimeList.length == x2) {
+          if (shaderGraph.runtimeList.length == x2) {
             console.log("LAST");
           }
         }, 500 * x2);
       }
     });
     btn("Save Graph", () => {
-      saveGraph(shaderGraph2, shaderGraph2.id);
+      saveGraph(shaderGraph, shaderGraph.id);
     });
     btn("Load Graph", async () => {
-      shaderGraph2.clear();
+      shaderGraph.clear();
       let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
-      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph2, addNode);
+      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
       if (exist === false) {
         alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
       }
     });
     btn("Delete", () => {
-      console.log("[DELETE]", shaderGraph2.id);
-      document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph2.id }));
+      console.log("[DELETE]", shaderGraph.id);
+      document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph.id }));
     });
     const titleb = document.createElement("p");
     titleb.style.cssText = "width:100%;margin:4px 0;";
@@ -23183,45 +23169,45 @@ svg path {
         placeholder2.selected = true;
         b.appendChild(placeholder2);
       }
-      shaderGraph2.runtimeList = [];
+      shaderGraph.runtimeList = [];
       shaders.forEach((shader, index) => {
         const opt = document.createElement("option");
         opt.value = index;
         opt.textContent = shader.name;
-        shaderGraph2.runtimeList.push(shader.name);
+        shaderGraph.runtimeList.push(shader.name);
         b.appendChild(opt);
       });
       if (__ == 1) {
         b.onchange = (event) => {
-          shaderGraph2.clear();
+          shaderGraph.clear();
           const selectedIndex = event.target.value;
           const selectedShader = shaders[selectedIndex];
           console.log("Selected shader:", selectedShader.name);
           document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: selectedShader.name }));
-          console.log("shaderGraph ???", shaderGraph2);
+          console.log("shaderGraph ???", shaderGraph);
         };
       }
     });
     document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
     setTimeout(async () => {
-      console.log(shaderGraph2.runtimeList);
-      if (shaderGraph2.runtimeList.length > 0) {
-        shaderGraph2.id = shaderGraph2.runtimeList[0];
-        const exist = await loadGraph(shaderGraph2.id, shaderGraph2, addNode);
+      console.log(shaderGraph.runtimeList);
+      if (shaderGraph.runtimeList.length > 0) {
+        shaderGraph.id = shaderGraph.runtimeList[0];
+        const exist = await loadGraph(shaderGraph.id, shaderGraph, addNode);
         if (exist == false) {
-          saveGraph(shaderGraph2, shaderGraph2.id);
+          saveGraph(shaderGraph, shaderGraph.id);
           console.log("NEW SHADER:[SAVED]" + exist);
         }
       } else {
         console.log("no saved graphs");
       }
-      resolve(shaderGraph2);
+      resolve(shaderGraph);
     }, 2600);
   });
 }
-function serializeGraph(shaderGraph2) {
+function serializeGraph(shaderGraph) {
   return JSON.stringify({
-    nodes: shaderGraph2.nodes.map((n2) => ({
+    nodes: shaderGraph.nodes.map((n2) => ({
       id: n2.id,
       type: n2.type,
       x: n2.x ?? 100,
@@ -23229,7 +23215,6 @@ function serializeGraph(shaderGraph2) {
       fnName: n2.fnName,
       code: n2.code,
       name: n2.name,
-      // ✅ Save all node properties
       value: n2.value,
       r: n2.r,
       g: n2.g,
@@ -23237,17 +23222,24 @@ function serializeGraph(shaderGraph2) {
       a: n2.a,
       inputs: Object.fromEntries(Object.entries(n2.inputs || {}).map(([k, v]) => [k, { default: v.default }]))
     })),
-    connections: shaderGraph2.connections.map((c) => ({
+    connections: shaderGraph.connections.map((c) => ({
       from: c.fromNode.id,
       fromPin: c.fromPin,
       to: c.toNode.id,
       toPin: c.toPin
-    }))
+    })),
+    final: shaderGraph.runtime_memory[shaderGraph.id] ? shaderGraph.runtime_memory[shaderGraph.id] : null
   });
 }
-function saveGraph(shaderGraph2, key = "fragShaderGraph") {
-  const content = serializeGraph(shaderGraph2);
+function saveGraph(shaderGraph, key = "fragShaderGraph") {
+  let content = serializeGraph(shaderGraph);
   localStorage.setItem(key, content);
+  console.log("test compile content", shaderGraph.runtime_memory[key]);
+  console.log("test compile content", content);
+  if (shaderGraph.runtime_memory[key]) {
+  } else {
+    console.warn("GraphShader is saved for src but with no compile final data for prod build.");
+  }
   document.dispatchEvent(new CustomEvent("save-shader-graph", {
     detail: {
       name: key,
@@ -23256,17 +23248,17 @@ function saveGraph(shaderGraph2, key = "fragShaderGraph") {
   }));
   console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
 }
-async function loadGraph(key, shaderGraph2, addNodeUI) {
-  if (shaderGraph2.onGraphLoadAttached === false) {
-    shaderGraph2.onGraphLoadAttached = true;
+async function loadGraph(key, shaderGraph, addNodeUI) {
+  if (shaderGraph.onGraphLoadAttached === false) {
+    shaderGraph.onGraphLoadAttached = true;
     document.addEventListener("on-graph-load", (e) => {
       if (e.detail == null) {
         alert("Graph no exist!");
         return;
       }
-      shaderGraph2.nodes.length = 0;
-      shaderGraph2.connections.length = 0;
-      shaderGraph2.id = e.detail.name;
+      shaderGraph.nodes.length = 0;
+      shaderGraph.connections.length = 0;
+      shaderGraph.id = e.detail.name;
       let data = JSON.parse(e.detail.content);
       if (!data) return false;
       const map = {};
@@ -23399,16 +23391,17 @@ async function loadGraph(key, shaderGraph2, addNodeUI) {
           console.warn("Skipping connection due to missing node", c);
           return;
         }
-        shaderGraph2.connect(fromNode, fromPin, toNode, toPin);
-        const path = shaderGraph2.connectionLayer.path();
+        shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+        const path = shaderGraph.connectionLayer.path();
         path.dataset.from = `${fromNode.id}:${fromPin}`;
         path.dataset.to = `${toNode.id}:${toPin}`;
-        shaderGraph2.connectionLayer.svg.appendChild(path);
-        shaderGraph2.connectionLayer.redrawAll(path);
+        shaderGraph.connectionLayer.svg.appendChild(path);
+        shaderGraph.connectionLayer.redrawAll(path);
       }), 50);
-      let r2 = shaderGraph2.compile();
-      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph2.nodes);
-      shaderGraph2.runtime_memory[shaderGraph2.id] = graphGenShaderWGSL;
+      let r2 = shaderGraph.compile();
+      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
+      console.log("test compile shaderGraph.final ", shaderGraph.final);
+      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
       return true;
     });
   }
@@ -25844,6 +25837,7 @@ var MatrixEngineWGPU = class {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
+    this.shadersPack = {};
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
@@ -25859,7 +25853,7 @@ var MatrixEngineWGPU = class {
     );
     setTimeout(() => {
       this.run(callback);
-    }, 500);
+    }, 50);
   };
   createGlobalStuff() {
     this.textureCache = new TextureCache(this.device);
