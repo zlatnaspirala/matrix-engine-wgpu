@@ -806,7 +806,6 @@ async function useScale(msg, ws) {
   })
 }
 
-// Delete object script code
 async function deleteSceneObject(n, ws) {
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {

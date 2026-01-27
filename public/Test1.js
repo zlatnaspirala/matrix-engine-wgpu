@@ -17854,7 +17854,6 @@ var FluxCodexVertex = class {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-    setTimeout(() => this.init(), 3e3);
     document.addEventListener("keydown", (e) => {
       if (e.key == "F6") {
         e.preventDefault();
@@ -17885,6 +17884,7 @@ var FluxCodexVertex = class {
     document.addEventListener("show-curve-editor", (e) => {
       this.curveEditor.toggleEditor();
     });
+    setTimeout(() => this.init(), 3300);
   }
   createContextMenu() {
     let CMenu = document.createElement("div");
@@ -21336,7 +21336,7 @@ var FluxCodexVertex = class {
           return;
         }
         let o2 = app.getSceneObjectByName(objectName2);
-        o2.changeMaterial("graph", selectedShader);
+        o2.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -23233,8 +23233,13 @@ function serializeGraph(shaderGraph) {
   });
 }
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
-  const content = serializeGraph(shaderGraph);
+  let content = serializeGraph(shaderGraph);
   localStorage.setItem(key, content);
+  console.log("test compile content", shaderGraph.runtime_memory[key]);
+  if (shaderGraph.runtime_memory[key]) {
+  } else {
+    console.warn("GraphShader is saved for src but with no compile final data for prod build.");
+  }
   document.dispatchEvent(new CustomEvent("save-shader-graph", {
     detail: {
       name: key,
@@ -25846,7 +25851,7 @@ var MatrixEngineWGPU = class {
     );
     setTimeout(() => {
       this.run(callback);
-    }, 500);
+    }, 50);
   };
   createGlobalStuff() {
     this.textureCache = new TextureCache(this.device);

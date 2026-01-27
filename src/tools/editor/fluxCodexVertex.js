@@ -123,9 +123,6 @@ export default class FluxCodexVertex {
 
     this._varInputs = {};
 
-    // EXTRA TIME
-    setTimeout(() => this.init(), 3000);
-
     document.addEventListener("keydown", e => {
       if(e.key == "F6") {
         e.preventDefault();
@@ -163,6 +160,9 @@ export default class FluxCodexVertex {
       // console.log('show-showCurveEditorBtn editor ', e);
       this.curveEditor.toggleEditor();
     });
+
+    // EXTRA TIME
+    setTimeout(() => this.init(), 3300);
   }
 
   createContextMenu() {
@@ -1303,7 +1303,7 @@ export default class FluxCodexVertex {
       placeholder.textContent = "-- Select Shader --";
       placeholder.value = "";
       select.appendChild(placeholder);
-    
+
       spec.accessObject.runtimeList.forEach(name => {
         const opt = document.createElement("option");
         opt.value = name;
@@ -1320,7 +1320,7 @@ export default class FluxCodexVertex {
       });
       el.appendChild(select);
       select.value = spec.fields[0].value;
-      setTimeout(() => select.dispatchEvent(new Event('change', { bubbles: true })) , 100);
+      setTimeout(() => select.dispatchEvent(new Event('change', {bubbles: true})), 100);
     }
 
     el.appendChild(body);
@@ -3890,7 +3890,8 @@ export default class FluxCodexVertex {
           return;
         }
         let o = app.getSceneObjectByName(objectName);
-        o.changeMaterial("graph", selectedShader);
+        // 
+        o.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -4391,7 +4392,7 @@ export default class FluxCodexVertex {
       try {
         let data;
         try {
-          if (app.graph) {
+          if(app.graph) {
             data = app.graph;
           } else {
             console.warn("⚠️ Used cached data for graph, load from localstorage!");

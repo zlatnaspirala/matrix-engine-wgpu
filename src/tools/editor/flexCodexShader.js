@@ -1852,8 +1852,14 @@ function serializeGraph(shaderGraph) {
 }
 
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
-  const content = serializeGraph(shaderGraph);
+  let content = serializeGraph(shaderGraph);
   localStorage.setItem(key, content);
+  console.log('test compile content', shaderGraph.runtime_memory[key]);
+  if (shaderGraph.runtime_memory[key]) {
+    // content.runtime_memory = shaderGraph.runtime_memory[key];
+  } else {
+    console.warn("GraphShader is saved for src but with no compile final data for prod build.");
+  }
   document.dispatchEvent(new CustomEvent('save-shader-graph', {
     detail: {
       name: key,

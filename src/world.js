@@ -229,7 +229,7 @@ export default class MatrixEngineWGPU {
 
      setTimeout(() => {
        this.run(callback);
-     },500);
+     },50);
   };
 
   createGlobalStuff() {
