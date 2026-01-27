@@ -213,6 +213,7 @@ function CBimport() {
 import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 import graph from "./graph.js";
+import shaderGraphsProdc from "./shader-graphs.js"
 `;
 }
 
@@ -268,6 +269,12 @@ async function cnp(ws, msg) {
 
   content.addLine(`// [only fro projects created from editor]`);
   content.addLine(`app.graph = graph;`);
+  content.addLine(` shaderGraphsProdc.forEach((gShader) => {`);
+  content.addLine(`   let shaderReady = JSON.parse(gShader.content);`);
+  content.addLine(`   app.shadersPack[gShader.name] = shaderReady.final;`);
+  content.addLine(`   if (typeof shaderReady.final === "undefined") console.warn(\`Shader \${shaderReady.name} is not compiled.\`);`);
+  content.addLine(` });`);
+
   // graph
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);

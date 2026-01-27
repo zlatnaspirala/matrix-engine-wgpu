@@ -2,6 +2,7 @@ import MatrixEngineWGPU from "../../src/world.js";
 import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 import graph from "./graph.js";
+import shaderGraphsProdc from "./shader-graphs.js"
 
 let app = new MatrixEngineWGPU(
 
@@ -23,6 +24,11 @@ let app = new MatrixEngineWGPU(
 addEventListener('AmmoReady', async () => { 
 // [only fro projects created from editor]
 app.graph = graph;
+ shaderGraphsProdc.forEach((gShader) => {
+   let shaderReady = JSON.parse(gShader.content);
+   app.shadersPack[gShader.name] = shaderReady.final;
+   if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
+ });
 // [light]
 app.addLight();
 
