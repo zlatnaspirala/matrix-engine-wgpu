@@ -218,7 +218,7 @@ export default class MaterialsInstanced {
       return this.material.fromGraph;
     }
     console.warn('Unknown material type use standard:', this.material?.type);
-    return fragmentWGSL; // fallback
+    return fragmentWGSL;
   }
 
   getFormat() {

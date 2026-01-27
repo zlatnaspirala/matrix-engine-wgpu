@@ -213,33 +213,11 @@ export default class MatrixEngineWGPU {
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
 
-    this.run(callback);
-
-    // let ff = 0;
-    // const logoAnim = setInterval(() => {
-    //   console.clear();
-    //   console.log(
-    //     "%c" + LOGO_FRAMES[ff],
-    //     LOG_FUNNY_BIG_NEON
-    //   );
-    //   console.log(
-    //     "%cMatrix Engine WGPU • WebGPU Power Unleashed\n" +
-    //     "https://github.com/zlatnaspirala/matrix-engine-wgpu",
-    //     LOG_FUNNY_ARCADE
-    //   );
-    //   ff = (ff + 1) % LOGO_FRAMES.length;
-    // }, 190);
-
-    // stop after few seconds (optional)
-    // setTimeout(() => {
-    //   // clearInterval(logoAnim);
-    //   console.clear();
-    // }, 3200);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c Version 1.8.7 ", LOG_FUNNY);
-    console.log("%c👽 ", LOG_FUNNY_EXTRABIG);
+    console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Port is open.\n" +
       "Creative power loaded with visual scripting.\n" +
@@ -249,6 +227,9 @@ export default class MatrixEngineWGPU {
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
 
+     setTimeout(() => {
+       this.run(callback);
+     },500);
   };
 
   createGlobalStuff() {

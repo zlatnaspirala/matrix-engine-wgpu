@@ -78,9 +78,11 @@ async function buildAllProjectsOnStartup() {
         format: "esm",
         sourcemap: true,
         platform: "browser",
-        minify: false
+        minify: false,
+        logOverride: {
+          'direct-eval': 'silent',
+        }
       });
-
       console.log(`✅ Built ${projectName}`);
       const htmlFile = path.join(PUBLIC_DIR, `${projectName}.html`);
       try {
@@ -607,7 +609,7 @@ async function getShaderGraphs(msg, ws) {
 
 async function deleteShaderGraph(msg, ws) {
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
-  await fs.mkdir(folderPerProject, { recursive: true });
+  await fs.mkdir(folderPerProject, {recursive: true});
 
   const file = path.join(folderPerProject, "shader-graphs.js");
   let graphs = [];
@@ -615,10 +617,10 @@ async function deleteShaderGraph(msg, ws) {
   try {
     const existingContent = await fs.readFile(file, "utf8");
     const match = existingContent.match(/export default (\[[\s\S]*\]);?/);
-    if (match) {
+    if(match) {
       graphs = JSON.parse(match[1]);
     }
-  } catch (err) {
+  } catch(err) {
     console.log("shader-graphs.js not found or empty");
   }
 
@@ -821,7 +823,6 @@ function removeSceneBlock(text, type, objName) {
     // match ANY block that belongs to this object
     const start = `// ME START ${objName}`;
     const end = `// ME END ${objName}`;
-
     regex = new RegExp(
       `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}[^\\n]*\\s*`,
       'g'
@@ -829,7 +830,6 @@ function removeSceneBlock(text, type, objName) {
   } else {
     const start = `// ME START ${objName} ${type}`;
     const end = `// ME END ${objName} ${type}`;
-
     regex = new RegExp(
       `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\s*`,
       'g'

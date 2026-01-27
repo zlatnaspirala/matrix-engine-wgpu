@@ -232,7 +232,6 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
-    <button onclick="app.editor.fluxCodexVertex.addNode('setGraphMaterial')">Set Graph Material</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -1076,6 +1075,8 @@ export default class FluxCodexVertex {
       el.className = "node " + "audios";
     } else if(spec.title == "Curve") {
       el.className = "node " + "curve";
+    } else if(spec.title == "Get Shader Graph") {
+      el.className = "node " + "shader";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -1296,29 +1297,30 @@ export default class FluxCodexVertex {
       select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
-      // Populate scene objects
+      // Populate shader objects
       if(spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Shader --";
       placeholder.value = "";
       select.appendChild(placeholder);
-
-      console.log('WORKS objects', spec.fields[0].value);
-
-
+    
       spec.accessObject.runtimeList.forEach(name => {
         const opt = document.createElement("option");
         opt.value = name;
         opt.textContent = name;
         select.appendChild(opt);
       });
-      // if(spec.fields[0].value) select.value = 0;
       select.addEventListener("change", e => {
         const name = e.target.value;
         spec.fields[0].value = name;
-        console.log('WORKS SPEC ', spec);
+        const dom = document.querySelector(`.node[data-id="${spec.id}"]`);
+        let fields = dom.querySelectorAll(".node-fields");
+        // console.log('WORKS objects', fields);
+        fields[0].children[0].value = name;
       });
       el.appendChild(select);
+      select.value = spec.fields[0].value;
+      setTimeout(() => select.dispatchEvent(new Event('change', { bubbles: true })) , 100);
     }
 
     el.appendChild(body);
@@ -2297,18 +2299,6 @@ export default class FluxCodexVertex {
         inputs: [
           {name: "exec", type: "action"},
           {name: "texturePath", semantic: "texturePath"},
-          {name: "sceneObjectName", semantic: "string"},
-        ],
-        outputs: [{name: "execOut", type: "action"}],
-      }),
-
-      setGraphMaterial: (id, x, y) => ({
-        id, x, y,
-        title: "Set Graph Material",
-        category: "scene",
-        inputs: [
-          {name: "exec", type: "action"},
-          {name: "shaderGraphName", semantic: "string"},
           {name: "sceneObjectName", semantic: "string"},
         ],
         outputs: [{name: "execOut", type: "action"}],
@@ -3891,6 +3881,7 @@ export default class FluxCodexVertex {
         }
         n._returnCache = n.osc.UPDATE();
       } else if(n.title === "Get Shader Graph") {
+        console.warn("[Get Shader Graph] ????? input fields...");
         const objectName = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if(!objectName) {
@@ -3921,20 +3912,6 @@ export default class FluxCodexVertex {
         // this.getValue(nodeId, "thrust")
         console.log('pos.getSpeed()', pos.getSpeed())
         n._returnCache = pos.getSpeed();
-      }
-      this.enqueueOutputs(n, "execOut");
-      return;
-    } else if(n.title === "Set Graph Material") {
-      const shaderGraphName = this.getValue(nodeId, "shaderGraphName");
-      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
-      if(shaderGraphName) {
-        console.log('CRAZZY .......', sceneObjectName)
-        let obj = app.getSceneObjectByName(sceneObjectName);
-        let r = app.shaderGraph.compile();
-        const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-        console.log("test compile ", graphGenShaderWGSL);
-        // hard code THIS IS OK FOR NOW LEAVE IT !!
-        obj.changeMaterial('graph', graphGenShaderWGSL);
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -4414,10 +4391,15 @@ export default class FluxCodexVertex {
       try {
         let data;
         try {
-          data = JSON.parse(saved);
-          if(data == null) {
-            console.warn("⚠️ No cache for graph, load from module!");
+          if (app.graph) {
             data = app.graph;
+          } else {
+            console.warn("⚠️ Used cached data for graph, load from localstorage!");
+            data = JSON.parse(saved);
+          }
+          if(data == null) {
+            console.warn("⚠️ No file also no cache for graph, Editor faild to load!");
+            return;
           }
         } catch(e) {
           console.warn("⚠️ No cache for graph, load from module!");

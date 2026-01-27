@@ -5784,37 +5784,49 @@ fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, t
     );
 }
 
+// Simpler sine wave for smoother animation
+fn sineWave(pos: vec2f, direction: vec2f, amplitude: f32, frequency: f32, time: f32) -> vec3f {
+    let d = normalize(direction);
+    let phase = dot(d, pos) * frequency - time;
+    
+    return vec3f(
+        d.x * amplitude * cos(phase),
+        amplitude * sin(phase),
+        d.y * amplitude * cos(phase)
+    );
+}
+
 // Calculate water normal from multiple waves
 fn calculateWaterNormal(worldPos: vec3f, time: f32) -> vec3f {
     let pos = worldPos.xz * waterParams.waveScale;
     let t = time * waterParams.waveSpeed;
     
-    // Multiple wave directions for complex motion
-    let wave1 = gerstnerWave(pos, vec2f(1.0, 0.0), 0.25, 2.0, t);
-    let wave2 = gerstnerWave(pos, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1);
-    let wave3 = gerstnerWave(pos, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9);
-    let wave4 = gerstnerWave(pos, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3);
+    // Use smoother sine waves instead of Gerstner for better animation
+    let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
+    let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
+    let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
+    let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
     
-    // Sum waves and calculate tangent vectors
+    // Sum waves
     let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
     
-    // Numerical derivative for normal
-    let eps = 0.01;
+    // Calculate tangent vectors using small step size
+    let eps = 0.1;
     let posX = worldPos + vec3f(eps, 0.0, 0.0);
     let posZ = worldPos + vec3f(0.0, 0.0, eps);
     
     let offsetX = (
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.25, 2.0, t) +
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1) +
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9) +
-        gerstnerWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3)
+        sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
     ) * waterParams.waveHeight;
     
     let offsetZ = (
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.25, 2.0, t) +
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.2, 1.5, t * 1.1) +
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(0.7, 0.7), 0.15, 1.0, t * 0.9) +
-        gerstnerWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.8), 0.1, 0.8, t * 1.3)
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
     ) * waterParams.waveHeight;
     
     let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
@@ -5888,9 +5900,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let finalColor = ambient + diffuse + specular + foam + causticsColor;
     
     // MUCH more transparent - alpha between 0.2 and 0.5
-    // let alpha = mix(0.2, 0.5, fresnel);
-    let alpha = mix(0.1, 0.3, fresnel); // Super transparent
-
+    let alpha = mix(0.2, 0.5, fresnel);
+    
     // Make the color more vibrant so it's visible even when transparent
     let vibrantColor = finalColor * 1.5;
     
@@ -6062,7 +6073,7 @@ var Materials = class {
         0
         // padding
       ]);
-      device.queue.writeBuffer(waterParamsBuffer, 0, data);
+      this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     };
   };
   createDummyTexture(device2, size2 = 256) {
@@ -6123,6 +6134,7 @@ var Materials = class {
     } else if (this.material.type == "water") {
       return fragmentWaterWGSL;
     } else if (this.material.type == "graph") {
+      console.warn("Unknown material ???????????????:", this.material?.type);
       return this.material.fromGraph;
     }
     console.warn("Unknown material type:", this.material?.type);
@@ -6846,9 +6858,9 @@ var MEMeshObj = class extends Materials {
     this.useScale = false;
     this.material = o2.material;
     this.time = 0;
-    this.deltaTImeAdapter = 1e3;
-    this.update = (time) => {
-      this.time = time * this.deltaTImeAdapter;
+    this.deltaTImeAdapter = 10;
+    this.updateTime = (time) => {
+      this.time += time * this.deltaTImeAdapter;
     };
     addEventListener("update-pipeine", () => {
       this.setupPipeline();
@@ -7337,7 +7349,6 @@ var MEMeshObj = class extends Materials {
     });
   }
   setupPipeline = () => {
-    console.log(" this.waterBindGroupLayout", this.waterBindGroupLayout);
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
       label: "Mesh Pipeline \u2705[OPAQUE]",
@@ -7366,7 +7377,6 @@ var MEMeshObj = class extends Materials {
           {
             format: "rgba16float",
             blend: void 0
-            // ❌ NO blending
           }
         ],
         constants: {
@@ -7375,7 +7385,6 @@ var MEMeshObj = class extends Materials {
       },
       depthStencil: {
         depthWriteEnabled: true,
-        // ✅ depth writes
         depthCompare: "less",
         format: "depth24plus"
       },
@@ -7427,14 +7436,11 @@ var MEMeshObj = class extends Materials {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        // ❌ do NOT write depth
         depthCompare: "less",
-        // still test depth
         format: "depth24plus"
       },
       primitive: this.primitive
     });
-    console.log("\u2705Set Pipelines done");
   };
   getMainPipeline = () => {
     return this.pipeline;
@@ -15437,7 +15443,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         // joint indices
         {
           arrayStride: 4 * 4,
-          // vec4<u32> = 4 * 4 bytes
           attributes: [{ format: "uint32x4", offset: 0, shaderLocation: 3 }]
         },
         // weights
@@ -15450,7 +15455,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
             { shaderLocation: 5, format: "float32x4", offset: 0 }
           ]
         });
-      } else {
       }
       this.primitive = {
         topology: "triangle-list",
@@ -16437,7 +16441,6 @@ var MEEditorClient = class {
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
-            document.dispatchEvent(new CustomEvent("on-shader-graphs-list", { detail: data.graphs }));
           }
           if (data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list \u2705", data);
@@ -17604,7 +17607,6 @@ var CurveStore = class {
 // ../flexCodexShaderAdapter.js
 function graphAdapter(compilerResult, nodes) {
   const { structs, uniforms, functions, locals, outputs, mainLines } = compilerResult;
-  console.log("what os node in adapter", nodes);
   const globals = /* @__PURE__ */ new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
   globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
@@ -17945,7 +17947,6 @@ var FluxCodexVertex = class {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
-    <button onclick="app.editor.fluxCodexVertex.addNode('setGraphMaterial')">Set Graph Material</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -18399,7 +18400,6 @@ var FluxCodexVertex = class {
     outputs.forEach((pin) => right2.appendChild(this._pinElement(pin, true, nodeId2)));
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Light" || node2.title === "Get Scene Animation") {
       const select2 = el2.querySelector("select.scene-select");
-      console.log("!TEST! ??? BEFORE");
       if (select2) {
         console.log("!TEST! ???");
       }
@@ -18628,6 +18628,8 @@ var FluxCodexVertex = class {
       el.className = "node audios";
     } else if (spec.title == "Curve") {
       el.className = "node curve";
+    } else if (spec.title == "Get Shader Graph") {
+      el.className = "node shader";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -18803,7 +18805,6 @@ var FluxCodexVertex = class {
       placeholder.textContent = "-- Select Shader --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      console.log("WORKS objects", spec.fields[0].value);
       spec.accessObject.runtimeList.forEach((name2) => {
         const opt = document.createElement("option");
         opt.value = name2;
@@ -18813,9 +18814,13 @@ var FluxCodexVertex = class {
       select.addEventListener("change", (e) => {
         const name2 = e.target.value;
         spec.fields[0].value = name2;
-        console.log("WORKS SPEC ", spec);
+        const dom2 = document.querySelector(`.node[data-id="${spec.id}"]`);
+        let fields = dom2.querySelectorAll(".node-fields");
+        fields[0].children[0].value = name2;
       });
       el.appendChild(select);
+      select.value = spec.fields[0].value;
+      setTimeout(() => select.dispatchEvent(new Event("change", { bubbles: true })), 100);
     }
     el.appendChild(body);
     header.addEventListener("mousedown", (e) => {
@@ -19909,19 +19914,6 @@ var FluxCodexVertex = class {
         inputs: [
           { name: "exec", type: "action" },
           { name: "texturePath", semantic: "texturePath" },
-          { name: "sceneObjectName", semantic: "string" }
-        ],
-        outputs: [{ name: "execOut", type: "action" }]
-      }),
-      setGraphMaterial: (id2, x2, y2) => ({
-        id: id2,
-        x: x2,
-        y: y2,
-        title: "Set Graph Material",
-        category: "scene",
-        inputs: [
-          { name: "exec", type: "action" },
-          { name: "shaderGraphName", semantic: "string" },
           { name: "sceneObjectName", semantic: "string" }
         ],
         outputs: [{ name: "execOut", type: "action" }]
@@ -21335,6 +21327,7 @@ var FluxCodexVertex = class {
         }
         n._returnCache = n.osc.UPDATE();
       } else if (n.title === "Get Shader Graph") {
+        console.warn("[Get Shader Graph] ????? input fields...");
         const objectName2 = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if (!objectName2) {
@@ -21785,10 +21778,15 @@ var FluxCodexVertex = class {
       try {
         let data;
         try {
-          data = JSON.parse(saved);
-          if (data == null) {
-            console.warn("\u26A0\uFE0F No cache for graph, load from module!");
+          if (app.graph) {
             data = app.graph;
+          } else {
+            console.warn("\u26A0\uFE0F Used cached data for graph, load from localstorage!");
+            data = JSON.parse(saved);
+          }
+          if (data == null) {
+            console.warn("\u26A0\uFE0F No file also no cache for graph, Editor faild to load!");
+            return;
           }
         } catch (e) {
           console.warn("\u26A0\uFE0F No cache for graph, load from module!");
@@ -22038,7 +22036,6 @@ var FragmentOutputNode = class extends ShaderNode {
       value = this.inputs.color.default;
     }
     ctx.outputs.outColor = value;
-    console.log("From FragmentOutputNode ctx.outputs.outColor", ctx.outputs.outColor);
     return { out: ctx.outputs.outColor, type: "vec4f" };
   }
 };
@@ -22773,6 +22770,7 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
     display:flex; font-family:system-ui;
     width:300%;height:90%
   `;
+    root.style.display = "none";
     const menu = document.createElement("div");
     menu.style.cssText = `
     width:200px; border-right:1px solid #222;
@@ -22782,7 +22780,7 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
       const b2 = document.createElement("button");
       b2.textContent = txt;
       b2.style.cssText = "width:100%;margin:4px 0;";
-      if (txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
+      if (txt == "Compile All" || txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
       if (txt == "Create New") b2.style.cssText += "color: lime;";
       if (txt == "Delete") b2.style.cssText += "color: red;";
       b2.classList.add("btn");
@@ -23157,6 +23155,13 @@ svg path {
       console.log("[DELETE]", shaderGraph2.id);
       document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph2.id }));
     });
+    const titleb = document.createElement("p");
+    titleb.style.cssText = "width:100%;margin:4px 0;";
+    titleb.classList.add("btn3");
+    titleb.classList.add("btnLeftBox");
+    titleb.innerHTML = `Current shader:`;
+    titleb.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(titleb);
     const b = document.createElement("select");
     b.id = "shader-graphs-list";
     b.style.cssText = "width:100%;margin:4px 0;";
@@ -23211,7 +23216,7 @@ svg path {
         console.log("no saved graphs");
       }
       resolve(shaderGraph2);
-    }, 400);
+    }, 2600);
   });
 }
 function serializeGraph(shaderGraph2) {
@@ -23382,7 +23387,6 @@ async function loadGraph(key, shaderGraph2, addNodeUI) {
         node2.id = saveId;
         node2.x = saveX;
         node2.y = saveY;
-        console.log("Loaded:" + node2);
         map[node2.id] = node2;
         addNodeUI(node2, node2.x, node2.y);
       });
@@ -23426,8 +23430,7 @@ var EditorHud = class {
       setTimeout(() => openFragmentShaderEditor().then((e) => {
         byId("shaderDOM").style.display = "none";
         app.shaderGraph = e;
-        console.log("AUTO INIT app.shaderGraph", app.shaderGraph);
-      }), 100);
+      }), 200);
     } else if (a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -24928,7 +24931,6 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Get shader graph</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setGraphMaterial')">Set Graph Material</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
@@ -25842,12 +25844,11 @@ var MatrixEngineWGPU = class {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
-    this.run(callback);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c Version 1.8.7 ", LOG_FUNNY);
-    console.log("%c\u{1F47D} ", LOG_FUNNY_EXTRABIG);
+    console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Port is open.\nCreative power loaded with visual scripting.\nLast features : audioReactiveNode, onDraw , onKey , curve editor.\nNo tracking. No hype. Just solutions. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
@@ -25856,6 +25857,9 @@ var MatrixEngineWGPU = class {
       "%cSource code: \u{1F449} GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE2
     );
+    setTimeout(() => {
+      this.run(callback);
+    }, 500);
   };
   createGlobalStuff() {
     this.textureCache = new TextureCache(this.device);
@@ -26442,6 +26446,9 @@ var MatrixEngineWGPU = class {
         if (mesh.update) {
           mesh.update(deltaTime2);
         }
+        if (mesh.updateTime) {
+          mesh.updateTime(deltaTime2);
+        }
         pass.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
@@ -26466,6 +26473,9 @@ var MatrixEngineWGPU = class {
         this.lastTime = now;
         if (mesh.update) {
           mesh.update(deltaTime2);
+        }
+        if (mesh.updateTime) {
+          mesh.updateTime(deltaTime2);
         }
         pass.setPipeline(mesh.pipelineTransparent);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {

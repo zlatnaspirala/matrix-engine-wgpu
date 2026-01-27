@@ -254,41 +254,10 @@ export class FragmentOutputNode extends ShaderNode {
       value = this.inputs.color.default;
     }
     ctx.outputs.outColor = value;
-    console.log('From FragmentOutputNode ctx.outputs.outColor', ctx.outputs.outColor);
+    // console.log('From FragmentOutputNode ctx.outputs.outColor', ctx.outputs.outColor);
     return {out: ctx.outputs.outColor, type: "vec4f"};
   }
 }
-
-// export class BaseColorOutputNode extends ShaderNode {
-//   constructor() {
-//     super("BaseColorOutput");
-//     this.inputs = {color: {default: "vec3f(1.0)"}};
-//   }
-
-//   build(_, __, ctx) {
-//     const conn = ctx.shaderGraph.getInput(this, "color");
-//     let value;
-//     if(conn) {
-//       value = ctx.resolve(conn.fromNode, conn.fromPin);
-//     } else {
-//       value = this.inputs.color.default;
-//     }
-//     ctx.outputs.baseColor = value;
-//     return {out: ctx.outputs.baseColor};
-//   }
-// }
-
-// export class EmissiveOutputNode extends ShaderNode {
-//   constructor() {
-//     super("EmissiveOutput");
-//     this.inputs = {color: {default: "vec3f(0.0)"}};
-//   }
-
-//   build(_, __, ctx) {
-//     ctx.outputs.emissive = ctx.resolve(this, "color");
-//     return {out: ctx.outputs.emissive};
-//   }
-// }
 
 export class AlphaOutput extends ShaderNode {
   constructor() {
@@ -1335,6 +1304,7 @@ export async function openFragmentShaderEditor(id = "fragShader") {
     display:flex; font-family:system-ui;
     width:300%;height:90%
   `;
+    root.style.display = 'none';
     /* LEFT MENU */
     const menu = document.createElement("div");
     menu.style.cssText = `
@@ -1345,7 +1315,7 @@ export async function openFragmentShaderEditor(id = "fragShader") {
       const b = document.createElement("button");
       b.textContent = txt;
       b.style.cssText = "width:100%;margin:4px 0;";
-      if(txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
+      if(txt == "Compile All" || txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
       if(txt == "Create New") b.style.cssText += "color: lime;";
       if(txt == "Delete") b.style.cssText += "color: red;";
       b.classList.add("btn");
@@ -1777,6 +1747,16 @@ svg path {
     // gobal for now next:
     // direct connection with FluxCOdexVertex vs ShaderGraph
     // document.addEventListener("give-me-shader", () => {  });
+
+    const titleb = document.createElement("p");
+    // titleb.id = "shader-graphs-list";
+    titleb.style.cssText = "width:100%;margin:4px 0;";
+    titleb.classList.add("btn3");
+    titleb.classList.add("btnLeftBox");
+    titleb.innerHTML = `Current shader:`;
+    titleb.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(titleb);
+
     const b = document.createElement("select");
     b.id = "shader-graphs-list";
     b.style.cssText = "width:100%;margin:4px 0;";
@@ -1786,6 +1766,7 @@ svg path {
     menu.appendChild(b);
 
     document.addEventListener("on-shader-graphs-list", (e) => {
+      // console.log("on-shader-graphs-list :", e.detail);
       const shaders = e.detail;
       b.innerHTML = "";
       var __ = 0;
@@ -1841,7 +1822,7 @@ svg path {
         console.log('no saved graphs');
       }
       resolve(shaderGraph);
-    }, 1250);
+    }, 2600);
     // if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   })
 }
@@ -1947,7 +1928,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
         node.id = saveId;
         node.x = saveX;
         node.y = saveY;
-        console.log("Loaded:" + node)
+        // console.log("Loaded:" + node)
         map[node.id] = node;
         addNodeUI(node, node.x, node.y);
       });

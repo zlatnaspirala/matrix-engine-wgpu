@@ -1531,6 +1531,10 @@ svg.connections {
   background: linear-gradient(45deg, #000000 0%, #001e3b 25%, #000000 50%, #001e3b 75%, #000000 100%);
 }
 
+.node.shader .header {
+  background: linear-gradient(45deg, #000000 0%, #b300ff 25%, #000000 50%, #0084ff 75%, #000000 100%);
+}
+
 .node .body {
   padding: 8px 10px;
   font-size: 13px;

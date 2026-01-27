@@ -247,6 +247,7 @@ export default class Materials {
     } else if(this.material.type == 'water') {
       return fragmentWaterWGSL;
     } else if(this.material.type == 'graph') {
+      console.warn('Unknown material ???????????????:', this.material?.type);
       return this.material.fromGraph;
     }
     console.warn('Unknown material type:', this.material?.type);

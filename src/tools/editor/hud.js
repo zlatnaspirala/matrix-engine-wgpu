@@ -22,8 +22,8 @@ export default class EditorHud {
       setTimeout(() => openFragmentShaderEditor().then((e) => {
         byId('shaderDOM').style.display = 'none';
         app.shaderGraph = e;
-        console.log('AUTO INIT app.shaderGraph', app.shaderGraph)
-      }), 10);
+        // console.log('AUTO INIT app.shaderGraph', app.shaderGraph)
+      }), 200);
     } else if(a == "pre editor") {
       this.createTopMenuPre();
     } else {

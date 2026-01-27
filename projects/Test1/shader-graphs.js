@@ -5,7 +5,7 @@ export default [
   },
   {
     "name": "MyShader1",
-    "content": "{\"nodes\":[{\"id\":\"N8\",\"type\":\"FragmentOutput\",\"x\":560,\"y\":334,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}},{\"id\":\"N9\",\"type\":\"Time\",\"x\":225,\"y\":166,\"inputs\":{}}],\"connections\":[]}"
+    "content": "{\"nodes\":[{\"id\":\"N8\",\"type\":\"FragmentOutput\",\"x\":462,\"y\":341,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}},{\"id\":\"N6\",\"type\":\"LightShadowNode\",\"x\":68,\"y\":214,\"inputs\":{\"intensity\":{\"default\":\"1\"}}},{\"id\":\"N7\",\"type\":\"LightToColor\",\"x\":262,\"y\":294,\"inputs\":{\"light\":{\"default\":\"vec3f(1.0)\"}}}],\"connections\":[{\"from\":\"N6\",\"fromPin\":\"out\",\"to\":\"N7\",\"toPin\":\"light\"},{\"from\":\"N7\",\"fromPin\":\"out\",\"to\":\"N8\",\"toPin\":\"color\"}]}"
   },
   {
     "name": "nikola",

@@ -65,7 +65,7 @@ export class MEEditorClient {
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");
             // console.log('Graph saved ✅ test ', data.graphs)
-            document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.graphs}));
+            // document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.graphs}));
           }
           if(data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list ✅", data);

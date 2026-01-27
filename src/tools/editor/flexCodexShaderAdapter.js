@@ -1,7 +1,7 @@
 export function graphAdapter(compilerResult, nodes) {
   const {structs, uniforms, functions, locals, outputs, mainLines} = compilerResult;
 
-  console.log("what os node in adapter", nodes);
+  // console.log("what os node in adapter", nodes);
 
   const globals = new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
