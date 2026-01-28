@@ -4616,6 +4616,75 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
     return SkinResult(skinnedPos, skinnedNorm);
 }
 
+// Add to your uniform structs at the top
+struct VertexAnimParams {
+  time: f32,
+  enabled: f32,  // 0.0 = OFF, 1.0 = ON
+  waveSpeed: f32,
+  waveAmplitude: f32,
+  waveFrequency: f32,
+  noiseScale: f32,
+  noiseStrength: f32,
+  _padding: f32,
+}
+
+@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+
+// Basic wave function - good starting point
+fn applyWave(pos: vec3f, time: f32) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed) * 
+             cos(pos.z * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+// Simple noise function (you can replace with texture sampling later)
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+// Apply noise-based displacement
+fn applyNoiseDisplacement(pos: vec3f, time: f32) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + time * 0.5);
+  let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
+  return vec3f(pos.x, pos.y + displacement, pos.z);
+}
+
+// Combined vertex animation function
+fn applyVertexAnimation(pos: vec3f, normal: vec3f, time: f32) -> SkinResult {
+  var animatedPos = pos;
+  var animatedNorm = normal;
+  
+  // Apply wave
+  animatedPos = applyWave(animatedPos, time);
+  
+  // Apply noise on top
+  animatedPos = applyNoiseDisplacement(animatedPos, time);
+  
+  // Recalculate normal for proper lighting (approximate)
+  let offset = 0.01;
+  let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0), time), time);
+  let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset), time), time);
+  
+  let tangentX = normalize(posX - animatedPos);
+  let tangentZ = normalize(posZ - animatedPos);
+  animatedNorm = normalize(cross(tangentZ, tangentX));
+  
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
+}
+
 @vertex
 fn main(
   @location(0) position: vec3f,
@@ -4627,18 +4696,33 @@ fn main(
   var output : VertexOutput;
   var pos = vec4(position, 1.0);
   var nrm = normal;
+  
+  // Apply skinning first
   let skinned = skinVertex(pos, nrm, joints, weights);
-  let worldPos = model.modelMatrix * skinned.position;
+  
+  var finalPos = skinned.position.xyz;
+  var finalNorm = skinned.normal;
+  
+  // Only apply animation if enabled > 0.5 (simple check)
+  if (vertexAnim.enabled > 0.5) {
+    let animated = applyVertexAnimation(finalPos, finalNorm, vertexAnim.time);
+    finalPos = animated.position.xyz;
+    finalNorm = animated.normal;
+  }
+  
+  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
+  
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm = normalize(normalMatrix * skinned.normal);
+  output.fragNorm = normalize(normalMatrix * finalNorm);
   output.uv = uv;
+  
   return output;
 }`;
 
@@ -7226,20 +7310,9 @@ var MEMeshObj = class extends Materials {
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: "uniformBufferBindGroupLayout in mesh regular",
         entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: "uniform"
-            }
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: "uniform"
-            }
-          }
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
       function alignTo256(n2) {
@@ -7257,17 +7330,44 @@ var MEMeshObj = class extends Materials {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+      this.vertexAnimParams = new Float32Array([
+        0,
+        // time
+        0,
+        // enabled (START DISABLED)
+        2,
+        // waveSpeed
+        0.1,
+        // waveAmplitude
+        2,
+        // waveFrequency
+        1,
+        // noiseScale
+        0.05,
+        // noiseStrength
+        0
+        // padding
+      ]);
+      this.vertexAnimBuffer = this.device.createBuffer({
+        label: "Vertex Animation Params",
+        size: this.vertexAnimParams.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.enableVertexAnim = () => {
+        this.vertexAnimParams[1] = 1;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      };
+      this.disableVertexAnim = () => {
+        this.vertexAnimParams[1] = 0;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
         layout: this.uniformBufferBindGroupLayout,
         entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: this.modelUniformBuffer
-            }
-          },
-          { binding: 1, resource: { buffer: this.bonesBuffer } }
+          { binding: 0, resource: { buffer: this.modelUniformBuffer } },
+          { binding: 1, resource: { buffer: this.bonesBuffer } },
+          { binding: 2, resource: { buffer: this.vertexAnimBuffer } }
         ]
       });
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
@@ -7594,6 +7694,8 @@ var MEMeshObj = class extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    shadowPass.setVertexBuffer(3, this.joints.buffer);
+    shadowPass.setVertexBuffer(4, this.weights.buffer);
     shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
     shadowPass.drawIndexed(this.indexCount);
   };
@@ -8202,7 +8304,10 @@ function play(nameAni) {
 }
 
 // ../../../shaders/vertexShadow.wgsl.js
-var vertexShadowWGSL = `struct Scene {
+var vertexShadowWGSL = `
+const MAX_BONES = 100u;
+
+struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
   lightPos: vec3f,
@@ -8212,14 +8317,120 @@ struct Model {
   modelMatrix: mat4x4f,
 }
 
+struct Bones {
+  boneMatrices : array<mat4x4f, MAX_BONES>
+}
+
+struct VertexAnimParams {
+  time: f32,
+  enabled: f32,
+  waveSpeed: f32,
+  waveAmplitude: f32,
+  waveFrequency: f32,
+  noiseScale: f32,
+  noiseStrength: f32,
+  _padding: f32,
+}
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
+@group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+
+struct SkinResult {
+  position : vec4f,
+  normal   : vec3f,
+};
+
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+    var skinnedPos = vec4f(0.0);
+    var skinnedNorm = vec3f(0.0);
+    
+    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+        let jointIndex = joints[i];
+        let w = weights[i];
+        if (w > 0.0) {
+          let boneMat = bones.boneMatrices[jointIndex];
+          skinnedPos  += (boneMat * pos) * w;
+          let boneMat3 = mat3x3f(
+            boneMat[0].xyz,
+            boneMat[1].xyz,
+            boneMat[2].xyz
+          );
+          skinnedNorm += (boneMat3 * nrm) * w;
+        }
+    }
+    
+    return SkinResult(skinnedPos, skinnedNorm); // \u2705 ADD THIS
+}
+
+// \u2705 COPY YOUR ANIMATION FUNCTIONS FROM MAIN SHADER
+fn applyWave(pos: vec3f, time: f32) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed) * 
+             cos(pos.z * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+fn applyNoiseDisplacement(pos: vec3f, time: f32) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + time * 0.5);
+  let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
+  return vec3f(pos.x, pos.y + displacement, pos.z);
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f, time: f32) -> SkinResult {
+  var animatedPos = pos;
+  var animatedNorm = normal;
+  
+  animatedPos = applyWave(animatedPos, time);
+  animatedPos = applyNoiseDisplacement(animatedPos, time);
+  
+  // For shadows we might not need perfect normals, but keep it consistent
+  let offset = 0.01;
+  let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0), time), time);
+  let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset), time), time);
+  
+  let tangentX = normalize(posX - animatedPos);
+  let tangentZ = normalize(posZ - animatedPos);
+  animatedNorm = normalize(cross(tangentZ, tangentX));
+  
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
+}
 
 @vertex
 fn main(
-  @location(0) position: vec3f
+  @location(0) position: vec3f,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f,
+  @location(3) joints: vec4<u32>,
+  @location(4) weights: vec4<f32>
 ) -> @builtin(position) vec4f {
-  return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
+  var pos = vec4(position, 1.0);
+  var nrm = normal;
+  let skinned = skinVertex(pos, nrm, joints, weights);
+  var finalPos = skinned.position.xyz;
+  if (vertexAnim.enabled > 0.5) {
+    let animated = applyVertexAnimation(finalPos, vec3f(0.0, 1.0, 0.0), vertexAnim.time);
+    finalPos = animated.position.xyz;
+  }
+  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
+  return scene.lightViewProjMatrix * worldPos;
 }
 `;
 
@@ -8426,14 +8637,16 @@ var SpotLight = class {
       label: "modelBindGroupLayout in light [one bindings]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
       ]
     });
     this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
       label: "modelBindGroupLayout in light [for skinned] [instanced]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
       ]
     });
     this.shadowPipeline = this.device.createRenderPipeline({
@@ -8450,15 +8663,63 @@ var SpotLight = class {
           code: vertexShadowWGSL
         }),
         buffers: [
+          // @location(0) - position
           {
             arrayStride: 12,
             // 3 * 4 bytes (vec3f)
             attributes: [
               {
                 shaderLocation: 0,
-                // must match @location(0) in vertex shader
                 offset: 0,
                 format: "float32x3"
+              }
+            ]
+          },
+          // ✅ ADD @location(1) - normal
+          {
+            arrayStride: 12,
+            // 3 * 4 bytes (vec3f)
+            attributes: [
+              {
+                shaderLocation: 1,
+                offset: 0,
+                format: "float32x3"
+              }
+            ]
+          },
+          // ✅ ADD @location(2) - uv
+          {
+            arrayStride: 8,
+            // 2 * 4 bytes (vec2f)
+            attributes: [
+              {
+                shaderLocation: 2,
+                offset: 0,
+                format: "float32x2"
+              }
+            ]
+          },
+          // ✅ ADD @location(3) - joints
+          {
+            arrayStride: 16,
+            // 4 * 4 bytes (vec4<u32>)
+            attributes: [
+              {
+                shaderLocation: 3,
+                offset: 0,
+                format: "uint32x4"
+              }
+            ]
+          },
+          // ✅ ADD @location(4) - weights
+          {
+            arrayStride: 16,
+            // 4 * 4 bytes (vec4f)
+            attributes: [
+              {
+                shaderLocation: 4,
+                offset: 0,
+                format: "float32x4"
               }
             ]
           }
@@ -15619,9 +15880,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         label: "modelBindGroup in mesh",
         layout: this.uniformBufferBindGroupLayout,
         entries: [
-          //
           { binding: 0, resource: { buffer: this.modelUniformBuffer } },
-          { binding: 1, resource: { buffer: this.bonesBuffer } }
+          { binding: 1, resource: { buffer: this.bonesBuffer } },
+          { binding: 2, resource: { buffer: this.vertexAnimBuffer } }
         ]
       });
       this.modelBindGroupInstanced = this.device.createBindGroup({
@@ -15944,6 +16205,15 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if (this.joints) {
+      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+      } else {
+        shadowPass.setVertexBuffer(3, this.joints.buffer);
+        shadowPass.setVertexBuffer(4, this.weights.buffer);
+      }
+    }
     shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
     if (this instanceof BVHPlayerInstances) {
       shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
@@ -27238,6 +27508,21 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("BANNER1").useScale = true;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster-MutantMesh-0").scale[1] = 5;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster-MutantMesh-0").scale[0] = 5;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster-MutantMesh-0").scale[2] = 5;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster-MutantMesh-0").position.SetY(-2);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster-MutantMesh-0").position.SetX(-3);
       }, 800);
     });
   }

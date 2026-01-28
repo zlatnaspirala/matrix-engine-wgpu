@@ -190,7 +190,8 @@ export class SpotLight {
       label: 'modelBindGroupLayout in light [one bindings]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }}
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
       ]
     });
 
@@ -198,7 +199,8 @@ export class SpotLight {
       label: 'modelBindGroupLayout in light [for skinned] [instanced]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
       ],
     });
 
@@ -216,13 +218,58 @@ export class SpotLight {
           code: vertexShadowWGSL,
         }),
         buffers: [
+          // @location(0) - position
           {
             arrayStride: 12, // 3 * 4 bytes (vec3f)
             attributes: [
               {
-                shaderLocation: 0, // must match @location(0) in vertex shader
+                shaderLocation: 0,
                 offset: 0,
                 format: "float32x3",
+              },
+            ],
+          },
+          // ✅ ADD @location(1) - normal
+          {
+            arrayStride: 12, // 3 * 4 bytes (vec3f)
+            attributes: [
+              {
+                shaderLocation: 1,
+                offset: 0,
+                format: "float32x3",
+              },
+            ],
+          },
+          // ✅ ADD @location(2) - uv
+          {
+            arrayStride: 8, // 2 * 4 bytes (vec2f)
+            attributes: [
+              {
+                shaderLocation: 2,
+                offset: 0,
+                format: "float32x2",
+              },
+            ],
+          },
+          // ✅ ADD @location(3) - joints
+          {
+            arrayStride: 16, // 4 * 4 bytes (vec4<u32>)
+            attributes: [
+              {
+                shaderLocation: 3,
+                offset: 0,
+                format: "uint32x4",
+              },
+            ],
+          },
+          // ✅ ADD @location(4) - weights
+          {
+            arrayStride: 16, // 4 * 4 bytes (vec4f)
+            attributes: [
+              {
+                shaderLocation: 4,
+                offset: 0,
+                format: "float32x4",
               },
             ],
           },
@@ -235,7 +282,6 @@ export class SpotLight {
       },
       primitive: this.primitive,
     });
-
     this.shadowPipelineInstanced = this.device.createRenderPipeline({
       label: 'shadowPipeline [instanced] per light',
       layout: this.device.createPipelineLayout({

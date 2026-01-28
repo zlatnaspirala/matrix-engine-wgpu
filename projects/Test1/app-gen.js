@@ -577,6 +577,36 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END BANNER1 useScaleno info
  
+  // ME START monster-MutantMesh-0 updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').scale[1] = 5;
+ }, 800);
+ // ME END monster-MutantMesh-0 updateScale1
+ 
+   // ME START monster-MutantMesh-0 updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').scale[0] = 5;
+ }, 800);
+ // ME END monster-MutantMesh-0 updateScale0
+ 
+   // ME START monster-MutantMesh-0 updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').scale[2] = 5;
+ }, 800);
+ // ME END monster-MutantMesh-0 updateScale2
+ 
+   // ME START monster-MutantMesh-0 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').position.SetY(-2);
+ }, 800);
+ // ME END monster-MutantMesh-0 updatePosy
+ 
+    // ME START monster-MutantMesh-0 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').position.SetX(-3);
+ }, 800);
+ // ME END monster-MutantMesh-0 updatePosx
+ 
  // [MAIN_REPLACE2]
 
     })

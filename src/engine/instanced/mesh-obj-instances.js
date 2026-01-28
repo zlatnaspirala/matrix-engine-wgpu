@@ -592,9 +592,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
-        entries: [ //
-          {binding: 0, resource: {buffer: this.modelUniformBuffer, }},
-          {binding: 1, resource: {buffer: this.bonesBuffer}}
+        entries: [
+          {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+          {binding: 1, resource: {buffer: this.bonesBuffer}},
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
         ],
       });
 
@@ -957,7 +958,20 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+
+    // ✅ ADD THESE - joints and weights for skinning!
+    if(this.joints) {
+      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
+        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+      } else {
+        shadowPass.setVertexBuffer(3, this.joints.buffer);  // new dummy
+        shadowPass.setVertexBuffer(4, this.weights.buffer); // new dummy
+      }
+    }
+
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
+
     if(this instanceof BVHPlayerInstances) {
       shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
     } else {

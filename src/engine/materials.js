@@ -160,7 +160,7 @@ export default class Materials {
         resource: {buffer: this.waterParamsBuffer}
       }]
     });
-    // To update values at runtime:
+
     this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
       const data = new Float32Array([
         deepColor[0], deepColor[1], deepColor[2],
