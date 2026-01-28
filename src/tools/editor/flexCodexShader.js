@@ -1764,7 +1764,7 @@ svg path {
     menu.appendChild(b);
 
     document.addEventListener("on-shader-graphs-list", (e) => {
-      console.log("on-shader-graphs-list :", e.detail);
+      // console.log("on-shader-graphs-list :", e.detail);
       const shaders = e.detail;
       b.innerHTML = "";
       var __ = 0;
@@ -1785,9 +1785,8 @@ svg path {
         opt.value = index;
         opt.textContent = shader.name;
         shaderGraph.runtimeList.push(shader.name);
-        console.log("Graph content shader:", shader.content);
         let test =  JSON.parse(shader.content);
-        console.log("Graph content shader:", test.final);
+        // console.log("Graph content shader:", test.final);
         shaderGraph.runtime_memory[shader.name] = test.final;
         b.appendChild(opt);
       });
@@ -1810,9 +1809,7 @@ svg path {
 
     document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
     // Init
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + shaderGraph.runtimeList)
     document.addEventListener("sgraphs-ready", async () => {
-      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + shaderGraph.runtimeList)
       if(shaderGraph.runtimeList.length > 0) {
         // load first
         shaderGraph.id = shaderGraph.runtimeList[0];
@@ -1960,11 +1957,10 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
       }), 50);
 
       // compile every loaded
-      let r = shaderGraph.compile();
-      const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
-      console.log("test compile shaderGraph.final ", shaderGraph.final);
-      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
-
+      // let r = shaderGraph.compile();
+      // const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+      // console.log("test compile shaderGraph.final ", shaderGraph.final);
+      // shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
       return true;
     });
   }

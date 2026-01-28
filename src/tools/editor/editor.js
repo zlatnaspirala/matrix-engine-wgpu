@@ -21,7 +21,6 @@ export class Editor {
         openFragmentShaderEditor().then((e) => {
           byId('shaderDOM').style.display = 'none';
           app.shaderGraph = e;
-          console.log('AUTO INIT app.shaderGraph', app.shaderGraph)
         })
       });
 
@@ -30,7 +29,7 @@ export class Editor {
       this.createFluxCodexVertexDOM();
 
       setTimeout(() => {
-        console.log("MOMENT BEFORE COSTRUCT MAIN GRAPH")
+        // console.log("MOMENT BEFORE COSTRUCT MAIN GRAPH")
         this.fluxCodexVertex = new FluxCodexVertex('board', 'boardWrap', 'log', this.methodsManager, projName);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();

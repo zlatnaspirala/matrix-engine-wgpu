@@ -70,7 +70,6 @@ export class MEEditorClient {
           }
           if(data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list ✅" + data.shaderGraphs);
-            console.log('Graph list ✅ test ', data)
             document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.shaderGraphs}));
           } else if(data.methodLoads && data.ok == true) {
             mb.show("Graph loads ✅", data);
@@ -233,7 +232,6 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
-    console.log('ATTACH MOMNET')
     document.addEventListener('get-shader-graphs', () => {
       console.info('%cget-shader-graphs <signal>', LOG_FUNNY_ARCADE);
       let o = {
