@@ -6941,9 +6941,6 @@ var MEMeshObj = class extends Materials {
     this.material = o2.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
-    this.updateTime = (time) => {
-      this.time += time * this.deltaTimeAdapter;
-    };
     addEventListener("update-pipeine", () => {
       this.setupPipeline();
     });
@@ -7361,6 +7358,11 @@ var MEMeshObj = class extends Materials {
         this.vertexAnimParams[1] = 0;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       };
+      this.updateTime = (time) => {
+        this.time += time * this.deltaTimeAdapter;
+        this.vertexAnimParams[0] = this.time;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
         layout: this.uniformBufferBindGroupLayout,
@@ -7403,7 +7405,6 @@ var MEMeshObj = class extends Materials {
           sceneData.byteOffset,
           sceneData.byteLength
         );
-        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, new Float32Array([this.time]));
       };
       this.getModelMatrix = (pos2, useScale = false) => {
         let modelMatrix2 = mat4Impl.identity();
@@ -26749,17 +26750,31 @@ var MatrixEngineWGPU = class {
       }, 100);
       return;
     }
-    this.mainRenderBundle.forEach((meItem, index) => {
-      if (meItem.isVideo == true) {
-        if (!meItem.externalTexture) {
-          meItem.createBindGroupForRender();
+    let now;
+    const currentTime = performance.now() / 1e3;
+    const bufferUpdates = [];
+    this.mainRenderBundle.forEach((m, index) => {
+      if (m.vertexAnimBuffer && m.vertexAnimParams) {
+        m.time = currentTime * m.deltaTimeAdapter;
+        m.vertexAnimParams[0] = m.time;
+        bufferUpdates.push({
+          buffer: m.vertexAnimBuffer,
+          data: m.vertexAnimParams
+        });
+      }
+      if (m.isVideo == true) {
+        if (!m.externalTexture) {
+          m.createBindGroupForRender();
           setTimeout(() => {
             requestAnimationFrame(this.frame);
-          }, 1e3);
+          }, 300);
           return;
         }
       }
     });
+    for (const update of bufferUpdates) {
+      this.device.queue.writeBuffer(update.buffer, 0, update.data);
+    }
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -26772,7 +26787,6 @@ var MatrixEngineWGPU = class {
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       }
-      let now, deltaTime2;
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -26817,15 +26831,6 @@ var MatrixEngineWGPU = class {
       let pass2 = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend === true) continue;
-        now = performance.now() / 1e3;
-        deltaTime2 = now - (this.lastTime || now);
-        this.lastTime = now;
-        if (mesh.update) {
-          mesh.update(deltaTime2);
-        }
-        if (mesh.updateTime) {
-          mesh.updateTime(deltaTime2);
-        }
         pass2.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
@@ -26845,15 +26850,6 @@ var MatrixEngineWGPU = class {
       }
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend !== true) continue;
-        now = performance.now() / 1e3;
-        deltaTime2 = now - (this.lastTime || now);
-        this.lastTime = now;
-        if (mesh.update) {
-          mesh.update(deltaTime2);
-        }
-        if (mesh.updateTime) {
-          mesh.updateTime(deltaTime2);
-        }
         pass2.setPipeline(mesh.pipelineTransparent);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {

@@ -228,9 +228,9 @@ export default class MatrixEngineWGPU {
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
 
-     setTimeout(() => {
-       this.run(callback);
-     },50);
+    setTimeout(() => {
+      this.run(callback);
+    }, 50);
   };
 
   createGlobalStuff() {
@@ -707,27 +707,35 @@ export default class MatrixEngineWGPU {
       setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
       return;
     }
-    this.mainRenderBundle.forEach((meItem, index) => {
-      if(meItem.isVideo == true) {
-        if(!meItem.externalTexture) { // || meItem.video.readyState < 2) {
-          // console.log('no rendere for video not ready')
-          // this.externalTexture = this.device.importExternalTexture({source: this.video});
-          meItem.createBindGroupForRender();
+    let now;
+    const currentTime = performance.now() / 1000;
+    const bufferUpdates = [];
+    this.mainRenderBundle.forEach((m, index) => {
+      if(m.vertexAnimBuffer && m.vertexAnimParams) {
+        m.time = currentTime * m.deltaTimeAdapter;
+        m.vertexAnimParams[0] = m.time;
+        bufferUpdates.push({
+          buffer: m.vertexAnimBuffer,
+          data: m.vertexAnimParams
+        });
+      }
+      if(m.isVideo == true) {
+        if(!m.externalTexture) {
+          m.createBindGroupForRender();
           setTimeout(() => {
             requestAnimationFrame(this.frame)
-          }, 1000)
+          }, 300)
           return;
         }
       }
     })
-
+    for(const update of bufferUpdates) {
+      this.device.queue.writeBuffer(update.buffer, 0, update.data);
+    }
     try {
       let commandEncoder = this.device.createCommandEncoder();
-
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
-
-      this.updateLights()
-      // 1️⃣ Update light data (position, direction, uniforms)
+      this.updateLights();
       for(const light of this.lightContainer) {
         light.update()
         this.mainRenderBundle.forEach((meItem, index) => {
@@ -736,7 +744,6 @@ export default class MatrixEngineWGPU {
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
       }
-      let now, deltaTime;
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
@@ -795,11 +802,6 @@ export default class MatrixEngineWGPU {
       // opaque
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend === true) continue;
-        now = performance.now() / 1000;
-        deltaTime = now - (this.lastTime || now);
-        this.lastTime = now;
-        if(mesh.update) {mesh.update(deltaTime)}
-        if(mesh.updateTime) {mesh.updateTime(deltaTime)}
         pass.setPipeline(mesh.pipeline);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
@@ -817,15 +819,9 @@ export default class MatrixEngineWGPU {
         }
         mesh.drawElements(pass, this.lightContainer);
       }
- 
       // blend
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend !== true) continue;
-        now = performance.now() / 1000;
-        deltaTime = now - (this.lastTime || now);
-        this.lastTime = now;
-        if(mesh.update) {mesh.update(deltaTime)}
-        if(mesh.updateTime) {mesh.updateTime(deltaTime)}
         pass.setPipeline(mesh.pipelineTransparent);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {

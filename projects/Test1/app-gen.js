@@ -31,6 +31,7 @@ let app = new MatrixEngineWGPU(
       app.addLight();
       // ME START Cube_0 addCube
       downloadMeshes({cube: "./res/meshes/blender/plane.obj"}, (m) => {
+      // downloadMeshes({cube: "./res/meshes/shapes/plane-water.obj"}, (m) => {
         let texturesPaths = ['./res/meshes/blender/cube.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
