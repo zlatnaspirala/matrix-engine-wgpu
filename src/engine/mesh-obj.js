@@ -44,12 +44,9 @@ export default class MEMeshObj extends Materials {
 
     this.time = 0;
     this.deltaTimeAdapter = 10;
-    this.updateTime = (time) => {
-      this.time += time * this.deltaTimeAdapter;
-    }
 
     addEventListener('update-pipeine', () => {this.setupPipeline()})
-    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
+    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
     if(_glbFile != null) {
       if(typeof this.mesh == 'undefined') {
@@ -527,11 +524,18 @@ export default class MEMeshObj extends Materials {
         this.vertexAnimParams[1] = 1.0;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       }
+
       this.disableVertexAnim = () => {
         this.vertexAnimParams[1] = 0.0;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       }
-      //
+
+      this.updateTime = (time) => {
+        this.time += time * this.deltaTimeAdapter;
+        this.vertexAnimParams[0] = this.time;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      }
+
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
@@ -585,7 +589,7 @@ export default class MEMeshObj extends Materials {
           sceneData.byteLength
         );
 
-        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, new Float32Array([this.time]));
+        // this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, new Float32Array([this.time]));
       };
 
       this.getModelMatrix = (pos, useScale = false) => {
