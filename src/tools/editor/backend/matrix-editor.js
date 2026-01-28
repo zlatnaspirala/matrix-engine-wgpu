@@ -57,7 +57,7 @@ async function buildAllProjectsOnStartup() {
       await fs.access(shaderGraphFile);
     } catch {
       await fs.writeFile(shaderGraphFile, DEFAULT_SHADER_GRAPH_JS, "utf8");
-      console.log(`🧠 Created default shader graph.js for ${projectName}`);
+      console.log(`🧠 Created default shader-graphs.js for ${projectName}`);
     }
     const mname = projectName + "_methods.js";
     const methodsFile = path.join(PUBLIC_DIR, mname);
@@ -160,7 +160,7 @@ wss.on("connection", ws => {
       } else if(msg.action === "cnp") {
         cnp(ws, msg);
       } else if(msg.action === "watch") {
-        console.log("action [WATCH]");
+        console.log("action [WATCH]", msg.name);
         buildProject(msg.name, ws, 'Watch activated')
       } else if(msg.action === "stop-watch") {
         console.log("action [WATCH]");
@@ -545,7 +545,7 @@ async function saveShaderGraph(msg, ws) {
   try {
     const existingContent = await fs.readFile(file, "utf8");
     // Extract array from "export default [...];"
-    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
     }
@@ -554,6 +554,7 @@ async function saveShaderGraph(msg, ws) {
   }
   // const newGraph = JSON.parse(msg.graphData);
   const newGraph = msg.graphData;
+  console.log("No existing shader-graphs.js, creating new");
   // Find and update, or add new
   const existingIndex = graphs.findIndex(g => g.name === newGraph.name);
   if(existingIndex !== -1) {
@@ -561,7 +562,7 @@ async function saveShaderGraph(msg, ws) {
   } else {
     graphs.push(newGraph);
   }
-  const content = `export default ${JSON.stringify(graphs, null, 2)};\n`;
+  const content = `export default  shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};\n`;
   await fs.writeFile(file, content, "utf8");
   ws.send(JSON.stringify({
     ok: true,
@@ -580,7 +581,7 @@ async function loadShaderGraph(msg, ws) {
   try {
     const existingContent = await fs.readFile(file, "utf8");
     // Extract array from "export default [...];"
-    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
     }
@@ -610,7 +611,7 @@ async function getShaderGraphs(msg, ws) {
   let graphs = [];
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) graphs = JSON.parse(match[1])
   } catch(err) {
     console.log("No existing shader-graphs.js, creating new");
@@ -631,7 +632,7 @@ async function deleteShaderGraph(msg, ws) {
 
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export default shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
     }
@@ -645,7 +646,7 @@ async function deleteShaderGraph(msg, ws) {
   const afterCount = graphs.length;
 
   // rewrite file
-  const out = `export default shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};`;
+  const out = `export let shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};`;
   await fs.writeFile(file, out, "utf8");
 
   ws.send(JSON.stringify({

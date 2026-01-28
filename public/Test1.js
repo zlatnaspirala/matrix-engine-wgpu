@@ -16405,6 +16405,7 @@ var MEEditorClient = class {
         this.ws.send(o2);
       }
       console.log("%c[EDITOR][WS OPEN]", LOG_FUNNY_ARCADE2);
+      document.dispatchEvent(new CustomEvent("editorx-ws-ready", {}));
     };
     this.ws.onmessage = (event) => {
       try {
@@ -16443,7 +16444,8 @@ var MEEditorClient = class {
             mb.show("Graph saved \u2705");
           }
           if (data.methodLoads && data.ok == true && data.shaderGraphs) {
-            mb.show("Graphs list \u2705", data);
+            mb.show("Graphs list \u2705" + data.shaderGraphs);
+            console.log("Graph list \u2705 test ", data);
             document.dispatchEvent(new CustomEvent("on-shader-graphs-list", { detail: data.shaderGraphs }));
           } else if (data.methodLoads && data.ok == true) {
             mb.show("Graph loads \u2705", data);
@@ -16587,6 +16589,7 @@ var MEEditorClient = class {
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
+    console.log("ATTACH MOMNET");
     document.addEventListener("get-shader-graphs", () => {
       console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE2);
       let o2 = {
@@ -16808,6 +16811,1772 @@ var EditorProvider = class {
     });
   }
 };
+
+// ../flexCodexShaderAdapter.js
+function graphAdapter(compilerResult, nodes) {
+  const { structs, uniforms, functions, locals, outputs, mainLines } = compilerResult;
+  const globals = /* @__PURE__ */ new Set();
+  globals.add("const PI: f32 = 3.141592653589793;");
+  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  const normal = outputs.normal || "normalize(input.fragNorm)";
+  const emissive = outputs.emissive || "vec3f(0.0)";
+  for (const node2 of nodes) {
+    if (node2.type === "LightShadowNode") {
+      functions.push(`
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    // coneAtten = 1.0;
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    // return (diffuse + specular) * radiance * NdotL * coneAtten;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+`);
+    }
+  }
+  return `
+/* === Engine uniforms === */
+
+// DINAMIC GLOBALS
+${[...globals].join("\n")}
+
+// DINAMIC STRUCTS
+${[...structs].join("\n")}
+
+// PREDEFINED
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+// PREDEFINED
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+// PREDEFINED
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+// PREDEFINED
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+    alpha     : f32
+};
+
+// PREDEFINED
+const MAX_SPOTLIGHTS = 20u;
+
+// PREDEFINED
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// \u2705 Graph custom uniforms
+${[...uniforms].join("\n")}
+
+// \u2705 Graph custom functions
+${functions.join("\n\n")}
+
+// PREDEFINED Fragment input
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// PREDEFINED PBR helpers
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+  // Locals
+  ${locals.join("\n  ")}
+  ${mainLines.join("\n  ")}
+  return ${outputs.outColor};
+}
+`;
+}
+
+// ../flexCodexShader.js
+var FragmentShaderRegistry = {};
+var FragmentShaderGraph = class {
+  constructor(id2) {
+    this.id = id2;
+    this.nodes = [];
+    this.connections = [];
+    this.spawnX = 80;
+    this.spawnY = 80;
+    this.spawnStepX = 220;
+    this.spawnStepY = 140;
+    this.spawnCol = 0;
+    this.runtimeList = [];
+    this.runtime_memory = {};
+    this.onGraphLoadAttached = false;
+  }
+  addNode(node2) {
+    if (node2.type === "FragmentOutput") {
+      const exists = this.nodes.some((n2) => n2.type === "FragmentOutput");
+      if (exists) {
+        console.warn("FragmentOutput already exists");
+        return null;
+      }
+    }
+    this.nodes.push(node2);
+    return node2;
+  }
+  connect(fromNode, fromPin, toNode, toPin) {
+    this.connections = this.connections.filter((c) => !(c.toNode === toNode && c.toPin === toPin));
+    this.connections.push({ fromNode, fromPin, toNode, toPin });
+  }
+  getInput(node2, pin) {
+    return this.connections.find((c) => c.toNode === node2 && c.toPin === pin);
+  }
+  compile() {
+    const wgsl = FragmentCompiler.compile(this);
+    FragmentShaderRegistry[this.id] = wgsl;
+    return wgsl;
+  }
+  nextSpawn() {
+    const x2 = this.spawnX + this.spawnCol * this.spawnStepX;
+    const y2 = this.spawnY;
+    this.spawnCol++;
+    if (this.spawnCol >= 3) {
+      this.spawnCol = 0;
+      this.spawnY += this.spawnStepY;
+    }
+    return { x: x2, y: y2 };
+  }
+  makeDraggable(el2, node2, connectionLayer) {
+    let ox = 0, oy = 0, drag = false;
+    el2.addEventListener("pointerdown", (e) => {
+      drag = true;
+      ox = e.clientX - el2.offsetLeft;
+      oy = e.clientY - el2.offsetTop;
+      el2.setPointerCapture(e.pointerId);
+    });
+    el2.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      el2.style.left = e.clientX - ox + "px";
+      el2.style.top = e.clientY - oy + "px";
+      node2.x = e.clientX - ox;
+      node2.y = e.clientY - oy;
+      connectionLayer.redrawAll();
+    });
+    el2.addEventListener("pointerup", () => drag = false);
+  }
+  clear() {
+    this.nodes = [];
+    this.connections = [];
+    this.spawnX = 80;
+    this.spawnY = 80;
+    this.spawnCol = 0;
+    if (this.connectionLayer) {
+      this.connectionLayer.svg.innerHTML = "";
+    }
+    const container = document.getElementsByClassName("fancy-grid-bg dark");
+    if (container) {
+      const nodeElements = container[0].querySelectorAll(".nodeShader");
+      nodeElements.forEach((el2) => el2.remove());
+    }
+    this.connectionLayer.redrawAll();
+  }
+};
+var CompileContext = class {
+  constructor(shaderGraph) {
+    this.shaderGraph = shaderGraph;
+    this.cache = /* @__PURE__ */ new Map();
+    this.structs = [];
+    this.uniforms = [];
+    this.functions = /* @__PURE__ */ new Map();
+    this.locals = [];
+    this.mainLines = [];
+    this.tmpIndex = 0;
+    this.outputs = {
+      outColor: null
+    };
+  }
+  temp(type2, expr) {
+    const name2 = `t${this.tmpIndex++}`;
+    this.locals.push(`let ${name2}: ${type2} = ${expr};`);
+    return name2;
+  }
+  registerFunction(name2, code) {
+    if (!this.functions.has(name2)) {
+      this.functions.set(name2, code);
+    }
+  }
+  resolve(node2, pin) {
+    const key = `${node2.id}:${pin}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+    if (!this.resolving) this.resolving = /* @__PURE__ */ new Set();
+    if (this.resolving.has(key)) {
+      console.warn("Cyclic dependency detected:", key);
+      return node2.default?.(pin) ?? "0.0";
+    }
+    this.resolving.add(key);
+    const conn = this.shaderGraph.getInput(node2, pin);
+    let value;
+    if (conn) {
+      value = this.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      if (node2.inputs && pin in node2.inputs) {
+        value = node2.inputs[pin].default;
+      } else {
+        value = void 0;
+      }
+    }
+    const result2 = node2.build(pin, value, this);
+    if (result2?.out !== void 0) {
+      this.cache.set(key, result2.out);
+    }
+    this.resolving.delete(key);
+    return result2.out;
+  }
+};
+var FragmentCompiler = class {
+  static compile(shaderGraph) {
+    const ctx = new CompileContext(shaderGraph);
+    shaderGraph.nodes.forEach((n2) => {
+      if (n2.type.endsWith("Output")) {
+        ctx.resolve(n2, Object.keys(n2.inputs)[0]);
+      }
+    });
+    if (!ctx.outputs.outColor) {
+      throw new Error("ShaderGraph: No visual output");
+    }
+    return {
+      structs: ctx.structs,
+      uniforms: ctx.uniforms,
+      functions: [...ctx.functions.values()],
+      locals: ctx.locals,
+      outputs: ctx.outputs,
+      mainLines: ctx.mainLines
+    };
+  }
+};
+var NODE_ID = 0;
+var ShaderNode = class {
+  constructor(type2) {
+    this.id = "N" + NODE_ID++;
+    this.type = type2;
+    this.inputs = {};
+  }
+  default(pin) {
+    return this.inputs[pin]?.default ?? "0.0";
+  }
+  build(_, value, ctx) {
+    return {
+      out: value,
+      type: "f32"
+    };
+  }
+};
+var FragmentOutputNode = class extends ShaderNode {
+  constructor() {
+    super("FragmentOutput");
+    this.inputs = { color: { default: "vec4f(1.0)" } };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "color");
+    let value;
+    if (conn) {
+      value = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      value = this.inputs.color.default;
+    }
+    ctx.outputs.outColor = value;
+    return { out: ctx.outputs.outColor, type: "vec4f" };
+  }
+};
+var AlphaOutput = class extends ShaderNode {
+  constructor() {
+    super("AlphaOutput");
+    this.inputs = { alpha: { default: "1.0" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.alpha = ctx.resolve(this, "alpha");
+    return { out: ctx.outputs.alpha };
+  }
+};
+var NormalOutput = class extends ShaderNode {
+  constructor() {
+    super("NormalOutput");
+    this.inputs = { normal: { default: "input.normal" } };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.normal = ctx.resolve(this, "normal");
+    return { out: ctx.outputs.normal };
+  }
+};
+var LightShadowNode = class extends ShaderNode {
+  constructor() {
+    super("LightShadowNode");
+    this.inputs = { intensity: { default: "1" } };
+  }
+  build(_, __, ctx) {
+    const lightCalcCode = `
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+    let materialData = getPBRMaterial(input.uv);
+    var lightContribution = vec3f(0.0);
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let bias = spotlights[i].shadowBias;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        lightContribution += contrib * visibility;
+    }`;
+    ctx.locals.push(lightCalcCode);
+    return {
+      out: "lightContribution",
+      type: "vec3f"
+    };
+  }
+};
+var LightToColorNode = class extends ShaderNode {
+  constructor() {
+    super("LightToColor");
+    this.inputs = {
+      light: { default: "vec3f(1.0)" }
+    };
+  }
+  build(pin, value, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "light");
+    let l;
+    if (conn) {
+      l = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      l = this.inputs.light.default;
+    }
+    const result2 = ctx.temp("vec4f", `vec4f(${l}, 1.0)`);
+    return {
+      out: result2,
+      type: "vec4f"
+    };
+  }
+};
+var UVNode = class extends ShaderNode {
+  constructor() {
+    super("UV");
+  }
+  build() {
+    return {
+      out: "input.uv",
+      type: "vec2f"
+    };
+  }
+};
+var CameraPosNode = class extends ShaderNode {
+  constructor() {
+    super("CameraPos");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.cameraPos",
+      type: "vec3f"
+    };
+  }
+};
+var TimeNode = class extends ShaderNode {
+  constructor() {
+    super("Time");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.time",
+      type: "f32"
+    };
+  }
+};
+var InlineFunctionNode = class extends ShaderNode {
+  constructor(name2 = "customFn", code = "") {
+    super("InlineFunction");
+    this.fnName = name2;
+    this.code = code;
+    this.inputs = {
+      a: { default: "input.uv" },
+      b: { default: "globals.time" }
+    };
+  }
+  build(_, __, ctx) {
+    ctx.registerFunction(this.fnName, this.code);
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("vec4f", `${this.fnName}(${a}, ${b})`),
+      type: "vec4f"
+    };
+  }
+};
+var TextureSamplerNode = class extends ShaderNode {
+  constructor(name2 = "tex0") {
+    super("TextureSampler");
+    this.name = name2;
+    this.inputs = { uv: { default: "input.uv" } };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "uv");
+    let uv;
+    if (conn) {
+      uv = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      uv = this.inputs.uv.default;
+    }
+    return {
+      out: ctx.temp("vec4f", `textureSample(meshTexture, meshSampler, ${uv})`),
+      type: "vec4f"
+    };
+  }
+};
+var MultiplyColorNode = class extends ShaderNode {
+  constructor() {
+    super("MultiplyColor");
+    this.inputs = {
+      a: { default: "vec4(1.0)" },
+      b: { default: "vec4(1.0)" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    let a, b;
+    if (connA) {
+      a = ctx.resolve(connA.fromNode, connA.fromPin);
+    } else {
+      a = this.inputs.a.default;
+    }
+    if (connB) {
+      b = ctx.resolve(connB.fromNode, connB.fromPin);
+    } else {
+      b = this.inputs.b.default;
+    }
+    const t = ctx.temp("vec4f", `${a} * ${b}`);
+    return { out: t, type: "vec4f" };
+  }
+};
+var GrayscaleNode = class extends ShaderNode {
+  constructor() {
+    super("Grayscale");
+    this.inputs = { color: { default: "vec4(1.0)" } };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "color");
+    const c = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.color.default;
+    return {
+      out: ctx.temp("vec4f", `vec4(vec3(dot(${c}.rgb,vec3(0.299,0.587,0.114))),${c}.a)`),
+      type: "vec4f"
+    };
+  }
+};
+var ContrastNode = class extends ShaderNode {
+  constructor() {
+    super("Contrast");
+    this.inputs = {
+      color: { default: "vec4(1.0)" },
+      contrast: { default: "1.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connColor = ctx.shaderGraph.getInput(this, "color");
+    const connContrast = ctx.shaderGraph.getInput(this, "contrast");
+    const c = connColor ? ctx.resolve(connColor.fromNode, connColor.fromPin) : this.inputs.color.default;
+    const k = connContrast ? ctx.resolve(connContrast.fromNode, connContrast.fromPin) : this.inputs.contrast.default;
+    return {
+      out: ctx.temp("vec4f", `vec4(((${c}.rgb-0.5)*${k}+0.5),${c}.a)`),
+      type: "vec4f"
+    };
+  }
+};
+var FloatNode = class extends ShaderNode {
+  constructor(value = 1) {
+    super("Float");
+    this.value = value;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `${this.value}`,
+      type: "f32"
+    };
+  }
+};
+var Vec2Node = class extends ShaderNode {
+  constructor(x2 = 0, y2 = 0) {
+    super("Vec2");
+    this.x = x2;
+    this.y = y2;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec2f(${this.x}, ${this.y})`,
+      type: "vec2f"
+    };
+  }
+};
+var Vec3Node = class extends ShaderNode {
+  constructor(x2 = 0, y2 = 0, z = 0) {
+    super("Vec3");
+    this.x = x2;
+    this.y = y2;
+    this.z = z;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec3f(${this.x}, ${this.y}, ${this.z})`,
+      type: "vec3f"
+    };
+  }
+};
+var Vec4Node = class extends ShaderNode {
+  constructor(x2 = 0, y2 = 0, z = 0, w = 1) {
+    super("Vec4");
+    this.x = x2;
+    this.y = y2;
+    this.z = z;
+    this.w = w;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec4f(${this.x}, ${this.y}, ${this.z}, ${this.w})`,
+      type: "vec4f"
+    };
+  }
+};
+var ColorNode = class extends ShaderNode {
+  constructor(r2 = 1, g = 1, b = 1, a = 1) {
+    super("Color");
+    this.r = r2;
+    this.g = g;
+    this.b = b;
+    this.a = a;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec4f(${this.r}, ${this.g}, ${this.b}, ${this.a})`,
+      type: "vec4f"
+    };
+  }
+};
+var AddNode = class extends ShaderNode {
+  constructor() {
+    super("Add");
+    this.inputs = {
+      a: { default: "0.0" },
+      b: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} + ${b}`),
+      type: "f32"
+    };
+  }
+};
+var SubtractNode = class extends ShaderNode {
+  constructor() {
+    super("Subtract");
+    this.inputs = {
+      a: { default: "0.0" },
+      b: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} - ${b}`),
+      type: "f32"
+    };
+  }
+};
+var MultiplyNode = class extends ShaderNode {
+  constructor() {
+    super("Multiply");
+    this.inputs = {
+      a: { default: "1.0" },
+      b: { default: "1.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} * ${b}`),
+      type: "f32"
+    };
+  }
+};
+var DivideNode = class extends ShaderNode {
+  constructor() {
+    super("Divide");
+    this.inputs = {
+      a: { default: "1.0" },
+      b: { default: "1.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} / ${b}`),
+      type: "f32"
+    };
+  }
+};
+var PowerNode = class extends ShaderNode {
+  constructor() {
+    super("Power");
+    this.inputs = {
+      base: { default: "1.0" },
+      exponent: { default: "2.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connBase = ctx.shaderGraph.getInput(this, "base");
+    const connExp = ctx.shaderGraph.getInput(this, "exponent");
+    const base = connBase ? ctx.resolve(connBase.fromNode, connBase.fromPin) : this.inputs.base.default;
+    const exp = connExp ? ctx.resolve(connExp.fromNode, connExp.fromPin) : this.inputs.exponent.default;
+    return {
+      out: ctx.temp("f32", `pow(${base}, ${exp})`),
+      type: "f32"
+    };
+  }
+};
+var LerpNode = class extends ShaderNode {
+  constructor() {
+    super("Lerp");
+    this.inputs = {
+      a: { default: "0.0" },
+      b: { default: "1.0" },
+      t: { default: "0.5" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const connT = ctx.shaderGraph.getInput(this, "t");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    const t = connT ? ctx.resolve(connT.fromNode, connT.fromPin) : this.inputs.t.default;
+    return {
+      out: ctx.temp("f32", `mix(${a}, ${b}, ${t})`),
+      type: "f32"
+    };
+  }
+};
+var SinNode = class extends ShaderNode {
+  constructor() {
+    super("Sin");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `sin(${val})`),
+      type: "f32"
+    };
+  }
+};
+var CosNode = class extends ShaderNode {
+  constructor() {
+    super("Cos");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `cos(${val})`),
+      type: "f32"
+    };
+  }
+};
+var DotProductNode = class extends ShaderNode {
+  constructor() {
+    super("DotProduct");
+    this.inputs = {
+      a: { default: "vec3f(0.0)" },
+      b: { default: "vec3f(0.0)" }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `dot(${a}, ${b})`),
+      type: "f32"
+    };
+  }
+};
+var NormalizeNode = class extends ShaderNode {
+  constructor() {
+    super("Normalize");
+    this.inputs = {
+      vector: { default: "vec3f(1.0)" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    return {
+      out: ctx.temp("vec3f", `normalize(${vec})`),
+      type: "vec3f"
+    };
+  }
+};
+var LengthNode = class extends ShaderNode {
+  constructor() {
+    super("Length");
+    this.inputs = {
+      vector: { default: "vec3f(0.0)" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    return {
+      out: ctx.temp("f32", `length(${vec})`),
+      type: "f32"
+    };
+  }
+};
+var SplitVec4Node = class extends ShaderNode {
+  constructor() {
+    super("SplitVec4");
+    this.inputs = {
+      vector: { default: "vec4f(0.0)" }
+    };
+  }
+  build(pin, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    if (!this._temp) {
+      this._temp = ctx.temp("vec4f", vec);
+    }
+    switch (pin) {
+      case "x":
+        return { out: `${this._temp}.x`, type: "f32" };
+      case "y":
+        return { out: `${this._temp}.y`, type: "f32" };
+      case "z":
+        return { out: `${this._temp}.z`, type: "f32" };
+      case "w":
+        return { out: `${this._temp}.w`, type: "f32" };
+      default:
+        return { out: this._temp, type: "vec4f" };
+    }
+  }
+};
+var CombineVec4Node = class extends ShaderNode {
+  constructor() {
+    super("CombineVec4");
+    this.inputs = {
+      x: { default: "0.0" },
+      y: { default: "0.0" },
+      z: { default: "0.0" },
+      w: { default: "1.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const connY = ctx.shaderGraph.getInput(this, "y");
+    const connZ = ctx.shaderGraph.getInput(this, "z");
+    const connW = ctx.shaderGraph.getInput(this, "w");
+    const x2 = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    const y2 = connY ? ctx.resolve(connY.fromNode, connY.fromPin) : this.inputs.y.default;
+    const z = connZ ? ctx.resolve(connZ.fromNode, connZ.fromPin) : this.inputs.z.default;
+    const w = connW ? ctx.resolve(connW.fromNode, connW.fromPin) : this.inputs.w.default;
+    return {
+      out: ctx.temp("vec4f", `vec4f(${x2}, ${y2}, ${z}, ${w})`),
+      type: "vec4f"
+    };
+  }
+};
+var FracNode = class extends ShaderNode {
+  constructor() {
+    super("Frac");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `fract(${val})`),
+      type: "f32"
+    };
+  }
+};
+var SmoothstepNode = class extends ShaderNode {
+  constructor() {
+    super("Smoothstep");
+    this.inputs = {
+      edge0: { default: "0.0" },
+      edge1: { default: "1.0" },
+      x: { default: "0.5" }
+    };
+  }
+  build(_, __, ctx) {
+    const connEdge0 = ctx.shaderGraph.getInput(this, "edge0");
+    const connEdge1 = ctx.shaderGraph.getInput(this, "edge1");
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const edge0 = connEdge0 ? ctx.resolve(connEdge0.fromNode, connEdge0.fromPin) : this.inputs.edge0.default;
+    const edge1 = connEdge1 ? ctx.resolve(connEdge1.fromNode, connEdge1.fromPin) : this.inputs.edge1.default;
+    const x2 = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    return {
+      out: ctx.temp("f32", `smoothstep(${edge0}, ${edge1}, ${x2})`),
+      type: "f32"
+    };
+  }
+};
+var OneMinusNode = class extends ShaderNode {
+  constructor() {
+    super("OneMinus");
+    this.inputs = {
+      value: { default: "0.0" }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `1.0 - ${val}`),
+      type: "f32"
+    };
+  }
+};
+var FragmentPositionNode = class extends ShaderNode {
+  constructor() {
+    super("FragmentPosition");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "input.fragPos",
+      type: "vec3f"
+    };
+  }
+};
+var FragmentNormalNode = class extends ShaderNode {
+  constructor() {
+    super("FragmentNormal");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "input.fragNorm",
+      type: "vec3f"
+    };
+  }
+};
+var ViewDirectionNode = class extends ShaderNode {
+  constructor() {
+    super("ViewDirection");
+  }
+  build(_, __, ctx) {
+    return {
+      out: ctx.temp("vec3f", "normalize(scene.cameraPos - input.fragPos)"),
+      type: "vec3f"
+    };
+  }
+};
+var GlobalAmbientNode = class extends ShaderNode {
+  constructor() {
+    super("GlobalAmbient");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.globalAmbient",
+      type: "vec3f"
+    };
+  }
+};
+var InlineWGSLNode = class {
+  constructor(code = "return vec4f(1.0, 0.0, 0.0, 1.0);") {
+    this.id = nodeId++;
+    this.type = "InlineWGSL";
+    this.code = code;
+    this.label = "Inline WGSL";
+    this.inputs = {};
+    this.outputs = {
+      result: { type: "vec4f" }
+    };
+  }
+  build(pin, value, ctx) {
+    if (pin === "result") {
+      const fnName = `inlineWGSL_${this.id}`;
+      const fnCode = `
+fn ${fnName}() -> vec4f {
+  ${this.code}
+}`;
+      ctx.registerFunction(fnName, fnCode);
+      const out = ctx.temp("vec4f", `${fnName}()`);
+      return { out };
+    }
+  }
+};
+var ConnectionLayer = class {
+  constructor(svg, shaderGraph) {
+    this.svg = svg;
+    this.shaderGraph = shaderGraph;
+    this.temp = null;
+    this.from = null;
+    document.addEventListener("pointermove", (e) => this.move(e));
+    document.addEventListener("pointerup", (e) => this.up(e));
+  }
+  attach(pin) {
+    pin.onpointerdown = (e) => {
+      e.stopPropagation();
+      if (pin.dataset.type !== "output") return;
+      this.from = pin;
+      this.temp = this.path();
+      this.svg.appendChild(this.temp);
+    };
+  }
+  move(e) {
+    if (!this.temp || !this.from) return;
+    this.draw(this.temp, this.center(this.from), { x: e.clientX, y: e.clientY });
+  }
+  up(e) {
+    if (!this.temp || !this.from) return;
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    if (t?.classList.contains("pinShader") && t.dataset.type === "input") {
+      this.finalize(this.from, t);
+    }
+    this.temp.remove();
+    this.temp = this.from = null;
+  }
+  finalize(outPin, inPin) {
+    const fromNode = this.shaderGraph.nodes.find((n2) => n2.id === outPin.dataset.node);
+    const toNode = this.shaderGraph.nodes.find((n2) => n2.id === inPin.dataset.node);
+    const fromPin = outPin.dataset.pin;
+    const toPin = inPin.dataset.pin;
+    this.shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+    this.redrawAll();
+  }
+  redrawAll() {
+    [...this.svg.children].forEach((p) => p.remove());
+    this.shaderGraph.connections.forEach((c) => this.redrawConnection(c));
+  }
+  redrawConnection(conn) {
+    const path = this.path();
+    path.dataset.from = `${conn.fromNode.id}:${conn.fromPin}`;
+    path.dataset.to = `${conn.toNode.id}:${conn.toPin}`;
+    this.svg.appendChild(path);
+    const a = document.querySelector(`.pinShader.output[data-node="${conn.fromNode.id}"][data-pin="${conn.fromPin}"]`);
+    const b = document.querySelector(`.pinShader.input[data-node="${conn.toNode.id}"][data-pin="${conn.toPin}"]`);
+    if (a && b) this.draw(path, this.center(a), this.center(b));
+  }
+  path() {
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("stroke", "#6aa9ff");
+    p.setAttribute("stroke-width", "2");
+    p.setAttribute("fill", "none");
+    return p;
+  }
+  draw(p, a, b) {
+    const dx = Math.abs(b.x - a.x) * 0.5;
+    p.setAttribute("d", `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}`);
+  }
+  center(el2) {
+    const r2 = el2.getBoundingClientRect();
+    const svgRect = this.svg.getBoundingClientRect();
+    return {
+      x: r2.left + r2.width / 2 - svgRect.left,
+      y: r2.top + r2.height / 2 - svgRect.top
+    };
+  }
+};
+async function openFragmentShaderEditor(id2 = "fragShader") {
+  return new Promise((resolve, reject) => {
+    const shaderGraph = new FragmentShaderGraph(id2);
+    const root = document.createElement("div");
+    root.id = "shaderDOM";
+    root.style.cssText = `
+    position:fixed; left: 17.5%; top:4%;
+    background:#0b0e14; color:#eee;
+    display:flex; font-family:system-ui;
+    width:300%;height:90%
+  `;
+    root.style.display = "none";
+    const menu = document.createElement("div");
+    menu.style.cssText = `
+    width:200px; border-right:1px solid #222;
+    padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
+  `;
+    const btn = (txt, fn) => {
+      const b2 = document.createElement("button");
+      b2.textContent = txt;
+      b2.style.cssText = "width:100%;margin:4px 0;";
+      if (txt == "Compile All" || txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
+      if (txt == "Create New") b2.style.cssText += "color: lime;";
+      if (txt == "Delete") b2.style.cssText += "color: red;";
+      b2.classList.add("btn");
+      b2.classList.add("btnLeftBox");
+      b2.onclick = fn;
+      menu.appendChild(b2);
+    };
+    const area = document.createElement("div");
+    area.style.cssText = "flex:1;position:relative";
+    area.classList.add("fancy-grid-bg");
+    area.classList.add("dark");
+    let pan = { active: false, ox: 0, oy: 0 };
+    area.addEventListener("pointerdown", (e) => {
+      if (e.target !== area) return;
+      pan.active = true;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      area.setPointerCapture(e.pointerId);
+    });
+    area.addEventListener("pointermove", (e) => {
+      if (!pan.active) return;
+      const dx = e.clientX - pan.ox;
+      const dy = e.clientY - pan.oy;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      shaderGraph.nodes.forEach((n2) => {
+        n2.x += dx;
+        n2.y += dy;
+        const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
+        if (el2) {
+          el2.style.left = n2.x + "px";
+          el2.style.top = n2.y + "px";
+        }
+      });
+      connectionLayer.redrawAll();
+    });
+    area.addEventListener("pointerup", (e) => {
+      pan.active = false;
+      area.releasePointerCapture(e.pointerId);
+    });
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position = "absolute";
+    svg.style.left = "0";
+    svg.style.top = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    area.appendChild(svg);
+    root.appendChild(menu);
+    root.appendChild(area);
+    document.body.appendChild(root);
+    const style = document.createElement("style");
+    style.textContent = `
+#shaderDOM { z-index:2 }
+
+.nodeShader {
+  position:absolute;
+  min-width:140px;
+  background:#151a2a;
+  border:1px solid #222;
+  border-radius:6px;
+  padding:0;
+  color:#eee;
+  cursor:move;
+}
+
+.nodeShader.selected {
+  border-color: #ff8800;
+  box-shadow: 0 0 8px #ff8800;
+}
+
+.nodeShader .node-title {
+  -webkit-text-stroke-width: 0.2px;
+  display: block;
+  padding: 6px 8px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: #ffffff;
+  background: #1f2937;
+  white-space: nowrap;
+  position: relative;
+  z-index: 10;
+  user-select: none;
+  border-radius: 6px 6px 0 0;
+  border-bottom: 1px solid #333;
+}
+
+.node-properties {
+  padding: 6px 8px;
+  background: #1a1f2e;
+  border-bottom: 1px solid #333;
+}
+
+.node-properties input,
+.node-properties textarea {
+  font-family: monospace;
+}
+
+.node-properties input:focus,
+.node-properties textarea:focus {
+  outline: none;
+  border-color: #6aa9ff;
+}
+
+.nodeShader-body {
+  display:flex;
+  gap:8px;
+  justify-content: space-between;
+  padding: 6px 8px;
+}
+
+.nodeShader-inputs {
+  display:flex;
+  flex-direction:column;
+}
+
+.pinShader-row {
+  position: relative;
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+  font-size: 12px;
+  color: #ddd;
+}
+
+.pinShader {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0f0;
+  border: 2px solid #000;
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.pinShader.input {  margin-left: -6px; background: #ff6a6a; }
+.pinShader.output { margin-right: -6px; background: #6aa9ff; }
+
+.pinShader-label {
+  margin-left: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 6;
+}
+
+svg path {
+  pointer-events:none;
+}
+`;
+    document.head.appendChild(style);
+    const connectionLayer = new ConnectionLayer(svg, shaderGraph);
+    function addNode(node2, x2, y2) {
+      const test = shaderGraph.addNode(node2);
+      if (test == null) return;
+      if (x2 == null || y2 == null) {
+        const p = shaderGraph.nextSpawn();
+        x2 = p.x;
+        y2 = p.y;
+      }
+      node2.x = x2;
+      node2.y = y2;
+      const el2 = document.createElement("div");
+      el2.className = "nodeShader";
+      el2.style.left = x2 + "px";
+      el2.style.top = y2 + "px";
+      area.appendChild(el2);
+      el2.tabIndex = 0;
+      el2.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.querySelectorAll(".nodeShader.selected").forEach((n2) => n2.classList.remove("selected"));
+        el2.classList.add("selected");
+      });
+      el2.dataset.nodeId = node2.id;
+      const title = document.createElement("div");
+      title.className = "node-title";
+      title.textContent = node2.type;
+      el2.appendChild(title);
+      const propsContainer = document.createElement("div");
+      propsContainer.className = "node-properties";
+      propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
+      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
+        const row2 = document.createElement("div");
+        row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
+        const labelEl = document.createElement("label");
+        labelEl.textContent = label + ":";
+        labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
+        const input = document.createElement("input");
+        input.type = type2;
+        input.value = value;
+        input.step = step;
+        input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
+        input.addEventListener("input", () => {
+          const val = type2 === "number" ? parseFloat(input.value) : input.value;
+          node2[propName] = val;
+        });
+        input.addEventListener("pointerdown", (e) => e.stopPropagation());
+        row2.appendChild(labelEl);
+        row2.appendChild(input);
+        propsContainer.appendChild(row2);
+      }
+      if (node2.type === "Float") {
+        addPropertyInput("Value", "value", node2.value);
+      } else if (node2.type === "Vec2") {
+        addPropertyInput("X", "x", node2.x);
+        addPropertyInput("Y", "y", node2.y);
+      } else if (node2.type === "Vec3") {
+        addPropertyInput("X", "x", node2.x);
+        addPropertyInput("Y", "y", node2.y);
+        addPropertyInput("Z", "z", node2.z);
+      } else if (node2.type === "Vec4") {
+        addPropertyInput("X", "x", node2.x);
+        addPropertyInput("Y", "y", node2.y);
+        addPropertyInput("Z", "z", node2.z);
+        addPropertyInput("W", "w", node2.w);
+      } else if (node2.type === "Color") {
+        addPropertyInput("R", "r", node2.r);
+        addPropertyInput("G", "g", node2.g);
+        addPropertyInput("B", "b", node2.b);
+        addPropertyInput("A", "a", node2.a);
+      } else if (node2.type === "InlineFunction") {
+        addPropertyInput("Name", "fnName", node2.fnName, "text");
+        const ta = document.createElement("textarea");
+        ta.value = node2.code;
+        ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
+        ta.oninput = () => node2.code = ta.value;
+        ta.onpointerdown = (e) => e.stopPropagation();
+        propsContainer.appendChild(ta);
+      }
+      if (propsContainer.children.length > 0) {
+        el2.appendChild(propsContainer);
+      }
+      const body2 = document.createElement("div");
+      body2.className = "nodeShader-body";
+      el2.appendChild(body2);
+      function createPinRow(pinName, type2 = "input") {
+        const row2 = document.createElement("div");
+        row2.className = "pinShader-row";
+        const pin = document.createElement("div");
+        pin.className = "pinShader " + (type2 === "input" ? "input" : "output");
+        pin.dataset.node = node2.id;
+        pin.dataset.pin = pinName;
+        pin.dataset.type = type2;
+        const label = document.createElement("div");
+        label.className = "pinShader-label";
+        label.textContent = pinName;
+        if (type2 === "input") row2.append(pin, label);
+        else {
+          row2.style.justifyContent = "flex-end";
+          row2.append(label, pin);
+        }
+        return { row: row2, pin };
+      }
+      const inputsContainer = document.createElement("div");
+      inputsContainer.className = "nodeShader-inputs";
+      body2.appendChild(inputsContainer);
+      Object.keys(node2.inputs || {}).forEach((pinName) => {
+        const { row: row2, pin } = createPinRow(pinName, "input");
+        inputsContainer.appendChild(row2);
+      });
+      const outputContainer = document.createElement("div");
+      outputContainer.style.width = "100%";
+      body2.appendChild(outputContainer);
+      const { row: outRow, pin: outPin } = createPinRow("out", "output");
+      outputContainer.appendChild(outRow);
+      connectionLayer.attach(outPin);
+      shaderGraph.connectionLayer = connectionLayer;
+      shaderGraph.makeDraggable(el2, node2, connectionLayer);
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Delete") {
+        const sel = document.querySelector(".nodeShader.selected");
+        if (!sel) return;
+        const nodeId2 = sel.dataset.nodeId;
+        const node2 = shaderGraph.nodes.find((n2) => n2.id === nodeId2);
+        if (!node2) return;
+        shaderGraph.connections = shaderGraph.connections.filter(
+          (c) => c.fromNode !== node2 && c.toNode !== node2
+        );
+        [...svg.querySelectorAll("path")].forEach((p) => {
+          if (p.dataset.from?.startsWith(nodeId2 + ":") || p.dataset.to?.startsWith(nodeId2 + ":")) {
+            p.remove();
+          }
+        });
+        sel.remove();
+        shaderGraph.nodes = shaderGraph.nodes.filter((n2) => n2 !== node2);
+        shaderGraph.connectionLayer.redrawConnection();
+      }
+    });
+    btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
+    btn("CameraPos", () => addNode(new CameraPosNode()));
+    btn("Time", () => addNode(new TimeNode()));
+    btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
+    btn("TextureSampler", () => addNode(new TextureSamplerNode()));
+    btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
+    btn("Grayscale", () => addNode(new GrayscaleNode()));
+    btn("Contrast", () => addNode(new ContrastNode()));
+    btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
+    btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
+    btn("LightShadowNode", () => addNode(new LightShadowNode()));
+    btn("LightToColorNode", () => addNode(new LightToColorNode()));
+    btn("AlphaOutput", () => addNode(new AlphaOutput()));
+    btn("NormalOutput", () => addNode(new NormalOutput()));
+    btn("Float", () => {
+      const val = prompt("Enter float value:", "1.0");
+      addNode(new FloatNode(parseFloat(val) || 1));
+    });
+    btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
+    btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
+    btn("Add", () => addNode(new AddNode()));
+    btn("Multiply", () => addNode(new MultiplyNode()));
+    btn("Power", () => addNode(new PowerNode()));
+    btn("Lerp", () => addNode(new LerpNode()));
+    btn("Sin", () => addNode(new SinNode()));
+    btn("Cos", () => addNode(new CosNode()));
+    btn("Normalize", () => addNode(new NormalizeNode()));
+    btn("DotProduct", () => addNode(new DotProductNode()));
+    btn("Length", () => addNode(new LengthNode()));
+    btn("Frac", () => addNode(new FracNode()));
+    btn("OneMinus", () => addNode(new OneMinusNode()));
+    btn("Smoothstep", () => addNode(new SmoothstepNode()));
+    btn("FragPosition", () => addNode(new FragmentPositionNode()));
+    btn("FragNormal", () => addNode(new FragmentNormalNode()));
+    btn("ViewDirection", () => addNode(new ViewDirectionNode()));
+    btn("SplitVec4", () => addNode(new SplitVec4Node()));
+    btn("CombineVec4", () => addNode(new CombineVec4Node()));
+    btn("Create New", async () => {
+      shaderGraph.clear();
+      let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
+      if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+        if (exist === true) {
+          console.info("ALREADY EXIST SHADER, please use diff name" + exist);
+        } else {
+          shaderGraph.id = nameOfGraphMaterital;
+          saveGraph(shaderGraph, nameOfGraphMaterital);
+        }
+      }
+    });
+    btn("Compile", () => {
+      let r2 = shaderGraph.compile();
+      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
+      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
+    });
+    btn("Compile All", () => {
+      for (let x2 = 0; x2 < shaderGraph.runtimeList.length; x2++) {
+        setTimeout(() => {
+          byId("shader-graphs-list").selectedIndex = x2 + 1;
+          const event = new Event("change", { bubbles: true });
+          byId("shader-graphs-list").dispatchEvent(event);
+          if (shaderGraph.runtimeList.length == x2) {
+            console.log("LAST");
+          }
+        }, 500 * x2);
+      }
+    });
+    btn("Save Graph", () => {
+      saveGraph(shaderGraph, shaderGraph.id);
+    });
+    btn("Load Graph", async () => {
+      shaderGraph.clear();
+      let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
+      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+      if (exist === false) {
+        alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
+      }
+    });
+    btn("Delete", () => {
+      console.log("[DELETE]", shaderGraph.id);
+      document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph.id }));
+    });
+    const titleb = document.createElement("p");
+    titleb.style.cssText = "width:100%;margin:4px 0;";
+    titleb.classList.add("btn3");
+    titleb.classList.add("btnLeftBox");
+    titleb.innerHTML = `Current shader:`;
+    titleb.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(titleb);
+    const b = document.createElement("select");
+    b.id = "shader-graphs-list";
+    b.style.cssText = "width:100%;margin:4px 0;";
+    b.classList.add("btn");
+    b.classList.add("btnLeftBox");
+    b.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(b);
+    document.addEventListener("on-shader-graphs-list", (e) => {
+      console.log("on-shader-graphs-list :", e.detail);
+      const shaders = e.detail;
+      b.innerHTML = "";
+      var __ = 0;
+      if (!byId("shader-graphs-list-dom")) {
+        __ = 1;
+        const placeholder2 = document.createElement("option");
+        placeholder2.id = "shader-graphs-list-dom";
+        placeholder2.textContent = "Select shader";
+        placeholder2.value = "";
+        placeholder2.disabled = true;
+        placeholder2.selected = true;
+        b.appendChild(placeholder2);
+      }
+      shaderGraph.runtimeList = [];
+      shaders.forEach((shader, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = shader.name;
+        shaderGraph.runtimeList.push(shader.name);
+        console.log("Graph content shader:", shader.content);
+        let test = JSON.parse(shader.content);
+        console.log("Graph content shader:", test.final);
+        shaderGraph.runtime_memory[shader.name] = test.final;
+        b.appendChild(opt);
+      });
+      if (__ == 1) {
+        b.onchange = (event) => {
+          shaderGraph.clear();
+          const selectedIndex = event.target.value;
+          const selectedShader = shaders[selectedIndex];
+          console.log("Selected shader:", selectedShader.name);
+          document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: selectedShader.name }));
+          console.log("Lets load selectedShader.name ", selectedShader.name);
+        };
+      }
+      document.dispatchEvent(new CustomEvent("sgraphs-ready", {}));
+    });
+    document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + shaderGraph.runtimeList);
+    document.addEventListener("sgraphs-ready", async () => {
+      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + shaderGraph.runtimeList);
+      if (shaderGraph.runtimeList.length > 0) {
+        shaderGraph.id = shaderGraph.runtimeList[0];
+        const exist = await loadGraph(shaderGraph.id, shaderGraph, addNode);
+        if (exist == false) {
+          saveGraph(shaderGraph, shaderGraph.id);
+          console.log("NEW SHADER:[SAVED]" + exist);
+        }
+      } else {
+        console.log("no saved graphs");
+      }
+      resolve(shaderGraph);
+    });
+  });
+}
+function serializeGraph(shaderGraph) {
+  return JSON.stringify({
+    nodes: shaderGraph.nodes.map((n2) => ({
+      id: n2.id,
+      type: n2.type,
+      x: n2.x ?? 100,
+      y: n2.y ?? 100,
+      fnName: n2.fnName,
+      code: n2.code,
+      name: n2.name,
+      value: n2.value,
+      r: n2.r,
+      g: n2.g,
+      b: n2.b,
+      a: n2.a,
+      inputs: Object.fromEntries(Object.entries(n2.inputs || {}).map(([k, v]) => [k, { default: v.default }]))
+    })),
+    connections: shaderGraph.connections.map((c) => ({
+      from: c.fromNode.id,
+      fromPin: c.fromPin,
+      to: c.toNode.id,
+      toPin: c.toPin
+    })),
+    final: shaderGraph.runtime_memory[shaderGraph.id] ? shaderGraph.runtime_memory[shaderGraph.id] : null
+  });
+}
+function saveGraph(shaderGraph, key = "fragShaderGraph") {
+  let content = serializeGraph(shaderGraph);
+  localStorage.setItem(key, content);
+  console.log("test compile content", shaderGraph.runtime_memory[key]);
+  console.log("test compile content", content);
+  if (shaderGraph.runtime_memory[key]) {
+  } else {
+    console.warn("GraphShader is saved for src but with no compile final data for prod build.");
+  }
+  document.dispatchEvent(new CustomEvent("save-shader-graph", {
+    detail: {
+      name: key,
+      content
+    }
+  }));
+  console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
+}
+async function loadGraph(key, shaderGraph, addNodeUI) {
+  if (shaderGraph.onGraphLoadAttached === false) {
+    shaderGraph.onGraphLoadAttached = true;
+    document.addEventListener("on-graph-load", (e) => {
+      if (e.detail == null) {
+        alert("Graph no exist!");
+        return;
+      }
+      shaderGraph.nodes.length = 0;
+      shaderGraph.connections.length = 0;
+      shaderGraph.id = e.detail.name;
+      let data = JSON.parse(e.detail.content);
+      if (!data) return false;
+      const map = {};
+      data.nodes.forEach((node2) => {
+        const saveId = node2.id;
+        const saveX = node2.x;
+        const saveY = node2.y;
+        switch (node2.type) {
+          case "FragmentOutput":
+            node2 = new FragmentOutputNode();
+            break;
+          case "CameraPos":
+            node2 = new CameraPosNode();
+            break;
+          case "Time":
+            node2 = new TimeNode();
+            break;
+          case "InlineFunction":
+            node2 = new InlineFunctionNode(node2.fnName, node2.code);
+            break;
+          case "TextureSampler":
+            node2 = new TextureSamplerNode(node2.name);
+            break;
+          case "MultiplyColor":
+            node2 = new MultiplyColorNode();
+            break;
+          case "Grayscale":
+            node2 = new GrayscaleNode();
+            break;
+          case "Contrast":
+            node2 = new ContrastNode();
+            break;
+          case "AlphaOutput":
+            node2 = new AlphaOutput();
+            break;
+          case "NormalOutput":
+            node2 = new NormalOutput();
+            break;
+          case "LightShadowNode":
+            node2 = new LightShadowNode();
+            break;
+          case "LightToColor":
+            node2 = new LightToColorNode();
+            break;
+          case "UV":
+            node2 = new UVNode();
+            break;
+          case "Float":
+            node2 = new FloatNode(node2.value ?? 1);
+            break;
+          case "Vec2":
+            node2 = new Vec2Node(node2.x ?? 0, node2.y ?? 0);
+            break;
+          case "Vec3":
+            node2 = new Vec3Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0);
+            break;
+          case "Vec4":
+            node2 = new Vec4Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0, node2.w ?? 1);
+            break;
+          case "Color":
+            node2 = new ColorNode(node2.r ?? 1, node2.g ?? 1, node2.b ?? 1, node2.a ?? 1);
+            break;
+          case "Add":
+            node2 = new AddNode();
+            break;
+          case "Subtract":
+            node2 = new SubtractNode();
+            break;
+          case "Multiply":
+            node2 = new MultiplyNode();
+            break;
+          case "Divide":
+            node2 = new DivideNode();
+            break;
+          case "Power":
+            node2 = new PowerNode();
+            break;
+          case "Sin":
+            node2 = new SinNode();
+            break;
+          case "Cos":
+            node2 = new CosNode();
+            break;
+          case "Normalize":
+            node2 = new NormalizeNode();
+            break;
+          case "DotProduct":
+            node2 = new DotProductNode();
+            break;
+          case "Lerp":
+            node2 = new LerpNode();
+            break;
+          case "Frac":
+            node2 = new FracNode();
+            break;
+          case "OneMinus":
+            node2 = new OneMinusNode();
+            break;
+          case "Smoothstep":
+            node2 = new SmoothstepNode();
+            break;
+          case "FragmentPosition":
+            node2 = new FragmentPositionNode();
+            break;
+          case "ViewDirection":
+            node2 = new ViewDirectionNode();
+            break;
+          case "SplitVec4":
+            node2 = new SplitVec4Node();
+            break;
+          case "CombineVec4":
+            node2 = new CombineVec4Node();
+            break;
+          case "GlobalAmbient":
+            node2 = new GlobalAmbientNode();
+            break;
+        }
+        node2.id = saveId;
+        node2.x = saveX;
+        node2.y = saveY;
+        map[node2.id] = node2;
+        addNodeUI(node2, node2.x, node2.y);
+      });
+      setTimeout(() => data.connections.forEach((c) => {
+        const fromNode = map[c.from];
+        const toNode = map[c.to];
+        const fromPin = c.fromPin;
+        const toPin = c.toPin;
+        if (!fromNode || !toNode) {
+          console.warn("Skipping connection due to missing node", c);
+          return;
+        }
+        shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+        const path = shaderGraph.connectionLayer.path();
+        path.dataset.from = `${fromNode.id}:${fromPin}`;
+        path.dataset.to = `${toNode.id}:${toPin}`;
+        shaderGraph.connectionLayer.svg.appendChild(path);
+        shaderGraph.connectionLayer.redrawAll(path);
+      }), 50);
+      let r2 = shaderGraph.compile();
+      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
+      console.log("test compile shaderGraph.final ", shaderGraph.final);
+      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
+      return true;
+    });
+  }
+  document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: key }));
+}
 
 // ../../../engine/plugin/tooltip/ToolTip.js
 var METoolTip = class {
@@ -17603,192 +19372,6 @@ var CurveStore = class {
     return c;
   }
 };
-
-// ../flexCodexShaderAdapter.js
-function graphAdapter(compilerResult, nodes) {
-  const { structs, uniforms, functions, locals, outputs, mainLines } = compilerResult;
-  const globals = /* @__PURE__ */ new Set();
-  globals.add("const PI: f32 = 3.141592653589793;");
-  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
-  const baseColor = outputs.baseColor || "vec3f(1.0)";
-  const alpha = outputs.alpha || "1.0";
-  const normal = outputs.normal || "normalize(input.fragNorm)";
-  const emissive = outputs.emissive || "vec3f(0.0)";
-  for (const node2 of nodes) {
-    if (node2.type === "LightShadowNode") {
-      functions.push(`
-fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-
-    // coneAtten = 1.0;
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
-
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
-
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
-
-    let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
-}
-
-fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
-}
-`);
-    }
-  }
-  return `
-/* === Engine uniforms === */
-
-// DINAMIC GLOBALS
-${[...globals].join("\n")}
-
-// DINAMIC STRUCTS
-${[...structs].join("\n")}
-
-// PREDEFINED
-struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
-};
-
-// PREDEFINED
-struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
-};
-
-// PREDEFINED
-struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
-};
-
-// PREDEFINED
-struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32
-};
-
-// PREDEFINED
-const MAX_SPOTLIGHTS = 20u;
-
-// PREDEFINED
-@group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-
-// \u2705 Graph custom uniforms
-${[...uniforms].join("\n")}
-
-// \u2705 Graph custom functions
-${functions.join("\n\n")}
-
-// PREDEFINED Fragment input
-struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-};
-
-// PREDEFINED PBR helpers
-fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
-}
-
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-  // Locals
-  ${locals.join("\n  ")}
-  ${mainLines.join("\n  ")}
-  return ${outputs.outColor};
-}
-`;
-}
 
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
@@ -21327,7 +22910,7 @@ var FluxCodexVertex = class {
         }
         n._returnCache = n.osc.UPDATE();
       } else if (n.title === "Get Shader Graph") {
-        console.warn("[Get Shader Graph] ????? input fields...");
+        console.warn("[Get Shader Graph] ?????  ??input fields...");
         const objectName2 = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if (!objectName2) {
@@ -21835,1579 +23418,6 @@ var FluxCodexVertex = class {
   }
 };
 
-// ../flexCodexShader.js
-var FragmentShaderRegistry = {};
-var FragmentShaderGraph = class {
-  constructor(id2) {
-    this.id = id2;
-    this.nodes = [];
-    this.connections = [];
-    this.spawnX = 80;
-    this.spawnY = 80;
-    this.spawnStepX = 220;
-    this.spawnStepY = 140;
-    this.spawnCol = 0;
-    this.runtimeList = [];
-    this.runtime_memory = {};
-    this.onGraphLoadAttached = false;
-  }
-  addNode(node2) {
-    if (node2.type === "FragmentOutput") {
-      const exists = this.nodes.some((n2) => n2.type === "FragmentOutput");
-      if (exists) {
-        console.warn("FragmentOutput already exists");
-        return null;
-      }
-    }
-    this.nodes.push(node2);
-    return node2;
-  }
-  connect(fromNode, fromPin, toNode, toPin) {
-    this.connections = this.connections.filter((c) => !(c.toNode === toNode && c.toPin === toPin));
-    this.connections.push({ fromNode, fromPin, toNode, toPin });
-  }
-  getInput(node2, pin) {
-    return this.connections.find((c) => c.toNode === node2 && c.toPin === pin);
-  }
-  compile() {
-    const wgsl = FragmentCompiler.compile(this);
-    FragmentShaderRegistry[this.id] = wgsl;
-    return wgsl;
-  }
-  nextSpawn() {
-    const x2 = this.spawnX + this.spawnCol * this.spawnStepX;
-    const y2 = this.spawnY;
-    this.spawnCol++;
-    if (this.spawnCol >= 3) {
-      this.spawnCol = 0;
-      this.spawnY += this.spawnStepY;
-    }
-    return { x: x2, y: y2 };
-  }
-  makeDraggable(el2, node2, connectionLayer) {
-    let ox = 0, oy = 0, drag = false;
-    el2.addEventListener("pointerdown", (e) => {
-      drag = true;
-      ox = e.clientX - el2.offsetLeft;
-      oy = e.clientY - el2.offsetTop;
-      el2.setPointerCapture(e.pointerId);
-    });
-    el2.addEventListener("pointermove", (e) => {
-      if (!drag) return;
-      el2.style.left = e.clientX - ox + "px";
-      el2.style.top = e.clientY - oy + "px";
-      node2.x = e.clientX - ox;
-      node2.y = e.clientY - oy;
-      connectionLayer.redrawAll();
-    });
-    el2.addEventListener("pointerup", () => drag = false);
-  }
-  clear() {
-    this.nodes = [];
-    this.connections = [];
-    this.spawnX = 80;
-    this.spawnY = 80;
-    this.spawnCol = 0;
-    if (this.connectionLayer) {
-      this.connectionLayer.svg.innerHTML = "";
-    }
-    const container = document.getElementsByClassName("fancy-grid-bg dark");
-    if (container) {
-      const nodeElements = container[0].querySelectorAll(".nodeShader");
-      nodeElements.forEach((el2) => el2.remove());
-    }
-    this.connectionLayer.redrawAll();
-  }
-};
-var CompileContext = class {
-  constructor(shaderGraph) {
-    this.shaderGraph = shaderGraph;
-    this.cache = /* @__PURE__ */ new Map();
-    this.structs = [];
-    this.uniforms = [];
-    this.functions = /* @__PURE__ */ new Map();
-    this.locals = [];
-    this.mainLines = [];
-    this.tmpIndex = 0;
-    this.outputs = {
-      outColor: null
-    };
-  }
-  temp(type2, expr) {
-    const name2 = `t${this.tmpIndex++}`;
-    this.locals.push(`let ${name2}: ${type2} = ${expr};`);
-    return name2;
-  }
-  registerFunction(name2, code) {
-    if (!this.functions.has(name2)) {
-      this.functions.set(name2, code);
-    }
-  }
-  resolve(node2, pin) {
-    const key = `${node2.id}:${pin}`;
-    if (this.cache.has(key)) return this.cache.get(key);
-    if (!this.resolving) this.resolving = /* @__PURE__ */ new Set();
-    if (this.resolving.has(key)) {
-      console.warn("Cyclic dependency detected:", key);
-      return node2.default?.(pin) ?? "0.0";
-    }
-    this.resolving.add(key);
-    const conn = this.shaderGraph.getInput(node2, pin);
-    let value;
-    if (conn) {
-      value = this.resolve(conn.fromNode, conn.fromPin);
-    } else {
-      if (node2.inputs && pin in node2.inputs) {
-        value = node2.inputs[pin].default;
-      } else {
-        value = void 0;
-      }
-    }
-    const result2 = node2.build(pin, value, this);
-    if (result2?.out !== void 0) {
-      this.cache.set(key, result2.out);
-    }
-    this.resolving.delete(key);
-    return result2.out;
-  }
-};
-var FragmentCompiler = class {
-  static compile(shaderGraph) {
-    const ctx = new CompileContext(shaderGraph);
-    shaderGraph.nodes.forEach((n2) => {
-      if (n2.type.endsWith("Output")) {
-        ctx.resolve(n2, Object.keys(n2.inputs)[0]);
-      }
-    });
-    if (!ctx.outputs.outColor) {
-      throw new Error("ShaderGraph: No visual output");
-    }
-    return {
-      structs: ctx.structs,
-      uniforms: ctx.uniforms,
-      functions: [...ctx.functions.values()],
-      locals: ctx.locals,
-      outputs: ctx.outputs,
-      mainLines: ctx.mainLines
-    };
-  }
-};
-var NODE_ID = 0;
-var ShaderNode = class {
-  constructor(type2) {
-    this.id = "N" + NODE_ID++;
-    this.type = type2;
-    this.inputs = {};
-  }
-  default(pin) {
-    return this.inputs[pin]?.default ?? "0.0";
-  }
-  build(_, value, ctx) {
-    return {
-      out: value,
-      type: "f32"
-    };
-  }
-};
-var FragmentOutputNode = class extends ShaderNode {
-  constructor() {
-    super("FragmentOutput");
-    this.inputs = { color: { default: "vec4f(1.0)" } };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "color");
-    let value;
-    if (conn) {
-      value = ctx.resolve(conn.fromNode, conn.fromPin);
-    } else {
-      value = this.inputs.color.default;
-    }
-    ctx.outputs.outColor = value;
-    return { out: ctx.outputs.outColor, type: "vec4f" };
-  }
-};
-var AlphaOutput = class extends ShaderNode {
-  constructor() {
-    super("AlphaOutput");
-    this.inputs = { alpha: { default: "1.0" } };
-  }
-  build(_, __, ctx) {
-    ctx.outputs.alpha = ctx.resolve(this, "alpha");
-    return { out: ctx.outputs.alpha };
-  }
-};
-var NormalOutput = class extends ShaderNode {
-  constructor() {
-    super("NormalOutput");
-    this.inputs = { normal: { default: "input.normal" } };
-  }
-  build(_, __, ctx) {
-    ctx.outputs.normal = ctx.resolve(this, "normal");
-    return { out: ctx.outputs.normal };
-  }
-};
-var LightShadowNode = class extends ShaderNode {
-  constructor() {
-    super("LightShadowNode");
-    this.inputs = { intensity: { default: "1" } };
-  }
-  build(_, __, ctx) {
-    const lightCalcCode = `
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    let materialData = getPBRMaterial(input.uv);
-    var lightContribution = vec3f(0.0);
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let bias = spotlights[i].shadowBias;
-        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-        lightContribution += contrib * visibility;
-    }`;
-    ctx.locals.push(lightCalcCode);
-    return {
-      out: "lightContribution",
-      type: "vec3f"
-    };
-  }
-};
-var LightToColorNode = class extends ShaderNode {
-  constructor() {
-    super("LightToColor");
-    this.inputs = {
-      light: { default: "vec3f(1.0)" }
-    };
-  }
-  build(pin, value, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "light");
-    let l;
-    if (conn) {
-      l = ctx.resolve(conn.fromNode, conn.fromPin);
-    } else {
-      l = this.inputs.light.default;
-    }
-    const result2 = ctx.temp("vec4f", `vec4f(${l}, 1.0)`);
-    return {
-      out: result2,
-      type: "vec4f"
-    };
-  }
-};
-var UVNode = class extends ShaderNode {
-  constructor() {
-    super("UV");
-  }
-  build() {
-    return {
-      out: "input.uv",
-      type: "vec2f"
-    };
-  }
-};
-var CameraPosNode = class extends ShaderNode {
-  constructor() {
-    super("CameraPos");
-  }
-  build(_, __, ctx) {
-    return {
-      out: "scene.cameraPos",
-      type: "vec3f"
-    };
-  }
-};
-var TimeNode = class extends ShaderNode {
-  constructor() {
-    super("Time");
-  }
-  build(_, __, ctx) {
-    return {
-      out: "scene.time",
-      type: "f32"
-    };
-  }
-};
-var InlineFunctionNode = class extends ShaderNode {
-  constructor(name2 = "customFn", code = "") {
-    super("InlineFunction");
-    this.fnName = name2;
-    this.code = code;
-    this.inputs = {
-      a: { default: "input.uv" },
-      b: { default: "globals.time" }
-    };
-  }
-  build(_, __, ctx) {
-    ctx.registerFunction(this.fnName, this.code);
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
-    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    return {
-      out: ctx.temp("vec4f", `${this.fnName}(${a}, ${b})`),
-      type: "vec4f"
-    };
-  }
-};
-var TextureSamplerNode = class extends ShaderNode {
-  constructor(name2 = "tex0") {
-    super("TextureSampler");
-    this.name = name2;
-    this.inputs = { uv: { default: "input.uv" } };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "uv");
-    let uv;
-    if (conn) {
-      uv = ctx.resolve(conn.fromNode, conn.fromPin);
-    } else {
-      uv = this.inputs.uv.default;
-    }
-    return {
-      out: ctx.temp("vec4f", `textureSample(meshTexture, meshSampler, ${uv})`),
-      type: "vec4f"
-    };
-  }
-};
-var MultiplyColorNode = class extends ShaderNode {
-  constructor() {
-    super("MultiplyColor");
-    this.inputs = {
-      a: { default: "vec4(1.0)" },
-      b: { default: "vec4(1.0)" }
-    };
-  }
-  build(_, __, ctx) {
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    let a, b;
-    if (connA) {
-      a = ctx.resolve(connA.fromNode, connA.fromPin);
-    } else {
-      a = this.inputs.a.default;
-    }
-    if (connB) {
-      b = ctx.resolve(connB.fromNode, connB.fromPin);
-    } else {
-      b = this.inputs.b.default;
-    }
-    const t = ctx.temp("vec4f", `${a} * ${b}`);
-    return { out: t, type: "vec4f" };
-  }
-};
-var GrayscaleNode = class extends ShaderNode {
-  constructor() {
-    super("Grayscale");
-    this.inputs = { color: { default: "vec4(1.0)" } };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "color");
-    const c = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.color.default;
-    return {
-      out: ctx.temp("vec4f", `vec4(vec3(dot(${c}.rgb,vec3(0.299,0.587,0.114))),${c}.a)`),
-      type: "vec4f"
-    };
-  }
-};
-var ContrastNode = class extends ShaderNode {
-  constructor() {
-    super("Contrast");
-    this.inputs = {
-      color: { default: "vec4(1.0)" },
-      contrast: { default: "1.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const connColor = ctx.shaderGraph.getInput(this, "color");
-    const connContrast = ctx.shaderGraph.getInput(this, "contrast");
-    const c = connColor ? ctx.resolve(connColor.fromNode, connColor.fromPin) : this.inputs.color.default;
-    const k = connContrast ? ctx.resolve(connContrast.fromNode, connContrast.fromPin) : this.inputs.contrast.default;
-    return {
-      out: ctx.temp("vec4f", `vec4(((${c}.rgb-0.5)*${k}+0.5),${c}.a)`),
-      type: "vec4f"
-    };
-  }
-};
-var FloatNode = class extends ShaderNode {
-  constructor(value = 1) {
-    super("Float");
-    this.value = value;
-  }
-  build(_, __, ctx) {
-    return {
-      out: `${this.value}`,
-      type: "f32"
-    };
-  }
-};
-var Vec2Node = class extends ShaderNode {
-  constructor(x2 = 0, y2 = 0) {
-    super("Vec2");
-    this.x = x2;
-    this.y = y2;
-  }
-  build(_, __, ctx) {
-    return {
-      out: `vec2f(${this.x}, ${this.y})`,
-      type: "vec2f"
-    };
-  }
-};
-var Vec3Node = class extends ShaderNode {
-  constructor(x2 = 0, y2 = 0, z = 0) {
-    super("Vec3");
-    this.x = x2;
-    this.y = y2;
-    this.z = z;
-  }
-  build(_, __, ctx) {
-    return {
-      out: `vec3f(${this.x}, ${this.y}, ${this.z})`,
-      type: "vec3f"
-    };
-  }
-};
-var Vec4Node = class extends ShaderNode {
-  constructor(x2 = 0, y2 = 0, z = 0, w = 1) {
-    super("Vec4");
-    this.x = x2;
-    this.y = y2;
-    this.z = z;
-    this.w = w;
-  }
-  build(_, __, ctx) {
-    return {
-      out: `vec4f(${this.x}, ${this.y}, ${this.z}, ${this.w})`,
-      type: "vec4f"
-    };
-  }
-};
-var ColorNode = class extends ShaderNode {
-  constructor(r2 = 1, g = 1, b = 1, a = 1) {
-    super("Color");
-    this.r = r2;
-    this.g = g;
-    this.b = b;
-    this.a = a;
-  }
-  build(_, __, ctx) {
-    return {
-      out: `vec4f(${this.r}, ${this.g}, ${this.b}, ${this.a})`,
-      type: "vec4f"
-    };
-  }
-};
-var AddNode = class extends ShaderNode {
-  constructor() {
-    super("Add");
-    this.inputs = {
-      a: { default: "0.0" },
-      b: { default: "0.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
-    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    return {
-      out: ctx.temp("f32", `${a} + ${b}`),
-      type: "f32"
-    };
-  }
-};
-var SubtractNode = class extends ShaderNode {
-  constructor() {
-    super("Subtract");
-    this.inputs = {
-      a: { default: "0.0" },
-      b: { default: "0.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
-    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    return {
-      out: ctx.temp("f32", `${a} - ${b}`),
-      type: "f32"
-    };
-  }
-};
-var MultiplyNode = class extends ShaderNode {
-  constructor() {
-    super("Multiply");
-    this.inputs = {
-      a: { default: "1.0" },
-      b: { default: "1.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
-    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    return {
-      out: ctx.temp("f32", `${a} * ${b}`),
-      type: "f32"
-    };
-  }
-};
-var DivideNode = class extends ShaderNode {
-  constructor() {
-    super("Divide");
-    this.inputs = {
-      a: { default: "1.0" },
-      b: { default: "1.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
-    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    return {
-      out: ctx.temp("f32", `${a} / ${b}`),
-      type: "f32"
-    };
-  }
-};
-var PowerNode = class extends ShaderNode {
-  constructor() {
-    super("Power");
-    this.inputs = {
-      base: { default: "1.0" },
-      exponent: { default: "2.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const connBase = ctx.shaderGraph.getInput(this, "base");
-    const connExp = ctx.shaderGraph.getInput(this, "exponent");
-    const base = connBase ? ctx.resolve(connBase.fromNode, connBase.fromPin) : this.inputs.base.default;
-    const exp = connExp ? ctx.resolve(connExp.fromNode, connExp.fromPin) : this.inputs.exponent.default;
-    return {
-      out: ctx.temp("f32", `pow(${base}, ${exp})`),
-      type: "f32"
-    };
-  }
-};
-var LerpNode = class extends ShaderNode {
-  constructor() {
-    super("Lerp");
-    this.inputs = {
-      a: { default: "0.0" },
-      b: { default: "1.0" },
-      t: { default: "0.5" }
-    };
-  }
-  build(_, __, ctx) {
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    const connT = ctx.shaderGraph.getInput(this, "t");
-    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
-    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    const t = connT ? ctx.resolve(connT.fromNode, connT.fromPin) : this.inputs.t.default;
-    return {
-      out: ctx.temp("f32", `mix(${a}, ${b}, ${t})`),
-      type: "f32"
-    };
-  }
-};
-var SinNode = class extends ShaderNode {
-  constructor() {
-    super("Sin");
-    this.inputs = {
-      value: { default: "0.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "value");
-    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
-    return {
-      out: ctx.temp("f32", `sin(${val})`),
-      type: "f32"
-    };
-  }
-};
-var CosNode = class extends ShaderNode {
-  constructor() {
-    super("Cos");
-    this.inputs = {
-      value: { default: "0.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "value");
-    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
-    return {
-      out: ctx.temp("f32", `cos(${val})`),
-      type: "f32"
-    };
-  }
-};
-var DotProductNode = class extends ShaderNode {
-  constructor() {
-    super("DotProduct");
-    this.inputs = {
-      a: { default: "vec3f(0.0)" },
-      b: { default: "vec3f(0.0)" }
-    };
-  }
-  build(_, __, ctx) {
-    const connA = ctx.shaderGraph.getInput(this, "a");
-    const connB = ctx.shaderGraph.getInput(this, "b");
-    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
-    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    return {
-      out: ctx.temp("f32", `dot(${a}, ${b})`),
-      type: "f32"
-    };
-  }
-};
-var NormalizeNode = class extends ShaderNode {
-  constructor() {
-    super("Normalize");
-    this.inputs = {
-      vector: { default: "vec3f(1.0)" }
-    };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "vector");
-    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
-    return {
-      out: ctx.temp("vec3f", `normalize(${vec})`),
-      type: "vec3f"
-    };
-  }
-};
-var LengthNode = class extends ShaderNode {
-  constructor() {
-    super("Length");
-    this.inputs = {
-      vector: { default: "vec3f(0.0)" }
-    };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "vector");
-    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
-    return {
-      out: ctx.temp("f32", `length(${vec})`),
-      type: "f32"
-    };
-  }
-};
-var SplitVec4Node = class extends ShaderNode {
-  constructor() {
-    super("SplitVec4");
-    this.inputs = {
-      vector: { default: "vec4f(0.0)" }
-    };
-  }
-  build(pin, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "vector");
-    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
-    if (!this._temp) {
-      this._temp = ctx.temp("vec4f", vec);
-    }
-    switch (pin) {
-      case "x":
-        return { out: `${this._temp}.x`, type: "f32" };
-      case "y":
-        return { out: `${this._temp}.y`, type: "f32" };
-      case "z":
-        return { out: `${this._temp}.z`, type: "f32" };
-      case "w":
-        return { out: `${this._temp}.w`, type: "f32" };
-      default:
-        return { out: this._temp, type: "vec4f" };
-    }
-  }
-};
-var CombineVec4Node = class extends ShaderNode {
-  constructor() {
-    super("CombineVec4");
-    this.inputs = {
-      x: { default: "0.0" },
-      y: { default: "0.0" },
-      z: { default: "0.0" },
-      w: { default: "1.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const connX = ctx.shaderGraph.getInput(this, "x");
-    const connY = ctx.shaderGraph.getInput(this, "y");
-    const connZ = ctx.shaderGraph.getInput(this, "z");
-    const connW = ctx.shaderGraph.getInput(this, "w");
-    const x2 = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
-    const y2 = connY ? ctx.resolve(connY.fromNode, connY.fromPin) : this.inputs.y.default;
-    const z = connZ ? ctx.resolve(connZ.fromNode, connZ.fromPin) : this.inputs.z.default;
-    const w = connW ? ctx.resolve(connW.fromNode, connW.fromPin) : this.inputs.w.default;
-    return {
-      out: ctx.temp("vec4f", `vec4f(${x2}, ${y2}, ${z}, ${w})`),
-      type: "vec4f"
-    };
-  }
-};
-var FracNode = class extends ShaderNode {
-  constructor() {
-    super("Frac");
-    this.inputs = {
-      value: { default: "0.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "value");
-    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
-    return {
-      out: ctx.temp("f32", `fract(${val})`),
-      type: "f32"
-    };
-  }
-};
-var SmoothstepNode = class extends ShaderNode {
-  constructor() {
-    super("Smoothstep");
-    this.inputs = {
-      edge0: { default: "0.0" },
-      edge1: { default: "1.0" },
-      x: { default: "0.5" }
-    };
-  }
-  build(_, __, ctx) {
-    const connEdge0 = ctx.shaderGraph.getInput(this, "edge0");
-    const connEdge1 = ctx.shaderGraph.getInput(this, "edge1");
-    const connX = ctx.shaderGraph.getInput(this, "x");
-    const edge0 = connEdge0 ? ctx.resolve(connEdge0.fromNode, connEdge0.fromPin) : this.inputs.edge0.default;
-    const edge1 = connEdge1 ? ctx.resolve(connEdge1.fromNode, connEdge1.fromPin) : this.inputs.edge1.default;
-    const x2 = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
-    return {
-      out: ctx.temp("f32", `smoothstep(${edge0}, ${edge1}, ${x2})`),
-      type: "f32"
-    };
-  }
-};
-var OneMinusNode = class extends ShaderNode {
-  constructor() {
-    super("OneMinus");
-    this.inputs = {
-      value: { default: "0.0" }
-    };
-  }
-  build(_, __, ctx) {
-    const conn = ctx.shaderGraph.getInput(this, "value");
-    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
-    return {
-      out: ctx.temp("f32", `1.0 - ${val}`),
-      type: "f32"
-    };
-  }
-};
-var FragmentPositionNode = class extends ShaderNode {
-  constructor() {
-    super("FragmentPosition");
-  }
-  build(_, __, ctx) {
-    return {
-      out: "input.fragPos",
-      type: "vec3f"
-    };
-  }
-};
-var FragmentNormalNode = class extends ShaderNode {
-  constructor() {
-    super("FragmentNormal");
-  }
-  build(_, __, ctx) {
-    return {
-      out: "input.fragNorm",
-      type: "vec3f"
-    };
-  }
-};
-var ViewDirectionNode = class extends ShaderNode {
-  constructor() {
-    super("ViewDirection");
-  }
-  build(_, __, ctx) {
-    return {
-      out: ctx.temp("vec3f", "normalize(scene.cameraPos - input.fragPos)"),
-      type: "vec3f"
-    };
-  }
-};
-var GlobalAmbientNode = class extends ShaderNode {
-  constructor() {
-    super("GlobalAmbient");
-  }
-  build(_, __, ctx) {
-    return {
-      out: "scene.globalAmbient",
-      type: "vec3f"
-    };
-  }
-};
-var InlineWGSLNode = class {
-  constructor(code = "return vec4f(1.0, 0.0, 0.0, 1.0);") {
-    this.id = nodeId++;
-    this.type = "InlineWGSL";
-    this.code = code;
-    this.label = "Inline WGSL";
-    this.inputs = {};
-    this.outputs = {
-      result: { type: "vec4f" }
-    };
-  }
-  build(pin, value, ctx) {
-    if (pin === "result") {
-      const fnName = `inlineWGSL_${this.id}`;
-      const fnCode = `
-fn ${fnName}() -> vec4f {
-  ${this.code}
-}`;
-      ctx.registerFunction(fnName, fnCode);
-      const out = ctx.temp("vec4f", `${fnName}()`);
-      return { out };
-    }
-  }
-};
-var ConnectionLayer = class {
-  constructor(svg, shaderGraph) {
-    this.svg = svg;
-    this.shaderGraph = shaderGraph;
-    this.temp = null;
-    this.from = null;
-    document.addEventListener("pointermove", (e) => this.move(e));
-    document.addEventListener("pointerup", (e) => this.up(e));
-  }
-  attach(pin) {
-    pin.onpointerdown = (e) => {
-      e.stopPropagation();
-      if (pin.dataset.type !== "output") return;
-      this.from = pin;
-      this.temp = this.path();
-      this.svg.appendChild(this.temp);
-    };
-  }
-  move(e) {
-    if (!this.temp || !this.from) return;
-    this.draw(this.temp, this.center(this.from), { x: e.clientX, y: e.clientY });
-  }
-  up(e) {
-    if (!this.temp || !this.from) return;
-    const t = document.elementFromPoint(e.clientX, e.clientY);
-    if (t?.classList.contains("pinShader") && t.dataset.type === "input") {
-      this.finalize(this.from, t);
-    }
-    this.temp.remove();
-    this.temp = this.from = null;
-  }
-  finalize(outPin, inPin) {
-    const fromNode = this.shaderGraph.nodes.find((n2) => n2.id === outPin.dataset.node);
-    const toNode = this.shaderGraph.nodes.find((n2) => n2.id === inPin.dataset.node);
-    const fromPin = outPin.dataset.pin;
-    const toPin = inPin.dataset.pin;
-    this.shaderGraph.connect(fromNode, fromPin, toNode, toPin);
-    this.redrawAll();
-  }
-  redrawAll() {
-    [...this.svg.children].forEach((p) => p.remove());
-    this.shaderGraph.connections.forEach((c) => this.redrawConnection(c));
-  }
-  redrawConnection(conn) {
-    const path = this.path();
-    path.dataset.from = `${conn.fromNode.id}:${conn.fromPin}`;
-    path.dataset.to = `${conn.toNode.id}:${conn.toPin}`;
-    this.svg.appendChild(path);
-    const a = document.querySelector(`.pinShader.output[data-node="${conn.fromNode.id}"][data-pin="${conn.fromPin}"]`);
-    const b = document.querySelector(`.pinShader.input[data-node="${conn.toNode.id}"][data-pin="${conn.toPin}"]`);
-    if (a && b) this.draw(path, this.center(a), this.center(b));
-  }
-  path() {
-    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    p.setAttribute("stroke", "#6aa9ff");
-    p.setAttribute("stroke-width", "2");
-    p.setAttribute("fill", "none");
-    return p;
-  }
-  draw(p, a, b) {
-    const dx = Math.abs(b.x - a.x) * 0.5;
-    p.setAttribute("d", `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}`);
-  }
-  center(el2) {
-    const r2 = el2.getBoundingClientRect();
-    const svgRect = this.svg.getBoundingClientRect();
-    return {
-      x: r2.left + r2.width / 2 - svgRect.left,
-      y: r2.top + r2.height / 2 - svgRect.top
-    };
-  }
-};
-async function openFragmentShaderEditor(id2 = "fragShader") {
-  return new Promise((resolve, reject) => {
-    const shaderGraph = new FragmentShaderGraph(id2);
-    const root = document.createElement("div");
-    root.id = "shaderDOM";
-    root.style.cssText = `
-    position:fixed; left: 17.5%; top:4%;
-    background:#0b0e14; color:#eee;
-    display:flex; font-family:system-ui;
-    width:300%;height:90%
-  `;
-    root.style.display = "none";
-    const menu = document.createElement("div");
-    menu.style.cssText = `
-    width:200px; border-right:1px solid #222;
-    padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
-  `;
-    const btn = (txt, fn) => {
-      const b2 = document.createElement("button");
-      b2.textContent = txt;
-      b2.style.cssText = "width:100%;margin:4px 0;";
-      if (txt == "Compile All" || txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b2.style.cssText += "color: orange;";
-      if (txt == "Create New") b2.style.cssText += "color: lime;";
-      if (txt == "Delete") b2.style.cssText += "color: red;";
-      b2.classList.add("btn");
-      b2.classList.add("btnLeftBox");
-      b2.onclick = fn;
-      menu.appendChild(b2);
-    };
-    const area = document.createElement("div");
-    area.style.cssText = "flex:1;position:relative";
-    area.classList.add("fancy-grid-bg");
-    area.classList.add("dark");
-    let pan = { active: false, ox: 0, oy: 0 };
-    area.addEventListener("pointerdown", (e) => {
-      if (e.target !== area) return;
-      pan.active = true;
-      pan.ox = e.clientX;
-      pan.oy = e.clientY;
-      area.setPointerCapture(e.pointerId);
-    });
-    area.addEventListener("pointermove", (e) => {
-      if (!pan.active) return;
-      const dx = e.clientX - pan.ox;
-      const dy = e.clientY - pan.oy;
-      pan.ox = e.clientX;
-      pan.oy = e.clientY;
-      shaderGraph.nodes.forEach((n2) => {
-        n2.x += dx;
-        n2.y += dy;
-        const el2 = document.querySelector(`.nodeShader[data-node-id="${n2.id}"]`);
-        if (el2) {
-          el2.style.left = n2.x + "px";
-          el2.style.top = n2.y + "px";
-        }
-      });
-      connectionLayer.redrawAll();
-    });
-    area.addEventListener("pointerup", (e) => {
-      pan.active = false;
-      area.releasePointerCapture(e.pointerId);
-    });
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.style.position = "absolute";
-    svg.style.left = "0";
-    svg.style.top = "0";
-    svg.style.width = "100%";
-    svg.style.height = "100%";
-    svg.style.pointerEvents = "none";
-    area.appendChild(svg);
-    root.appendChild(menu);
-    root.appendChild(area);
-    document.body.appendChild(root);
-    const style = document.createElement("style");
-    style.textContent = `
-#shaderDOM { z-index:2 }
-
-.nodeShader {
-  position:absolute;
-  min-width:140px;
-  background:#151a2a;
-  border:1px solid #222;
-  border-radius:6px;
-  padding:0;
-  color:#eee;
-  cursor:move;
-}
-
-.nodeShader.selected {
-  border-color: #ff8800;
-  box-shadow: 0 0 8px #ff8800;
-}
-
-.nodeShader .node-title {
-  -webkit-text-stroke-width: 0.2px;
-  display: block;
-  padding: 6px 8px;
-  font-size: 13px;
-  line-height: 1.2;
-  color: #ffffff;
-  background: #1f2937;
-  white-space: nowrap;
-  position: relative;
-  z-index: 10;
-  user-select: none;
-  border-radius: 6px 6px 0 0;
-  border-bottom: 1px solid #333;
-}
-
-.node-properties {
-  padding: 6px 8px;
-  background: #1a1f2e;
-  border-bottom: 1px solid #333;
-}
-
-.node-properties input,
-.node-properties textarea {
-  font-family: monospace;
-}
-
-.node-properties input:focus,
-.node-properties textarea:focus {
-  outline: none;
-  border-color: #6aa9ff;
-}
-
-.nodeShader-body {
-  display:flex;
-  gap:8px;
-  justify-content: space-between;
-  padding: 6px 8px;
-}
-
-.nodeShader-inputs {
-  display:flex;
-  flex-direction:column;
-}
-
-.pinShader-row {
-  position: relative;
-  width: 100%;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  font-family: monospace;
-  font-size: 12px;
-  color: #ddd;
-}
-
-.pinShader {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #0f0;
-  border: 2px solid #000;
-  z-index: 5;
-  flex-shrink: 0;
-}
-
-.pinShader.input {  margin-left: -6px; background: #ff6a6a; }
-.pinShader.output { margin-right: -6px; background: #6aa9ff; }
-
-.pinShader-label {
-  margin-left: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  z-index: 6;
-}
-
-svg path {
-  pointer-events:none;
-}
-`;
-    document.head.appendChild(style);
-    const connectionLayer = new ConnectionLayer(svg, shaderGraph);
-    function addNode(node2, x2, y2) {
-      const test = shaderGraph.addNode(node2);
-      if (test == null) return;
-      if (x2 == null || y2 == null) {
-        const p = shaderGraph.nextSpawn();
-        x2 = p.x;
-        y2 = p.y;
-      }
-      node2.x = x2;
-      node2.y = y2;
-      const el2 = document.createElement("div");
-      el2.className = "nodeShader";
-      el2.style.left = x2 + "px";
-      el2.style.top = y2 + "px";
-      area.appendChild(el2);
-      el2.tabIndex = 0;
-      el2.addEventListener("click", (e) => {
-        e.stopPropagation();
-        document.querySelectorAll(".nodeShader.selected").forEach((n2) => n2.classList.remove("selected"));
-        el2.classList.add("selected");
-      });
-      el2.dataset.nodeId = node2.id;
-      const title = document.createElement("div");
-      title.className = "node-title";
-      title.textContent = node2.type;
-      el2.appendChild(title);
-      const propsContainer = document.createElement("div");
-      propsContainer.className = "node-properties";
-      propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
-        const row2 = document.createElement("div");
-        row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
-        const labelEl = document.createElement("label");
-        labelEl.textContent = label + ":";
-        labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
-        const input = document.createElement("input");
-        input.type = type2;
-        input.value = value;
-        input.step = step;
-        input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
-        input.addEventListener("input", () => {
-          const val = type2 === "number" ? parseFloat(input.value) : input.value;
-          node2[propName] = val;
-        });
-        input.addEventListener("pointerdown", (e) => e.stopPropagation());
-        row2.appendChild(labelEl);
-        row2.appendChild(input);
-        propsContainer.appendChild(row2);
-      }
-      if (node2.type === "Float") {
-        addPropertyInput("Value", "value", node2.value);
-      } else if (node2.type === "Vec2") {
-        addPropertyInput("X", "x", node2.x);
-        addPropertyInput("Y", "y", node2.y);
-      } else if (node2.type === "Vec3") {
-        addPropertyInput("X", "x", node2.x);
-        addPropertyInput("Y", "y", node2.y);
-        addPropertyInput("Z", "z", node2.z);
-      } else if (node2.type === "Vec4") {
-        addPropertyInput("X", "x", node2.x);
-        addPropertyInput("Y", "y", node2.y);
-        addPropertyInput("Z", "z", node2.z);
-        addPropertyInput("W", "w", node2.w);
-      } else if (node2.type === "Color") {
-        addPropertyInput("R", "r", node2.r);
-        addPropertyInput("G", "g", node2.g);
-        addPropertyInput("B", "b", node2.b);
-        addPropertyInput("A", "a", node2.a);
-      } else if (node2.type === "InlineFunction") {
-        addPropertyInput("Name", "fnName", node2.fnName, "text");
-        const ta = document.createElement("textarea");
-        ta.value = node2.code;
-        ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
-        ta.oninput = () => node2.code = ta.value;
-        ta.onpointerdown = (e) => e.stopPropagation();
-        propsContainer.appendChild(ta);
-      }
-      if (propsContainer.children.length > 0) {
-        el2.appendChild(propsContainer);
-      }
-      const body2 = document.createElement("div");
-      body2.className = "nodeShader-body";
-      el2.appendChild(body2);
-      function createPinRow(pinName, type2 = "input") {
-        const row2 = document.createElement("div");
-        row2.className = "pinShader-row";
-        const pin = document.createElement("div");
-        pin.className = "pinShader " + (type2 === "input" ? "input" : "output");
-        pin.dataset.node = node2.id;
-        pin.dataset.pin = pinName;
-        pin.dataset.type = type2;
-        const label = document.createElement("div");
-        label.className = "pinShader-label";
-        label.textContent = pinName;
-        if (type2 === "input") row2.append(pin, label);
-        else {
-          row2.style.justifyContent = "flex-end";
-          row2.append(label, pin);
-        }
-        return { row: row2, pin };
-      }
-      const inputsContainer = document.createElement("div");
-      inputsContainer.className = "nodeShader-inputs";
-      body2.appendChild(inputsContainer);
-      Object.keys(node2.inputs || {}).forEach((pinName) => {
-        const { row: row2, pin } = createPinRow(pinName, "input");
-        inputsContainer.appendChild(row2);
-      });
-      const outputContainer = document.createElement("div");
-      outputContainer.style.width = "100%";
-      body2.appendChild(outputContainer);
-      const { row: outRow, pin: outPin } = createPinRow("out", "output");
-      outputContainer.appendChild(outRow);
-      connectionLayer.attach(outPin);
-      shaderGraph.connectionLayer = connectionLayer;
-      shaderGraph.makeDraggable(el2, node2, connectionLayer);
-    }
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Delete") {
-        const sel = document.querySelector(".nodeShader.selected");
-        if (!sel) return;
-        const nodeId2 = sel.dataset.nodeId;
-        const node2 = shaderGraph.nodes.find((n2) => n2.id === nodeId2);
-        if (!node2) return;
-        shaderGraph.connections = shaderGraph.connections.filter(
-          (c) => c.fromNode !== node2 && c.toNode !== node2
-        );
-        [...svg.querySelectorAll("path")].forEach((p) => {
-          if (p.dataset.from?.startsWith(nodeId2 + ":") || p.dataset.to?.startsWith(nodeId2 + ":")) {
-            p.remove();
-          }
-        });
-        sel.remove();
-        shaderGraph.nodes = shaderGraph.nodes.filter((n2) => n2 !== node2);
-        shaderGraph.connectionLayer.redrawConnection();
-      }
-    });
-    btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
-    btn("CameraPos", () => addNode(new CameraPosNode()));
-    btn("Time", () => addNode(new TimeNode()));
-    btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
-    btn("TextureSampler", () => addNode(new TextureSamplerNode()));
-    btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
-    btn("Grayscale", () => addNode(new GrayscaleNode()));
-    btn("Contrast", () => addNode(new ContrastNode()));
-    btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
-    btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
-    btn("LightShadowNode", () => addNode(new LightShadowNode()));
-    btn("LightToColorNode", () => addNode(new LightToColorNode()));
-    btn("AlphaOutput", () => addNode(new AlphaOutput()));
-    btn("NormalOutput", () => addNode(new NormalOutput()));
-    btn("Float", () => {
-      const val = prompt("Enter float value:", "1.0");
-      addNode(new FloatNode(parseFloat(val) || 1));
-    });
-    btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
-    btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
-    btn("Add", () => addNode(new AddNode()));
-    btn("Multiply", () => addNode(new MultiplyNode()));
-    btn("Power", () => addNode(new PowerNode()));
-    btn("Lerp", () => addNode(new LerpNode()));
-    btn("Sin", () => addNode(new SinNode()));
-    btn("Cos", () => addNode(new CosNode()));
-    btn("Normalize", () => addNode(new NormalizeNode()));
-    btn("DotProduct", () => addNode(new DotProductNode()));
-    btn("Length", () => addNode(new LengthNode()));
-    btn("Frac", () => addNode(new FracNode()));
-    btn("OneMinus", () => addNode(new OneMinusNode()));
-    btn("Smoothstep", () => addNode(new SmoothstepNode()));
-    btn("FragPosition", () => addNode(new FragmentPositionNode()));
-    btn("FragNormal", () => addNode(new FragmentNormalNode()));
-    btn("ViewDirection", () => addNode(new ViewDirectionNode()));
-    btn("SplitVec4", () => addNode(new SplitVec4Node()));
-    btn("CombineVec4", () => addNode(new CombineVec4Node()));
-    btn("Create New", async () => {
-      shaderGraph.clear();
-      let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
-      if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
-        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-        if (exist === true) {
-          console.info("ALREADY EXIST SHADER, please use diff name" + exist);
-        } else {
-          shaderGraph.id = nameOfGraphMaterital;
-          saveGraph(shaderGraph, nameOfGraphMaterital);
-        }
-      }
-    });
-    btn("Compile", () => {
-      let r2 = shaderGraph.compile();
-      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
-      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
-    });
-    btn("Compile All", () => {
-      for (let x2 = 0; x2 < shaderGraph.runtimeList.length; x2++) {
-        setTimeout(() => {
-          byId("shader-graphs-list").selectedIndex = x2 + 1;
-          const event = new Event("change", { bubbles: true });
-          byId("shader-graphs-list").dispatchEvent(event);
-          if (shaderGraph.runtimeList.length == x2) {
-            console.log("LAST");
-          }
-        }, 500 * x2);
-      }
-    });
-    btn("Save Graph", () => {
-      saveGraph(shaderGraph, shaderGraph.id);
-    });
-    btn("Load Graph", async () => {
-      shaderGraph.clear();
-      let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
-      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
-      if (exist === false) {
-        alert("\u26A0\uFE0FGraph no exist!\u26A0\uFE0F");
-      }
-    });
-    btn("Delete", () => {
-      console.log("[DELETE]", shaderGraph.id);
-      document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph.id }));
-    });
-    const titleb = document.createElement("p");
-    titleb.style.cssText = "width:100%;margin:4px 0;";
-    titleb.classList.add("btn3");
-    titleb.classList.add("btnLeftBox");
-    titleb.innerHTML = `Current shader:`;
-    titleb.style.webkitTextStrokeWidth = 0;
-    menu.appendChild(titleb);
-    const b = document.createElement("select");
-    b.id = "shader-graphs-list";
-    b.style.cssText = "width:100%;margin:4px 0;";
-    b.classList.add("btn");
-    b.classList.add("btnLeftBox");
-    b.style.webkitTextStrokeWidth = 0;
-    menu.appendChild(b);
-    document.addEventListener("on-shader-graphs-list", (e) => {
-      const shaders = e.detail;
-      b.innerHTML = "";
-      var __ = 0;
-      if (!byId("shader-graphs-list-dom")) {
-        __ = 1;
-        const placeholder2 = document.createElement("option");
-        placeholder2.id = "shader-graphs-list-dom";
-        placeholder2.textContent = "Select shader";
-        placeholder2.value = "";
-        placeholder2.disabled = true;
-        placeholder2.selected = true;
-        b.appendChild(placeholder2);
-      }
-      shaderGraph.runtimeList = [];
-      shaders.forEach((shader, index) => {
-        const opt = document.createElement("option");
-        opt.value = index;
-        opt.textContent = shader.name;
-        shaderGraph.runtimeList.push(shader.name);
-        b.appendChild(opt);
-      });
-      if (__ == 1) {
-        b.onchange = (event) => {
-          shaderGraph.clear();
-          const selectedIndex = event.target.value;
-          const selectedShader = shaders[selectedIndex];
-          console.log("Selected shader:", selectedShader.name);
-          document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: selectedShader.name }));
-          console.log("shaderGraph ???", shaderGraph);
-        };
-      }
-    });
-    document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
-    setTimeout(async () => {
-      console.log(shaderGraph.runtimeList);
-      if (shaderGraph.runtimeList.length > 0) {
-        shaderGraph.id = shaderGraph.runtimeList[0];
-        const exist = await loadGraph(shaderGraph.id, shaderGraph, addNode);
-        if (exist == false) {
-          saveGraph(shaderGraph, shaderGraph.id);
-          console.log("NEW SHADER:[SAVED]" + exist);
-        }
-      } else {
-        console.log("no saved graphs");
-      }
-      resolve(shaderGraph);
-    }, 2600);
-  });
-}
-function serializeGraph(shaderGraph) {
-  return JSON.stringify({
-    nodes: shaderGraph.nodes.map((n2) => ({
-      id: n2.id,
-      type: n2.type,
-      x: n2.x ?? 100,
-      y: n2.y ?? 100,
-      fnName: n2.fnName,
-      code: n2.code,
-      name: n2.name,
-      value: n2.value,
-      r: n2.r,
-      g: n2.g,
-      b: n2.b,
-      a: n2.a,
-      inputs: Object.fromEntries(Object.entries(n2.inputs || {}).map(([k, v]) => [k, { default: v.default }]))
-    })),
-    connections: shaderGraph.connections.map((c) => ({
-      from: c.fromNode.id,
-      fromPin: c.fromPin,
-      to: c.toNode.id,
-      toPin: c.toPin
-    })),
-    final: shaderGraph.runtime_memory[shaderGraph.id] ? shaderGraph.runtime_memory[shaderGraph.id] : null
-  });
-}
-function saveGraph(shaderGraph, key = "fragShaderGraph") {
-  let content = serializeGraph(shaderGraph);
-  localStorage.setItem(key, content);
-  console.log("test compile content", shaderGraph.runtime_memory[key]);
-  console.log("test compile content", content);
-  if (shaderGraph.runtime_memory[key]) {
-  } else {
-    console.warn("GraphShader is saved for src but with no compile final data for prod build.");
-  }
-  document.dispatchEvent(new CustomEvent("save-shader-graph", {
-    detail: {
-      name: key,
-      content
-    }
-  }));
-  console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
-}
-async function loadGraph(key, shaderGraph, addNodeUI) {
-  if (shaderGraph.onGraphLoadAttached === false) {
-    shaderGraph.onGraphLoadAttached = true;
-    document.addEventListener("on-graph-load", (e) => {
-      if (e.detail == null) {
-        alert("Graph no exist!");
-        return;
-      }
-      shaderGraph.nodes.length = 0;
-      shaderGraph.connections.length = 0;
-      shaderGraph.id = e.detail.name;
-      let data = JSON.parse(e.detail.content);
-      if (!data) return false;
-      const map = {};
-      data.nodes.forEach((node2) => {
-        const saveId = node2.id;
-        const saveX = node2.x;
-        const saveY = node2.y;
-        switch (node2.type) {
-          case "FragmentOutput":
-            node2 = new FragmentOutputNode();
-            break;
-          case "CameraPos":
-            node2 = new CameraPosNode();
-            break;
-          case "Time":
-            node2 = new TimeNode();
-            break;
-          case "InlineFunction":
-            node2 = new InlineFunctionNode(node2.fnName, node2.code);
-            break;
-          case "TextureSampler":
-            node2 = new TextureSamplerNode(node2.name);
-            break;
-          case "MultiplyColor":
-            node2 = new MultiplyColorNode();
-            break;
-          case "Grayscale":
-            node2 = new GrayscaleNode();
-            break;
-          case "Contrast":
-            node2 = new ContrastNode();
-            break;
-          case "AlphaOutput":
-            node2 = new AlphaOutput();
-            break;
-          case "NormalOutput":
-            node2 = new NormalOutput();
-            break;
-          case "LightShadowNode":
-            node2 = new LightShadowNode();
-            break;
-          case "LightToColor":
-            node2 = new LightToColorNode();
-            break;
-          case "UV":
-            node2 = new UVNode();
-            break;
-          case "Float":
-            node2 = new FloatNode(node2.value ?? 1);
-            break;
-          case "Vec2":
-            node2 = new Vec2Node(node2.x ?? 0, node2.y ?? 0);
-            break;
-          case "Vec3":
-            node2 = new Vec3Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0);
-            break;
-          case "Vec4":
-            node2 = new Vec4Node(node2.x ?? 0, node2.y ?? 0, node2.z ?? 0, node2.w ?? 1);
-            break;
-          case "Color":
-            node2 = new ColorNode(node2.r ?? 1, node2.g ?? 1, node2.b ?? 1, node2.a ?? 1);
-            break;
-          case "Add":
-            node2 = new AddNode();
-            break;
-          case "Subtract":
-            node2 = new SubtractNode();
-            break;
-          case "Multiply":
-            node2 = new MultiplyNode();
-            break;
-          case "Divide":
-            node2 = new DivideNode();
-            break;
-          case "Power":
-            node2 = new PowerNode();
-            break;
-          case "Sin":
-            node2 = new SinNode();
-            break;
-          case "Cos":
-            node2 = new CosNode();
-            break;
-          case "Normalize":
-            node2 = new NormalizeNode();
-            break;
-          case "DotProduct":
-            node2 = new DotProductNode();
-            break;
-          case "Lerp":
-            node2 = new LerpNode();
-            break;
-          case "Frac":
-            node2 = new FracNode();
-            break;
-          case "OneMinus":
-            node2 = new OneMinusNode();
-            break;
-          case "Smoothstep":
-            node2 = new SmoothstepNode();
-            break;
-          case "FragmentPosition":
-            node2 = new FragmentPositionNode();
-            break;
-          case "ViewDirection":
-            node2 = new ViewDirectionNode();
-            break;
-          case "SplitVec4":
-            node2 = new SplitVec4Node();
-            break;
-          case "CombineVec4":
-            node2 = new CombineVec4Node();
-            break;
-          case "GlobalAmbient":
-            node2 = new GlobalAmbientNode();
-            break;
-        }
-        node2.id = saveId;
-        node2.x = saveX;
-        node2.y = saveY;
-        map[node2.id] = node2;
-        addNodeUI(node2, node2.x, node2.y);
-      });
-      setTimeout(() => data.connections.forEach((c) => {
-        const fromNode = map[c.from];
-        const toNode = map[c.to];
-        const fromPin = c.fromPin;
-        const toPin = c.toPin;
-        if (!fromNode || !toNode) {
-          console.warn("Skipping connection due to missing node", c);
-          return;
-        }
-        shaderGraph.connect(fromNode, fromPin, toNode, toPin);
-        const path = shaderGraph.connectionLayer.path();
-        path.dataset.from = `${fromNode.id}:${fromPin}`;
-        path.dataset.to = `${toNode.id}:${toPin}`;
-        shaderGraph.connectionLayer.svg.appendChild(path);
-        shaderGraph.connectionLayer.redrawAll(path);
-      }), 50);
-      let r2 = shaderGraph.compile();
-      const graphGenShaderWGSL = graphAdapter(r2, shaderGraph.nodes);
-      console.log("test compile shaderGraph.final ", shaderGraph.final);
-      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
-      return true;
-    });
-  }
-  document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: key }));
-}
-
 // ../hud.js
 var EditorHud = class {
   constructor(core, a) {
@@ -23418,12 +23428,9 @@ var EditorHud = class {
     if (a == "infly") {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
+      console.log("AUTO INIT HUD");
       this.createTopMenu();
       this.createAssets();
-      setTimeout(() => openFragmentShaderEditor().then((e) => {
-        byId("shaderDOM").style.display = "none";
-        app.shaderGraph = e;
-      }), 200);
     } else if (a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -24880,9 +24887,17 @@ var Editor = class {
     if (this.check(a) == "pre editor") {
       this.client = new MEEditorClient(this.check(a));
     } else if (this.check(a) == "created from editor") {
+      document.addEventListener("editorx-ws-ready", () => {
+        openFragmentShaderEditor().then((e) => {
+          byId("shaderDOM").style.display = "none";
+          app.shaderGraph = e;
+          console.log("AUTO INIT app.shaderGraph", app.shaderGraph);
+        });
+      });
       this.client = new MEEditorClient(this.check(a), projName);
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
+        console.log("MOMENT BEFORE COSTRUCT MAIN GRAPH");
         this.fluxCodexVertex = new FluxCodexVertex("board", "boardWrap", "log", this.methodsManager, projName);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
@@ -26793,22 +26808,10 @@ var MatrixEngineWGPU = class {
 var graph_default = { "nodes": { "node_2": { "noExec": true, "id": "node_2", "title": "Get Scene Light", "x": 372.15625, "y": 416.046875, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_3": { "id": "node_3", "title": "reffunctions", "x": 977.34375, "y": 357.4375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_4": { "id": "node_4", "title": "Get Number", "x": 686.953125, "y": 400.53125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_5": { "id": "node_5", "title": "Get Number", "x": 682.8125, "y": 602.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 988.78125, "y": 557.28125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_10": { "id": "node_10", "title": "reffunctions", "x": 989.671875, "y": 731.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorR", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_11": { "id": "node_11", "title": "Get Number", "x": 698.609375, "y": 789.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_RED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_12": { "id": "node_12", "title": "reffunctions", "x": 1005.078125, "y": 947.953125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorB", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_13": { "id": "node_13", "title": "Get Number", "x": 713.515625, "y": 995.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_BLUE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "title": "reffunctions", "x": 989.984375, "y": 1199.3125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorG", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_15": { "id": "node_15", "title": "Get Number", "x": 711.90625, "y": 1284.765625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_GREEN" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_16": { "noExec": true, "id": "node_16", "title": "Get Scene Object", "x": 1323.5625, "y": 1496.8125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_17": { "id": "node_17", "x": 1603.234375, "y": 1239.390625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_18": { "id": "node_18", "title": "Get String", "x": 1295.5625, "y": 1325.265625, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "functions", "x": -17.28125, "y": 17.765625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "activateBloomEffect" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 128.828125, "y": 221.390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "bloomPower" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_24": { "id": "node_24", "x": 2020.515625, "y": 1696.265625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_25": { "id": "node_25", "title": "Get String", "x": 1422.40625, "y": 1803.234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_26": { "noExec": true, "id": "node_26", "title": "Get Scene Object", "x": 1706.9375, "y": 1755.78125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_42": { "noExec": true, "id": "node_42", "title": "Get Scene Object", "x": 3181.890625, "y": 1338.546875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_43": { "id": "node_43", "x": 3566.53125, "y": 1326.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_44": { "id": "node_44", "title": "Get Number", "x": 3215.9375, "y": 1842.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SMALL_INV_ROT_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_45": { "noExec": true, "id": "node_45", "title": "Get Scene Object", "x": 3187.828125, "y": 1599.359375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_46": { "noExec": true, "id": "node_46", "title": "Get Scene Object", "x": 3195.609375, "y": 2016.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_48": { "id": "node_48", "x": 3566.46875, "y": 1701, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_49": { "id": "node_49", "x": 3574.5625, "y": 2060.640625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_50": { "id": "node_50", "title": "SetTimeout", "x": 3579.765625, "y": 1884.234375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_65": { "id": "node_65", "title": "if", "x": 3154.484375, "y": 719.640625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }] }, "node_69": { "noExec": true, "id": "node_69", "title": "Get Scene Object", "x": 1705.015625, "y": 1972.59375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_70": { "noExec": true, "id": "node_70", "title": "Get Scene Object", "x": 1706.4375, "y": 2193.75, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_71": { "id": "node_71", "x": 2023.84375, "y": 1928.5625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_72": { "id": "node_72", "x": 2021.96875, "y": 2152.53125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_77": { "id": "node_77", "title": "Set Object", "x": -272.625, "y": 9.171875, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_78": { "id": "node_78", "title": "Get Object", "x": -271.75, "y": 168.84375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_84": { "id": "node_84", "title": "Print", "x": 3437.34375, "y": 797.8125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS IS FREE TO PLAY" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_85": { "id": "node_85", "title": "SetTimeout", "x": 3554.40625, "y": 1527.28125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_86": { "id": "node_86", "title": "Get Number", "x": 4025.125, "y": 1846.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPIN_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_87": { "id": "node_87", "x": 4277.9375, "y": 1504.921875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_89": { "id": "node_89", "x": 4306.96875, "y": 2103.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_97": { "id": "node_97", "title": "Function", "x": 5406.890625, "y": 1280.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_98": { "id": "node_98", "title": "GenRandInt", "x": 5180.90625, "y": 1401.8125, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_99": { "id": "node_99", "title": "Get Number", "x": 4982.109375, "y": 2194.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_100": { "id": "node_100", "title": "SetTimeout", "x": 4716.15625, "y": 1556.875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_102": { "id": "node_102", "x": 4921.765625, "y": 1272.671875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_104": { "noExec": true, "id": "node_104", "title": "Get Scene Object", "x": 5421.203125, "y": 1565.96875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_109": { "id": "node_109", "title": "Get Number", "x": 6485.46875, "y": 3241.625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_113": { "noExec": true, "id": "node_113", "title": "Get Scene Object", "x": 5766.765625, "y": 2410.46875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_115": { "id": "node_115", "title": "GenRandInt", "x": 5769.71875, "y": 2238.890625, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_116": { "id": "node_116", "title": "Function", "x": 6041.734375, "y": 2172.59375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_118": { "id": "node_118", "title": "GenRandInt", "x": 5941.5, "y": 3064.875, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_119": { "id": "node_119", "title": "Function", "x": 6183.046875, "y": 2990.25, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_120": { "noExec": true, "id": "node_120", "title": "Get Scene Object", "x": 6205.84375, "y": 3181.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_121": { "id": "node_121", "x": 6522.609375, "y": 3010.75, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_126": { "id": "node_126", "title": "functions", "x": -695.921875, "y": -251.1875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_128": { "id": "node_128", "title": "Get Number", "x": -974.21875, "y": -223.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_INIT_PITCH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_130": { "id": "node_130", "title": "Get Number", "x": -980.484375, "y": -17.984375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_131": { "id": "node_131", "title": "Get Number", "x": -965.984375, "y": 204.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Z" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_132": { "id": "node_132", "title": "functions", "x": -686.140625, "y": -41.90625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setY" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setY", "descFunc": "setY" }, "node_137": { "id": "node_137", "title": "functions", "x": -688.15625, "y": 181.71875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "z", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setZ" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setZ", "descFunc": "setZ" }, "node_139": { "id": "node_139", "title": "Get Number", "x": 5417.203125, "y": 1811.234375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_142": { "id": "node_142", "x": 6625.296875, "y": 2309.84375, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_144": { "id": "node_144", "title": "Get Number", "x": 6347.265625, "y": 2632.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_146": { "id": "node_146", "title": "onLoad", "x": -1570.765625, "y": -532.328125, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_149": { "id": "node_149", "x": 3850.359375, "y": 1616.234375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "start_spin" }, { "key": "src", "value": "res/audios/spin.mp3" }], "noselfExec": "true" }, "node_150": { "id": "node_150", "title": "SetTimeout", "x": 3818.0625, "y": 1951.421875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_152": { "id": "node_152", "x": -1270.140625, "y": -418.859375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "welcome" }, { "key": "src", "value": "res/audios/rpg/feel.mp3" }], "noselfExec": "true" }, "node_157": { "id": "node_157", "x": 2469.03125, "y": 594.109375, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObject", "type": "object" }], "noselfExec": "true", "_listenerAttached": false }, "node_160": { "id": "node_160", "title": "Set Object", "x": 3442.03125, "y": 996.734375, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": "" }], "finished": true }, "node_161": { "id": "node_161", "title": "Get Object", "x": 3155.234375, "y": 1053.75, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "USED_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_162": { "id": "node_162", "title": "Get Object", "x": 2519.8125, "y": 930.875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_164": { "id": "node_164", "title": "Get Object", "x": 2523.875, "y": 781.109375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_165": { "id": "node_165", "title": "A != B", "x": 2857.375, "y": 897.234375, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_167": { "id": "node_167", "title": "Set Object", "x": 7844.84375, "y": 2837.28125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_168": { "id": "node_168", "title": "Get Object", "x": 7966.9375, "y": 3035.078125, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_169": { "id": "node_169", "title": "Print", "x": 8093.671875, "y": 2833.359375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "MASHINE IS FREE " }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_170": { "id": "node_170", "title": "Comment", "x": 2790.890625, "y": 748.046875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Equal and NoEqual only compare nodes \nwho works with objects !!!" }] }, "node_172": { "id": "node_172", "x": 5779.578125, "y": 2084.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_174": { "id": "node_174", "x": 5936.875, "y": 2901.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_176": { "id": "node_176", "title": "Get Number", "x": 5707.625, "y": 1612.859375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_177": { "id": "node_177", "x": 5950.9375, "y": 1361.5, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_178": { "id": "node_178", "x": 6219.546875, "y": 1502.609375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_179": { "id": "node_179", "title": "Mul", "x": 5970.328125, "y": 1681.34375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_180": { "id": "node_180", "title": "Get Number", "x": 5706.21875, "y": 1780.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_181": { "id": "node_181", "title": "SetTimeout", "x": 6219.046875, "y": 1674.140625, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_183": { "id": "node_183", "x": 6224.515625, "y": 1825.296875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_184": { "id": "node_184", "title": "Get Number", "x": 6065.84375, "y": 2406.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_185": { "id": "node_185", "title": "Mul", "x": 6293.59375, "y": 2485.90625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_186": { "id": "node_186", "title": "Get Number", "x": 6055.53125, "y": 2574.125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_187": { "id": "node_187", "x": 6631.390625, "y": 2491.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_188": { "id": "node_188", "title": "SetTimeout", "x": 6638.84375, "y": 2652.09375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_189": { "id": "node_189", "x": 6655.71875, "y": 2798.484375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_190": { "id": "node_190", "title": "Get Number", "x": 6743.9375, "y": 3179.015625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_191": { "id": "node_191", "title": "Get Number", "x": 6757.0625, "y": 3335.703125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_192": { "id": "node_192", "title": "Mul", "x": 6969.84375, "y": 3254.84375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_193": { "id": "node_193", "x": 6755.296875, "y": 3012.375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_194": { "id": "node_194", "title": "SetTimeout", "x": 7510.78125, "y": 2875.953125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_195": { "id": "node_195", "title": "SetTimeout", "x": 6997.125, "y": 3065.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_196": { "id": "node_196", "x": 7210.9375, "y": 3164.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_197": { "id": "node_197", "title": "SetTimeout", "x": 4286.1875, "y": 1649.359375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_198": { "id": "node_198", "x": 4300.8125, "y": 1804.625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_199": { "id": "node_199", "title": "SetTimeout", "x": 4303.109375, "y": 1959.21875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_200": { "id": "node_200", "title": "Print", "x": 3452.515625, "y": 594.296875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS USED" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_205": { "id": "node_205", "title": "Get Number", "x": 409.59375, "y": 217.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLUR_EFFECT" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_206": { "id": "node_206", "title": "Comment", "x": 7031.359375, "y": 2832.375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "NOW STOP SPINING" }] }, "node_207": { "id": "node_207", "title": "functions", "x": 984.359375, "y": 62.625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setKnee" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setKnee", "descFunc": "setKnee" }, "node_208": { "id": "node_208", "title": "functions", "x": 709.546875, "y": 63.234375, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setBlurRadius" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_209": { "id": "node_209", "title": "Get Number", "x": 743.1875, "y": 238.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_KNEE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_211": { "id": "node_211", "title": "functions", "x": 431.140625, "y": 28.140625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setIntensity" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_215": { "id": "node_215", "title": "Function", "x": 193.625, "y": 2046.765625, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "neonTextEffect" }, "node_219": { "id": "node_219", "title": "SetTimeout", "x": 422.9375, "y": 1811.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "2000" }], "builtIn": true }, "node_221": { "id": "node_221", "x": 643.625, "y": 2000.25, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER1" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": '{ hue: 200, glow: 10, text: "Hello developer \\n \u{1F47D}\u{1F47D}\u{1F47D}" , fontSize: 25, flicker: 0.05 }' }], "noselfExec": "true" }, "node_223": { "id": "node_223", "x": 623.6875, "y": 2271.484375, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER3" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": "{ ballRadius : 5 ,hue: 200, glow: 10, text: 'Hello programmer', fontSize: 60, flicker: 0.05, }" }], "noselfExec": "true" }, "node_225": { "id": "node_225", "title": "Function", "x": 194.625, "y": 2459.625, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "teslaLightning" }, "node_226": { "id": "node_226", "x": 640.765625, "y": 2581.921875, "title": "Set Video Texture", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "VideoTextureArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "CAMERA_JUMPER" }, { "key": "VideoTextureArg", "value": "{type: 'camera', src: 'res/videos/tunel.mp4'}" }], "noselfExec": "true" }, "node_231": { "id": "node_231", "x": 992.65625, "y": 3119.546875, "title": "Curve", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "name", "type": "string" }, { "name": "delta", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "name", "value": "Curve1" }], "curve": { "name": "node_231", "keys": [{ "time": 0, "value": 0, "inTangent": 0, "outTangent": 0 }, { "time": 1, "value": 1, "inTangent": 0, "outTangent": 0 }], "length": 1, "loop": true, "samples": 128, "baked": null }, "noselfExec": "true" }, "node_233": { "noExec": true, "id": "node_233", "title": "Get Scene Object", "x": 1247.1875, "y": 2880.078125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "BANNER1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_236": { "id": "node_236", "title": "Mul", "x": 1363.453125, "y": 3296.296875, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_237": { "id": "node_237", "title": "Get Number", "x": 1038.3125, "y": 3386.328125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "MULTIPLY_CURVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_239": { "id": "node_239", "title": "Get Number", "x": 1357.515625, "y": 3480.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_241": { "id": "node_241", "x": 1727.015625, "y": 3126.765625, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_243": { "id": "node_243", "title": "getNumberLiteral", "x": 1351.953125, "y": 3126.109375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "90" }], "noselfExec": "true" }, "node_249": { "id": "node_249", "title": "onLoad", "x": 40.125, "y": 1476.234375, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_252": { "noExec": true, "id": "node_252", "title": "Get Scene Object", "x": 3139.484375, "y": 3452.890625, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "CAMERA_JUMPER" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_254": { "id": "node_254", "title": "Get Object", "x": 3141, "y": 3715.921875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_255": { "id": "node_255", "x": 3489.953125, "y": 3351.296875, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_258": { "id": "node_258", "title": "getNumberLiteral", "x": 3089.09375, "y": 3074.984375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "0.03" }], "noselfExec": "true" }, "node_261": { "id": "node_261", "title": "if", "x": 2792.125, "y": 3138.71875, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "true" }], "noselfExec": "true" }, "node_269": { "id": "node_269", "title": "Mul", "x": 3153.6875, "y": 3274.625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_271": { "id": "node_271", "x": 2370.59375, "y": 3180.625, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_275": { "id": "node_275", "title": "Get Boolean", "x": 3489.921875, "y": 3641.328125, "category": "value", "outputs": [{ "name": "result", "type": "boolean" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_276": { "id": "node_276", "title": "Set Boolean", "x": 2913.078125, "y": 2589.90625, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": "true" }], "finished": true }, "node_280": { "id": "node_280", "x": 2458.84375, "y": 2502.921875, "title": "Generator Pyramid", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "levels", "type": "value" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/cube-g1.png" }, { "key": "name", "value": "TEST" }, { "key": "levels", "value": "5" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 10 }, { "key": "delay", "value": "50" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_281": { "id": "node_281", "type": "getArray", "title": "Get Array", "x": 4353.375, "y": 3439.109375, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_282": { "id": "node_282", "title": "For Each", "type": "forEach", "x": 4596.390625, "y": 3454.578125, "state": { "item": "TEST_54", "index": 54 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_284": { "id": "node_284", "x": 4926.65625, "y": 3622.953125, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_286": { "id": "node_286", "title": "Mul", "x": 4376.5625, "y": 3749.234375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_287": { "id": "node_287", "title": "getNumberLiteral", "x": 4049.640625, "y": 3296.265625, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": "0.02" }], "noselfExec": "true" }, "node_288": { "id": "node_288", "title": "if", "x": 3794.234375, "y": 3402.265625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }], "noselfExec": "true" }, "node_289": { "id": "node_289", "title": "Get Object", "x": 4672.0625, "y": 3839.90625, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_290": { "id": "node_290", "title": "Set Boolean", "x": 2114.84375, "y": 2644.125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": false }], "finished": true }, "node_308": { "noExec": true, "id": "node_308", "title": "Get Scene Object", "x": 2356.765625, "y": 1721.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "L_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_309": { "id": "node_309", "x": 2723.4375, "y": 1888.484375, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_310": { "id": "node_310", "title": "Get String", "x": 2483.796875, "y": 2028.75, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "CUBE_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_311": { "noExec": true, "id": "node_311", "title": "Get Scene Object", "x": 2349.734375, "y": 2185, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "R_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_312": { "id": "node_312", "x": 2715.484375, "y": 2184.0625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_313": { "id": "node_313", "title": "Comment", "x": 1832.203125, "y": 2625.671875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON LOAD TEST CASE \n" }] }, "node_314": { "id": "node_314", "title": "Comment", "x": 710.796875, "y": 3127.1875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON DRAW \n" }] }, "node_322": { "noExec": true, "id": "node_322", "title": "Get Shader Graph", "x": 1000.625, "y": 2189.84375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "objectName": "objectName", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "selectedShader", "value": "MyShader1" }, { "key": "objectName", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.shaderGraph" } }, "links": [{ "id": "link_1", "from": { "node": "node_2", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "reference" }, "type": "any" }, { "id": "link_3", "from": { "node": "node_4", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "intensity" }, "type": "value" }, { "id": "link_4", "from": { "node": "node_2", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_5", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_5", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_9", "from": { "node": "node_2", "pin": "setColorR", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "reference" }, "type": "any" }, { "id": "link_10", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_11", "from": { "node": "node_11", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "colorR" }, "type": "value" }, { "id": "link_12", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_2", "pin": "setColorB", "type": "object", "out": true }, "to": { "node": "node_12", "pin": "reference" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_12", "pin": "colorB" }, "type": "value" }, { "id": "link_15", "from": { "node": "node_2", "pin": "setColorG", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "reference" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_15", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "colorG" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_16", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_20", "from": { "node": "node_18", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "texturePath" }, "type": "any" }, { "id": "link_26", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "texturePath" }, "type": "any" }, { "id": "link_27", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_26", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_52", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_43", "pin": "rotation" }, "type": "any" }, { "id": "link_53", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_43", "pin": "x" }, "type": "any" }, { "id": "link_55", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_48", "pin": "rotation" }, "type": "any" }, { "id": "link_57", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_48", "pin": "x" }, "type": "any" }, { "id": "link_58", "from": { "node": "node_48", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_50", "pin": "exec" }, "type": "action" }, { "id": "link_59", "from": { "node": "node_50", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_49", "pin": "exec" }, "type": "action" }, { "id": "link_60", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_49", "pin": "rotation" }, "type": "any" }, { "id": "link_61", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_49", "pin": "x" }, "type": "any" }, { "id": "link_95", "from": { "node": "node_69", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_96", "from": { "node": "node_24", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_71", "pin": "exec" }, "type": "action" }, { "id": "link_97", "from": { "node": "node_71", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_72", "pin": "exec" }, "type": "action" }, { "id": "link_98", "from": { "node": "node_70", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_99", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "texturePath" }, "type": "any" }, { "id": "link_100", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "texturePath" }, "type": "any" }, { "id": "link_104", "from": { "node": "node_77", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_105", "from": { "node": "node_78", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_77", "pin": "value" }, "type": "object" }, { "id": "link_113", "from": { "node": "node_65", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_84", "pin": "exec" }, "type": "action" }, { "id": "link_115", "from": { "node": "node_43", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_85", "pin": "exec" }, "type": "action" }, { "id": "link_116", "from": { "node": "node_85", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_48", "pin": "exec" }, "type": "action" }, { "id": "link_117", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_87", "pin": "rotation" }, "type": "any" }, { "id": "link_119", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_89", "pin": "rotation" }, "type": "any" }, { "id": "link_120", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_87", "pin": "x" }, "type": "any" }, { "id": "link_122", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_89", "pin": "x" }, "type": "any" }, { "id": "link_134", "from": { "node": "node_98", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_97", "pin": "input" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_89", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_100", "pin": "exec" }, "type": "action" }, { "id": "link_138", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_102", "pin": "rotation" }, "type": "any" }, { "id": "link_143", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_102", "pin": "x" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_100", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_102", "pin": "exec" }, "type": "action" }, { "id": "link_166", "from": { "node": "node_115", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_116", "pin": "input" }, "type": "value" }, { "id": "link_172", "from": { "node": "node_118", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_119", "pin": "input" }, "type": "value" }, { "id": "link_174", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_121", "pin": "rotation" }, "type": "any" }, { "id": "link_175", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "y" }, "type": "any" }, { "id": "link_176", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "z" }, "type": "any" }, { "id": "link_178", "from": { "node": "node_119", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "x" }, "type": "any" }, { "id": "link_179", "from": { "node": "node_119", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_121", "pin": "exec" }, "type": "action" }, { "id": "link_182", "from": { "node": "node_128", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_126", "pin": "pitch" }, "type": "value" }, { "id": "link_186", "from": { "node": "node_126", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_132", "pin": "exec" }, "type": "action" }, { "id": "link_188", "from": { "node": "node_130", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_132", "pin": "y2" }, "type": "value" }, { "id": "link_193", "from": { "node": "node_131", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_137", "pin": "z" }, "type": "value" }, { "id": "link_194", "from": { "node": "node_132", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_137", "pin": "exec" }, "type": "action" }, { "id": "link_195", "from": { "node": "node_137", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_77", "pin": "exec" }, "type": "action" }, { "id": "link_207", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_142", "pin": "rotation" }, "type": "any" }, { "id": "link_208", "from": { "node": "node_116", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_142", "pin": "exec" }, "type": "action" }, { "id": "link_211", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "y" }, "type": "any" }, { "id": "link_212", "from": { "node": "node_116", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "x" }, "type": "any" }, { "id": "link_213", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "z" }, "type": "any" }, { "id": "link_218", "from": { "node": "node_49", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_150", "pin": "exec" }, "type": "action" }, { "id": "link_219", "from": { "node": "node_150", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_149", "pin": "exec" }, "type": "action" }, { "id": "link_220", "from": { "node": "node_149", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_87", "pin": "exec" }, "type": "action" }, { "id": "link_221", "from": { "node": "node_146", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_152", "pin": "exec" }, "type": "action" }, { "id": "link_222", "from": { "node": "node_152", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_126", "pin": "exec" }, "type": "action" }, { "id": "link_235", "from": { "node": "node_84", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_160", "pin": "exec" }, "type": "action" }, { "id": "link_236", "from": { "node": "node_160", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_43", "pin": "exec" }, "type": "action" }, { "id": "link_237", "from": { "node": "node_161", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_160", "pin": "value" }, "type": "object" }, { "id": "link_239", "from": { "node": "node_157", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_65", "pin": "exec" }, "type": "action" }, { "id": "link_243", "from": { "node": "node_164", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "A" }, "type": "any" }, { "id": "link_244", "from": { "node": "node_162", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "B" }, "type": "any" }, { "id": "link_245", "from": { "node": "node_165", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_65", "pin": "condition" }, "type": "boolean" }, { "id": "link_248", "from": { "node": "node_168", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_167", "pin": "value" }, "type": "object" }, { "id": "link_249", "from": { "node": "node_167", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_169", "pin": "exec" }, "type": "action" }, { "id": "link_250", "from": { "node": "node_102", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_97", "pin": "exec" }, "type": "action" }, { "id": "link_251", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_172", "pin": "rotation" }, "type": "any" }, { "id": "link_252", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_172", "pin": "x" }, "type": "any" }, { "id": "link_255", "from": { "node": "node_172", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_116", "pin": "exec" }, "type": "action" }, { "id": "link_256", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_174", "pin": "x" }, "type": "any" }, { "id": "link_259", "from": { "node": "node_174", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_119", "pin": "exec" }, "type": "action" }, { "id": "link_260", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_174", "pin": "rotation" }, "type": "any" }, { "id": "link_261", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_177", "pin": "rotation" }, "type": "any" }, { "id": "link_262", "from": { "node": "node_97", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_177", "pin": "exec" }, "type": "action" }, { "id": "link_267", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "y" }, "type": "any" }, { "id": "link_268", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "z" }, "type": "any" }, { "id": "link_269", "from": { "node": "node_176", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "a" }, "type": "value" }, { "id": "link_270", "from": { "node": "node_180", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "b" }, "type": "value" }, { "id": "link_271", "from": { "node": "node_179", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_178", "pin": "x" }, "type": "any" }, { "id": "link_272", "from": { "node": "node_177", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_178", "pin": "exec" }, "type": "action" }, { "id": "link_273", "from": { "node": "node_178", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_181", "pin": "exec" }, "type": "action" }, { "id": "link_274", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_178", "pin": "rotation" }, "type": "any" }, { "id": "link_278", "from": { "node": "node_181", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_183", "pin": "exec" }, "type": "action" }, { "id": "link_279", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_183", "pin": "x" }, "type": "any" }, { "id": "link_280", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_183", "pin": "rotation" }, "type": "any" }, { "id": "link_281", "from": { "node": "node_183", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_172", "pin": "exec" }, "type": "action" }, { "id": "link_282", "from": { "node": "node_97", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "x" }, "type": "any" }, { "id": "link_283", "from": { "node": "node_184", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "a" }, "type": "value" }, { "id": "link_284", "from": { "node": "node_186", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "b" }, "type": "value" }, { "id": "link_285", "from": { "node": "node_142", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_187", "pin": "exec" }, "type": "action" }, { "id": "link_286", "from": { "node": "node_185", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_187", "pin": "x" }, "type": "any" }, { "id": "link_287", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_187", "pin": "rotation" }, "type": "any" }, { "id": "link_288", "from": { "node": "node_187", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_188", "pin": "exec" }, "type": "action" }, { "id": "link_289", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_189", "pin": "x" }, "type": "any" }, { "id": "link_290", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_189", "pin": "rotation" }, "type": "any" }, { "id": "link_291", "from": { "node": "node_188", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_189", "pin": "exec" }, "type": "action" }, { "id": "link_292", "from": { "node": "node_189", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_174", "pin": "exec" }, "type": "action" }, { "id": "link_293", "from": { "node": "node_190", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_192", "pin": "a" }, "type": "value" }, { "id": "link_294", "from": { "node": "node_191", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_192", "pin": "b" }, "type": "value" }, { "id": "link_295", "from": { "node": "node_192", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_193", "pin": "x" }, "type": "any" }, { "id": "link_296", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_193", "pin": "rotation" }, "type": "any" }, { "id": "link_297", "from": { "node": "node_194", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_167", "pin": "exec" }, "type": "action" }, { "id": "link_298", "from": { "node": "node_121", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_193", "pin": "exec" }, "type": "action" }, { "id": "link_299", "from": { "node": "node_193", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_195", "pin": "exec" }, "type": "action" }, { "id": "link_300", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_196", "pin": "x" }, "type": "any" }, { "id": "link_301", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_196", "pin": "rotation" }, "type": "any" }, { "id": "link_302", "from": { "node": "node_195", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_196", "pin": "exec" }, "type": "action" }, { "id": "link_303", "from": { "node": "node_196", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_194", "pin": "exec" }, "type": "action" }, { "id": "link_304", "from": { "node": "node_87", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_197", "pin": "exec" }, "type": "action" }, { "id": "link_305", "from": { "node": "node_197", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_198", "pin": "exec" }, "type": "action" }, { "id": "link_306", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_198", "pin": "x" }, "type": "any" }, { "id": "link_307", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_198", "pin": "rotation" }, "type": "any" }, { "id": "link_308", "from": { "node": "node_198", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_199", "pin": "exec" }, "type": "action" }, { "id": "link_309", "from": { "node": "node_199", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_89", "pin": "exec" }, "type": "action" }, { "id": "link_310", "from": { "node": "node_65", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_200", "pin": "exec" }, "type": "action" }, { "id": "link_316", "from": { "node": "node_205", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_208", "pin": "v" }, "type": "value" }, { "id": "link_318", "from": { "node": "node_208", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_207", "pin": "exec" }, "type": "action" }, { "id": "link_319", "from": { "node": "node_207", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_320", "from": { "node": "node_209", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_207", "pin": "v" }, "type": "value" }, { "id": "link_321", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_211", "pin": "exec" }, "type": "action" }, { "id": "link_322", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_211", "pin": "v" }, "type": "value" }, { "id": "link_323", "from": { "node": "node_211", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_208", "pin": "exec" }, "type": "action" }, { "id": "link_331", "from": { "node": "node_215", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_221", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_332", "from": { "node": "node_219", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_221", "pin": "exec" }, "type": "action" }, { "id": "link_334", "from": { "node": "node_225", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_223", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_336", "from": { "node": "node_223", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_226", "pin": "exec" }, "type": "action" }, { "id": "link_352", "from": { "node": "node_231", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "a" }, "type": "value" }, { "id": "link_355", "from": { "node": "node_237", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "b" }, "type": "value" }, { "id": "link_362", "from": { "node": "node_233", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_241", "pin": "rotation" }, "type": "any" }, { "id": "link_363", "from": { "node": "node_236", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "y" }, "type": "any" }, { "id": "link_365", "from": { "node": "node_239", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "z" }, "type": "any" }, { "id": "link_366", "from": { "node": "node_231", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_243", "pin": "exec" }, "type": "action" }, { "id": "link_367", "from": { "node": "node_243", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "x" }, "type": "any" }, { "id": "link_368", "from": { "node": "node_243", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_241", "pin": "exec" }, "type": "action" }, { "id": "link_380", "from": { "node": "node_254", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_255", "pin": "rayDirection" }, "type": "object" }, { "id": "link_382", "from": { "node": "node_252", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_255", "pin": "objectName" }, "type": "string" }, { "id": "link_392", "from": { "node": "node_258", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_255", "pin": "exec" }, "type": "action" }, { "id": "link_402", "from": { "node": "node_261", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_258", "pin": "exec" }, "type": "action" }, { "id": "link_409", "from": { "node": "node_258", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "a" }, "type": "value" }, { "id": "link_411", "from": { "node": "node_269", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_255", "pin": "strength" }, "type": "value" }, { "id": "link_412", "from": { "node": "node_249", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_219", "pin": "exec" }, "type": "action" }, { "id": "link_414", "from": { "node": "node_271", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_261", "pin": "exec" }, "type": "action" }, { "id": "link_415", "from": { "node": "node_271", "pin": "mid", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "b" }, "type": "value" }, { "id": "link_416", "from": { "node": "node_271", "pin": "beat", "type": "boolean", "out": true }, "to": { "node": "node_261", "pin": "condition" }, "type": "boolean" }, { "id": "link_426", "from": { "node": "node_280", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_276", "pin": "exec" }, "type": "action" }, { "id": "link_427", "from": { "node": "node_280", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_281", "pin": "array" }, "type": "any" }, { "id": "link_429", "from": { "node": "node_281", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_282", "pin": "exec" }, "type": "action" }, { "id": "link_430", "from": { "node": "node_281", "pin": "array", "type": "any", "out": true }, "to": { "node": "node_282", "pin": "array" }, "type": "any" }, { "id": "link_431", "from": { "node": "node_282", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_284", "pin": "exec" }, "type": "action" }, { "id": "link_432", "from": { "node": "node_282", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_284", "pin": "objectName" }, "type": "string" }, { "id": "link_434", "from": { "node": "node_271", "pin": "high", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "a" }, "type": "value" }, { "id": "link_435", "from": { "node": "node_255", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_288", "pin": "exec" }, "type": "action" }, { "id": "link_436", "from": { "node": "node_275", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_288", "pin": "condition" }, "type": "boolean" }, { "id": "link_437", "from": { "node": "node_288", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_287", "pin": "exec" }, "type": "action" }, { "id": "link_438", "from": { "node": "node_287", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_281", "pin": "exec" }, "type": "action" }, { "id": "link_439", "from": { "node": "node_287", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "b" }, "type": "value" }, { "id": "link_440", "from": { "node": "node_286", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_284", "pin": "strength" }, "type": "value" }, { "id": "link_441", "from": { "node": "node_289", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_284", "pin": "rayDirection" }, "type": "object" }, { "id": "link_443", "from": { "node": "node_290", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_280", "pin": "exec" }, "type": "action" }, { "id": "link_450", "from": { "node": "node_241", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_271", "pin": "exec" }, "type": "action" }, { "id": "link_461", "from": { "node": "node_221", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_223", "pin": "exec" }, "type": "action" }, { "id": "link_462", "from": { "node": "node_72", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_309", "pin": "exec" }, "type": "action" }, { "id": "link_463", "from": { "node": "node_308", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_464", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "texturePath" }, "type": "any" }, { "id": "link_465", "from": { "node": "node_311", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_466", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "texturePath" }, "type": "any" }, { "id": "link_467", "from": { "node": "node_309", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_312", "pin": "exec" }, "type": "action" }, { "id": "link_469", "from": { "node": "node_226", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_322", "pin": "exec" }, "type": "action" }], "nodeCounter": 323, "linkCounter": 470, "pan": [-328, -1748], "variables": { "number": { "LIGHT_POWER": 10, "LIGHT_Y": 55, "COLOR_RED": 1, "COLOR_BLUE": 1, "COLOR_GREEN": 1, "bloomPower": 5, "SMALL_INV_ROT_SPEED": -100, "SPIN_SPEED": 1e4, "ZERO": 0, "RESULT_ANGLE": null, "CAMERA_INIT_PITCH": -0.1, "CAMERA_Y": 3.5, "CAMERA_Z": -12, "DELTA_INV_ON_STOP": 1e3, "NEGATIVE": -1, "BLUR_EFFECT": 100, "BLOOM_KNEE": 991, "MULTIPLY_CURVE": 20 }, "boolean": { "DINAMIC_OBJS_READY": true }, "string": { "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.png", "REEL_TEX": "res/textures/reel.png", "START_SPIN": "start-spin", "CUBE_TEX": "res/textures/cube-g1.png" }, "object": { "SPIN_STATUS": { "status": "free" }, "FREE": { "status": "free" }, "USED_STATUS": { "status": "used" }, "RAY_DIR": [1, 0, 0] } } };
 
 // ../../../../projects/Test1/shader-graphs.js
-var shader_graphs_default = shaderGraphsProdc = [
+var shaderGraphsProdc = [
   {
-    "name": "fragShader",
-    "content": '{"nodes":[{"id":"N0","type":"FragmentOutput","x":882,"y":469,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N1","type":"GlobalAmbient","x":342,"y":268,"inputs":{}},{"id":"N2","type":"MultiplyColor","x":648,"y":440,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N3","type":"Color","x":313,"y":576,"r":1,"g":1,"b":1,"a":1,"inputs":{}}],"connections":[{"from":"N3","fromPin":"out","to":"N2","toPin":"b"},{"from":"N1","fromPin":"out","to":"N2","toPin":"a"},{"from":"N2","fromPin":"out","to":"N0","toPin":"color"}]}'
-  },
-  {
-    "name": "MyShader1",
-    "content": '{"nodes":[{"id":"N8","type":"FragmentOutput","x":593,"y":444,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N6","type":"LightShadowNode","x":204,"y":276,"inputs":{"intensity":{"default":"1"}}},{"id":"N7","type":"LightToColor","x":393,"y":379,"inputs":{"light":{"default":"vec3f(1.0)"}}}],"connections":[{"from":"N6","fromPin":"out","to":"N7","toPin":"light"},{"from":"N7","fromPin":"out","to":"N8","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    return PBRMaterialData(baseColor, metallic, roughness);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  \\n  return t0;\\n}\\n"}'
-  },
-  {
-    "name": "nikola",
-    "content": '{"nodes":[{"id":"N1","type":"FragmentOutput","x":313,"y":255,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    return PBRMaterialData(baseColor, metallic, roughness);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n  \\n  return vec4f(1.0);\\n}\\n"}'
-  },
-  {
-    "name": "nidza",
-    "content": '{"nodes":[{"id":"N5","type":"FragmentOutput","x":440,"y":297,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[]}'
+    "name": "fragShaderGraph",
+    "content": '{"nodes":[{"id":"N0","type":"FragmentOutput","x":347,"y":321,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[]}'
   }
 ];
 
@@ -26828,7 +26831,7 @@ var app2 = new MatrixEngineWGPU(
   },
   (app3) => {
     app3.graph = graph_default;
-    shader_graphs_default.forEach((gShader) => {
+    shaderGraphsProdc.forEach((gShader) => {
       let shaderReady = JSON.parse(gShader.content);
       app3.shadersPack[gShader.name] = shaderReady.final;
       if (typeof shaderReady.final === void 0) console.warn(`Shader ${shaderReady.name} is not compiled.`);

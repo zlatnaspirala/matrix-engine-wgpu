@@ -22,6 +22,7 @@ export class MEEditorClient {
         this.ws.send(o);
       }
       console.log("%c[EDITOR][WS OPEN]", LOG_FUNNY_ARCADE);
+      document.dispatchEvent(new CustomEvent("editorx-ws-ready", {}));
     };
 
     this.ws.onmessage = (event) => {
@@ -68,7 +69,8 @@ export class MEEditorClient {
             // document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.graphs}));
           }
           if(data.methodLoads && data.ok == true && data.shaderGraphs) {
-            mb.show("Graphs list ✅", data);
+            mb.show("Graphs list ✅" + data.shaderGraphs);
+            console.log('Graph list ✅ test ', data)
             document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.shaderGraphs}));
           } else if(data.methodLoads && data.ok == true) {
             mb.show("Graph loads ✅", data);
@@ -221,7 +223,7 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
-     document.addEventListener('delete-shader-graph', (e) => {
+    document.addEventListener('delete-shader-graph', (e) => {
       console.info('%cDelete shader-graph <signal>', LOG_FUNNY_ARCADE);
       let o = {
         action: "delete-shader-graph",
@@ -231,6 +233,7 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    console.log('ATTACH MOMNET')
     document.addEventListener('get-shader-graphs', () => {
       console.info('%cget-shader-graphs <signal>', LOG_FUNNY_ARCADE);
       let o = {

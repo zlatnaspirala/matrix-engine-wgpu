@@ -17,13 +17,9 @@ export default class EditorHud {
     if(a == 'infly') {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
+      console.log('AUTO INIT HUD')
       this.createTopMenu();
       this.createAssets();
-      setTimeout(() => openFragmentShaderEditor().then((e) => {
-        byId('shaderDOM').style.display = 'none';
-        app.shaderGraph = e;
-        // console.log('AUTO INIT app.shaderGraph', app.shaderGraph)
-      }), 200);
     } else if(a == "pre editor") {
       this.createTopMenuPre();
     } else {

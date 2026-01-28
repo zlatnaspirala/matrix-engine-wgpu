@@ -3881,7 +3881,7 @@ export default class FluxCodexVertex {
         }
         n._returnCache = n.osc.UPDATE();
       } else if(n.title === "Get Shader Graph") {
-        console.warn("[Get Shader Graph] ????? input fields...");
+        console.warn("[Get Shader Graph] ?????  ??input fields...");
         const objectName = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if(!objectName) {

@@ -1,10 +1,10 @@
+import {byId} from "../../engine/utils";
 import {MEEditorClient} from "./client";
 import EditorProvider from "./editor.provider";
+import {openFragmentShaderEditor} from "./flexCodexShader";
 import FluxCodexVertex from "./fluxCodexVertex";
 import EditorHud from "./hud";
 import MethodsManager from "./methodsManager";
-
-// import methodsContainer from './';
 
 export class Editor {
 
@@ -16,10 +16,21 @@ export class Editor {
     if(this.check(a) == 'pre editor') {
       this.client = new MEEditorClient(this.check(a));
     } else if(this.check(a) == 'created from editor') {
+
+      document.addEventListener('editorx-ws-ready', () => {
+        openFragmentShaderEditor().then((e) => {
+          byId('shaderDOM').style.display = 'none';
+          app.shaderGraph = e;
+          console.log('AUTO INIT app.shaderGraph', app.shaderGraph)
+        })
+      });
+
       this.client = new MEEditorClient(this.check(a), projName);
       // Visual Scripting
       this.createFluxCodexVertexDOM();
+
       setTimeout(() => {
+        console.log("MOMENT BEFORE COSTRUCT MAIN GRAPH")
         this.fluxCodexVertex = new FluxCodexVertex('board', 'boardWrap', 'log', this.methodsManager, projName);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();

@@ -2,7 +2,7 @@ import MatrixEngineWGPU from "../../src/world.js";
 import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 import graph from "./graph.js";
-import shaderGraphsProdc from "./shader-graphs.js"
+import {shaderGraphsProdc} from "./shader-graphs.js"
 
 let app = new MatrixEngineWGPU(
   {

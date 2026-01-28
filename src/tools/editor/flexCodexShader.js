@@ -1764,7 +1764,7 @@ svg path {
     menu.appendChild(b);
 
     document.addEventListener("on-shader-graphs-list", (e) => {
-      // console.log("on-shader-graphs-list :", e.detail);
+      console.log("on-shader-graphs-list :", e.detail);
       const shaders = e.detail;
       b.innerHTML = "";
       var __ = 0;
@@ -1785,7 +1785,10 @@ svg path {
         opt.value = index;
         opt.textContent = shader.name;
         shaderGraph.runtimeList.push(shader.name);
-        // console.log("Graph content shader:", shader.content);
+        console.log("Graph content shader:", shader.content);
+        let test =  JSON.parse(shader.content);
+        console.log("Graph content shader:", test.final);
+        shaderGraph.runtime_memory[shader.name] = test.final;
         b.appendChild(opt);
       });
 
@@ -1799,15 +1802,17 @@ svg path {
           // There is a other way - compile and assign - no cache policy
           // const exist = loadGraph(selectedShader.name, shaderGraph, addNode);
           document.dispatchEvent(new CustomEvent('load-shader-graph', {detail: selectedShader.name}));
-          console.log("shaderGraph ???", shaderGraph);
+          console.log("Lets load selectedShader.name ", selectedShader.name);
         };
       }
+      document.dispatchEvent(new CustomEvent("sgraphs-ready", {}));
     });
 
     document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
     // Init
-    setTimeout(async () => {
-      console.log(shaderGraph.runtimeList)
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + shaderGraph.runtimeList)
+    document.addEventListener("sgraphs-ready", async () => {
+      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + shaderGraph.runtimeList)
       if(shaderGraph.runtimeList.length > 0) {
         // load first
         shaderGraph.id = shaderGraph.runtimeList[0];
@@ -1820,7 +1825,7 @@ svg path {
         console.log('no saved graphs');
       }
       resolve(shaderGraph);
-    }, 2600);
+    });
     // if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
   })
 }
@@ -1854,7 +1859,7 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
   localStorage.setItem(key, content);
   console.log('test compile content', shaderGraph.runtime_memory[key]);
   console.log('test compile content', content);
-  if (shaderGraph.runtime_memory[key]) {
+  if(shaderGraph.runtime_memory[key]) {
     // content.runtime_memory = shaderGraph.runtime_memory[key];
   } else {
     console.warn("GraphShader is saved for src but with no compile final data for prod build.");

@@ -1,7 +1,22 @@
-export const DEFAULT_SHADER_GRAPH_JS = `export default [
+const defaultShaderGraph = {
+  nodes: [{
+    id: "N0",
+    type: "FragmentOutput",
+    x: 347,
+    y: 321,
+    inputs: {
+      color: {
+        default: "vec4f(1.0)"
+      }
+    }
+  }],
+  connections: []
+};
+
+export let DEFAULT_SHADER_GRAPH_JS = `export let shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
-    "content": "{\"nodes\":[{\"id\":\"N0\",\"type\":\"FragmentOutput\",\"x\":347,\"y\":321,\"inputs\":{\"color\":{\"default\":\"vec4f(1.0)\"}}}],\"connections\":[]}"
+    "content": ${JSON.stringify(JSON.stringify(defaultShaderGraph))}
   }
 ];
 `;
