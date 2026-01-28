@@ -17,7 +17,6 @@ export default class EditorHud {
     if(a == 'infly') {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
-      console.log('AUTO INIT HUD')
       this.createTopMenu();
       this.createAssets();
     } else if(a == "pre editor") {

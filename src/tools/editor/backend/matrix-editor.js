@@ -544,7 +544,6 @@ async function saveShaderGraph(msg, ws) {
   let graphs = [];
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    // Extract array from "export default [...];"
     const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
@@ -562,7 +561,7 @@ async function saveShaderGraph(msg, ws) {
   } else {
     graphs.push(newGraph);
   }
-  const content = `export default  shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};\n`;
+  const content = `export let shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};\n`;
   await fs.writeFile(file, content, "utf8");
   ws.send(JSON.stringify({
     ok: true,
@@ -580,7 +579,6 @@ async function loadShaderGraph(msg, ws) {
   let graphs = [];
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    // Extract array from "export default [...];"
     const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
     if(match) {
       graphs = JSON.parse(match[1]);
