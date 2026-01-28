@@ -19,6 +19,7 @@ import {addRaycastsListener} from "./engine/raycast.js";
 import {physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/phisicsBodies.js";
 import {TextureCache} from "./engine/core-cache.js";
 import {AudioAssetManager} from "./sounds/audioAsset.js";
+import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
 
 /**
  * @description
@@ -37,7 +38,8 @@ export default class MatrixEngineWGPU {
     BVHPlayerInstances,
     BVHPlayer,
     downloadMeshes,
-    addRaycastsListener
+    addRaycastsListener,
+    graphAdapter
   }
 
   mainRenderBundle = [];
@@ -91,7 +93,7 @@ export default class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
 
-    this.logLoopError = false;
+    this.logLoopError = true;
 
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
@@ -210,34 +212,13 @@ export default class MatrixEngineWGPU {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
+    this.shadersPack = {};
 
-    this.run(callback);
-
-    // let ff = 0;
-    // const logoAnim = setInterval(() => {
-    //   console.clear();
-    //   console.log(
-    //     "%c" + LOGO_FRAMES[ff],
-    //     LOG_FUNNY_BIG_NEON
-    //   );
-    //   console.log(
-    //     "%cMatrix Engine WGPU • WebGPU Power Unleashed\n" +
-    //     "https://github.com/zlatnaspirala/matrix-engine-wgpu",
-    //     LOG_FUNNY_ARCADE
-    //   );
-    //   ff = (ff + 1) % LOGO_FRAMES.length;
-    // }, 190);
-
-    // stop after few seconds (optional)
-    // setTimeout(() => {
-    //   // clearInterval(logoAnim);
-    //   console.clear();
-    // }, 3200);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c Version 1.8.7 ", LOG_FUNNY);
-    console.log("%c👽 ", LOG_FUNNY_EXTRABIG);
+    console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Port is open.\n" +
       "Creative power loaded with visual scripting.\n" +
@@ -247,6 +228,9 @@ export default class MatrixEngineWGPU {
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
 
+     setTimeout(() => {
+       this.run(callback);
+     },50);
   };
 
   createGlobalStuff() {
@@ -584,6 +568,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
+    if(typeof o.useScale === 'undefined') {o.useScale = false;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {
@@ -801,21 +786,20 @@ export default class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-      const currentTextureView = this.context.getCurrentTexture().createView();
+      // with no postprocessing 
+      // const currentTextureView = this.context.getCurrentTexture().createView();
       // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
 
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      // Loop over each mesh
-
+      // opaque
       for(const mesh of this.mainRenderBundle) {
+        if(mesh.material?.useBlend === true) continue;
         now = performance.now() / 1000;
         deltaTime = now - (this.lastTime || now);
         this.lastTime = now;
-        if(mesh.update) {
-
-          mesh.update(deltaTime); // glb
-        }
+        if(mesh.update) {mesh.update(deltaTime)}
+        if(mesh.updateTime) {mesh.updateTime(deltaTime)}
         pass.setPipeline(mesh.pipeline);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
@@ -833,12 +817,35 @@ export default class MatrixEngineWGPU {
         }
         mesh.drawElements(pass, this.lightContainer);
       }
+ 
+      // blend
+      for(const mesh of this.mainRenderBundle) {
+        if(mesh.material?.useBlend !== true) continue;
+        now = performance.now() / 1000;
+        deltaTime = now - (this.lastTime || now);
+        this.lastTime = now;
+        if(mesh.update) {mesh.update(deltaTime)}
+        if(mesh.updateTime) {mesh.updateTime(deltaTime)}
+        pass.setPipeline(mesh.pipelineTransparent);
+        if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
+          for(const m of this.mainRenderBundle) {
+            if(m.isVideo == true) {
+              console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+              m.shadowDepthTextureView = this.shadowVideoView;
+              m.FINISH_VIDIO_INIT = true;
+              m.setupPipeline();
+              pass.setPipeline(mesh.pipelineTransparent);
+            } else {
+              m.shadowDepthTextureView = this.shadowArrayView;
+              m.setupPipeline();
+            }
+          }
+        }
+        mesh.drawElements(pass, this.lightContainer);
+      }
       pass.end();
 
-      // 3) resolve collisions AFTER positions changed
       if(this.collisionSystem) this.collisionSystem.update();
-      // 4) render / send network updates / animations etc
-
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{view: this.sceneTextureView, loadOp: 'load', storeOp: 'store'}],
@@ -938,6 +945,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
     if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
+    if(typeof o.useScale === 'undefined') {o.useScale = false;}
 
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -1023,6 +1031,7 @@ export default class MatrixEngineWGPU {
         ballEffect: false
       };
     }
+    if(typeof o.useScale === 'undefined') {o.useScale = false;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

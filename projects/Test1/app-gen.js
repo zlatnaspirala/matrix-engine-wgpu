@@ -2,6 +2,7 @@ import MatrixEngineWGPU from "../../src/world.js";
 import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 import graph from "./graph.js";
+import {shaderGraphsProdc} from "./shader-graphs.js"
 
 let app = new MatrixEngineWGPU(
   {
@@ -18,6 +19,13 @@ let app = new MatrixEngineWGPU(
   }
   , (app) => {
     app.graph = graph;
+
+    shaderGraphsProdc.forEach((gShader) => {
+      let shaderReady = JSON.parse(gShader.content);
+      app.shadersPack[gShader.name] = shaderReady.final;
+      if (typeof shaderReady.final === undefined) console.warn(`Shader ${shaderReady.name} is not compiled.`);
+    });
+
     addEventListener('AmmoReady', async () => {
       // [light]
       app.addLight();
@@ -35,35 +43,6 @@ let app = new MatrixEngineWGPU(
       }, {scale: [1, 1, 1]});
       // ME END Cube_0 addCube
 
-
-
-
-
-
-
-      // ME START FLOOR updateScale0
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').scale[0] = 15;
-      }, 800);
-      // ME END FLOOR updateScale0
-
-      // ME START FLOOR updateScale2
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').scale[2] = 15;
-      }, 800);
-      // ME END FLOOR updateScale2
-
-      // ME START FLOOR updateScale1
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').scale[1] = 0.01;
-      }, 800);
-      // ME END FLOOR updateScale1
-
-
-
-
-
-
       // ME START L_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
         let texturesPaths = ['./res/meshes/blender/cube.png'];
@@ -77,9 +56,6 @@ let app = new MatrixEngineWGPU(
         });
       }, {scale: [1, 1, 1]});
       // ME END L_BOX addCube
-
-
-
 
       // ME START R_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
@@ -236,12 +212,6 @@ let app = new MatrixEngineWGPU(
         app.getSceneObjectByName('R_BOX').scale[1] = 4;
       }, 800);
       // ME END R_BOX updateScale1
-
-      // ME START FLOOR updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').position.SetY(-3.5);
-      }, 800);
-      // ME END FLOOR updatePosy
 
       // ME START REEL_2 updatePosy
       setTimeout(() => {
@@ -494,7 +464,99 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END CAMERA_JUMPER updateScale1
  
- // [MAIN_REPLACE2]
+               // ME START FLOOR updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').scale[2] = 19;
+ }, 800);
+ // ME END FLOOR updateScale2
+ 
+                                           // ME START FLOOR updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').scale[1] = 1;
+ }, 800);
+ // ME END FLOOR updateScale1
+ 
+     // ME START FLOOR updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').scale[0] = 18;
+ }, 800);
+ // ME END FLOOR updateScale0
+ 
+             // ME START FLOOR updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').rotation.x = 0;
+ }, 800);
+ // ME END FLOOR updateRotx
+ 
+        // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-3.5);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+     // ME START FLOOR useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').useScale = true;
+ }, 800);
+ // ME END FLOOR useScaleno info
+ 
+ 
+       
+       // ME START L_BOX useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').useScale = true;
+ }, 800);
+ // ME END L_BOX useScaleno info
+ 
+  // ME START REEL_1 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_1').useScale = true;
+ }, 800);
+ // ME END REEL_1 useScaleno info
+ 
+  // ME START R_BOX useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').useScale = true;
+ }, 800);
+ // ME END R_BOX useScaleno info
+ 
+  // ME START BANNER2 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').useScale = true;
+ }, 800);
+ // ME END BANNER2 useScaleno info
+ 
+  // ME START CAMERA_JUMPER useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('CAMERA_JUMPER').useScale = true;
+ }, 800);
+ // ME END CAMERA_JUMPER useScaleno info
+ 
+  // ME START REEL_2 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').useScale = true;
+ }, 800);
+ // ME END REEL_2 useScaleno info
+ 
+  // ME START REEL_3 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_3').useScale = true;
+ }, 800);
+ // ME END REEL_3 useScaleno info
+ 
+  // ME START BANNER3 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').useScale = true;
+ }, 800);
+ // ME END BANNER3 useScaleno info
+ 
+  // ME START BANNER1 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').useScale = true;
+ }, 800);
+ // ME END BANNER1 useScaleno info
+ 
+  // [MAIN_REPLACE2]
 
     })
   });

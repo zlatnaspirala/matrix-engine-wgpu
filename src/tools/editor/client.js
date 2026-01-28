@@ -1,9 +1,7 @@
 import {LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_TERMINAL, mb} from "../../engine/utils";
 
 export class MEEditorClient {
-
   ws = null;
-
   constructor(typeOfRun, name) {
     this.ws = new WebSocket("ws://localhost:1243");
 
@@ -24,6 +22,7 @@ export class MEEditorClient {
         this.ws.send(o);
       }
       console.log("%c[EDITOR][WS OPEN]", LOG_FUNNY_ARCADE);
+      document.dispatchEvent(new CustomEvent("editorx-ws-ready", {}));
     };
 
     this.ws.onmessage = (event) => {
@@ -66,10 +65,19 @@ export class MEEditorClient {
         } else {
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");
-          } else {
+            // console.log('Graph saved ✅ test ', data.graphs)
+            // document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.graphs}));
+          }
+          if(data.methodLoads && data.ok == true && data.shaderGraphs) {
+            mb.show("Graphs list ✅" + data.shaderGraphs);
+            document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.shaderGraphs}));
+          } else if(data.methodLoads && data.ok == true) {
+            mb.show("Graph loads ✅", data);
+            document.dispatchEvent(new CustomEvent('on-graph-load', {detail: data.graph}));
+          }
+          else {
             mb.show("From editorX:" + data.ok);
           }
-
         }
       } catch(e) {
         console.error("[WS ERROR PARSE]", e);
@@ -194,6 +202,45 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('save-shader-graph', (e) => {
+      console.info('%cSave shader-graph <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "save-shader-graph",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('load-shader-graph', (e) => {
+      console.info('%cLoad shader-graph <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "load-shader-graph",
+        name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('delete-shader-graph', (e) => {
+      console.info('%cDelete shader-graph <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "delete-shader-graph",
+        name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('get-shader-graphs', () => {
+      console.info('%cget-shader-graphs <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "get-shader-graphs"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
     document.addEventListener('web.editor.addGlb', (e) => {
       console.log("%c[web.editor.addGlb]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {
@@ -273,5 +320,15 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('web.editor.update.useScale', (e) => {
+      console.log("%c[web.editor.update.useScale]: " + e.detail, LOG_FUNNY_ARCADE);
+      let o = {
+        action: "useScale",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 }

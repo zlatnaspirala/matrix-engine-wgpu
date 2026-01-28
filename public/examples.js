@@ -146,7 +146,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":43,"../src/engine/raycast.js":52,"../src/engine/utils.js":53,"../src/world.js":82}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":43,"../src/engine/raycast.js":52,"../src/engine/utils.js":53,"../src/world.js":87}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -200,6 +200,7 @@ function loadGLBLoader() {
           type: 'standard',
           useTextureFromGlb: true
         },
+        useScale: true,
         scale: [20, 20, 20],
         position: {
           x: 0,
@@ -215,6 +216,7 @@ function loadGLBLoader() {
           type: 'power',
           useTextureFromGlb: true
         },
+        useScale: true,
         scale: [20, 20, 20],
         position: {
           x: -40,
@@ -230,6 +232,7 @@ function loadGLBLoader() {
           type: 'pong',
           useTextureFromGlb: true
         },
+        useScale: true,
         scale: [20, 20, 20],
         position: {
           x: 40,
@@ -247,6 +250,7 @@ function loadGLBLoader() {
           type: 'normalmap',
           useTextureFromGlb: true
         },
+        useScale: true,
         scale: [20, 20, 20],
         position: {
           x: 0,
@@ -262,6 +266,7 @@ function loadGLBLoader() {
           type: 'power',
           useTextureFromGlb: true
         },
+        useScale: true,
         scale: [20, 20, 20],
         position: {
           x: -40,
@@ -277,6 +282,7 @@ function loadGLBLoader() {
           type: 'pong',
           useTextureFromGlb: true
         },
+        useScale: true,
         scale: [20, 20, 20],
         position: {
           x: 40,
@@ -292,6 +298,7 @@ function loadGLBLoader() {
           type: 'pong',
           useTextureFromGlb: true
         },
+        useScale: true,
         scale: [20, 20, 20],
         position: {
           x: 40,
@@ -344,7 +351,8 @@ function loadGLBLoader() {
           geometry: "Cube"
         }
       });
-      app.lightContainer[0].position[1] = 25;
+      app.lightContainer[0].position[1] = 35;
+      app.lightContainer[0].intensity = 20;
     }
   });
   // just for dev
@@ -353,7 +361,7 @@ function loadGLBLoader() {
 
 // loadGLBLoader()
 
-},{"../src/engine/loader-obj.js":43,"../src/engine/loaders/bvh.js":45,"../src/engine/loaders/webgpu-gltf.js":46,"../src/engine/utils.js":53,"../src/world.js":82}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":43,"../src/engine/loaders/bvh.js":45,"../src/engine/loaders/webgpu-gltf.js":46,"../src/engine/utils.js":53,"../src/world.js":87}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -501,7 +509,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":43,"../src/engine/utils.js":53,"../src/world.js":82}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":43,"../src/engine/utils.js":53,"../src/world.js":87}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -579,6 +587,7 @@ var loadObjsSequence = function () {
           y: 0,
           z: 0
         },
+        useScale: true,
         scale: [100, 100, 100],
         texturesPaths: ['./res/meshes/blender/swat.png'],
         name: 'swat',
@@ -637,7 +646,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":43,"../src/engine/utils.js":53,"../src/world.js":82}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":43,"../src/engine/utils.js":53,"../src/world.js":87}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -967,7 +976,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":43,"../src/engine/raycast.js":52,"../src/engine/utils.js":53,"../src/world.js":82}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":43,"../src/engine/raycast.js":52,"../src/engine/utils.js":53,"../src/world.js":87}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1031,7 +1040,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":82}],8:[function(require,module,exports){
+},{"../src/world.js":87}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1122,7 +1131,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":43,"../src/engine/raycast.js":52,"../src/engine/utils.js":53,"../src/world.js":82}],9:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":43,"../src/engine/raycast.js":52,"../src/engine/utils.js":53,"../src/world.js":87}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22019,6 +22028,7 @@ exports.physicsBodiesGeneratorPyramid = physicsBodiesGeneratorPyramid;
 exports.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower;
 exports.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall;
 exports.stabilizeTowerBody = stabilizeTowerBody;
+var _fluxCodexVertex = require("../../tools/editor/fluxCodexVertex");
 var _loaderObj = require("../loader-obj");
 // general function for stabilisation 
 function stabilizeTowerBody(body) {
@@ -22050,26 +22060,31 @@ function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, na
       radius: 1
     };
     for (var x = 0; x < sum; x++) {
-      setTimeout(() => engine.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: pos,
-        rotation: rot,
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: [texturePath],
-        name: name + '_' + x,
-        mesh: m.mesh,
-        physics: {
-          enabled: true,
-          geometry: geometry
-        },
-        raycast: RAY
-      }), x * delay);
+      setTimeout(() => {
+        engine.addMeshObj({
+          material: {
+            type: material
+          },
+          position: pos,
+          rotation: rot,
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturePath],
+          name: name + '_' + x,
+          mesh: m.mesh,
+          physics: {
+            enabled: true,
+            geometry: geometry
+          },
+          raycast: RAY
+        });
+        // cache
+        const o = app.getSceneObjectByName(cubeName);
+        _fluxCodexVertex.runtimeCacheObjs.push(o);
+      }, x * delay);
     }
   }
   if (geometry == "Cube") {
@@ -22138,6 +22153,9 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
           });
           // const b = app.matrixAmmo.getBodyByName(cubeName);
           // stabilizeTowerBody(b);
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          _fluxCodexVertex.runtimeCacheObjs.push(o);
         }, index * delay);
         index++;
       }
@@ -22159,7 +22177,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
  * @param {Array} scale
  * @param {number} spacing
  */
-function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2) {
+function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2, delay = 500) {
   const engine = this;
   const inputCube = {
     mesh: "./res/meshes/blender/cube.obj"
@@ -22175,31 +22193,36 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, textureP
       const xOffset = (rowCount - 1) * spacing * 0.5;
       for (let x = 0; x < rowCount; x++) {
         const cubeName = `${name}_${index}`;
-        engine.addMeshObj({
-          material: {
-            type: material
-          },
-          position: {
-            x: pos.x + x * spacing - xOffset,
-            y: pos.y + y * spacing,
-            z: pos.z
-          },
-          rotation: rot,
-          rotationSpeed: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          texturesPaths: [texturePath],
-          name: cubeName,
-          mesh: m.mesh,
-          physics: {
-            scale: scale,
-            enabled: true,
-            geometry: "Cube"
-          },
-          raycast: RAY
-        });
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: {
+              type: material
+            },
+            position: {
+              x: pos.x + x * spacing - xOffset,
+              y: pos.y + y * spacing,
+              z: pos.z
+            },
+            rotation: rot,
+            rotationSpeed: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            texturesPaths: [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              scale: scale,
+              enabled: true,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          _fluxCodexVertex.runtimeCacheObjs.push(o);
+        }, delay);
         index++;
       }
     }
@@ -22221,59 +22244,74 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, textureP
  * @param {number} spacing
  */
 function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
-  const engine = this;
-  const inputCube = {
-    mesh: "./res/meshes/blender/cube.obj"
-  };
-  function handler(m) {
-    let index = 0;
-    const RAY = {
-      enabled: !!raycast,
-      radius: 1
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = {
+      mesh: "./res/meshes/blender/cube.obj"
     };
-    for (let y = 0; y < levels; y++) {
-      const sizeX = levels - y; // shrink X
-      const sizeZ = levels - y; // shrink Z
-      const xOffset = (sizeX - 1) * spacing * 0.5;
-      const zOffset = (sizeZ - 1) * spacing * 0.5;
-      for (let x = 0; x < sizeX; x++) {
-        for (let z = 0; z < sizeZ; z++) {
-          const cubeName = `${name}_${index}`;
-          engine.addMeshObj({
-            material: {
-              type: material
-            },
-            position: {
-              x: pos.x + x * spacing - xOffset,
-              y: pos.y + y * spacing,
-              z: pos.z + z * spacing - zOffset
-            },
-            rotation: rot,
-            rotationSpeed: {
-              x: 0,
-              y: 0,
-              z: 0
-            },
-            texturesPaths: [texturePath],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          // Optional: stabilize tower-style
-          // const body = app.matrixAmmo.getBodyByName(cubeName);
-          // stabilizeTowerBody(body);
-          index++;
+    levels = parseFloat(levels);
+    function handler(m) {
+      let index = 0;
+      const totalCubes = levels * (levels + 1) * (2 * levels + 1) / 6;
+      const lastIndex = totalCubes - 1;
+      const RAY = {
+        enabled: !!raycast,
+        radius: 1
+      };
+      const objects = [];
+      for (let y = 0; y < levels; y++) {
+        const sizeX = levels - y;
+        const sizeZ = levels - y;
+        const xOffset = (sizeX - 1) * spacing * 0.5;
+        const zOffset = (sizeZ - 1) * spacing * 0.5;
+        for (let x = 0; x < sizeX; x++) {
+          for (let z = 0; z < sizeZ; z++) {
+            const cubeName = `${name}_${index}`;
+            const currentIndex = index;
+            setTimeout(() => {
+              engine.addMeshObj({
+                material: {
+                  type: material
+                },
+                position: {
+                  x: pos.x + x * spacing - xOffset,
+                  y: pos.y + y * spacing,
+                  z: pos.z + z * spacing - zOffset
+                },
+                rotation: rot,
+                rotationSpeed: {
+                  x: 0,
+                  y: 0,
+                  z: 0
+                },
+                texturesPaths: [texturePath],
+                name: cubeName,
+                mesh: m.mesh,
+                physics: {
+                  scale: scale,
+                  enabled: true,
+                  geometry: "Cube"
+                },
+                raycast: RAY
+              });
+              const b = app.matrixAmmo.getBodyByName(cubeName);
+              stabilizeTowerBody(b);
+              const o = app.getSceneObjectByName(cubeName);
+              _fluxCodexVertex.runtimeCacheObjs.push(o);
+              objects.push(o.name);
+              if (currentIndex === lastIndex) {
+                // console.log("Last cube added!");
+                resolve(objects);
+              }
+            }, delay * index);
+            index++;
+          }
         }
       }
     }
-  }
-  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
-    scale
+    (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+      scale
+    });
   });
 }
 function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePath, name = "towerCube", height = 10, raycast = false, scale = [1, 1, 1], spacing = 2) {
@@ -22288,33 +22326,38 @@ function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePat
     };
     for (let y = 0; y < height; y++) {
       const cubeName = `${name}_${y}`;
-      engine.addMeshObj({
-        material: {
-          type: material
-        },
-        position: {
-          x: pos.x,
-          y: pos.y + y * spacing,
-          z: pos.z
-        },
-        rotation: rot,
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: [texturePath],
-        name: cubeName,
-        mesh: m.mesh,
-        physics: {
-          scale: scale,
-          enabled: true,
-          geometry: "Cube"
-        },
-        raycast: RAY
-      });
-      const b = app.matrixAmmo.getBodyByName(cubeName);
-      stabilizeTowerBody(b);
+      setTimeout(() => {
+        engine.addMeshObj({
+          material: {
+            type: material
+          },
+          position: {
+            x: pos.x,
+            y: pos.y + y * spacing,
+            z: pos.z
+          },
+          rotation: rot,
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturePath],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            scale: scale,
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+        const b = app.matrixAmmo.getBodyByName(cubeName);
+        stabilizeTowerBody(b);
+        // cache
+        const o = app.getSceneObjectByName(cubeName);
+        _fluxCodexVertex.runtimeCacheObjs.push(o);
+      }, delay);
     }
   }
   (0, _loaderObj.downloadMeshes)(inputCube, handler, {
@@ -22322,7 +22365,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePat
   });
 }
 
-},{"../loader-obj":43}],39:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":84,"../loader-obj":43}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22647,6 +22690,7 @@ var _fragmentWgsl2 = require("../../shaders/fragment.wgsl.normalmap");
 var _fragmentWgsl3 = require("../../shaders/fragment.wgsl.pong");
 var _fragmentWgsl4 = require("../../shaders/fragment.wgsl.power");
 var _fragmentInstanced = require("../../shaders/instanced/fragment.instanced.wgsl");
+var _waterC = require("../../shaders/water/water-c.wgls");
 /**
  * @description
  * Created for matrix-engine-wgpu project.
@@ -22761,7 +22805,79 @@ class MaterialsInstanced {
         minFilter: 'linear'
       });
     }
+    this.createBufferForWater();
   }
+  createBufferForWater = () => {
+    // new water test
+    this.waterBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Water MAT Bind Group Layout for main pass',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.waterParamsBuffer = this.device.createBuffer({
+      size: 48,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.waterParamsData = new Float32Array([0.0, 0.2, 0.4,
+    // deepColor (vec3f)
+    0.5,
+    // waveSpeed
+    0.0, 0.5, 0.7,
+    // shallowColor (vec3f)
+    4.0,
+    // waveScale
+    0.15,
+    // waveHeight
+    3.0,
+    // fresnelPower
+    128.0,
+    // specularPower
+    0.0 // padding
+    ]);
+    this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    this.waterBindGroup = this.device.createBindGroup({
+      layout: this.waterBindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.waterParamsBuffer
+        }
+      }]
+    });
+    // To update values at runtime:
+    this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
+      const data = new Float32Array([deepColor[0], deepColor[1], deepColor[2], waveSpeed, shallowColor[0], shallowColor[1], shallowColor[2], waveScale, waveHeight, fresnelPower, specularPower, 0.0 // padding
+      ]);
+      device.queue.writeBuffer(waterParamsBuffer, 0, data);
+    };
+  };
+  changeTexture(newTexture) {
+    // Accept GPUTexture OR GPUTextureView
+    if (newTexture instanceof GPUTexture) {
+      this.texture0 = newTexture;
+    } else {
+      this.texture0 = {
+        createView: () => newTexture
+      };
+    }
+    this.isVideo = false;
+    // Recreate bind group only
+    this.createBindGroupForRender();
+  }
+  changeMaterial(newType = 'graph', graphShader) {
+    this.material.fromGraph = graphShader;
+    this.material.type = newType;
+    this.setupPipeline();
+  }
+  setBlend = alpha => {
+    this.material.useBlend = true;
+    this.setupMaterialPBR([1, 1, 1, alpha]);
+  };
   getMaterial() {
     // make it for all after all....
     if (this.material.type == 'standard') {
@@ -22774,9 +22890,13 @@ class MaterialsInstanced {
       return _fragmentWgsl.fragmentWGSLMetal;
     } else if (this.material.type == 'normalmap') {
       return _fragmentWgsl2.fragmentWGSLNormalMap;
+    } else if (this.material.type == 'water') {
+      return _waterC.fragmentWaterWGSL;
+    } else if (this.material.type == 'graph') {
+      return this.material.fromGraph;
     }
-    console.warn('Unknown material type:', this.material?.type);
-    return _fragment.fragmentWGSL; // fallback
+    console.warn('Unknown material type use standard:', this.material?.type);
+    return _fragment.fragmentWGSL;
   }
   getFormat() {
     if (this.material?.format == 'darker') {
@@ -22787,12 +22907,12 @@ class MaterialsInstanced {
       return 'rgba8unorm';
     }
   }
-  // not affect all fs
-  setupMaterialPBR(metallicFactor) {
-    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const roughnessFactor = 0.5; // some gloss
-    const pad = [0.0, 0.0];
-    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
+    if (!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
+    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    if (!roughnessFactor) roughnessFactor = 0.5;
+    const pad = [0.0];
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, 0.5, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
   updatePostFXMode(mode) {
@@ -22926,7 +23046,7 @@ class MaterialsInstanced {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind.");
+      console.log("%c✅video bind.", LOG_FUNNY_ARCADE);
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -23161,7 +23281,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":60,"../../shaders/fragment.wgsl.metal":61,"../../shaders/fragment.wgsl.normalmap":62,"../../shaders/fragment.wgsl.pong":63,"../../shaders/fragment.wgsl.power":64,"../../shaders/instanced/fragment.instanced.wgsl":65}],41:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":60,"../../shaders/fragment.wgsl.metal":61,"../../shaders/fragment.wgsl.normalmap":62,"../../shaders/fragment.wgsl.pong":63,"../../shaders/fragment.wgsl.power":64,"../../shaders/instanced/fragment.instanced.wgsl":65,"../../shaders/water/water-c.wgls":75}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23196,7 +23316,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
-    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -23212,7 +23331,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-    // console.log('Material class arg:', o.material)
+    if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
+      o.material.useBlend = false;
+    }
     this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
@@ -23231,7 +23352,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       //N
       const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
       const normalsUint8 = norView.buffer;
-      const byteOffsetN = norView.byteOffset || 0; // if your loader provides it
+      const byteOffsetN = norView.byteOffset || 0;
       const byteLengthN = normalsUint8.byteLength;
       const normals = new Float32Array(normalsUint8.buffer, byteOffsetN, byteLengthN / 4);
       this.mesh.vertexNormals = normals;
@@ -23239,7 +23360,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
       const bufferView = accessor.view;
       const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-      const count = accessor.count * 2; // VEC2 = 2 floats per vertex
+      const count = accessor.count * 2;
       const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
       this.mesh.textures = uvFloatArray;
@@ -23340,7 +23461,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
         this.mesh.tangentsBuffer.unmap();
       } else {
-        // 🟢 dummy fallback
+        // Dummy
         const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
         for (let i = 0; i < dummyTangents.length; i += 4) {
           dummyTangents[i + 0] = 1.0; // T = (1,0,0)
@@ -23361,7 +23482,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.mesh.uvs = this.mesh.textures;
     }
-    // console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -23525,7 +23645,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       // joint indices
       {
         arrayStride: 4 * 4,
-        // vec4<u32> = 4 * 4 bytes
         attributes: [{
           format: 'uint32x4',
           offset: 0,
@@ -23543,8 +23662,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
             offset: 0
           }]
         });
-      } else {
-        // for non glb - non skinned use basic shaders
       }
 
       // Note: The frontFace and cullMode values have no effect on the 
@@ -23762,9 +23879,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
-        entries: [
-        //
-        {
+        entries: [{
           binding: 0,
           resource: {
             buffer: this.modelUniformBuffer
@@ -23773,6 +23888,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           binding: 1,
           resource: {
             buffer: this.bonesBuffer
+          }
+        }, {
+          binding: 2,
+          resource: {
+            buffer: this.vertexAnimBuffer
           }
         }]
       });
@@ -23848,7 +23968,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
+        const sceneData = new Float32Array(48);
         // Light VP
         sceneData.set(spotLight.viewProjMatrix, 0);
         // Camera VP
@@ -23858,6 +23978,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         // Light position + padding
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        sceneData.set([this.time, dt, 0, 0], 44);
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
@@ -23875,17 +23996,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }
         return modelMatrix;
       };
-
-      // looks like affect on transformations for now const 0
-      // const modelMatrix = mat4.translation([0, 0, 0]);
-      // const modelData = modelMatrix;
-      // this.device.queue.writeBuffer(
-      //   this.modelUniformBuffer,
-      //   0,
-      //   modelData.buffer,
-      //   modelData.byteOffset,
-      //   modelData.byteLength
-      // );
       this.done = true;
       try {
         this.setupPipeline();
@@ -23976,18 +24086,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 
     // console.log('✅Pipelines done');
   };
-  updateModelUniformBuffer = () => {
-    // if(this.done == false) return;
-    // Per-object model matrix only
-    // const modelMatrix = this.getModelMatrix(this.position);
-    // this.device.queue.writeBuffer(
-    //   this.modelUniformBuffer,
-    //   0,
-    //   modelMatrix.buffer,
-    //   modelMatrix.byteOffset,
-    //   modelMatrix.byteLength
-    // );
-  };
+  updateModelUniformBuffer = () => {};
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid data array passed to createGPUBuffer');
@@ -24066,6 +24165,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
+    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -24109,6 +24209,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
+    pass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -24138,6 +24239,15 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if (this.joints) {
+      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+      } else {
+        shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
+        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      }
+    }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     if (this instanceof _bvhInstaced.BVHPlayerInstances) {
       shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
@@ -24186,12 +24296,13 @@ class SpotLight {
   outerCutoff;
   spotlightUniformBuffer;
   constructor(camera, inputHandler, device, indexx, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    aspect = 1; //hot fix
     this.name = "light" + indexx;
     this.getName = () => {
       return "light" + indexx;
     };
     this.fov = fov;
-    this.aspect = aspect;
+    this.aspect = 1;
     this.near = near;
     this.far = far;
     this.camera = camera;
@@ -24314,6 +24425,12 @@ class SpotLight {
         buffer: {
           type: 'uniform'
         }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
       }]
     });
     this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
@@ -24330,6 +24447,12 @@ class SpotLight {
         buffer: {
           type: 'uniform'
         }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
       }]
     });
     this.shadowPipeline = this.device.createRenderPipeline({
@@ -24342,14 +24465,55 @@ class SpotLight {
         module: this.device.createShaderModule({
           code: _vertexShadow.vertexShadowWGSL
         }),
-        buffers: [{
+        buffers: [
+        // @location(0) - position
+        {
           arrayStride: 12,
           // 3 * 4 bytes (vec3f)
           attributes: [{
             shaderLocation: 0,
-            // must match @location(0) in vertex shader
             offset: 0,
             format: "float32x3"
+          }]
+        },
+        // ✅ ADD @location(1) - normal
+        {
+          arrayStride: 12,
+          // 3 * 4 bytes (vec3f)
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x3"
+          }]
+        },
+        // ✅ ADD @location(2) - uv
+        {
+          arrayStride: 8,
+          // 2 * 4 bytes (vec2f)
+          attributes: [{
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32x2"
+          }]
+        },
+        // ✅ ADD @location(3) - joints
+        {
+          arrayStride: 16,
+          // 4 * 4 bytes (vec4<u32>)
+          attributes: [{
+            shaderLocation: 3,
+            offset: 0,
+            format: "uint32x4"
+          }]
+        },
+        // ✅ ADD @location(4) - weights
+        {
+          arrayStride: 16,
+          // 4 * 4 bytes (vec4f)
+          attributes: [{
+            shaderLocation: 4,
+            offset: 0,
+            format: "float32x4"
           }]
         }]
       },
@@ -24384,6 +24548,9 @@ class SpotLight {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
+        depthBias: 2,
+        // Constant bias (try 1-4)
+        depthBiasSlopeScale: 2.0,
         format: 'depth32float'
       },
       primitive: this.primitive
@@ -24742,11 +24909,11 @@ var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
   // a new object is created. this will be passed into the completionCallback
   if (typeof inputArg === 'undefined') {
     var inputArg = {
-      scale: [0.1, 0.1, 0.1],
+      scale: [1, 1, 1],
       swap: [null]
     };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = [0.1, 0.1, 0.1];
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = [1, 1, 1];
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
   var meshes = {};
 
@@ -24772,7 +24939,7 @@ var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
             }
             // there haven't been any errors in retrieving the meshes
             // call the callback
-            completionCallback(meshes);
+            completionCallback(meshes, inputArg.scale);
           }
         };
       }(mesh_name));
@@ -26599,6 +26766,8 @@ var _fragmentWgsl = require("../shaders/fragment.wgsl.metal");
 var _fragmentWgsl2 = require("../shaders/fragment.wgsl.normalmap");
 var _fragmentWgsl3 = require("../shaders/fragment.wgsl.pong");
 var _fragmentWgsl4 = require("../shaders/fragment.wgsl.power");
+var _waterC = require("../shaders/water/water-c.wgls");
+var _utils = require("./utils");
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -26675,9 +26844,10 @@ class Materials {
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const metallicFactor = 0.1; // diffuse like plastic
     const roughnessFactor = 0.5; // some gloss
-    const pad = [0.0, 0.0];
+    const alphaFactor = 0.8;
+    const pad = [0.0];
     // Pack into Float32Array
-    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, alphaFactor, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
     if (this.material.type == 'normalmap') {
       const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
@@ -26688,8 +26858,6 @@ class Materials {
           magFilter: 'linear',
           minFilter: 'linear'
         });
-      } else {
-        // console.log('>>>ERRR >>>normalTexture>>')
       }
     } else {
       // console.log('>DUMMY>normalTexture>')
@@ -26713,12 +26881,85 @@ class Materials {
         minFilter: 'linear'
       });
     }
+    this.createBufferForWater();
+  }
+  createBufferForWater = () => {
+    // new water test
+    this.waterBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Water MAT Bind Group Layout for main pass',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.waterParamsBuffer = this.device.createBuffer({
+      size: 48,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.waterParamsData = new Float32Array([0.0, 0.2, 0.4,
+    // deepColor (vec3f)
+    0.5,
+    // waveSpeed
+    0.0, 0.5, 0.7,
+    // shallowColor (vec3f)
+    4.0,
+    // waveScale
+    0.15,
+    // waveHeight
+    3.0,
+    // fresnelPower
+    128.0,
+    // specularPower
+    0.0 // padding
+    ]);
+    this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    this.waterBindGroup = this.device.createBindGroup({
+      layout: this.waterBindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.waterParamsBuffer
+        }
+      }]
+    });
+    this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
+      const data = new Float32Array([deepColor[0], deepColor[1], deepColor[2], waveSpeed, shallowColor[0], shallowColor[1], shallowColor[2], waveScale, waveHeight, fresnelPower, specularPower, 0.0 // padding
+      ]);
+      this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
+    };
+  };
+  createDummyTexture(device, size = 256) {
+    const data = new Uint8Array(size * size * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i + 0] = 0;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = 255;
+    }
+    const texture = device.createTexture({
+      size: [size, size],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    device.queue.writeTexture({
+      texture
+    }, data, {
+      bytesPerRow: size * 4
+    }, {
+      width: size,
+      height: size
+    });
+    return texture;
   }
 
   /**
-  * Change ONLY base color texture (binding = 3)
-  * Does NOT rebuild pipeline or layout
-  */
+   * @description 
+   * Change ONLY base color texture (binding = 3)
+   * Does NOT rebuild pipeline or layout
+   **/
   changeTexture(newTexture) {
     // Accept GPUTexture OR GPUTextureView
     if (newTexture instanceof GPUTexture) {
@@ -26732,6 +26973,15 @@ class Materials {
     // Recreate bind group only
     this.createBindGroupForRender();
   }
+  changeMaterial(newType = 'graph', graphShader) {
+    this.material.fromGraph = graphShader;
+    this.material.type = newType;
+    this.setupPipeline();
+  }
+  setBlend = alpha => {
+    this.material.useBlend = true;
+    this.setupMaterialPBR([1, 1, 1, alpha]);
+  };
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if (this.material.type == 'standard') {
@@ -26744,9 +26994,14 @@ class Materials {
       return _fragmentWgsl.fragmentWGSLMetal;
     } else if (this.material.type == 'normalmap') {
       return _fragmentWgsl2.fragmentWGSLNormalMap;
+    } else if (this.material.type == 'water') {
+      return _waterC.fragmentWaterWGSL;
+    } else if (this.material.type == 'graph') {
+      console.warn('Unknown material ???????????????:', this.material?.type);
+      return this.material.fromGraph;
     }
     console.warn('Unknown material type:', this.material?.type);
-    return _fragment.fragmentWGSL; // fallback
+    return _fragment.fragmentWGSL;
   }
   getFormat() {
     if (this.material?.format == 'darker') {
@@ -26757,44 +27012,18 @@ class Materials {
       return 'rgba8unorm';
     }
   }
-  // not affect all fs
-  setupMaterialPBR(metallicFactor) {
-    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const roughnessFactor = 0.5; // some gloss
-    const pad = [0.0, 0.0];
-    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
+    if (!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
+    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    if (!roughnessFactor) roughnessFactor = 0.5;
+    const pad = [0.0];
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, 0.5, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
   updatePostFXMode(mode) {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-
-  // async loadTex0(texturesPaths) {
-  //   this.sampler = this.device.createSampler({
-  //     magFilter: 'linear',
-  //     minFilter: 'linear',
-  //   });
-  //   return new Promise(async (resolve) => {
-  //     const response = await fetch(texturesPaths[0]);
-  //     const imageBitmap = await createImageBitmap(await response.blob());
-  //     this.texture0 = this.device.createTexture({
-  //       size: [imageBitmap.width, imageBitmap.height, 1], // REMOVED 1
-  //       format: this.getFormat(),
-  //       usage:
-  //         GPUTextureUsage.TEXTURE_BINDING |
-  //         GPUTextureUsage.COPY_DST |
-  //         GPUTextureUsage.RENDER_ATTACHMENT,
-  //     });
-  //     this.device.queue.copyExternalImageToTexture(
-  //       {source: imageBitmap},
-  //       {texture: this.texture0},
-  //       [imageBitmap.width, imageBitmap.height]
-  //     );
-  //     resolve()
-  //   })
-  // }
-
   async loadTex0(texturesPaths) {
     const path = texturesPaths[0];
     const {
@@ -26853,7 +27082,7 @@ class Materials {
       this.video = document.createElement('video');
       this.video.autoplay = true;
       this.video.muted = true;
-      this.video.playsInline = true;
+      this.video.crossOrigin = 'anonymous';
       this.video.style.display = 'none';
       document.body.append(this.video);
       const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
@@ -26865,33 +27094,50 @@ class Materials {
       await this.video.play();
       this.isVideo = true;
     } else if (arg.type === 'canvas2d-inline') {
+      // console.log('what is arg', arg);
       // Miniature inline-drawn canvas created dynamically
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+      canvas.style.position = 'absolute';
+      canvas.style.left = '-1000px';
+      canvas.style.top = '0';
+      // canvas.style.zIndex = '10000';
+      document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
       if (typeof arg.canvaInlineProgram === 'function') {
-        // Start drawing loop
         const drawLoop = () => {
-          arg.canvaInlineProgram(ctx, canvas);
+          ctx.save();
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+          ctx.restore();
           requestAnimationFrame(drawLoop);
         };
         drawLoop();
+      } else {
+        ctx.fillStyle = '#0ce325ff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       this.video = document.createElement('video');
+      this.video.style.position = 'absolute';
+      // this.video.style.zIndex = '1';
+      this.video.style.left = '0px';
+      this.video.style.top = '0';
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.style.display = 'none';
+      this.video.srcObject = canvas.captureStream(60);
       document.body.append(this.video);
-      this.isVideo = true;
-      const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
-      if (!stream) {
-        console.error('❌ Cannot capture stream from inline canvas');
-        return;
-      }
-      this.video.srcObject = stream;
       await this.video.play();
+      await new Promise(resolve => {
+        const check = () => {
+          if (this.video.readyState >= 2) resolve();else requestAnimationFrame(check);
+        };
+        check();
+      });
+      // console.log('Canvas video stream READY');
+      this.isVideo = true;
     }
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
@@ -26899,9 +27145,14 @@ class Materials {
     });
     // ✅ Now - maybe noT
     this.createLayoutForRender();
+    this.createBindGroupForRender();
+    // dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
+    if (!this.video || this.video.readyState < 2) {
+      // console.info('this.video.readyState', this.video.readyState)
+      return;
+    }
     if (!this.externalTexture) {
       // create it once
       this.externalTexture = this.device.importExternalTexture({
@@ -26909,7 +27160,7 @@ class Materials {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind.");
+      console.log("%c✅video bind.", _utils.LOG_FUNNY_ARCADE);
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -26947,7 +27198,7 @@ class Materials {
       textureResource = textureView;
     }
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
+      if (!textureResource) console.log("%c❗Missing res texture ", _utils.LOG_FUNNY_ARCADE);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
       // if(!this.shadowDepthTextureView) // console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
       if (typeof textureResource === 'undefined') {
@@ -27145,7 +27396,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":60,"../shaders/fragment.wgsl.metal":61,"../shaders/fragment.wgsl.normalmap":62,"../shaders/fragment.wgsl.pong":63,"../shaders/fragment.wgsl.power":64}],48:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":60,"../shaders/fragment.wgsl.metal":61,"../shaders/fragment.wgsl.normalmap":62,"../shaders/fragment.wgsl.pong":63,"../shaders/fragment.wgsl.power":64,"../shaders/water/water-c.wgls":75,"./utils":53}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27576,9 +27827,19 @@ class MEMeshObj extends _materials.default {
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-    // console.log('Material class arg:', o.material)
+    if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
+      o.material.useBlend = false;
+    }
+    this.useScale = o.useScale || false;
     this.material = o.material;
-
+    this.time = 0;
+    this.deltaTimeAdapter = 10;
+    this.updateTime = time => {
+      this.time += time * this.deltaTimeAdapter;
+    };
+    addEventListener('update-pipeine', () => {
+      this.setupPipeline();
+    });
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
@@ -27741,7 +28002,7 @@ class MEMeshObj extends _materials.default {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+    console.log(`%cMesh loaded: ${o.name}`, _utils.LOG_FUNNY_ARCADE);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -27995,10 +28256,10 @@ class MEMeshObj extends _materials.default {
       });
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
-        size: 176,
+        size: 192,
+        //192, // ⬅️ was 176
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh regular',
         entries: [{
@@ -28013,10 +28274,14 @@ class MEMeshObj extends _materials.default {
           buffer: {
             type: 'uniform'
           }
+        }, {
+          binding: 2,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
         }]
       });
-
-      // dummy for non skin mesh like this class
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
@@ -28033,6 +28298,39 @@ class MEMeshObj extends _materials.default {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+
+      // -- vertex hader anim part
+      this.vertexAnimParams = new Float32Array([0.0,
+      // time
+      0.0,
+      // enabled (START DISABLED)
+      2.0,
+      // waveSpeed
+      0.1,
+      // waveAmplitude
+      2.0,
+      // waveFrequency
+      1.0,
+      // noiseScale
+      0.05,
+      // noiseStrength
+      0.0 // padding
+      ]);
+      this.vertexAnimBuffer = this.device.createBuffer({
+        label: "Vertex Animation Params",
+        size: this.vertexAnimParams.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      // Simple toggle functions
+      this.enableVertexAnim = () => {
+        this.vertexAnimParams[1] = 1.0;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      };
+      this.disableVertexAnim = () => {
+        this.vertexAnimParams[1] = 0.0;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      };
+      //
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
@@ -28045,6 +28343,11 @@ class MEMeshObj extends _materials.default {
           binding: 1,
           resource: {
             buffer: this.bonesBuffer
+          }
+        }, {
+          binding: 2,
+          resource: {
+            buffer: this.vertexAnimBuffer
           }
         }]
       });
@@ -28074,7 +28377,6 @@ class MEMeshObj extends _materials.default {
       }
       // end
 
-      // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -28082,7 +28384,7 @@ class MEMeshObj extends _materials.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
+        const sceneData = new Float32Array(48);
         // Light VP
         sceneData.set(spotLight.viewProjMatrix, 0);
         // Camera VP
@@ -28092,7 +28394,9 @@ class MEMeshObj extends _materials.default {
         // Light position + padding
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        sceneData.set([this.time, dt, 0, 0], 44);
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, new Float32Array([this.time]));
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -28133,25 +28437,26 @@ class MEMeshObj extends _materials.default {
   setupPipeline = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
-      label: 'Mesh Pipeline ✅',
+      label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout Mesh',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout]
+        label: 'PipelineLayout Opaque',
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout, this.waterBindGroupLayout]
       }),
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.material.type == 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL
+          code: this.material.type === 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL
         }),
         buffers: this.vertexBuffers
       },
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
+          code: this.isVideo === true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
         }),
         targets: [{
-          format: 'rgba16float' //this.presentationFormat,
+          format: 'rgba16float',
+          blend: undefined
         }],
         constants: {
           shadowDepthTextureSize: this.shadowDepthTextureSize
@@ -28164,12 +28469,60 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    // console.log('✅Set Pipeline done');
+    // TRANSPARENT
+    this.pipelineTransparent = this.device.createRenderPipeline({
+      label: 'Main [Mesh] Pipeline ✅[Transparent]',
+      layout: this.device.createPipelineLayout({
+        label: 'Main PipelineLayout Transparent',
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout, this.waterBindGroupLayout]
+      }),
+      vertex: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: this.material.type === 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL
+        }),
+        buffers: this.vertexBuffers
+      },
+      fragment: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: this.isVideo === true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
+        }),
+        targets: [{
+          format: 'rgba16float',
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }],
+        constants: {
+          shadowDepthTextureSize: this.shadowDepthTextureSize
+        }
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less',
+        format: 'depth24plus'
+      },
+      primitive: this.primitive
+    });
+    // console.log('✅Set Pipelines done');
+  };
+  getMainPipeline = () => {
+    return this.pipeline;
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, true);
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
   createGPUBuffer(dataArray, usage) {
@@ -28242,11 +28595,10 @@ class MEMeshObj extends _materials.default {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-
-    // probably no need i forgot on ambient - very similar
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
+    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -28287,6 +28639,7 @@ class MEMeshObj extends _materials.default {
     if (this.selectedBindGroup) {
       renderPass.setBindGroup(2, this.selectedBindGroup);
     }
+    renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -28320,10 +28673,12 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    shadowPass.setVertexBuffer(3, this.joints.buffer);
+    shadowPass.setVertexBuffer(4, this.weights.buffer);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
-  destroy() {
+  destroy = () => {
     if (this._destroyed) return;
     this._destroyed = true;
 
@@ -28369,8 +28724,18 @@ class MEMeshObj extends _materials.default {
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
+    let testPB = app.matrixAmmo.getBodyByName(this.name);
+    if (testPB !== null) {
+      try {
+        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        // global fix later
+        console.warn("Physics cleanup done for ", this.name);
+      } catch (e) {
+        console.warn("Physics cleanup error:", e);
+      }
+    }
     console.info(`🧹 MEMeshObj destroyed: ${this.name}`);
-  }
+  };
 }
 exports.default = MEMeshObj;
 
@@ -28396,19 +28761,21 @@ class METoolTip {
     tooltip.style.opacity = '0';
     tooltip.style.transition = 'opacity 0.2s ease';
     tooltip.style.zIndex = '9999';
+    tooltip.style.whiteSpace = 'pre-line';
     document.body.appendChild(tooltip);
+    this.tooltip = tooltip;
   }
   attachTooltip(element, text) {
     element.addEventListener('mouseenter', e => {
-      tooltip.textContent = text;
-      tooltip.style.opacity = '1';
+      this.tooltip.textContent = text;
+      this.tooltip.style.opacity = '1';
     });
     element.addEventListener('mousemove', e => {
-      tooltip.style.left = e.clientX + 12 + 'px';
-      tooltip.style.top = e.clientY + 12 + 'px';
+      this.tooltip.style.left = e.clientX + 12 + 'px';
+      this.tooltip.style.top = e.clientY + 12 + 'px';
     });
     element.addEventListener('mouseleave', () => {
-      tooltip.style.opacity = '0';
+      this.tooltip.style.opacity = '0';
     });
   }
 }
@@ -29040,7 +29407,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_ARCADE = exports.LOG_FUNNY = exports.LOGO_FRAMES = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -29522,42 +29889,131 @@ var scriptManager = exports.scriptManager = {
 };
 
 // GET PULSE VALUES IN REAL TIME
-function OSCILLATOR(min, max, step) {
-  if ((typeof min === 'string' || typeof min === 'number') && (typeof max === 'string' || typeof max === 'number') && (typeof step === 'string' || typeof step === 'number')) {
-    var ROOT = this;
-    this.min = parseFloat(min);
-    this.max = parseFloat(max);
-    this.step = parseFloat(step);
-    this.value_ = parseFloat(min);
-    this.status = 0;
-    this.on_maximum_value = function () {};
-    this.on_minimum_value = function () {};
-    this.UPDATE = function (STATUS_) {
-      if (STATUS_ === undefined) {
-        if (this.status == 0 && this.value_ < this.max) {
-          this.value_ = this.value_ + this.step;
+function OSCILLATOR(min, max, step, options) {
+  if (min == null || max == null || step == null) {
+    console.log("OSCILLATOR ERROR");
+    return;
+  }
+  var ROOT = this;
+
+  // ---- core values ----
+  this.min0 = parseFloat(min);
+  this.max0 = parseFloat(max);
+  this.min = this.min0;
+  this.max = this.max0;
+  this.step = parseFloat(step);
+  this.value_ = this.min;
+  this.status = 0; // 0 up, 1 down
+
+  // ---- options ----
+  options = options || {};
+  this.regime = options.regime || "pingpong";
+  this.resist = parseFloat(options.resist) || 0; // 0 = infinite
+  this.resistMode = options.resistMode || "linear"; // linear | exp
+  this.stopEpsilon = options.stopEpsilon || 0; // 0 = never stop
+  this.useDelta = options.useDelta || false;
+
+  // ---- events ----
+  this.on_maximum_value = function () {};
+  this.on_minimum_value = function () {};
+  this.on_stop = function () {};
+
+  // ---- helpers ----
+  this._applyResist = function () {
+    if (this.resist <= 0) return;
+    var range = this.max - this.min;
+    if (range <= 0) return;
+    var shrink;
+    if (this.resistMode === "exp") {
+      shrink = range * this.resist;
+    } else {
+      shrink = (this.max0 - this.min0) * this.resist;
+    }
+    this.min += shrink;
+    this.max -= shrink;
+    if (this.min > this.max) {
+      var c = (this.min + this.max) * 0.5;
+      this.min = this.max = c;
+    }
+  };
+
+  // ---- UPDATE ----
+  this.UPDATE = function (delta) {
+    var s = this.step;
+    if (this.useDelta && delta !== undefined) {
+      s = s * delta;
+    }
+    // ---------- REGIMES ----------
+    switch (this.regime) {
+      // ===== PING-PONG =====
+      case "pingpong":
+        if (this.status === 0) {
+          this.value_ += s;
           if (this.value_ >= this.max) {
             this.value_ = this.max;
             this.status = 1;
             ROOT.on_maximum_value();
           }
-          return this.value_;
-        } else if (this.status == 1 && this.value_ > this.min) {
-          this.value_ = this.value_ - this.step;
+        } else {
+          this.value_ -= s;
           if (this.value_ <= this.min) {
             this.value_ = this.min;
             this.status = 0;
+            this._applyResist();
             ROOT.on_minimum_value();
           }
-          return this.value_;
         }
-      } else {
-        return this.value_;
+        break;
+
+      // ===== ONLY MIN → MAX =====
+      case "onlyFromMinToMax":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.min;
+          this._applyResist();
+          ROOT.on_maximum_value();
+        }
+        break;
+
+      // ===== MAX → MIN =====
+      case "fromMaxToMin":
+        this.value_ -= s;
+        if (this.value_ <= this.min) {
+          this.value_ = this.max;
+          this._applyResist();
+          ROOT.on_minimum_value();
+        }
+        break;
+
+      // ===== ONE SHOT =====
+      case "oneShot":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.max;
+          ROOT.on_stop();
+        }
+        break;
+
+      // ===== SPRING TO CENTER =====
+      case "springCenter":
+        var center = (this.min + this.max) * 0.5;
+        var force = (center - this.value_) * this.resist;
+        this.value_ += force + s;
+        if (Math.abs(center - this.value_) < this.stopEpsilon) {
+          this.value_ = center;
+          ROOT.on_stop();
+        }
+        break;
+    }
+
+    // ---- AUTO STOP ----
+    if (this.stopEpsilon > 0) {
+      if (this.max - this.min < this.stopEpsilon) {
+        ROOT.on_stop();
       }
-    };
-  } else {
-    console.log("OSCILLATOR ERROR");
-  }
+    }
+    return this.value_;
+  };
 }
 
 // this is class not func ecma5
@@ -29725,8 +30181,14 @@ function quaternion_rotation_matrix(Q) {
 const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
 const LOG_MATRIX = exports.LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
-const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
 const LOG_FUNNY_SMALL = exports.LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
+const LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_TERMINAL = "font-family: monospace; font-size:15px; font-weight:bold;" + "color:#33ff33;" + "text-shadow: 2px 2px 0 #003300;" + "background:#000; padding:10px 14px;";
+const LOG_FUNNY_ARCADE = exports.LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;" + "color:#ffffff;" + "text-shadow: 2px 2px 6px #000;" + "background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+const LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;" + "color:#ffffff;" + "text-shadow: 2px 2px 6px #000;" + "background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+const LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
+const LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
+const LOGO_FRAMES = exports.LOGO_FRAMES = [` M                 `, ` MA                 `, ` MAT                `, ` MATR               `, ` MATRI              `, ` MATRIX             `, ` MATRIX-E           `, ` MATRIX-ENG         `, ` MATRIX-ENGI        `, ` MATRIX-ENGIN       `, ` MATRIX-ENGINE      `, ` MATRIX-ENGINE-     `, ` MATRIX-ENGINE-W    `, ` MATRIX-ENGINE-WG   `, ` MATRIX-ENGINE-WGPU `];
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -30088,7 +30550,7 @@ class MultiLang {
   loadMultilang = async function (lang = 'en') {
     if (lang == 'rs') lang = 'sr'; // exc
     lang = 'res/multilang/' + lang + '.json';
-    console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
+    console.info(`%cMultilang: ${lang}`, _utils.LOG_FUNNY_ARCADE);
     try {
       const r = await fetch(lang, {
         headers: {
@@ -30116,7 +30578,9 @@ var _utils = require("../engine/utils");
 class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-    _utils.scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs", undefined, undefined, this.init);
+
+    // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
+    _utils.scriptManager.LOAD("ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
     this.speedUpSimulation = 1;
@@ -30128,7 +30592,7 @@ class MatrixAmmo {
       this.rigidBodies = [];
       this.Ammo = Ammo;
       this.lastUpdate = 0;
-      console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
+      console.log("%c Ammo core loaded.", _utils.LOG_FUNNY_ARCADE);
       this.initPhysics();
       // simulate async
       setTimeout(() => {
@@ -30243,12 +30707,12 @@ class MatrixAmmo {
     this.rigidBodies.push(body);
     return body;
   }
-  setBodyVelocity(body, x, y, z) {
+  setBodyVelocity = (body, x, y, z) => {
     var tbv30 = new Ammo.btVector3();
     tbv30.setValue(x, y, z);
     body.setLinearVelocity(tbv30);
-  }
-  setKinematicTransform(body, x, y, z, rx, ry, rz) {
+  };
+  setKinematicTransform = (body, x, y, z, rx, ry, rz) => {
     if (typeof rx == 'undefined') {
       var rx = 0;
     }
@@ -30278,8 +30742,8 @@ class MatrixAmmo {
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-  }
-  getBodyByName(name) {
+  };
+  getBodyByName = name => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if (item.name == name) {
@@ -30287,8 +30751,8 @@ class MatrixAmmo {
       }
     });
     return b;
-  }
-  getNameByBody(body) {
+  };
+  getNameByBody = body => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if (item.kB == body.kB) {
@@ -30296,8 +30760,8 @@ class MatrixAmmo {
       }
     });
     return b;
-  }
-  deactivatePhysics(body) {
+  };
+  deactivatePhysics = body => {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
     // 1. Remove from world
@@ -30318,7 +30782,7 @@ class MatrixAmmo {
     this.matrixAmmo.dynamicsWorld.addRigidBody(body);
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
-  }
+  };
   detectCollision() {
     // console.log('override this')
     return;
@@ -30759,6 +31223,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -30791,6 +31258,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -30823,7 +31291,12 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = mrTex.b * material.metallicFactor;
     let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    
+    // ✅ Get alpha from texture and material factor
+    // let alpha = texColor.a * material.baseColorFactor.a;
+    let alpha = material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -30865,7 +31338,6 @@ fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mater
         return vec3f(0.0);
     }
     return material.baseColor * light.color * light.intensity * NdotL;
-    // return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
@@ -30876,7 +31348,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let epsilon = light.innerCutoff - light.outerCutoff;
     var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    // coneAtten = 1.0;
     if (coneAtten <= 0.0 || NdotL <= 0.0) {
         return vec3f(0.0);
     }
@@ -30906,7 +31377,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let diffuse = kD * material.baseColor.rgb / PI;
 
     let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
     return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
@@ -30936,8 +31406,13 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    // ✅ now we declare materialData
+    // ✅ Get material with alpha
     let materialData = getPBRMaterial(input.uv);
+    
+    // ✅ Early discard for fully transparent pixels (alpha cutoff)
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
 
     var lightContribution = vec3f(0.0);
 
@@ -30950,7 +31425,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let lightDir = normalize(spotlights[i].position - input.fragPos);
         let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        // let visibility = 1.0;
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
@@ -30967,7 +31441,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         finalColor += glowColor * fresnel * 0.1;
     }
 
-    return vec4f(finalColor, 1.0);
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // ✅ Return color with alpha from material
+    return vec4f(finalColor, alpha);
 }`;
 
 },{}],61:[function(require,module,exports){
@@ -30989,6 +31465,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -31021,6 +31500,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,  // ✅ Added alpha
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -31048,11 +31528,11 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let texColor = textureSample(meshTexture, meshSampler, uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    // let metallic = mrTex.b * material.metallicFactor;
-    // let roughness = mrTex.g * material.roughnessFactor;
     let metallic = material.metallicFactor;
     let roughness = material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    // ✅ Get alpha from texture and material factor
+    let alpha = texColor.a * material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -31108,45 +31588,48 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let materialData = getPBRMaterial(input.uv);
+    
+    // ✅ Early discard for fully transparent pixels
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
+    
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
-   var Lo = vec3f(0.0);
-  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-    let L = normalize(spotlights[i].position - input.fragPos);
-    let H = normalize(V + L);
-    let distance = length(spotlights[i].position - input.fragPos);
-    let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+    var Lo = vec3f(0.0);
+    
+    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let L = normalize(spotlights[i].position - input.fragPos);
+        let H = normalize(V + L);
+        let distance = length(spotlights[i].position - input.fragPos);
+        let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
 
-    let NdotL = max(dot(N, L), 0.0);
+        let NdotL = max(dot(N, L), 0.0);
 
-    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
 
-    let NDF = distributionGGX(N, H, materialData.roughness);
-    let G   = geometrySmith(N, V, L, materialData.roughness);
-    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+        let NDF = distributionGGX(N, H, materialData.roughness);
+        let G   = geometrySmith(N, V, L, materialData.roughness);
+        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+        let kS = F;
+        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
 
-    let diffuse  = kD * materialData.baseColor / PI;
-    let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+        let diffuse  = kD * materialData.baseColor / PI;
+        let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
 
-    // Combine diffuse + specular and multiply by NdotL and radiance
-    Lo += (diffuse + specular) * radiance * NdotL;
-}
+        // Combine diffuse + specular and multiply by NdotL and radiance
+        Lo += (diffuse + specular) * radiance * NdotL;
+    }
 
-let ambient = scene.globalAmbient * materialData.baseColor;
-var color = ambient + Lo;
-return vec4f(color, 1.0);
+    let ambient = scene.globalAmbient * materialData.baseColor;
+    var color = ambient + Lo;
+    
+    // ✅ Return color with alpha from material
+    return vec4f(color, materialData.alpha);
 }
 `;
-
-// let N = normalize(input.fragNorm);
-// let L = normalize(spotlights[0].position - input.fragPos);
-// let NdotL = max(dot(N,L),0.0);
-// let radiance = spotlights[0].color * 10.0; // test high intensity
-// Lo += materialData.baseColor * radiance * NdotL;
 
 },{}],62:[function(require,module,exports){
 "use strict";
@@ -31168,6 +31651,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -31413,6 +31899,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -31632,6 +32121,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {
@@ -31833,6 +32325,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -31866,7 +32359,12 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = mrTex.b * material.metallicFactor;
     let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+    
+    // ✅ Get alpha from texture and material factor
+    // let alpha = texColor.a * material.baseColorFactor.a;
+    let alpha = material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -31982,6 +32480,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // ✅ now we declare materialData
     let materialData = getPBRMaterial(input.uv);
 
+    // ✅ Early discard for fully transparent pixels (alpha cutoff)
+    if (materialData.alpha < 0.01) {
+        discard;
+    }
+
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -32013,7 +32516,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         finalColor += glowColor * fresnel * 0.1;
     }
 
-    let alpha = input.colorMult.a; // use alpha for blending
+    // let alpha = input.colorMult.a; // use alpha for blending
+    // return vec4f(finalColor, alpha);
+
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // ✅ Return color with alpha from material
     return vec4f(finalColor, alpha);
 }`;
 
@@ -32479,6 +32986,75 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
     return SkinResult(skinnedPos, skinnedNorm);
 }
 
+// Add to your uniform structs at the top
+struct VertexAnimParams {
+  time: f32,
+  enabled: f32,  // 0.0 = OFF, 1.0 = ON
+  waveSpeed: f32,
+  waveAmplitude: f32,
+  waveFrequency: f32,
+  noiseScale: f32,
+  noiseStrength: f32,
+  _padding: f32,
+}
+
+@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+
+// Basic wave function - good starting point
+fn applyWave(pos: vec3f, time: f32) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed) * 
+             cos(pos.z * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+// Simple noise function (you can replace with texture sampling later)
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+// Apply noise-based displacement
+fn applyNoiseDisplacement(pos: vec3f, time: f32) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + time * 0.5);
+  let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
+  return vec3f(pos.x, pos.y + displacement, pos.z);
+}
+
+// Combined vertex animation function
+fn applyVertexAnimation(pos: vec3f, normal: vec3f, time: f32) -> SkinResult {
+  var animatedPos = pos;
+  var animatedNorm = normal;
+  
+  // Apply wave
+  animatedPos = applyWave(animatedPos, time);
+  
+  // Apply noise on top
+  animatedPos = applyNoiseDisplacement(animatedPos, time);
+  
+  // Recalculate normal for proper lighting (approximate)
+  let offset = 0.01;
+  let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0), time), time);
+  let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset), time), time);
+  
+  let tangentX = normalize(posX - animatedPos);
+  let tangentZ = normalize(posZ - animatedPos);
+  animatedNorm = normalize(cross(tangentZ, tangentX));
+  
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
+}
+
 @vertex
 fn main(
   @location(0) position: vec3f,
@@ -32490,18 +33066,33 @@ fn main(
   var output : VertexOutput;
   var pos = vec4(position, 1.0);
   var nrm = normal;
+  
+  // Apply skinning first
   let skinned = skinVertex(pos, nrm, joints, weights);
-  let worldPos = model.modelMatrix * skinned.position;
+  
+  var finalPos = skinned.position.xyz;
+  var finalNorm = skinned.normal;
+  
+  // Only apply animation if enabled > 0.5 (simple check)
+  if (vertexAnim.enabled > 0.5) {
+    let animated = applyVertexAnimation(finalPos, finalNorm, vertexAnim.time);
+    finalPos = animated.position.xyz;
+    finalNorm = animated.normal;
+  }
+  
+  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
+  
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm = normalize(normalMatrix * skinned.normal);
+  output.fragNorm = normalize(normalMatrix * finalNorm);
   output.uv = uv;
+  
   return output;
 }`;
 
@@ -32623,7 +33214,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexShadowWGSL = void 0;
-let vertexShadowWGSL = exports.vertexShadowWGSL = `struct Scene {
+let vertexShadowWGSL = exports.vertexShadowWGSL = `
+const MAX_BONES = 100u;
+
+struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
   lightPos: vec3f,
@@ -32633,18 +33227,447 @@ struct Model {
   modelMatrix: mat4x4f,
 }
 
+struct Bones {
+  boneMatrices : array<mat4x4f, MAX_BONES>
+}
+
+struct VertexAnimParams {
+  time: f32,
+  enabled: f32,
+  waveSpeed: f32,
+  waveAmplitude: f32,
+  waveFrequency: f32,
+  noiseScale: f32,
+  noiseStrength: f32,
+  _padding: f32,
+}
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
+@group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+
+struct SkinResult {
+  position : vec4f,
+  normal   : vec3f,
+};
+
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+    var skinnedPos = vec4f(0.0);
+    var skinnedNorm = vec3f(0.0);
+    
+    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+        let jointIndex = joints[i];
+        let w = weights[i];
+        if (w > 0.0) {
+          let boneMat = bones.boneMatrices[jointIndex];
+          skinnedPos  += (boneMat * pos) * w;
+          let boneMat3 = mat3x3f(
+            boneMat[0].xyz,
+            boneMat[1].xyz,
+            boneMat[2].xyz
+          );
+          skinnedNorm += (boneMat3 * nrm) * w;
+        }
+    }
+    
+    return SkinResult(skinnedPos, skinnedNorm); // ✅ ADD THIS
+}
+
+// ✅ COPY YOUR ANIMATION FUNCTIONS FROM MAIN SHADER
+fn applyWave(pos: vec3f, time: f32) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed) * 
+             cos(pos.z * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+fn applyNoiseDisplacement(pos: vec3f, time: f32) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + time * 0.5);
+  let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
+  return vec3f(pos.x, pos.y + displacement, pos.z);
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f, time: f32) -> SkinResult {
+  var animatedPos = pos;
+  var animatedNorm = normal;
+  
+  animatedPos = applyWave(animatedPos, time);
+  animatedPos = applyNoiseDisplacement(animatedPos, time);
+  
+  // For shadows we might not need perfect normals, but keep it consistent
+  let offset = 0.01;
+  let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0), time), time);
+  let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset), time), time);
+  
+  let tangentX = normalize(posX - animatedPos);
+  let tangentZ = normalize(posZ - animatedPos);
+  animatedNorm = normalize(cross(tangentZ, tangentX));
+  
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
+}
 
 @vertex
 fn main(
-  @location(0) position: vec3f
+  @location(0) position: vec3f,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f,
+  @location(3) joints: vec4<u32>,
+  @location(4) weights: vec4<f32>
 ) -> @builtin(position) vec4f {
-  return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
+  var pos = vec4(position, 1.0);
+  var nrm = normal;
+  let skinned = skinVertex(pos, nrm, joints, weights);
+  var finalPos = skinned.position.xyz;
+  if (vertexAnim.enabled > 0.5) {
+    let animated = applyVertexAnimation(finalPos, vec3f(0.0, 1.0, 0.0), vertexAnim.time);
+    finalPos = animated.position.xyz;
+  }
+  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
+  return scene.lightViewProjMatrix * worldPos;
 }
 `;
 
 },{}],75:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentWaterWGSL = void 0;
+let fragmentWaterWGSL = exports.fragmentWaterWGSL = `
+/* === Engine uniforms === */
+
+// DINAMIC GLOBALS
+const PI: f32 = 3.141592653589793;
+override shadowDepthTextureSize: f32 = 1024.0;
+
+// DINAMIC STRUCTS
+
+
+// PREDEFINED
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+// PREDEFINED
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+// PREDEFINED
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+// PREDEFINED
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+// PREDEFINED
+const MAX_SPOTLIGHTS = 20u;
+
+// PREDEFINED
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// ✅ Graph custom uniforms
+struct WaterParams {
+    deepColor     : vec3f,
+    waveSpeed     : f32,
+    shallowColor  : vec3f,
+    waveScale     : f32,
+    waveHeight    : f32,
+    fresnelPower  : f32,
+    specularPower : f32,
+    _pad1         : f32,
+};
+
+@group(3) @binding(0) var<uniform> waterParams: WaterParams;
+
+// ✅ Graph custom functions
+
+// Gerstner wave function for realistic water waves
+fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, time: f32) -> vec3f {
+    let k = 2.0 * PI / wavelength;
+    let c = sqrt(9.8 / k);
+    let d = normalize(direction);
+    let f = k * (dot(d, pos) - c * time);
+    let a = steepness / k;
+    
+    return vec3f(
+        d.x * a * cos(f),
+        a * sin(f),
+        d.y * a * cos(f)
+    );
+}
+
+// Simpler sine wave for smoother animation
+fn sineWave(pos: vec2f, direction: vec2f, amplitude: f32, frequency: f32, time: f32) -> vec3f {
+    let d = normalize(direction);
+    let phase = dot(d, pos) * frequency - time;
+    
+    return vec3f(
+        d.x * amplitude * cos(phase),
+        amplitude * sin(phase),
+        d.y * amplitude * cos(phase)
+    );
+}
+
+// Calculate water normal from multiple waves
+fn calculateWaterNormal(worldPos: vec3f, time: f32) -> vec3f {
+    let pos = worldPos.xz * waterParams.waveScale;
+    let t = time * waterParams.waveSpeed;
+    
+    // Use smoother sine waves instead of Gerstner for better animation
+    let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
+    let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
+    let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
+    let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
+    
+    // Sum waves
+    let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
+    
+    // Calculate tangent vectors using small step size
+    let eps = 0.1;
+    let posX = worldPos + vec3f(eps, 0.0, 0.0);
+    let posZ = worldPos + vec3f(0.0, 0.0, eps);
+    
+    let offsetX = (
+        sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+        sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+    ) * waterParams.waveHeight;
+    
+    let offsetZ = (
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+        sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+    ) * waterParams.waveHeight;
+    
+    let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
+    let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
+    
+    return normalize(cross(tangentZ, tangentX));
+}
+
+// Fresnel effect for water reflections
+fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
+}
+
+// PREDEFINED Fragment input
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// PREDEFINED PBR helpers
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    // Calculate animated water normal
+    let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
+    
+    // View direction
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+    
+    // Fresnel effect (0 = looking straight down, 1 = grazing angle)
+    let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+    
+    // Light direction
+    let lightDir = normalize(scene.lightPos - input.fragPos);
+    
+    // Diffuse lighting
+    let diff = max(dot(waterNormal, lightDir), 0.0);
+    
+    // Specular (sun reflection on water)
+    let halfDir = normalize(lightDir + viewDir);
+    let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+    
+    // Mix deep and shallow water colors based on fresnel
+    let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+    
+    // Enhanced lighting for more visible effect
+    let ambient = scene.globalAmbient * waterColor * 0.3;
+    let diffuse = diff * waterColor * 1.2;
+    let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
+    
+    // Enhanced foam on wave peaks
+    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+    
+    // Add some caustics-like effect based on waves
+    let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
+                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+    let causticsColor = waterColor * caustics;
+    
+    // Final color with enhanced effects
+    let finalColor = ambient + diffuse + specular + foam + causticsColor;
+    
+    // MUCH more transparent - alpha between 0.2 and 0.5
+    let alpha = mix(0.2, 0.5, fresnel);
+    
+    // Make the color more vibrant so it's visible even when transparent
+    let vibrantColor = finalColor * 1.5;
+    
+    return vec4f(vibrantColor, alpha);
+}`;
+
+},{}],76:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MatrixMusicAsset = exports.AudioAssetManager = void 0;
+class AudioAssetManager {
+  constructor() {
+    this.assets = new Map();
+    this.loading = new Map();
+  }
+  load(path, options = {}) {
+    if (this.assets.has(path)) {
+      return Promise.resolve(this.assets.get(path));
+    }
+    if (this.loading.has(path)) {
+      return this.loading.get(path);
+    }
+    const asset = new MatrixMusicAsset({
+      path,
+      ...options
+    });
+    const promise = asset.init().then(a => {
+      this.assets.set(path, a);
+      this.loading.delete(path);
+      return a;
+    });
+    this.loading.set(path, promise);
+    return promise;
+  }
+}
+exports.AudioAssetManager = AudioAssetManager;
+class MatrixMusicAsset {
+  constructor({
+    path,
+    autoplay = true,
+    containerId = null
+  }) {
+    this.path = path;
+    this.autoplay = autoplay;
+    this.containerId = containerId;
+    this.audio = null;
+    this.ctx = null;
+    this.source = null;
+    this.gain = null;
+    this.filter = null;
+    this.analyser = null;
+    this.frequencyData = null;
+    this.ready = false;
+  }
+  async init() {
+    this.audio = document.createElement("audio");
+    this.audio.id = this.path;
+    this.audio.src = `res/audios/${this.path}`;
+    this.audio.autoplay = this.autoplay;
+    this.audio.playsInline = true;
+    this.audio.controls = true;
+    (this.containerId ? document.getElementById(this.containerId) : document.body)?.appendChild(this.audio);
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AudioCtx();
+    if (this.ctx.state === "suspended") {
+      await this.ctx.resume();
+    }
+    this.source = this.ctx.createMediaElementSource(this.audio);
+    this.gain = this.ctx.createGain();
+    this.filter = this.ctx.createBiquadFilter();
+    this.analyser = this.ctx.createAnalyser();
+    this.filter.frequency.value = 5000;
+    this.analyser.fftSize = 2048;
+    this.source.connect(this.gain).connect(this.filter).connect(this.ctx.destination);
+    this.source.connect(this.analyser);
+    this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
+    try {
+      await this.audio.play();
+    } catch {}
+    this.ready = true;
+    return this;
+  }
+  updateFFT() {
+    if (!this.ready) return null;
+    this.analyser.getByteFrequencyData(this.frequencyData);
+    return this.frequencyData;
+  }
+}
+exports.MatrixMusicAsset = MatrixMusicAsset;
+
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32714,7 +33737,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],76:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32728,7 +33751,7 @@ class MEEditorClient {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
       if (typeOfRun == 'created from editor') {
-        console.info('created from editor - watch <signal>');
+        console.log("%cCreated from editor. Watch <signal>", _utils.LOG_FUNNY_ARCADE);
         let o = {
           action: "watch",
           name: name
@@ -32742,12 +33765,13 @@ class MEEditorClient {
         o = JSON.stringify(o);
         this.ws.send(o);
       }
-      console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
+      console.log("%c[EDITOR][WS OPEN]", _utils.LOG_FUNNY_ARCADE);
+      document.dispatchEvent(new CustomEvent("editorx-ws-ready", {}));
     };
     this.ws.onmessage = event => {
       try {
         const data = JSON.parse(event.data);
-        console.log("%c[WS MESSAGE]", "color: yellow", data);
+        console.log("%c[EDITOR][WS MESSAGE]", _utils.LOG_FUNNY_ARCADE, data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
           setTimeout(() => location.assign(data.name + ".html"), 2000);
         } else if (data.payload && data.payload == "stop-watch done") {
@@ -32757,24 +33781,19 @@ class MEEditorClient {
             detail: data
           }));
         } else if (data.projects) {
-          data.payload.forEach(item => {
-            console.log('.....' + item.name);
-            if (item.name != 'readme.md') {
-              let txt = `Project list: \n
-                - ${item.name}  \n
-               \n
-               Choose project name:
-              `;
-              let projectName = prompt(txt);
-              if (projectName !== null) {
-                console.log("Project name:", projectName);
-                projectName += ".html";
-                location.assign(projectName);
-              } else {
-                console.error('Something wrong with load project input!');
-              }
-            }
-          });
+          const projects = data.payload.filter(item => item.name !== 'readme.md').map(item => item.name.trim());
+          if (projects.length === 0) {
+            console.warn('No projects found');
+            return;
+          }
+          const txt = "Project list: \n" + projects.map(p => `- ${p}`).join("\n") + "\n" + "  Choose project name:";
+          const projectName = prompt(txt);
+          if (projectName) {
+            console.log("Project name:", projectName);
+            location.assign(projectName + ".html");
+          } else {
+            console.error('Project loading cancelled');
+          }
         } else if (data.details) {
           document.dispatchEvent(new CustomEvent('file-detail-data', {
             detail: data
@@ -32785,7 +33804,24 @@ class MEEditorClient {
             detail: {}
           })), 1000);
         } else {
-          _utils.mb.show("from editor:" + data.payload);
+          if (data.methodSaves && data.ok == true) {
+            _utils.mb.show("Graph saved ✅");
+            // console.log('Graph saved ✅ test ', data.graphs)
+            // document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {detail: data.graphs}));
+          }
+          if (data.methodLoads && data.ok == true && data.shaderGraphs) {
+            _utils.mb.show("Graphs list ✅" + data.shaderGraphs);
+            document.dispatchEvent(new CustomEvent('on-shader-graphs-list', {
+              detail: data.shaderGraphs
+            }));
+          } else if (data.methodLoads && data.ok == true) {
+            _utils.mb.show("Graph loads ✅", data);
+            document.dispatchEvent(new CustomEvent('on-graph-load', {
+              detail: data.graph
+            }));
+          } else {
+            _utils.mb.show("From editorX:" + data.ok);
+          }
         }
       } catch (e) {
         console.error("[WS ERROR PARSE]", e);
@@ -32850,7 +33886,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('file-detail', e => {
-      console.info('file-detail <signal>');
+      console.info('%c[file-detail <signal>]', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "file-detail",
         name: e.detail.name,
@@ -32860,8 +33896,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.addCube', e => {
-      console.log("[web.editor.addCube]: ", e.detail);
-      console.info('addCube <signal>');
+      console.info('%c[web.editor.addCube]', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addCube",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -32871,8 +33906,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.addSphere', e => {
-      console.log("[web.editor.addSphere]: ", e.detail);
-      console.info('addSphere <signal>');
+      console.info('%c[web.editor.addSphere]', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addSphere",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -32882,7 +33916,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('save-methods', e => {
-      console.info('save script <signal>');
+      console.info('%cSave methods <signal>', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "save-methods",
         methodsContainer: e.detail.methodsContainer
@@ -32890,9 +33924,52 @@ class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener('save-graph', e => {
+      console.info('%cSave graph <signal>', _utils.LOG_FUNNY_ARCADE);
+      let o = {
+        action: "save-graph",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('save-shader-graph', e => {
+      console.info('%cSave shader-graph <signal>', _utils.LOG_FUNNY_ARCADE);
+      let o = {
+        action: "save-shader-graph",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('load-shader-graph', e => {
+      console.info('%cLoad shader-graph <signal>', _utils.LOG_FUNNY_ARCADE);
+      let o = {
+        action: "load-shader-graph",
+        name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('delete-shader-graph', e => {
+      console.info('%cDelete shader-graph <signal>', _utils.LOG_FUNNY_ARCADE);
+      let o = {
+        action: "delete-shader-graph",
+        name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('get-shader-graphs', () => {
+      console.info('%cget-shader-graphs <signal>', _utils.LOG_FUNNY_ARCADE);
+      let o = {
+        action: "get-shader-graphs"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
     document.addEventListener('web.editor.addGlb', e => {
-      console.log("[web.editor.addGlb]: ", e.detail);
-      console.info('addGlb <signal>');
+      console.log("%c[web.editor.addGlb]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addGlb",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -32902,8 +33979,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.addObj', e => {
-      console.log("[web.editor.addObj]: ", e.detail);
-      console.info('addObj <signal>');
+      console.log("%c[web.editor.addObj]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "addObj",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -32926,8 +34002,7 @@ class MEEditorClient {
 
     // delete obj
     document.addEventListener('web.editor.delete', e => {
-      console.log("[web.editor.delete]: ", e.detail.prefix);
-      console.info('delete-obj <signal>');
+      console.log("%c[web.editor.delete]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "delete-obj",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -32937,8 +34012,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.update.pos', e => {
-      console.log("[web.editor.update.pos]: ", e.detail);
-      console.info('web.editor.update.pos <signal>');
+      console.log("%c[web.editor.update.pos]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "updatePos",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -32948,8 +34022,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.update.rot', e => {
-      console.log("[web.editor.update.rot]: ", e.detail);
-      console.info('web.editor.update.rot <signal>');
+      console.log("%c[web.editor.update.rot]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "updateRot",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -32959,10 +34032,19 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('web.editor.update.scale', e => {
-      console.log("[web.editor.update.scale]: ", e.detail);
-      console.info('web.editor.update.scale <signal>');
+      console.log("%c[web.editor.update.scale]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "updateScale",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.update.useScale', e => {
+      console.log("%c[web.editor.update.useScale]: " + e.detail, _utils.LOG_FUNNY_ARCADE);
+      let o = {
+        action: "useScale",
         projectName: location.href.split('/public/')[1].split(".")[0],
         data: e.detail
       };
@@ -32973,21 +34055,788 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":53}],77:[function(require,module,exports){
+},{"../../engine/utils":53}],79:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.CurveEditor = exports.CurveData = void 0;
+var _utils = require("../../engine/utils");
+/**
+ * @description
+ * Matrix-Engine-Wgpu Curve Editor
+ */
+
+class CurveEditor {
+  constructor({
+    width = 651,
+    height = 300,
+    samples = 128
+  } = {}) {
+    this.curveStore = new CurveStore();
+    this.width = width;
+    this.height = height;
+    this.samples = samples;
+    this.keys = [{
+      time: 0,
+      value: 0,
+      inTangent: 0,
+      outTangent: 0
+    }, {
+      time: 1,
+      value: 0,
+      inTangent: 0,
+      outTangent: 0
+    }];
+    this.valueMin = -1;
+    this.valueMax = 1;
+    this.padLeft = 32;
+    this.padBottom = 18;
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.ctx = this.canvas.getContext("2d");
+    this.zeroY = Math.round(this.height * 0.5) + 0.5;
+    this.graphHeight = this.height - this.padBottom;
+    this.snapEnabled = true;
+    this.snapSteps = 20;
+    this.snapValueSteps = 20;
+    this.name = "Curve";
+    this.currentValue = 0;
+    // fix
+    this.value = 0;
+    this.activeKey = null;
+    this.dragMode = null;
+    this._grabDX = 0;
+    this._grabDY = 0;
+    this.time = 0;
+    this.loop = true;
+    this.speed = 1;
+    this.isGraphRunning = false;
+    this._editorOpen = false;
+    this._createPopup();
+    this._bindMouse();
+    this._buildToolbar();
+    this._enableDrag();
+    this.length = 1.0;
+    this._lastTime = performance.now();
+    this._runner = null;
+    this.baked = this.bake(samples);
+    setTimeout(() => this.draw(), 100);
+  }
+  _valueToY(v) {
+    const n = (v - this.valueMin) / (this.valueMax - this.valueMin);
+    return (1 - n) * this.graphHeight;
+  }
+  _yToValue(y) {
+    const n = 1 - y / this.height;
+    return this.valueMin + n * (this.valueMax - this.valueMin);
+  }
+  _snap(value, steps) {
+    if (!this.snapEnabled) return value;
+    const range = this.valueMax - this.valueMin;
+    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
+  }
+
+  // VALUE EVALUATION (HERMITE)
+  getValue(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < this.keys.length - 1; i++) {
+      const k0 = this.keys[i];
+      const k1 = this.keys[i + 1];
+      if (t >= k0.time && t <= k1.time) {
+        const dt = k1.time - k0.time;
+        const u = (t - k0.time) / dt;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const m0 = k0.outTangent * dt;
+        const m1 = k1.inTangent * dt;
+        return (2 * u3 - 3 * u2 + 1) * k0.value + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * k1.value + (u3 - u2) * m1;
+      }
+    }
+    return this.keys.at(-1).value;
+  }
+
+  // DRAW
+  draw() {
+    const padLeft = 32;
+    const padBottom = 18;
+    const ctx = this.ctx;
+    const w = this.width - padLeft;
+    const h = this.height - padBottom;
+    ctx.save();
+    ctx.translate(padLeft, 0);
+    ctx.clearRect(-50, -50, w + padLeft + 50, h + padBottom + 50);
+    ctx.fillStyle = "#0b0f14";
+    ctx.fillRect(0, 0, w, h);
+
+    // grid
+    ctx.strokeStyle = "#1c2533";
+    for (let i = 0; i <= 10; i++) {
+      const x = i / 10 * w;
+      const y = i / 10 * h;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // ===== Y AXIS LABELS =====
+    ctx.fillStyle = "#9aa7b2";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("+1", -6, this._valueToY(0.9));
+    ctx.fillText("0", -6, this._valueToY(0));
+    ctx.fillText("-1", -6, this._valueToY(-0.9));
+    const zeroY = this._valueToY(0);
+    ctx.strokeStyle = "#2e3b4e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, zeroY);
+    ctx.lineTo(w, zeroY);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+
+    // curve
+    ctx.strokeStyle = "#4fc3f7";
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      // const x = t * w;
+      const x = t * w;
+      const y = this._valueToY(this.getValue(t));
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // keys + tangents
+    this.keys.forEach(k => {
+      const x = this._timeToX(k.time);
+      const y = this._valueToY(k.value);
+
+      // tangents
+      ctx.strokeStyle = "#888";
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 30, y - k.outTangent * 30);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 30, y + k.inTangent * 30);
+      ctx.stroke();
+
+      // key circle
+      ctx.fillStyle = "#ffcc00";
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    // PLAYHEAD
+    const playX = this._timeToX(this.time);
+    const playY = this._valueToY(this.getValueNow());
+    // vertical line
+    ctx.strokeStyle = "#ff5555";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playX, 0);
+    ctx.lineTo(playX, h);
+    ctx.stroke();
+
+    // dot
+    ctx.fillStyle = "#ff5555";
+    ctx.beginPath();
+    ctx.arc(playX, playY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.restore();
+
+    // ===== X AXIS LABELS =====
+    ctx.fillStyle = "#ffffffff";
+    ctx.font = "13px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const y = this.height - padBottom + 2;
+    ctx.fillText("0s", padLeft, y);
+    ctx.fillText((this.length * 0.5).toFixed(2) + "s", padLeft + w * 0.5, y);
+    ctx.fillText(this.length.toFixed(2) + "s", padLeft + w, y);
+    this._updateToolbar();
+  }
+  _getMouse(e) {
+    const r = this.canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - r.left - this.padLeft,
+      y: e.clientY - r.top
+    };
+  }
+  _bindMouse() {
+    const hitKey = (mx, my) => {
+      return this.keys.find(k => {
+        const x = this._timeToX(k.time);
+        const y = this._valueToY(k.value);
+        const HIT_RADIUS = 20;
+        return Math.hypot(mx - x, my - y) <= HIT_RADIUS;
+      });
+    };
+    const hitPlayhead = (mx, my) => {
+      if (this.isGraphRunning) return false;
+      const w = this.width - this.padLeft;
+      const playX = this._timeToX(this.time);
+      const playY = this._valueToY(this.getValueNow());
+      return Math.hypot(mx - playX, my - playY) < 8;
+    };
+    this.canvas.addEventListener("mousedown", e => {
+      const {
+        x: mx,
+        y: my
+      } = this._getMouse(e);
+      if (hitPlayhead(mx, my)) {
+        this.activeKey = 'playhead';
+        this.dragMode = 'playhead';
+        return;
+      }
+      const k = hitKey(mx, my);
+      if (k) {
+        const w = this.width - this.padLeft;
+        const kx = k.time * w;
+        const ky = this._valueToY(k.value);
+        this._grabDX = mx - kx;
+        this._grabDY = my - ky;
+        this.activeKey = k;
+        this.dragMode = e.shiftKey ? "tangent" : "key";
+      }
+    });
+    window.addEventListener("mousemove", e => {
+      if (!this.activeKey) return;
+      const {
+        x: mx,
+        y: my
+      } = this._getMouse(e);
+      if (this.dragMode === 'playhead' && this.activeKey === 'playhead') {
+        const w = this.width - this.padLeft;
+        let t = Math.max(0, Math.min(1, mx / w));
+        t = this._snap(t, this.snapSteps);
+        this.time = t;
+        this.draw();
+        return;
+      }
+      if (this.dragMode === "key") {
+        const w = this.width - this.padLeft;
+        // let t = (mx - this._grabDX) / w;
+        let t = (mx - this._grabDX) / w;
+        t = Math.max(0, Math.min(1 - 1e-6, t));
+        let v = this._yToValue(my - this._grabDY);
+        v = Math.max(this.valueMin, Math.min(this.valueMax, v));
+        v = this._snap(v, this.snapValueSteps);
+        t = this._snap(t, this.snapSteps);
+        v = this._snap(v, this.snapValueSteps);
+        this.activeKey.time = t;
+        this.activeKey.value = v;
+        this.keys.sort((a, b) => a.time - b.time);
+      }
+      if (this.dragMode === "tangent") {
+        const dx = mx / r.width - this.activeKey.time;
+        const dy = 1 - my / r.height - this.activeKey.value;
+        this.activeKey.outTangent = dy / dx || 0;
+        this.activeKey.inTangent = this.activeKey.outTangent;
+      }
+      this.draw();
+      this._reBake();
+    });
+    window.addEventListener("mouseup", () => {
+      this.activeKey = null;
+      this.dragMode = null;
+    });
+    this.canvas.addEventListener("dblclick", e => {
+      const {
+        x,
+        y
+      } = this._getMouse(e);
+      const w = this.width - this.padLeft;
+      const t = Math.max(0, Math.min(1, x / w));
+      const v = this._yToValue(y);
+      this.keys.push({
+        time: t,
+        value: v,
+        inTangent: 0,
+        outTangent: 0
+      });
+      this.keys.sort((a, b) => a.time - b.time);
+      this._reBake();
+      this.draw();
+    });
+
+    // delete key
+    this.canvas.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      const {
+        x: mx,
+        y: my
+      } = this._getMouse(e);
+      const k = hitKey(mx, my);
+      if (k && this.keys.length > 2) {
+        this.keys = this.keys.filter(x => x !== k);
+        this.draw();
+        this._reBake();
+      }
+    });
+  }
+  _timeToX(t) {
+    const w = this.width - this.padLeft;
+    const R = 4;
+    let x = t * w;
+
+    // clamp so circle is fully inside canvas
+    return Math.min(Math.max(x, R), w - R);
+  }
+
+  // BAKING
+  bake(samples = this.samples) {
+    const data = new Float32Array(samples);
+    for (let i = 0; i < samples; i++) {
+      const t = i / (samples - 1);
+      data[i] = this.getValue(t);
+    }
+    return data;
+  }
+  _reBake() {
+    this.baked = this.bake(this.samples);
+  }
+  exec(delta) {
+    if (!this.isGraphRunning) return this.value;
+    this.time += delta / this.length * this.speed;
+    if (this.loop && this.time > 1) this.time = 0;
+    if (!this.loop && this.time > 1) {
+      this.time = 1;
+      this.stop();
+    }
+    const idx = Math.floor(this.time * (this.samples - 1));
+    this.value = this.baked[idx];
+    this.draw();
+    return this.value;
+  }
+
+  // SYNTETIC FOR NOW 
+  play() {
+    if (this.isGraphRunning) return;
+    this.isGraphRunning = true;
+    this._lastTime = performance.now();
+    this._runner = setInterval(() => {
+      const now = performance.now();
+      const delta = (now - this._lastTime) / 1000;
+      this._lastTime = now;
+      this.exec(delta);
+    }, 16); // ~60fps
+  }
+  stop() {
+    this.isGraphRunning = false;
+    if (this._runner) {
+      clearInterval(this._runner);
+      this._runner = null;
+    }
+    this.draw();
+  }
+  getValueNow() {
+    return this.value;
+  }
+  _createPopup() {
+    this.popup = document.createElement("div");
+    this.popup.id = "curve-editor";
+    Object.assign(this.popup.style, {
+      position: "fixed",
+      top: "20%",
+      left: "20%",
+      transform: "translate(-50%,-50%)",
+      background: "#111",
+      border: "1px solid #333",
+      padding: "5px",
+      display: "none",
+      zIndex: 999999,
+      width: '650px',
+      height: '409px',
+      paddingLeft: '2px',
+      paddingRight: '2px'
+    });
+    this.toolbarTitle = document.createElement("div");
+    this.toolbarTitle.style.cssText = `
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:4px 6px;
+      background:#121822;
+      border-bottom:1px solid #1c2533;
+      font-size:12px;
+      margin-bottom: 5px;
+    `;
+    this.toolbarTitle.innerHTML = `<h3>Curve Editor</h3>`;
+    this.popup.appendChild(this.toolbarTitle);
+    this.popup.appendChild(this.canvas);
+    document.body.appendChild(this.popup);
+  }
+  toggleEditor() {
+    // console.log('_editorOpen')
+    this._editorOpen = !this._editorOpen;
+    this.popup.style.display = this._editorOpen ? "block" : "none";
+    this.draw();
+  }
+  _buildToolbar() {
+    this.root = document.createElement("div");
+    this.root.style.cssText = `
+    background:#0b0f14;
+    border:1px solid #1c2533;
+    font-family:monospace;
+    color:#cfd8dc;
+    width:${this.width}px;
+  `;
+
+    // Toolbar
+    this.toolbar = document.createElement("div");
+    this.toolbar.style.cssText = `
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:4px 6px;
+    background:#121822;
+    border-bottom:1px solid #1c2533;
+    font-size:12px;
+  `;
+    this.nameInput = document.createElement("input");
+    // console.log(this.name)
+    this.nameInput.value = this.name;
+    this.nameInput.disabled = true;
+    this.nameInput.style.cssText = `
+    width:80px;
+    background:#0b0f14;
+    border:1px solid #1c2533;
+    color:#fff;
+    padding:2px 4px;
+  `;
+    this.nameInput.onchange = () => this.name = this.nameInput.value;
+    this.playBtn = document.createElement("button");
+    this.playBtn.textContent = "▶";
+    this.playBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 8px;
+      cursor:pointer;
+    `;
+    this.playBtn.onclick = () => {
+      this.isGraphRunning ? this.stop() : this.play();
+    };
+    this.lengthInput = document.createElement("input");
+    this.lengthInput.type = "number";
+    this.lengthInput.value = this.length;
+    this.lengthInput.step = "0.1";
+    this.lengthInput.style.cssText = `
+      width:60px;
+      background:#0b0f14;
+      border:1px solid #1c2533;
+      color:#fff;
+      padding:2px 4px;
+    `;
+    this.lengthInput.onchange = () => {
+      this.length = Math.max(0.01, parseFloat(this.lengthInput.value));
+    };
+
+    // Time label
+    this.timeLabel = document.createElement("span");
+
+    // Value label
+    this.valueLabel = document.createElement("span");
+
+    // Running indicator
+    this.runLabel = document.createElement("span");
+
+    // Snap toggle
+    this.snapBtn = document.createElement("button");
+    this.snapBtn.textContent = "Snap";
+    this.snapBtn.style.cssText = `
+    background:#1c2533;
+    color:#fff;
+    border:none;
+    padding:2px 6px;
+    cursor:pointer;
+  `;
+    this.snapBtn.onclick = () => {
+      this.snapEnabled = !this.snapEnabled;
+      this.snapBtn.style.opacity = this.snapEnabled ? "1" : "0.4";
+    };
+    const lenLabel = document.createElement("span");
+    lenLabel.textContent = "Len";
+
+    // Reset button
+    this.resetBtn = document.createElement("button");
+    this.resetBtn.textContent = "Reset";
+    this.resetBtn.style.cssText = this.snapBtn.style.cssText;
+    this.resetBtn.onclick = () => {
+      this.time = 0;
+      this.draw();
+    };
+    this.saveBtn = document.createElement("button");
+    this.saveBtn.textContent = "💾 Save";
+    this.saveBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 6px;
+      cursor:pointer;
+    `;
+    this.saveBtn.onclick = () => {
+      let curve = this.curveStore.getByName(this.name);
+      if (!curve) {
+        curve = new CurveData(this.name);
+        this.curveStore.curves.push(curve);
+      }
+      curve.keys = this.keys.map(k => ({
+        ...k
+      }));
+      curve.length = this.length;
+      curve.loop = this.loop;
+      curve.bake(this.samples);
+      this.curveStore.save(curve);
+      (0, _utils.byId)('saveMainGraphDOM').click();
+      console.log(`%c Curve [${this.name}] saved`, "color:#4caf50;font-weight:bold");
+    };
+    this.hideBtn = document.createElement("button");
+    this.hideBtn.textContent = "Hide";
+    this.hideBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 6px;
+      cursor:pointer;
+    `;
+    this.hideBtn.onclick = () => {
+      this.toggleEditor();
+      console.log(`%c Curve [${this.name}] saved!`, _utils.LOG_FUNNY_ARCADE);
+    };
+    this.toolbar.append(this.nameInput, this.playBtn, lenLabel, this.lengthInput, this.timeLabel, this.valueLabel, this.runLabel, this.snapBtn, this.resetBtn, this.saveBtn, this.hideBtn);
+    this.root.append(this.toolbar);
+    this.popup.appendChild(this.root);
+  }
+  _updateToolbar = () => {
+    this.currentValue = this.getValueNow();
+    const timeSec = this.time * this.length;
+    this.timeLabel.textContent = `T: ${timeSec.toFixed(2)}s`;
+    this.valueLabel.textContent = `V: ${this.currentValue.toFixed(3)}`;
+    this.runLabel.textContent = this.isGraphRunning ? "ACTIVE" : "STOPED";
+    this.runLabel.style.color = this.isGraphRunning ? "#4caf50" : "#ff9800";
+    this.playBtn.textContent = this.isGraphRunning ? "⏸" : "▶";
+  };
+  _enableDrag() {
+    const el = this.popup;
+    const handle = this.toolbar;
+    const handle2 = this.toolbarTitle;
+    let isDown = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    handle.style.cursor = "move";
+    handle2.style.cursor = "move";
+    handle.addEventListener("mousedown", e => {
+      isDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = el.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      document.body.style.userSelect = "none";
+    });
+    handle2.addEventListener("mousedown", e => {
+      isDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = el.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      document.body.style.userSelect = "none";
+    });
+    window.addEventListener("mousemove", e => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      el.style.left = startLeft + dx + "px";
+      el.style.top = startTop + dy + "px";
+      el.style.transform = "none";
+    });
+    window.addEventListener("mouseup", () => {
+      isDown = false;
+      document.body.style.userSelect = "";
+    });
+  }
+  bindCurve(curve, meta = {}) {
+    // console.log("BIND curve", curve, meta);
+    this.curve = curve;
+    this.keys = curve.keys;
+    this.length = curve.length;
+    this.loop = curve.loop;
+    this.name = meta.idNode;
+    this.nameInput.value = this.name;
+    this.lengthInput.value = this.length;
+    this.idNode = meta.idNode ?? null;
+    this.time = 0;
+    this._reBake();
+    this.draw();
+  }
+}
+
+/**
+ * @description
+ * Data class
+ **/
+exports.CurveEditor = CurveEditor;
+class CurveData {
+  constructor(name) {
+    this.name = name;
+    this.keys = [{
+      time: 0,
+      value: 0,
+      inTangent: 0,
+      outTangent: 0
+    }, {
+      time: 1,
+      value: 1,
+      inTangent: 0,
+      outTangent: 0
+    }];
+    this.length = 1;
+    this.loop = true;
+    this.samples = 128;
+    this.baked = null;
+  }
+  getValue(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < this.keys.length - 1; i++) {
+      const k0 = this.keys[i];
+      const k1 = this.keys[i + 1];
+      if (t >= k0.time && t <= k1.time) {
+        const dt = k1.time - k0.time;
+        const u = (t - k0.time) / dt;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const m0 = k0.outTangent * dt;
+        const m1 = k1.inTangent * dt;
+        return (2 * u3 - 3 * u2 + 1) * k0.value + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * k1.value + (u3 - u2) * m1;
+      }
+    }
+    return this.keys.at(-1).value;
+  }
+
+  // bake real values, not normalized 0-1
+  bake(samples = this.samples) {
+    this.baked = new Float32Array(samples);
+    for (let i = 0; i < samples; i++) {
+      const t = i / (samples - 1);
+      this.baked[i] = this.getValue(t);
+    }
+  }
+  evaluate(time01) {
+    if (!this.baked) {
+      console.warn("Curve not baked!");
+      return 0;
+    }
+    let t = time01;
+    if (this.loop) t = t % 1;else t = Math.min(1, Math.max(0, t));
+    const idx = Math.floor(t * (this.baked.length - 1));
+    return this.baked[idx];
+  }
+}
+exports.CurveData = CurveData;
+class CurveStore {
+  constructor() {
+    this.CURVE_STORAGE_KEY = "PROJECT_NAME";
+    this.curves = [];
+    this.load();
+  }
+  has(name) {
+    return this.curves.some(c => c.name === name);
+  }
+  getOrCreate(curveArg) {
+    let curve = this.curves.find(c => c.name === curveArg.name);
+    if (curve) return curve;
+    // console.log("PUSH in getOrCreate")
+    curve = new CurveData(curveArg.name);
+    this.curves.push(curve);
+    return curve;
+  }
+  getByName(name) {
+    return this.curves.find(c => c.name === name) || null;
+  }
+  add(curve) {
+    this.curves.push(curve);
+    this.save();
+  }
+  removeByName(name) {
+    this.curves = this.curves.filter(c => c.name !== name);
+    this.save();
+  }
+  getAll() {
+    return this.curves;
+  }
+
+  // SAVE / LOAD
+  save() {
+    console.log('TEST SAVE', this.curves);
+    const data = {
+      version: 1,
+      curves: this.curves
+    };
+    localStorage.setItem(this.CURVE_STORAGE_KEY, JSON.stringify(data));
+  }
+
+  // saveCurve(curveData) {
+  //   const idx = this.curves.findIndex(c => c.name === curveData.name);
+  //   if(idx >= 0) {
+  //     this.curves[idx] = curveData;
+  //   } else {
+  //     this.curves.push(curveData);
+  //   }
+  //   this.save();
+  // }
+
+  load() {
+    const raw = localStorage.getItem(this.CURVE_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (!data.curves) return;
+      this.curves = data.curves.map(c => this._fromJSON(c));
+    } catch (e) {
+      console.warn("CurveStore load failed", e);
+      this.curves = [];
+    }
+  }
+  _fromJSON(obj) {
+    const c = new CurveData(obj.name);
+    c.keys = obj.keys || [];
+    c.length = obj.length ?? 1;
+    c.loop = !!obj.loop;
+    return c;
+  }
+}
+
+},{"../../engine/utils":53}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Editor = void 0;
+var _utils = require("../../engine/utils");
 var _client = require("./client");
 var _editor = _interopRequireDefault(require("./editor.provider"));
+var _flexCodexShader = require("./flexCodexShader");
 var _fluxCodexVertex = _interopRequireDefault(require("./fluxCodexVertex"));
 var _hud = _interopRequireDefault(require("./hud"));
 var _methodsManager = _interopRequireDefault(require("./methodsManager"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import methodsContainer from './';
-
 class Editor {
   constructor(core, a, projName) {
     this.core = core;
@@ -32997,11 +34846,18 @@ class Editor {
     if (this.check(a) == 'pre editor') {
       this.client = new _client.MEEditorClient(this.check(a));
     } else if (this.check(a) == 'created from editor') {
+      document.addEventListener('editorx-ws-ready', () => {
+        (0, _flexCodexShader.openFragmentShaderEditor)().then(e => {
+          (0, _utils.byId)('shaderDOM').style.display = 'none';
+          app.shaderGraph = e;
+        });
+      });
       this.client = new _client.MEEditorClient(this.check(a), projName);
       // Visual Scripting
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
-        this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager);
+        // console.log("MOMENT BEFORE COSTRUCT MAIN GRAPH")
+        this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager, projName);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
         }, 3000);
@@ -33027,8 +34883,12 @@ class Editor {
     // setTimeout(() => FCV.style.display = 'none' , 200);
     FCV.innerHTML = `
     <div id="leftBar">
-      <h3>Events/Func</h3>
+      <span>Declaration</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setProductionMode')">Set ProductionMode</button>
+      <span>Events/Func</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onDraw')">Event: onDraw</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onKey')">Event: onKey</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
@@ -33038,10 +34898,13 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
@@ -33049,28 +34912,46 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
-
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
-      <hr>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
-      <hr>
+      <span>Data mod</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('curveTimeline')">Curve Timeline</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('oscillator')">Oscillator</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-      <hr>
       <span>Media</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
-      <hr>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
       <span>Physics</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
+      <span>String Operations</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
 
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
@@ -33079,7 +34960,6 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>COMPARISON</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
@@ -33088,14 +34968,13 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
-      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save Graph</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear All</button>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+      <button style="color: lime;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button style="color: lime;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
 
       <pre id="log" aria-live="polite"></pre>
     </div>
@@ -33110,7 +34989,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"./client":76,"./editor.provider":78,"./fluxCodexVertex":79,"./hud":80,"./methodsManager":81}],78:[function(require,module,exports){
+},{"../../engine/utils":53,"./client":78,"./editor.provider":81,"./flexCodexShader":82,"./fluxCodexVertex":84,"./hud":85,"./methodsManager":86}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33178,6 +35057,14 @@ class EditorProvider {
       // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+      if (e.detail.property == "no info") {
+        // console.warn("What is useScale !!! ", e.detail.value);
+        sceneObj[e.detail.propertyId] = e.detail.value;
+        if (e.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent('web.editor.update.useScale', {
+          detail: e.detail
+        }));
+        return;
+      }
       if (sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {
@@ -33338,15 +35225,16 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":43,"../../engine/loaders/webgpu-gltf":46}],79:[function(require,module,exports){
+},{"../../engine/loader-obj":43,"../../engine/loaders/webgpu-gltf":46}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
-var _ToolTip = require("../../engine/plugin/tooltip/ToolTip");
-var _utils = require("../../engine/utils");
+exports.ViewDirectionNode = exports.Vec4Node = exports.Vec3Node = exports.Vec2Node = exports.UVNode = exports.TimeNode = exports.TextureSamplerNode = exports.TanNode = exports.SubtractNode = exports.SqrtNode = exports.SplitVec4Node = exports.SmoothstepNode = exports.SinNode = exports.ShaderNode = exports.PowerNode = exports.OneMinusNode = exports.NormalizeNode = exports.NormalOutput = exports.MultiplyNode = exports.MultiplyColorNode = exports.MinNode = exports.MaxNode = exports.LightToColorNode = exports.LightShadowNode = exports.LerpNode = exports.LengthNode = exports.InlineWGSLNode = exports.InlineFunctionNode = exports.GrayscaleNode = exports.GlobalAmbientNode = exports.FragmentShaderRegistry = exports.FragmentShaderGraph = exports.FragmentPositionNode = exports.FragmentOutputNode = exports.FragmentNormalNode = exports.FracNode = exports.FloorNode = exports.FloatNode = exports.DotProductNode = exports.DivideNode = exports.CrossProductNode = exports.CosNode = exports.ContrastNode = exports.CombineVec4Node = exports.ColorNode = exports.ClampNode = exports.CeilNode = exports.CameraPosNode = exports.AlphaOutput = exports.AddNode = exports.AbsNode = void 0;
+exports.openFragmentShaderEditor = openFragmentShaderEditor;
+var _utils = require("../../engine/utils.js");
+var _flexCodexShaderAdapter = require("./flexCodexShaderAdapter.js");
 /**
  * @description
  * Flux Codex Vertex use visual scripting model.
@@ -33385,10 +35273,2320 @@ var _utils = require("../../engine/utils");
  * - MPL applies ONLY to this file
  */
 
+const FragmentShaderRegistry = exports.FragmentShaderRegistry = {};
+class FragmentShaderGraph {
+  constructor(id) {
+    this.id = id;
+    this.nodes = [];
+    this.connections = [];
+    this.spawnX = 80;
+    this.spawnY = 80;
+    this.spawnStepX = 220;
+    this.spawnStepY = 140;
+    this.spawnCol = 0;
+    this.runtimeList = [];
+    this.runtime_memory = {};
+    this.onGraphLoadAttached = false;
+  }
+  addNode(node) {
+    if (node.type === "FragmentOutput") {
+      const exists = this.nodes.some(n => n.type === "FragmentOutput");
+      if (exists) {
+        console.warn("FragmentOutput already exists");
+        return null;
+      }
+    }
+    this.nodes.push(node);
+    return node;
+  }
+  connect(fromNode, fromPin, toNode, toPin) {
+    this.connections = this.connections.filter(c => !(c.toNode === toNode && c.toPin === toPin));
+    this.connections.push({
+      fromNode,
+      fromPin,
+      toNode,
+      toPin
+    });
+  }
+  getInput(node, pin) {
+    return this.connections.find(c => c.toNode === node && c.toPin === pin);
+  }
+  compile() {
+    const wgsl = FragmentCompiler.compile(this);
+    FragmentShaderRegistry[this.id] = wgsl;
+    return wgsl;
+  }
+  nextSpawn() {
+    const x = this.spawnX + this.spawnCol * this.spawnStepX;
+    const y = this.spawnY;
+    this.spawnCol++;
+    if (this.spawnCol >= 3) {
+      this.spawnCol = 0;
+      this.spawnY += this.spawnStepY;
+    }
+    return {
+      x,
+      y
+    };
+  }
+  makeDraggable(el, node, connectionLayer) {
+    let ox = 0,
+      oy = 0,
+      drag = false;
+    el.addEventListener("pointerdown", e => {
+      drag = true;
+      ox = e.clientX - el.offsetLeft;
+      oy = e.clientY - el.offsetTop;
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener("pointermove", e => {
+      if (!drag) return;
+      el.style.left = e.clientX - ox + "px";
+      el.style.top = e.clientY - oy + "px";
+      node.x = e.clientX - ox;
+      node.y = e.clientY - oy;
+      connectionLayer.redrawAll();
+    });
+    el.addEventListener("pointerup", () => drag = false);
+  }
+  clear() {
+    this.nodes = [];
+    this.connections = [];
+    this.spawnX = 80;
+    this.spawnY = 80;
+    this.spawnCol = 0;
+    if (this.connectionLayer) {
+      this.connectionLayer.svg.innerHTML = '';
+    }
+    const container = document.getElementsByClassName("fancy-grid-bg dark");
+    if (container) {
+      const nodeElements = container[0].querySelectorAll('.nodeShader');
+      nodeElements.forEach(el => el.remove());
+    }
+    this.connectionLayer.redrawAll();
+  }
+}
+exports.FragmentShaderGraph = FragmentShaderGraph;
+class CompileContext {
+  constructor(shaderGraph) {
+    this.shaderGraph = shaderGraph;
+    this.cache = new Map();
+    this.structs = [];
+    this.uniforms = [];
+    this.functions = new Map();
+    this.locals = [];
+    this.mainLines = [];
+    this.tmpIndex = 0;
+    this.outputs = {
+      outColor: null
+    };
+  }
+  temp(type, expr) {
+    const name = `t${this.tmpIndex++}`;
+    this.locals.push(`let ${name}: ${type} = ${expr};`);
+    return name;
+  }
+  registerFunction(name, code) {
+    if (!this.functions.has(name)) {
+      this.functions.set(name, code);
+    }
+  }
+  resolve(node, pin) {
+    const key = `${node.id}:${pin}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+    if (!this.resolving) this.resolving = new Set();
+    if (this.resolving.has(key)) {
+      console.warn("Cyclic dependency detected:", key);
+      return node.default?.(pin) ?? "0.0";
+    }
+    this.resolving.add(key);
+    const conn = this.shaderGraph.getInput(node, pin);
+    let value;
+    if (conn) {
+      value = this.resolve(conn.fromNode, conn.fromPin);
+      // console.log('value = this.resolve(conn.fromNode, conn.fromPin); ', value)
+    } else {
+      // ✅ ONLY inputs have defaults
+      if (node.inputs && pin in node.inputs) {
+        value = node.inputs[pin].default;
+      } else {
+        // 🔥 OUTPUT PIN → no default
+        value = undefined;
+      }
+    }
+    const result = node.build(pin, value, this);
+    if (result?.out !== undefined) {
+      this.cache.set(key, result.out);
+    }
+    this.resolving.delete(key);
+    return result.out;
+  }
+}
+class FragmentCompiler {
+  static compile(shaderGraph) {
+    const ctx = new CompileContext(shaderGraph);
+    shaderGraph.nodes.forEach(n => {
+      if (n.type.endsWith("Output")) {
+        ctx.resolve(n, Object.keys(n.inputs)[0]);
+      }
+    });
+    if (!ctx.outputs.outColor) {
+      throw new Error("ShaderGraph: No visual output");
+    }
+    return {
+      structs: ctx.structs,
+      uniforms: ctx.uniforms,
+      functions: [...ctx.functions.values()],
+      locals: ctx.locals,
+      outputs: ctx.outputs,
+      mainLines: ctx.mainLines
+    };
+  }
+}
+let NODE_ID = 0;
+class ShaderNode {
+  constructor(type) {
+    this.id = "N" + NODE_ID++;
+    this.type = type;
+    this.inputs = {};
+  }
+  default(pin) {
+    return this.inputs[pin]?.default ?? "0.0";
+  }
+  build(_, value, ctx) {
+    return {
+      out: value,
+      type: "f32"
+    };
+  }
+}
+exports.ShaderNode = ShaderNode;
+class FragmentOutputNode extends ShaderNode {
+  constructor() {
+    super("FragmentOutput");
+    this.inputs = {
+      color: {
+        default: "vec4f(1.0)"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "color");
+    let value;
+    if (conn) {
+      // Resolve the node connected to this input
+      value = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      // No connection → use default
+      value = this.inputs.color.default;
+    }
+    ctx.outputs.outColor = value;
+    // console.log('From FragmentOutputNode ctx.outputs.outColor', ctx.outputs.outColor);
+    return {
+      out: ctx.outputs.outColor,
+      type: "vec4f"
+    };
+  }
+}
+exports.FragmentOutputNode = FragmentOutputNode;
+class AlphaOutput extends ShaderNode {
+  constructor() {
+    super("AlphaOutput");
+    this.inputs = {
+      alpha: {
+        default: "1.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.alpha = ctx.resolve(this, "alpha");
+    return {
+      out: ctx.outputs.alpha
+    };
+  }
+}
+exports.AlphaOutput = AlphaOutput;
+class NormalOutput extends ShaderNode {
+  constructor() {
+    super("NormalOutput");
+    this.inputs = {
+      normal: {
+        default: "input.normal"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    ctx.outputs.normal = ctx.resolve(this, "normal");
+    return {
+      out: ctx.outputs.normal
+    };
+  }
+}
+
+// STANDARD SOME STUFF ARE PREDEFINED ALREADY IN ADAPTER
+exports.NormalOutput = NormalOutput;
+class LightShadowNode extends ShaderNode {
+  constructor() {
+    super("LightShadowNode");
+    this.inputs = {
+      intensity: {
+        default: "1"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    // Generate the light calculation code as a string
+    const lightCalcCode = `
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+    let materialData = getPBRMaterial(input.uv);
+    var lightContribution = vec3f(0.0);
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let bias = spotlights[i].shadowBias;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        lightContribution += contrib * visibility;
+    }`;
+    ctx.locals.push(lightCalcCode);
+
+    // Return the variable name that downstream nodes can use
+    return {
+      out: "lightContribution",
+      type: "vec3f"
+    };
+  }
+}
+exports.LightShadowNode = LightShadowNode;
+class LightToColorNode extends ShaderNode {
+  constructor() {
+    super("LightToColor");
+    this.inputs = {
+      light: {
+        default: "vec3f(1.0)"
+      }
+    };
+  }
+  build(pin, value, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "light");
+    let l;
+    if (conn) {
+      l = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      l = this.inputs.light.default;
+    }
+    const result = ctx.temp("vec4f", `vec4f(${l}, 1.0)`);
+    return {
+      out: result,
+      type: "vec4f"
+    };
+  }
+}
+exports.LightToColorNode = LightToColorNode;
+class UVNode extends ShaderNode {
+  constructor() {
+    super("UV");
+  }
+  build() {
+    return {
+      out: "input.uv",
+      type: "vec2f"
+    };
+  }
+}
+exports.UVNode = UVNode;
+class CameraPosNode extends ShaderNode {
+  constructor() {
+    super("CameraPos");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.cameraPos",
+      type: "vec3f"
+    };
+  }
+}
+exports.CameraPosNode = CameraPosNode;
+class TimeNode extends ShaderNode {
+  constructor() {
+    super("Time");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.time",
+      type: "f32"
+    };
+  }
+}
+exports.TimeNode = TimeNode;
+class InlineFunctionNode extends ShaderNode {
+  constructor(name = "customFn", code = "") {
+    super("InlineFunction");
+    this.fnName = name;
+    this.code = code;
+    this.inputs = {
+      a: {
+        default: "input.uv"
+      },
+      b: {
+        default: "globals.time"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    ctx.registerFunction(this.fnName, this.code);
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("vec4f", `${this.fnName}(${a}, ${b})`),
+      type: "vec4f"
+    };
+  }
+}
+exports.InlineFunctionNode = InlineFunctionNode;
+class TextureSamplerNode extends ShaderNode {
+  constructor(name = "tex0") {
+    super("TextureSampler");
+    this.name = name;
+    this.inputs = {
+      uv: {
+        default: "input.uv"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "uv");
+    let uv;
+    if (conn) {
+      uv = ctx.resolve(conn.fromNode, conn.fromPin);
+    } else {
+      uv = this.inputs.uv.default;
+    }
+    return {
+      out: ctx.temp("vec4f", `textureSample(meshTexture, meshSampler, ${uv})`),
+      type: "vec4f"
+    };
+  }
+}
+exports.TextureSamplerNode = TextureSamplerNode;
+class MultiplyColorNode extends ShaderNode {
+  constructor() {
+    super("MultiplyColor");
+    this.inputs = {
+      a: {
+        default: "vec4(1.0)"
+      },
+      b: {
+        default: "vec4(1.0)"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    let a, b;
+    if (connA) {
+      a = ctx.resolve(connA.fromNode, connA.fromPin);
+    } else {
+      a = this.inputs.a.default;
+    }
+    if (connB) {
+      b = ctx.resolve(connB.fromNode, connB.fromPin);
+    } else {
+      b = this.inputs.b.default;
+    }
+    const t = ctx.temp("vec4f", `${a} * ${b}`);
+    return {
+      out: t,
+      type: "vec4f"
+    };
+  }
+}
+exports.MultiplyColorNode = MultiplyColorNode;
+class ClampNode extends ShaderNode {
+  constructor() {
+    super("Clamp");
+    this.inputs = {
+      x: {
+        default: "0.0"
+      },
+      min: {
+        default: "0.0"
+      },
+      max: {
+        default: "1.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const connMin = ctx.shaderGraph.getInput(this, "min");
+    const connMax = ctx.shaderGraph.getInput(this, "max");
+    const x = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    const min = connMin ? ctx.resolve(connMin.fromNode, connMin.fromPin) : this.inputs.min.default;
+    const max = connMax ? ctx.resolve(connMax.fromNode, connMax.fromPin) : this.inputs.max.default;
+    return {
+      out: ctx.temp("f32", `clamp(${x}, ${min}, ${max})`),
+      type: "f32"
+    };
+  }
+}
+exports.ClampNode = ClampNode;
+class GrayscaleNode extends ShaderNode {
+  constructor() {
+    super("Grayscale");
+    this.inputs = {
+      color: {
+        default: "vec4(1.0)"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "color");
+    const c = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.color.default;
+    return {
+      out: ctx.temp("vec4f", `vec4(vec3(dot(${c}.rgb,vec3(0.299,0.587,0.114))),${c}.a)`),
+      type: "vec4f"
+    };
+  }
+}
+exports.GrayscaleNode = GrayscaleNode;
+class ContrastNode extends ShaderNode {
+  constructor() {
+    super("Contrast");
+    this.inputs = {
+      color: {
+        default: "vec4(1.0)"
+      },
+      contrast: {
+        default: "1.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connColor = ctx.shaderGraph.getInput(this, "color");
+    const connContrast = ctx.shaderGraph.getInput(this, "contrast");
+    const c = connColor ? ctx.resolve(connColor.fromNode, connColor.fromPin) : this.inputs.color.default;
+    const k = connContrast ? ctx.resolve(connContrast.fromNode, connContrast.fromPin) : this.inputs.contrast.default;
+    return {
+      out: ctx.temp("vec4f", `vec4(((${c}.rgb-0.5)*${k}+0.5),${c}.a)`),
+      type: "vec4f"
+    };
+  }
+}
+
+// CONSTANT/LITERAL NODES
+exports.ContrastNode = ContrastNode;
+class FloatNode extends ShaderNode {
+  constructor(value = 1.0) {
+    super("Float");
+    this.value = value;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `${this.value}`,
+      type: "f32"
+    };
+  }
+}
+exports.FloatNode = FloatNode;
+class Vec2Node extends ShaderNode {
+  constructor(x = 0.0, y = 0.0) {
+    super("Vec2");
+    this.x = x;
+    this.y = y;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec2f(${this.x}, ${this.y})`,
+      type: "vec2f"
+    };
+  }
+}
+exports.Vec2Node = Vec2Node;
+class Vec3Node extends ShaderNode {
+  constructor(x = 0.0, y = 0.0, z = 0.0) {
+    super("Vec3");
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec3f(${this.x}, ${this.y}, ${this.z})`,
+      type: "vec3f"
+    };
+  }
+}
+exports.Vec3Node = Vec3Node;
+class Vec4Node extends ShaderNode {
+  constructor(x = 0.0, y = 0.0, z = 0.0, w = 1.0) {
+    super("Vec4");
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = w;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec4f(${this.x}, ${this.y}, ${this.z}, ${this.w})`,
+      type: "vec4f"
+    };
+  }
+}
+exports.Vec4Node = Vec4Node;
+class ColorNode extends ShaderNode {
+  constructor(r = 1.0, g = 1.0, b = 1.0, a = 1.0) {
+    super("Color");
+    this.r = r;
+    this.g = g;
+    this.b = b;
+    this.a = a;
+  }
+  build(_, __, ctx) {
+    return {
+      out: `vec4f(${this.r}, ${this.g}, ${this.b}, ${this.a})`,
+      type: "vec4f"
+    };
+  }
+}
+
+// MATH NODES
+exports.ColorNode = ColorNode;
+class AddNode extends ShaderNode {
+  constructor() {
+    super("Add");
+    this.inputs = {
+      a: {
+        default: "0.0"
+      },
+      b: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} + ${b}`),
+      type: "f32"
+    };
+  }
+}
+exports.AddNode = AddNode;
+class SubtractNode extends ShaderNode {
+  constructor() {
+    super("Subtract");
+    this.inputs = {
+      a: {
+        default: "0.0"
+      },
+      b: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} - ${b}`),
+      type: "f32"
+    };
+  }
+}
+exports.SubtractNode = SubtractNode;
+class MultiplyNode extends ShaderNode {
+  constructor() {
+    super("Multiply");
+    this.inputs = {
+      a: {
+        default: "1.0"
+      },
+      b: {
+        default: "1.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} * ${b}`),
+      type: "f32"
+    };
+  }
+}
+exports.MultiplyNode = MultiplyNode;
+class DivideNode extends ShaderNode {
+  constructor() {
+    super("Divide");
+    this.inputs = {
+      a: {
+        default: "1.0"
+      },
+      b: {
+        default: "1.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `${a} / ${b}`),
+      type: "f32"
+    };
+  }
+}
+exports.DivideNode = DivideNode;
+class PowerNode extends ShaderNode {
+  constructor() {
+    super("Power");
+    this.inputs = {
+      base: {
+        default: "1.0"
+      },
+      exponent: {
+        default: "2.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connBase = ctx.shaderGraph.getInput(this, "base");
+    const connExp = ctx.shaderGraph.getInput(this, "exponent");
+    const base = connBase ? ctx.resolve(connBase.fromNode, connBase.fromPin) : this.inputs.base.default;
+    const exp = connExp ? ctx.resolve(connExp.fromNode, connExp.fromPin) : this.inputs.exponent.default;
+    return {
+      out: ctx.temp("f32", `pow(${base}, ${exp})`),
+      type: "f32"
+    };
+  }
+}
+exports.PowerNode = PowerNode;
+class SqrtNode extends ShaderNode {
+  constructor() {
+    super("Sqrt");
+    this.inputs = {
+      value: {
+        default: "1.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `sqrt(${val})`),
+      type: "f32"
+    };
+  }
+}
+exports.SqrtNode = SqrtNode;
+class AbsNode extends ShaderNode {
+  constructor() {
+    super("Abs");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `abs(${val})`),
+      type: "f32"
+    };
+  }
+}
+exports.AbsNode = AbsNode;
+class MinNode extends ShaderNode {
+  constructor() {
+    super("Min");
+    this.inputs = {
+      a: {
+        default: "0.0"
+      },
+      b: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `min(${a}, ${b})`),
+      type: "f32"
+    };
+  }
+}
+exports.MinNode = MinNode;
+class MaxNode extends ShaderNode {
+  constructor() {
+    super("Max");
+    this.inputs = {
+      a: {
+        default: "0.0"
+      },
+      b: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `max(${a}, ${b})`),
+      type: "f32"
+    };
+  }
+}
+exports.MaxNode = MaxNode;
+class LerpNode extends ShaderNode {
+  constructor() {
+    super("Lerp");
+    this.inputs = {
+      a: {
+        default: "0.0"
+      },
+      b: {
+        default: "1.0"
+      },
+      t: {
+        default: "0.5"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const connT = ctx.shaderGraph.getInput(this, "t");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    const t = connT ? ctx.resolve(connT.fromNode, connT.fromPin) : this.inputs.t.default;
+    return {
+      out: ctx.temp("f32", `mix(${a}, ${b}, ${t})`),
+      type: "f32"
+    };
+  }
+}
+exports.LerpNode = LerpNode;
+class SinNode extends ShaderNode {
+  constructor() {
+    super("Sin");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `sin(${val})`),
+      type: "f32"
+    };
+  }
+}
+exports.SinNode = SinNode;
+class CosNode extends ShaderNode {
+  constructor() {
+    super("Cos");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `cos(${val})`),
+      type: "f32"
+    };
+  }
+}
+exports.CosNode = CosNode;
+class TanNode extends ShaderNode {
+  constructor() {
+    super("Tan");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `tan(${val})`),
+      type: "f32"
+    };
+  }
+}
+
+// VECTOR OPERATIONS
+exports.TanNode = TanNode;
+class DotProductNode extends ShaderNode {
+  constructor() {
+    super("DotProduct");
+    this.inputs = {
+      a: {
+        default: "vec3f(0.0)"
+      },
+      b: {
+        default: "vec3f(0.0)"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("f32", `dot(${a}, ${b})`),
+      type: "f32"
+    };
+  }
+}
+exports.DotProductNode = DotProductNode;
+class CrossProductNode extends ShaderNode {
+  constructor() {
+    super("CrossProduct");
+    this.inputs = {
+      a: {
+        default: "vec3f(0.0)"
+      },
+      b: {
+        default: "vec3f(0.0)"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+    return {
+      out: ctx.temp("vec3f", `cross(${a}, ${b})`),
+      type: "vec3f"
+    };
+  }
+}
+exports.CrossProductNode = CrossProductNode;
+class NormalizeNode extends ShaderNode {
+  constructor() {
+    super("Normalize");
+    this.inputs = {
+      vector: {
+        default: "vec3f(1.0)"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    return {
+      out: ctx.temp("vec3f", `normalize(${vec})`),
+      type: "vec3f"
+    };
+  }
+}
+exports.NormalizeNode = NormalizeNode;
+class LengthNode extends ShaderNode {
+  constructor() {
+    super("Length");
+    this.inputs = {
+      vector: {
+        default: "vec3f(0.0)"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+    return {
+      out: ctx.temp("f32", `length(${vec})`),
+      type: "f32"
+    };
+  }
+}
+
+// CHANNEL/SWIZZLE NODES
+exports.LengthNode = LengthNode;
+class SplitVec4Node extends ShaderNode {
+  constructor() {
+    super("SplitVec4");
+    this.inputs = {
+      vector: {
+        default: "vec4f(0.0)"
+      }
+    };
+    // This node has multiple outputs!
+  }
+  build(pin, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "vector");
+    const vec = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.vector.default;
+
+    // Store the temp once
+    if (!this._temp) {
+      this._temp = ctx.temp("vec4f", vec);
+    }
+
+    // Return different components based on which output pin is being resolved
+    switch (pin) {
+      case "x":
+        return {
+          out: `${this._temp}.x`,
+          type: "f32"
+        };
+      case "y":
+        return {
+          out: `${this._temp}.y`,
+          type: "f32"
+        };
+      case "z":
+        return {
+          out: `${this._temp}.z`,
+          type: "f32"
+        };
+      case "w":
+        return {
+          out: `${this._temp}.w`,
+          type: "f32"
+        };
+      default:
+        return {
+          out: this._temp,
+          type: "vec4f"
+        };
+    }
+  }
+}
+exports.SplitVec4Node = SplitVec4Node;
+class CombineVec4Node extends ShaderNode {
+  constructor() {
+    super("CombineVec4");
+    this.inputs = {
+      x: {
+        default: "0.0"
+      },
+      y: {
+        default: "0.0"
+      },
+      z: {
+        default: "0.0"
+      },
+      w: {
+        default: "1.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const connY = ctx.shaderGraph.getInput(this, "y");
+    const connZ = ctx.shaderGraph.getInput(this, "z");
+    const connW = ctx.shaderGraph.getInput(this, "w");
+    const x = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    const y = connY ? ctx.resolve(connY.fromNode, connY.fromPin) : this.inputs.y.default;
+    const z = connZ ? ctx.resolve(connZ.fromNode, connZ.fromPin) : this.inputs.z.default;
+    const w = connW ? ctx.resolve(connW.fromNode, connW.fromPin) : this.inputs.w.default;
+    return {
+      out: ctx.temp("vec4f", `vec4f(${x}, ${y}, ${z}, ${w})`),
+      type: "vec4f"
+    };
+  }
+}
+
+// UTILITY NODES
+exports.CombineVec4Node = CombineVec4Node;
+class FracNode extends ShaderNode {
+  constructor() {
+    super("Frac");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `fract(${val})`),
+      type: "f32"
+    };
+  }
+}
+exports.FracNode = FracNode;
+class FloorNode extends ShaderNode {
+  constructor() {
+    super("Floor");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `floor(${val})`),
+      type: "f32"
+    };
+  }
+}
+exports.FloorNode = FloorNode;
+class CeilNode extends ShaderNode {
+  constructor() {
+    super("Ceil");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `ceil(${val})`),
+      type: "f32"
+    };
+  }
+}
+exports.CeilNode = CeilNode;
+class SmoothstepNode extends ShaderNode {
+  constructor() {
+    super("Smoothstep");
+    this.inputs = {
+      edge0: {
+        default: "0.0"
+      },
+      edge1: {
+        default: "1.0"
+      },
+      x: {
+        default: "0.5"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const connEdge0 = ctx.shaderGraph.getInput(this, "edge0");
+    const connEdge1 = ctx.shaderGraph.getInput(this, "edge1");
+    const connX = ctx.shaderGraph.getInput(this, "x");
+    const edge0 = connEdge0 ? ctx.resolve(connEdge0.fromNode, connEdge0.fromPin) : this.inputs.edge0.default;
+    const edge1 = connEdge1 ? ctx.resolve(connEdge1.fromNode, connEdge1.fromPin) : this.inputs.edge1.default;
+    const x = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
+    return {
+      out: ctx.temp("f32", `smoothstep(${edge0}, ${edge1}, ${x})`),
+      type: "f32"
+    };
+  }
+}
+exports.SmoothstepNode = SmoothstepNode;
+class OneMinusNode extends ShaderNode {
+  constructor() {
+    super("OneMinus");
+    this.inputs = {
+      value: {
+        default: "0.0"
+      }
+    };
+  }
+  build(_, __, ctx) {
+    const conn = ctx.shaderGraph.getInput(this, "value");
+    const val = conn ? ctx.resolve(conn.fromNode, conn.fromPin) : this.inputs.value.default;
+    return {
+      out: ctx.temp("f32", `1.0 - ${val}`),
+      type: "f32"
+    };
+  }
+}
+
+// INPUT NODES
+exports.OneMinusNode = OneMinusNode;
+class FragmentPositionNode extends ShaderNode {
+  constructor() {
+    super("FragmentPosition");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "input.fragPos",
+      type: "vec3f"
+    };
+  }
+}
+exports.FragmentPositionNode = FragmentPositionNode;
+class FragmentNormalNode extends ShaderNode {
+  constructor() {
+    super("FragmentNormal");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "input.fragNorm",
+      type: "vec3f"
+    };
+  }
+}
+exports.FragmentNormalNode = FragmentNormalNode;
+class ViewDirectionNode extends ShaderNode {
+  constructor() {
+    super("ViewDirection");
+  }
+  build(_, __, ctx) {
+    return {
+      out: ctx.temp("vec3f", "normalize(scene.cameraPos - input.fragPos)"),
+      type: "vec3f"
+    };
+  }
+}
+exports.ViewDirectionNode = ViewDirectionNode;
+class GlobalAmbientNode extends ShaderNode {
+  constructor() {
+    super("GlobalAmbient");
+  }
+  build(_, __, ctx) {
+    return {
+      out: "scene.globalAmbient",
+      type: "vec3f"
+    };
+  }
+}
+exports.GlobalAmbientNode = GlobalAmbientNode;
+class InlineWGSLNode {
+  constructor(code = "return vec4f(1.0, 0.0, 0.0, 1.0);") {
+    this.id = nodeId++;
+    this.type = "InlineWGSL";
+    this.code = code;
+    this.label = "Inline WGSL";
+    this.inputs = {};
+    this.outputs = {
+      result: {
+        type: "vec4f"
+      }
+    };
+  }
+  build(pin, value, ctx) {
+    if (pin === "result") {
+      const fnName = `inlineWGSL_${this.id}`;
+      const fnCode = `
+fn ${fnName}() -> vec4f {
+  ${this.code}
+}`;
+      ctx.registerFunction(fnName, fnCode);
+      const out = ctx.temp("vec4f", `${fnName}()`);
+      return {
+        out
+      };
+    }
+  }
+}
+exports.InlineWGSLNode = InlineWGSLNode;
+class ConnectionLayer {
+  constructor(svg, shaderGraph) {
+    this.svg = svg;
+    this.shaderGraph = shaderGraph;
+    this.temp = null;
+    this.from = null;
+    document.addEventListener("pointermove", e => this.move(e));
+    document.addEventListener("pointerup", e => this.up(e));
+  }
+  attach(pin) {
+    pin.onpointerdown = e => {
+      e.stopPropagation();
+      if (pin.dataset.type !== "output") return;
+      this.from = pin;
+      this.temp = this.path();
+      this.svg.appendChild(this.temp);
+    };
+  }
+  move(e) {
+    if (!this.temp || !this.from) return;
+    this.draw(this.temp, this.center(this.from), {
+      x: e.clientX,
+      y: e.clientY
+    });
+  }
+  up(e) {
+    if (!this.temp || !this.from) return;
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    if (t?.classList.contains("pinShader") && t.dataset.type === "input") {
+      this.finalize(this.from, t);
+    }
+    this.temp.remove();
+    this.temp = this.from = null;
+  }
+  finalize(outPin, inPin) {
+    const fromNode = this.shaderGraph.nodes.find(n => n.id === outPin.dataset.node);
+    const toNode = this.shaderGraph.nodes.find(n => n.id === inPin.dataset.node);
+    const fromPin = outPin.dataset.pin;
+    const toPin = inPin.dataset.pin;
+    this.shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+    this.redrawAll();
+  }
+  redrawAll() {
+    [...this.svg.children].forEach(p => p.remove()); // remove old paths
+    this.shaderGraph.connections.forEach(c => this.redrawConnection(c));
+  }
+  redrawConnection(conn) {
+    const path = this.path();
+    path.dataset.from = `${conn.fromNode.id}:${conn.fromPin}`;
+    path.dataset.to = `${conn.toNode.id}:${conn.toPin}`;
+    this.svg.appendChild(path);
+    const a = document.querySelector(`.pinShader.output[data-node="${conn.fromNode.id}"][data-pin="${conn.fromPin}"]`);
+    const b = document.querySelector(`.pinShader.input[data-node="${conn.toNode.id}"][data-pin="${conn.toPin}"]`);
+    if (a && b) this.draw(path, this.center(a), this.center(b));
+  }
+  path() {
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("stroke", "#6aa9ff");
+    p.setAttribute("stroke-width", "2");
+    p.setAttribute("fill", "none");
+    return p;
+  }
+  draw(p, a, b) {
+    const dx = Math.abs(b.x - a.x) * 0.5;
+    p.setAttribute("d", `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}`);
+  }
+  center(el) {
+    const r = el.getBoundingClientRect();
+    const svgRect = this.svg.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2 - svgRect.left,
+      y: r.top + r.height / 2 - svgRect.top
+    };
+  }
+}
+async function openFragmentShaderEditor(id = "fragShader") {
+  return new Promise((resolve, reject) => {
+    const shaderGraph = new FragmentShaderGraph(id);
+    const root = document.createElement("div");
+    root.id = "shaderDOM";
+    root.style.cssText = `
+    position:fixed; left: 17.5%; top:4%;
+    background:#0b0e14; color:#eee;
+    display:flex; font-family:system-ui;
+    width:300%;height:90%
+  `;
+    root.style.display = 'none';
+    /* LEFT MENU */
+    const menu = document.createElement("div");
+    menu.style.cssText = `
+    width:200px; border-right:1px solid #222;
+    padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
+  `;
+    const btn = (txt, fn) => {
+      const b = document.createElement("button");
+      b.textContent = txt;
+      b.style.cssText = "width:100%;margin:4px 0;";
+      if (txt == "Compile All" || txt == "Compile" || txt == "Save Graph" || txt == "Load Graph") b.style.cssText += "color: orange;";
+      if (txt == "Create New") b.style.cssText += "color: lime;";
+      if (txt == "Delete") b.style.cssText += "color: red;";
+      b.classList.add("btn");
+      b.classList.add("btnLeftBox");
+      b.onclick = fn;
+      menu.appendChild(b);
+    };
+    /* GRAPH AREA */
+    const area = document.createElement("div");
+    area.style.cssText = "flex:1;position:relative";
+    area.classList.add('fancy-grid-bg');
+    area.classList.add('dark');
+    let pan = {
+      active: false,
+      ox: 0,
+      oy: 0
+    };
+    area.addEventListener("pointerdown", e => {
+      if (e.target !== area) return;
+      pan.active = true;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      area.setPointerCapture(e.pointerId);
+    });
+    area.addEventListener("pointermove", e => {
+      if (!pan.active) return;
+      const dx = e.clientX - pan.ox;
+      const dy = e.clientY - pan.oy;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      shaderGraph.nodes.forEach(n => {
+        n.x += dx;
+        n.y += dy;
+        const el = document.querySelector(`.nodeShader[data-node-id="${n.id}"]`);
+        if (el) {
+          el.style.left = n.x + "px";
+          el.style.top = n.y + "px";
+        }
+      });
+      connectionLayer.redrawAll();
+    });
+    area.addEventListener("pointerup", e => {
+      pan.active = false;
+      area.releasePointerCapture(e.pointerId);
+    });
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position = "absolute";
+    svg.style.left = "0";
+    svg.style.top = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    area.appendChild(svg);
+    root.appendChild(menu);
+    root.appendChild(area);
+    document.body.appendChild(root);
+    const style = document.createElement("style");
+    style.textContent = `
+#shaderDOM { z-index:2 }
+
+.nodeShader {
+  position:absolute;
+  min-width:140px;
+  background:#151a2a;
+  border:1px solid #222;
+  border-radius:6px;
+  padding:0;
+  color:#eee;
+  cursor:move;
+}
+
+.nodeShader.selected {
+  border-color: #ff8800;
+  box-shadow: 0 0 8px #ff8800;
+}
+
+.nodeShader .node-title {
+  -webkit-text-stroke-width: 0.2px;
+  display: block;
+  padding: 6px 8px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: #ffffff;
+  background: #1f2937;
+  white-space: nowrap;
+  position: relative;
+  z-index: 10;
+  user-select: none;
+  border-radius: 6px 6px 0 0;
+  border-bottom: 1px solid #333;
+}
+
+.node-properties {
+  padding: 6px 8px;
+  background: #1a1f2e;
+  border-bottom: 1px solid #333;
+}
+
+.node-properties input,
+.node-properties textarea {
+  font-family: monospace;
+}
+
+.node-properties input:focus,
+.node-properties textarea:focus {
+  outline: none;
+  border-color: #6aa9ff;
+}
+
+.nodeShader-body {
+  display:flex;
+  gap:8px;
+  justify-content: space-between;
+  padding: 6px 8px;
+}
+
+.nodeShader-inputs {
+  display:flex;
+  flex-direction:column;
+}
+
+.pinShader-row {
+  position: relative;
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+  font-size: 12px;
+  color: #ddd;
+}
+
+.pinShader {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0f0;
+  border: 2px solid #000;
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.pinShader.input {  margin-left: -6px; background: #ff6a6a; }
+.pinShader.output { margin-right: -6px; background: #6aa9ff; }
+
+.pinShader-label {
+  margin-left: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 6;
+}
+
+svg path {
+  pointer-events:none;
+}
+`;
+    document.head.appendChild(style);
+    const connectionLayer = new ConnectionLayer(svg, shaderGraph);
+    function addNode(node, x, y) {
+      const test = shaderGraph.addNode(node);
+      if (test == null) return;
+      if (x == null || y == null) {
+        const p = shaderGraph.nextSpawn();
+        x = p.x;
+        y = p.y;
+      }
+      node.x = x;
+      node.y = y;
+      const el = document.createElement("div");
+      el.className = "nodeShader";
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      area.appendChild(el);
+      el.tabIndex = 0;
+      el.addEventListener("click", e => {
+        e.stopPropagation();
+        document.querySelectorAll(".nodeShader.selected").forEach(n => n.classList.remove("selected"));
+        el.classList.add("selected");
+      });
+      el.dataset.nodeId = node.id;
+      const title = document.createElement("div");
+      title.className = "node-title";
+      title.textContent = node.type;
+      el.appendChild(title);
+
+      // ✅ ADD INPUT FIELDS FOR NODE PROPERTIES
+      const propsContainer = document.createElement("div");
+      propsContainer.className = "node-properties";
+      propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
+
+      // Helper to create labeled input
+      function addPropertyInput(label, propName, value, type = "number", step = "0.01") {
+        const row = document.createElement("div");
+        row.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
+        const labelEl = document.createElement("label");
+        labelEl.textContent = label + ":";
+        labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
+        const input = document.createElement("input");
+        input.type = type;
+        input.value = value;
+        input.step = step;
+        input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
+        input.addEventListener("input", () => {
+          const val = type === "number" ? parseFloat(input.value) : input.value;
+          node[propName] = val;
+        });
+        input.addEventListener("pointerdown", e => e.stopPropagation());
+        row.appendChild(labelEl);
+        row.appendChild(input);
+        propsContainer.appendChild(row);
+      }
+
+      // ✅ ADD PROPERTIES BASED ON NODE TYPE
+      if (node.type === "Float") {
+        addPropertyInput("Value", "value", node.value);
+      } else if (node.type === "Vec2") {
+        addPropertyInput("X", "x", node.x);
+        addPropertyInput("Y", "y", node.y);
+      } else if (node.type === "Vec3") {
+        addPropertyInput("X", "x", node.x);
+        addPropertyInput("Y", "y", node.y);
+        addPropertyInput("Z", "z", node.z);
+      } else if (node.type === "Vec4") {
+        addPropertyInput("X", "x", node.x);
+        addPropertyInput("Y", "y", node.y);
+        addPropertyInput("Z", "z", node.z);
+        addPropertyInput("W", "w", node.w);
+      } else if (node.type === "Color") {
+        addPropertyInput("R", "r", node.r);
+        addPropertyInput("G", "g", node.g);
+        addPropertyInput("B", "b", node.b);
+        addPropertyInput("A", "a", node.a);
+      } else if (node.type === "InlineFunction") {
+        addPropertyInput("Name", "fnName", node.fnName, "text");
+        const ta = document.createElement("textarea");
+        ta.value = node.code;
+        ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
+        ta.oninput = () => node.code = ta.value;
+        ta.onpointerdown = e => e.stopPropagation();
+        propsContainer.appendChild(ta);
+      }
+      if (propsContainer.children.length > 0) {
+        el.appendChild(propsContainer);
+      }
+      const body = document.createElement("div");
+      body.className = "nodeShader-body";
+      el.appendChild(body);
+      function createPinRow(pinName, type = "input") {
+        const row = document.createElement("div");
+        row.className = "pinShader-row";
+        const pin = document.createElement("div");
+        pin.className = "pinShader " + (type === "input" ? "input" : "output");
+        pin.dataset.node = node.id;
+        pin.dataset.pin = pinName;
+        pin.dataset.type = type;
+        const label = document.createElement("div");
+        label.className = "pinShader-label";
+        label.textContent = pinName;
+        if (type === "input") row.append(pin, label);else {
+          row.style.justifyContent = "flex-end";
+          row.append(label, pin);
+        }
+        return {
+          row,
+          pin
+        };
+      }
+      const inputsContainer = document.createElement("div");
+      inputsContainer.className = "nodeShader-inputs";
+      body.appendChild(inputsContainer);
+      Object.keys(node.inputs || {}).forEach(pinName => {
+        const {
+          row,
+          pin
+        } = createPinRow(pinName, "input");
+        inputsContainer.appendChild(row);
+      });
+      const outputContainer = document.createElement("div");
+      outputContainer.style.width = '100%';
+      body.appendChild(outputContainer);
+      const {
+        row: outRow,
+        pin: outPin
+      } = createPinRow("out", "output");
+      outputContainer.appendChild(outRow);
+      connectionLayer.attach(outPin);
+      shaderGraph.connectionLayer = connectionLayer;
+      shaderGraph.makeDraggable(el, node, connectionLayer);
+    }
+    document.addEventListener("keydown", e => {
+      if (e.key === "Delete") {
+        const sel = document.querySelector(".nodeShader.selected");
+        if (!sel) return;
+        const nodeId = sel.dataset.nodeId;
+        const node = shaderGraph.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        // remove connections involving this node
+        shaderGraph.connections = shaderGraph.connections.filter(c => c.fromNode !== node && c.toNode !== node);
+        // remove SVG paths
+        [...svg.querySelectorAll("path")].forEach(p => {
+          if (p.dataset.from?.startsWith(nodeId + ":") || p.dataset.to?.startsWith(nodeId + ":")) {
+            p.remove();
+          }
+        });
+        sel.remove();
+        shaderGraph.nodes = shaderGraph.nodes.filter(n => n !== node);
+        // ?
+        shaderGraph.connectionLayer.redrawConnection();
+      }
+    });
+    btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
+    btn("CameraPos", () => addNode(new CameraPosNode()));
+    btn("Time", () => addNode(new TimeNode()));
+    btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
+    btn("TextureSampler", () => addNode(new TextureSamplerNode()));
+    btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
+    btn("Grayscale", () => addNode(new GrayscaleNode()));
+    btn("Contrast", () => addNode(new ContrastNode()));
+    btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
+    btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
+    // btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
+    // btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
+    btn("LightShadowNode", () => addNode(new LightShadowNode()));
+    btn("LightToColorNode", () => addNode(new LightToColorNode()));
+    btn("AlphaOutput", () => addNode(new AlphaOutput()));
+    btn("NormalOutput", () => addNode(new NormalOutput()));
+    // Constants
+    btn("Float", () => {
+      const val = prompt("Enter float value:", "1.0");
+      addNode(new FloatNode(parseFloat(val) || 1.0));
+    });
+    btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
+    btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
+    // Math
+    btn("Add", () => addNode(new AddNode()));
+    btn("Multiply", () => addNode(new MultiplyNode()));
+    btn("Power", () => addNode(new PowerNode()));
+    btn("Lerp", () => addNode(new LerpNode()));
+    // Trig
+    btn("Sin", () => addNode(new SinNode()));
+    btn("Cos", () => addNode(new CosNode()));
+    // Vector
+    btn("Normalize", () => addNode(new NormalizeNode()));
+    btn("DotProduct", () => addNode(new DotProductNode()));
+    btn("Length", () => addNode(new LengthNode()));
+    // Utility
+    btn("Frac", () => addNode(new FracNode()));
+    btn("OneMinus", () => addNode(new OneMinusNode()));
+    btn("Smoothstep", () => addNode(new SmoothstepNode()));
+    // Inputs
+    btn("FragPosition", () => addNode(new FragmentPositionNode()));
+    btn("FragNormal", () => addNode(new FragmentNormalNode()));
+    btn("ViewDirection", () => addNode(new ViewDirectionNode()));
+    // Channel ops
+    btn("SplitVec4", () => addNode(new SplitVec4Node()));
+    btn("CombineVec4", () => addNode(new CombineVec4Node()));
+    btn("Create New", async () => {
+      shaderGraph.clear();
+      let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
+      if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+        if (exist === true) {
+          console.info("ALREADY EXIST SHADER, please use diff name" + exist);
+        } else {
+          shaderGraph.id = nameOfGraphMaterital;
+          saveGraph(shaderGraph, nameOfGraphMaterital);
+        }
+      }
+    });
+    btn("Compile", () => {
+      let r = shaderGraph.compile();
+      const graphGenShaderWGSL = (0, _flexCodexShaderAdapter.graphAdapter)(r, shaderGraph.nodes);
+      // console.log("test compile ", graphGenShaderWGSL);
+      shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
+    });
+    btn("Compile All", () => {
+      for (let x = 0; x < shaderGraph.runtimeList.length; x++) {
+        setTimeout(() => {
+          (0, _utils.byId)('shader-graphs-list').selectedIndex = x + 1;
+          const event = new Event('change', {
+            bubbles: true
+          });
+          (0, _utils.byId)('shader-graphs-list').dispatchEvent(event);
+          if (shaderGraph.runtimeList.length == x) {
+            console.log('LAST');
+          }
+        }, 500 * x);
+      }
+    });
+    btn("Save Graph", () => {
+      saveGraph(shaderGraph, shaderGraph.id);
+    });
+    btn("Load Graph", async () => {
+      shaderGraph.clear();
+      let nameOfGraphMaterital = prompt("Choose Name:", "MyShader1");
+      const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+      if (exist === false) {
+        alert("⚠️Graph no exist!⚠️");
+      }
+    });
+    btn("Delete", () => {
+      console.log("[DELETE]", shaderGraph.id);
+      document.dispatchEvent(new CustomEvent('delete-shader-graph', {
+        detail: shaderGraph.id
+      }));
+    });
+
+    // gobal for now next:
+    // direct connection with FluxCOdexVertex vs ShaderGraph
+    // document.addEventListener("give-me-shader", () => {  });
+
+    const titleb = document.createElement("p");
+    // titleb.id = "shader-graphs-list";
+    titleb.style.cssText = "width:100%;margin:4px 0;";
+    titleb.classList.add("btn3");
+    titleb.classList.add("btnLeftBox");
+    titleb.innerHTML = `Current shader:`;
+    titleb.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(titleb);
+    const b = document.createElement("select");
+    b.id = "shader-graphs-list";
+    b.style.cssText = "width:100%;margin:4px 0;";
+    b.classList.add("btn");
+    b.classList.add("btnLeftBox");
+    b.style.webkitTextStrokeWidth = 0;
+    menu.appendChild(b);
+    document.addEventListener("on-shader-graphs-list", e => {
+      // console.log("on-shader-graphs-list :", e.detail);
+      const shaders = e.detail;
+      b.innerHTML = "";
+      var __ = 0;
+      if (!(0, _utils.byId)("shader-graphs-list-dom")) {
+        __ = 1;
+        const placeholder = document.createElement("option");
+        placeholder.id = "shader-graphs-list-dom";
+        placeholder.textContent = "Select shader";
+        placeholder.value = "";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        b.appendChild(placeholder);
+      }
+      shaderGraph.runtimeList = [];
+      shaders.forEach((shader, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = shader.name;
+        shaderGraph.runtimeList.push(shader.name);
+        let test = JSON.parse(shader.content);
+        // console.log("Graph content shader:", test.final);
+        shaderGraph.runtime_memory[shader.name] = test.final;
+        b.appendChild(opt);
+      });
+      if (__ == 1) {
+        b.onchange = event => {
+          shaderGraph.clear();
+          const selectedIndex = event.target.value;
+          const selectedShader = shaders[selectedIndex];
+          console.log("Selected shader:", selectedShader.name);
+          // console.log("Graph content:", selectedShader.content);
+          // There is a other way - compile and assign - no cache policy
+          // const exist = loadGraph(selectedShader.name, shaderGraph, addNode);
+          document.dispatchEvent(new CustomEvent('load-shader-graph', {
+            detail: selectedShader.name
+          }));
+          console.log("Lets load selectedShader.name ", selectedShader.name);
+        };
+      }
+      document.dispatchEvent(new CustomEvent("sgraphs-ready", {}));
+    });
+    document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
+    // Init
+    document.addEventListener("sgraphs-ready", async () => {
+      if (shaderGraph.runtimeList.length > 0) {
+        // load first
+        shaderGraph.id = shaderGraph.runtimeList[0];
+        const exist = await loadGraph(shaderGraph.id, shaderGraph, addNode);
+        if (exist == false) {
+          saveGraph(shaderGraph, shaderGraph.id);
+          console.log("NEW SHADER:[SAVED]" + exist);
+        }
+      } else {
+        console.log('no saved graphs');
+      }
+      resolve(shaderGraph);
+    });
+    // if(shaderGraph.nodes.length == 0) addNode(new FragmentOutputNode(), 500, 200);
+  });
+}
+function serializeGraph(shaderGraph) {
+  return JSON.stringify({
+    nodes: shaderGraph.nodes.map(n => ({
+      id: n.id,
+      type: n.type,
+      x: n.x ?? 100,
+      y: n.y ?? 100,
+      fnName: n.fnName,
+      code: n.code,
+      name: n.name,
+      value: n.value,
+      r: n.r,
+      g: n.g,
+      b: n.b,
+      a: n.a,
+      inputs: Object.fromEntries(Object.entries(n.inputs || {}).map(([k, v]) => [k, {
+        default: v.default
+      }]))
+    })),
+    connections: shaderGraph.connections.map(c => ({
+      from: c.fromNode.id,
+      fromPin: c.fromPin,
+      to: c.toNode.id,
+      toPin: c.toPin
+    })),
+    final: shaderGraph.runtime_memory[shaderGraph.id] ? shaderGraph.runtime_memory[shaderGraph.id] : null
+  });
+}
+function saveGraph(shaderGraph, key = "fragShaderGraph") {
+  let content = serializeGraph(shaderGraph);
+  localStorage.setItem(key, content);
+  console.log('test compile content', shaderGraph.runtime_memory[key]);
+  console.log('test compile content', content);
+  if (shaderGraph.runtime_memory[key]) {
+    // content.runtime_memory = shaderGraph.runtime_memory[key];
+  } else {
+    console.warn("GraphShader is saved for src but with no compile final data for prod build.");
+  }
+  document.dispatchEvent(new CustomEvent('save-shader-graph', {
+    detail: {
+      name: key,
+      content: content
+    }
+  }));
+  console.log("%cShader shaderGraph saved", _utils.LOG_FUNNY_ARCADE);
+}
+async function loadGraph(key, shaderGraph, addNodeUI) {
+  // shaderGraph.clear();
+  // Editor is not aware where is project file 
+  // It is in generated file&folder event projectName is defined
+  // Its not good to write import for project file here in middle of engine core...
+  if (shaderGraph.onGraphLoadAttached === false) {
+    shaderGraph.onGraphLoadAttached = true;
+    document.addEventListener('on-graph-load', e => {
+      if (e.detail == null) {
+        alert("Graph no exist!");
+        return;
+      }
+      shaderGraph.nodes.length = 0;
+      shaderGraph.connections.length = 0;
+      // console.log("on-graph-load: " + e.detail.name);
+      shaderGraph.id = e.detail.name;
+      let data = JSON.parse(e.detail.content);
+      // console.log("on-graph-load: " + data)
+      if (!data) return false;
+      const map = {};
+      data.nodes.forEach(node => {
+        const saveId = node.id;
+        const saveX = node.x;
+        const saveY = node.y;
+        switch (node.type) {
+          case "FragmentOutput":
+            node = new FragmentOutputNode();
+            break;
+          case "CameraPos":
+            node = new CameraPosNode();
+            break;
+          case "Time":
+            node = new TimeNode();
+            break;
+          case "InlineFunction":
+            node = new InlineFunctionNode(node.fnName, node.code);
+            break;
+          case "TextureSampler":
+            node = new TextureSamplerNode(node.name);
+            break;
+          case "MultiplyColor":
+            node = new MultiplyColorNode();
+            break;
+          case "Grayscale":
+            node = new GrayscaleNode();
+            break;
+          case "Contrast":
+            node = new ContrastNode();
+            break;
+          case "AlphaOutput":
+            node = new AlphaOutput();
+            break;
+          case "NormalOutput":
+            node = new NormalOutput();
+            break;
+          case "LightShadowNode":
+            node = new LightShadowNode();
+            break;
+          case "LightToColor":
+            node = new LightToColorNode();
+            break;
+          case "UV":
+            node = new UVNode();
+            break;
+          case "Float":
+            node = new FloatNode(node.value ?? 1.0);
+            break;
+          case "Vec2":
+            node = new Vec2Node(node.x ?? 0, node.y ?? 0);
+            break;
+          case "Vec3":
+            node = new Vec3Node(node.x ?? 0, node.y ?? 0, node.z ?? 0);
+            break;
+          case "Vec4":
+            node = new Vec4Node(node.x ?? 0, node.y ?? 0, node.z ?? 0, node.w ?? 1);
+            break;
+          case "Color":
+            node = new ColorNode(node.r ?? 1, node.g ?? 1, node.b ?? 1, node.a ?? 1);
+            break;
+          case "Add":
+            node = new AddNode();
+            break;
+          case "Subtract":
+            node = new SubtractNode();
+            break;
+          case "Multiply":
+            node = new MultiplyNode();
+            break;
+          case "Divide":
+            node = new DivideNode();
+            break;
+          case "Power":
+            node = new PowerNode();
+            break;
+          case "Sin":
+            node = new SinNode();
+            break;
+          case "Cos":
+            node = new CosNode();
+            break;
+          case "Normalize":
+            node = new NormalizeNode();
+            break;
+          case "DotProduct":
+            node = new DotProductNode();
+            break;
+          case "Lerp":
+            node = new LerpNode();
+            break;
+          case "Frac":
+            node = new FracNode();
+            break;
+          case "OneMinus":
+            node = new OneMinusNode();
+            break;
+          case "Smoothstep":
+            node = new SmoothstepNode();
+            break;
+          case "FragmentPosition":
+            node = new FragmentPositionNode();
+            break;
+          case "ViewDirection":
+            node = new ViewDirectionNode();
+            break;
+          case "SplitVec4":
+            node = new SplitVec4Node();
+            break;
+          case "CombineVec4":
+            node = new CombineVec4Node();
+            break;
+          case "GlobalAmbient":
+            node = new GlobalAmbientNode();
+            break;
+        }
+        node.id = saveId;
+        node.x = saveX;
+        node.y = saveY;
+        // console.log("Loaded:" + node)
+        map[node.id] = node;
+        addNodeUI(node, node.x, node.y);
+      });
+      setTimeout(() => data.connections.forEach(c => {
+        const fromNode = map[c.from];
+        const toNode = map[c.to];
+        const fromPin = c.fromPin;
+        const toPin = c.toPin;
+        if (!fromNode || !toNode) {
+          console.warn("Skipping connection due to missing node", c);
+          return;
+        }
+        shaderGraph.connect(fromNode, fromPin, toNode, toPin);
+        const path = shaderGraph.connectionLayer.path();
+        path.dataset.from = `${fromNode.id}:${fromPin}`;
+        path.dataset.to = `${toNode.id}:${toPin}`;
+        shaderGraph.connectionLayer.svg.appendChild(path);
+        shaderGraph.connectionLayer.redrawAll(path);
+      }), 50);
+
+      // compile every loaded
+      // let r = shaderGraph.compile();
+      // const graphGenShaderWGSL = graphAdapter(r, shaderGraph.nodes);
+      // console.log("test compile shaderGraph.final ", shaderGraph.final);
+      // shaderGraph.runtime_memory[shaderGraph.id] = graphGenShaderWGSL;
+      return true;
+    });
+  }
+  document.dispatchEvent(new CustomEvent('load-shader-graph', {
+    detail: key
+  }));
+}
+
+},{"../../engine/utils.js":53,"./flexCodexShaderAdapter.js":83}],83:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.graphAdapter = graphAdapter;
+function graphAdapter(compilerResult, nodes) {
+  const {
+    structs,
+    uniforms,
+    functions,
+    locals,
+    outputs,
+    mainLines
+  } = compilerResult;
+
+  // console.log("what os node in adapter", nodes);
+
+  const globals = new Set();
+  globals.add("const PI: f32 = 3.141592653589793;");
+  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
+
+  // 3️⃣ Prepare final color outputs
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  const normal = outputs.normal || "normalize(input.fragNorm)";
+  const emissive = outputs.emissive || "vec3f(0.0)";
+
+  /////////////////////////
+  // --- Iterate nodes in topological order ---
+  for (const node of nodes) {
+    if (node.type === "LightShadowNode") {
+      functions.push(`
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    // coneAtten = 1.0;
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    // return (diffuse + specular) * radiance * NdotL * coneAtten;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+`);
+      // Inject compute function (inline or multi-line)
+      // mainLines.push(`finalColor *= vec4(scene.globalAmbient + lightContribution, 1);`);
+    }
+  }
+  return `
+/* === Engine uniforms === */
+
+// DINAMIC GLOBALS
+${[...globals].join("\n")}
+
+// DINAMIC STRUCTS
+${[...structs].join("\n")}
+
+// PREDEFINED
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+// PREDEFINED
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+// PREDEFINED
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+// PREDEFINED
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+    alpha     : f32
+};
+
+// PREDEFINED
+const MAX_SPOTLIGHTS = 20u;
+
+// PREDEFINED
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// ✅ Graph custom uniforms
+${[...uniforms].join("\n")}
+
+// ✅ Graph custom functions
+${functions.join("\n\n")}
+
+// PREDEFINED Fragment input
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// PREDEFINED PBR helpers
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    
+    // ✅ Get alpha from texture and material factor
+    // let alpha = texColor.a * material.baseColorFactor.a;
+    let alpha = material.baseColorFactor.a;
+    
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+  // Locals
+  ${locals.join("\n  ")}
+  ${mainLines.join("\n  ")}
+  return ${outputs.outColor};
+}
+`;
+}
+
+},{}],84:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.runtimeCacheObjs = exports.default = void 0;
+var _ToolTip = require("../../engine/plugin/tooltip/ToolTip");
+var _utils = require("../../engine/utils");
+var _audioAsset = require("../../sounds/audioAsset");
+var _curveEditor = require("./curve-editor");
+var _flexCodexShaderAdapter = require("./flexCodexShaderAdapter");
+/**
+ * @description
+ * Flux Codex Vertex use visual scripting model.
+ *
+ * @filename
+ * fluxCodexVertex.js
+ *
+ * @Licence
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (c) 2025 Nikola Lukić zlatnaspirala@gmail.com
+ *
+ * @Note
+ * License summary for fluxCodexVertex.js (MPL 2.0):
+ *
+ * ✔ You MAY:
+ * - Use this file in commercial and proprietary software
+ * - Modify and redistribute this file
+ * - Combine it with closed-source code
+ * - Sell software that includes this file
+ *
+ * ✘ You MUST:
+ * - Publish the source code of this file if you modify it
+ * - Keep this file under MPL 2.0
+ * - Provide a link to the MPL 2.0 license
+ * - Preserve copyright notices
+ *
+ * ✔ You do NOT have to:
+ * - Open-source your entire project
+ * - Publish files that merely import or use this file
+ * - Release unrelated source code
+ *
+ * - MPL applies ONLY to this file
+ */
+
+// Engine agnostic
+let runtimeCacheObjs = exports.runtimeCacheObjs = [];
 class FluxCodexVertex {
-  constructor(boardId, boardWrapId, logId, methodsManager) {
+  constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
     this.toolTip = new _ToolTip.METoolTip();
+    this.curveEditor = new _curveEditor.CurveEditor();
+    this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
     this.variables = {
       number: {},
@@ -33421,6 +37619,20 @@ class FluxCodexVertex {
       panStart: [0, 0],
       zoom: 1
     };
+    this.clearRuntime = () => {
+      app.graphUpdate = () => {};
+      // stop sepcial onDraw node
+      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter(n => n.title == "On Draw"), _utils.LOG_FUNNY_ARCADE);
+      let allOnDraws = Object.values(this.nodes).filter(n => n.title == "On Draw");
+      for (var x = 0; x < allOnDraws.length; x++) {
+        allOnDraws[x]._listenerAttached = false;
+      }
+      for (let x = 0; x < runtimeCacheObjs.length; x++) {
+        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
+        app.removeSceneObjectByName(runtimeCacheObjs[x].name);
+      }
+      (0, _utils.byId)("graph-status").innerHTML = '⚫';
+    };
     this.setZoom = z => {
       this.state.zoom = Math.max(0.2, Math.min(2.5, z));
       this.board.style.transform = `scale(${this.state.zoom})`;
@@ -33439,9 +37651,6 @@ class FluxCodexVertex {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-
-    // EXTRA TIME 
-    setTimeout(() => this.init(), 3000);
     document.addEventListener("keydown", e => {
       if (e.key == "F6") {
         e.preventDefault();
@@ -33476,6 +37685,15 @@ class FluxCodexVertex {
       e.detail.path = e.detail.path.replace(/\\/g, '/');
       this.addNode('audioMP3', e.detail);
     });
+
+    // curve editor stuff
+    document.addEventListener('show-curve-editor', e => {
+      // console.log('show-showCurveEditorBtn editor ', e);
+      this.curveEditor.toggleEditor();
+    });
+
+    // EXTRA TIME
+    setTimeout(() => this.init(), 3300);
   }
   createContextMenu() {
     let CMenu = document.createElement("div");
@@ -33525,7 +37743,10 @@ class FluxCodexVertex {
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">Translate by Z</button>
@@ -33538,10 +37759,8 @@ class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
-    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
-    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -33694,13 +37913,25 @@ class FluxCodexVertex {
     hideVPopup.innerText = `Hide`;
     hideVPopup.classList.add("btn4");
     hideVPopup.style.margin = "8px 8px 8px 8px";
-    hideVPopup.style.width = "100px";
+    hideVPopup.style.width = "200px";
     hideVPopup.style.fontWeight = "bold";
     hideVPopup.style.webkitTextStrokeWidth = "0px";
     hideVPopup.addEventListener("click", () => {
       (0, _utils.byId)("varsPopup").style.display = "none";
     });
     popup.appendChild(hideVPopup);
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Save`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => {
+      this.compileGraph();
+    });
+    popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
@@ -33723,23 +37954,23 @@ class FluxCodexVertex {
           padding: "4px",
           cursor: "pointer",
           borderBottom: "1px solid #222",
-          color: colors[type] || "#fff"
+          color: colors[type] || "#fff",
+          placeContent: "space-around"
         });
         const label = document.createElement("span");
         label.textContent = `${name} (${type})`;
-        label.style.minWidth = "120px";
+        label.style.width = "20%";
         let input;
         if (type === "object") {
           input = document.createElement("textarea");
           input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
-          input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
           input.value = this.variables[type][name] ?? "";
-          input.style.width = "";
         }
+        input.style.width = "30%";
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, {
           background: "#000",
@@ -33914,6 +38145,12 @@ class FluxCodexVertex {
       name: "return",
       type: "value"
     });
+
+    // test 
+    node.outputs.push({
+      name: "reference",
+      type: "function"
+    });
     node.attachedMethod = methodItem.name;
     node.fn = fn;
     this.updateNodeDOM(node.id);
@@ -34013,19 +38250,20 @@ class FluxCodexVertex {
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
     if (node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
+      // console.log('!TEST! ??? BEFORE')
       if (select) {
         console.log('!TEST! ???');
-        const objects = spec.accessObject || [];
-        objects.forEach(obj => {
-          const opt = document.createElement("option");
-          opt.value = obj.name;
-          opt.textContent = obj.name;
-          select.appendChild(opt);
-        });
-        const selected = this._getSceneSelectedName(node);
-        if (selected) {
-          select.value = selected;
-        }
+        // const objects = spec.accessObject || [];
+        // objects.forEach(obj => {
+        //   const opt = document.createElement("option");
+        //   opt.value = obj.name;
+        //   opt.textContent = obj.name;
+        //   select.appendChild(opt);
+        // });
+        // const selected = this._getSceneSelectedName(node);
+        // if(selected) {
+        //   select.value = selected;
+        // }
       }
     } else if (node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
@@ -34039,10 +38277,10 @@ class FluxCodexVertex {
       if (node.attachedMethod) select.value = node.attachedMethod;
       select.onchange = e => {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        console.log('test reference::::', selected);
         if (selected) this.adaptNodeToMethod(node, selected);
       };
     } else if (node.category === "functions") {
-      console.log('!!!updateDOMNODE restoreDynamicFunctionNode', this.restoreDynamicFunctionNode);
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     } else if (node.category === "reffunctions") {
@@ -34293,6 +38531,10 @@ class FluxCodexVertex {
       el.className = "node " + (spec.title.toLowerCase() || "");
     } else if (spec.title == "Play MP3") {
       el.className = "node " + "audios";
+    } else if (spec.title == "Curve") {
+      el.className = "node " + "curve";
+    } else if (spec.title == "Set Shader Graph") {
+      el.className = "node " + "shader";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -34335,6 +38577,16 @@ class FluxCodexVertex {
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
+    if (spec.title == "Curve") {
+      const c = new _curveEditor.CurveData(spec.id);
+      let curve = this.curveEditor.curveStore.getOrCreate(c);
+      spec.curve = curve;
+      console.log(`%c Create DOM corotine Node [CURVE] ${spec.curve}`, _utils.LOG_FUNNY_ARCADE);
+      this.curveEditor.bindCurve(spec.curve, {
+        name: spec.id,
+        idNode: spec.id
+      });
+    }
     if (spec.comment) {
       const textarea = document.createElement("textarea");
       // textarea.style
@@ -34372,7 +38624,6 @@ class FluxCodexVertex {
       spec.fields.forEach(f => {
         const input = document.createElement("input");
         input.type = "number";
-        console.log("?????????????");
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
@@ -34406,6 +38657,7 @@ class FluxCodexVertex {
       select.addEventListener("change", e => {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
         if (selected) {
+          console.log('test reference', selected);
           this.adaptNodeToMethod(spec, selected);
         }
       });
@@ -34440,7 +38692,7 @@ class FluxCodexVertex {
     }
     if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
-      select.id = spec._id;
+      select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
@@ -34466,6 +38718,36 @@ class FluxCodexVertex {
         this.updateSceneObjectPins(spec, name);
       });
       el.appendChild(select);
+    } else if (spec.title === "Set Shader Graph") {
+      const select = document.createElement("select");
+      select.id = spec._id ? spec._id : spec.id;
+      select.style.width = "100%";
+      select.style.marginTop = "6px";
+      // Populate shader objects
+      if (spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "-- Select Shader --";
+      placeholder.value = "";
+      select.appendChild(placeholder);
+      spec.accessObject.runtimeList.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", e => {
+        const name = e.target.value;
+        spec.fields[0].value = name;
+        const dom = document.querySelector(`.node[data-id="${spec.id}"]`);
+        let fields = dom.querySelectorAll(".node-fields");
+        // console.log('WORKS objects', fields);
+        fields[0].children[0].value = name;
+      });
+      el.appendChild(select);
+      select.value = spec.fields[0].value;
+      setTimeout(() => select.dispatchEvent(new Event('change', {
+        bubbles: true
+      })), 100);
     }
     el.appendChild(body);
     // --- Dragging ---
@@ -34482,6 +38764,11 @@ class FluxCodexVertex {
       e.stopPropagation();
       this.selectNode(spec.id);
       this.updateNodeDOM(spec.id);
+    });
+    el.addEventListener("dblclick", e => {
+      e.stopPropagation();
+      console.log('DBL ' + spec.id);
+      this.onNodeDoubleClick(spec);
     });
     return el;
   }
@@ -34590,11 +38877,37 @@ class FluxCodexVertex {
         inputs: [{
           name: "exec",
           type: "action"
-        }
-        // {name: "physicsGeometry", type: "string", default: "Cube"},
-        // {name: "texturePath", type: "string", default: "res/textures/default.png"},
-        // {name: "position", type: "object"}
-        ],
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "geometry",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "sum",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }],
         outputs: [{
           name: "execOut",
           type: "action"
@@ -34604,28 +38917,28 @@ class FluxCodexVertex {
           value: "standard"
         }, {
           key: "pos",
-          value: ""
+          value: '{x:0, y:0, z:-20}'
         }, {
           key: "rot",
-          value: ""
+          value: '{x:0, y:0, z:0}'
         }, {
           key: "texturePath",
           value: "res/textures/star1.png"
         }, {
           key: "name",
-          value: ""
+          value: "TEST"
         }, {
           key: "geometry",
           value: "Cube"
         }, {
           key: "raycast",
-          value: ""
+          value: true
         }, {
           key: "scale",
           value: [1, 1, 1]
         }, {
           key: "sum",
-          value: ""
+          value: 10
         }, {
           key: "delay",
           value: 500
@@ -34633,6 +38946,407 @@ class FluxCodexVertex {
           key: "created",
           value: false
         }],
+        noselfExec: "true"
+      }),
+      generatorWall: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Generator Wall",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "size",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "spacing",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:0, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "size",
+          value: "10x3"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "spacing",
+          value: 10
+        }, {
+          key: "delay",
+          value: 500
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      generatorPyramid: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Generator Pyramid",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "levels",
+          type: "number"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "spacing",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "complete",
+          type: "action"
+        }, {
+          name: "objectNames",
+          type: "object"
+        }],
+        fields: [{
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:0, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "levels",
+          value: "5"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "spacing",
+          value: 10
+        }, {
+          key: "delay",
+          value: 500
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      setForceOnHit: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Force On Hit",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "rayDirection",
+          type: "object"
+        }, {
+          name: "strength",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [],
+        noselfExec: "true"
+      }),
+      setVideoTexture: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Video Texture",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "VideoTextureArg",
+          type: "object"
+        }, {
+          name: "muteAudio",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "objectName",
+          value: "standard"
+        }, {
+          key: "VideoTextureArg",
+          value: "{type: 'video', src: 'res/videos/tunel.mp4'}"
+        }, {
+          key: "muteAudio",
+          value: true
+        }],
+        noselfExec: "true"
+      }),
+      setCanvasInlineTexture: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set CanvasInline",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "canvaInlineProgram",
+          type: "function"
+        }, {
+          name: "specialCanvas2dArg",
+          type: "object"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "objectName",
+          value: "standard"
+        }, {
+          key: "canvaInlineProgram",
+          value: "function (ctx, canvas) {}"
+        }, {
+          key: "specialCanvas2dArg",
+          value: "{ hue: 200, glow: 10, text: 'Hello programmer', fontSize: 60, flicker: 0.05, }"
+        }],
+        noselfExec: "true"
+      }),
+      audioReactiveNode: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Audio Reactive Node",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "audioSrc",
+          type: "string"
+        }, {
+          name: "loop",
+          type: "boolean"
+        }, {
+          name: "thresholdBeat",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "low",
+          type: "number"
+        }, {
+          name: "mid",
+          type: "number"
+        }, {
+          name: "high",
+          type: "number"
+        }, {
+          name: "energy",
+          type: "number"
+        }, {
+          name: "beat",
+          type: "boolean"
+        }],
+        fields: [{
+          key: "audioSrc",
+          value: "audionautix-black-fly.mp3"
+        }, {
+          key: "loop",
+          value: true
+        }, {
+          key: "thresholdBeat",
+          value: 0.7
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      oscillator: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Oscillator",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "min",
+          type: "number"
+        }, {
+          name: "max",
+          type: "number"
+        }, {
+          name: "step",
+          type: "number"
+        }, {
+          name: "regime",
+          type: "string"
+        }, {
+          name: "resist",
+          type: "number"
+        }, {
+          name: "resistMode",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "value",
+          type: "number"
+        }],
+        fields: [{
+          key: "min",
+          value: 0
+        }, {
+          key: "max",
+          value: 10
+        }, {
+          key: "step",
+          value: 0.2
+        }, {
+          key: "regime",
+          value: 'pingpong'
+        }, {
+          key: "resist",
+          value: 0.02
+        }, {
+          key: "resistMode",
+          value: 'linear'
+        }],
+        noselfExec: "true"
+      }),
+      curveTimeline: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Curve",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "delta",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "value",
+          type: "number"
+        }],
+        fields: [{
+          key: "name",
+          value: "Curve1"
+        }],
+        curve: {},
         noselfExec: "true"
       }),
       eventCustom: (id, x, y) => ({
@@ -34692,8 +39406,98 @@ class FluxCodexVertex {
           name: "exec",
           type: "action"
         }, {
+          name: "hitObjectName",
+          type: "string"
+        }, {
+          name: "screenCoords",
+          type: "object"
+        }, {
+          name: "rayOrigin",
+          type: "object"
+        }, {
+          name: "rayDirection",
+          type: "object"
+        }, {
           name: "hitObject",
           type: "object"
+        }, {
+          name: "hitNormal",
+          type: "object"
+        }, {
+          name: "hitDistance",
+          type: "object"
+        }, {
+          name: "eventName",
+          type: "object"
+        }, {
+          name: "button",
+          type: "number"
+        }, {
+          name: "timestamp",
+          type: "number"
+        }],
+        noselfExec: 'true',
+        _listenerAttached: false
+      }),
+      onDraw: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "On Draw",
+        category: "event",
+        inputs: [],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "delta",
+          type: "number"
+        }, {
+          name: "skip",
+          type: "number"
+        }],
+        fields: [{
+          key: "skip",
+          value: 5
+        }],
+        noselfExec: 'true',
+        _listenerAttached: false
+      }),
+      onKey: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "On Key",
+        category: "event",
+        inputs: [],
+        outputs: [{
+          name: "keyDown",
+          type: "action"
+        }, {
+          name: "keyUp",
+          type: "action"
+        }, {
+          name: "isHeld",
+          type: "boolean"
+        }, {
+          name: "anyKeyDown",
+          type: "action"
+        }, {
+          name: "keyCode",
+          type: "string"
+        }, {
+          name: "shift",
+          type: "action"
+        }, {
+          name: "ctrl",
+          type: "action"
+        }, {
+          name: "alt",
+          type: "action"
+        }],
+        fields: [{
+          key: "key",
+          value: "W"
         }],
         noselfExec: 'true',
         _listenerAttached: false
@@ -34804,6 +39608,214 @@ class FluxCodexVertex {
           value: "1000"
         }],
         builtIn: true
+      }),
+      // string operation
+      startsWith: (id, x, y) => ({
+        id,
+        title: "Starts With [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "prefix",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
+      }),
+      endsWith: (id, x, y) => ({
+        id,
+        title: "Ends With [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "suffix",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
+      }),
+      includes: (id, x, y) => ({
+        id,
+        title: "Includes [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "search",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
+      }),
+      toUpperCase: (id, x, y) => ({
+        id,
+        title: "To Upper Case [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      toLowerCase: (id, x, y) => ({
+        id,
+        title: "To Lower Case [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      trim: (id, x, y) => ({
+        id,
+        title: "Trim [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      length: (id, x, y) => ({
+        id,
+        title: "String Length",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "number"
+        }]
+      }),
+      substring: (id, x, y) => ({
+        id,
+        title: "Substring [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "start",
+          type: "number"
+        }, {
+          name: "end",
+          type: "number"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      replace: (id, x, y) => ({
+        id,
+        title: "Replace [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "search",
+          type: "string"
+        }, {
+          name: "replace",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      split: (id, x, y) => ({
+        id,
+        title: "Split [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }, {
+          name: "separator",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "array"
+        }]
+      }),
+      concat: (id, x, y) => ({
+        id,
+        title: "Concat [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "a",
+          type: "string"
+        }, {
+          name: "b",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "string"
+        }]
+      }),
+      isEmpty: (id, x, y) => ({
+        id,
+        title: "Is Empty [string]",
+        x,
+        y,
+        category: "stringOperation",
+        inputs: [{
+          name: "input",
+          type: "string"
+        }],
+        outputs: [{
+          name: "return",
+          type: "boolean"
+        }]
       }),
       // Math
       add: (id, x, y) => ({
@@ -35197,6 +40209,29 @@ class FluxCodexVertex {
           value: ""
         }]
       }),
+      getNumberLiteral: (id, x, y) => ({
+        id,
+        title: "getNumberLiteral",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "value",
+          type: "number"
+        }],
+        fields: [{
+          key: "value",
+          value: 1
+        }],
+        noselfExec: "true"
+      }),
       comment: (id, x, y) => ({
         id,
         title: "Comment",
@@ -35268,6 +40303,35 @@ class FluxCodexVertex {
         accessObject: window.app?.mainRenderBundle,
         accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: ["name", "position", "rotation", "scale"]
+      }),
+      getShaderGraph: (id, x, y) => ({
+        noExec: true,
+        id,
+        title: "Set Shader Graph",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          objectName: "objectName",
+          type: "string"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "selectedShader",
+          value: ""
+        }, {
+          key: "objectName",
+          value: "FLOOR"
+        }],
+        builtIn: true,
+        accessObject: window.app?.shaderGraph,
+        accessObjectLiteral: "window.app?.shaderGraph"
       }),
       getSceneLight: (id, x, y) => ({
         noExec: true,
@@ -35394,6 +40458,121 @@ class FluxCodexVertex {
         outputs: [{
           name: "execOut",
           type: "action"
+        }]
+      }),
+      setProductionMode: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Production Mode",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "disableLoopWarns",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "disableLoopWarns",
+          value: "true"
+        }]
+      }),
+      setMaterial: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Material",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "materialType",
+          semantic: "string"
+        }, {
+          name: "sceneObjectName",
+          semantic: "string"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "sceneObjectName",
+          value: "FLOOR"
+        }, {
+          key: "materialType",
+          value: "standard",
+          placeholder: "standard|power|water"
+        }]
+      }),
+      setWaterParams: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Water Material Params",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "sceneObjectName",
+          semantic: "string"
+        }, {
+          name: "deepColor(vec3f)",
+          semantic: "object"
+        }, {
+          name: "waveSpeed",
+          semantic: "number"
+        }, {
+          name: "shallowColor(vec3f)",
+          semantic: "object"
+        }, {
+          name: "waveScale",
+          semantic: "number"
+        }, {
+          name: "waveHeight",
+          semantic: "number"
+        }, {
+          name: "fresnelPower",
+          semantic: "number"
+        }, {
+          name: "specularPower",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "sceneObjectName",
+          value: "FLOOR"
+        }, {
+          key: "deepColor(vec3f)",
+          value: "[0.0, 0.2, 0.4]"
+        }, {
+          key: "waveSpeed",
+          value: "0.5"
+        }, {
+          key: "shallowColor(vec3f)",
+          value: "[0.0, 0.5, 0.7]"
+        }, {
+          key: "waveScale",
+          value: "4.0"
+        }, {
+          key: "waveHeight",
+          value: "0.15"
+        }, {
+          key: "fresnelPower",
+          value: "3.0"
+        }, {
+          key: "specularPower",
+          value: "128"
         }]
       }),
       getSpeed: (id, x, y) => ({
@@ -35997,7 +41176,6 @@ class FluxCodexVertex {
       const pos = this.getValue(nodeId, "position");
       if (!pos) return;
       pos.onTargetPositionReach = () => {
-        console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
       n._listenerAttached = true;
@@ -36006,13 +41184,68 @@ class FluxCodexVertex {
       if (n._listenerAttached) return;
       app.reference.addRaycastsListener();
       const handler = e => {
-        n._returnCache = e.detail?.hitObject ?? e.detail;
+        n._returnCache = e.detail;
         this.enqueueOutputs(n, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
       n._eventHandler = handler;
       n._listenerAttached = true;
       return;
+    } else if (n.title == "On Draw") {
+      // console.log('ON DRAW INIT ONLE !!!!!', n.fields.find(f => f.key === "skip")?.value);
+      if (n._listenerAttached) return;
+      let skip = n.fields.find(f => f.key === "skip")?.value;
+      if (typeof n._frameCounter === "undefined") {
+        n._frameCounter = 0;
+      }
+      const graph = this;
+      app.graphUpdate = function (delta) {
+        n._frameCounter++;
+        if (skip > 0 && n._frameCounter < skip) return;
+        n._frameCounter = 0;
+        // console.info('.....', delta)
+        n._returnCache = delta;
+        graph.enqueueOutputs(n, "exec");
+      };
+      n._listenerAttached = true;
+      return;
+    } else if (n.title == "On Key") {
+      if (n._listenerAttached) return;
+      const graph = this;
+      n._isHeld = false;
+      window.addEventListener("keydown", e => {
+        n.lastKey = e.key;
+        graph.enqueueOutputs(n, "anyKeyDown");
+        if (e.ctrlKey == true) graph.enqueueOutputs(n, "ctrl");
+        if (e.altKey == true) graph.enqueueOutputs(n, "alt");
+        if (e.shiftKey == true) graph.enqueueOutputs(n, "shift");
+        const keyValue = n.fields.find(f => f.key === "key")?.value;
+        if (!keyValue) return;
+        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
+          // node._pressed = true;
+          n._isHeld = true;
+          graph.enqueueOutputs(n, "keyDown");
+        }
+      });
+      window.addEventListener("keyup", e => {
+        console.log('ON e.shiftKey !!!!!', e.shiftKey);
+        console.log('ON e.altKey !!!!!', e.altKey);
+        console.log('ON e.ctrltKey !!!!!', e.ctrlKey);
+        const keyValue = n.fields.find(f => f.key === "key")?.value;
+        if (!keyValue) return;
+        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
+          // node._pressed = true;
+          n._isHeld = false;
+          graph.enqueueOutputs(n, "keyUp");
+        }
+      });
+      window.addEventListener("blur", () => {
+        if (n._isHeld) {
+          n._isHeld = false;
+          graph.enqueueOutputs(n, "keyUp");
+        }
+      });
+      n._listenerAttached = true;
     }
   }
   _executeAttachedMethod(n) {
@@ -36038,9 +41271,53 @@ class FluxCodexVertex {
     }
     if (!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
+    if (node.title === "Function" && pinName === "reference") {
+      if (typeof node.fn === 'undefined') {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === node.attachedMethod);
+        if (selected) {
+          node.fn = this.methodsManager.compileFunction(selected.code);
+        } else {
+          console.warn('Node: Function PinName: reference [reference not found at methodsContainer]');
+        }
+      }
+      return node.fn;
+    }
+    if (node.title === "On Draw") if (pinName == "delta") return node._returnCache;
+    if (node.title === "On Key" && pinName == "isHeld") return node._isHeld;
+    if (node.title === "On Key" && pinName == "keyCode") return node.lastKey;
+    if (node.title === "Generator Pyramid" && pinName == "objectNames") return node._returnCache;
+    if (node.title === "Audio Reactive Node") {
+      if (pinName === "low") {
+        return node._returnCache[0];
+      } else if (pinName === "mid") {
+        return node._returnCache[1];
+      } else if (pinName === "high") {
+        return node._returnCache[2];
+      } else if (pinName === "energy") {
+        return node._returnCache[3];
+      } else if (pinName === "beat") {
+        return node._returnCache[4];
+      }
+    }
+    if (node.title === "Oscillator" && pinName == "value") {
+      return node._returnCache;
+    }
+    if (node.title === "On Ray Hit") {
+      if (pinName === "hitObjectName") {
+        return node._returnCache['hitObject']['name'];
+      } else {
+        return node._returnCache[pinName];
+      }
+    }
     if (node.title === "if" && pinName === "condition") {
       let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
-      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      let t;
+      try {
+        t = this.getValue(testLink.from.node, testLink.from.pin);
+      } catch (err) {
+        console.log(`IF NODE ${node.id} have no conditional pin connected - default is false... fix this in FluxCodexVertex graph editor.`);
+        return false;
+      }
       if (typeof t !== 'undefined') {
         return t;
       }
@@ -36049,10 +41326,6 @@ class FluxCodexVertex {
         return node.fields?.find(f => f.key === "condition")?.value;
       }
       // ?
-    }
-    if (node.title === "On Ray Hit" && pinName === "hitObject") {
-      console.info('get value ray hit', node._returnCache);
-      return node._returnCache;
     }
     if (node.title === "Custom Event" && pinName === "detail") {
       console.warn("[Custom Event]  getvalue");
@@ -36081,10 +41354,10 @@ class FluxCodexVertex {
       }
       return value;
     }
-    const field = node.fields?.find(f => f.key === pinName);
-    if (field) return field.value;
     const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
+    const field = node.fields?.find(f => f.key === pinName);
+    if (field) return field.value;
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
     if (node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
@@ -36094,8 +41367,6 @@ class FluxCodexVertex {
       const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
       const selects = dom.querySelectorAll("select"); // returns NodeList
       let select = selects[0];
-      // alert()
-      // if((select.options.length-1) != node.accessObject.length) {
       select.innerHTML = ``;
       if (select) {
         node.accessObject.forEach(obj => {
@@ -36106,8 +41377,6 @@ class FluxCodexVertex {
         });
       }
       if (node.fields[0].value) select.value = node.fields[0].value;
-      // console.log('>>>>>>>>>>>>>>>>>>>>>')
-
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if (!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
@@ -36140,9 +41409,52 @@ class FluxCodexVertex {
     }
 
     // console.log("GETVALUE COMPARE!")
-    if (["math", "value", "compare"].includes(node.category)) {
+    if (["math", "value", "compare", "stringOperation"].includes(node.category)) {
       let result;
       switch (node.title) {
+        case "Starts With [string]":
+          console.log('test startsWith');
+          result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
+          break;
+        case "Ends With [string]":
+          result = this.getValue(nodeId, "input")?.endsWith(this.getValue(nodeId, "suffix"));
+          break;
+        case "Includes [string]":
+          result = this.getValue(nodeId, "input")?.includes(this.getValue(nodeId, "search"));
+          break;
+        case "Equals [string]":
+          result = this.getValue(nodeId, "a") === this.getValue(nodeId, "b");
+          break;
+        case "Not Equals [string]":
+          result = this.getValue(nodeId, "a") !== this.getValue(nodeId, "b");
+          break;
+        case "To Upper Case [string]":
+          result = this.getValue(nodeId, "input")?.toUpperCase();
+          break;
+        case "To Lower Case [string]":
+          result = this.getValue(nodeId, "input")?.toLowerCase();
+          break;
+        case "Trim [string]":
+          result = this.getValue(nodeId, "input")?.trim();
+          break;
+        case "String Length":
+          result = this.getValue(nodeId, "input")?.length ?? 0;
+          break;
+        case "Substring [string]":
+          result = this.getValue(nodeId, "input")?.substring(this.getValue(nodeId, "start"), this.getValue(nodeId, "end"));
+          break;
+        case "Replace [string]":
+          result = this.getValue(nodeId, "input")?.replace(this.getValue(nodeId, "search"), this.getValue(nodeId, "replace"));
+          break;
+        case "Split [string]":
+          result = this.getValue(nodeId, "input")?.split(this.getValue(nodeId, "separator"));
+          break;
+        case "Concat [string]":
+          result = (this.getValue(nodeId, "a") ?? "") + (this.getValue(nodeId, "b") ?? "");
+          break;
+        case "Is Empty [string]":
+          result = !this.getValue(nodeId, "input") || this.getValue(nodeId, "input").length === 0;
+          break;
         case "Add":
           result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -36173,11 +41485,8 @@ class FluxCodexVertex {
         case "A == B":
           let varA = this.getValue(nodeId, "A");
           let varB = this.getValue(nodeId, "B");
-          console.log('TEST DEEP TEST ');
           if (typeof varA == "object") {
-            console.log('TEST DEEP ');
             const r = this.deepEqual(varA, varB);
-            console.log('TEST DEEP ', r);
             result = r;
           } else {
             result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
@@ -36264,7 +41573,7 @@ class FluxCodexVertex {
     args.forEach(arg => {
       node.inputs.push({
         name: arg,
-        type: "value"
+        type: "any"
       });
     });
     if (this.hasReturn(fn)) {
@@ -36366,7 +41675,7 @@ class FluxCodexVertex {
       if (link) {
         const fromNode = this.nodes[link.from.node];
         if (fromNode._returnCache === undefined && fromNode._subCache === undefined) {
-          this.triggerNode(fromNode.id);
+          // this.triggerNode(fromNode.id);
         }
         if (fromNode._returnCache) arr = fromNode._returnCache;
         if (fromNode._subCache) arr = fromNode._subCache;
@@ -36456,16 +41765,13 @@ class FluxCodexVertex {
       pos.onTargetPositionReach = () => {
         this.triggerNode(n);
         this.enqueueOutputs(n, "exec");
-        // alert(" TARGET REACh ");
       };
-      console.log('**************rrrrrrrrrr***************');
       n._listenerAttached = true;
       return;
     }
 
     // functionDinamic execution
     if (n.category === "functions") {
-      console.log('TRIGGER n.category === functions ');
       // bloomPass is created in post time - make always update
       n.accessObject = eval(n.accessObjectLiteral);
       if (n.fn === undefined) {
@@ -36480,7 +41786,7 @@ class FluxCodexVertex {
       return;
     }
     if (n.category === "event" && typeof n.noselfExec === 'undefined') {
-      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>EXEC :  ', n.title);
+      console.log('EMPTY EXEC :  ', n.title);
       this.enqueueOutputs(n, "exec");
       return;
     }
@@ -36497,14 +41803,22 @@ class FluxCodexVertex {
         if (n.title == "Set Object") {
           if (value == 0) {
             let varliteral = n.fields?.find(f => f.key === "literal");
-            console.log("set object  varliteral.value ", varliteral.value);
+            // console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            // ??
           }
         } else {
-          console.log("set object ", value);
-          this.variables[type][varField.value] = {
-            value
-          };
+          if (value == 0) {
+            let varliteral = n.fields?.find(f => f.key === "literal");
+            // console.log("set object  varliteral.value ", varliteral.value);
+            this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            value = JSON.parse(varliteral.value);
+          } else {
+            console.log("set object ", value);
+            this.variables[type][varField.value] = {
+              value
+            };
+          }
         }
         this.notifyVariableChanged(type, varField.value);
         // Update matching getter nodes instantly
@@ -36588,7 +41902,7 @@ class FluxCodexVertex {
             n.displayEl.textContent = String(val);
           }
         }
-        console.info(`[Print] ${label}`, val);
+        console.info(`%c[Print] ${label}` + val, _utils.LOG_FUNNY_ARCADE);
       } else if (n.title === "SetTimeout") {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
@@ -36598,13 +41912,13 @@ class FluxCodexVertex {
         const src = this.getValue(nodeId, "src");
         const clones = Number(this.getValue(nodeId, "clones")) || 1;
         if (!key || !src) {
-          console.warn("[Play MP3] Missing key or src");
+          console.info(`%c[Play MP3] Missing key or src...`, _utils.LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
         const createdField = n.fields.find(f => f.key === "created");
         if (!createdField.value) {
-          console.log('!AUDIO ONCE!');
+          createdField.disabled = true;
           app.matrixSounds.createAudio(key, src, clones);
           createdField.value = true;
         }
@@ -36613,23 +41927,289 @@ class FluxCodexVertex {
         return;
       } else if (n.title === "Generator") {
         const texturePath = this.getValue(nodeId, "texturePath");
-        const pos = this.getValue(nodeId, "position");
-        // const clones = Number(this.getValue(nodeId, "clones")) || 1;
-
-        console.log('!INTERNAL TIMER no visual part. TEST !', scale);
-        console.log('!INTERNAL TIMER no visual part. TEST !', pos);
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const geo = this.getValue(nodeId, "geometry");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let sum = this.getValue(nodeId, "sum");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
         if (!texturePath || !pos) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
           return;
         }
         const createdField = n.fields.find(f => f.key === "created");
-        if (!createdField.value) {
-          console.log('!INTERNAL TIMER no visual part. ONCE!');
-
-          // app.matrixSounds.createAudio(key, src, clones);
+        if (createdField.value == "false" || createdField.value == false) {
+          console.log('!GEN! ONCE!');
+          app.physicsBodiesGenerator(mat, pos, rot, texturePath, name, geo, raycast, scale, sum, delay);
           // createdField.value = true;
         }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Generator Wall") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          // console.log('!GEN WALL! ONCE!');
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          // createdField.value = true;
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Generator Pyramid") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const levels = this.getValue(nodeId, "levels");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay).then(objects => {
+            // console.log('!GEN PYRAMID COMPLETE!');
+            n._returnCache = objects;
+            this.enqueueOutputs(n, "complete");
+          });
+          // createdField.value = true;
+        }
+        // sync
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Force On Hit") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const strength = this.getValue(nodeId, "strength");
+        const rayDirection = this.getValue(nodeId, "rayDirection");
+        if (!objectName || !rayDirection || !strength) {
+          console.warn("[Set Force On Hit] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let b = app.matrixAmmo.getBodyByName(objectName);
+        const i = new Ammo.btVector3(rayDirection[0] * strength, rayDirection[1] * strength, rayDirection[2] * strength);
+        b.applyCentralImpulse(i);
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Video Texture") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let videoTextureArg = this.getValue(nodeId, "VideoTextureArg");
+        if (!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+
+        // console.warn("[Set Video Texture] arg:", videoTextureArg);
+        if (typeof videoTextureArg != 'object') {
+          // console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
+          if (typeof videoTextureArg == 'string') {
+            eval("videoTextureArg = " + videoTextureArg);
+          }
+          if (typeof videoTextureArg === "undefined" || videoTextureArg === null) videoTextureArg = {
+            type: "video",
+            // video , camera  //not tested canvas2d, canvas2dinline
+            src: "res/videos/tunel.mp4"
+          };
+        }
+        let o = app.getSceneObjectByName(objectName);
+        o.loadVideoTexture(videoTextureArg);
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set CanvasInline") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
+        let specialCanvas2dArg = this.getValue(nodeId, "specialCanvas2dArg");
+        if (!objectName) {
+          console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, _utils.LOG_FUNNY_ARCADE);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        // console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
+        if (typeof specialCanvas2dArg == 'string') {
+          eval("specialCanvas2dArg = " + specialCanvas2dArg);
+        }
+        if (typeof canvaInlineProgram != 'function') {
+          // console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
+          if (typeof canvaInlineProgram == 'string') {
+            canvaInlineProgram = eval("canvaInlineProgram = " + canvaInlineProgram);
+          }
+          if (typeof canvaInlineProgram === "undefined" || canvaInlineProgram === null) canvaInlineProgram = function (ctx, canvas) {};
+        }
+        let o = app.getSceneObjectByName(objectName);
+        if (typeof o === 'undefined') {
+          console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, _utils.LOG_FUNNY_ARCADE);
+          _utils.mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
+          return;
+        }
+        // mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
+        o.loadVideoTexture({
+          type: "canvas2d-inline",
+          canvaInlineProgram: canvaInlineProgram,
+          specialCanvas2dArg: specialCanvas2dArg ? specialCanvas2dArg : undefined
+        });
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Curve") {
+        const cName = this.getValue(nodeId, "name");
+        const cDelta = this.getValue(nodeId, "delta");
+        if (!cName) {
+          console.log(`%c Node [CURVE] probably name is missing...`, _utils.LOG_FUNNY_ARCADE);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let curve = this.curveEditor.curveStore.getByName(nodeId);
+        if (!curve) {
+          console.warn("Curve not found:", cName);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        if (!curve.baked) {
+          console.log(`%cNode [CURVE] ${curve} bake.`, _utils.LOG_FUNNY_ARCADE);
+          curve.bake();
+        }
+        n.curve = curve;
+        const t01 = cDelta / curve.length;
+        // smooth
+        // const t01 = curve.loop
+        // ? (cDelta / curve.length) % 1
+        // : Math.min(1, Math.max(0, cDelta / curve.length));
+        let V = n.curve.evaluate(t01);
+        n._returnCache = V;
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "getNumberLiteral") {
+        const literailNum = this.getValue(nodeId, "number");
+        n._returnCache = literailNum;
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Audio Reactive Node") {
+        const src = this.getValue(nodeId, "audioSrc");
+        const loop = this.getValue(nodeId, "loop");
+        const thresholdBeat = this.getValue(nodeId, "thresholdBeat");
+        const createdField = n.fields.find(f => f.key === "created");
+        if (!n._audio && !n._loading) {
+          n._loading = true;
+          createdField.value = true;
+          createdField.disabled = true;
+          app.audioManager.load(src).then(asset => {
+            asset.audio.loop = loop;
+            n._audio = asset;
+            n._energyHistory = [];
+            n._beatCooldown = 0;
+            n._loading = false;
+          });
+          return;
+        }
+        if (!n._audio || !n._audio.ready) return;
+        const data = n._audio.updateFFT();
+        if (!data) return;
+        let low = 0,
+          mid = 0,
+          high = 0;
+        for (let i = 0; i < 16; i++) low += data[i];
+        for (let i = 16; i < 64; i++) mid += data[i];
+        for (let i = 64; i < 128; i++) high += data[i];
+        low /= 16;
+        mid /= 48;
+        high /= 64;
+        const energy = (low + mid + high) / 3;
+        const hist = n._energyHistory;
+        hist.push(low);
+        if (hist.length > 30) hist.shift();
+        let avg = 0;
+        for (let i = 0; i < hist.length; i++) avg += hist[i];
+        avg /= hist.length;
+        let beat = false;
+        if (low > avg * thresholdBeat && n._beatCooldown <= 0) {
+          beat = true;
+          n._beatCooldown = 10;
+        }
+        if (n._beatCooldown > 0) n._beatCooldown--;
+        n._returnCache = [low, mid, high, energy, beat];
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Oscillator") {
+        const min = this.getValue(nodeId, "min");
+        const max = this.getValue(nodeId, "max");
+        const step = this.getValue(nodeId, "step");
+        const regime = this.getValue(nodeId, "regime");
+        const resist = this.getValue(nodeId, "resist");
+        const resistMode = this.getValue(nodeId, "resistMode");
+        if (!n._listenerAttached) {
+          n.osc = new _utils.OSCILLATOR(min, max, step, {
+            regime: regime,
+            resist: resist,
+            resistMode: resistMode
+          });
+          n._listenerAttached = true;
+        }
+        n._returnCache = n.osc.UPDATE();
+      } else if (n.title === "Set Shader Graph") {
+        console.warn("[Set Shader Graph] ?????  ??input fields...");
+        const objectName = this.getValue(nodeId, "objectName");
+        let selectedShader = this.getValue(nodeId, "selectedShader");
+        if (!objectName) {
+          console.warn("[Set Shader Graph] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let o = app.getSceneObjectByName(objectName);
+        // 
+        o.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -36652,18 +42232,43 @@ class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Water Material Params") {
+      let deepColor = this.getValue(nodeId, "deepColor(vec3f)");
+      let waveSpeed = this.getValue(nodeId, "waveSpeed");
+      let shallowColor = this.getValue(nodeId, "shallowColor(vec3f)");
+      let waveScale = this.getValue(nodeId, "waveScale");
+      let waveHeight = this.getValue(nodeId, "waveHeight");
+      let fresnelPower = this.getValue(nodeId, "fresnelPower");
+      let specularPower = this.getValue(nodeId, "specularPower");
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if (deepColor && sceneObjectName) {
+        console.log('deepColor', deepColor);
+        deepColor = JSON.parse(deepColor);
+        shallowColor = JSON.parse(shallowColor);
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.updateWaterParams(deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Material") {
+      const materialType = this.getValue(nodeId, "materialType");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if (materialType && materialType !== "graph") {
+        console.log('sceneObjectName', sceneObjectName);
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.changeMaterial(materialType);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if (n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
-      // sceneObjectName
       if (texpath) {
-        // console.log('textPath', texpath)
         // console.log('sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(() => {
           setTimeout(() => obj.changeTexture(obj.texture0), 200);
         });
-        // pos.setSpeed(this.getValue(nodeId, "thrust"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -36737,12 +42342,25 @@ class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Production Mode") {
+      const disableLoopWarns = this.getValue(nodeId, "disableLoopWarns");
+      if (disableLoopWarns) {
+        //
+      }
+      console.log('set prodction mode true...');
+      (0, _utils.byId)('hideEditorBtn').click();
+      this.enqueueOutputs(n, "execOut");
+      return;
     }
-    console.log("BEFORE COMPARE ");
-    if (["math", "value", "compare"].includes(n.category)) {
+    // console.log("BEFORE COMPARE ");
+    if (["math", "value", "compare", "stringOperation"].includes(n.category)) {
       console.log("BEFORE COMPARE ");
       let result;
       switch (n.title) {
+        case "Starts With [string]":
+          // console.log('test startsWith');
+          result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
+          break;
         case "Add":
           result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -36773,11 +42391,8 @@ class FluxCodexVertex {
         case "A == B":
           let varA = this.getValue(nodeId, "A");
           let varB = this.getValue(nodeId, "B");
-          console.log('TEST DEEP TEST ');
           if (typeof varA == "object") {
-            console.log('TEST DEEP ');
             const r = this.deepEqual(varA, varB);
-            console.log('TEST DEEP ', r);
             result = r;
           } else {
             result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
@@ -36933,11 +42548,18 @@ class FluxCodexVertex {
     });
   }
   runGraph() {
-    (0, _utils.byId)("app").style.opacity = 0.4;
-    // this.updateValueDisplays();
+    // console.log('this.nodes', Object.values(this.nodes));
+    if ((0, _utils.byId)("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
+      // Just dummy thoughts — this is wrong.
+      // Every data in DOMs is good to use like status flas or any others calls.
+      if (_utils.mb) _utils.mb.show('FluxCodexVertex not ready yet...');
+      return;
+    }
+    (0, _utils.byId)("app").style.opacity = 0.5;
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => n._returnCache = undefined);
     Object.values(this.nodes).filter(n => n.category === "event" && n.title === "onLoad").forEach(n => this.triggerNode(n.id));
+    (0, _utils.byId)("graph-status").innerHTML = '🔴';
   }
   compileGraph() {
     const bundle = {
@@ -36953,22 +42575,33 @@ class FluxCodexVertex {
       if (key === 'accessObject') return undefined;
       if (key === '_returnCache') return undefined;
       if (key === '_listenerAttached') return false;
+      if (key === '_audio') return undefined;
+      if (key === '_loading') return false;
+      if (key === '_energyHistory') return undefined;
+      if (key === '_beatCooldown') return 0;
       return value;
     }
-    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
-    this.log("Graph saved to LocalStorage!");
+    let d = JSON.stringify(bundle, saveReplacer);
+    localStorage.setItem(this.SAVE_KEY, d);
+    document.dispatchEvent(new CustomEvent('save-graph', {
+      detail: d
+    }));
+    this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
-    let ask = confirm("⚠️ Delete all nodes , are you sure ?");
+    let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if (ask) {
-      localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
-      location.reload(true);
+      this.clearAllNodes();
+      localStorage.removeItem(this.SAVE_KEY);
+      this.compileGraph(); // not just save empty
+      // location.reload(true);
     }
   }
   clearAllNodes() {
     // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
     // Clear data
+    this.nodes = [];
     this.nodes.length = 0;
     this.links.length = 0;
     // Clear state
@@ -37054,11 +42687,25 @@ class FluxCodexVertex {
     this._importInput = input;
   }
   init() {
-    const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
-    if (saved) {
+    const saved = localStorage.getItem(this.SAVE_KEY);
+    if (saved || app.graph) {
       try {
-        const data = JSON.parse(saved);
-        // console.log("data.variables", data.variables);
+        let data;
+        try {
+          if (app.graph) {
+            data = app.graph;
+          } else {
+            console.warn("⚠️ Used cached data for graph, load from localstorage!");
+            data = JSON.parse(saved);
+          }
+          if (data == null) {
+            console.warn("⚠️ No file also no cache for graph, Editor faild to load!");
+            return;
+          }
+        } catch (e) {
+          console.warn("⚠️ No cache for graph, load from module!");
+          data = app.graph;
+        }
         if (data.variables) {
           this.variables = data.variables;
           this._refreshVarsList(this._varsPopup.children[1]);
@@ -37075,16 +42722,11 @@ class FluxCodexVertex {
           if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
             spec.displayEl = domEl.querySelector(".value-display");
           }
-          // if(spec.category === "action" && spec.title === "Function") {
           this.updateNodeDOM(spec.id);
-          // }
         });
         this.updateLinks();
-        // TEST FIX SELF CALL TRIGGER
-        // this.updateValueDisplays();
-
         this.restoreConnectionsRuntime();
-        this.log("Restored graph.");
+        this.log("Loaded graph.");
         return;
       } catch (e) {
         console.error("Failed to load graph from storage:", e);
@@ -37110,18 +42752,28 @@ class FluxCodexVertex {
     this.compileGraph();
     return;
   }
+  onNodeDoubleClick(node) {
+    console.log(`%c Node [CURVE  func] ${node.curve}`, _utils.LOG_FUNNY_ARCADE);
+    if (node.title !== "Curve") return;
+    this.curveEditor.bindCurve(node.curve, {
+      name: node.id,
+      idNode: node.id
+    });
+    this.curveEditor.toggleEditor(true);
+  }
 }
 exports.default = FluxCodexVertex;
-FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
 
-},{"../../engine/plugin/tooltip/ToolTip":50,"../../engine/utils":53}],80:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":50,"../../engine/utils":53,"../../sounds/audioAsset":76,"./curve-editor":79,"./flexCodexShaderAdapter":83}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _ToolTip = require("../../engine/plugin/tooltip/ToolTip.js");
 var _utils = require("../../engine/utils.js");
+var _flexCodexShader = require("./flexCodexShader.js");
 /**
  * @Author NIkola Lukic
  * @description
@@ -37133,6 +42785,7 @@ class EditorHud {
     this.core = core;
     this.sceneContainer = null;
     this.FS = new _utils.FullscreenManager();
+    this.toolTip = new _ToolTip.METoolTip();
     if (a == 'infly') {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
@@ -37182,12 +42835,11 @@ class EditorHud {
         }
       } else if (ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
         let objName = prompt("📦 Enter uniq name: ");
-        let name = prompt("📦 OBJ file : ", getPATH);
         if (confirm("⚛ Enable physics (Ammo)?")) {
           // infly 
           let o = {
             physics: true,
-            path: name,
+            path: getPATH,
             index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
@@ -37197,7 +42849,7 @@ class EditorHud {
           // infly
           let o = {
             physics: false,
-            path: name,
+            path: getPATH,
             index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
@@ -37282,8 +42934,8 @@ class EditorHud {
       <div class="dropdown">
       <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
-      <div class="drop-item">🛠️ Build</div>
       <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
+      <div id="start-prod-build" class="drop-item">🛠️ Build for production</div>
       </div>
     </div>
 
@@ -37306,12 +42958,12 @@ class EditorHud {
            <p>📽️Camera</p>
            <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
            <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <div> Position :  </br>
+           <!--div> Position :  </br>
             \n 
             X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
             Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
             Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div>
+           </div-->
         </div>
       </div>
     </div>
@@ -37320,19 +42972,29 @@ class EditorHud {
     <div class="top-item">
       <div class="top-btn">Script ▾</div>
       <div class="dropdown">
-        <div id="showVisualCodeEditorBtn" class="drop-item">
+        <div id="showVisualCodeEditorBtn" class="drop-item btn4">
            <span>Visual Scripting</span>
            <small>⌨️FluxCodexVertex</small>
            <small>⌨️Press F6 for run</small>
         </div>
-        <div id="showCodeVARSBtn" class="drop-item">
+        <div id="showCodeVARSBtn" class="drop-item btn4">
            <span>Variable editor</span>
-           <small>⌨️Visual Script tool</small>
+           <small>🔧Visual Script tool</small>
         </div>
-        <div id="showCodeEditorBtn" class="drop-item">
+        <div id="showCodeEditorBtn" class="drop-item btn4">
            <span>Show code editor</span>
-           <small>⌨️Function raw edit</small>
+           <small>👩‍💻Function raw edit</small>
            <small>Custom Functions</small>
+        </div>
+        <div id="showCurveEditorBtn" class="drop-item btn4">
+           <span>Show curve editor</span>
+           <small>📈Timeline curve editor</small>
+           <small> </small>
+        </div>
+        <div id="showShaderEditorBtn" class="drop-item btn4">
+           <span>Show shader editor</span>
+           <small>Shader editor</small>
+           <small> </small>
         </div>
       </div>
     </div>
@@ -37365,6 +43027,13 @@ class EditorHud {
         <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
       </div>
     </div>
+
+    <div class="btn2">
+      <button class="btn" id="saveMainGraphDOM">SAVE GRAPH</button>
+      <button class="btn" id="runMainGraphDOM">RUN [F6]</button>
+      <button class="btn" id="stopMainGraphDOM">STOP</button>
+      <span id="graph-status">⚫</span>
+    </div>
   `;
     document.body.appendChild(this.editorMenu);
 
@@ -37383,6 +43052,24 @@ class EditorHud {
       });
     });
 
+    // run top many
+
+    (0, _utils.byId)('saveMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.compileGraph();
+    });
+    (0, _utils.byId)('runMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.runGraph();
+    });
+    this.toolTip.attachTooltip((0, _utils.byId)('saveMainGraphDOM'), "Any changes in graph must be saved.");
+    this.toolTip.attachTooltip((0, _utils.byId)('runMainGraphDOM'), "Run main graph, sometimes engine need refresh.");
+    this.toolTip.attachTooltip((0, _utils.byId)('stopMainGraphDOM'), "Stop main graph, clear dynamic created objects.");
+    (0, _utils.byId)('stopMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.clearRuntime();
+    });
+
     // Close on outside tap
     document.addEventListener("click", e => {
       if (!this.editorMenu.contains(e.target)) {
@@ -37394,6 +43081,7 @@ class EditorHud {
     (0, _utils.byId)('fullScreenBtn').addEventListener('click', () => {
       this.FS.request();
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('fullScreenBtn'), "Just editor gui part for fullscreen - not fullscreen for real program.");
     (0, _utils.byId)('hideEditorBtn').addEventListener('click', () => {
       this.editorMenu.style.display = 'none';
       this.assetsBox.style.display = 'none';
@@ -37404,20 +43092,24 @@ class EditorHud {
     (0, _utils.byId)('bg-transparent').addEventListener('click', () => {
       (0, _utils.byId)('boardWrap').style.backgroundImage = 'none';
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('bg-transparent'), "Make visible both (mix) graphs and render.");
     (0, _utils.byId)('bg-tradicional').addEventListener('click', () => {
       // byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
       (0, _utils.byId)('boardWrap').style.backgroundImage = '';
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('bg-tradicional'), "Make visible graphs layout only.");
     if ((0, _utils.byId)('stop-watch')) (0, _utils.byId)('stop-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('stop-watch', {
         detail: {}
       }));
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('stop-watch'), "Stops JavaScript compilers. Use this when working with Git, for example, to avoid unnecessary builds.");
     if ((0, _utils.byId)('start-watch')) (0, _utils.byId)('start-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('start-watch', {
         detail: {}
       }));
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('start-watch'), "Start watch builds for JavaScript compilers.No need at start up - watcher already started on backend of editor.");
     if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
       let name = prompt("📦 Project name :", "MyProject1");
       let features = {
@@ -37438,8 +43130,15 @@ class EditorHud {
         }
       }));
     });
+    if ((0, _utils.byId)('cnpBtn')) this.toolTip.attachTooltip((0, _utils.byId)('cnpBtn'), "Create new project. You must input project name.");
     (0, _utils.byId)('start-refresh').onclick = () => {
       location.reload(true);
+    };
+    if ((0, _utils.byId)('start-refresh')) this.toolTip.attachTooltip((0, _utils.byId)('start-refresh'), "Simple refresh page.");
+    (0, _utils.byId)('start-prod-build').onclick = () => {
+      //
+      console.log('.......start-prod-build.......');
+      console.log('................................');
     };
 
     // OBJECT LEVEL
@@ -37453,6 +43152,7 @@ class EditorHud {
         detail: o
       }));
     });
+    if ((0, _utils.byId)('addCube')) this.toolTip.attachTooltip((0, _utils.byId)('addCube'), "Create Cube scene object with no physics.If you wanna objects who will be in kinematic also in physics regime (switching) then you need to use CubePhysics.");
     if ((0, _utils.byId)('addSphere')) (0, _utils.byId)('addSphere').addEventListener('click', () => {
       let objName = prompt("📦 Enter uniq name: ");
       let o = {
@@ -37498,12 +43198,33 @@ class EditorHud {
       this.core.cameras.WASD.yaw = e.target.value;
     });
     (0, _utils.byId)('showCodeEditorBtn').addEventListener('click', e => {
-      console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {
         detail: {}
       }));
     });
+    (0, _utils.byId)('showCurveEditorBtn').addEventListener('click', e => {
+      document.dispatchEvent(new CustomEvent('show-curve-editor', {
+        detail: {}
+      }));
+    });
+    (0, _utils.byId)('showShaderEditorBtn').addEventListener('click', e => {
+      if ((0, _utils.byId)('app').style.display == 'flex') {
+        (0, _utils.byId)('app').style.display = 'none';
+      }
+      if ((0, _utils.byId)('shaderDOM') === null) {
+        (0, _flexCodexShader.openFragmentShaderEditor)().then(e => {
+          app.shaderGraph = e;
+        });
+      } else if ((0, _utils.byId)('shaderDOM').style.display === 'flex') {
+        (0, _utils.byId)('shaderDOM').style.display = 'none';
+      } else {
+        (0, _utils.byId)('shaderDOM').style.display = 'flex';
+      }
+    });
     (0, _utils.byId)('showVisualCodeEditorBtn').addEventListener('click', e => {
+      if ((0, _utils.byId)('shaderDOM') && (0, _utils.byId)('shaderDOM').style.display == 'flex') {
+        (0, _utils.byId)('shaderDOM').style.display = 'none';
+      }
       if ((0, _utils.byId)('app').style.display == 'flex') {
         (0, _utils.byId)('app').style.display = 'none';
       } else {
@@ -37576,8 +43297,13 @@ class EditorHud {
         }
       }));
     });
+    this.toolTip.attachTooltip((0, _utils.byId)('folderTitle'), `This represent real folders files present intro res folder (what ever is there).\n
+    From assets box you can add glb or obj files direct with simple click. Everyting will be saved automatic.\n
+    Support for mp3 adding by click also. No support for mp4 - mp4 can be added from 'Set Textures' node.
+    `);
+    // folderTitle
     document.addEventListener('la', e => {
-      console.log('root folder ', e.detail.rootFolder);
+      console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, _utils.LOG_FUNNY_ARCADE);
       (0, _utils.byId)('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);
       (0, _utils.byId)('res-folder').innerHTML = '';
       e.detail.payload.forEach(i => {
@@ -37916,7 +43642,7 @@ class SceneObjectProperty {
     this.propName.style.width = '100%';
     // console.log("init : " + propName)
     // Register
-    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody") {
+    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody" || propName == "useScale") {
       this.propName.style.overflow = 'hidden';
       this.propName.style.height = '20px';
       this.propName.style.borderBottom = 'solid lime 2px';
@@ -37941,6 +43667,8 @@ class SceneObjectProperty {
       } else if (propName == "maxInstances") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if (propName == "useScale") {
+        this.propName.innerHTML = `<div style="display:flex;" >useScale  + ${this.readBool(currSceneObj, propName)} </div>`;
       } else if (propName == "texturesPaths") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
@@ -38041,6 +43769,28 @@ class SceneObjectProperty {
       // this.propName.innerHTML = `<div>${propName}</div>`;
       // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
     }
+  }
+  readBool(currSceneObj, rootKey) {
+    return `
+    <input type="checkbox"
+      class="inputEditor"
+      name="${rootKey}"
+      ${currSceneObj[rootKey] == true ? "checked" : ""}
+      onchange="
+        console.log(this.checked, 'checkbox change fired');
+        document.dispatchEvent(
+          new CustomEvent('web.editor.input', {
+            detail: {
+              inputFor: ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"},
+              propertyId: ${currSceneObj ? "'" + rootKey + "'" : "'no info'"},
+              property: 'no info',
+              value: this.checked
+            }
+          })
+        );
+      "
+    />
+  `;
   }
   exploreSubObject(subobj, rootKey, currSceneObj) {
     let a = [];
@@ -38264,7 +44014,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":53}],81:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip.js":50,"../../engine/utils.js":53,"./flexCodexShader.js":82}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38285,10 +44035,8 @@ class MethodsManager {
     this.methodsContainer = [];
     this.createUI();
     this.loadMethods(editorType).then(r => {
-      console.log('r: ', r);
       this.methodsContainer = r;
       this.refreshSelect();
-      console.log('r: ', r);
       this.select.click();
     });
     document.addEventListener('show-method-editor', () => {
@@ -38303,7 +44051,8 @@ class MethodsManager {
     return new Promise(async (resolve, reject) => {
       if (editorType == 'created from editor') {
         const page = location.pathname.split("/").pop().replace(".html", "");
-        const file = `../src/tools/editor/gen/${page}/methods.js`;
+        // const file = `../projects/${page}/methods.js`;
+        const file = `./${page}_methods.js`;
         let module;
         try {
           module = await import(file);
@@ -38353,7 +44102,6 @@ class MethodsManager {
       border-radius:8px;
       color:#ddd; 
       font-family: monospace;
-      width:95%;
     `;
     this.select = document.createElement("select");
     this.select.style.cssText = `
@@ -38364,7 +44112,6 @@ class MethodsManager {
       border:1px solid #555;
       margin-bottom:10px;
     `;
-    this.wrapper.appendChild(this.select);
     this.select.onchange = () => {
       console.log("CHANGE SCRIPT SELECT");
       const index = this.select.selectedIndex;
@@ -38379,6 +44126,18 @@ class MethodsManager {
       const method = this.methodsContainer[index];
       if (method) this.openEditor(method);
     };
+    this.managerTitle = document.createElement("p");
+    this.managerTitle.innerText = "Custom Method Box";
+    this.managerTitle.style.cssText = `
+      width:100%;
+      padding:6px;
+      margin-top: -10px;
+      color:#fff;
+      background: unset;
+      font-size: 140%;
+      font-family: 'stormfaze';
+    `;
+    this.wrapper.appendChild(this.managerTitle);
 
     // BUTTON Add new
     this.btnNew = document.createElement("button");
@@ -38386,13 +44145,14 @@ class MethodsManager {
     this.btnNew.style.cssText = `
       width:30%;
       padding:6px;
-      background:#444;
+      margin-left:10px;
+      background:rgb(20 94 171);
       color:#fff;
       border:1px solid #555;
       cursor:pointer;
     `;
     this.btnNew.onclick = () => this.openEditor();
-    this.wrapper.appendChild(this.btnNew);
+    this.wrapper.appendChild(this.select);
 
     // Popup Editor
     this.popup = document.createElement("div");
@@ -38405,7 +44165,8 @@ class MethodsManager {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:400px;
+      width:30%;
+      height: 75%;
       z-index:999;
     `;
     this.popup.appendChild(this.wrapper);
@@ -38423,36 +44184,41 @@ class MethodsManager {
         cursor:pointer;
       `;
     this.btnRemove.onclick = () => this.removeMethod();
-    this.popup.appendChild(this.btnRemove);
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
-      width:100%; 
-      height:160px; 
-      background:#1e1e1e; 
+      width:99%; 
+      height:78%; 
+      background:#1e1e1e;
+      font-size: larger;
       color:#fff; 
       border:1px solid #555;
-      box-shadow: inset 0px 0px 16px 0px #3F51B5;
-      -webkit-text-stroke-color: #03A9F4;
+      box-shadow: inset 0px 0px 10px 0px #3F51B5;
+      -webkit-text-stroke-width:0;
     `;
+    // -webkit-text-stroke-color: #03A9F4;
     this.popup.appendChild(this.textarea);
     this.btnSave = document.createElement("button");
     this.btnSave.innerText = "Save method";
     this.btnSave.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
-      background:#555;
+      margin-left:10px;
+      background:rgb(45 133 0);
       color:#fff;
       border:1px solid #666;
       cursor:pointer;
     `;
     this.btnSave.onclick = () => this.saveMethod();
     this.popup.appendChild(this.btnSave);
+    this.popup.appendChild(this.btnRemove);
+    this.popup.appendChild(this.btnNew);
     this.btnExit = document.createElement("button");
     this.btnExit.innerText = "Hide";
     this.btnExit.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
+      margin-left:10px;
       background:#555;
       color:#fff;
       border:1px solid #666;
@@ -38565,7 +44331,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],82:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38591,6 +44357,8 @@ var _bloom = require("./engine/postprocessing/bloom.js");
 var _raycast = require("./engine/raycast.js");
 var _phisicsBodies = require("./engine/generators/phisicsBodies.js");
 var _coreCache = require("./engine/core-cache.js");
+var _audioAsset = require("./sounds/audioAsset.js");
+var _flexCodexShaderAdapter = require("./tools/editor/flexCodexShaderAdapter.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -38608,7 +44376,8 @@ class MatrixEngineWGPU {
     BVHPlayerInstances: _bvhInstaced.BVHPlayerInstances,
     BVHPlayer: _bvh.BVHPlayer,
     downloadMeshes: _loaderObj.downloadMeshes,
-    addRaycastsListener: _raycast.addRaycastsListener
+    addRaycastsListener: _raycast.addRaycastsListener,
+    graphAdapter: _flexCodexShaderAdapter.graphAdapter
   };
   mainRenderBundle = [];
   lightContainer = [];
@@ -38622,6 +44391,7 @@ class MatrixEngineWGPU {
     depthStoreOp: 'store'
   };
   matrixSounds = new _sounds.MatrixSounds();
+  audioManager = new _audioAsset.AudioAssetManager();
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
       this.options = {
@@ -38667,6 +44437,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorTower = _phisicsBodies.physicsBodiesGeneratorTower.bind(this);
       this.physicsBodiesGeneratorDeepPyramid = _phisicsBodies.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
+    this.logLoopError = true;
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
@@ -38787,7 +44558,17 @@ class MatrixEngineWGPU {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
-    this.run(callback);
+    this.shadersPack = {};
+    console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
+    console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
+    console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.8.7 ", _utils.LOG_FUNNY);
+    console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
+    console.log("%cMatrix Engine WGPU - Port is open.\n" + "Creative power loaded with visual scripting.\n" + "Last features : audioReactiveNode, onDraw , onKey , curve editor.\n" + "No tracking. No hype. Just solutions. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
+    console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
+    setTimeout(() => {
+      this.run(callback);
+    }, 50);
   };
   createGlobalStuff() {
     // OPTIMISATION
@@ -38971,32 +44752,19 @@ class MatrixEngineWGPU {
   removeSceneObjectByName = name => {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
     if (index === -1) {
-      console.warn("Scene object not found:", name);
+      console.warn("%cScene object not found:" + name, _utils.LOG_FUNNY_ARCADE);
       return false;
     }
-
-    // Get object
     const obj = this.mainRenderBundle[index];
     let testPB = app.matrixAmmo.getBodyByName(obj.name);
     if (testPB !== null) {
       try {
         this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
       } catch (e) {
-        console.warn("Physics cleanup error:", e);
+        console.warn("%cPhysics cleanup error:" + e, _utils.LOG_FUNNY_ARCADE);
       }
     }
-
-    // if(obj.destroy && typeof obj.destroy === "function") {
-    //   try {
-    //     obj.destroy();  // user-defined GPU cleanup
-    //   } catch(e) {
-    //     console.warn("Destroy() cleanup failed:", e);
-    //   }
-    // }
-
-    // Remove from render bundle
     this.mainRenderBundle.splice(index, 1);
-    console.log("Removed scene object:", name);
     return true;
   };
 
@@ -39204,7 +44972,7 @@ class MatrixEngineWGPU {
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
-    console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
+    console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
@@ -39250,6 +45018,9 @@ class MatrixEngineWGPU {
         enabled: false,
         radius: 2
       };
+    }
+    if (typeof o.useScale === 'undefined') {
+      o.useScale = false;
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -39319,13 +45090,14 @@ class MatrixEngineWGPU {
       this.editor.editorHud.updateSceneContainer();
     }
   };
-  run(callback) {
+  async run(callback) {
+    // await this.device.queue.onSubmittedWorkDone();
     setTimeout(() => {
       requestAnimationFrame(this.frame);
-    }, 500);
+    }, 1000);
     setTimeout(() => {
       callback(this);
-    }, 20);
+    }, 1);
   }
   destroyProgram = () => {
     console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');
@@ -39474,28 +45246,62 @@ class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-      const currentTextureView = this.context.getCurrentTexture().createView();
+      // with no postprocessing 
+      // const currentTextureView = this.context.getCurrentTexture().createView();
       // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      // Loop over each mesh
-
+      // opaque
       for (const mesh of this.mainRenderBundle) {
-        // mesh.position.update()
+        if (mesh.material?.useBlend === true) continue;
+        now = performance.now() / 1000;
+        deltaTime = now - (this.lastTime || now);
+        this.lastTime = now;
         if (mesh.update) {
-          now = performance.now() / 1000; // seconds
-          deltaTime = now - (this.lastTime || now);
-          this.lastTime = now;
-          mesh.update(deltaTime); // glb
+          mesh.update(deltaTime);
+        }
+        if (mesh.updateTime) {
+          mesh.updateTime(deltaTime);
         }
         pass.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log('✅shadowVideoView', this.shadowVideoView);
+              console.log("%c✅shadowVideoView ${this.shadowVideoView}", _utils.LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
+              pass.setPipeline(mesh.pipeline); // new
+            } else {
+              m.shadowDepthTextureView = this.shadowArrayView;
+              m.setupPipeline();
+            }
+          }
+        }
+        mesh.drawElements(pass, this.lightContainer);
+      }
+
+      // blend
+      for (const mesh of this.mainRenderBundle) {
+        if (mesh.material?.useBlend !== true) continue;
+        now = performance.now() / 1000;
+        deltaTime = now - (this.lastTime || now);
+        this.lastTime = now;
+        if (mesh.update) {
+          mesh.update(deltaTime);
+        }
+        if (mesh.updateTime) {
+          mesh.updateTime(deltaTime);
+        }
+        pass.setPipeline(mesh.pipelineTransparent);
+        if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
+          for (const m of this.mainRenderBundle) {
+            if (m.isVideo == true) {
+              console.log("%c✅shadowVideoView ${this.shadowVideoView}", _utils.LOG_FUNNY_ARCADE);
+              m.shadowDepthTextureView = this.shadowVideoView;
+              m.FINISH_VIDIO_INIT = true;
+              m.setupPipeline();
+              pass.setPipeline(mesh.pipelineTransparent);
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
               m.setupPipeline();
@@ -39505,11 +45311,7 @@ class MatrixEngineWGPU {
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
-
-      // 3) resolve collisions AFTER positions changed
       if (this.collisionSystem) this.collisionSystem.update();
-      // 4) render / send network updates / animations etc
-
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{
@@ -39567,13 +45369,15 @@ class MatrixEngineWGPU {
       }));
       pass.draw(6);
       pass.end();
+      this.graphUpdate(now);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      if (this.logLoopError) console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
+  graphUpdate = delta => {};
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
     if (this.matrixAmmo.rigidBodies && this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
@@ -39647,6 +45451,9 @@ class MatrixEngineWGPU {
       o.pointerEffect = {
         enabled: false
       };
+    }
+    if (typeof o.useScale === 'undefined') {
+      o.useScale = false;
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -39772,6 +45579,9 @@ class MatrixEngineWGPU {
         ballEffect: false
       };
     }
+    if (typeof o.useScale === 'undefined') {
+      o.useScale = false;
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if (typeof o.physics === 'undefined') {
@@ -39855,4 +45665,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":25,"./engine/core-cache.js":27,"./engine/cube.js":28,"./engine/engine.js":37,"./engine/generators/phisicsBodies.js":38,"./engine/instanced/mesh-obj-instances.js":41,"./engine/lights.js":42,"./engine/loader-obj.js":43,"./engine/loaders/bvh-instaced.js":44,"./engine/loaders/bvh.js":45,"./engine/mesh-obj.js":49,"./engine/postprocessing/bloom.js":51,"./engine/raycast.js":52,"./engine/utils.js":53,"./multilang/lang.js":54,"./physics/matrix-ammo.js":55,"./sounds/sounds.js":75,"./tools/editor/editor.js":77,"wgpu-matrix":23}]},{},[1]);
+},{"./engine/ball.js":25,"./engine/core-cache.js":27,"./engine/cube.js":28,"./engine/engine.js":37,"./engine/generators/phisicsBodies.js":38,"./engine/instanced/mesh-obj-instances.js":41,"./engine/lights.js":42,"./engine/loader-obj.js":43,"./engine/loaders/bvh-instaced.js":44,"./engine/loaders/bvh.js":45,"./engine/mesh-obj.js":49,"./engine/postprocessing/bloom.js":51,"./engine/raycast.js":52,"./engine/utils.js":53,"./multilang/lang.js":54,"./physics/matrix-ammo.js":55,"./sounds/audioAsset.js":76,"./sounds/sounds.js":77,"./tools/editor/editor.js":80,"./tools/editor/flexCodexShaderAdapter.js":83,"wgpu-matrix":23}]},{},[1]);

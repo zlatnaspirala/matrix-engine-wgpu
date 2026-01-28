@@ -39,6 +39,7 @@ import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
+import {graphAdapter} from "./flexCodexShaderAdapter";
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -122,9 +123,6 @@ export default class FluxCodexVertex {
 
     this._varInputs = {};
 
-    // EXTRA TIME
-    setTimeout(() => this.init(), 3000);
-
     document.addEventListener("keydown", e => {
       if(e.key == "F6") {
         e.preventDefault();
@@ -159,9 +157,12 @@ export default class FluxCodexVertex {
 
     // curve editor stuff
     document.addEventListener('show-curve-editor', (e) => {
-      console.log('show-showCurveEditorBtn editor ', e);
+      // console.log('show-showCurveEditorBtn editor ', e);
       this.curveEditor.toggleEditor();
     });
+
+    // EXTRA TIME
+    setTimeout(() => this.init(), 3300);
   }
 
   createContextMenu() {
@@ -220,6 +221,8 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">Translate by Z</button>
@@ -773,19 +776,20 @@ export default class FluxCodexVertex {
 
     if(node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
+      // console.log('!TEST! ??? BEFORE')
       if(select) {
         console.log('!TEST! ???')
-        const objects = spec.accessObject || [];
-        objects.forEach(obj => {
-          const opt = document.createElement("option");
-          opt.value = obj.name;
-          opt.textContent = obj.name;
-          select.appendChild(opt);
-        });
-        const selected = this._getSceneSelectedName(node);
-        if(selected) {
-          select.value = selected;
-        }
+        // const objects = spec.accessObject || [];
+        // objects.forEach(obj => {
+        //   const opt = document.createElement("option");
+        //   opt.value = obj.name;
+        //   opt.textContent = obj.name;
+        //   select.appendChild(opt);
+        // });
+        // const selected = this._getSceneSelectedName(node);
+        // if(selected) {
+        //   select.value = selected;
+        // }
       }
     } else if(node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
@@ -1073,6 +1077,8 @@ export default class FluxCodexVertex {
       el.className = "node " + "audios";
     } else if(spec.title == "Curve") {
       el.className = "node " + "curve";
+    } else if(spec.title == "Set Shader Graph") {
+      el.className = "node " + "shader";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -1288,6 +1294,35 @@ export default class FluxCodexVertex {
         this.updateSceneObjectPins(spec, name);
       });
       el.appendChild(select);
+    } else if(spec.title === "Set Shader Graph") {
+      const select = document.createElement("select");
+      select.id = spec._id ? spec._id : spec.id;
+      select.style.width = "100%";
+      select.style.marginTop = "6px";
+      // Populate shader objects
+      if(spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "-- Select Shader --";
+      placeholder.value = "";
+      select.appendChild(placeholder);
+
+      spec.accessObject.runtimeList.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", e => {
+        const name = e.target.value;
+        spec.fields[0].value = name;
+        const dom = document.querySelector(`.node[data-id="${spec.id}"]`);
+        let fields = dom.querySelectorAll(".node-fields");
+        // console.log('WORKS objects', fields);
+        fields[0].children[0].value = name;
+      });
+      el.appendChild(select);
+      select.value = spec.fields[0].value;
+      setTimeout(() => select.dispatchEvent(new Event('change', {bubbles: true})), 100);
     }
 
     el.appendChild(body);
@@ -2169,6 +2204,24 @@ export default class FluxCodexVertex {
         exposeProps: ["name", "position", "rotation", "scale"],
       }),
 
+      getShaderGraph: (id, x, y) => ({
+        noExec: true, id,
+        title: "Set Shader Graph", x, y,
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {objectName: "objectName", type: "string"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "selectedShader", value: ""},
+          {key: "objectName", value: "FLOOR"}
+        ],
+        builtIn: true,
+        accessObject: window.app?.shaderGraph,
+        accessObjectLiteral: "window.app?.shaderGraph"
+      }),
+
       getSceneLight: (id, x, y) => ({
         noExec: true, id,
         title: "Get Scene Light", x, y,
@@ -2251,6 +2304,64 @@ export default class FluxCodexVertex {
           {name: "sceneObjectName", semantic: "string"},
         ],
         outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setProductionMode: (id, x, y) => ({
+        id, x, y,
+        title: "Set Production Mode",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "disableLoopWarns", type: "boolean"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "disableLoopWarns", value: "true"},
+        ],
+      }),
+
+      setMaterial: (id, x, y) => ({
+        id, x, y,
+        title: "Set Material",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "materialType", semantic: "string"},
+          {name: "sceneObjectName", semantic: "string"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "materialType", value: "standard", placeholder: "standard|power|water"},
+        ],
+      }),
+
+      setWaterParams: (id, x, y) => ({
+        id, x, y,
+        title: "Set Water Material Params",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "deepColor(vec3f)", semantic: "object"},
+          {name: "waveSpeed", semantic: "number"},
+          {name: "shallowColor(vec3f)", semantic: "object"},
+          {name: "waveScale", semantic: "number"},
+          {name: "waveHeight", semantic: "number"},
+          {name: "fresnelPower", semantic: "number"},
+          {name: "specularPower", semantic: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "deepColor(vec3f)", value: "[0.0, 0.2, 0.4]"},
+          {key: "waveSpeed", value: "0.5"},
+          {key: "shallowColor(vec3f)", value: "[0.0, 0.5, 0.7]"},
+          {key: "waveScale", value: "4.0"},
+          {key: "waveHeight", value: "0.15"},
+          {key: "fresnelPower", value: "3.0"},
+          {key: "specularPower", value: "128"},
+        ],
       }),
 
       getSpeed: (id, x, y) => ({
@@ -2937,8 +3048,6 @@ export default class FluxCodexVertex {
       const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
       const selects = dom.querySelectorAll("select"); // returns NodeList
       let select = selects[0];
-      // alert()
-      // if((select.options.length-1) != node.accessObject.length) {
       select.innerHTML = ``;
       if(select) {
         node.accessObject.forEach(obj => {
@@ -2948,19 +3057,14 @@ export default class FluxCodexVertex {
           select.appendChild(opt);
         });
       }
-
       if(node.fields[0].value) select.value = node.fields[0].value;
-      // console.log('>>>>>>>>>>>>>>>>>>>>>')
-
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
       if(!out) return undefined;
-
       if(pinName.indexOf('.') != -1) {
         return this.resolvePath(obj, pinName);
       }
-
       return obj[pinName];
     } else if(node.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
@@ -3836,8 +3940,21 @@ export default class FluxCodexVertex {
           n._listenerAttached = true;
         }
         n._returnCache = n.osc.UPDATE();
+      } else if(n.title === "Set Shader Graph") {
+        console.warn("[Set Shader Graph] ?????  ??input fields...");
+        const objectName = this.getValue(nodeId, "objectName");
+        let selectedShader = this.getValue(nodeId, "selectedShader");
+        if(!objectName) {
+          console.warn("[Set Shader Graph] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let o = app.getSceneObjectByName(objectName);
+        // 
+        o.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
-
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -3856,6 +3973,42 @@ export default class FluxCodexVertex {
         // this.getValue(nodeId, "thrust")
         console.log('pos.getSpeed()', pos.getSpeed())
         n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Water Material Params") {
+      let deepColor = this.getValue(nodeId, "deepColor(vec3f)");
+      let waveSpeed = this.getValue(nodeId, "waveSpeed");
+      let shallowColor = this.getValue(nodeId, "shallowColor(vec3f)");
+      let waveScale = this.getValue(nodeId, "waveScale");
+      let waveHeight = this.getValue(nodeId, "waveHeight");
+      let fresnelPower = this.getValue(nodeId, "fresnelPower");
+      let specularPower = this.getValue(nodeId, "specularPower");
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if(deepColor && sceneObjectName) {
+        console.log('deepColor', deepColor)
+        deepColor = JSON.parse(deepColor);
+        shallowColor = JSON.parse(shallowColor);
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.updateWaterParams(
+          deepColor,
+          shallowColor,
+          waveSpeed,
+          waveScale,
+          waveHeight,
+          fresnelPower,
+          specularPower
+        );
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Material") {
+      const materialType = this.getValue(nodeId, "materialType");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if(materialType && materialType !== "graph") {
+        console.log('sceneObjectName', sceneObjectName)
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.changeMaterial(materialType);
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -3941,14 +4094,17 @@ export default class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if(n.title === "Set Production Mode") {
+      const disableLoopWarns = this.getValue(nodeId, "disableLoopWarns");
+      if(disableLoopWarns) {}
+      // console.log('set production mode true - must be saved on editorx level.')
+      byId('hideEditorBtn').click();
+      this.enqueueOutputs(n, "execOut");
+      return;
     }
-
     // console.log("BEFORE COMPARE ");
     if(["math", "value", "compare", "stringOperation"].includes(n.category)) {
-
-      console.log("BEFORE COMPARE ")
       let result;
-
       switch(n.title) {
         case "Starts With [string]":
           // console.log('test startsWith');
@@ -4015,13 +4171,10 @@ export default class FluxCodexVertex {
         default:
           result = undefined;
       }
-
       n._returnCache = result;
       if(n.displayEl) n.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
     }
-
     this._execContext = null;
-
   }
 
   getConnectedSource(nodeId, inputName) {
@@ -4034,7 +4187,6 @@ export default class FluxCodexVertex {
   }
 
   populateAccessMethods(select) {
-    // console.log("populateAccessMethods")
     select.innerHTML = "";
     this.accessObject.forEach(obj => {
       Object.getOwnPropertyNames(obj.__proto__)
@@ -4175,9 +4327,8 @@ export default class FluxCodexVertex {
   }
 
   runGraph() {
-    // console.log('this.nodes', Object.values(this.nodes));
     if(byId("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
-      // Just dummy thoughts — this is wrong.
+      // Just dummy thoughts —> this is wrong.
       // Every data in DOMs is good to use like status flas or any others calls.
       if(mb) mb.show('FluxCodexVertex not ready yet...');
       return;
@@ -4335,10 +4486,15 @@ export default class FluxCodexVertex {
       try {
         let data;
         try {
-          data = JSON.parse(saved);
-          if(data == null) {
-            console.warn("⚠️ No cache for graph, load from module!");
+          if(app.graph) {
             data = app.graph;
+          } else {
+            console.warn("⚠️ Used cached data for graph, load from localstorage!");
+            data = JSON.parse(saved);
+          }
+          if(data == null) {
+            console.warn("⚠️ No file also no cache for graph, Editor faild to load!");
+            return;
           }
         } catch(e) {
           console.warn("⚠️ No cache for graph, load from module!");
@@ -4396,7 +4552,6 @@ export default class FluxCodexVertex {
     return;
   }
 
-  // test
   onNodeDoubleClick(node) {
     console.log(`%c Node [CURVE  func] ${node.curve}`, LOG_FUNNY_ARCADE);
     if(node.title !== "Curve") return;
@@ -4406,5 +4561,4 @@ export default class FluxCodexVertex {
     });
     this.curveEditor.toggleEditor(true);
   }
-
 }

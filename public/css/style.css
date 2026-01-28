@@ -439,9 +439,11 @@ p {
   0% {
     background-position: 0% 50%
   }
+
   50% {
     background-position: 100% 50%
   }
+
   100% {
     background-position: 0% 50%
   }
@@ -451,9 +453,11 @@ p {
   0% {
     background-position: 0% 50%
   }
+
   50% {
     background-position: 100% 50%
   }
+
   100% {
     background-position: 0% 50%
   }
@@ -463,9 +467,11 @@ p {
   0% {
     background-position: 0% 50%
   }
+
   50% {
     background-position: 100% 50%
   }
+
   100% {
     background-position: 0% 50%
   }
@@ -484,9 +490,11 @@ p {
   0% {
     background-position: 0% 45%
   }
+
   50% {
     background-position: 100% 56%
   }
+
   100% {
     background-position: 0% 45%
   }
@@ -496,9 +504,11 @@ p {
   0% {
     background-position: 0% 45%
   }
+
   50% {
     background-position: 100% 56%
   }
+
   100% {
     background-position: 0% 45%
   }
@@ -508,9 +518,11 @@ p {
   0% {
     background-position: 0% 45%
   }
+
   50% {
     background-position: 100% 56%
   }
+
   100% {
     background-position: 0% 45%
   }
@@ -520,9 +532,11 @@ p {
   0% {
     background-position: 0% 45%
   }
+
   50% {
     background-position: 100% 56%
   }
+
   100% {
     background-position: 0% 45%
   }
@@ -677,11 +691,13 @@ option {
     background-color: rgba(155, 101, 10, 0.95);
     height: 75px;
   }
+
   50% {
     background-color: rgba(238, 65, 13, 0.95);
     height: 50vh;
     opacity: 0.5;
   }
+
   100% {
     background-color: rgb(200, 54, 9);
     height: 100vh;
@@ -694,11 +710,13 @@ option {
     background-color: rgba(155, 101, 10, 0.95);
     height: 75px;
   }
+
   50% {
     background-color: rgba(224, 64, 43, 0.95);
     height: 50vh;
     opacity: 0.5;
   }
+
   100% {
     background-color: rgb(200, 54, 9);
     height: 100vh;
@@ -975,6 +993,7 @@ option {
   0% {
     right: -4%;
   }
+
   100% {
     right: -52%;
     opacity: 0.6;
@@ -998,6 +1017,7 @@ option {
   -webkit-scrollbar {
     width: 25px;
   }
+
   -webkit-animation-fill-mode: forwards;
   -webkit-animation-name: hideByRight;
   -webkit-animation-duration: 1.2s;
@@ -1037,8 +1057,9 @@ option {
   width: 70%;
   padding: 10px 10px 10px 10px;
   -webkit-box-shadow: 1px 1px 43px -15px #de961f;
-  box-shadow:1px 1px 43px -15px #de961f;
+  box-shadow: 1px 1px 43px -15px #de961f;
   font-size: large;
+
   @media screen and (max-width: 700px) {
     width: 97.5%;
     left: 1%;
@@ -1063,10 +1084,12 @@ option {
   margin: 0;
   top: 20%;
   background: darkslategrey;
+
   @media screen and (max-width: 1000px) {
     width: 45%;
     left: 28%;
   }
+
   @media screen and (max-width: 600px) {
     width: 95%;
     left: 0;
@@ -1508,6 +1531,10 @@ svg.connections {
   background: linear-gradient(45deg, #000000 0%, #001e3b 25%, #000000 50%, #001e3b 75%, #000000 100%);
 }
 
+.node.shader .header {
+  background: linear-gradient(45deg, #000000 0%, #b300ff 25%, #000000 50%, #0084ff 75%, #000000 100%);
+}
+
 .node .body {
   padding: 8px 10px;
   font-size: 13px;
@@ -1786,4 +1813,93 @@ svg.connections {
 
 .btnGetter:has(:contains("Del")) {
   border-color: #ff5252;
+}
+
+.fancy-grid-bg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(135deg,
+      rgba(0, 255, 255, 0.08),
+      rgba(255, 0, 255, 0.08),
+      rgba(0, 128, 255, 0.08)),
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px),
+    linear-gradient(90deg,
+      rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px);
+
+  background-size:
+    400% 400%,
+    32px 32px,
+    32px 32px;
+
+  animation:
+    gradientFlow 18s ease infinite,
+    gridDrift 30s linear infinite;
+
+  overflow: hidden;
+}
+
+/* Smooth gradient motion */
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%, 0 0, 0 0;
+  }
+
+  50% {
+    background-position: 100% 50%, 0 0, 0 0;
+  }
+
+  100% {
+    background-position: 0% 50%, 0 0, 0 0;
+  }
+}
+
+/* Slow grid drifting */
+@keyframes gridDrift {
+  0% {
+    background-position: 0 0, 0 0, 0 0;
+  }
+
+  100% {
+    background-position: 0 0, 128px 128px, 128px 128px;
+  }
+}
+.fancy-grid-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(255,255,255,0.06),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.fancy-grid-bg.dark {
+  background:
+    radial-gradient(circle at 20% 30%,
+      rgba(0, 115, 255, 0.2),
+      transparent 40%
+    ),
+    linear-gradient(
+      rgba(0, 51, 255, 0.2) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(251, 0, 255, 0.1) 1px,
+      transparent 1px
+    ),
+    #000000;
+
+  background-size:
+    100% 100%,
+    140px 140px,
+    140px 140px;
+
+  animation: gridDrift 160s linear infinite;
 }

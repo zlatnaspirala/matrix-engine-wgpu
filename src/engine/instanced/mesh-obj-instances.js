@@ -1,4 +1,4 @@
-import {mat4, vec3} from 'wgpu-matrix';
+import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
 import {degToRad, genName, LOG_FUNNY_SMALL} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
@@ -18,12 +18,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device, o.material, _glbFile);
     if(typeof o.name === 'undefined') o.name = genName(3);
-    if(typeof o.raycast === 'undefined') {
-      this.raycast = {enabled: false, radius: 2};
-    } else {
+    if(typeof o.raycast === 'undefined') {this.raycast = {enabled: false, radius: 2}} else {
       this.raycast = o.raycast;
     }
-    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
+
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -35,14 +33,16 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
-
     this.blendInstanced = false;
 
-    if(typeof o.material.useTextureFromGlb === 'undefined' ||
-      typeof o.material.useTextureFromGlb !== "boolean") {
+    if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-    // console.log('Material class arg:', o.material)
+
+    if(typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
+      o.material.useBlend = false;
+    }
+
     this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
@@ -65,7 +65,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       //N
       const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
       const normalsUint8 = norView.buffer;
-      const byteOffsetN = norView.byteOffset || 0; // if your loader provides it
+      const byteOffsetN = norView.byteOffset || 0;
       const byteLengthN = normalsUint8.byteLength;
       const normals = new Float32Array(
         normalsUint8.buffer,
@@ -77,7 +77,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
       const bufferView = accessor.view;
       const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-      const count = accessor.count * 2; // VEC2 = 2 floats per vertex
+      const count = accessor.count * 2;
       const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
       this.mesh.textures = uvFloatArray;
@@ -181,7 +181,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
         this.mesh.tangentsBuffer.unmap();
       } else {
-        // 🟢 dummy fallback
+        // Dummy
         const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
         for(let i = 0;i < dummyTangents.length;i += 4) {
           dummyTangents[i + 0] = 1.0; // T = (1,0,0)
@@ -202,7 +202,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     } else {
       this.mesh.uvs = this.mesh.textures;
     }
-    // console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -373,7 +372,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         },
         // joint indices
         {
-          arrayStride: 4 * 4, // vec4<u32> = 4 * 4 bytes
+          arrayStride: 4 * 4,
           attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]
         },
         // weights
@@ -387,8 +386,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             {shaderLocation: 5, format: "float32x4", offset: 0}
           ]
         });
-      } else {
-        // for non glb - non skinned use basic shaders
       }
 
       // Note: The frontFace and cullMode values have no effect on the 
@@ -595,9 +592,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
-        entries: [ //
-          {binding: 0, resource: {buffer: this.modelUniformBuffer, }},
-          {binding: 1, resource: {buffer: this.bonesBuffer}}
+        entries: [
+          {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+          {binding: 1, resource: {buffer: this.bonesBuffer}},
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
         ],
       });
 
@@ -658,7 +656,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
+        const sceneData = new Float32Array(48);
         // Light VP
         sceneData.set(spotLight.viewProjMatrix, 0);
         // Camera VP
@@ -668,6 +666,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         // Light position + padding
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        sceneData.set([this.time, dt, 0, 0], 44);
         device.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
@@ -697,16 +696,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         return modelMatrix;
       };
 
-      // looks like affect on transformations for now const 0
-      // const modelMatrix = mat4.translation([0, 0, 0]);
-      // const modelData = modelMatrix;
-      // this.device.queue.writeBuffer(
-      //   this.modelUniformBuffer,
-      //   0,
-      //   modelData.buffer,
-      //   modelData.byteOffset,
-      //   modelData.byteLength
-      // );
       this.done = true;
       try {
         this.setupPipeline();
@@ -801,18 +790,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     // console.log('✅Pipelines done');
   };
 
-  updateModelUniformBuffer = () => {
-    // if(this.done == false) return;
-    // Per-object model matrix only
-    // const modelMatrix = this.getModelMatrix(this.position);
-    // this.device.queue.writeBuffer(
-    //   this.modelUniformBuffer,
-    //   0,
-    //   modelMatrix.buffer,
-    //   modelMatrix.byteOffset,
-    //   modelMatrix.byteLength
-    // );
-  }
+  updateModelUniformBuffer = () => {}
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {
@@ -900,6 +878,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
 
+    pass.setBindGroup(3, this.waterBindGroup);
+
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -945,6 +925,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       }
     }
 
+    pass.setBindGroup(3, this.waterBindGroup);
+
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -978,6 +960,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if(this.joints) {
+      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
+        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+      } else {
+        shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
+        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      }
+    }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     if(this instanceof BVHPlayerInstances) {
       shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);

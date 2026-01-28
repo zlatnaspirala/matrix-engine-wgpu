@@ -35,6 +35,7 @@ export function loadGLBLoader() {
       var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'standard', useTextureFromGlb: true},
+        useScale: true,
         scale: [20, 20, 20],
         position: {x: 0, y: -4, z: -70},
         name: 'firstGlb',
@@ -44,6 +45,7 @@ export function loadGLBLoader() {
       var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'power', useTextureFromGlb: true},
+        useScale: true,
         scale: [20, 20, 20],
         position: {x: -40, y: -4, z: -70},
         name: 'firstGlb',
@@ -53,6 +55,7 @@ export function loadGLBLoader() {
       var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'pong', useTextureFromGlb: true},
+        useScale: true,
         scale: [20, 20, 20],
         position: {x: 40, y: -4, z: -70},
         name: 'firstGlb',
@@ -63,6 +66,7 @@ export function loadGLBLoader() {
       var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'normalmap', useTextureFromGlb: true},
+        useScale: true,
         scale: [20, 20, 20],
         position: {x: 0, y: -4, z: -20},
         name: 'woman1',
@@ -72,6 +76,7 @@ export function loadGLBLoader() {
       var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'power', useTextureFromGlb: true},
+        useScale: true,
         scale: [20, 20, 20],
         position: {x: -40, y: -4, z: -20},
         name: 'woman1',
@@ -81,6 +86,7 @@ export function loadGLBLoader() {
       var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'pong', useTextureFromGlb: true},
+        useScale: true,
         scale: [20, 20, 20],
         position: {x: 40, y: -4, z: -20},
         name: 'woman1',
@@ -91,6 +97,7 @@ export function loadGLBLoader() {
       var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'pong', useTextureFromGlb: true},
+        useScale: true,
         scale: [20, 20, 20],
         position: {x: 40, y: -4, z: -20},
         name: 'glbFileWhouse',
@@ -128,7 +135,8 @@ export function loadGLBLoader() {
           geometry: "Cube"
         },
       });
-      app.lightContainer[0].position[1] = 25;
+      app.lightContainer[0].position[1] = 35;
+      app.lightContainer[0].intensity = 20;
     }
   })
   // just for dev

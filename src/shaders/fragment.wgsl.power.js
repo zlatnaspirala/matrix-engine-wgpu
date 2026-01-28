@@ -10,6 +10,9 @@ struct Scene {
     padding              : f32,
     globalAmbient        : vec3f,
     padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
 };
 
 struct SpotLight {

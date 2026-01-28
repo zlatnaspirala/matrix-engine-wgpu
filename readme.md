@@ -25,20 +25,31 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 ---
 
-## Roadmap
+## Done list []
 
 - ✔️ Support for 3D objects and scene transformations
-- ✔️ Ammo.js physics full integration
+- ✔️ Ammo.js physics integration
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
 - ✔️ Bloom post processing
-- 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
+- ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex)
+- ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader)
+- ✔️ Dynamic shadow cast (done also for skinned meshes)
+- ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect
+
+## Roadmap
+
+- (Preparing API DOCs)[https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API]
+- 🎯 Test linux OS -> Editor creates and manages files internally (Windows tested only!)
+- 🎯 Add editor nav arrows in editor mode
+- 🎯 Test others physics libraries [same interface/drive system]
+- 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`
+- 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
+
 
 ## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
 
 EditorX has **two main parts**:
-
 - **Frontend** (`./src/tools/editor`)
 - **Backend** (`./src/tools/editor/backend`)
 
@@ -53,11 +64,11 @@ The backend is built using **Node.js** 🟢
 
 ## General Features 🧩
 
-- Editor creates and manages files (Windows tested only)
-- Scene container added
-- SceneObject property container added
+- Editor creates and manages files internally (Windows tested only!).
+- Scene container [adding objs -> auto save]
+- SceneObject property container [selected object] [auto save]
 - Assets toolbar added (bottom panel)
-  - Add **GLB** or **OBJ** files from the asset toolbox by selecting them
+  - Add **GLB** or **OBJ** files (also mp3) from the asset toolbox by selecting them.
 - Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
 - Integrated Visual Scripting system 🧠 FluxCodexVertex
 
@@ -67,10 +78,10 @@ The backend is built using **Node.js** 🟢
 
 - Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access**
 - Get SceneObject → set position → bind `onTargetReach` events
-- Fetch, GetArray, forEach, Print, IF, Math, compare etc...
-- Custom func editor
-- String operation set of nodes
-- Generator physics bodies in sequence pos in choosen geometry in world pos (Pyramid, wall , in place).
+- SetTexture, setMaterial, 
+- Fetch, GetArray, forEach, Print, IF, Math, compare, string operation etc...
+- Custom func editor - Function Manager after creating use it from visual scripting.
+- Generator physics bodies in sequence pos in choosen geometry in world pos (Pyramid, wall, in place).
 - onDraw Event node - called on every frame.Can be multiply used and set skip value. More skip less calls.
 - Audio reactive node Audio to pos , rot, scale or geometry or any... Outputs low, mid, high, energy and beat.
 - Run the graph ▶️
@@ -160,6 +171,8 @@ All changes in graph must be saved manually/clicking for now 💾 (no autosave f
 For now translation is only with `WASD` keyboard keys.
 
 Supported types: `WASD`, `arcball`
+
+`WASD` also use 'c' and 'v' for up and down camera position.
 
 ```js
 mainCameraParams: {
@@ -290,10 +303,13 @@ loadObjFile.lightContainer[0].updater.push(light => {
 ### Materials
 
 With last glb feature materials become part of engine also.
-
+```js
 material: {type: 'standard'}
 material: {type: 'pong'}
 material: {type: 'power'}
+material: {type: 'water'}
+material: {type: 'metal'}
+```
 
 - Standard is fully supported with lights shadow cast down (not for anims yet)
 - Pong
@@ -302,7 +318,7 @@ material: {type: 'power'}
 ```js
 // Also for addMeshObj
 TEST_ANIM.addGlbObj({
-material: {type: 'power'},
+  material: {type: 'power'},
 ...
 }, null, glbFile);
 ```
@@ -312,6 +328,34 @@ Change only textures (no recreation of pipeline)
 ```js
 await app.mainRenderBundle[0].loadTex0(["res/icons/editor/chatgpt-gen-bg.png"]);
 app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
+```
+
+Setup Blend (For water mat use blend!)
+```js
+app.mainRenderBundle[0].setBlend(0.5);
+```
+
+Examples for setup water params:
+```js
+app.mainRenderBundle[0].updateWaterParams(
+  [0.0, 0.1, 0.3],      // Deep: navy
+  [0.2, 0.6, 0.9],      // Shallow: blue
+  2.0,                   // Wave speed: fast continuous
+  1.8,                   // Wave scale: rolling waves
+  0.5,                   // Wave height: tall active waves
+  1.5,                   // Fresnel: strong
+  50.0                   // Specular: soft highlights
+);
+
+app.mainRenderBundle[0].updateWaterParams(
+  [0.0, 0.3, 0.5],      // Deep: medium blue
+  [0.3, 0.8, 1.0],      // Shallow: bright cyan
+  1.2,                   // Wave speed: gentle continuous (changed from 0.6)
+  2.5,                   // Wave scale: smooth ripples (changed from 5.0)
+  0.3,                   // Wave height: visible movement
+  2.5,                   // Fresnel: moderate reflection
+  100.0                  // Specular: sharp sparkles
+);
 ```
 
 ### Bloom post processing
@@ -611,7 +655,7 @@ Will be fixxed in next update.
 Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTextureArray[GLOBAL] num of light 1"] doesn't match the expected dimension (TextureViewDimension::e2D).
 ```
 
-## Networking
+### Networking
 
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
 Very good for handling streams, channels etc...
@@ -680,7 +724,7 @@ if (this.teams.length > 0)
     });
 ```
 
-## About URLParams
+### About URLParams
 
 Buildin Url Param check for multiLang. MultiLang feature is also buildin options.
 
@@ -772,7 +816,6 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
   → Uses `empty.js` build from:
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
-- 📘 Learning Resource: [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
 
 ---
 
@@ -883,3 +926,7 @@ You may use, modify, and sell projects based on this code — just keep this not
 Top level main.js instance (Jamb 3d deluxe)
 
 ---
+
+## 📘 Learning Resource:
+ [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+  ChatGPT , claude ai

@@ -1,5 +1,7 @@
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip.js";
 import {byId, FullscreenManager, isMobile, jsonHeaders, LOG_FUNNY_ARCADE, mb} from "../../engine/utils.js";
+import {openFragmentShaderEditor} from "./flexCodexShader.js";
+
 /**
  * @Author NIkola Lukic
  * @description
@@ -133,7 +135,7 @@ export default class EditorHud {
     });
 
     this.errorForm.innerHTML = `
-       <h2 class='fancy-label'>No connection with editor node app.</h2>
+       <h1 class='fancy-label' style="font-size: 24px;" >No connection with editor node app.</h1>
        <h3 class='fancy-label'>Run from root [npm run editorx] \n 
           or run from ./src/tools/editor/backend [npm run editorx] \n
           Than refresh page [clear default cache browser with CTRL+F5] </h3>
@@ -226,6 +228,11 @@ export default class EditorHud {
            <small>📈Timeline curve editor</small>
            <small> </small>
         </div>
+        <div id="showShaderEditorBtn" class="drop-item btn4">
+           <span>Show shader editor</span>
+           <small>Shader editor</small>
+           <small> </small>
+        </div>
       </div>
     </div>
 
@@ -285,7 +292,7 @@ export default class EditorHud {
     });
 
     // run top many
-    
+
     byId('saveMainGraphDOM').addEventListener('click', () => {
       // global for now.
       app.editor.fluxCodexVertex.compileGraph();
@@ -454,17 +461,32 @@ export default class EditorHud {
     })
 
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
-      console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
 
     byId('showCurveEditorBtn').addEventListener('click', (e) => {
-      console.log('show-showCurveEditorBtn editor ', e);
       document.dispatchEvent(new CustomEvent('show-curve-editor', {detail: {}}));
     });
-    
+
+    byId('showShaderEditorBtn').addEventListener('click', (e) => {
+      if(byId('app').style.display == 'flex') {
+        byId('app').style.display = 'none';
+      }
+      if(byId('shaderDOM') === null) {
+        openFragmentShaderEditor().then((e) => {
+          app.shaderGraph = e;
+        });
+      } else if(byId('shaderDOM').style.display === 'flex') {
+        byId('shaderDOM').style.display = 'none';
+      } else {
+        byId('shaderDOM').style.display = 'flex'
+      }
+    });
 
     byId('showVisualCodeEditorBtn').addEventListener('click', (e) => {
+      if(byId('shaderDOM') && byId('shaderDOM').style.display == 'flex') {
+        byId('shaderDOM').style.display = 'none';
+      }
       if(byId('app').style.display == 'flex') {
         byId('app').style.display = 'none';
       } else {
@@ -547,10 +569,8 @@ export default class EditorHud {
     this.toolTip.attachTooltip(byId('folderTitle'), `This represent real folders files present intro res folder (what ever is there).\n
     From assets box you can add glb or obj files direct with simple click. Everyting will be saved automatic.\n
     Support for mp3 adding by click also. No support for mp4 - mp4 can be added from 'Set Textures' node.
-
     `);
     // folderTitle
-
     document.addEventListener('la', (e) => {
       console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, LOG_FUNNY_ARCADE);
       byId('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);
@@ -926,7 +946,7 @@ class SceneObjectProperty {
     if(propName == "device" || propName == "position" || propName == "rotation"
       || propName == "raycast" || propName == "entityArgPass" || propName == "scale"
       || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb"
-      || propName == "itIsPhysicsBody"
+      || propName == "itIsPhysicsBody" || propName == "useScale"
     ) {
       this.propName.style.overflow = 'hidden';
       this.propName.style.height = '20px';
@@ -953,6 +973,8 @@ class SceneObjectProperty {
       } else if(propName == "maxInstances") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if(propName == "useScale") {
+        this.propName.innerHTML = `<div style="display:flex;" >useScale  + ${this.readBool(currSceneObj, propName)} </div>`;
       } else if(propName == "texturesPaths") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
@@ -1066,6 +1088,29 @@ class SceneObjectProperty {
       // this.propName.innerHTML = `<div>${propName}</div>`;
       // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
     }
+  }
+
+  readBool(currSceneObj, rootKey) {
+    return `
+    <input type="checkbox"
+      class="inputEditor"
+      name="${rootKey}"
+      ${currSceneObj[rootKey] == true ? "checked" : ""}
+      onchange="
+        console.log(this.checked, 'checkbox change fired');
+        document.dispatchEvent(
+          new CustomEvent('web.editor.input', {
+            detail: {
+              inputFor: ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"},
+              propertyId: ${currSceneObj ? "'" + rootKey + "'" : "'no info'"},
+              property: 'no info',
+              value: this.checked
+            }
+          })
+        );
+      "
+    />
+  `;
   }
 
   exploreSubObject(subobj, rootKey, currSceneObj) {
@@ -1323,5 +1368,4 @@ class SceneObjectProperty {
       }));
     });
   }
-
 }

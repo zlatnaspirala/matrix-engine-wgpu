@@ -11,6 +11,7 @@ import path from "path";
 import {WebSocketServer} from "ws";
 import {DEFAULT_GRAPH_JS} from "./graph.js";
 import {DEFAUL_METHODS} from "./methods.js";
+import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
@@ -24,13 +25,16 @@ const watchers = new Map();
 
 const wss = new WebSocketServer({port: 1243});
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
-console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
-console.log("\x1b[93m%s\x1b[0m", "- Start you new project                 -");
-console.log("\x1b[93m%s\x1b[0m", "- Load project                          -");
-console.log("\x1b[93m%s\x1b[0m", "- Add Cube [mesh]                       -");
-console.log("\x1b[93m%s\x1b[0m", "- Add Obj  [mesh]                       -");
-console.log("\x1b[93m%s\x1b[0m", "- Add Glb  [skinned-mesh]               -");
-console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+console.log("\x1b[93m%s\x1b[0m", "- Start you new project                  -");
+console.log("\x1b[93m%s\x1b[0m", "- Load project                           -");
+console.log("\x1b[93m%s\x1b[0m", "- from ./public/matrix-engine.html       -");
+console.log("\x1b[93m%s\x1b[0m", "- When you create a project next time    -");
+console.log("\x1b[93m%s\x1b[0m", "- you can go directly to /MyProject.html -");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCodexVertex Graph and FragmentShader Graph");
+console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
@@ -47,6 +51,14 @@ async function buildAllProjectsOnStartup() {
       await fs.writeFile(graphFile, DEFAULT_GRAPH_JS, "utf8");
       console.log(`🧠 Created default graph.js for ${projectName}`);
     }
+    // Shader graph
+    const shaderGraphFile = path.join(PROJECTS_DIR, projectName, "shader-graphs.js");
+    try {
+      await fs.access(shaderGraphFile);
+    } catch {
+      await fs.writeFile(shaderGraphFile, DEFAULT_SHADER_GRAPH_JS, "utf8");
+      console.log(`🧠 Created default shader-graphs.js for ${projectName}`);
+    }
     const mname = projectName + "_methods.js";
     const methodsFile = path.join(PUBLIC_DIR, mname);
     try {
@@ -55,8 +67,6 @@ async function buildAllProjectsOnStartup() {
       await fs.writeFile(methodsFile, DEFAUL_METHODS, "utf8");
       console.log(`🧠 Created default methods.js for ${projectName}`);
     }
-    //
-    //
     try {
       await fs.access(entry);
     } catch {
@@ -72,9 +82,11 @@ async function buildAllProjectsOnStartup() {
         format: "esm",
         sourcemap: true,
         platform: "browser",
-        minify: false
+        minify: false,
+        logOverride: {
+          'direct-eval': 'silent',
+        }
       });
-
       console.log(`✅ Built ${projectName}`);
       const htmlFile = path.join(PUBLIC_DIR, `${projectName}.html`);
       try {
@@ -148,7 +160,7 @@ wss.on("connection", ws => {
       } else if(msg.action === "cnp") {
         cnp(ws, msg);
       } else if(msg.action === "watch") {
-        console.log("action [WATCH]");
+        console.log("action [WATCH]", msg.name);
         buildProject(msg.name, ws, 'Watch activated')
       } else if(msg.action === "stop-watch") {
         console.log("action [WATCH]");
@@ -170,6 +182,14 @@ wss.on("connection", ws => {
         saveMethods(msg, ws);
       } else if(msg.action == "save-graph") {
         saveGraph(msg, ws);
+      } else if(msg.action == "save-shader-graph") {
+        saveShaderGraph(msg, ws);
+      } else if(msg.action == "load-shader-graph") {
+        loadShaderGraph(msg, ws);
+      } else if(msg.action == "delete-shader-graph") {
+        deleteShaderGraph(msg, ws);
+      } else if(msg.action == "get-shader-graphs") {
+        getShaderGraphs(msg, ws);
       } else if(msg.action == "delete-obj") {
         deleteSceneObject(msg, ws);
       } else if(msg.action == "updatePos") {
@@ -178,6 +198,8 @@ wss.on("connection", ws => {
         updateRot(msg, ws);
       } else if(msg.action == "updateScale") {
         updateScale(msg, ws);
+      } else if(msg.action == "useScale") {
+        useScale(msg, ws);
       }
 
     } catch(err) {
@@ -191,6 +213,7 @@ function CBimport() {
 import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 import graph from "./graph.js";
+import shaderGraphsProdc from "./shader-graphs.js"
 `;
 }
 
@@ -246,6 +269,12 @@ async function cnp(ws, msg) {
 
   content.addLine(`// [only fro projects created from editor]`);
   content.addLine(`app.graph = graph;`);
+  content.addLine(` shaderGraphsProdc.forEach((gShader) => {`);
+  content.addLine(`   let shaderReady = JSON.parse(gShader.content);`);
+  content.addLine(`   app.shadersPack[gShader.name] = shaderReady.final;`);
+  content.addLine(`   if (typeof shaderReady.final === "undefined") console.warn(\`Shader \${shaderReady.name} is not compiled.\`);`);
+  content.addLine(` });`);
+
   // graph
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);
@@ -316,7 +345,10 @@ async function buildProject(projectName, ws, payload) {
     format: "esm",
     sourcemap: true,
     platform: "browser",
-    minify: false
+    minify: false,
+    logOverride: {
+      'direct-eval': 'silent',
+    }
   });
   await context.watch();
   console.log(`Watching & bundling ${projectName} → ${outfile}`);
@@ -476,15 +508,7 @@ async function saveMethods(msg, ws) {
     "export default " +
     JSON.stringify(msg.methodsContainer, null, 2) +
     ";\n";
-  fs.writeFile(file, content, "utf8").then((e) => {
-    // ws.send(JSON.stringify({
-    //   ok: true,
-    //   methodSaves: 'OK'
-    // }));
-    console.log("Saved methods.js");
-  });
-  //
-
+  fs.writeFile(file, content, "utf8").then((e) => {console.log("Saved methods.js")});
   let name = PROJECT_NAME + "_methods.js"
   const finalPack = path.join(PUBLIC_DIR, name);
   const contentPublic =
@@ -492,14 +516,12 @@ async function saveMethods(msg, ws) {
     JSON.stringify(msg.methodsContainer, null, 2) +
     ";\n";
   fs.writeFile(finalPack, contentPublic, "utf8").then((e) => {
-    ws.send(JSON.stringify({
-      ok: true,
-      methodSaves: 'OK'
-    }));
+    ws.send(JSON.stringify({ok: true, methodSaves: 'OK'}));
     console.log("Saved methods.js");
   });
 }
 
+// FluxCodexVertex
 async function saveGraph(msg, ws) {
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
@@ -509,12 +531,127 @@ async function saveGraph(msg, ws) {
     msg.graphData +
     ";\n";
   fs.writeFile(file, content, "utf8").then((e) => {
-    ws.send(JSON.stringify({
-      ok: true,
-      methodSaves: 'OK'
-    }));
+    ws.send(JSON.stringify({ok: true, methodSaves: 'OK'}));
     console.log("Saved graph.js");
   });
+}
+
+// FLUXCODEXSHADER
+async function saveShaderGraph(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, {recursive: true});
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    if(match) {
+      graphs = JSON.parse(match[1]);
+    }
+  } catch(err) {
+    console.log("No existing shader-graphs.js, creating new");
+  }
+  // const newGraph = JSON.parse(msg.graphData);
+  const newGraph = msg.graphData;
+  console.log("No existing shader-graphs.js, creating new");
+  // Find and update, or add new
+  const existingIndex = graphs.findIndex(g => g.name === newGraph.name);
+  if(existingIndex !== -1) {
+    graphs[existingIndex] = newGraph;
+  } else {
+    graphs.push(newGraph);
+  }
+  const content = `export let shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};\n`;
+  await fs.writeFile(file, content, "utf8");
+  ws.send(JSON.stringify({
+    ok: true,
+    methodSaves: 'OK',
+    graphName: newGraph.name,
+    graphs: graphs
+  }));
+  console.log(`Saved shader graph: ${newGraph.name}`);
+}
+
+async function loadShaderGraph(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, {recursive: true});
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    if(match) {
+      graphs = JSON.parse(match[1]);
+    }
+  } catch(err) {
+    console.log("No existing shader-graphs.js, creating new");
+  }
+  let newGraph;
+  // Find and update, or add new
+  const existingIndex = graphs.findIndex(g => g.name === msg.name);
+  if(existingIndex !== -1) {
+    newGraph = graphs[existingIndex];
+  } else {
+    newGraph = null;
+  }
+  ws.send(JSON.stringify({
+    ok: true,
+    methodLoads: 'OK',
+    graph: newGraph
+  }));
+  console.log(`Saved shader graph: ${newGraph}`);
+}
+
+async function getShaderGraphs(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, {recursive: true});
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    if(match) graphs = JSON.parse(match[1])
+  } catch(err) {
+    console.log("No existing shader-graphs.js, creating new");
+  }
+  ws.send(JSON.stringify({
+    ok: true,
+    methodLoads: 'OK',
+    shaderGraphs: graphs
+  }));
+}
+
+async function deleteShaderGraph(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  await fs.mkdir(folderPerProject, {recursive: true});
+
+  const file = path.join(folderPerProject, "shader-graphs.js");
+  let graphs = [];
+
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    if(match) {
+      graphs = JSON.parse(match[1]);
+    }
+  } catch(err) {
+    console.log("shader-graphs.js not found or empty");
+  }
+
+  // 🔥 DELETE BY NAME
+  const beforeCount = graphs.length;
+  graphs = graphs.filter(g => g.name !== msg.name);
+  const afterCount = graphs.length;
+
+  // rewrite file
+  const out = `export let shaderGraphsProdc = ${JSON.stringify(graphs, null, 2)};`;
+  await fs.writeFile(file, out, "utf8");
+
+  ws.send(JSON.stringify({
+    ok: true,
+    methodLoads: 'OK',
+    shaderGraphs: graphs
+  }));
 }
 
 function getNameFromPath(p) {
@@ -663,7 +800,26 @@ async function updateScale(msg, ws) {
     saveScript(objScript, text, ws);
   })
 }
-// Delete object script code
+
+async function useScale(msg, ws) {
+  //  // inputFor: "Cube_0" property: "0 1 2" propertyId: "scale" value: "1"
+  console.log('msg usescale update :', msg);
+  const content = new CodeBuilder();
+  content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+  content.addLine(` setTimeout(() => {`);
+  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').useScale = ${msg.data.value};`);
+  content.addLine(` }, 800);`);
+  content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = removeSceneBlock(text, (msg.action + msg.data.property), msg.data.inputFor);
+    text = text.replace('// [MAIN_REPLACE2]', `${content.toString()} \n // [MAIN_REPLACE2]`);
+    saveScript(objScript, text, ws);
+  })
+}
+
 async function deleteSceneObject(n, ws) {
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -680,7 +836,6 @@ function removeSceneBlock(text, type, objName) {
     // match ANY block that belongs to this object
     const start = `// ME START ${objName}`;
     const end = `// ME END ${objName}`;
-
     regex = new RegExp(
       `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}[^\\n]*\\s*`,
       'g'
@@ -688,7 +843,6 @@ function removeSceneBlock(text, type, objName) {
   } else {
     const start = `// ME START ${objName} ${type}`;
     const end = `// ME END ${objName} ${type}`;
-
     regex = new RegExp(
       `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\s*`,
       'g'

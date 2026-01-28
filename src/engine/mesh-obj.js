@@ -33,14 +33,22 @@ export default class MEMeshObj extends Materials {
       typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-    // console.log('Material class arg:', o.material)
+
+    if(typeof o.material.useBlend === 'undefined' ||
+      typeof o.material.useBlend !== "boolean") {
+      o.material.useBlend = false;
+    }
+
+    this.useScale = o.useScale || false;
     this.material = o.material;
-    addEventListener('update-pipeine', () => {
-      this.setupPipeline();
-      // alert('setup pipeline');
-    })
 
+    this.time = 0;
+    this.deltaTimeAdapter = 10;
+    this.updateTime = (time) => {
+      this.time += time * this.deltaTimeAdapter;
+    }
 
+    addEventListener('update-pipeine', () => {this.setupPipeline()})
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -467,34 +475,20 @@ export default class MEMeshObj extends Materials {
 
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
-        size: 176,
+        size: 192,//192, // ⬅️ was 176
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-      // test MUST BE IF
+
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh regular',
         entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: 'uniform',
-            },
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: 'uniform',
-            },
-          },
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
         ],
       });
 
-      // dummy for non skin mesh like this class
-      function alignTo256(n) {
-        return Math.ceil(n / 256) * 256;
-      }
+      function alignTo256(n) {return Math.ceil(n / 256) * 256;}
 
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
@@ -511,17 +505,40 @@ export default class MEMeshObj extends Materials {
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
+      // -- vertex hader anim part
+      this.vertexAnimParams = new Float32Array([
+        0.0,   // time
+        0.0,   // enabled (START DISABLED)
+        2.0,   // waveSpeed
+        0.1,   // waveAmplitude
+        2.0,   // waveFrequency
+        1.0,   // noiseScale
+        0.05,  // noiseStrength
+        0.0    // padding
+      ]);
+
+      this.vertexAnimBuffer = this.device.createBuffer({
+        label: "Vertex Animation Params",
+        size: this.vertexAnimParams.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      // Simple toggle functions
+      this.enableVertexAnim = () => {
+        this.vertexAnimParams[1] = 1.0;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      }
+      this.disableVertexAnim = () => {
+        this.vertexAnimParams[1] = 0.0;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      }
+      //
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
         entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: this.modelUniformBuffer,
-            },
-          },
+          {binding: 0, resource: {buffer: this.modelUniformBuffer}},
           {binding: 1, resource: {buffer: this.bonesBuffer}},
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
         ],
       });
 
@@ -542,7 +559,6 @@ export default class MEMeshObj extends Materials {
       }
       // end
 
-      // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -550,7 +566,7 @@ export default class MEMeshObj extends Materials {
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
+        const sceneData = new Float32Array(48);
         // Light VP
         sceneData.set(spotLight.viewProjMatrix, 0);
         // Camera VP
@@ -560,6 +576,7 @@ export default class MEMeshObj extends Materials {
         // Light position + padding
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        sceneData.set([this.time, dt, 0, 0], 44);
         device.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
@@ -567,6 +584,8 @@ export default class MEMeshObj extends Materials {
           sceneData.byteOffset,
           sceneData.byteLength
         );
+
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, new Float32Array([this.time]));
       };
 
       this.getModelMatrix = (pos, useScale = false) => {
@@ -618,29 +637,32 @@ export default class MEMeshObj extends Materials {
   setupPipeline = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
-      label: 'Mesh Pipeline ✅',
+      label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout Mesh',
+        label: 'PipelineLayout Opaque',
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.selectedBindGroupLayout],
+          this.selectedBindGroupLayout,
+          this.waterBindGroupLayout,
+        ],
       }),
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.material.type == 'normalmap') ? vertexWGSL_NM : vertexWGSL,
+          code: (this.material.type === 'normalmap') ? vertexWGSL_NM : vertexWGSL,
         }),
         buffers: this.vertexBuffers,
       },
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()),
+          code: (this.isVideo === true ? fragmentVideoWGSL : this.getMaterial()),
         }),
         targets: [
           {
-            format: 'rgba16float',//this.presentationFormat,
+            format: 'rgba16float',
+            blend: undefined
           },
         ],
         constants: {
@@ -654,13 +676,69 @@ export default class MEMeshObj extends Materials {
       },
       primitive: this.primitive,
     });
-    // console.log('✅Set Pipeline done');
+    // TRANSPARENT
+    this.pipelineTransparent = this.device.createRenderPipeline({
+      label: 'Main [Mesh] Pipeline ✅[Transparent]',
+      layout: this.device.createPipelineLayout({
+        label: 'Main PipelineLayout Transparent',
+        bindGroupLayouts: [
+          this.bglForRender,
+          this.uniformBufferBindGroupLayout,
+          this.selectedBindGroupLayout,
+          this.waterBindGroupLayout,
+        ],
+      }),
+      vertex: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: (this.material.type === 'normalmap') ? vertexWGSL_NM : vertexWGSL,
+        }),
+        buffers: this.vertexBuffers,
+      },
+      fragment: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: (this.isVideo === true ? fragmentVideoWGSL : this.getMaterial()),
+        }),
+        targets: [
+          {
+            format: 'rgba16float',
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+            },
+          },
+        ],
+        constants: {
+          shadowDepthTextureSize: this.shadowDepthTextureSize,
+        },
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less',
+        format: 'depth24plus',
+      },
+      primitive: this.primitive,
+    });
+    // console.log('✅Set Pipelines done');
+  }
+
+  getMainPipeline = () => {
+    return this.pipeline;
   }
 
   updateModelUniformBuffer = () => {
     if(this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, false);
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,
@@ -747,11 +825,8 @@ export default class MEMeshObj extends Materials {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-
-    // probably no need i forgot on ambient - very similar
-    if(this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
-    }
+    if(this.selectedBindGroup) {pass.setBindGroup(2, this.selectedBindGroup)}
+    pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -794,6 +869,8 @@ export default class MEMeshObj extends Materials {
       renderPass.setBindGroup(2, this.selectedBindGroup);
     }
 
+    renderPass.setBindGroup(3, this.waterBindGroup);
+
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -832,6 +909,8 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    shadowPass.setVertexBuffer(3, this.joints.buffer);
+    shadowPass.setVertexBuffer(4, this.weights.buffer);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
