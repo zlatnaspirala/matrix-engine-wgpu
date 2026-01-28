@@ -135,7 +135,7 @@ export default class EditorHud {
     });
 
     this.errorForm.innerHTML = `
-       <h2 class='fancy-label'>No connection with editor node app.</h2>
+       <h1 class='fancy-label' style="font-size: 24px;" >No connection with editor node app.</h1>
        <h3 class='fancy-label'>Run from root [npm run editorx] \n 
           or run from ./src/tools/editor/backend [npm run editorx] \n
           Than refresh page [clear default cache browser with CTRL+F5] </h3>
@@ -1368,5 +1368,4 @@ class SceneObjectProperty {
       }));
     });
   }
-
 }

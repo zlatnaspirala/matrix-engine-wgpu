@@ -4096,20 +4096,15 @@ export default class FluxCodexVertex {
       return;
     } else if(n.title === "Set Production Mode") {
       const disableLoopWarns = this.getValue(nodeId, "disableLoopWarns");
-      if(disableLoopWarns) {
-        //
-      }
-      console.log('set prodction mode true...')
+      if(disableLoopWarns) {}
+      // console.log('set production mode true - must be saved on editorx level.')
       byId('hideEditorBtn').click();
       this.enqueueOutputs(n, "execOut");
       return;
     }
     // console.log("BEFORE COMPARE ");
     if(["math", "value", "compare", "stringOperation"].includes(n.category)) {
-
-      console.log("BEFORE COMPARE ")
       let result;
-
       switch(n.title) {
         case "Starts With [string]":
           // console.log('test startsWith');
@@ -4176,13 +4171,10 @@ export default class FluxCodexVertex {
         default:
           result = undefined;
       }
-
       n._returnCache = result;
       if(n.displayEl) n.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
     }
-
     this._execContext = null;
-
   }
 
   getConnectedSource(nodeId, inputName) {
@@ -4195,7 +4187,6 @@ export default class FluxCodexVertex {
   }
 
   populateAccessMethods(select) {
-    // console.log("populateAccessMethods")
     select.innerHTML = "";
     this.accessObject.forEach(obj => {
       Object.getOwnPropertyNames(obj.__proto__)
@@ -4336,9 +4327,8 @@ export default class FluxCodexVertex {
   }
 
   runGraph() {
-    // console.log('this.nodes', Object.values(this.nodes));
     if(byId("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
-      // Just dummy thoughts — this is wrong.
+      // Just dummy thoughts —> this is wrong.
       // Every data in DOMs is good to use like status flas or any others calls.
       if(mb) mb.show('FluxCodexVertex not ready yet...');
       return;
@@ -4571,5 +4561,4 @@ export default class FluxCodexVertex {
     });
     this.curveEditor.toggleEditor(true);
   }
-
 }

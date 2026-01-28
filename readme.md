@@ -43,12 +43,13 @@ Published on npm as: **`matrix-engine-wgpu`**
 - 🎯 Test linux OS -> Editor creates and manages files internally (Windows tested only!)
 - 🎯 Add editor nav arrows in editor mode
 - 🎯 Test others physics libraries [same interface/drive system]
+- 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`
+- 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
 
 
 ## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
 
 EditorX has **two main parts**:
-
 - **Frontend** (`./src/tools/editor`)
 - **Backend** (`./src/tools/editor/backend`)
 
@@ -815,7 +816,6 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
   → Uses `empty.js` build from:
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
-- 📘 Learning Resource: [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
 
 ---
 
@@ -926,3 +926,7 @@ You may use, modify, and sell projects based on this code — just keep this not
 Top level main.js instance (Jamb 3d deluxe)
 
 ---
+
+## 📘 Learning Resource:
+ [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+  ChatGPT , claude ai

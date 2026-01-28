@@ -502,28 +502,7 @@ let app = new MatrixEngineWGPU(
  
  
        
-       // ME START monster
- var glbFile01 = await fetch('res/meshes/glb/monster.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
-   texturesPaths = ['./res/meshes/blender/cube.png']; 
-    app.addGlbObj({ 
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     scale: [2, 2, 2],
-     name:  app.getNameFromPath('res/meshes/glb/monster.glb'),
-     material: {type: 'standard', useTextureFromGlb: true},
-     raycast: {enabled: true, radius: 2},
-     physics: {enabled: false, geometry: "Cube"}
-   }, null, glbFile01);
- // ME END monster
- 
-
-         // ME START monster-MutantMesh-0 useScaleno info
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').useScale = true;
- }, 800);
- // ME END monster-MutantMesh-0 useScaleno info
- 
-  // ME START L_BOX useScaleno info
+       // ME START L_BOX useScaleno info
  setTimeout(() => {
   app.getSceneObjectByName('L_BOX').useScale = true;
  }, 800);
@@ -577,37 +556,7 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END BANNER1 useScaleno info
  
-  // ME START monster-MutantMesh-0 updateScale1
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').scale[1] = 5;
- }, 800);
- // ME END monster-MutantMesh-0 updateScale1
- 
-   // ME START monster-MutantMesh-0 updateScale0
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').scale[0] = 5;
- }, 800);
- // ME END monster-MutantMesh-0 updateScale0
- 
-   // ME START monster-MutantMesh-0 updateScale2
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').scale[2] = 5;
- }, 800);
- // ME END monster-MutantMesh-0 updateScale2
- 
-   // ME START monster-MutantMesh-0 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').position.SetY(-2);
- }, 800);
- // ME END monster-MutantMesh-0 updatePosy
- 
-    // ME START monster-MutantMesh-0 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').position.SetX(-3);
- }, 800);
- // ME END monster-MutantMesh-0 updatePosx
- 
- // [MAIN_REPLACE2]
+  // [MAIN_REPLACE2]
 
     })
   });
