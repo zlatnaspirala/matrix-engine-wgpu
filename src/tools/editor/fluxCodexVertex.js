@@ -2306,6 +2306,20 @@ export default class FluxCodexVertex {
         outputs: [{name: "execOut", type: "action"}],
       }),
 
+      setProductionMode: (id, x, y) => ({
+        id, x, y,
+        title: "Set Production Mode",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "disableLoopWarns", type: "boolean"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "disableLoopWarns", value: "true"},
+        ],
+      }),
+
       setMaterial: (id, x, y) => ({
         id, x, y,
         title: "Set Material",
@@ -4080,8 +4094,16 @@ export default class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if(n.title === "Set Production Mode") {
+      const disableLoopWarns = this.getValue(nodeId, "disableLoopWarns");
+      if(disableLoopWarns) {
+        //
+      }
+      console.log('set prodction mode true...')
+      byId('hideEditorBtn').click();
+      this.enqueueOutputs(n, "execOut");
+      return;
     }
-
     // console.log("BEFORE COMPARE ");
     if(["math", "value", "compare", "stringOperation"].includes(n.category)) {
 

@@ -24209,6 +24209,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
+    pass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -24238,15 +24239,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-
-    // ✅ ADD THESE - joints and weights for skinning!
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
         shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
         shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
       } else {
-        shadowPass.setVertexBuffer(3, this.joints.buffer); // new dummy
-        shadowPass.setVertexBuffer(4, this.weights.buffer); // new dummy
+        shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
+        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
       }
     }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
@@ -28599,8 +28598,6 @@ class MEMeshObj extends _materials.default {
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
-
-    // if (this.material.type == "water") {
     pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -28642,6 +28639,7 @@ class MEMeshObj extends _materials.default {
     if (this.selectedBindGroup) {
       renderPass.setBindGroup(2, this.selectedBindGroup);
     }
+    renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -34885,6 +34883,8 @@ class Editor {
     // setTimeout(() => FCV.style.display = 'none' , 200);
     FCV.innerHTML = `
     <div id="leftBar">
+      <span>Declaration</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setProductionMode')">Set ProductionMode</button>
       <span>Events/Func</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onDraw')">Event: onDraw</button>
@@ -40460,6 +40460,28 @@ class FluxCodexVertex {
           type: "action"
         }]
       }),
+      setProductionMode: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Production Mode",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "disableLoopWarns",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "disableLoopWarns",
+          value: "true"
+        }]
+      }),
       setMaterial: (id, x, y) => ({
         id,
         x,
@@ -42320,8 +42342,16 @@ class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Production Mode") {
+      const disableLoopWarns = this.getValue(nodeId, "disableLoopWarns");
+      if (disableLoopWarns) {
+        //
+      }
+      console.log('set prodction mode true...');
+      (0, _utils.byId)('hideEditorBtn').click();
+      this.enqueueOutputs(n, "execOut");
+      return;
     }
-
     // console.log("BEFORE COMPARE ");
     if (["math", "value", "compare", "stringOperation"].includes(n.category)) {
       console.log("BEFORE COMPARE ");

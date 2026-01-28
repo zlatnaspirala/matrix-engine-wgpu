@@ -58,6 +58,8 @@ export class Editor {
     // setTimeout(() => FCV.style.display = 'none' , 200);
     FCV.innerHTML = `
     <div id="leftBar">
+      <span>Declaration</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setProductionMode')">Set ProductionMode</button>
       <span>Events/Func</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onDraw')">Event: onDraw</button>

@@ -6890,15 +6890,15 @@ var PointerEffect = class {
       depthStencil: { depthWriteEnabled: true, depthCompare: "always", format: "depth24plus" }
     });
   }
-  draw(pass, cameraMatrix, modelMatrix) {
+  draw(pass2, cameraMatrix, modelMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount);
   }
   render(transPass, mesh, viewProjMatrix) {
     const objPos = mesh.position;
@@ -7609,39 +7609,39 @@ var MEMeshObj = class extends Materials {
       mesh.indexCount = indexCount;
     }
   }
-  drawElements = (pass, lightContainer) => {
+  drawElements = (pass2, lightContainer) => {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
+    pass2.setBindGroup(0, this.sceneBindGroupForRender);
+    pass2.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
       let bindIndex = 2;
       for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
     if (this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
+      pass2.setBindGroup(2, this.selectedBindGroup);
     }
-    pass.setBindGroup(3, this.waterBindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass2.setBindGroup(3, this.waterBindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass2.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+        pass2.setVertexBuffer(3, this.mesh.jointsBuffer);
+        pass2.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
-        pass.setVertexBuffer(3, this.joints.buffer);
-        pass.setVertexBuffer(4, this.weights.buffer);
+        pass2.setVertexBuffer(3, this.joints.buffer);
+        pass2.setVertexBuffer(4, this.weights.buffer);
       }
     }
     if (this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+      pass2.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount);
   };
   drawElementsAnim = (renderPass, lightContainer) => {
     if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
@@ -7664,6 +7664,7 @@ var MEMeshObj = class extends Materials {
     if (this.selectedBindGroup) {
       renderPass.setBindGroup(2, this.selectedBindGroup);
     }
+    renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -14073,14 +14074,14 @@ var GenGeo = class {
     const activeBytes = activeFloatCount * 4;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
   };
-  draw(pass, cameraMatrix) {
+  draw(pass2, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceCount);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount, this.instanceCount);
   }
   render(transPass, mesh, viewProjMatrix) {
     this.draw(transPass, viewProjMatrix);
@@ -14230,7 +14231,7 @@ var HPBarEffect = class {
   setColor(r2, g, b, a = 1) {
     this.color = [r2, g, b, a];
   }
-  draw(pass, cameraMatrix, modelMatrix) {
+  draw(pass2, cameraMatrix, modelMatrix) {
     const color = new Float32Array(this.color);
     const progressData = new Float32Array([this.progress]);
     const buffer = new ArrayBuffer(64 + 16 + 4);
@@ -14240,18 +14241,18 @@ var HPBarEffect = class {
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 64, color);
     this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount);
   }
-  render(pass, mesh, viewProjMatrix) {
+  render(pass2, mesh, viewProjMatrix) {
     const pos2 = mesh.position;
     const modelMatrix = mat4Impl.identity();
     mat4Impl.translate(modelMatrix, [pos2.x, pos2.y + this.offsetY, pos2.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
+    this.draw(pass2, viewProjMatrix, modelMatrix);
   }
 };
 
@@ -14358,7 +14359,7 @@ var MANABarEffect = class {
   setColor(r2, g, b, a = 1) {
     this.color = [r2, g, b, a];
   }
-  draw(pass, cameraMatrix, modelMatrix) {
+  draw(pass2, cameraMatrix, modelMatrix) {
     const color = new Float32Array(this.color);
     const progressData = new Float32Array([this.progress]);
     const buffer = new ArrayBuffer(64 + 16 + 4);
@@ -14368,18 +14369,18 @@ var MANABarEffect = class {
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 64, color);
     this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount);
   }
-  render(pass, mesh, viewProjMatrix) {
+  render(pass2, mesh, viewProjMatrix) {
     const pos2 = mesh.position;
     const modelMatrix = mat4Impl.identity();
     mat4Impl.translate(modelMatrix, [pos2.x, pos2.y + this.offsetY, pos2.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
+    this.draw(pass2, viewProjMatrix, modelMatrix);
   }
 };
 
@@ -14568,14 +14569,14 @@ var FlameEffect = class {
       }
     });
   }
-  draw(pass, cameraMatrix) {
+  draw(pass2, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount);
   }
   updateInstanceData = (baseModelMatrix) => {
     const local = mat4Impl.identity();
@@ -14589,9 +14590,9 @@ var FlameEffect = class {
     this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
     this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
   };
-  render(pass, mesh, viewProjMatrix, dt = 0.01, offsetY = 50) {
+  render(pass2, mesh, viewProjMatrix, dt = 0.01, offsetY = 50) {
     this.time += dt;
-    this.draw(pass, viewProjMatrix);
+    this.draw(pass2, viewProjMatrix);
   }
   setIntensity(v) {
     this.intensity = v;
@@ -14898,7 +14899,7 @@ var FlameEmitter = class {
       this.instanceData.subarray(0, count * this.floatsPerInstance)
     );
   };
-  render(pass, mesh, viewProjMatrix, dt = 0.1) {
+  render(pass2, mesh, viewProjMatrix, dt = 0.1) {
     this.time += dt;
     for (const p of this.instanceTargets) {
       p.position[this.swap1] += dt * p.riseSpeed;
@@ -14912,12 +14913,12 @@ var FlameEmitter = class {
       p.rotation += dt * randomIntFromTo(3, 15);
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceTargets.length);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount, this.instanceTargets.length);
   }
   setIntensity(v) {
     this.intensity = v;
@@ -15170,14 +15171,14 @@ var GenGeoTexture = class {
     const activeBytes = activeFloatCount * 4;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
   };
-  draw(pass, cameraMatrix) {
+  draw(pass2, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceCount);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount, this.instanceCount);
   }
   render(transPass, mesh, viewProjMatrix) {
     this.draw(transPass, viewProjMatrix);
@@ -15356,14 +15357,14 @@ var GenGeoTexture2 = class {
     const activeBytes = activeFloatCount * 4;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
   };
-  draw(pass, cameraMatrix) {
+  draw(pass2, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceCount);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount, this.instanceCount);
   }
   render(transPass, mesh, viewProjMatrix) {
     this.draw(transPass, viewProjMatrix);
@@ -16117,47 +16118,47 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       mesh.indexCount = indexCount;
     }
   }
-  drawElements = (pass, lightContainer) => {
+  drawElements = (pass2, lightContainer) => {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass2.setBindGroup(0, this.sceneBindGroupForRender);
     if (this instanceof BVHPlayerInstances) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
+      pass2.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
-      pass.setBindGroup(1, this.modelBindGroup);
+      pass2.setBindGroup(1, this.modelBindGroup);
     }
     if (this.isVideo == false) {
       let bindIndex = 2;
       for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
     if (this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
+      pass2.setBindGroup(2, this.selectedBindGroup);
     }
-    pass.setBindGroup(3, this.waterBindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass2.setBindGroup(3, this.waterBindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass2.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+        pass2.setVertexBuffer(3, this.mesh.jointsBuffer);
+        pass2.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
-        pass.setVertexBuffer(3, this.joints.buffer);
-        pass.setVertexBuffer(4, this.weights.buffer);
+        pass2.setVertexBuffer(3, this.joints.buffer);
+        pass2.setVertexBuffer(4, this.weights.buffer);
       }
     }
     if (this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+      pass2.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
-    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);
-    else pass.setPipeline(this.pipeline);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount, 1, 0, 0, 0);
+    if (this.blendInstanced == true) pass2.setPipeline(this.pipelineBlended);
+    else pass2.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
-      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+      pass2.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   };
   drawElementsAnim = (renderPass, lightContainer) => {
@@ -16178,6 +16179,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
+    pass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -25555,35 +25557,35 @@ var BloomPass = class {
   }
   render(encoder, sceneView, finalTargetView) {
     {
-      const pass = this._beginFullscreenPass(encoder, this.brightTex.createView());
-      pass.setPipeline(this.brightPipeline);
-      pass.setBindGroup(0, this._brightBindGroup(sceneView));
-      pass.draw(6);
-      pass.end();
+      const pass2 = this._beginFullscreenPass(encoder, this.brightTex.createView());
+      pass2.setPipeline(this.brightPipeline);
+      pass2.setBindGroup(0, this._brightBindGroup(sceneView));
+      pass2.draw(6);
+      pass2.end();
     }
     {
-      const pass = this._beginFullscreenPass(encoder, this.blurTexA.createView());
-      pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurBindGroup(this.brightTex.createView(), this.blurDirX));
-      pass.draw(6);
-      pass.end();
+      const pass2 = this._beginFullscreenPass(encoder, this.blurTexA.createView());
+      pass2.setPipeline(this.blurPipeline);
+      pass2.setBindGroup(0, this._blurBindGroup(this.brightTex.createView(), this.blurDirX));
+      pass2.draw(6);
+      pass2.end();
     }
     {
-      const pass = this._beginFullscreenPass(encoder, this.blurTexB.createView());
-      pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurBindGroup(this.blurTexA.createView(), this.blurDirY));
-      pass.draw(6);
-      pass.end();
+      const pass2 = this._beginFullscreenPass(encoder, this.blurTexB.createView());
+      pass2.setPipeline(this.blurPipeline);
+      pass2.setBindGroup(0, this._blurBindGroup(this.blurTexA.createView(), this.blurDirY));
+      pass2.draw(6);
+      pass2.end();
     }
     {
-      const pass = this._beginFullscreenPass(encoder, finalTargetView);
-      pass.setPipeline(this.combinePipeline);
-      pass.setBindGroup(
+      const pass2 = this._beginFullscreenPass(encoder, finalTargetView);
+      pass2.setPipeline(this.combinePipeline);
+      pass2.setBindGroup(
         0,
         this._combineBindGroup(sceneView, this.blurTexB.createView())
       );
-      pass.draw(6);
-      pass.end();
+      pass2.draw(6);
+      pass2.end();
     }
   }
 };
@@ -26814,7 +26816,7 @@ var MatrixEngineWGPU = class {
         shadowPass.end();
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      let pass2 = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend === true) continue;
         now = performance.now() / 1e3;
@@ -26826,7 +26828,7 @@ var MatrixEngineWGPU = class {
         if (mesh.updateTime) {
           mesh.updateTime(deltaTime2);
         }
-        pass.setPipeline(mesh.pipeline);
+        pass2.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
@@ -26834,14 +26836,14 @@ var MatrixEngineWGPU = class {
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
-              pass.setPipeline(mesh.pipeline);
+              pass2.setPipeline(mesh.pipeline);
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
               m.setupPipeline();
             }
           }
         }
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass2, this.lightContainer);
       }
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend !== true) continue;
@@ -26854,7 +26856,7 @@ var MatrixEngineWGPU = class {
         if (mesh.updateTime) {
           mesh.updateTime(deltaTime2);
         }
-        pass.setPipeline(mesh.pipelineTransparent);
+        pass2.setPipeline(mesh.pipelineTransparent);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
@@ -26862,16 +26864,16 @@ var MatrixEngineWGPU = class {
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
-              pass.setPipeline(mesh.pipelineTransparent);
+              pass2.setPipeline(mesh.pipelineTransparent);
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
               m.setupPipeline();
             }
           }
         }
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass2, this.lightContainer);
       }
-      pass.end();
+      pass2.end();
       if (this.collisionSystem) this.collisionSystem.update();
       const transPassDesc = {
         colorAttachments: [{ view: this.sceneTextureView, loadOp: "load", storeOp: "store" }],
@@ -26902,7 +26904,7 @@ var MatrixEngineWGPU = class {
       if (this.bloomPass.enabled == true) {
         this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
-      pass = commandEncoder.beginRenderPass({
+      pass2 = commandEncoder.beginRenderPass({
         colorAttachments: [{
           view: canvasView,
           loadOp: "clear",
@@ -26910,16 +26912,16 @@ var MatrixEngineWGPU = class {
           clearValue: { r: 0, g: 0, b: 0, a: 1 }
         }]
       });
-      pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this.device.createBindGroup({
+      pass2.setPipeline(this.presentPipeline);
+      pass2.setBindGroup(0, this.device.createBindGroup({
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [
           { binding: 0, resource: this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView() },
           { binding: 1, resource: this.presentSampler }
         ]
       }));
-      pass.draw(6);
-      pass.end();
+      pass2.draw(6);
+      pass2.end();
       this.graphUpdate(now);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);

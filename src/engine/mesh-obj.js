@@ -825,10 +825,7 @@ export default class MEMeshObj extends Materials {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-
     if(this.selectedBindGroup) {pass.setBindGroup(2, this.selectedBindGroup)}
-
-    // if (this.material.type == "water") {
     pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -871,6 +868,8 @@ export default class MEMeshObj extends Materials {
     if(this.selectedBindGroup) {
       renderPass.setBindGroup(2, this.selectedBindGroup);
     }
+
+    renderPass.setBindGroup(3, this.waterBindGroup);
 
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);

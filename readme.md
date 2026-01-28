@@ -39,9 +39,10 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 ## Roadmap
 
-- ✔️ Test linux OS -> Editor creates and manages files internally (Windows tested only!)
-- ✔️ Add editor nav arrows in editor mode
-- ✔️ Test others physics libraries [same interface/drive system]
+- (Preparing API DOCs)[https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API]
+- 🎯 Test linux OS -> Editor creates and manages files internally (Windows tested only!)
+- 🎯 Add editor nav arrows in editor mode
+- 🎯 Test others physics libraries [same interface/drive system]
 
 
 ## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
@@ -66,7 +67,7 @@ The backend is built using **Node.js** 🟢
 - Scene container [adding objs -> auto save]
 - SceneObject property container [selected object] [auto save]
 - Assets toolbar added (bottom panel)
-  - Add **GLB** or **OBJ** files from the asset toolbox by selecting them
+  - Add **GLB** or **OBJ** files (also mp3) from the asset toolbox by selecting them.
 - Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
 - Integrated Visual Scripting system 🧠 FluxCodexVertex
 
@@ -76,10 +77,10 @@ The backend is built using **Node.js** 🟢
 
 - Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access**
 - Get SceneObject → set position → bind `onTargetReach` events
-- Fetch, GetArray, forEach, Print, IF, Math, compare etc...
-- Custom func editor
-- String operation set of nodes
-- Generator physics bodies in sequence pos in choosen geometry in world pos (Pyramid, wall , in place).
+- SetTexture, setMaterial, 
+- Fetch, GetArray, forEach, Print, IF, Math, compare, string operation etc...
+- Custom func editor - Function Manager after creating use it from visual scripting.
+- Generator physics bodies in sequence pos in choosen geometry in world pos (Pyramid, wall, in place).
 - onDraw Event node - called on every frame.Can be multiply used and set skip value. More skip less calls.
 - Audio reactive node Audio to pos , rot, scale or geometry or any... Outputs low, mid, high, energy and beat.
 - Run the graph ▶️
@@ -653,7 +654,7 @@ Will be fixxed in next update.
 Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTextureArray[GLOBAL] num of light 1"] doesn't match the expected dimension (TextureViewDimension::e2D).
 ```
 
-## Networking
+### Networking
 
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
 Very good for handling streams, channels etc...
@@ -722,7 +723,7 @@ if (this.teams.length > 0)
     });
 ```
 
-## About URLParams
+### About URLParams
 
 Buildin Url Param check for multiLang. MultiLang feature is also buildin options.
 
