@@ -65,6 +65,7 @@ export var loadObjsSequence = function() {
         position: {x: 0, y: 0, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
+        useScale: true,
         scale: [100, 100, 100],
         texturesPaths: ['./res/meshes/blender/swat.png'],
         name: 'swat',

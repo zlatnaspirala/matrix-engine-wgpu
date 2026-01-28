@@ -39,13 +39,13 @@ export default class MEMeshObj extends Materials {
       o.material.useBlend = false;
     }
 
-    this.useScale = false;
+    this.useScale = o.useScale || false;
     this.material = o.material;
 
     this.time = 0;
-    this.deltaTImeAdapter = 10;
+    this.deltaTimeAdapter = 10;
     this.updateTime = (time) => {
-      this.time += time * this.deltaTImeAdapter;
+      this.time += time * this.deltaTimeAdapter;
     }
 
     addEventListener('update-pipeine', () => {this.setupPipeline()})
@@ -584,6 +584,8 @@ export default class MEMeshObj extends Materials {
           sceneData.byteOffset,
           sceneData.byteLength
         );
+
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, new Float32Array([this.time]));
       };
 
       this.getModelMatrix = (pos, useScale = false) => {

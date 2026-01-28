@@ -25,15 +25,24 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 ---
 
-## Roadmap
+## Done list []
 
 - ✔️ Support for 3D objects and scene transformations
-- ✔️ Ammo.js physics full integration
+- ✔️ Ammo.js physics integration
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
 - ✔️ Bloom post processing
-- 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
+- ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex)
+- ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader)
+- ✔️ Dynamic shadow cast (done also for skinned meshes)
+- ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect
+
+## Roadmap
+
+- ✔️ Test linux OS -> Editor creates and manages files internally (Windows tested only!)
+- ✔️ Add editor nav arrows in editor mode
+- ✔️ Test others physics libraries [same interface/drive system]
+
 
 ## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
 
@@ -53,9 +62,9 @@ The backend is built using **Node.js** 🟢
 
 ## General Features 🧩
 
-- Editor creates and manages files (Windows tested only)
-- Scene container added
-- SceneObject property container added
+- Editor creates and manages files internally (Windows tested only!).
+- Scene container [adding objs -> auto save]
+- SceneObject property container [selected object] [auto save]
 - Assets toolbar added (bottom panel)
   - Add **GLB** or **OBJ** files from the asset toolbox by selecting them
 - Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
@@ -160,6 +169,8 @@ All changes in graph must be saved manually/clicking for now 💾 (no autosave f
 For now translation is only with `WASD` keyboard keys.
 
 Supported types: `WASD`, `arcball`
+
+`WASD` also use 'c' and 'v' for up and down camera position.
 
 ```js
 mainCameraParams: {
@@ -290,13 +301,13 @@ loadObjFile.lightContainer[0].updater.push(light => {
 ### Materials
 
 With last glb feature materials become part of engine also.
-
+```js
 material: {type: 'standard'}
 material: {type: 'pong'}
 material: {type: 'power'}
 material: {type: 'water'}
 material: {type: 'metal'}
-
+```
 
 - Standard is fully supported with lights shadow cast down (not for anims yet)
 - Pong
@@ -305,7 +316,7 @@ material: {type: 'metal'}
 ```js
 // Also for addMeshObj
 TEST_ANIM.addGlbObj({
-material: {type: 'power'},
+  material: {type: 'power'},
 ...
 }, null, glbFile);
 ```
