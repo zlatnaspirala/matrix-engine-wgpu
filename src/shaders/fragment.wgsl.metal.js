@@ -75,10 +75,8 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = material.metallicFactor;
     let roughness = material.roughnessFactor;
-    
     // ✅ Get alpha from texture and material factor
     let alpha = texColor.a * material.baseColorFactor.a;
-    
     return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 

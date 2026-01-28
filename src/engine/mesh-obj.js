@@ -626,7 +626,7 @@ export default class MEMeshObj extends Materials {
   setupPipeline = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
-      label: 'Mesh Pipeline ✅[OPAQUE]',
+      label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
       layout: this.device.createPipelineLayout({
         label: 'PipelineLayout Opaque',
         bindGroupLayouts: [
@@ -667,9 +667,9 @@ export default class MEMeshObj extends Materials {
     });
     // TRANSPARENT
     this.pipelineTransparent = this.device.createRenderPipeline({
-      label: 'Mesh Pipeline Transparent',
+      label: 'Main [Mesh] Pipeline ✅[Transparent]',
       layout: this.device.createPipelineLayout({
-        label: 'PipelineLayout Transparent',
+        label: 'Main PipelineLayout Transparent',
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,

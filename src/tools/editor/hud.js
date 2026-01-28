@@ -569,10 +569,8 @@ export default class EditorHud {
     this.toolTip.attachTooltip(byId('folderTitle'), `This represent real folders files present intro res folder (what ever is there).\n
     From assets box you can add glb or obj files direct with simple click. Everyting will be saved automatic.\n
     Support for mp3 adding by click also. No support for mp4 - mp4 can be added from 'Set Textures' node.
-
     `);
     // folderTitle
-
     document.addEventListener('la', (e) => {
       console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, LOG_FUNNY_ARCADE);
       byId('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);

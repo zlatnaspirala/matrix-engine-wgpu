@@ -221,6 +221,8 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">Translate by Z</button>
@@ -1075,7 +1077,7 @@ export default class FluxCodexVertex {
       el.className = "node " + "audios";
     } else if(spec.title == "Curve") {
       el.className = "node " + "curve";
-    } else if(spec.title == "Get Shader Graph") {
+    } else if(spec.title == "Set Shader Graph") {
       el.className = "node " + "shader";
     } else {
       el.className = "node " + (spec.category || "");
@@ -1292,7 +1294,7 @@ export default class FluxCodexVertex {
         this.updateSceneObjectPins(spec, name);
       });
       el.appendChild(select);
-    } else if(spec.title === "Get Shader Graph") {
+    } else if(spec.title === "Set Shader Graph") {
       const select = document.createElement("select");
       select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
@@ -2204,7 +2206,7 @@ export default class FluxCodexVertex {
 
       getShaderGraph: (id, x, y) => ({
         noExec: true, id,
-        title: "Get Shader Graph", x, y,
+        title: "Set Shader Graph", x, y,
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
@@ -2302,6 +2304,50 @@ export default class FluxCodexVertex {
           {name: "sceneObjectName", semantic: "string"},
         ],
         outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setMaterial: (id, x, y) => ({
+        id, x, y,
+        title: "Set Material",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "materialType", semantic: "string"},
+          {name: "sceneObjectName", semantic: "string"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "materialType", value: "standard", placeholder: "standard|power|water"},
+        ],
+      }),
+
+      setWaterParams: (id, x, y) => ({
+        id, x, y,
+        title: "Set Water Material Params",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "deepColor(vec3f)", semantic: "object"},
+          {name: "waveSpeed", semantic: "number"},
+          {name: "shallowColor(vec3f)", semantic: "object"},
+          {name: "waveScale", semantic: "number"},
+          {name: "waveHeight", semantic: "number"},
+          {name: "fresnelPower", semantic: "number"},
+          {name: "specularPower", semantic: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "deepColor(vec3f)", value: "[0.0, 0.2, 0.4]"},
+          {key: "waveSpeed", value: "0.5"},
+          {key: "shallowColor(vec3f)", value: "[0.0, 0.5, 0.7]"},
+          {key: "waveScale", value: "4.0"},
+          {key: "waveHeight", value: "0.15"},
+          {key: "fresnelPower", value: "3.0"},
+          {key: "specularPower", value: "128"},
+        ],
       }),
 
       getSpeed: (id, x, y) => ({
@@ -3880,12 +3926,12 @@ export default class FluxCodexVertex {
           n._listenerAttached = true;
         }
         n._returnCache = n.osc.UPDATE();
-      } else if(n.title === "Get Shader Graph") {
-        console.warn("[Get Shader Graph] ?????  ??input fields...");
+      } else if(n.title === "Set Shader Graph") {
+        console.warn("[Set Shader Graph] ?????  ??input fields...");
         const objectName = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if(!objectName) {
-          console.warn("[Get Shader Graph] Missing input fields...");
+          console.warn("[Set Shader Graph] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
           return;
         }
@@ -3913,6 +3959,42 @@ export default class FluxCodexVertex {
         // this.getValue(nodeId, "thrust")
         console.log('pos.getSpeed()', pos.getSpeed())
         n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Water Material Params") {
+      let deepColor = this.getValue(nodeId, "deepColor(vec3f)");
+      let waveSpeed = this.getValue(nodeId, "waveSpeed");
+      let shallowColor = this.getValue(nodeId, "shallowColor(vec3f)");
+      let waveScale = this.getValue(nodeId, "waveScale");
+      let waveHeight = this.getValue(nodeId, "waveHeight");
+      let fresnelPower = this.getValue(nodeId, "fresnelPower");
+      let specularPower = this.getValue(nodeId, "specularPower");
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if(deepColor && sceneObjectName) {
+        console.log('deepColor', deepColor)
+        deepColor = JSON.parse(deepColor);
+        shallowColor = JSON.parse(shallowColor);
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.updateWaterParams(
+          deepColor,
+          shallowColor,
+          waveSpeed,
+          waveScale,
+          waveHeight,
+          fresnelPower,
+          specularPower
+        );
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Material") {
+      const materialType = this.getValue(nodeId, "materialType");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if(materialType && materialType !== "graph") {
+        console.log('sceneObjectName', sceneObjectName)
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.changeMaterial(materialType);
       }
       this.enqueueOutputs(n, "execOut");
       return;
