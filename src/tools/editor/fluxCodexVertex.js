@@ -94,6 +94,13 @@ export default class FluxCodexVertex {
       for(var x = 0;x < allOnDraws.length;x++) {
         allOnDraws[x]._listenerAttached = false;
       }
+
+      // stop vertext anims
+      // let allVertexAnims = Object.values(this.nodes).filter((n) =>
+      //   n.title == "Set Vertex Wave" || n.title == "Set Vertex Wind" || n.title == "Set Vertex Pulse" ||
+      //   n.title == "Set Vertex Twist" || n.title == "Set Vertex Ocean" || n.title == "Set Vertex Noise");
+      app.mainRenderBundle.forEach((o) => {o.vertexAnim.disableAll()});
+
       for(let x = 0;x < runtimeCacheObjs.length;x++) {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
@@ -2364,6 +2371,207 @@ export default class FluxCodexVertex {
         ],
       }),
 
+      setVertexAnim: (id, x, y) => ({
+        id, x, y,
+        title: "Set VertexAnim Intesity",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "intensity", type: "number"},
+          {name: "enableTwist", type: "boolean"},
+          //  setTwistParams: (speed, amount)
+          {name: "Twist speed", type: "number"},
+          {name: "Twist amount", type: "number"},
+          {name: "enableNoise", type: "boolean"},
+          {name: "Noise Scale", type: "number"},
+          {name: "Noise Strength", type: "number"},
+          {name: "Noise Speed", type: "number"},
+          // setNoiseParams: (scale, strength, speed)
+          {name: "enableOcean", type: "boolean"},
+          {name: "Ocean Scale", type: "number"},
+          {name: "Ocean Height", type: "number"},
+          {name: "Ocean speed", type: "number"},
+          // setOceanParams: (scale, height, speed) => {
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "enableWave", value: false},
+          {key: "enableWind", value: false},
+          {key: "enablePulse", value: false},
+          {key: "enableTwist", value: false},
+          {key: "enableNoise", value: false},
+          {key: "enableOcean", value: false},
+          {key: "Intensity", value: 1},
+          {key: "Wave Speed", value: "number"},
+          {key: "Wave Amplitude", value: "number"},
+          {key: "Wave Speed", value: "number"},
+          {key: "Wave Frequency", value: "number"},
+          // setWaveParams: (speed, amplitude, frequency) 
+          {key: "enableWind", value: "boolean"},
+          {key: "Wind Speed", value: "number"},
+          {key: "Wind Strength", value: "number"},
+          {key: "Wind HeightInfluence", value: "number"},
+          {key: "Wind Turbulence", value: "number"},
+          // setWindParams: (speed, strength, heightInfluence, turbulence)
+          {key: "enablePulse", value: "boolean"},
+          {key: "Pulse speed", value: "number"},
+          {key: "Pulse amount", value: "number"},
+          {key: "Pulse centerX", value: "number"},
+          {key: "Pulse centerY", value: "number"},
+          // setPulseParams: (speed, amount, centerX = 0, centerY = 0)
+          {key: "enableTwist", value: "boolean"},
+          //  setTwistParams: (speed, amount)
+          {key: "Twist speed", value: "number"},
+          {key: "Twist amount", value: "number"},
+          {key: "enableNoise", value: "boolean"},
+          {key: "Noise Scale", value: "number"},
+          {key: "Noise Strength", value: "number"},
+          {key: "Noise Speed", value: "number"},
+          // setNoiseParams: (scale, strength, speed)
+          {key: "enableOcean", value: "boolean"},
+          {key: "Ocean Scale", value: "number"},
+          {key: "Ocean Height", value: "number"},
+          {key: "Ocean speed", value: "number"},
+        ],
+      }),
+
+      setVertexWave: (id, x, y) => ({
+        id, x, y,
+        title: "Set Vertex Wave",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "intensity", type: "number"},
+          {name: "enableWave", type: "boolean"},
+          {name: "Wave Speed", type: "number"},
+          {name: "Wave Amplitude", type: "number"},
+          {name: "Wave Frequency", type: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "enableWave", value: false},
+          {key: "Wave Speed", value: 3.0},
+          {key: "Wave Amplitude", value: 0.2},
+          {key: "Wave Frequency", value: 1.5},
+        ],
+      }),
+
+      setVertexWind: (id, x, y) => ({
+        id, x, y,
+        title: "Set Vertex Wind",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "enableWind", type: "boolean"},
+          {name: "Wind Speed", type: "number"},
+          {name: "Wind Strength", type: "number"},
+          {name: "Wind HeightInfluence", type: "number"},
+          {name: "Wind Turbulence", type: "number"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "enableWind", value: false},
+          {key: "Wind Speed", value: 2.0},
+          {key: "Wind Strength", value: 0.4},
+          {key: "Wind HeightInfluence", value: 2.0},
+          {key: "Wind Turbulence", value: 0.4}
+        ],
+      }),
+
+      setVertexPulse: (id, x, y) => ({
+        id, x, y,
+        title: "Set Vertex Pulse",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "enablePulse", type: "boolean"},
+          {name: "Pulse speed", type: "number"},
+          {name: "Pulse amount", type: "number"},
+          {name: "Pulse centerX", type: "number"},
+          {name: "Pulse centerY", type: "number"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "enablePulse", value: false},
+          {key: "Pulse speed", value: 1},
+          {key: "Pulse amount", value: 2},
+          {key: "Pulse centerX", value: 0},
+          {key: "Pulse centerY", value: 0}
+        ]
+      }),
+
+      setVertexTwist: (id, x, y) => ({
+        id, x, y,
+        title: "Set Vertex Twist",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "enableTwist", type: "boolean"},
+          {name: "Twist speed", type: "number"},
+          {name: "Twist amount", type: "number"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "enableTwist", value: false},
+          {key: "Twist speed", value: 1},
+          {key: "Twist amount", value: 1},
+        ],
+      }),
+
+      setVertexNoise: (id, x, y) => ({
+        id, x, y,
+        title: "Set Vertex Noise",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "enableNoise", type: "boolean"},
+          {name: "Noise Scale", type: "number"},
+          {name: "Noise Strength", type: "number"},
+          {name: "Noise Speed", type: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "enableNoise", value: false},
+          {key: "Noise Scale", value: 0.5},
+          {key: "Noise Strength", value: 0.02},
+          {key: "Noise Speed", value: 0.3}
+        ],
+      }),
+
+      setVertexOcean: (id, x, y) => ({
+        id, x, y,
+        title: "Set Vertex Ocean",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "sceneObjectName", semantic: "string"},
+          {name: "enableOcean", type: "boolean"},
+          {name: "Ocean Scale", type: "number"},
+          {name: "Ocean Height", type: "number"},
+          {name: "Ocean speed", type: "number"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "enableOcean", value: false},
+          {key: "Ocean Scale", value: 2.0},
+          {key: "Ocean Height", value: 0.08},
+          {key: "Ocean speed", value: 1.5}
+        ],
+      }),
+
       getSpeed: (id, x, y) => ({
         id, x, y,
         title: "Get Speed",
@@ -3969,11 +4177,7 @@ export default class FluxCodexVertex {
 
     if(n.title === "Get Speed") {
       const pos = this.getValue(nodeId, "position");
-      if(pos?.getSpeed) {
-        // this.getValue(nodeId, "thrust")
-        console.log('pos.getSpeed()', pos.getSpeed())
-        n._returnCache = pos.getSpeed();
-      }
+      if(pos?.getSpeed) n._returnCache = pos.getSpeed()
       this.enqueueOutputs(n, "execOut");
       return;
     } else if(n.title === "Set Water Material Params") {
@@ -3999,6 +4203,118 @@ export default class FluxCodexVertex {
           fresnelPower,
           specularPower
         );
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set VertexAnim Intesity") {
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      let intensity = this.getValue(nodeId, "intensity");
+      if(sceneObjectName) {
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.vertexAnim.setIntensity(intensity);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Vertex Wave") {
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      let enableWave = this.getValue(nodeId, "enableWave");
+      let waveSpeed = this.getValue(nodeId, "Wave Speed");
+      let waveAmplitude = this.getValue(nodeId, "Wave Amplitude");
+      let waveFrequency = this.getValue(nodeId, "Wave Frequency");
+      if(sceneObjectName) {
+        if(enableWave == true || enableWave == "true") {
+          let obj = app.getSceneObjectByName(sceneObjectName);
+          obj.vertexAnim.enableWave();
+          obj.vertexAnim.setWaveParams(waveSpeed, waveAmplitude, waveFrequency);
+        } else {
+          obj.vertexAnim.disableWave();
+        }
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Vertex Wind") {
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      let enableWind = this.getValue(nodeId, "enableWind");
+      let windSpeed = this.getValue(nodeId, "Wind Speed");
+      let windStrength = this.getValue(nodeId, "Wind Strength");
+      let windHeightInfluence = this.getValue(nodeId, "Wind HeightInfluence");
+      let windTurbulence = this.getValue(nodeId, "Wind Turbulence");
+      if(sceneObjectName) {
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        if(enableWind == true || enableWind == "true") {
+          obj.vertexAnim.enableWind();
+          obj.vertexAnim.setWindParams(windSpeed, windStrength, windHeightInfluence, windTurbulence);
+        } else {
+          obj.vertexAnim.disableWind();
+        }
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Vertex Pulse") {
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      let enablePulse = this.getValue(nodeId, "enablePulse");
+      let pulseSpeed = this.getValue(nodeId, "Pulse speed");
+      let pulseAmount = this.getValue(nodeId, "Pulse amount");
+      let pulseCenterX = this.getValue(nodeId, "Pulse centerX");
+      let pulseCenterY = this.getValue(nodeId, "Pulse centerY");
+      if(sceneObjectName) {
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        if(enablePulse == true || enablePulse == "true") {
+          obj.vertexAnim.enablePulse();
+          obj.vertexAnim.setPulseParams(pulseSpeed, pulseAmount, pulseCenterX, pulseCenterY);
+        } else {
+          obj.vertexAnim.disablePulse();
+        }
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Vertex Twist") {
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      let enableTwist = this.getValue(nodeId, "enableTwist");
+      let twistSpeed = this.getValue(nodeId, "Twist speed");
+      let twistAmount = this.getValue(nodeId, "Twist amount");
+      // setTwistParams: (speed, amount)");
+      if(sceneObjectName) {
+        console.log(' TEST VERTEX ANIMATION !Twist ', enableTwist);
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        if(enableTwist == true || enableTwist == "true") {
+          obj.vertexAnim.enableTwist();
+          obj.vertexAnim.setTwistParams(twistSpeed, twistAmount);
+        }
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Vertex Noise") {
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      let enableNoise = this.getValue(nodeId, "enableNoise");
+      let noiseScale = this.getValue(nodeId, "Noise Scale");
+      let noiseStrength = this.getValue(nodeId, "Noise Strength");
+      let noiseSpeed = this.getValue(nodeId, "Noise Speed");
+      // setNoiseParams: (scale, strength, speed)
+      if(sceneObjectName) {
+        console.log(' TEST VERTEX ANIMATION !enableNoise ', enableNoise);
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        if(enableNoise == true || enableNoise == "true") {
+          obj.vertexAnim.enableNoise();
+          obj.vertexAnim.setNoiseParams(noiseScale, noiseStrength, noiseSpeed);
+        }
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Vertex Ocean") {
+      let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      let enableOcean = this.getValue(nodeId, "enableOcean");
+      let oceanScale = this.getValue(nodeId, "Ocean Scale");
+      let oceanHeight = this.getValue(nodeId, "Ocean Height");
+      let oceanSpeed = this.getValue(nodeId, "Ocean speed");
+      if(sceneObjectName) {
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        if(enableOcean == true || enableOcean == "true") {
+          obj.vertexAnim.enableOcean();
+          obj.vertexAnim.setOceanParams(oceanScale, oceanHeight, oceanSpeed);
+        } else {
+          obj.vertexAnim.disableOcean();
+        }
       }
       this.enqueueOutputs(n, "execOut");
       return;

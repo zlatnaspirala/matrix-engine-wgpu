@@ -497,38 +497,148 @@ export default class MEMeshObj extends Materials {
 
       const bones = new Float32Array(this.MAX_BONES * 16);
       for(let i = 0;i < this.MAX_BONES;i++) {
-        // identity matrices
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+      const VERTEX_ANIM_FLAGS = {
+        NONE: 0,
+        WAVE: 1 << 0,      // 1
+        WIND: 1 << 1,      // 2
+        PULSE: 1 << 2,     // 4
+        TWIST: 1 << 3,     // 8
+        NOISE: 1 << 4,     // 16
+        OCEAN: 1 << 5,     // 32
+        DISPLACEMENT: 1 << 6 // 64
+      };
 
-      // -- vertex hader anim part
+      // vertex Anim
       this.vertexAnimParams = new Float32Array([
-        0.0,   // time
-        0.0,   // enabled (START DISABLED)
-        2.0,   // waveSpeed
-        0.1,   // waveAmplitude
-        2.0,   // waveFrequency
-        1.0,   // noiseScale
-        0.05,  // noiseStrength
-        0.0    // padding
+        0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
       ]);
 
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
-        size: this.vertexAnimParams.byteLength,
+        size: this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-      // Simple toggle functions
-      this.enableVertexAnim = () => {
-        this.vertexAnimParams[1] = 1.0;
-        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-      }
 
-      this.disableVertexAnim = () => {
-        this.vertexAnimParams[1] = 0.0;
+      this.vertexAnim = {
+        enableWave: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
+          this.updateVertexAnimBuffer();
+        },
+        disableWave: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
+          this.updateVertexAnimBuffer();
+        },
+        enableWind: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
+          this.updateVertexAnimBuffer();
+        },
+        disableWind: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
+          this.updateVertexAnimBuffer();
+        },
+        enablePulse: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
+          this.updateVertexAnimBuffer();
+        },
+        disablePulse: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
+          this.updateVertexAnimBuffer();
+        },
+        enableTwist: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
+          this.updateVertexAnimBuffer();
+        },
+        disableTwist: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
+          this.updateVertexAnimBuffer();
+        },
+        enableNoise: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
+          this.updateVertexAnimBuffer();
+        },
+        disableNoise: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
+          this.updateVertexAnimBuffer();
+        },
+        enableOcean: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
+          this.updateVertexAnimBuffer();
+        },
+        disableOcean: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
+          this.updateVertexAnimBuffer();
+        },
+        enable: (...effects) => {
+          effects.forEach(effect => {
+            this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+          });
+          this.updateVertexAnimBuffer();
+        },
+        disable: (...effects) => {
+          effects.forEach(effect => {
+            this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+          });
+          this.updateVertexAnimBuffer();
+        },
+        disableAll: () => {
+          this.vertexAnimParams[1] = 0;
+          this.updateVertexAnimBuffer();
+        },
+        isEnabled: (effect) => {return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;},
+        setWaveParams: (speed, amplitude, frequency) => {
+          this.vertexAnimParams[4] = speed;
+          this.vertexAnimParams[5] = amplitude;
+          this.vertexAnimParams[6] = frequency;
+          this.updateVertexAnimBuffer();
+        },
+        setWindParams: (speed, strength, heightInfluence, turbulence) => {
+          this.vertexAnimParams[8] = speed;
+          this.vertexAnimParams[9] = strength;
+          this.vertexAnimParams[10] = heightInfluence;
+          this.vertexAnimParams[11] = turbulence;
+          this.updateVertexAnimBuffer();
+        },
+        setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
+          this.vertexAnimParams[12] = speed;
+          this.vertexAnimParams[13] = amount;
+          this.vertexAnimParams[14] = centerX;
+          this.vertexAnimParams[15] = centerY;
+          this.updateVertexAnimBuffer();
+        },
+        setTwistParams: (speed, amount) => {
+          this.vertexAnimParams[16] = speed;
+          this.vertexAnimParams[17] = amount;
+          this.updateVertexAnimBuffer();
+        },
+        setNoiseParams: (scale, strength, speed) => {
+          this.vertexAnimParams[20] = scale;
+          this.vertexAnimParams[21] = strength;
+          this.vertexAnimParams[22] = speed;
+          this.updateVertexAnimBuffer();
+        },
+        setOceanParams: (scale, height, speed) => {
+          this.vertexAnimParams[24] = scale;
+          this.vertexAnimParams[25] = height;
+          this.vertexAnimParams[26] = speed;
+          this.updateVertexAnimBuffer();
+        },
+        setIntensity: (value) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+          this.updateVertexAnimBuffer();
+        },
+        getIntensity: () => {return this.vertexAnimParams[2]}
+      };
+
+      this.updateVertexAnimBuffer = () => {
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-      }
+      };
+
+      // globalIntensity
+      this.vertexAnimParams[2] = 1.0;
+      this.updateVertexAnimBuffer();
 
       this.updateTime = (time) => {
         this.time += time * this.deltaTimeAdapter;
@@ -547,7 +657,7 @@ export default class MEMeshObj extends Materials {
       });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'mainPassBindGroupLayout mesh',
+        label: '[mainPass]BindGroupLayout mesh',
         entries: [
           {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth'}},
           {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
@@ -571,25 +681,13 @@ export default class MEMeshObj extends Materials {
         if(index == 0) camera.update(dt, inputHandler());
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
         const sceneData = new Float32Array(48);
-        // Light VP
         sceneData.set(spotLight.viewProjMatrix, 0);
-        // Camera VP
         sceneData.set(camVP, 16);
-        // Camera position + padding
         sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
-        // Light position + padding
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
         sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(
-          this.sceneUniformBuffer,
-          0,
-          sceneData.buffer,
-          sceneData.byteOffset,
-          sceneData.byteLength
-        );
-
-        // this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, new Float32Array([this.time]));
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength)
       };
 
       this.getModelMatrix = (pos, useScale = false) => {

@@ -217,7 +217,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.8.7 ", LOG_FUNNY);
+    console.log("%c Version 1.8.9 ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Port is open.\n" +
@@ -228,9 +228,8 @@ export default class MatrixEngineWGPU {
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
 
-    setTimeout(() => {
-      this.run(callback);
-    }, 50);
+    // pseude async
+    setTimeout(() => {this.run(callback)}, 50);
   };
 
   createGlobalStuff() {

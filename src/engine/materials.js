@@ -127,9 +127,8 @@ export default class Materials {
   }
 
   createBufferForWater = () => {
-    // new water test
     this.waterBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Water MAT Bind Group Layout for main pass',
+      label: '[Water]BindGroupLayout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.FRAGMENT,
@@ -139,6 +138,7 @@ export default class Materials {
       }]
     });
     this.waterParamsBuffer = this.device.createBuffer({
+      label: '[WaterParams]Buffer',
       size: 48,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });

@@ -16,27 +16,22 @@ export class Editor {
     if(this.check(a) == 'pre editor') {
       this.client = new MEEditorClient(this.check(a));
     } else if(this.check(a) == 'created from editor') {
-
       document.addEventListener('editorx-ws-ready', () => {
         openFragmentShaderEditor().then((e) => {
           byId('shaderDOM').style.display = 'none';
           app.shaderGraph = e;
         })
       });
-
       this.client = new MEEditorClient(this.check(a), projName);
-      // Visual Scripting
       this.createFluxCodexVertexDOM();
-
       setTimeout(() => {
-        // console.log("MOMENT BEFORE COSTRUCT MAIN GRAPH")
+        console.log("MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
         this.fluxCodexVertex = new FluxCodexVertex('board', 'boardWrap', 'log', this.methodsManager, projName);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
-        }, 3000);
-      }, 1500);
+        }, 2500);
+      }, 1000);
     }
-    // console.log("methodsManager", this.methodsManager);
   }
 
   check(a) {
@@ -54,8 +49,6 @@ export class Editor {
     FCV.id = 'app';
     FCV.style.display = 'none';
     FCV.style.opacity = 1;
-    // test async 
-    // setTimeout(() => FCV.style.display = 'none' , 200);
     FCV.innerHTML = `
     <div id="leftBar">
       <span>Declaration</span>
@@ -79,7 +72,6 @@ export class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
@@ -93,6 +85,14 @@ export class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
