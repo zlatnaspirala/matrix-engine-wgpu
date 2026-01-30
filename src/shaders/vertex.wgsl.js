@@ -54,22 +54,106 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
 // Add to your uniform structs at the top
 struct VertexAnimParams {
   time: f32,
-  enabled: f32,  // 0.0 = OFF, 1.0 = ON
+  flags: f32,
+  globalIntensity: f32,
+  _pad0: f32,
+  
+  // Wave [4-7]
   waveSpeed: f32,
   waveAmplitude: f32,
   waveFrequency: f32,
+  _pad1: f32,
+  
+  // Wind [8-11]
+  windSpeed: f32,
+  windStrength: f32,
+  windHeightInfluence: f32,
+  windTurbulence: f32,
+  
+  // Pulse [12-15]
+  pulseSpeed: f32,
+  pulseAmount: f32,
+  pulseCenterX: f32,
+  pulseCenterY: f32,
+  
+  // Twist [16-19]
+  twistSpeed: f32,
+  twistAmount: f32,
+  _pad2: f32,
+  _pad3: f32,
+  
+  // Noise [20-23]
   noiseScale: f32,
   noiseStrength: f32,
-  _padding: f32,
+  noiseSpeed: f32,
+  _pad4: f32,
+  
+  // Ocean [24-27]
+  oceanWaveScale: f32,
+  oceanWaveHeight: f32,
+  oceanWaveSpeed: f32,
+  _pad5: f32,
+  
+  // Displacement [28-31]
+  displacementStrength: f32,
+  displacementSpeed: f32,
+  _pad6: f32,
+  _pad7: f32,
 }
 
 @group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 
+const ANIM_WAVE: u32 = 1u;
+const ANIM_WIND: u32 = 2u;
+const ANIM_PULSE: u32 = 4u;
+const ANIM_TWIST: u32 = 8u;
+const ANIM_NOISE: u32 = 16u;
+const ANIM_OCEAN: u32 = 32u;
+
 // Basic wave function - good starting point
-fn applyWave(pos: vec3f, time: f32) -> vec3f {
-  let wave = sin(pos.x * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed) * 
-             cos(pos.z * vertexAnim.waveFrequency + time * vertexAnim.waveSpeed);
+fn applyWave(pos: vec3f) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) * 
+             cos(pos.z * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed);
   return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn applyWind(pos: vec3f, normal: vec3f) -> vec3f {
+  let heightFactor = max(0.0, pos.y) * vertexAnim.windHeightInfluence;
+  
+  let windDir = vec2f(
+    sin(vertexAnim.time * vertexAnim.windSpeed),
+    cos(vertexAnim.time * vertexAnim.windSpeed * 0.7)
+  ) * vertexAnim.windStrength;
+  
+  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3) 
+                   * vertexAnim.windTurbulence;
+  
+  return vec3f(
+    pos.x + windDir.x * heightFactor * (1.0 + turbulence),
+    pos.y,
+    pos.z + windDir.y * heightFactor * (1.0 + turbulence)
+  );
+}
+
+fn applyPulse(pos: vec3f) -> vec3f {
+  let pulse = sin(vertexAnim.time * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+  let scale = 1.0 + pulse;
+  
+  let center = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+  return center + (pos - center) * scale;
+}
+
+fn applyTwist(pos: vec3f) -> vec3f {
+  let angle = pos.y * vertexAnim.twistAmount * sin(vertexAnim.time * vertexAnim.twistSpeed);
+  
+  let cosA = cos(angle);
+  let sinA = sin(angle);
+  
+  return vec3f(
+    pos.x * cosA - pos.z * sinA,
+    pos.y,
+    pos.x * sinA + pos.z * cosA
+  );
 }
 
 // Simple noise function (you can replace with texture sampling later)
@@ -90,33 +174,58 @@ fn noise(p: vec2f) -> f32 {
   );
 }
 
-// Apply noise-based displacement
-fn applyNoiseDisplacement(pos: vec3f, time: f32) -> vec3f {
-  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + time * 0.5);
+fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale 
+                      + vertexAnim.time * vertexAnim.noiseSpeed);
   let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
   return vec3f(pos.x, pos.y + displacement, pos.z);
 }
 
-// Combined vertex animation function
-fn applyVertexAnimation(pos: vec3f, normal: vec3f, time: f32) -> SkinResult {
+fn applyOcean(pos: vec3f) -> vec3f {
+  let t = vertexAnim.time * vertexAnim.oceanWaveSpeed;
+  let scale = vertexAnim.oceanWaveScale;
+  
+  let wave1 = sin(dot(pos.xz, vec2f(1.0, 0.0)) * scale + t) * vertexAnim.oceanWaveHeight;
+  let wave2 = sin(dot(pos.xz, vec2f(0.7, 0.7)) * scale * 1.2 + t * 1.3) * vertexAnim.oceanWaveHeight * 0.7;
+  let wave3 = sin(dot(pos.xz, vec2f(0.0, 1.0)) * scale * 0.8 + t * 0.9) * vertexAnim.oceanWaveHeight * 0.5;
+  
+  return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
   var animatedPos = pos;
   var animatedNorm = normal;
-  
-  // Apply wave
-  animatedPos = applyWave(animatedPos, time);
-  
-  // Apply noise on top
-  animatedPos = applyNoiseDisplacement(animatedPos, time);
-  
-  // Recalculate normal for proper lighting (approximate)
-  let offset = 0.01;
-  let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0), time), time);
-  let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset), time), time);
-  
-  let tangentX = normalize(posX - animatedPos);
-  let tangentZ = normalize(posZ - animatedPos);
-  animatedNorm = normalize(cross(tangentZ, tangentX));
-  
+  let flags = u32(vertexAnim.flags);
+  // Apply effects in order
+  if ((flags & ANIM_WAVE) != 0u) {
+    animatedPos = applyWave(animatedPos);
+  }
+  if ((flags & ANIM_WIND) != 0u) {
+    animatedPos = applyWind(animatedPos, animatedNorm);
+  }
+  if ((flags & ANIM_NOISE) != 0u) {
+    animatedPos = applyNoiseDisplacement(animatedPos);
+  }
+  if ((flags & ANIM_OCEAN) != 0u) {
+    animatedPos = applyOcean(animatedPos);
+  }
+  if ((flags & ANIM_PULSE) != 0u) {
+    animatedPos = applyPulse(animatedPos);
+  }
+  if ((flags & ANIM_TWIST) != 0u) {
+    animatedPos = applyTwist(animatedPos);
+  }
+  // Apply global intensity (master volume control)
+  animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
+  // Recalculate normal
+  if (flags != 0u) {
+    let offset = 0.01;
+    let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0)));
+    let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset)));
+    let tangentX = normalize(posX - animatedPos);
+    let tangentZ = normalize(posZ - animatedPos);
+    animatedNorm = normalize(cross(tangentZ, tangentX));
+  }
   return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
@@ -131,32 +240,30 @@ fn main(
   var output : VertexOutput;
   var pos = vec4(position, 1.0);
   var nrm = normal;
-  
   // Apply skinning first
   let skinned = skinVertex(pos, nrm, joints, weights);
-  
-  var finalPos = skinned.position.xyz;
-  var finalNorm = skinned.normal;
-  
+  let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
+  // var finalPos = skinned.position.xyz;
+  // var finalNorm = skinned.normal;
+  var finalPos = animated.position.xyz;
+  var finalNorm = animated.normal;
   // Only apply animation if enabled > 0.5 (simple check)
-  if (vertexAnim.enabled > 0.5) {
-    let animated = applyVertexAnimation(finalPos, finalNorm, vertexAnim.time);
+  // Check if any animation flags are set
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+    let animated = applyVertexAnimation(finalPos, finalNorm);
     finalPos = animated.position.xyz;
     finalNorm = animated.normal;
   }
-  
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
-  
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * finalNorm);
   output.uv = uv;
-  
   return output;
 }`;

@@ -28,7 +28,6 @@ var about = () => {
   console.info(" - Raycaster HIT/CLICK on object scene")
   console.info(" - Light cast shadow multi lights")
   console.info("--------------------------------------------")
-
 }
 
 export {
