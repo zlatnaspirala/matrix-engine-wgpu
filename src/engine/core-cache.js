@@ -6,7 +6,7 @@ export class TextureCache {
   }
 
   async get(path, format) {
-    if (this.cache.has(path)) {
+    if(this.cache.has(path)) {
       return this.cache.get(path); // reuse promise
     }
 
@@ -30,16 +30,19 @@ export class TextureCache {
     });
 
     this.device.queue.copyExternalImageToTexture(
-      { source: imageBitmap },
-      { texture },
+      {source: imageBitmap},
+      {texture},
       [imageBitmap.width, imageBitmap.height]
     );
 
     const sampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
+      addressModeU: "repeat",
+      addressModeV: "repeat",
+      addressModeW: "repeat",
     });
 
-    return { texture, sampler };
+    return {texture, sampler};
   }
 }

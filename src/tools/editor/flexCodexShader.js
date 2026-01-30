@@ -356,6 +356,29 @@ export class UVNode extends ShaderNode {
   }
 }
 
+export class AddVec2Node extends ShaderNode {
+  constructor() {
+    super("AddVec2");
+    this.inputs = {
+      a: {default: "vec2f(0.0)"},
+      b: {default: "vec2f(0.0)"}
+    };
+  }
+
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+
+    return {
+      out: ctx.temp("vec2f", `${a} + ${b}`),
+      type: "vec2f"
+    };
+  }
+}
+
 export class CameraPosNode extends ShaderNode {
   constructor() {
     super("CameraPos");
@@ -364,6 +387,29 @@ export class CameraPosNode extends ShaderNode {
     return {
       out: "scene.cameraPos",
       type: "vec3f"
+    };
+  }
+}
+
+export class MultiplyVec2Node extends ShaderNode {
+  constructor() {
+    super("MultiplyVec2");
+    this.inputs = {
+      a: {default: "vec2f(1.0)"},
+      b: {default: "1.0"}  // Can be scalar or vec2
+    };
+  }
+
+  build(_, __, ctx) {
+    const connA = ctx.shaderGraph.getInput(this, "a");
+    const connB = ctx.shaderGraph.getInput(this, "b");
+
+    const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
+    const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
+
+    return {
+      out: ctx.temp("vec2f", `${a} * ${b}`),
+      type: "vec2f"
     };
   }
 }
@@ -536,48 +582,48 @@ export class FloatNode extends ShaderNode {
 }
 
 export class Vec2Node extends ShaderNode {
-  constructor(x = 0.0, y = 0.0) {
+  constructor(vx = 0.0, vy = 0.0) {
     super("Vec2");
-    this.x = x;
-    this.y = y;
+    this.valueX = vx;  // ✅ Store vector X value
+    this.valueY = vy;  // ✅ Store vector Y value
   }
 
   build(_, __, ctx) {
     return {
-      out: `vec2f(${this.x}, ${this.y})`,
+      out: `vec2f(${this.valueX}, ${this.valueY})`,  // ✅ Use valueX, valueY
       type: "vec2f"
     };
   }
 }
 
 export class Vec3Node extends ShaderNode {
-  constructor(x = 0.0, y = 0.0, z = 0.0) {
+  constructor(vx = 0.0, vy = 0.0, vz = 0.0) {
     super("Vec3");
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.valueX = vx;
+    this.valueY = vy;
+    this.valueZ = vz;
   }
 
   build(_, __, ctx) {
     return {
-      out: `vec3f(${this.x}, ${this.y}, ${this.z})`,
+      out: `vec3f(${this.valueX}, ${this.valueY}, ${this.valueZ})`,
       type: "vec3f"
     };
   }
 }
 
 export class Vec4Node extends ShaderNode {
-  constructor(x = 0.0, y = 0.0, z = 0.0, w = 1.0) {
+  constructor(vx = 0.0, vy = 0.0, vz = 0.0, vw = 1.0) {
     super("Vec4");
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.w = w;
+    this.valueX = vx;
+    this.valueY = vy;
+    this.valueZ = vz;
+    this.valueW = vw;
   }
 
   build(_, __, ctx) {
     return {
-      out: `vec4f(${this.x}, ${this.y}, ${this.z}, ${this.w})`,
+      out: `vec4f(${this.valueX}, ${this.valueY}, ${this.valueZ}, ${this.valueW})`,
       type: "vec4f"
     };
   }
@@ -1183,35 +1229,35 @@ export class GlobalAmbientNode extends ShaderNode {
   }
 }
 
-export class InlineWGSLNode {
-  constructor(code = "return vec4f(1.0, 0.0, 0.0, 1.0);") {
-    this.id = nodeId++;
-    this.type = "InlineWGSL";
-    this.code = code;
-    this.label = "Inline WGSL";
+// export class InlineWGSLNode {
+//   constructor(code = "return vec4f(1.0, 0.0, 0.0, 1.0);") {
+//     this.id = nodeId++;
+//     this.type = "InlineWGSL";
+//     this.code = code;
+//     this.label = "Inline WGSL";
 
-    this.inputs = {};
-    this.outputs = {
-      result: {type: "vec4f"}
-    };
-  }
+//     this.inputs = {};
+//     this.outputs = {
+//       result: {type: "vec4f"}
+//     };
+//   }
 
-  build(pin, value, ctx) {
-    if(pin === "result") {
-      const fnName = `inlineWGSL_${this.id}`;
+//   build(pin, value, ctx) {
+//     if(pin === "result") {
+//       const fnName = `inlineWGSL_${this.id}`;
 
-      const fnCode = `
-fn ${fnName}() -> vec4f {
-  ${this.code}
-}`;
+//       const fnCode = `
+// fn ${fnName}() -> vec4f {
+//   ${this.code}
+// }`;
 
-      ctx.registerFunction(fnName, fnCode);
-      const out = ctx.temp("vec4f", `${fnName}()`);
+//       ctx.registerFunction(fnName, fnCode);
+//       const out = ctx.temp("vec4f", `${fnName}()`);
 
-      return {out};
-    }
-  }
-}
+//       return {out};
+//     }
+//   }
+// }
 class ConnectionLayer {
   constructor(svg, shaderGraph) {
     this.svg = svg;
@@ -1537,26 +1583,32 @@ svg path {
         addPropertyInput("Value", "value", node.value);
       }
       else if(node.type === "Vec2") {
-        addPropertyInput("X", "x", node.x);
-        addPropertyInput("Y", "y", node.y);
+        addPropertyInput("X", "valueX", node.valueX || 0);
+        addPropertyInput("Y", "valueY", node.valueY || 0);
       }
       else if(node.type === "Vec3") {
-        addPropertyInput("X", "x", node.x);
-        addPropertyInput("Y", "y", node.y);
-        addPropertyInput("Z", "z", node.z);
+        addPropertyInput("X", "valueX", node.valueX || 0);
+        addPropertyInput("Y", "valueY", node.valueY || 0);
+        addPropertyInput("Z", "valueZ", node.valueZ || 0);
       }
       else if(node.type === "Vec4") {
-        addPropertyInput("X", "x", node.x);
-        addPropertyInput("Y", "y", node.y);
-        addPropertyInput("Z", "z", node.z);
-        addPropertyInput("W", "w", node.w);
+        addPropertyInput("X", "valueX", node.valueX || 0);
+        addPropertyInput("Y", "valueY", node.valueY || 0);
+        addPropertyInput("Z", "valueZ", node.valueZ || 0);
+        addPropertyInput("W", "valueW", node.valueW || 1);
       }
       else if(node.type === "Color") {
         addPropertyInput("R", "r", node.r);
         addPropertyInput("G", "g", node.g);
         addPropertyInput("B", "b", node.b);
         addPropertyInput("A", "a", node.a);
+      } else if(node.type === "AddVec2") {
+        // This node has vec2 inputs, but users typically connect nodes
+        // If you want to show defaults:
+        addPropertyInput("Default A", "defaultA", node.inputs.a.default);
+        addPropertyInput("Default B", "defaultB", node.inputs.b.default);
       }
+
       else if(node.type === "InlineFunction") {
         addPropertyInput("Name", "fnName", node.fnName, "text");
 
@@ -1645,13 +1697,15 @@ svg path {
 
     btn("outColor", () => addNode(new FragmentOutputNode(), 500, 200));
     btn("CameraPos", () => addNode(new CameraPosNode()));
+    btn("MultiplyVec2", () => addNode(new MultiplyVec2Node()));
     btn("Time", () => addNode(new TimeNode()));
+    btn("AddVec2", () => addNode(new AddVec2Node()));
     btn("GlobalAmbient", () => addNode(new GlobalAmbientNode()));
     btn("TextureSampler", () => addNode(new TextureSamplerNode()));
     btn("MultiplyColor", () => addNode(new MultiplyColorNode()));
     btn("Grayscale", () => addNode(new GrayscaleNode()));
     btn("Contrast", () => addNode(new ContrastNode()));
-    btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
+    // btn("Inline WGSL", () => addNode(new InlineWGSLNode(prompt("WGSL code"))));
     btn("Inline Function", () => addNode(new InlineFunctionNode("customFn", "")));
     // btn("BaseColorOutputNode", () => addNode(new BaseColorOutputNode()));
     // btn("EmissiveOutputNode", () => addNode(new EmissiveOutputNode()));
@@ -1664,7 +1718,9 @@ svg path {
       const val = prompt("Enter float value:", "1.0");
       addNode(new FloatNode(parseFloat(val) || 1.0));
     });
+    btn("UV", () => addNode(new UVNode(1, 0)));
     btn("Vec3", () => addNode(new Vec3Node(1, 0, 0)));
+    btn("Vec2", () => addNode(new Vec2Node(1, 0)));
     btn("Color", () => addNode(new ColorNode(1, 1, 1, 1)));
     // Math
     btn("Add", () => addNode(new AddNode()));
@@ -1785,7 +1841,7 @@ svg path {
         opt.value = index;
         opt.textContent = shader.name;
         shaderGraph.runtimeList.push(shader.name);
-        let test =  JSON.parse(shader.content);
+        let test = JSON.parse(shader.content);
         // console.log("Graph content shader:", test.final);
         shaderGraph.runtime_memory[shader.name] = test.final;
         b.appendChild(opt);
@@ -1839,7 +1895,12 @@ function serializeGraph(shaderGraph) {
       name: n.name,
       value: n.value,
       r: n.r, g: n.g, b: n.b, a: n.a,
-      inputs: Object.fromEntries(Object.entries(n.inputs || {}).map(([k, v]) => [k, {default: v.default}]))
+      inputs: Object.fromEntries(Object.entries(n.inputs || {}).map(([k, v]) => [k, {default: v.default}])),
+
+      valueX: n.valueX,
+      valueY: n.valueY,
+      valueZ: n.valueZ,
+      valueW: n.valueW,
     })),
     connections: shaderGraph.connections.map(c => ({
       from: c.fromNode.id,
@@ -1897,6 +1958,8 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
         switch(node.type) {
           case "FragmentOutput": node = new FragmentOutputNode(); break;
           case "CameraPos": node = new CameraPosNode(); break;
+          case "MultiplyVec2": node = new MultiplyVec2Node(); break;
+          case "AddVec2": node = new AddVec2Node; break;
           case "Time": node = new TimeNode(); break;
           case "InlineFunction": node = new InlineFunctionNode(node.fnName, node.code); break;
           case "TextureSampler": node = new TextureSamplerNode(node.name); break;
@@ -1909,9 +1972,9 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
           case "LightToColor": node = new LightToColorNode(); break;
           case "UV": node = new UVNode(); break;
           case "Float": node = new FloatNode(node.value ?? 1.0); break;
-          case "Vec2": node = new Vec2Node(node.x ?? 0, node.y ?? 0); break;
-          case "Vec3": node = new Vec3Node(node.x ?? 0, node.y ?? 0, node.z ?? 0); break;
-          case "Vec4": node = new Vec4Node(node.x ?? 0, node.y ?? 0, node.z ?? 0, node.w ?? 1); break;
+          case "Vec2": node = new Vec2Node(node.valueX ?? 0, node.valueY ?? 0); break;
+          case "Vec3": node = new Vec3Node(node.valueX ?? 0, node.valueY ?? 0, node.valueZ ?? 0); break;
+          case "Vec4": node = new Vec4Node(node.valueX ?? 0, node.valueY ?? 0, node.valueZ ?? 0, node.valueW ?? 1); break;
           case "Color": node = new ColorNode(node.r ?? 1, node.g ?? 1, node.b ?? 1, node.a ?? 1); break;
           case "Add": node = new AddNode(); break;
           case "Subtract": node = new SubtractNode(); break;

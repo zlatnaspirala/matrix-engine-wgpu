@@ -32,6 +32,9 @@ export default class Materials {
     this.imageSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
+      addressModeU: "repeat",
+      addressModeV: "repeat",
+      addressModeW: "repeat",
     });
     // For external video textures (needs to be filtering sampler too!)
     this.videoSampler = this.device.createSampler({
