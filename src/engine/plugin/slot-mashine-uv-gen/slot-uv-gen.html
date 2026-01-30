@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Machine Reel Texture Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        #controls {
+            min-width: 350px;
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        .control-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }
+        .control-section:last-child {
+            border-bottom: none;
+        }
+        .control-section h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 13px;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="color"] {
+            width: 60px;
+            height: 30px;
+            border: 1px solid #444;
+            background: #1a1a1a;
+            cursor: pointer;
+        }
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            width: calc(50% - 5px);
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #1976D2;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #d32f2f;
+        }
+        #canvasContainer {
+            flex: 1;
+            text-align: center;
+        }
+        #canvas {
+            border: 2px solid #444;
+            max-width: 100%;
+            height: auto;
+            background: #2a2a2a;
+        }
+        .info {
+            text-align: center;
+            margin-top: 10px;
+            color: #aaa;
+        }
+        .symbol-editor {
+            background: #1a1a1a;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+        .symbol-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .symbol-header span {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .symbol-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+        .symbol-controls label {
+            margin: 0;
+        }
+        .color-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .scrollable-symbols {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .scrollable-symbols::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-symbols::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        .scrollable-symbols::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+        .scrollable-symbols::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="controls">
+            <h2 style="margin-top: 0;">Slot Reel Texture</h2>
+            
+            <div class="control-section">
+                <h3>Canvas Settings</h3>
+                <div class="grid-inputs">
+                    <div>
+                        <label>Width (px)</label>
+                        <input type="number" id="canvasWidth" value="4096" min="512" step="128">
+                    </div>
+                    <div>
+                        <label>Height (px)</label>
+                        <input type="number" id="canvasHeight" value="4096" min="512" step="128">
+                    </div>
+                </div>
+                <div class="grid-inputs">
+                    <div>
+                        <label>Grid Columns</label>
+                        <input type="number" id="gridCols" value="4" min="1" max="8">
+                    </div>
+                    <div>
+                        <label>Grid Rows</label>
+                        <input type="number" id="gridRows" value="4" min="1" max="8">
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Symbol Editor</h3>
+                <div style="margin-bottom: 10px;">
+                    <button onclick="addSymbol()" style="width: calc(50% - 2.5px); background: #2196F3;">+ Add Symbol</button>
+                    <button onclick="removeSymbol()" class="danger" style="width: calc(50% - 2.5px);">- Remove Last</button>
+                </div>
+                <div class="scrollable-symbols" id="symbolEditor">
+                    <!-- Symbols will be dynamically generated here -->
+                </div>
+            </div>
+
+            <div class="control-section" style="border: none;">
+                <button onclick="drawTexture()" style="width: 100%;">Generate Texture</button>
+                <button onclick="downloadTexture()" class="secondary" style="width: 100%;">Download PNG</button>
+                <div class="info" id="infoText">Ready to generate</div>
+            </div>
+        </div>
+
+        <div id="canvasContainer">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Configuration
+        let config = {
+            canvasWidth: 4096,
+            canvasHeight: 4096,
+            gridCols: 4,
+            gridRows: 4,
+            symbols: [
+                { type: 'seven', color: '#ff0000', label: '' },      // Red 7
+                { type: 'seven', color: '#ffd700', label: '' },      // Golden 7
+                { type: 'cherry', color: '#ff1744', label: '' },     // Cherry
+                { type: 'bar', color: '#ffd700', label: 'BAR' },     // BAR
+                { type: 'bell', color: '#ffd700', label: '' },       // Golden Bell
+                { type: 'diamond', color: '#00e5ff', label: '' },    // Diamond
+                { type: 'lemon', color: '#ffeb3b', label: '' },      // Lemon
+                { type: 'grape', color: '#9c27b0', label: '' },      // Grape
+                { type: 'watermelon', color: '#4caf50', label: '' }, // Watermelon
+                { type: 'bar', color: '#ffd700', label: 'DOUBLE' },  // Double BAR
+                { type: 'star', color: '#ffd700', label: '' },       // Star
+                { type: 'seven', color: '#00e5ff', label: '' }       // Blue 7
+            ]
+        };
+
+        // Initialize UI
+        function initializeUI() {
+            document.getElementById('canvasWidth').value = config.canvasWidth;
+            document.getElementById('canvasHeight').value = config.canvasHeight;
+            document.getElementById('gridCols').value = config.gridCols;
+            document.getElementById('gridRows').value = config.gridRows;
+            
+            renderSymbolEditor();
+            updateCanvasSize();
+        }
+
+        // Render symbol editor
+        function renderSymbolEditor() {
+            const editor = document.getElementById('symbolEditor');
+            editor.innerHTML = '';
+            
+            config.symbols.forEach((symbol, index) => {
+                const symbolDiv = document.createElement('div');
+                symbolDiv.className = 'symbol-editor';
+                symbolDiv.innerHTML = `
+                    <div class="symbol-header">
+                        <span>Symbol ${index + 1}</span>
+                    </div>
+                    <div class="symbol-controls">
+                        <label>Type</label>
+                        <select onchange="updateSymbol(${index}, 'type', this.value)">
+                            <option value="seven" ${symbol.type === 'seven' ? 'selected' : ''}>Seven (7)</option>
+                            <option value="cherry" ${symbol.type === 'cherry' ? 'selected' : ''}>Cherry</option>
+                            <option value="bar" ${symbol.type === 'bar' ? 'selected' : ''}>Bar</option>
+                            <option value="bell" ${symbol.type === 'bell' ? 'selected' : ''}>Bell</option>
+                            <option value="diamond" ${symbol.type === 'diamond' ? 'selected' : ''}>Diamond</option>
+                            <option value="star" ${symbol.type === 'star' ? 'selected' : ''}>Star</option>
+                            <option value="lemon" ${symbol.type === 'lemon' ? 'selected' : ''}>Lemon</option>
+                            <option value="grape" ${symbol.type === 'grape' ? 'selected' : ''}>Grape</option>
+                            <option value="watermelon" ${symbol.type === 'watermelon' ? 'selected' : ''}>Watermelon</option>
+                        </select>
+                        
+                        <label>Color</label>
+                        <div class="color-input-group">
+                            <input type="color" value="${symbol.color}" onchange="updateSymbol(${index}, 'color', this.value)">
+                            <input type="text" value="${symbol.color}" onchange="updateSymbol(${index}, 'color', this.value)" style="width: 80px;">
+                        </div>
+                        
+                        ${symbol.type === 'bar' ? `
+                            <label>Label</label>
+                            <input type="text" value="${symbol.label}" onchange="updateSymbol(${index}, 'label', this.value)" placeholder="BAR, DOUBLE...">
+                        ` : '<div></div><div></div>'}
+                    </div>
+                `;
+                editor.appendChild(symbolDiv);
+            });
+        }
+
+        // Update symbol configuration
+        function updateSymbol(index, property, value) {
+            config.symbols[index][property] = value;
+        }
+
+        // Add new symbol
+        function addSymbol() {
+            const newSymbol = {
+                type: 'seven',
+                color: '#ffd700',
+                label: ''
+            };
+            config.symbols.push(newSymbol);
+            renderSymbolEditor();
+            document.getElementById('infoText').textContent = `Symbol added! Total: ${config.symbols.length}`;
+        }
+
+        // Remove last symbol
+        function removeSymbol() {
+            if (config.symbols.length > 1) {
+                config.symbols.pop();
+                renderSymbolEditor();
+                document.getElementById('infoText').textContent = `Symbol removed! Total: ${config.symbols.length}`;
+            } else {
+                document.getElementById('infoText').textContent = 'Cannot remove! Need at least 1 symbol.';
+            }
+        }
+
+        // Update canvas size
+        function updateCanvasSize() {
+            config.canvasWidth = parseInt(document.getElementById('canvasWidth').value);
+            config.canvasHeight = parseInt(document.getElementById('canvasHeight').value);
+            config.gridCols = parseInt(document.getElementById('gridCols').value);
+            config.gridRows = parseInt(document.getElementById('gridRows').value);
+            
+            canvas.width = config.canvasWidth;
+            canvas.height = config.canvasHeight;
+            
+            document.getElementById('infoText').textContent = 
+                `Resolution: ${config.canvasWidth}x${config.canvasHeight} | Grid: ${config.gridCols}x${config.gridRows}`;
+        }
+
+        function drawMetallicFrame(x, y, size) {
+            const frameWidth = size * 0.08;
+            const innerSize = size - frameWidth * 2;
+            
+            // Outer metallic ring
+            const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+            gradient.addColorStop(0, '#6a7a8a');
+            gradient.addColorStop(0.5, '#a0b0c0');
+            gradient.addColorStop(1, '#5a6a7a');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x + size/2, y + size/2, size/2 - frameWidth/2, 0, Math.PI * 2);
+            ctx.lineWidth = frameWidth;
+            ctx.strokeStyle = gradient;
+            ctx.stroke();
+        }
+
+        function drawSeven(x, y, size, color) {
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const fontSize = size * 0.6;
+            
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Multiple shadow layers for depth
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetX = 8;
+            ctx.shadowOffsetY = 8;
+            ctx.fillStyle = '#000000';
+            ctx.fillText('7', centerX, centerY);
+            
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Glow effect
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 25;
+            
+            // Gradient fill with more vibrant colors
+            const gradient = ctx.createLinearGradient(centerX, centerY - fontSize/2, centerX, centerY + fontSize/2);
+            gradient.addColorStop(0, lightenColor(color, 40));
+            gradient.addColorStop(0.3, color);
+            gradient.addColorStop(0.5, '#ffffff');
+            gradient.addColorStop(0.7, color);
+            gradient.addColorStop(1, darkenColor(color, 20));
+            
+            ctx.fillStyle = gradient;
+            ctx.fillText('7', centerX, centerY);
+            
+            // Inner highlight
+            ctx.shadowBlur = 0;
+            const highlightGradient = ctx.createLinearGradient(centerX - fontSize/4, centerY - fontSize/3, centerX - fontSize/4, centerY);
+            highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = highlightGradient;
+            ctx.fillText('7', centerX - 3, centerY - 3);
+            
+            // Outline with bevel effect
+            ctx.strokeStyle = darkenColor(color, 50);
+            ctx.lineWidth = 5;
+            ctx.strokeText('7', centerX + 1, centerY + 1);
+            
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 3;
+            ctx.strokeText('7', centerX, centerY);
+        }
+
+        function drawCherry(x, y, size) {
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const cherryRadius = size * 0.15;
+            
+            // Stem
+            ctx.strokeStyle = '#4a3020';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - cherryRadius);
+            ctx.quadraticCurveTo(centerX + 20, centerY - size * 0.3, centerX + 30, centerY - size * 0.35);
+            ctx.stroke();
+            
+            // Leaf
+            ctx.fillStyle = '#4caf50';
+            ctx.beginPath();
+            ctx.ellipse(centerX + 25, centerY - size * 0.32, 15, 8, -Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Cherry 1
+            const cherry1Gradient = ctx.createRadialGradient(
+                centerX - cherryRadius * 0.3, centerY - cherryRadius * 0.3, cherryRadius * 0.2,
+                centerX - 15, centerY + 10, cherryRadius
+            );
+            cherry1Gradient.addColorStop(0, '#ff5252');
+            cherry1Gradient.addColorStop(1, '#b71c1c');
+            
+            ctx.fillStyle = cherry1Gradient;
+            ctx.beginPath();
+            ctx.arc(centerX - 15, centerY + 10, cherryRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.arc(centerX - 20, centerY + 5, cherryRadius * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Cherry 2
+            const cherry2Gradient = ctx.createRadialGradient(
+                centerX + cherryRadius * 0.3, centerY + cherryRadius * 0.3, cherryRadius * 0.2,
+                centerX + 15, centerY + 10, cherryRadius
+            );
+            cherry2Gradient.addColorStop(0, '#ff5252');
+            cherry2Gradient.addColorStop(1, '#b71c1c');
+            
+            ctx.fillStyle = cherry2Gradient;
+            ctx.beginPath();
+            ctx.arc(centerX + 15, centerY + 10, cherryRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.arc(centerX + 20, centerY + 5, cherryRadius * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawBar(x, y, size, label, color) {
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const barWidth = size * 0.7;
+            const barHeight = size * 0.25;
+            const fontSize = label.length > 4 ? size * 0.11 : size * 0.16;
+            
+            // 3D bar effect with enhanced depth
+            const gradient = ctx.createLinearGradient(centerX - barWidth/2, centerY - barHeight/2, centerX - barWidth/2, centerY + barHeight/2);
+            gradient.addColorStop(0, lightenColor(color, 30));
+            gradient.addColorStop(0.5, color);
+            gradient.addColorStop(1, darkenColor(color, 30));
+            
+            // Multiple shadow layers for depth
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(centerX - barWidth/2 + 8, centerY - barHeight/2 + 8, barWidth, barHeight);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(centerX - barWidth/2 + 4, centerY - barHeight/2 + 4, barWidth, barHeight);
+            
+            // Main bar with rounded corners effect
+            ctx.fillStyle = gradient;
+            ctx.fillRect(centerX - barWidth/2, centerY - barHeight/2, barWidth, barHeight);
+            
+            // Inner highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fillRect(centerX - barWidth/2 + 8, centerY - barHeight/2 + 4, barWidth - 16, barHeight * 0.3);
+            
+            // Outer border with bevel effect
+            ctx.strokeStyle = darkenColor(color, 40);
+            ctx.lineWidth = 4;
+            ctx.strokeRect(centerX - barWidth/2, centerY - barHeight/2, barWidth, barHeight);
+            
+            ctx.strokeStyle = lightenColor(color, 20);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(centerX - barWidth/2 + 2, centerY - barHeight/2 + 2, barWidth - 4, barHeight - 4);
+            
+            // Text with better centering - moved down slightly
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Text shadow for depth
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillText(label, centerX + 2, centerY + 2);
+            
+            // Main text - adjusted vertical position
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillText(label, centerX, centerY + 1);
+        }
+
+        function drawBell(x, y, size, color) {
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const bellSize = size * 0.3;
+            
+            // Bell body
+            const gradient = ctx.createLinearGradient(centerX, centerY - bellSize, centerX, centerY + bellSize);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(0.5, '#ffffff');
+            gradient.addColorStop(1, color);
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - bellSize);
+            ctx.quadraticCurveTo(centerX - bellSize * 0.8, centerY - bellSize * 0.5, centerX - bellSize, centerY + bellSize * 0.3);
+            ctx.lineTo(centerX + bellSize, centerY + bellSize * 0.3);
+            ctx.quadraticCurveTo(centerX + bellSize * 0.8, centerY - bellSize * 0.5, centerX, centerY - bellSize);
+            ctx.fill();
+            
+            // Bell rim
+            ctx.fillStyle = darkenColor(color, 20);
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY + bellSize * 0.3, bellSize, bellSize * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Clapper
+            ctx.fillStyle = '#424242';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + bellSize * 0.5, bellSize * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawDiamond(x, y, size, color) {
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const diamondSize = size * 0.35;
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(centerX + 5, centerY - diamondSize + 5);
+            ctx.lineTo(centerX + diamondSize * 0.6 + 5, centerY + 5);
+            ctx.lineTo(centerX + 5, centerY + diamondSize + 5);
+            ctx.lineTo(centerX - diamondSize * 0.6 + 5, centerY + 5);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Main diamond body gradient
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, diamondSize);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.3, lightenColor(color, 50));
+            gradient.addColorStop(0.6, color);
+            gradient.addColorStop(1, darkenColor(color, 30));
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - diamondSize);
+            ctx.lineTo(centerX + diamondSize * 0.6, centerY);
+            ctx.lineTo(centerX, centerY + diamondSize);
+            ctx.lineTo(centerX - diamondSize * 0.6, centerY);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Inner facets for depth
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - diamondSize);
+            ctx.lineTo(centerX + diamondSize * 0.3, centerY - diamondSize * 0.3);
+            ctx.lineTo(centerX, centerY);
+            ctx.lineTo(centerX - diamondSize * 0.3, centerY - diamondSize * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(100, 150, 255, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY + diamondSize);
+            ctx.lineTo(centerX + diamondSize * 0.3, centerY + diamondSize * 0.3);
+            ctx.lineTo(centerX, centerY);
+            ctx.lineTo(centerX - diamondSize * 0.3, centerY + diamondSize * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Facet lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - diamondSize);
+            ctx.lineTo(centerX, centerY + diamondSize);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX - diamondSize * 0.6, centerY);
+            ctx.lineTo(centerX + diamondSize * 0.6, centerY);
+            ctx.stroke();
+            
+            // Diagonal facets
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - diamondSize);
+            ctx.lineTo(centerX + diamondSize * 0.6, centerY);
+            ctx.moveTo(centerX + diamondSize * 0.6, centerY);
+            ctx.lineTo(centerX, centerY + diamondSize);
+            ctx.moveTo(centerX, centerY + diamondSize);
+            ctx.lineTo(centerX - diamondSize * 0.6, centerY);
+            ctx.moveTo(centerX - diamondSize * 0.6, centerY);
+            ctx.lineTo(centerX, centerY - diamondSize);
+            ctx.stroke();
+            
+            // Bright sparkle highlights
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(centerX - diamondSize * 0.2, centerY - diamondSize * 0.4, diamondSize * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(centerX + diamondSize * 0.3, centerY - diamondSize * 0.1, diamondSize * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // Outer edge
+            ctx.strokeStyle = darkenColor(color, 40);
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - diamondSize);
+            ctx.lineTo(centerX + diamondSize * 0.6, centerY);
+            ctx.lineTo(centerX, centerY + diamondSize);
+            ctx.lineTo(centerX - diamondSize * 0.6, centerY);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        function drawStar(x, y, size, color) {
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const starSize = size * 0.35;
+            const points = 5;
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points - Math.PI / 2;
+                const radius = i % 2 === 0 ? starSize : starSize * 0.5;
+                const px = Math.cos(angle) * radius + 5;
+                const py = Math.sin(angle) * radius + 5;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Gradient with more color variation
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, starSize);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.3, lightenColor(color, 40));
+            gradient.addColorStop(0.6, color);
+            gradient.addColorStop(1, darkenColor(color, 30));
+            
+            ctx.fillStyle = gradient;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 30;
+            
+            ctx.beginPath();
+            for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points - Math.PI / 2;
+                const radius = i % 2 === 0 ? starSize : starSize * 0.5;
+                const px = Math.cos(angle) * radius;
+                const py = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Inner star for depth
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points - Math.PI / 2;
+                const radius = i % 2 === 0 ? starSize * 0.4 : starSize * 0.2;
+                const px = Math.cos(angle) * radius;
+                const py = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Outer edge
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = darkenColor(color, 50);
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points - Math.PI / 2;
+                const radius = i % 2 === 0 ? starSize : starSize * 0.5;
+                const px = Math.cos(angle) * radius;
+                const py = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Highlight edge
+            ctx.strokeStyle = lightenColor(color, 30);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        function drawFruit(x, y, size, type, color) {
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const fruitSize = size * 0.3;
+            
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15;
+            
+            if (type === 'lemon') {
+                // Lemon shape
+                const gradient = ctx.createRadialGradient(centerX - fruitSize * 0.2, centerY - fruitSize * 0.2, 0, centerX, centerY, fruitSize);
+                gradient.addColorStop(0, lightenColor(color, 50));
+                gradient.addColorStop(1, color);
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.ellipse(centerX, centerY, fruitSize * 0.8, fruitSize, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Highlight
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(centerX - fruitSize * 0.3, centerY - fruitSize * 0.3, fruitSize * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'grape') {
+                // Grape cluster
+                ctx.fillStyle = color;
+                const grapeRadius = fruitSize * 0.25;
+                const positions = [
+                    [0, -0.5], [-0.4, -0.2], [0.4, -0.2],
+                    [-0.5, 0.2], [0, 0.2], [0.5, 0.2],
+                    [-0.3, 0.6], [0.3, 0.6]
+                ];
+                
+                positions.forEach(pos => {
+                    const gx = centerX + pos[0] * fruitSize;
+                    const gy = centerY + pos[1] * fruitSize;
+                    
+                    const grapeGrad = ctx.createRadialGradient(gx - grapeRadius * 0.3, gy - grapeRadius * 0.3, 0, gx, gy, grapeRadius);
+                    grapeGrad.addColorStop(0, lightenColor(color, 30));
+                    grapeGrad.addColorStop(1, darkenColor(color, 20));
+                    
+                    ctx.fillStyle = grapeGrad;
+                    ctx.beginPath();
+                    ctx.arc(gx, gy, grapeRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            } else if (type === 'watermelon') {
+                // Watermelon slice
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, fruitSize);
+                gradient.addColorStop(0, '#ff5252');
+                gradient.addColorStop(0.7, color);
+                gradient.addColorStop(0.85, '#ffffff');
+                gradient.addColorStop(1, '#1b5e20');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, fruitSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Seeds
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#1a1a1a';
+                const seedPositions = [
+                    [0, -0.3], [-0.3, 0], [0.3, 0], [-0.15, 0.2], [0.15, 0.2]
+                ];
+                seedPositions.forEach(pos => {
+                    ctx.beginPath();
+                    ctx.ellipse(centerX + pos[0] * fruitSize, centerY + pos[1] * fruitSize, 
+                                fruitSize * 0.06, fruitSize * 0.1, Math.random() * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+
+        // Helper functions for color manipulation
+        function lightenColor(color, percent) {
+            const num = parseInt(color.replace("#",""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#",""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+            const B = Math.max(0, (num & 0x0000FF) - amt);
+            return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        function drawSymbol(symbol, x, y, size) {
+            ctx.save();
+            
+            // Dark background with subtle gradient
+            const bgGradient = ctx.createRadialGradient(x + size/2, y + size/2, 0, x + size/2, y + size/2, size/2);
+            bgGradient.addColorStop(0, '#3a3a3a');
+            bgGradient.addColorStop(1, '#1a1a1a');
+            ctx.fillStyle = bgGradient;
+            ctx.beginPath();
+            ctx.arc(x + size/2, y + size/2, size * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw symbol based on type
+            switch(symbol.type) {
+                case 'seven':
+                    drawSeven(x, y, size, symbol.color);
+                    break;
+                case 'cherry':
+                    drawCherry(x, y, size);
+                    break;
+                case 'bar':
+                    drawBar(x, y, size, symbol.label || 'BAR', symbol.color);
+                    break;
+                case 'bell':
+                    drawBell(x, y, size, symbol.color);
+                    break;
+                case 'diamond':
+                    drawDiamond(x, y, size, symbol.color);
+                    break;
+                case 'star':
+                    drawStar(x, y, size, symbol.color);
+                    break;
+                case 'lemon':
+                case 'grape':
+                case 'watermelon':
+                    drawFruit(x, y, size, symbol.type, symbol.color);
+                    break;
+            }
+            
+            // Draw metallic frame
+            drawMetallicFrame(x, y, size);
+            
+            ctx.restore();
+        }
+
+        function drawTexture() {
+            // Update configuration from inputs
+            updateCanvasSize();
+            
+            const cellWidth = config.canvasWidth / config.gridCols;
+            const cellHeight = config.canvasHeight / config.gridRows;
+            const totalCells = config.gridCols * config.gridRows;
+            
+            // Check if we have enough symbols
+            if (totalCells > config.symbols.length) {
+                document.getElementById('infoText').textContent = 
+                    `Warning: ${totalCells} cells but only ${config.symbols.length} symbols! Add more symbols.`;
+                document.getElementById('infoText').style.color = '#ff9800';
+            } else {
+                document.getElementById('infoText').style.color = '#aaa';
+            }
+            
+            // Clear canvas
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw each cell
+            let symbolIndex = 0;
+            for (let row = 0; row < config.gridRows; row++) {
+                for (let col = 0; col < config.gridCols; col++) {
+                    const x = col * cellWidth;
+                    const y = row * cellHeight;
+                    const cellSize = Math.min(cellWidth, cellHeight);
+                    
+                    if (symbolIndex < config.symbols.length) {
+                        drawSymbol(config.symbols[symbolIndex], x, y, cellSize);
+                        symbolIndex++;
+                    } else {
+                        // Draw empty cell with warning
+                        ctx.fillStyle = '#3a1a1a';
+                        ctx.fillRect(x + cellSize * 0.1, y + cellSize * 0.1, cellSize * 0.8, cellSize * 0.8);
+                        
+                        ctx.font = `${cellSize * 0.1}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#ff5252';
+                        ctx.fillText('EMPTY', x + cellWidth/2, y + cellHeight/2);
+                    }
+                    
+                    // Draw UV grid lines (subtle, for reference)
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, cellWidth, cellHeight);
+                }
+            }
+            
+            if (totalCells <= config.symbols.length) {
+                document.getElementById('infoText').textContent = 'Texture generated successfully!';
+                document.getElementById('infoText').style.color = '#4CAF50';
+            }
+        }
+
+        function downloadTexture() {
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            link.download = `slot_reel_${config.canvasWidth}x${config.canvasHeight}_${timestamp}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            document.getElementById('infoText').textContent = 'Downloaded!';
+        }
+
+        // Initialize on load
+        initializeUI();
+        drawTexture();
+    </script>
+</body>
+</html>
