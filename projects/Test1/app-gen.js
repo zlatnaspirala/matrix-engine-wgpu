@@ -557,7 +557,53 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END BANNER1 useScaleno info
  
-  // [MAIN_REPLACE2]
+  
+       // ME START REEL_TOP
+ downloadMeshes({cube: "res/meshes/obj/reel-top.obj"}, (m) => { 
+   const texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'REEL_TOP',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END REEL_TOP
+ 
+
+        // ME START REEL_TOP useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').useScale = true;
+ }, 800);
+ // ME END REEL_TOP useScaleno info
+ 
+  // ME START REEL_TOP updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').scale[1] = 2;
+ }, 800);
+ // ME END REEL_TOP updateScale1
+ 
+  // ME START REEL_TOP updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').scale[2] = 2;
+ }, 800);
+ // ME END REEL_TOP updateScale2
+ 
+  // ME START REEL_TOP updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').scale[0] = 2.1;
+ }, 800);
+ // ME END REEL_TOP updateScale0
+ 
+  // ME START REEL_TOP updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').position.SetY(3);
+ }, 800);
+ // ME END REEL_TOP updatePosy
+ 
+ // [MAIN_REPLACE2]
 
     })
   });

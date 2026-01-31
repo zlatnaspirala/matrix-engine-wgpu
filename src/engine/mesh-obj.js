@@ -423,15 +423,12 @@ export default class MEMeshObj extends Materials {
             {shaderLocation: 5, format: "float32x4", offset: 0}
           ]
         });
-      } else {
-        // for non glb - non skinned use basic shaders
       }
-
       // Note: The frontFace and cullMode values have no effect on the 
       // "point-list", "line-list", or "line-strip" topologies.
       this.primitive = {
         topology: 'triangle-list',
-        cullMode: 'back', // typical for shadow passes
+        cullMode: 'none', // 'back', // typical for shadow passes
         frontFace: 'ccw'
       }
 

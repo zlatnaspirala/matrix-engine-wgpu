@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Single Entity — Live Controls</title>
+  <style>
+    :root {
+      --bg:#090209;
+      --panel-bg: rgba(255,255,255,0.04);
+      --accent: #8be;
+      --text: #eee;
+      --muted: #bbb;
+      --control-width: 320px;
+      --gap: 10px;
+    }
+    html,body { height:100%; margin:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .app {
+      display: flex;
+      gap: var(--gap);
+      align-items: start;
+      padding: 18px;
+      box-sizing: border-box;
+      height: 100vh;
+    }
+    canvas { background: var(--bg); border-radius:8px; box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
+    .panel {
+      width: var(--control-width);
+      max-height: calc(100vh - 36px);
+      overflow:auto;
+      background:var(--panel-bg);
+      border-radius:8px;
+      padding:12px;
+      box-sizing:border-box;
+      backdrop-filter: blur(6px) saturate(120%);
+    }
+    .panel h2 { margin:0 0 8px 0; font-size:14px; color:var(--text); }
+    .row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .label { width: 120px; font-size:13px; color:var(--muted); }
+    .value { width:60px; text-align:right; font-variant-numeric: tabular-nums; }
+    input[type="range"] { flex:1; }
+    button { background:transparent; border:1px solid rgba(255,255,255,0.08); color:var(--text); padding:6px 8px; border-radius:6px; cursor:pointer; }
+    button.primary { background: linear-gradient(90deg,#2a8,#58a); border:none; color:#001; font-weight:700; }
+    .controls-row { display:flex; gap:8px; margin-bottom:10px; }
+    .note { font-size:12px; color:var(--muted); margin-top:6px; }
+    .small { font-size:12px; color:var(--muted); }
+    .sliders { margin-top:8px; }
+    .footer { margin-top:10px; font-size:12px; color:var(--muted); }
+    /* ensure range is usable on small widths */
+    input[type="range"] { height: 28px; }
+    input[type="color"] { width:48px; height:28px; padding:0; border-radius:6px; border:none; cursor:pointer; background:transparent; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+      <canvas id="c" width="900" height="900"></canvas>
+    </div>
+
+    <div class="panel" id="panel">
+      <h2>Live Controls — Single Entity</h2>
+
+      <div class="controls-row">
+        <button id="btnPause">Pause</button>
+        <button id="btnStep">Step</button>
+        <button id="btnRandom" class="primary">Randomize</button>
+      </div>
+
+      <div style="margin-top:6px;">
+        <div class="row">
+          <div class="label">Frame Rate</div>
+          <input id="sFrameRate" type="range" min="1" max="60" step="1" value="25">
+          <div class="value" id="vFrameRate">25</div>
+        </div>
+
+        <div class="row">
+          <div class="label">Segments (len)</div>
+          <input id="sLen" type="range" min="4" max="120" step="1" value="25">
+          <div class="value" id="vLen">25</div>
+        </div>
+
+        <div class="row">
+          <div class="label">Head size</div>
+          <input id="sHead" type="range" min="1" max="80" step="1" value="10">
+          <div class="value" id="vHead">10</div>
+        </div>
+
+        <div class="row">
+          <div class="label">Radius max</div>
+          <input id="sRadius" type="range" min="10" max="300" step="1" value="110">
+          <div class="value" id="vRadius">110</div>
+        </div>
+
+        <div class="row">
+          <div class="label">Kaleido span</div>
+          <input id="sSpan" type="range" min="1" max="12" step="1" value="5">
+          <div class="value" id="vSpan">5</div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:10px 0">
+
+        <div class="row">
+          <div class="label">Noise seed</div>
+          <input id="sNoiseSeed" type="range" min="0" max="65535" step="1" value="42">
+          <div class="value" id="vNoiseSeed">42</div>
+        </div>
+
+        <div class="note">Parameter triplet (xSeed, ySeed, zSeed)</div>
+
+        <div class="row">
+          <div class="label">Param X</div>
+          <input id="sPx" type="range" min="0" max="2000" step="0.1" value="400">
+          <div class="value" id="vPx">400</div>
+        </div>
+
+        <div class="row">
+          <div class="label">Param Y</div>
+          <input id="sPy" type="range" min="0" max="2000" step="0.1" value="600">
+          <div class="value" id="vPy">600</div>
+        </div>
+
+        <div class="row">
+          <div class="label">Param Z</div>
+          <input id="sPz" type="range" min="0" max="2000" step="0.1" value="800">
+          <div class="value" id="vPz">800</div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:10px 0">
+
+        <div class="row">
+          <div class="label">Half PI factor</div>
+          <input id="sHalfPi" type="range" min="0.05" max="1.0" step="0.01" value="0.50">
+          <div class="value" id="vHalfPi">0.50</div>
+        </div>
+
+        <div class="row">
+          <div class="label">Background</div>
+          <input id="sBGColor" type="color" value="#090209">
+          <div class="value" id="vBGColor">#090209</div>
+        </div>
+
+        <div class="footer">Tip: slide controls while running. "Randomize" will set new param triplet and reseed noise.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Single-file sketch with live controls
+  class SimplexNoise {
+    constructor(seed = 0) {
+      this.grad3 = [
+        [1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+        [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+        [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
+      ];
+      this.p = new Uint8Array(256);
+      let s = seed || Math.floor(Math.random()*65536);
+      for (let i=0;i<256;i++) this.p[i]=i;
+      for (let i=255;i>0;i--) {
+        s = (s ^ (s << 13)) >>> 0;
+        s = (s ^ (s >>> 17)) >>> 0;
+        s = (s ^ (s << 5)) >>> 0;
+        let r = s % (i+1);
+        let tmp = this.p[i]; this.p[i] = this.p[r]; this.p[r] = tmp;
+      }
+      this.perm = new Uint8Array(512);
+      for (let i=0;i<512;i++) this.perm[i] = this.p[i & 255];
+      this.F2 = 0.5*(Math.sqrt(3.0)-1.0);
+      this.G2 = (3.0-Math.sqrt(3.0))/6.0;
+    }
+    dot(g, x, y) { return g[0]*x + g[1]*y; }
+    noise2D(xin, yin) {
+      let n0, n1, n2;
+      let s = (xin+yin)*this.F2;
+      let i = Math.floor(xin + s);
+      let j = Math.floor(yin + s);
+      let t = (i + j) * this.G2;
+      let X0 = i - t, Y0 = j - t;
+      let x0 = xin - X0, y0 = yin - Y0;
+      let i1, j1;
+      if (x0 > y0) { i1 = 1; j1 = 0; } else { i1 = 0; j1 = 1; }
+      let x1 = x0 - i1 + this.G2, y1 = y0 - j1 + this.G2;
+      let x2 = x0 - 1.0 + 2.0 * this.G2, y2 = y0 - 1.0 + 2.0 * this.G2;
+      let ii = i & 255, jj = j & 255;
+      let gi0 = this.perm[ii + this.perm[jj]] % 12;
+      let gi1 = this.perm[ii + i1 + this.perm[jj + j1]] % 12;
+      let gi2 = this.perm[ii + 1 + this.perm[jj + 1]] % 12;
+      let t0 = 0.5 - x0*x0 - y0*y0;
+      if (t0 < 0) n0 = 0.0; else { t0 *= t0; n0 = t0 * t0 * this.dot(this.grad3[gi0], x0, y0); }
+      let t1 = 0.5 - x1*x1 - y1*y1;
+      if (t1 < 0) n1 = 0.0; else { t1 *= t1; n1 = t1 * t1 * this.dot(this.grad3[gi1], x1, y1); }
+      let t2 = 0.5 - x2*x2 - y2*y2;
+      if (t2 < 0) n2 = 0.0; else { t2 *= t2; n2 = t2 * t2 * this.dot(this.grad3[gi2], x2, y2); }
+      return 70.0 * (n0 + n1 + n2) * 0.5 + 0.5;
+    }
+  }
+
+  // Utils
+  function map(v, a, b, c, d) { return c + (d - c) * ((v - a) / (b - a)); }
+
+  // Canvas
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // State variables (tied to controls)
+  let frameNum = 0;
+  let frameRate = 25;
+  let intervalMs = 1000 / frameRate;
+  let len = 25;
+  let head_size_outer = 10;
+  let radiusMax = 110;
+  let span = 5;
+
+  // Param triplet + noise
+  let params = [Math.random()*1000, Math.random()*1000, Math.random()*1000];
+  let noiseSeed = 42;
+  let noise = new SimplexNoise(noiseSeed);
+
+  // Half PI factor & background color (made mutable)
+  let halfPiFactor = 0.5; // user-managed multiplier for Math.PI
+  let bgColor = "#090209"; // user-managed background color
+
+  // Animation control
+  let intervalId = null;
+  let paused = false;
+
+  // DOM elements
+  const sFrameRate = document.getElementById('sFrameRate');
+  const vFrameRate = document.getElementById('vFrameRate');
+  const sLen = document.getElementById('sLen');
+  const vLen = document.getElementById('vLen');
+  const sHead = document.getElementById('sHead');
+  const vHead = document.getElementById('vHead');
+  const sRadius = document.getElementById('sRadius');
+  const vRadius = document.getElementById('vRadius');
+  const sSpan = document.getElementById('sSpan');
+  const vSpan = document.getElementById('vSpan');
+  const sNoiseSeed = document.getElementById('sNoiseSeed');
+  const vNoiseSeed = document.getElementById('vNoiseSeed');
+  const sPx = document.getElementById('sPx');
+  const vPx = document.getElementById('vPx');
+  const sPy = document.getElementById('sPy');
+  const vPy = document.getElementById('vPy');
+  const sPz = document.getElementById('sPz');
+  const vPz = document.getElementById('vPz');
+
+  const sHalfPi = document.getElementById('sHalfPi');
+  const vHalfPi = document.getElementById('vHalfPi');
+  const sBGColor = document.getElementById('sBGColor');
+  const vBGColor = document.getElementById('vBGColor');
+
+  const btnPause = document.getElementById('btnPause');
+  const btnStep = document.getElementById('btnStep');
+  const btnRandom = document.getElementById('btnRandom');
+
+  // Initialize control default values from state
+  function initControls() {
+    sFrameRate.value = frameRate; vFrameRate.textContent = frameRate;
+    sLen.value = len; vLen.textContent = len;
+    sHead.value = head_size_outer; vHead.textContent = head_size_outer;
+    sRadius.value = radiusMax; vRadius.textContent = radiusMax;
+    sSpan.value = span; vSpan.textContent = span;
+
+    sNoiseSeed.value = noiseSeed; vNoiseSeed.textContent = noiseSeed;
+    sPx.value = params[0]; vPx.textContent = Number(params[0]).toFixed(1);
+    sPy.value = params[1]; vPy.textContent = Number(params[1]).toFixed(1);
+    sPz.value = params[2]; vPz.textContent = Number(params[2]).toFixed(1);
+
+    sHalfPi.value = halfPiFactor.toFixed(2); vHalfPi.textContent = halfPiFactor.toFixed(2);
+    sBGColor.value = bgColor; vBGColor.textContent = bgColor;
+  }
+
+  // Wire up events
+  sFrameRate.addEventListener('input', (e) => {
+    frameRate = Number(e.target.value);
+    vFrameRate.textContent = frameRate;
+    restartInterval();
+  });
+  sLen.addEventListener('input', (e) => { len = Number(e.target.value); vLen.textContent = len; });
+  sHead.addEventListener('input', (e) => { head_size_outer = Number(e.target.value); vHead.textContent = head_size_outer; });
+  sRadius.addEventListener('input', (e) => { radiusMax = Number(e.target.value); vRadius.textContent = radiusMax; });
+  sSpan.addEventListener('input', (e) => { span = Math.max(1, Math.round(Number(e.target.value))); vSpan.textContent = span; });
+
+  sNoiseSeed.addEventListener('input', (e) => {
+    noiseSeed = Number(e.target.value); vNoiseSeed.textContent = noiseSeed;
+    noise = new SimplexNoise(noiseSeed);
+  });
+
+  sPx.addEventListener('input', (e) => { params[0] = Number(e.target.value); vPx.textContent = Number(params[0]).toFixed(1); });
+  sPy.addEventListener('input', (e) => { params[1] = Number(e.target.value); vPy.textContent = Number(params[1]).toFixed(1); });
+  sPz.addEventListener('input', (e) => { params[2] = Number(e.target.value); vPz.textContent = Number(params[2]).toFixed(1); });
+
+  sHalfPi.addEventListener('input', (e) => {
+    halfPiFactor = Number(e.target.value);
+    vHalfPi.textContent = halfPiFactor.toFixed(2);
+  });
+
+  sBGColor.addEventListener('input', (e) => {
+    bgColor = e.target.value;
+    vBGColor.textContent = bgColor;
+  });
+
+  btnPause.addEventListener('click', () => {
+    paused = !paused;
+    btnPause.textContent = paused ? 'Resume' : 'Pause';
+    if (!paused) restartInterval();
+    else { if (intervalId) clearInterval(intervalId); intervalId = null; }
+  });
+
+  btnStep.addEventListener('click', () => {
+    if (!paused) {
+      // pause then step
+      paused = true;
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      btnPause.textContent = 'Resume';
+    }
+    frameNum++;
+    drawSingleEntity();
+  });
+
+  btnRandom.addEventListener('click', () => {
+    // randomize params and reseed
+    params = [Math.random()*2000, Math.random()*2000, Math.random()*2000];
+    noiseSeed = Math.floor(Math.random()*65536);
+    noise = new SimplexNoise(noiseSeed);
+    sPx.value = params[0]; vPx.textContent = Number(params[0]).toFixed(1);
+    sPy.value = params[1]; vPy.textContent = Number(params[1]).toFixed(1);
+    sPz.value = params[2]; vPz.textContent = Number(params[2]).toFixed(1);
+    sNoiseSeed.value = noiseSeed; vNoiseSeed.textContent = noiseSeed;
+  });
+
+  // Drawing function (single entity)
+  function drawSingleEntity() {
+    // use bgColor variable for background
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0,0,W,H);
+
+    ctx.save();
+    ctx.translate(W/2, H/2);
+    ctx.globalCompositeOperation = 'screen';
+
+    const HALF_PI = Math.PI * halfPiFactor;
+    const baseHue = (frameNum * 0.6 + params[2] * 3) % 360;
+
+    for (let layer = 0; layer < 2; layer++) {
+      ctx.save();
+      const right = [], left = [];
+      let last_location = [0,0], last_theta = 0, last_radius = 0;
+      const head_size = layer === 0 ? head_size_outer : Math.max(1, head_size_outer - 4);
+
+      for (let i = 0; i < len; i++) {
+        const noise_deg = map(noise.noise2D(params[0]*0.001, (frameNum + i) * 0.01), 0, 1, -360, 360);
+        const noise_radius = map(noise.noise2D(params[1]*0.001, (frameNum + i) * 0.015), 0, 1, -radiusMax, radiusMax);
+        const next_noise_deg = map(noise.noise2D(params[0]*0.001, (frameNum + i + 1) * 0.01), 0, 1, -360, 360);
+        const next_noise_radius = map(noise.noise2D(params[1]*0.001, (frameNum + i + 1) * 0.015), 0, 1, -radiusMax, radiusMax);
+
+        const location = [
+          noise_radius * Math.cos(noise_deg * Math.PI / 180),
+          noise_radius * Math.sin(noise_deg * Math.PI / 180)
+        ];
+        const next = [
+          next_noise_radius * Math.cos(next_noise_deg * Math.PI / 180),
+          next_noise_radius * Math.sin(next_noise_deg * Math.PI / 180)
+        ];
+        const direction = [ next[0] - location[0], next[1] - location[1] ];
+        const theta = Math.atan2(direction[1], direction[0]);
+        const w = map(i, 0, len, 0, head_size);
+
+        right.push([ location[0] + w * Math.cos(theta + HALF_PI), location[1] + w * Math.sin(theta + HALF_PI) ]);
+        left.push([ location[0] + w * Math.cos(theta - HALF_PI), location[1] + w * Math.sin(theta - HALF_PI) ]);
+
+        last_location = location;
+        last_theta = theta;
+        last_radius = noise_radius;
+      }
+
+      // Build verts
+      const verts = [];
+      for (let i = 0; i < right.length; i++) { verts.push(left[i]); verts.push(right[i]); }
+
+      const hue = (baseHue + (layer === 0 ? 0 : -20) + frameNum * 0.2) % 360;
+      const sat = layer === 0 ? 80 : 60;
+      const light = layer === 0 ? 60 : 28;
+      const alpha = layer === 0 ? 0.95 : 0.7;
+      const fillColor = `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+      const strokeColor = `hsla(${(hue + 180) % 360}, ${Math.max(30, sat-20)}%, ${Math.max(30, light-20)}%, ${layer===0?0.12:0.18})`;
+
+      ctx.fillStyle = fillColor;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = layer === 0 ? 0.9 : 1.1;
+      ctx.beginPath();
+      for (let i = 0; i < verts.length - 2; i += 2) {
+        let a = verts[i], b = verts[i+1], c = verts[i+3], d = verts[i+2];
+        ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.closePath();
+        ctx.moveTo(a[0], a[1]); ctx.lineTo(d[0], d[1]); ctx.lineTo(c[0], c[1]); ctx.closePath();
+      }
+      ctx.fill();
+      ctx.stroke();
+
+      // head gradient
+      const tmp_head_size = map(Math.max(0, verts.length - 2), 0, verts.length || 1, 0, head_size);
+      const grad = ctx.createRadialGradient(
+        last_location[0], last_location[1], Math.max(1, tmp_head_size * 0.2),
+        last_location[0], last_location[1], Math.max(1, tmp_head_size * 1.8)
+      );
+      grad.addColorStop(0, `hsla(${(hue + 10)%360}, ${Math.min(100, sat+10)}%, ${Math.min(90, light+10)}%, ${Math.min(1, alpha)})`);
+      grad.addColorStop(0.6, `hsla(${(hue + 30)%360}, ${Math.max(40, sat-10)}%, ${Math.max(30, light-20)}%, ${alpha*0.6})`);
+      grad.addColorStop(1, `hsla(${(hue + 30)%360}, ${Math.max(30, sat-20)}%, ${Math.max(10, light-40)}%, 0)`);
+      ctx.beginPath();
+      for (let t = last_theta - HALF_PI; t <= last_theta + HALF_PI + 1e-6; t += Math.PI / 20) {
+        const px = last_location[0] + tmp_head_size * Math.cos(t);
+        const py = last_location[1] + tmp_head_size * Math.sin(t);
+        if (t === last_theta - HALF_PI) ctx.moveTo(last_location[0], last_location[1]);
+        ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(0,0,0,${layer===0?0.06:0.09})`;
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+
+      if (Math.abs(last_radius) < 2) { params[2] += 0.1; }
+
+      // repeated rotated overlays (kaleidoscope)
+      const deg_span = 360 / Math.max(1, span);
+      const iterations = Math.max(1, Math.ceil(360 / 30));
+      for (let it = 0; it < iterations; it++) {
+        ctx.rotate(deg_span * Math.PI / 180);
+        ctx.beginPath();
+        for (let t = last_theta - HALF_PI; t <= last_theta + HALF_PI + 1e-6; t += Math.PI / 20) {
+          const px = last_location[0] + tmp_head_size * Math.cos(t);
+          const py = last_location[1] + tmp_head_size * Math.sin(t);
+          if (t === last_theta - HALF_PI) ctx.moveTo(last_location[0], last_location[1]);
+          ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = `hsla(${(hue+it*8)%360}, ${sat}%, ${light}%, ${layer===0?0.06:0.08})`;
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+  }
+
+  // Interval management
+  function restartInterval() {
+    if (intervalId) clearInterval(intervalId);
+    if (paused) return;
+    intervalMs = 1000 / frameRate;
+    intervalId = setInterval(() => {
+      frameNum++;
+      drawSingleEntity();
+    }, intervalMs);
+  }
+
+  // Kick off
+  initControls();
+  drawSingleEntity();
+  restartInterval();
+
+  // ensure canvas is redrawn after control changes that don't change frame (so immediate feedback)
+  const instantControls = [sLen, sHead, sRadius, sSpan, sPx, sPy, sPz, sHalfPi, sBGColor];
+  instantControls.forEach(el => el.addEventListener('input', () => { drawSingleEntity(); }));
+
+  // resize handling: keep canvas fixed in this example; if you want responsive sizing, implement resizing logic here.
+
+  </script>
+</body>
+</html>
