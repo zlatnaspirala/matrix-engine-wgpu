@@ -131,6 +131,18 @@ export default class FluxCodexVertex {
     this._varInputs = {};
 
     document.addEventListener("keydown", e => {
+      const target = (e.composedPath && e.composedPath()[0]) || e.target || document.activeElement;
+      function isEditableElement(el) {
+        if(!el) return false;
+        if(el instanceof HTMLInputElement ||
+          el instanceof HTMLTextAreaElement ||
+          el instanceof HTMLSelectElement) return true;
+        if(el.isContentEditable) return true;
+        if(el.getAttribute && el.getAttribute('role') === 'textbox') return true;
+        return false;
+      }
+      if(isEditableElement(target)) return;
+
       if(e.key == "F6") {
         e.preventDefault();
         this.runGraph();

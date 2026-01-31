@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Single Entity</title>
+  <style>
+    html,body { height:100%; margin:0; background:#000; display:flex; align-items:center; justify-content:center; }
+    canvas { image-rendering: optimizeQuality; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="900" height="900"></canvas>
+  <script>
+  class SimplexNoise {
+    constructor(seed = 0) {
+      this.grad3 = [
+        [1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+        [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+        [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
+      ];
+      this.p = new Uint8Array(256);
+      let s = seed || Math.floor(Math.random()*65536);
+      for (let i=0;i<256;i++) this.p[i]=i;
+      for (let i=255;i>0;i--) {
+        s = (s ^ (s << 13)) >>> 0;
+        s = (s ^ (s >>> 17)) >>> 0;
+        s = (s ^ (s << 5)) >>> 0;
+        let r = s % (i+1);
+        let tmp = this.p[i]; this.p[i] = this.p[r]; this.p[r] = tmp;
+      }
+      this.perm = new Uint8Array(512);
+      for (let i=0;i<512;i++) this.perm[i] = this.p[i & 255];
+      this.F2 = 0.5*(Math.sqrt(3.0)-1.0);
+      this.G2 = (3.0-Math.sqrt(3.0))/6.0;
+    }
+    dot(g, x, y) { return g[0]*x + g[1]*y; }
+    noise2D(xin, yin) {
+      let n0, n1, n2;
+      let s = (xin+yin)*this.F2;
+      let i = Math.floor(xin + s);
+      let j = Math.floor(yin + s);
+      let t = (i + j) * this.G2;
+      let X0 = i - t, Y0 = j - t;
+      let x0 = xin - X0, y0 = yin - Y0;
+      let i1, j1;
+      if (x0 > y0) { i1 = 1; j1 = 0; } else { i1 = 0; j1 = 1; }
+      let x1 = x0 - i1 + this.G2, y1 = y0 - j1 + this.G2;
+      let x2 = x0 - 1.0 + 2.0 * this.G2, y2 = y0 - 1.0 + 2.0 * this.G2;
+      let ii = i & 255, jj = j & 255;
+      let gi0 = this.perm[ii + this.perm[jj]] % 12;
+      let gi1 = this.perm[ii + i1 + this.perm[jj + j1]] % 12;
+      let gi2 = this.perm[ii + 1 + this.perm[jj + 1]] % 12;
+      let t0 = 0.5 - x0*x0 - y0*y0;
+      if (t0 < 0) n0 = 0.0; else { t0 *= t0; n0 = t0 * t0 * this.dot(this.grad3[gi0], x0, y0); }
+      let t1 = 0.5 - x1*x1 - y1*y1;
+      if (t1 < 0) n1 = 0.0; else { t1 *= t1; n1 = t1 * t1 * this.dot(this.grad3[gi1], x1, y1); }
+      let t2 = 0.5 - x2*x2 - y2*y2;
+      if (t2 < 0) n2 = 0.0; else { t2 *= t2; n2 = t2 * t2 * this.dot(this.grad3[gi2], x2, y2); }
+      return 70.0 * (n0 + n1 + n2) * 0.5 + 0.5;
+    }
+  }
+
+  // Utils
+  const HALF_PI = Math.PI * 1.1; // 0.5
+  function map(v, a, b, c, d) { return c + (d - c) * ((v - a) / (b - a)); }
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const noise = new SimplexNoise(42);
+  const params = [Math.random()*1000, Math.random()*1000, Math.random()*1000];
+  let frameNum = 0;
+  const frameRate = 25;
+  const intervalMs = 1000 / frameRate;
+  function drawSingleEntity() {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = 'rgb(0,0,0)';
+    ctx.fillRect(0,0,W,H);
+    ctx.save();
+    ctx.translate(W/2, H/2);
+    ctx.globalCompositeOperation = 'screen';
+    const len = 150; // 25
+    let head_size_outer = 201; // larger for visibility
+    const baseHue = (frameNum * 0.6 + params[2] * 3) % 360;
+
+    for (let layer = 0; layer < 2; layer++) {
+      ctx.save();
+      const right = [], left = [];
+      let last_location = [0,0], last_theta = 0, last_radius = 0;
+      const head_size = layer === 0 ? head_size_outer : head_size_outer - 4;
+      for (let i = 0; i < len; i++) {
+        const noise_deg = map(noise.noise2D(params[0]*0.001, (frameNum + i) * 0.01), 0, 1, -360, 360);
+        const noise_radius = map(noise.noise2D(params[1]*0.001, (frameNum + i) * 0.015), 0, 1, -110, 110);
+        const next_noise_deg = map(noise.noise2D(params[0]*0.001, (frameNum + i + 1) * 0.01), 0, 1, -360, 360);
+        const next_noise_radius = map(noise.noise2D(params[1]*0.001, (frameNum + i + 1) * 0.015), 0, 1, -110, 110);
+        const location = [
+          noise_radius * Math.cos(noise_deg * Math.PI / 180),
+          noise_radius * Math.sin(noise_deg * Math.PI / 180)
+        ];
+        const next = [
+          next_noise_radius * Math.cos(next_noise_deg * Math.PI / 180),
+          next_noise_radius * Math.sin(next_noise_deg * Math.PI / 180)
+        ];
+        const direction = [ next[0] - location[0], next[1] - location[1] ];
+        const theta = Math.atan2(direction[1], direction[0]);
+        const w = map(i, 0, len, 0, head_size);
+        right.push([ location[0] + w * Math.cos(theta + HALF_PI), location[1] + w * Math.sin(theta + HALF_PI) ]);
+        left.push([ location[0] + w * Math.cos(theta - HALF_PI), location[1] + w * Math.sin(theta - HALF_PI) ]);
+        last_location = location;
+        last_theta = theta;
+        last_radius = noise_radius;
+      }
+
+      // Build verts
+      const verts = [];
+      for (let i = 0; i < right.length; i++) { verts.push(left[i]); verts.push(right[i]); }
+
+      const hue = (baseHue + (layer === 0 ? 0 : -20) + frameNum * 0.2) % 360;
+      const sat = layer === 0 ? 80 : 60;
+      const light = layer === 0 ? 60 : 28;
+      const alpha = layer === 0 ? 0.95 : 0.7;
+      const fillColor = `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+      const strokeColor = `hsla(${(hue + 180) % 360}, ${Math.max(30, sat-20)}%, ${Math.max(30, light-20)}%, ${layer===0?0.12:0.18})`;
+
+      ctx.fillStyle = fillColor;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = layer === 0 ? 0.9 : 1.1;
+      ctx.beginPath();
+      for (let i = 0; i < verts.length - 2; i += 2) {
+        let a = verts[i], b = verts[i+1], c = verts[i+3], d = verts[i+2];
+        ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.closePath();
+        ctx.moveTo(a[0], a[1]); ctx.lineTo(d[0], d[1]); ctx.lineTo(c[0], c[1]); ctx.closePath();
+      }
+      ctx.fill();
+      ctx.stroke();
+
+      // head gradient
+      const tmp_head_size = map(Math.max(0, verts.length - 2), 0, verts.length || 1, 0, head_size);
+      const grad = ctx.createRadialGradient(
+        last_location[0], last_location[1], Math.max(1, tmp_head_size * 0.2),
+        last_location[0], last_location[1], Math.max(1, tmp_head_size * 1.8)
+      );
+      grad.addColorStop(0, `hsla(${(hue + 10)%360}, ${Math.min(100, sat+10)}%, ${Math.min(90, light+10)}%, ${Math.min(1, alpha)})`);
+      grad.addColorStop(0.6, `hsla(${(hue + 30)%360}, ${Math.max(40, sat-10)}%, ${Math.max(30, light-20)}%, ${alpha*0.6})`);
+      grad.addColorStop(1, `hsla(${(hue + 30)%360}, ${Math.max(30, sat-20)}%, ${Math.max(10, light-40)}%, 0)`);
+      ctx.beginPath();
+      for (let t = last_theta - HALF_PI; t <= last_theta + HALF_PI + 1e-6; t += Math.PI / 20) {
+        const px = last_location[0] + tmp_head_size * Math.cos(t);
+        const py = last_location[1] + tmp_head_size * Math.sin(t);
+        if (t === last_theta - HALF_PI) ctx.moveTo(last_location[0], last_location[1]);
+        ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(0,0,0,${layer===0?0.06:0.09})`;
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+
+      if (Math.abs(last_radius) < 2) { params[2] += 0.1; }
+
+      // a few soft rotated overlays
+      const span = 5;
+      const deg_span = 360 / span;
+      const iterations = Math.ceil(360 / 30);
+      for (let it = 0; it < iterations; it++) {
+        ctx.rotate(deg_span * Math.PI / 180);
+        ctx.beginPath();
+        for (let t = last_theta - HALF_PI; t <= last_theta + HALF_PI + 1e-6; t += Math.PI / 20) {
+          const px = last_location[0] + tmp_head_size * Math.cos(t);
+          const py = last_location[1] + tmp_head_size * Math.sin(t);
+          if (t === last_theta - HALF_PI) ctx.moveTo(last_location[0], last_location[1]);
+          ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = `hsla(${(hue+it*8)%360}, ${sat}%, ${light}%, ${layer===0?0.06:0.08})`;
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+  }
+  let intervalId = null;
+  function start() {
+    if (intervalId) clearInterval(intervalId);
+    intervalId = setInterval(() => {
+      frameNum++;
+      drawSingleEntity();
+    }, intervalMs);
+  }
+  start();
+  </script>
+</body>
+</html>
