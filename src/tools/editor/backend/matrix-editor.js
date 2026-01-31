@@ -12,6 +12,7 @@ import {WebSocketServer} from "ws";
 import {DEFAULT_GRAPH_JS} from "./graph.js";
 import {DEFAUL_METHODS} from "./methods.js";
 import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
+import {ME_AI_TOOL} from "./ai/me-ollama.js";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
@@ -35,6 +36,12 @@ console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCodexVertex Graph and FragmentShader Graph");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+console.log("\x1b[92m%s\x1b[0m", "- Experimental ME_AI_TOOL Ollama -");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+
+let AI_TOOL = new ME_AI_TOOL();
+AI_TOOL.test();
+
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");

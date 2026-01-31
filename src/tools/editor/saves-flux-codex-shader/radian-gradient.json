@@ -1,0 +1,29 @@
+{
+  "name": "Radial Gradient",
+  "description": "Color based on distance from center",
+  "nodes": [
+    {"id": "N1", "type": "UV", "x": -400, "y": 200},
+    {"id": "N2", "type": "Vec2", "x": -400, "y": 300, "valueX": 0.5, "valueY": 0.5},
+    {"id": "N3", "type": "SubtractNode", "x": -200, "y": 250},
+    {"id": "N4", "type": "Length", "x": 0, "y": 250},
+    {"id": "N5", "type": "Float", "x": 0, "y": 350, "value": 2.0},
+    {"id": "N6", "type": "Multiply", "x": 200, "y": 300},
+    {"id": "N7", "type": "Clamp", "x": 400, "y": 250},
+    {"id": "N8", "type": "Color", "x": 400, "y": 100, "r": 1, "g": 0, "b": 0, "a": 1},
+    {"id": "N9", "type": "Color", "x": 400, "y": 400, "r": 0, "g": 0, "b": 1, "a": 1},
+    {"id": "N10", "type": "LerpNode", "x": 600, "y": 250},
+    {"id": "N11", "type": "FragmentOutput", "x": 800, "y": 250}
+  ],
+  "connections": [
+    {"from": "N1", "fromPin": "out", "to": "N3", "toPin": "a"},
+    {"from": "N2", "fromPin": "out", "to": "N3", "toPin": "b"},
+    {"from": "N3", "fromPin": "out", "to": "N4", "toPin": "vector"},
+    {"from": "N4", "fromPin": "out", "to": "N6", "toPin": "a"},
+    {"from": "N5", "fromPin": "out", "to": "N6", "toPin": "b"},
+    {"from": "N6", "fromPin": "out", "to": "N7", "toPin": "x"},
+    {"from": "N8", "fromPin": "out", "to": "N10", "toPin": "a"},
+    {"from": "N9", "fromPin": "out", "to": "N10", "toPin": "b"},
+    {"from": "N7", "fromPin": "out", "to": "N10", "toPin": "t"},
+    {"from": "N10", "fromPin": "out", "to": "N11", "toPin": "color"}
+  ]
+}

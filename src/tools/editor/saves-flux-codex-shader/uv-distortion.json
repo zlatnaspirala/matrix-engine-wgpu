@@ -1,6 +1,6 @@
 {
   "name": "Horizontal Wave Distortion",
-  "description": "Simple wave that distorts UVs horizontally",
+  "description": "Simple wave that distorts UVs horizontally TESTED",
   "nodes": [
     {"id": "N1", "type": "UV", "x": -800, "y": 300},
     {"id": "N2", "type": "Time", "x": -800, "y": 500},

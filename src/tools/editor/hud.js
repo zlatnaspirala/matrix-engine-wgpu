@@ -172,7 +172,7 @@ export default class EditorHud {
       <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
-      <div id="start-prod-build" class="drop-item">🛠️ Build for production</div>
+      <!--div id="start-prod-build" class="drop-item">🛠️ Build for production</div-->
       </div>
     </div>
 
@@ -262,6 +262,7 @@ export default class EditorHud {
       <div class="top-btn">About ▾</div>
       <div class="dropdown">
         <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+        <div class="drop-item">Raport issuse on <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu/issues">Github</a></div>
       </div>
     </div>
 

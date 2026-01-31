@@ -1,5 +1,5 @@
 {
-  "name": "Brightness Pulse with Lighting",
+  "name": "Brightness Pulse with Lighting TESTED",
   "nodes": [
     {"id": "N1", "type": "Time", "x": -400, "y": 100},
     {"id": "N2", "type": "Sin", "x": -200, "y": 100},
