@@ -641,6 +641,8 @@ export default class MEMeshObj extends Materials {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = this.time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
+        this.setupMaterialPBR(false, false, false, effectMix, 1.0);
       }
 
       this.modelBindGroup = this.device.createBindGroup({

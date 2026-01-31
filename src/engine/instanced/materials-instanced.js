@@ -217,6 +217,9 @@ export default class MaterialsInstanced {
     } else if(this.material.type == 'graph') {
       return this.material.fromGraph;
     }
+    //  else if(this.material.type == 'mix1') {
+    //   return fragmentWGSLMix1;
+    // }
     console.warn('Unknown material type use standard:', this.material?.type);
     return fragmentWGSL;
   }

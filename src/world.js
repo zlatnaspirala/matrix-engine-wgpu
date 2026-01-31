@@ -202,11 +202,8 @@ export default class MatrixEngineWGPU {
       alphaMode: 'premultiplied',
     });
 
-    if(this.options.useSingleRenderPass == true) {
-      this.frame = this.frameSinglePass;
-    } else {
-      this.frame = this.framePassPerObject;
-    }
+    // if(this.options.useSingleRenderPass == true) {
+    this.frame = this.frameSinglePass;
 
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
@@ -418,17 +415,11 @@ export default class MatrixEngineWGPU {
     this.createMe();
   }
 
-  getSceneObjectByName = (name) => {
-    return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)
-  }
+  getSceneObjectByName = (name) => {return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)}
 
-  getSceneLightByName = (name) => {
-    return this.lightContainer.find((l) => l.name === name)
-  }
+  getSceneLightByName = (name) => {return this.lightContainer.find((l) => l.name === name)}
 
-  getNameFromPath(p) {
-    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
-  }
+  getNameFromPath(p) {return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");}
 
   removeSceneObjectByName = (name) => {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
@@ -447,106 +438,6 @@ export default class MatrixEngineWGPU {
     }
     this.mainRenderBundle.splice(index, 1);
     return true;
-  }
-
-  // Not in use for now -  Can be used with addBall have indipended pipeline and draw func.
-  addCube = (o) => {
-    if(typeof o === 'undefined') {
-      var o = {
-        scale: 1,
-        position: {x: 0, y: 0, z: -4},
-        texturesPaths: ['./res/textures/default.png'],
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
-      }
-    } else {
-      if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-      if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-      if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-      if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-      if(typeof o.scale === 'undefined') {o.scale = 1;}
-      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
-    }
-
-    if(typeof o.physics === 'undefined') {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        radius: o.scale,
-        name: o.name,
-        rotation: o.rotation
-      }
-    }
-    if(typeof o.position !== 'undefined') {o.physics.position = o.position;}
-    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
-    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
-    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
-    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
-    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
-    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
-    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
-
-    let myCube1 = new MECube(this.canvas, this.device, this.context, o)
-    if(o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myCube1, o.physics);
-    }
-    this.mainRenderBundle.push(myCube1);
-  }
-
-  // Not in use for now
-  addBall = (o) => {
-    if(typeof o === 'undefined') {
-      var o = {
-        scale: 1,
-        position: {x: 0, y: 0, z: -4},
-        texturesPaths: ['./res/textures/default.png'],
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
-      }
-    } else {
-      if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-      if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-      if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-      if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-      if(typeof o.scale === 'undefined') {o.scale = 1;}
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
-    }
-
-    if(typeof o.physics === 'undefined') {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        radius: o.scale,
-        name: o.name,
-        rotation: o.rotation
-      }
-    }
-    if(typeof o.position !== 'undefined') {o.physics.position = o.position;}
-    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
-    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
-    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
-    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
-    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
-    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
-    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
-
-    let myBall1 = new MEBall(this.canvas, this.device, this.context, o);
-    if(o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myBall1, o.physics)
-    }
-    this.mainRenderBundle.push(myBall1);
   }
 
   addLight(o) {
@@ -902,32 +793,6 @@ export default class MatrixEngineWGPU {
   }
 
   graphUpdate = (delta) => {}
-
-  framePassPerObject = () => {
-    let commandEncoder = this.device.createCommandEncoder();
-    if(this.matrixAmmo.rigidBodies && this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
-    this.mainRenderBundle.forEach((meItem, index) => {
-      if(index === 0) {
-        if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
-      } else {
-        if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
-      }
-      // Update transforms, physics, etc. (optional)
-      meItem.draw(commandEncoder);
-      if(meItem.renderBundle) {
-        // Set up view per object
-        meItem.renderPassDescriptor.colorAttachments[0].view =
-          this.context.getCurrentTexture().createView();
-        const passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
-        passEncoder.end();
-      } else {
-        meItem.draw(commandEncoder);
-      }
-    });
-    this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(this.frame);
-  }
 
   addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if(typeof o.name === 'undefined') {o.name = genName(9)}

@@ -3,9 +3,9 @@ import {fragmentWGSLMetal} from "../shaders/fragment.wgsl.metal";
 import {fragmentWGSLNormalMap} from "../shaders/fragment.wgsl.normalmap";
 import {fragmentWGSLPong} from "../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
+import {fragmentWGSLMix1} from "../shaders/mixed/fragmentMix1.wgsl";
 import {fragmentWaterWGSL} from "../shaders/water/water-c.wgls";
 import {LOG_FUNNY_ARCADE} from "./utils";
-
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -77,19 +77,17 @@ export default class Materials {
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    // Dummy values
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const metallicFactor = 0.1;    // diffuse like plastic
-    const roughnessFactor = 0.5;   // some gloss
-    const alphaFactor = 0.8;
-    const pad = [0.0];
-    // Pack into Float32Array
+    const metallicFactor = 0.1;
+    const roughnessFactor = 0.5;
+    const effectMix = 0.0;            // NEW: 0.0 = normal PBR, 1.0 = full effect
+    const lightingEnabled = 1.0;      // NEW: 1.0 = lighting on, 0.0 = effect only
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
-      alphaFactor,
-      ...pad
+      effectMix,
+      lightingEnabled
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
 
@@ -250,8 +248,10 @@ export default class Materials {
     } else if(this.material.type == 'water') {
       return fragmentWaterWGSL;
     } else if(this.material.type == 'graph') {
-      console.warn('Unknown material ???????????????:', this.material?.type);
+      // console.warn('Unknown material ???????????????:', this.material?.type);
       return this.material.fromGraph;
+    } else if(this.material.type == 'mix1') {
+      return fragmentWGSLMix1;
     }
     console.warn('Unknown material type:', this.material?.type);
     return fragmentWGSL;
@@ -267,19 +267,49 @@ export default class Materials {
     }
   }
 
-  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
-    if(!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0) {
+    if(!metallicFactor) metallicFactor = 0.5;
     if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     if(!roughnessFactor) roughnessFactor = 0.5;
-    const pad = [0.0];
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
-      0.5,
-      ...pad
+      effectMix,
+      lightingEnabled
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+  }
+
+  setMixEffectMode(mode = 'normal') {
+    let effectMix = 0.0;
+    let lightingEnabled = 1.0;
+    switch(mode) {
+      case 'normal':
+        effectMix = 0.0;
+        lightingEnabled = 1.0;
+        break;
+      case 'subtle':
+        effectMix = 0.3;
+        lightingEnabled = 1.0;
+        break;
+      case 'blend':
+        effectMix = 0.5;
+        lightingEnabled = 1.0;
+        break;
+      case 'full':
+        effectMix = 1.0;
+        lightingEnabled = 1.0;
+        break;
+      case 'pure':
+        effectMix = 1.0;
+        lightingEnabled = 0.0;
+        break;
+    }
+    const baseColorFactor = this.currentBaseColor || [1.0, 1.0, 1.0, 1.0];
+    const metallicFactor = this.currentMetallic || 0.1;
+    const roughnessFactor = this.currentRoughness || 0.5;
+    this.setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled);
   }
 
   updatePostFXMode(mode) {
