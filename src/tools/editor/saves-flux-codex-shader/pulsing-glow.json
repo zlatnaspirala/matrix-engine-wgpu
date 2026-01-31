@@ -1,0 +1,36 @@
+{
+  "name": "Brightness Pulse with Lighting",
+  "nodes": [
+    {"id": "N1", "type": "Time", "x": -400, "y": 100},
+    {"id": "N2", "type": "Sin", "x": -200, "y": 100},
+    {"id": "N3", "type": "Float", "x": -200, "y": 200, "value": 0.3},
+    {"id": "N4", "type": "Multiply", "x": 0, "y": 150},
+    {"id": "N5", "type": "Float", "x": 0, "y": 250, "value": 0.8},
+    {"id": "N6", "type": "Add", "x": 200, "y": 200},
+    {"id": "N7", "type": "CombineVec4", "x": 400, "y": 200},
+    {"id": "N8", "type": "UV", "x": 0, "y": 450},
+    {"id": "N9", "type": "TextureSampler", "x": 200, "y": 450},
+    {"id": "N10", "type": "LightShadowNode", "x": 200, "y": -100},
+    {"id": "N11", "type": "LightToColor", "x": 400, "y": -100},
+    {"id": "N12", "type": "MultiplyColor", "x": 600, "y": 50},
+    {"id": "N13", "type": "MultiplyColor", "x": 800, "y": 250},
+    {"id": "N14", "type": "FragmentOutput", "x": 1000, "y": 250}
+  ],
+  "connections": [
+    {"from": "N1", "fromPin": "out", "to": "N2", "toPin": "value"},
+    {"from": "N2", "fromPin": "out", "to": "N4", "toPin": "a"},
+    {"from": "N3", "fromPin": "out", "to": "N4", "toPin": "b"},
+    {"from": "N5", "fromPin": "out", "to": "N6", "toPin": "a"},
+    {"from": "N4", "fromPin": "out", "to": "N6", "toPin": "b"},
+    {"from": "N6", "fromPin": "out", "to": "N7", "toPin": "x"},
+    {"from": "N6", "fromPin": "out", "to": "N7", "toPin": "y"},
+    {"from": "N6", "fromPin": "out", "to": "N7", "toPin": "z"},
+    {"from": "N8", "fromPin": "out", "to": "N9", "toPin": "uv"},
+    {"from": "N10", "fromPin": "out", "to": "N11", "toPin": "light"},
+    {"from": "N11", "fromPin": "out", "to": "N12", "toPin": "a"},
+    {"from": "N7", "fromPin": "out", "to": "N12", "toPin": "b"},
+    {"from": "N12", "fromPin": "out", "to": "N13", "toPin": "a"},
+    {"from": "N9", "fromPin": "out", "to": "N13", "toPin": "b"},
+    {"from": "N13", "fromPin": "out", "to": "N14", "toPin": "color"}
+  ]
+}

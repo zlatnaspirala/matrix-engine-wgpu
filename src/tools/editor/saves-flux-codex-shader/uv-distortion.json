@@ -1,0 +1,37 @@
+{
+  "name": "Horizontal Wave Distortion",
+  "description": "Simple wave that distorts UVs horizontally",
+  "nodes": [
+    {"id": "N1", "type": "UV", "x": -800, "y": 300},
+    {"id": "N2", "type": "Time", "x": -800, "y": 500},
+    {"id": "N3", "type": "Float", "x": -800, "y": 600, "value": 3.0},
+    {"id": "N4", "type": "Multiply", "x": -600, "y": 550},
+    {"id": "N5", "type": "Sin", "x": -400, "y": 550},
+    {"id": "N6", "type": "Float", "x": -400, "y": 650, "value": 0.08},
+    {"id": "N7", "type": "Multiply", "x": -200, "y": 600},
+    {"id": "N8", "type": "Vec2", "x": -200, "y": 700, "valueX": 1, "valueY": 0},
+    {"id": "N9", "type": "MultiplyVec2", "x": 0, "y": 650},
+    {"id": "N10", "type": "AddVec2", "x": 200, "y": 475},
+    {"id": "N11", "type": "TextureSampler", "x": 400, "y": 475},
+    {"id": "N12", "type": "LightShadowNode", "x": 200, "y": 150},
+    {"id": "N13", "type": "LightToColor", "x": 400, "y": 150},
+    {"id": "N14", "type": "MultiplyColor", "x": 600, "y": 312},
+    {"id": "N15", "type": "FragmentOutput", "x": 800, "y": 312}
+  ],
+  "connections": [
+    {"from": "N2", "fromPin": "out", "to": "N4", "toPin": "a"},
+    {"from": "N3", "fromPin": "out", "to": "N4", "toPin": "b"},
+    {"from": "N4", "fromPin": "out", "to": "N5", "toPin": "value"},
+    {"from": "N5", "fromPin": "out", "to": "N7", "toPin": "a"},
+    {"from": "N6", "fromPin": "out", "to": "N7", "toPin": "b"},
+    {"from": "N7", "fromPin": "out", "to": "N9", "toPin": "a"},
+    {"from": "N8", "fromPin": "out", "to": "N9", "toPin": "b"},
+    {"from": "N1", "fromPin": "out", "to": "N10", "toPin": "a"},
+    {"from": "N9", "fromPin": "out", "to": "N10", "toPin": "b"},
+    {"from": "N10", "fromPin": "out", "to": "N11", "toPin": "uv"},
+    {"from": "N12", "fromPin": "out", "to": "N13", "toPin": "light"},
+    {"from": "N13", "fromPin": "out", "to": "N14", "toPin": "a"},
+    {"from": "N11", "fromPin": "out", "to": "N14", "toPin": "b"},
+    {"from": "N14", "fromPin": "out", "to": "N15", "toPin": "color"}
+  ]
+}

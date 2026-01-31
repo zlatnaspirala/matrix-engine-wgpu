@@ -1,6 +1,4 @@
 import {mat4, vec3} from "wgpu-matrix";
-import MEBall from "./engine/ball.js";
-import MECube from './engine/cube.js';
 import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";

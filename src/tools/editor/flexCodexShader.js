@@ -1798,6 +1798,48 @@ svg path {
       document.dispatchEvent(new CustomEvent('delete-shader-graph', {detail: shaderGraph.id}));
     });
 
+    btn("Import JSON", async () => {
+      shaderGraph.clear();
+      let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
+      if(nameOfGraphMaterital && nameOfGraphMaterital !== "") {
+        const exist = await loadGraph(nameOfGraphMaterital, shaderGraph, addNode);
+        if(exist === true) {
+          console.info("ALREADY EXIST SHADER, please use diff name" + exist);
+        } else {
+          shaderGraph.id = nameOfGraphMaterital;
+          console.info("ADAPT DATA FROM JSON - name assinged");
+          // importJSON(shaderGraph);
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = ".json";
+          input.style.display = "none";
+
+          input.onchange = e => {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                let data = JSON.parse(reader.result);
+                data.id = shaderGraph.id;
+                console.log("test import json", data);
+                console.log("test import json", shaderGraph.id);
+                document.dispatchEvent(new CustomEvent('on-graph-load', {detail: {name: data.id, content: data}}));
+                input.remove();
+              } catch(err) {
+                console.error("Invalid JSON file", err);
+              }
+            };
+            reader.readAsText(file);
+          };
+          document.body.appendChild(input);
+          input.click();
+          // saveGraph(shaderGraph, nameOfGraphMaterital);
+        }
+      }
+    });
+
     // gobal for now next:
     // direct connection with FluxCOdexVertex vs ShaderGraph
     // document.addEventListener("give-me-shader", () => {  });
@@ -1939,16 +1981,16 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   if(shaderGraph.onGraphLoadAttached === false) {
     shaderGraph.onGraphLoadAttached = true;
     document.addEventListener('on-graph-load', (e) => {
-      if(e.detail == null) {
-        alert("Graph no exist!");
-        return;
-      }
+      if(e.detail == null) {return;}
       shaderGraph.nodes.length = 0;
       shaderGraph.connections.length = 0;
-      // console.log("on-graph-load: " + e.detail.name);
       shaderGraph.id = e.detail.name;
-      let data = JSON.parse(e.detail.content);
-      // console.log("on-graph-load: " + data)
+      let data;
+      if(typeof e.detail.content === 'object') {
+        data = e.detail.content;
+      } else {
+        data = JSON.parse(e.detail.content);
+      }
       if(!data) return false;
       const map = {};
       data.nodes.forEach(node => {
@@ -2028,4 +2070,9 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
     });
   }
   document.dispatchEvent(new CustomEvent('load-shader-graph', {detail: key}));
+}
+
+function importJSON(shaderGraph) {
+
+  // this._importInput = input;
 }
