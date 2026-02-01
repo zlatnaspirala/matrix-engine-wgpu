@@ -393,12 +393,12 @@ export default class EditorHud {
     if(byId('start-refresh')) this.toolTip.attachTooltip(byId('start-refresh'), "Simple refresh page.");
 
 
-    byId('start-prod-build').onclick = () => {
-      //
-      console.log('.......start-prod-build.......');
-      console.log('................................')
+    // byId('start-prod-build').onclick = () => {
+    //   //
+    //   console.log('.......start-prod-build.......');
+    //   console.log('................................')
 
-    };
+    // };
 
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
