@@ -23946,10 +23946,6 @@ var EditorHud = class {
       location.reload(true);
     };
     if (byId("start-refresh")) this.toolTip.attachTooltip(byId("start-refresh"), "Simple refresh page.");
-    byId("start-prod-build").onclick = () => {
-      console.log(".......start-prod-build.......");
-      console.log("................................");
-    };
     if (byId("addCube")) byId("addCube").addEventListener("click", () => {
       let objName = prompt("\u{1F4E6} Enter uniq name: ");
       let o2 = {

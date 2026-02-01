@@ -23946,10 +23946,6 @@ var EditorHud = class {
       location.reload(true);
     };
     if (byId("start-refresh")) this.toolTip.attachTooltip(byId("start-refresh"), "Simple refresh page.");
-    byId("start-prod-build").onclick = () => {
-      console.log(".......start-prod-build.......");
-      console.log("................................");
-    };
     if (byId("addCube")) byId("addCube").addEventListener("click", () => {
       let objName = prompt("\u{1F4E6} Enter uniq name: ");
       let o2 = {
@@ -26830,13 +26826,12 @@ var MatrixEngineWGPU = class {
 // ../../../../projects/ai-tool/graph.js
 var graph_default = {
   "nodes": {
-    "node_1": {
-      "id": "node_1",
+    "node_0": {
+      "id": "node_0",
       "title": "onLoad",
-      "x": 100,
-      "y": 100,
+      "x": 50,
+      "y": 50,
       "category": "event",
-      "fields": [],
       "inputs": [],
       "outputs": [
         {
@@ -26845,55 +26840,20 @@ var graph_default = {
         }
       ]
     },
-    "node_2": {
-      "id": "node_2",
+    "node_1": {
+      "id": "node_1",
       "title": "Generator Pyramid",
-      "x": 400,
-      "y": 100,
+      "x": 350,
+      "y": 50,
       "category": "action",
-      "fields": [
-        {
-          "key": "material",
-          "value": "cube"
-        },
-        {
-          "key": "pos",
-          "value": "0,-5,-20"
-        },
-        {
-          "key": "texturePath",
-          "value": "res/images/complex_texture_1/diffuse.png"
-        },
-        {
-          "key": "levels",
-          "value": "5"
-        }
-      ],
-      "inputs": [
-        {
-          "name": "exec",
-          "type": "action"
-        },
-        {
-          "name": "material",
-          "type": "string"
-        },
-        {
-          "name": "pos",
-          "type": "object"
-        },
-        {
-          "name": "texturePath",
-          "type": "string"
-        },
-        {
-          "name": "levels",
-          "type": "number"
-        }
-      ],
+      "noselfExec": "true",
       "outputs": [
         {
           "name": "execOut",
+          "type": "action"
+        },
+        {
+          "name": "complete",
           "type": "action"
         },
         {
@@ -26905,33 +26865,46 @@ var graph_default = {
   },
   "links": [
     {
-      "id": "link_1",
       "from": {
-        "node": "node_1",
-        "pin": "exec",
-        "type": "action",
-        "out": true
-      },
-      "to": {
-        "node": "node_2",
+        "node": "node_0",
+        "out": true,
         "pin": "exec",
         "type": "action"
+      },
+      "id": "link_0",
+      "to": {
+        "node": "node_1",
+        "pin": "exec"
       },
       "type": "action"
     }
   ],
   "variables": {
-    "number": {},
-    "boolean": {},
+    "number": {
+      "levels": 5,
+      "spacing": 1.5,
+      "delay": 50
+    },
+    "boolean": {
+      "raycast": true
+    },
     "string": {},
-    "object": {}
+    "object": {
+      "pos": {},
+      "rot": {},
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
   },
-  "nodeCounter": 2,
-  "linkCounter": 1,
   "pan": [
     0,
     0
-  ]
+  ],
+  "nodeCounter": 3,
+  "linkCounter": 2
 };
 
 // ../../../../projects/ai-tool/shader-graphs.js
