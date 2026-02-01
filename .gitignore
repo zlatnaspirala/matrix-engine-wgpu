@@ -1,4 +1,5 @@
 node_modules/
+src/tools/editor/ai-tools/config.js
 public/res/meshes/glb/**.blend
 public/res/meshes/glb/**.blend1
 public/res/meshes/glb/maria_arhive/*.blend
