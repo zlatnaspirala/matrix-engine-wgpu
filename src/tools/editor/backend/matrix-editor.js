@@ -40,7 +40,7 @@ console.log("\x1b[92m%s\x1b[0m", "- Experimental ME_AI_TOOL Ollama -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 let AI_TOOL = new ME_AI_TOOL();
-AI_TOOL.test();
+// AI_TOOL.test();
 
 
 async function buildAllProjectsOnStartup() {
