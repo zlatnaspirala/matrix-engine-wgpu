@@ -1,0 +1,10 @@
+{
+  "redirect": true,
+  "id": "ai-tool",
+  "name": "ai-tool",
+  "absolutePath": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects\\ai-tool\\ai-tool.json",
+  "PROJECTS_DIR": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects",
+  "projectData": "ai-tool\\ai-tool.json",
+  "physics": true,
+  "networking": true
+}
