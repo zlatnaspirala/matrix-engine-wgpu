@@ -11,3 +11,4 @@ public/res/meshes/glb/DEVELOP-COPY.blend11
 public/res/meshes/glb/DEVELOP-COPY.blend11
 public/res/meshes/nav-mesh/withtree_.blend
 src/tools/editor/ai-tools/config.js
+src/tools/editor/ai-generators/ollama/config.js

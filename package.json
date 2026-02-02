@@ -25,6 +25,7 @@
     "esbuild": "^0.27.1",
     "esmify": "^2.1.1",
     "http-server": "^14.1.1",
+    "ollama": "^0.6.3",
     "watchify": "^4.0.0",
     "wgpu-matrix": "^2.0.0"
   },
