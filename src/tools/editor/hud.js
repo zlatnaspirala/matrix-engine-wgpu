@@ -1,7 +1,5 @@
-import {METoolTip} from "../../engine/plugin/tooltip/ToolTip.js";
 import {byId, FullscreenManager, isMobile, jsonHeaders, LOG_FUNNY_ARCADE, mb} from "../../engine/utils.js";
 import {openFragmentShaderEditor} from "./flexCodexShader.js";
-
 /**
  * @Author NIkola Lukic
  * @description
@@ -9,11 +7,11 @@ import {openFragmentShaderEditor} from "./flexCodexShader.js";
  * Using "file protocol" in direct way no virtual/syntetic assets
  */
 export default class EditorHud {
-  constructor(core, a) {
+  constructor(core, a, toolTip) {
     this.core = core;
     this.sceneContainer = null;
     this.FS = new FullscreenManager();
-    this.toolTip = new METoolTip();
+    this.toolTip = toolTip;
     if(a == 'infly') {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
@@ -229,15 +227,15 @@ export default class EditorHud {
       <div class="top-btn">View ▾</div>
       <div class="dropdown">
         <div id="hideEditorBtn" class="drop-item">
-           <p>Hide Editor UI</p>
+           <h4>Hide Editor UI</h4>
            <small>Show editor - press F4 ⌨️</small>
         </div>
         <div id="bg-transparent" class="drop-item">
-           <p>Background transparent</p>
+           <h4>Background transparent</h4>
            <small>Fancy style</small>
         </div>
         <div id="bg-tradicional" class="drop-item">
-           <p>Background tradicional</p>
+           <h4>Background tradicional</h4>
            <small>Old school</small>
         </div>
         <div id="fullScreenBtn" class="drop-item">
@@ -281,13 +279,10 @@ export default class EditorHud {
       });
     });
 
-    // run top many
     byId('saveMainGraphDOM').addEventListener('click', () => {
-      // global for now.
       app.editor.fluxCodexVertex.compileGraph();
     });
     byId('runMainGraphDOM').addEventListener('click', () => {
-      // global for now.
       app.editor.fluxCodexVertex.runGraph();
     });
 
@@ -314,7 +309,6 @@ export default class EditorHud {
     });
 
     this.toolTip.attachTooltip(byId('fullScreenBtn'), "Just editor gui part for fullscreen - not fullscreen for real program.");
-
 
     byId('showAITools').addEventListener('click', () => {
       byId('aiPopup').style.display = 'flex';

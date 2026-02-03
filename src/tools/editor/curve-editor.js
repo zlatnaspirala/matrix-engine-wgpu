@@ -415,7 +415,7 @@ export class CurveEditor {
       border: "1px solid #333",
       padding: "5px",
       display: "none",
-      zIndex: 999999,
+      zIndex: 999,
       width: '650px',
       height: '409px',
       paddingLeft: '2px',

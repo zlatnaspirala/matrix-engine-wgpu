@@ -6,7 +6,7 @@ export class AiOllama {
   constructor() {
     this.USER_PROMPT = `Create me simple multiply two literal number 10 and print results.`
   }
-  async aiGenGraphCall() {
+  async aiGenGraphCall(i) {
     const ollama = new Ollama({
       host: "https://ollama.com",
       headers: {Authorization: "Bearer " + aiConfig.ollama},
@@ -15,7 +15,7 @@ export class AiOllama {
       model: "gpt-oss:120b",
       messages: [
         {role: "system", content: SYSTEM_PROMPT},
-        {role: "user", content: this.USER_PROMPT}
+        {role: "user", content: i}
       ],
       stream: true,
     });

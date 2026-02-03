@@ -867,8 +867,14 @@ function escapeRegExp(str) {
 }
 
 async function aiGenGraphCall(msg, ws) {
-  console.log('input for from ai tool service....', msg)
-  matrixOllama.aiGenGraphCall().then((r) => {
-    console.log('result from ai tool service....', r)
+  console.log('input for from ai tool service....', msg.prompt.provider)
+  console.log('input for from ai tool service....', msg.prompt.task)
+  matrixOllama.aiGenGraphCall(msg.prompt.task).then((r) => {
+    console.log('result from ai tool service....>>>>', r)
+    ws.send(JSON.stringify({
+      ok: true,
+      aiGenGraph: 'OK',
+      aiGenNodes: r
+    }));
   });
 }

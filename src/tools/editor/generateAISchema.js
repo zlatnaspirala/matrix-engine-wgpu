@@ -139,6 +139,6 @@ export let tasks = [
   "Enable vertex wave animation on floor"];
 
 export let providers = [
-  "groq",
-  "ollama"
+  "ollama",
+  "groq"
 ];

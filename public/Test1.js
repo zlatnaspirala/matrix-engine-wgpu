@@ -16074,6 +16074,40 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   }
 };
 
+// ../../../engine/plugin/tooltip/ToolTip.js
+var METoolTip = class {
+  constructor() {
+    const tooltip = document.createElement("div");
+    tooltip.style.position = "fixed";
+    tooltip.style.padding = "6px 10px";
+    tooltip.style.background = "rgba(0,0,0,0.8)";
+    tooltip.style.color = "#fff";
+    tooltip.style.borderRadius = "6px";
+    tooltip.style.fontFamily = "Arial";
+    tooltip.style.fontSize = "12px";
+    tooltip.style.pointerEvents = "none";
+    tooltip.style.opacity = "0";
+    tooltip.style.transition = "opacity 0.2s ease";
+    tooltip.style.zIndex = "9999";
+    tooltip.style.whiteSpace = "pre-line";
+    document.body.appendChild(tooltip);
+    this.tooltip = tooltip;
+  }
+  attachTooltip(element, text) {
+    element.addEventListener("mouseenter", (e) => {
+      this.tooltip.textContent = text;
+      this.tooltip.style.opacity = "1";
+    });
+    element.addEventListener("mousemove", (e) => {
+      this.tooltip.style.left = e.clientX + 12 + "px";
+      this.tooltip.style.top = e.clientY + 12 + "px";
+    });
+    element.addEventListener("mouseleave", () => {
+      this.tooltip.style.opacity = "0";
+    });
+  }
+};
+
 // ../client.js
 var MEEditorClient = class {
   ws = null;
@@ -16259,6 +16293,15 @@ var MEEditorClient = class {
       let o2 = {
         action: "save-shader-graph",
         graphData: e.detail
+      };
+      o2 = JSON.stringify(o2);
+      this.ws.send(o2);
+    });
+    document.addEventListener("aiGenGraphCall", (e) => {
+      console.info("%caiGenGraphCall fluxCodexVertex <signal>", LOG_FUNNY_ARCADE2);
+      let o2 = {
+        action: "aiGenGraphCall",
+        prompt: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -18334,113 +18377,6 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: key }));
 }
 
-// ../../../engine/plugin/tooltip/ToolTip.js
-var METoolTip = class {
-  constructor() {
-    const tooltip = document.createElement("div");
-    tooltip.style.position = "fixed";
-    tooltip.style.padding = "6px 10px";
-    tooltip.style.background = "rgba(0,0,0,0.8)";
-    tooltip.style.color = "#fff";
-    tooltip.style.borderRadius = "6px";
-    tooltip.style.fontFamily = "Arial";
-    tooltip.style.fontSize = "12px";
-    tooltip.style.pointerEvents = "none";
-    tooltip.style.opacity = "0";
-    tooltip.style.transition = "opacity 0.2s ease";
-    tooltip.style.zIndex = "9999";
-    tooltip.style.whiteSpace = "pre-line";
-    document.body.appendChild(tooltip);
-    this.tooltip = tooltip;
-  }
-  attachTooltip(element, text) {
-    element.addEventListener("mouseenter", (e) => {
-      this.tooltip.textContent = text;
-      this.tooltip.style.opacity = "1";
-    });
-    element.addEventListener("mousemove", (e) => {
-      this.tooltip.style.left = e.clientX + 12 + "px";
-      this.tooltip.style.top = e.clientY + 12 + "px";
-    });
-    element.addEventListener("mouseleave", () => {
-      this.tooltip.style.opacity = "0";
-    });
-  }
-};
-
-// ../../../sounds/audioAsset.js
-var AudioAssetManager = class {
-  constructor() {
-    this.assets = /* @__PURE__ */ new Map();
-    this.loading = /* @__PURE__ */ new Map();
-  }
-  load(path, options2 = {}) {
-    if (this.assets.has(path)) {
-      return Promise.resolve(this.assets.get(path));
-    }
-    if (this.loading.has(path)) {
-      return this.loading.get(path);
-    }
-    const asset = new MatrixMusicAsset({ path, ...options2 });
-    const promise = asset.init().then((a) => {
-      this.assets.set(path, a);
-      this.loading.delete(path);
-      return a;
-    });
-    this.loading.set(path, promise);
-    return promise;
-  }
-};
-var MatrixMusicAsset = class {
-  constructor({ path, autoplay = true, containerId = null }) {
-    this.path = path;
-    this.autoplay = autoplay;
-    this.containerId = containerId;
-    this.audio = null;
-    this.ctx = null;
-    this.source = null;
-    this.gain = null;
-    this.filter = null;
-    this.analyser = null;
-    this.frequencyData = null;
-    this.ready = false;
-  }
-  async init() {
-    this.audio = document.createElement("audio");
-    this.audio.id = this.path;
-    this.audio.src = `res/audios/${this.path}`;
-    this.audio.autoplay = this.autoplay;
-    this.audio.playsInline = true;
-    this.audio.controls = true;
-    (this.containerId ? document.getElementById(this.containerId) : document.body)?.appendChild(this.audio);
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    this.ctx = new AudioCtx();
-    if (this.ctx.state === "suspended") {
-      await this.ctx.resume();
-    }
-    this.source = this.ctx.createMediaElementSource(this.audio);
-    this.gain = this.ctx.createGain();
-    this.filter = this.ctx.createBiquadFilter();
-    this.analyser = this.ctx.createAnalyser();
-    this.filter.frequency.value = 5e3;
-    this.analyser.fftSize = 2048;
-    this.source.connect(this.gain).connect(this.filter).connect(this.ctx.destination);
-    this.source.connect(this.analyser);
-    this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
-    try {
-      await this.audio.play();
-    } catch {
-    }
-    this.ready = true;
-    return this;
-  }
-  updateFFT() {
-    if (!this.ready) return null;
-    this.analyser.getByteFrequencyData(this.frequencyData);
-    return this.frequencyData;
-  }
-};
-
 // ../curve-editor.js
 var CurveEditor = class {
   constructor({ width = 651, height = 300, samples = 128 } = {}) {
@@ -19162,13 +19098,17 @@ var tasks = [
   "Animate cube position using curve timeline",
   "Enable vertex wave animation on floor"
 ];
+var providers = [
+  "ollama",
+  "groq"
+];
 
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
 var FluxCodexVertex = class {
-  constructor(boardId, boardWrapId, logId, methodsManager, projName) {
+  constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
-    this.toolTip = new METoolTip();
+    this.toolTip = toolTip;
     this.curveEditor = new CurveEditor();
     this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
@@ -19511,6 +19451,7 @@ var FluxCodexVertex = class {
     Object.assign(popup.style, {
       display: "none",
       flexDirection: "column",
+      alignItems: "flex-start",
       position: "absolute",
       top: "10%",
       left: "5%",
@@ -19550,10 +19491,14 @@ var FluxCodexVertex = class {
       fontSize: "13px"
     });
     const title = document.createElement("div");
-    title.innerHTML = `FluxCodexVertex AI generator`;
-    title.style.marginBottom = "8px";
+    title.innerHTML = `FluxCodexVertex AI generator [Experimental]`;
+    title.style.marginBottom = "18px";
     title.style.fontWeight = "bold";
+    title.style.fontSize = "20px";
     popup.appendChild(title);
+    const label1 = document.createElement("span");
+    label1.innerText = `Select task for ai`;
+    popup.appendChild(label1);
     const selectPrompt = document.createElement("select");
     selectPrompt.style.width = "400px";
     const placeholder2 = document.createElement("option");
@@ -19562,13 +19507,45 @@ var FluxCodexVertex = class {
     placeholder2.disabled = true;
     placeholder2.selected = true;
     selectPrompt.appendChild(placeholder2);
-    tasks.forEach((shader, index) => {
+    tasks.forEach((t, i) => {
       const opt = document.createElement("option");
-      opt.value = index;
-      opt.textContent = shader;
+      opt.value = i;
+      opt.textContent = t;
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const label2 = document.createElement("span");
+    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    popup.appendChild(label2);
+    const selectPromptProvider = document.createElement("select");
+    selectPromptProvider.style.width = "400px";
+    providers.forEach((p, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = p;
+      selectPromptProvider.appendChild(opt);
+    });
+    popup.appendChild(selectPromptProvider);
+    const call = document.createElement("button");
+    call.innerText = `Generate`;
+    call.classList.add("btnLeftBox");
+    call.classList.add("btn4");
+    call.style.margin = "8px 8px 8px 8px";
+    call.style.width = "200px";
+    call.style.fontWeight = "bold";
+    call.style.webkitTextStrokeWidth = "0px";
+    call.addEventListener("click", () => {
+      console.log("selectPrompt.selectedOptions.value", selectPrompt.selectedOptions.value);
+      document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
+        detail: {
+          provider: providers[0],
+          // hardcode
+          task: selectPrompt.selectedOptions.value
+        }
+      }));
+    });
+    popup.appendChild(call);
+    this.toolTip.attachTooltip(call, "AI will try to generate graph. It is not guaranteed to work \u26A0\uFE0F");
     const list = document.createElement("textarea");
     list.style.height = "500px";
     list.id = "graphGenJSON";
@@ -19585,13 +19562,16 @@ var FluxCodexVertex = class {
       fontFamily: "JetBrains Mono, monospace",
       fontSize: "12px",
       lineHeight: "1.4",
+      width: "98%",
       outline: "none",
       boxShadow: "inset 0 0 8px rgba(0,0,0,0.6)"
     });
     popup.appendChild(list);
+    this.toolTip.attachTooltip(list, "If the exported graph is not valid, in the last case you can manually try to fix it, but it is best to make a new query \u26A0\uFE0F");
     const hideVPopup = document.createElement("button");
     hideVPopup.innerText = `Hide`;
     hideVPopup.classList.add("btn4");
+    hideVPopup.classList.add("btnLeftBox");
     hideVPopup.style.margin = "8px 8px 8px 8px";
     hideVPopup.style.width = "200px";
     hideVPopup.style.fontWeight = "bold";
@@ -19600,17 +19580,25 @@ var FluxCodexVertex = class {
       byId("aiPopup").style.display = "none";
     });
     popup.appendChild(hideVPopup);
-    const saveVPopup = document.createElement("button");
-    saveVPopup.innerText = `Copy`;
-    saveVPopup.classList.add("btn4");
-    saveVPopup.style.margin = "8px 8px 8px 8px";
-    saveVPopup.style.width = "200px";
-    saveVPopup.style.height = "70px";
-    saveVPopup.style.fontWeight = "bold";
-    saveVPopup.style.webkitTextStrokeWidth = "0px";
-    saveVPopup.addEventListener("click", () => {
+    const copyVPopup = document.createElement("button");
+    copyVPopup.innerText = `Copy`;
+    copyVPopup.classList.add("btnLeftBox");
+    copyVPopup.classList.add("btn4");
+    copyVPopup.style.margin = "8px 8px 8px 8px";
+    copyVPopup.style.width = "200px";
+    copyVPopup.style.height = "70px";
+    copyVPopup.style.fontWeight = "bold";
+    copyVPopup.style.color = "lime";
+    copyVPopup.style.webkitTextStrokeWidth = "0px";
+    copyVPopup.addEventListener("click", async () => {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(list.value);
+      } else {
+        list.select();
+        document.execCommand("copy");
+      }
     });
-    popup.appendChild(saveVPopup);
+    popup.appendChild(copyVPopup);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
   }
@@ -23754,11 +23742,11 @@ var FluxCodexVertex = class {
 
 // ../hud.js
 var EditorHud = class {
-  constructor(core, a) {
+  constructor(core, a, toolTip) {
     this.core = core;
     this.sceneContainer = null;
     this.FS = new FullscreenManager();
-    this.toolTip = new METoolTip();
+    this.toolTip = toolTip;
     if (a == "infly") {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
@@ -24123,10 +24111,6 @@ var EditorHud = class {
         detail: o2
       }));
     });
-    setTimeout(() => {
-      this.core.cameras.WASD.pitch = byId("camera-settings-pitch").value;
-      this.core.cameras.WASD.yaw = byId("camera-settings-yaw").value;
-    }, 1500);
     byId("showCodeEditorBtn").addEventListener("click", (e) => {
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });
@@ -25192,8 +25176,9 @@ var MethodsManager = class {
 var Editor = class {
   constructor(core, a, projName) {
     this.core = core;
+    this.toolTip = new METoolTip();
     this.methodsManager = new MethodsManager(this.check(a));
-    this.editorHud = new EditorHud(core, this.check(a));
+    this.editorHud = new EditorHud(core, this.check(a), this.toolTip);
     this.editorProvider = new EditorProvider(core, this.check(a));
     if (this.check(a) == "pre editor") {
       this.client = new MEEditorClient(this.check(a));
@@ -25208,7 +25193,7 @@ var Editor = class {
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
         console.log("MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
-        this.fluxCodexVertex = new FluxCodexVertex("board", "boardWrap", "log", this.methodsManager, projName);
+        this.fluxCodexVertex = new FluxCodexVertex("board", "boardWrap", "log", this.methodsManager, projName, this.toolTip);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
         }, 2500);
@@ -26005,6 +25990,79 @@ var TextureCache = class {
       addressModeW: "repeat"
     });
     return { texture, sampler };
+  }
+};
+
+// ../../../sounds/audioAsset.js
+var AudioAssetManager = class {
+  constructor() {
+    this.assets = /* @__PURE__ */ new Map();
+    this.loading = /* @__PURE__ */ new Map();
+  }
+  load(path, options2 = {}) {
+    if (this.assets.has(path)) {
+      return Promise.resolve(this.assets.get(path));
+    }
+    if (this.loading.has(path)) {
+      return this.loading.get(path);
+    }
+    const asset = new MatrixMusicAsset({ path, ...options2 });
+    const promise = asset.init().then((a) => {
+      this.assets.set(path, a);
+      this.loading.delete(path);
+      return a;
+    });
+    this.loading.set(path, promise);
+    return promise;
+  }
+};
+var MatrixMusicAsset = class {
+  constructor({ path, autoplay = true, containerId = null }) {
+    this.path = path;
+    this.autoplay = autoplay;
+    this.containerId = containerId;
+    this.audio = null;
+    this.ctx = null;
+    this.source = null;
+    this.gain = null;
+    this.filter = null;
+    this.analyser = null;
+    this.frequencyData = null;
+    this.ready = false;
+  }
+  async init() {
+    this.audio = document.createElement("audio");
+    this.audio.id = this.path;
+    this.audio.src = `res/audios/${this.path}`;
+    this.audio.autoplay = this.autoplay;
+    this.audio.playsInline = true;
+    this.audio.controls = true;
+    (this.containerId ? document.getElementById(this.containerId) : document.body)?.appendChild(this.audio);
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AudioCtx();
+    if (this.ctx.state === "suspended") {
+      await this.ctx.resume();
+    }
+    this.source = this.ctx.createMediaElementSource(this.audio);
+    this.gain = this.ctx.createGain();
+    this.filter = this.ctx.createBiquadFilter();
+    this.analyser = this.ctx.createAnalyser();
+    this.filter.frequency.value = 5e3;
+    this.analyser.fftSize = 2048;
+    this.source.connect(this.gain).connect(this.filter).connect(this.ctx.destination);
+    this.source.connect(this.analyser);
+    this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
+    try {
+      await this.audio.play();
+    } catch {
+    }
+    this.ready = true;
+    return this;
+  }
+  updateFFT() {
+    if (!this.ready) return null;
+    this.analyser.getByteFrequencyData(this.frequencyData);
+    return this.frequencyData;
   }
 };
 

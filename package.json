@@ -31,7 +31,8 @@
   },
   "dependencies": {
     "bvh-loader": "1.0.10",
-    "gl-matrix": "^3.4.4"
+    "gl-matrix": "^3.4.4",
+    "groq-sdk": "^0.37.0"
   },
   "peerDependencies": {
     "wgpu-matrix": "^2.0.0"

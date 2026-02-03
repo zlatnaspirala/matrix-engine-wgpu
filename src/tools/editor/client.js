@@ -67,7 +67,6 @@ export class MEEditorClient {
             mb.show("Graph saved ✅");
             console.log('Graph saved ✅ test ', data.graphName);
             if (typeof data.graphName === "string") document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
-
           }
           if(data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list ✅" + data.shaderGraphs);
@@ -75,6 +74,9 @@ export class MEEditorClient {
           } else if(data.methodLoads && data.ok == true) {
             mb.show("Graph loads ✅", data);
             document.dispatchEvent(new CustomEvent('on-graph-load', {detail: data.graph}));
+          } else if(data.aiGenGraph && data.ok == true) {
+            mb.show("AIGraph Generator response graph part ✅", data.aiGenNodes);
+            document.dispatchEvent(new CustomEvent('on-ai-graph-response', {detail: data.aiGenNodes}));
           }
           else {
             mb.show("From editorX:" + data.ok);
@@ -217,7 +219,7 @@ export class MEEditorClient {
       console.info('%caiGenGraphCall fluxCodexVertex <signal>', LOG_FUNNY_ARCADE);
       let o = {
         action: "aiGenGraphCall",
-        graphData: e.detail
+        prompt: e.detail
       };
       o = JSON.stringify(o);
       this.ws.send(o);

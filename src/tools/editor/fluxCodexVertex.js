@@ -35,23 +35,19 @@
  *
  * - MPL applies ONLY to this file
  */
-import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
-import {MatrixMusicAsset} from "../../sounds/audioAsset";
+// import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
-import {graphAdapter} from "./flexCodexShaderAdapter";
+// import {graphAdapter} from "./flexCodexShaderAdapter";
 import {catalogToText, generateAICatalog, providers, tasks} from "./generateAISchema.js"
-
 // Engine agnostic
 export let runtimeCacheObjs = [];
 
 export default class FluxCodexVertex {
-  constructor(boardId, boardWrapId, logId, methodsManager, projName) {
+  constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
-    this.toolTip = new METoolTip();
-
+    this.toolTip = toolTip;
     this.curveEditor = new CurveEditor();
-
     this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
     this.variables = {
@@ -60,7 +56,6 @@ export default class FluxCodexVertex {
       string: {},
       object: {},
     };
-
     // DOM Elements
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
@@ -129,9 +124,14 @@ export default class FluxCodexVertex {
     this.createAIToolPopup();
     this._createImportInput();
     this.bindGlobalListeners();
-
     this._varInputs = {};
 
+    // global events
+    document.addEventListener("on-ai-graph-response", e => {
+      //
+      console.log("AI RESPONSE:", e.detail);
+      byId("graphGenJSON").value = e.detail;
+    });
     document.addEventListener("keydown", e => {
       const target = (e.composedPath && e.composedPath()[0]) || e.target || document.activeElement;
       function isEditableElement(el) {
@@ -392,7 +392,7 @@ export default class FluxCodexVertex {
       border: "1px solid #444",
       borderRadius: "8px",
       padding: "10px",
-      zIndex: 9999,
+      zIndex: 99,
       color: "#eee",
       overflowX: "hidden",
     });
@@ -452,10 +452,11 @@ export default class FluxCodexVertex {
     Object.assign(popup.style, {
       display: "none",
       flexDirection: "column",
+      alignItems: "flex-start",
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "70%",
+      width: "50%",
       height: "70%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
@@ -483,7 +484,7 @@ export default class FluxCodexVertex {
     inset 0 1px 0 rgba(255,255,255,0.05)
   `,
       padding: "12px 14px",
-      zIndex: 9999,
+      zIndex: 99,
       color: "#e6e6e6",
       overflowY: "auto",
       overflowX: "hidden",
@@ -492,9 +493,13 @@ export default class FluxCodexVertex {
     });
     const title = document.createElement("div");
     title.innerHTML = `FluxCodexVertex AI generator [Experimental]`;
-    title.style.marginBottom = "8px";
+    title.style.marginBottom = "18px";
     title.style.fontWeight = "bold";
+    title.style.fontSize = "20px";
     popup.appendChild(title);
+    const label1 = document.createElement("span");
+    label1.innerText = `Select task for ai`;
+    popup.appendChild(label1);
     const selectPrompt = document.createElement("select");
     selectPrompt.style.width = '400px';
     const placeholder = document.createElement("option");
@@ -503,86 +508,99 @@ export default class FluxCodexVertex {
     placeholder.disabled = true;
     placeholder.selected = true;
     selectPrompt.appendChild(placeholder);
-    tasks.forEach((shader, index) => {
+    tasks.forEach((t, i) => {
       const opt = document.createElement("option");
-      opt.value = index;
-      opt.textContent = shader;
+      opt.value = i;
+      opt.textContent = t;
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt)
+    const label2 = document.createElement("span");
+    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = '400px';
-    providers.forEach((p, index) => {
+    providers.forEach((p, i) => {
       const opt = document.createElement("option");
-      opt.value = index;
+      opt.value = i;
       opt.textContent = p;
       selectPromptProvider.appendChild(opt);
     });
     popup.appendChild(selectPromptProvider);
 
     const call = document.createElement("button");
-    call.innerText = `Hide`;
-    call.classList.add("btn");
+    call.innerText = `Generate`;
+    call.classList.add("btnLeftBox");
+    call.classList.add("btn4");
     call.style.margin = "8px 8px 8px 8px";
     call.style.width = "200px";
     call.style.fontWeight = "bold";
     call.style.webkitTextStrokeWidth = "0px";
     call.addEventListener("click", () => {
-      console.log("selectPrompt.selectedOptions.value", selectPrompt.selectedOptions.value)
+      if(selectPrompt.selectedIndex > 0) {
+        // use select task...
+      }
+      console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
         detail: {
-          name: providers[0], // hardcode
-          task: selectPrompt.selectedOptions.value
+          provider: providers[0], // hardcode
+          task: selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
     popup.appendChild(call);
-
+    this.toolTip.attachTooltip(call, "AI will try to generate graph. It is not guaranteed to work ⚠️");
     const list = document.createElement("textarea");
     list.style.height = '500px';
     list.id = "graphGenJSON";
+    list.disabled = true;
     Object.assign(list.style, {
       height: "100%",
       minHeight: "420px",
       resize: "none",
-
       background: "#0f0f0f",
       color: "#d0f0ff",
-
       border: "1px solid #333",
       borderRadius: "6px",
-
       padding: "10px",
       marginBottom: "10px",
-
       fontFamily: "JetBrains Mono, monospace",
       fontSize: "12px",
       lineHeight: "1.4",
-
+      width: "98%",
       outline: "none",
       boxShadow: "inset 0 0 8px rgba(0,0,0,0.6)"
     });
     popup.appendChild(list);
+    this.toolTip.attachTooltip(list, "If the exported graph is not valid, in the last case you can manually try to fix it, but it is best to make a new query ⚠️");
     // popup.appendChild(btns);
-    const hideVPopup = document.createElement("button");
-    hideVPopup.innerText = `Hide`;
-    hideVPopup.classList.add("btn");
-    hideVPopup.style.margin = "8px 8px 8px 8px";
-    hideVPopup.style.width = "200px";
-    hideVPopup.style.fontWeight = "bold";
-    hideVPopup.style.webkitTextStrokeWidth = "0px";
-    hideVPopup.addEventListener("click", () => {byId("aiPopup").style.display = "none";});
-    popup.appendChild(hideVPopup);
 
-    const copyVPopup = document.createElement("button");
-    copyVPopup.innerText = `Copy`;
-    copyVPopup.classList.add("btn1");
-    copyVPopup.style.margin = "8px 8px 8px 8px";
-    copyVPopup.style.width = "200px";
-    copyVPopup.style.height = "70px";
-    copyVPopup.style.fontWeight = "bold";
-    copyVPopup.style.webkitTextStrokeWidth = "0px";
-    copyVPopup.addEventListener("click", async () => {
+    const wrap1 = document.createElement("div");
+    wrap1.style.display = 'flex';
+    wrap1.style.height = '50px';
+    popup.appendChild(wrap1);
+
+    const hideAIGen = document.createElement("button");
+    hideAIGen.innerText = `Hide`;
+    hideAIGen.classList.add("btn4");
+    hideAIGen.classList.add("btnLeftBox");
+    hideAIGen.style.margin = "8px 8px 8px 8px";
+    hideAIGen.style.width = "100px";
+    hideAIGen.style.fontWeight = "bold";
+    hideAIGen.style.webkitTextStrokeWidth = "0px";
+    hideAIGen.addEventListener("click", () => {byId("aiPopup").style.display = "none";});
+    wrap1.appendChild(hideAIGen);
+
+    const copy = document.createElement("button");
+    copy.innerText = `Copy`;
+    copy.classList.add("btnLeftBox");
+    copy.classList.add("btn4");
+    copy.style.margin = "8px 8px 8px 8px";
+    copy.style.width = "100px";
+    copy.style.fontWeight = "bold";
+    copy.style.color = "lime";
+    copy.style.webkitTextStrokeWidth = "0px";
+    copy.addEventListener("click", async () => {
       if(navigator.clipboard) {
         await navigator.clipboard.writeText(list.value);
       } else {
@@ -590,7 +608,7 @@ export default class FluxCodexVertex {
         document.execCommand("copy");
       }
     });
-    popup.appendChild(copyVPopup);
+    wrap1.appendChild(copy);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
   }
@@ -4831,6 +4849,7 @@ export default class FluxCodexVertex {
   }
 
   compileGraph() {
+    // this is save !!!
     const bundle = {
       nodes: this.nodes,
       links: this.links,
