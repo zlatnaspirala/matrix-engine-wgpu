@@ -12,7 +12,7 @@ import {WebSocketServer} from "ws";
 import {DEFAULT_GRAPH_JS} from "./graph.js";
 import {DEFAUL_METHODS} from "./methods.js";
 import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
-import {AiOllama} from "../ai-tools/ollama.js";
+import {AiOllama} from "../ai-generators/ollama/ollama.js";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
@@ -40,11 +40,9 @@ console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL Ollama -");
 console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL GoogleAI -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
- let test = new AiOllama();
-//  test.test();
-
+let test = new AiOllama();
+test.test();
 // AI_TOOL.test();
-
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");

@@ -189,22 +189,11 @@ export default class EditorHud {
     </div>
 
     <div class="top-item">
-      <div class="top-btn">Settings ▾</div>
+      <div class="top-btn">AI tools ▾</div>
       <div class="dropdown">
-        <div id="cameraBox" class="drop-item">
-           <p>📽️Camera</p>
-           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
-           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <!--div> Position :  </br>
-            \n 
-            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
-            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
-            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div-->
-        </div>
+        <div id="showAITools" class="drop-item">⚪ AI graph generator</div>
       </div>
     </div>
-    
     
     <div class="top-item">
       <div class="top-btn">Script ▾</div>
@@ -326,6 +315,12 @@ export default class EditorHud {
     });
 
     this.toolTip.attachTooltip(byId('fullScreenBtn'), "Just editor gui part for fullscreen - not fullscreen for real program.");
+
+
+    byId('showAITools').addEventListener('click', () => {
+      byId('aiPopup').style.display = 'flex';
+    });
+    this.toolTip.attachTooltip(byId('showAITools'), "Experimental stage, MEWGPU use open source ollama platform. Possible to create less complex - assets data not yet involment...");
 
     byId('hideEditorBtn').addEventListener('click', () => {
       this.editorMenu.style.display = 'none';
@@ -452,14 +447,25 @@ export default class EditorHud {
       this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
     }, 1500);
 
-    byId('camera-settings-pitch').addEventListener('change', (e) => {
-      console.log('setting camera pitch ', e);
-      this.core.cameras.WASD.pitch = e.target.value;
-    })
-    byId('camera-settings-yaw').addEventListener('change', (e) => {
-      console.log('setting camera', e)
-      this.core.cameras.WASD.yaw = e.target.value;
-    })
+    //     <!--div id="cameraBox" class="drop-item">
+    //    <p>📽️Camera</p>
+    //    <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
+    //    <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
+    //    <!--div> Position :  </br>
+    //     \n 
+    //     X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
+    //     Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
+    //     Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
+    //    </div-->
+    // </div-->
+    // byId('camera-settings-pitch').addEventListener('change', (e) => {
+    //   console.log('setting camera pitch ', e);
+    //   this.core.cameras.WASD.pitch = e.target.value;
+    // })
+    // byId('camera-settings-yaw').addEventListener('change', (e) => {
+    //   console.log('setting camera', e)
+    //   this.core.cameras.WASD.yaw = e.target.value;
+    // })
 
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));

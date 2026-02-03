@@ -5,7 +5,7 @@ import {Ollama} from "ollama";
 export class AiOllama {
 
   constructor() {
-    this.USER_PROMPT = `Create me simple print literal number 10.`
+    this.USER_PROMPT = `Create me simple multiply two literal number 10 and print results.`
   }
 
   async test() {

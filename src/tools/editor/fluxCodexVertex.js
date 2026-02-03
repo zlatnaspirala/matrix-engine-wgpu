@@ -40,6 +40,7 @@ import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
 import {graphAdapter} from "./flexCodexShaderAdapter";
+import {catalogToText, generateAICatalog} from "./generateAISchema.js"
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -125,6 +126,7 @@ export default class FluxCodexVertex {
 
     // Bind event listeners
     this.createVariablesPopup();
+    this.createAIToolPopup();
     this._createImportInput();
     this.bindGlobalListeners();
 
@@ -440,6 +442,135 @@ export default class FluxCodexVertex {
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
+  }
+
+  createAIToolPopup() {
+    if(this._aiPopup) return;
+    const popup = document.createElement("div");
+    popup.id = "aiPopup";
+    this._aiPopup = popup;
+    Object.assign(popup.style, {
+      display: "none",
+      flexDirection: "column",
+      position: "absolute",
+      top: "10%",
+      left: "5%",
+      width: "70%",
+      height: "70%",
+
+      background: `
+    linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    )
+  `,
+      backgroundBlendMode: "overlay",
+      backgroundSize: "auto, 22px 22px, 22px 22px",
+
+      border: "1px solid rgba(255,255,255,0.15)",
+      borderRadius: "10px",
+      boxShadow: `
+    0 20px 40px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255,255,255,0.05)
+  `,
+
+      padding: "12px 14px",
+      zIndex: 9999,
+      color: "#e6e6e6",
+
+      overflowY: "auto",
+      overflowX: "hidden",
+
+      fontFamily: "Orbitron, monospace",
+      fontSize: "13px",
+    });
+    // HEADER
+    const title = document.createElement("div");
+    title.innerHTML = `FluxCodexVertex AI generator`;
+    title.style.marginBottom = "8px";
+    title.style.fontWeight = "bold";
+    popup.appendChild(title);
+
+    const selectPrompt = document.createElement("select");
+    selectPrompt.style.width = '400px';
+    const placeholder = document.createElement("option");
+    placeholder.textContent = "Select task";
+    placeholder.value = "";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    selectPrompt.appendChild(placeholder);
+    let tasks = [" Create print number 10 "];
+    tasks.forEach((shader, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.textContent = shader;
+      selectPrompt.appendChild(opt);
+    });
+
+    popup.appendChild(selectPrompt)
+
+    const list = document.createElement("textarea");
+    list.style.height = '500px';
+    list.id = "graphGenJSON";
+    Object.assign(list.style, {
+      height: "100%",
+      minHeight: "420px",
+      resize: "none",
+
+      background: "#0f0f0f",
+      color: "#d0f0ff",
+
+      border: "1px solid #333",
+      borderRadius: "6px",
+
+      padding: "10px",
+      marginBottom: "10px",
+
+      fontFamily: "JetBrains Mono, monospace",
+      fontSize: "12px",
+      lineHeight: "1.4",
+
+      outline: "none",
+      boxShadow: "inset 0 0 8px rgba(0,0,0,0.6)"
+    });
+    popup.appendChild(list);
+
+    // popup.appendChild(btns);
+    const hideVPopup = document.createElement("button");
+    hideVPopup.innerText = `Hide`;
+    hideVPopup.classList.add("btn4");
+    hideVPopup.style.margin = "8px 8px 8px 8px";
+    hideVPopup.style.width = "200px";
+    hideVPopup.style.fontWeight = "bold";
+    hideVPopup.style.webkitTextStrokeWidth = "0px";
+    hideVPopup.addEventListener("click", () => {byId("aiPopup").style.display = "none";});
+    popup.appendChild(hideVPopup);
+
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Copy`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => {
+      // 
+    });
+    popup.appendChild(saveVPopup);
+    document.body.appendChild(popup);
+    this.makePopupDraggable(popup);
   }
 
   _refreshVarsList(container) {
@@ -2809,6 +2940,13 @@ export default class FluxCodexVertex {
         }
       }
     }
+
+    // TEST
+    // const catalog = generateAICatalog(nodeFactories);
+    // const systemCatalogText = catalogToText(catalog);
+    // console.log(systemCatalogText);
+    // localStorage.setItem('systemCatalogText', systemCatalogText);
+    // TEST
 
     if(spec) {
       const dom = this.createNodeDOM(spec);

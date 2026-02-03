@@ -19193,6 +19193,7 @@ var FluxCodexVertex = class {
       // IMPORTANT
     });
     this.createVariablesPopup();
+    this.createAIToolPopup();
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
@@ -19467,6 +19468,118 @@ var FluxCodexVertex = class {
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
+  }
+  createAIToolPopup() {
+    if (this._aiPopup) return;
+    const popup = document.createElement("div");
+    popup.id = "aiPopup";
+    this._aiPopup = popup;
+    Object.assign(popup.style, {
+      display: "none",
+      flexDirection: "column",
+      position: "absolute",
+      top: "10%",
+      left: "5%",
+      width: "70%",
+      height: "70%",
+      background: `
+    linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    )
+  `,
+      backgroundBlendMode: "overlay",
+      backgroundSize: "auto, 22px 22px, 22px 22px",
+      border: "1px solid rgba(255,255,255,0.15)",
+      borderRadius: "10px",
+      boxShadow: `
+    0 20px 40px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255,255,255,0.05)
+  `,
+      padding: "12px 14px",
+      zIndex: 9999,
+      color: "#e6e6e6",
+      overflowY: "auto",
+      overflowX: "hidden",
+      fontFamily: "Orbitron, monospace",
+      fontSize: "13px"
+    });
+    const title = document.createElement("div");
+    title.innerHTML = `FluxCodexVertex AI generator`;
+    title.style.marginBottom = "8px";
+    title.style.fontWeight = "bold";
+    popup.appendChild(title);
+    const selectPrompt = document.createElement("select");
+    selectPrompt.style.width = "400px";
+    const placeholder2 = document.createElement("option");
+    placeholder2.textContent = "Select task";
+    placeholder2.value = "";
+    placeholder2.disabled = true;
+    placeholder2.selected = true;
+    selectPrompt.appendChild(placeholder2);
+    let tasks = [" Create print number 10 "];
+    tasks.forEach((shader, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.textContent = shader;
+      selectPrompt.appendChild(opt);
+    });
+    popup.appendChild(selectPrompt);
+    const list = document.createElement("textarea");
+    list.style.height = "500px";
+    list.id = "graphGenJSON";
+    Object.assign(list.style, {
+      height: "100%",
+      minHeight: "420px",
+      resize: "none",
+      background: "#0f0f0f",
+      color: "#d0f0ff",
+      border: "1px solid #333",
+      borderRadius: "6px",
+      padding: "10px",
+      marginBottom: "10px",
+      fontFamily: "JetBrains Mono, monospace",
+      fontSize: "12px",
+      lineHeight: "1.4",
+      outline: "none",
+      boxShadow: "inset 0 0 8px rgba(0,0,0,0.6)"
+    });
+    popup.appendChild(list);
+    const hideVPopup = document.createElement("button");
+    hideVPopup.innerText = `Hide`;
+    hideVPopup.classList.add("btn4");
+    hideVPopup.style.margin = "8px 8px 8px 8px";
+    hideVPopup.style.width = "200px";
+    hideVPopup.style.fontWeight = "bold";
+    hideVPopup.style.webkitTextStrokeWidth = "0px";
+    hideVPopup.addEventListener("click", () => {
+      byId("aiPopup").style.display = "none";
+    });
+    popup.appendChild(hideVPopup);
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Copy`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => {
+    });
+    popup.appendChild(saveVPopup);
+    document.body.appendChild(popup);
+    this.makePopupDraggable(popup);
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
@@ -23774,25 +23887,11 @@ var EditorHud = class {
     </div>
 
     <div class="top-item">
-      <div class="top-btn">Settings \u25BE</div>
+      <div class="top-btn">AI tools \u25BE</div>
       <div class="dropdown">
-        <div id="cameraBox" class="drop-item">
-           <p>\u{1F4FD}\uFE0FCamera</p>
-           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
-           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <!--div> Position :  </br>
-            
- 
-            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> 
-
-            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> 
-
-            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div-->
-        </div>
+        <div id="showAITools" class="drop-item">\u26AA AI graph generator</div>
       </div>
     </div>
-    
     
     <div class="top-item">
       <div class="top-btn">Script \u25BE</div>
@@ -23894,6 +23993,10 @@ var EditorHud = class {
       this.FS.request();
     });
     this.toolTip.attachTooltip(byId("fullScreenBtn"), "Just editor gui part for fullscreen - not fullscreen for real program.");
+    byId("showAITools").addEventListener("click", () => {
+      byId("aiPopup").style.display = "flex";
+    });
+    this.toolTip.attachTooltip(byId("showAITools"), "Experimental stage, MEWGPU use open source ollama platform. Possible to create less complex - assets data not yet involment...");
     byId("hideEditorBtn").addEventListener("click", () => {
       this.editorMenu.style.display = "none";
       this.assetsBox.style.display = "none";
@@ -23991,14 +24094,6 @@ var EditorHud = class {
       this.core.cameras.WASD.pitch = byId("camera-settings-pitch").value;
       this.core.cameras.WASD.yaw = byId("camera-settings-yaw").value;
     }, 1500);
-    byId("camera-settings-pitch").addEventListener("change", (e) => {
-      console.log("setting camera pitch ", e);
-      this.core.cameras.WASD.pitch = e.target.value;
-    });
-    byId("camera-settings-yaw").addEventListener("change", (e) => {
-      console.log("setting camera", e);
-      this.core.cameras.WASD.yaw = e.target.value;
-    });
     byId("showCodeEditorBtn").addEventListener("click", (e) => {
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });
@@ -26824,7 +26919,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 299.34460239409304, "y": 127.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "title": "Print", "x": 655.171875, "y": 226.046875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }], "nodeCounter": 3, "linkCounter": 2, "pan": [35, 78], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 115, "y": 394, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n2": { "id": "n2", "title": "getNumberLiteral", "x": 326, "y": 283, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n3": { "id": "n3", "title": "getNumberLiteral", "x": 332, "y": 508, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n4": { "id": "n4", "title": "Mul", "x": 593, "y": 381, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "fields": [], "displayEl": {} }, "n5": { "id": "n5", "title": "Print", "x": 863, "y": 294, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "noselfExec": true, "displayEl": {} } }, "links": [{ "id": "l1", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n2", "pin": "exec" }, "type": "action" }, { "id": "l2", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n3", "pin": "exec" }, "type": "action" }, { "id": "l3", "from": { "node": "n2", "pin": "execOut" }, "to": { "node": "n5", "pin": "exec" }, "type": "action" }, { "id": "l4", "from": { "node": "n2", "pin": "value" }, "to": { "node": "n4", "pin": "a" }, "type": "value" }, { "id": "l5", "from": { "node": "n3", "pin": "value" }, "to": { "node": "n4", "pin": "b" }, "type": "value" }, { "id": "l6", "from": { "node": "n4", "pin": "result" }, "to": { "node": "n5", "pin": "value" }, "type": "value" }], "nodeCounter": 1, "linkCounter": 1, "pan": [-48, 38], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [
