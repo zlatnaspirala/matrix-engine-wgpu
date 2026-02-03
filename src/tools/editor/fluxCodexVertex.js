@@ -40,7 +40,7 @@ import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
 import {graphAdapter} from "./flexCodexShaderAdapter";
-import {catalogToText, generateAICatalog} from "./generateAISchema.js"
+import {catalogToText, generateAICatalog, providers, tasks} from "./generateAISchema.js"
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -457,7 +457,6 @@ export default class FluxCodexVertex {
       left: "5%",
       width: "70%",
       height: "70%",
-
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -477,31 +476,25 @@ export default class FluxCodexVertex {
   `,
       backgroundBlendMode: "overlay",
       backgroundSize: "auto, 22px 22px, 22px 22px",
-
       border: "1px solid rgba(255,255,255,0.15)",
       borderRadius: "10px",
       boxShadow: `
     0 20px 40px rgba(0,0,0,0.65),
     inset 0 1px 0 rgba(255,255,255,0.05)
   `,
-
       padding: "12px 14px",
       zIndex: 9999,
       color: "#e6e6e6",
-
       overflowY: "auto",
       overflowX: "hidden",
-
       fontFamily: "Orbitron, monospace",
       fontSize: "13px",
     });
-    // HEADER
     const title = document.createElement("div");
-    title.innerHTML = `FluxCodexVertex AI generator`;
+    title.innerHTML = `FluxCodexVertex AI generator [Experimental]`;
     title.style.marginBottom = "8px";
     title.style.fontWeight = "bold";
     popup.appendChild(title);
-
     const selectPrompt = document.createElement("select");
     selectPrompt.style.width = '400px';
     const placeholder = document.createElement("option");
@@ -510,15 +503,40 @@ export default class FluxCodexVertex {
     placeholder.disabled = true;
     placeholder.selected = true;
     selectPrompt.appendChild(placeholder);
-    let tasks = [" Create print number 10 "];
     tasks.forEach((shader, index) => {
       const opt = document.createElement("option");
       opt.value = index;
       opt.textContent = shader;
       selectPrompt.appendChild(opt);
     });
-
     popup.appendChild(selectPrompt)
+    const selectPromptProvider = document.createElement("select");
+    selectPromptProvider.style.width = '400px';
+    providers.forEach((p, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.textContent = p;
+      selectPromptProvider.appendChild(opt);
+    });
+    popup.appendChild(selectPromptProvider);
+
+    const call = document.createElement("button");
+    call.innerText = `Hide`;
+    call.classList.add("btn");
+    call.style.margin = "8px 8px 8px 8px";
+    call.style.width = "200px";
+    call.style.fontWeight = "bold";
+    call.style.webkitTextStrokeWidth = "0px";
+    call.addEventListener("click", () => {
+      console.log("selectPrompt.selectedOptions.value", selectPrompt.selectedOptions.value)
+      document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
+        detail: {
+          name: providers[0], // hardcode
+          task: selectPrompt.selectedOptions.value
+        }
+      }));
+    });
+    popup.appendChild(call);
 
     const list = document.createElement("textarea");
     list.style.height = '500px';
@@ -545,11 +563,10 @@ export default class FluxCodexVertex {
       boxShadow: "inset 0 0 8px rgba(0,0,0,0.6)"
     });
     popup.appendChild(list);
-
     // popup.appendChild(btns);
     const hideVPopup = document.createElement("button");
     hideVPopup.innerText = `Hide`;
-    hideVPopup.classList.add("btn4");
+    hideVPopup.classList.add("btn");
     hideVPopup.style.margin = "8px 8px 8px 8px";
     hideVPopup.style.width = "200px";
     hideVPopup.style.fontWeight = "bold";
@@ -557,18 +574,23 @@ export default class FluxCodexVertex {
     hideVPopup.addEventListener("click", () => {byId("aiPopup").style.display = "none";});
     popup.appendChild(hideVPopup);
 
-    const saveVPopup = document.createElement("button");
-    saveVPopup.innerText = `Copy`;
-    saveVPopup.classList.add("btn4");
-    saveVPopup.style.margin = "8px 8px 8px 8px";
-    saveVPopup.style.width = "200px";
-    saveVPopup.style.height = "70px";
-    saveVPopup.style.fontWeight = "bold";
-    saveVPopup.style.webkitTextStrokeWidth = "0px";
-    saveVPopup.addEventListener("click", () => {
-      // 
+    const copyVPopup = document.createElement("button");
+    copyVPopup.innerText = `Copy`;
+    copyVPopup.classList.add("btn1");
+    copyVPopup.style.margin = "8px 8px 8px 8px";
+    copyVPopup.style.width = "200px";
+    copyVPopup.style.height = "70px";
+    copyVPopup.style.fontWeight = "bold";
+    copyVPopup.style.webkitTextStrokeWidth = "0px";
+    copyVPopup.addEventListener("click", async () => {
+      if(navigator.clipboard) {
+        await navigator.clipboard.writeText(list.value);
+      } else {
+        list.select();
+        document.execCommand("copy");
+      }
     });
-    popup.appendChild(saveVPopup);
+    popup.appendChild(copyVPopup);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
   }

@@ -12,6 +12,7 @@ import {WebSocketServer} from "ws";
 import {DEFAULT_GRAPH_JS} from "./graph.js";
 import {DEFAUL_METHODS} from "./methods.js";
 import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
+import {AiGroq} from "../ai-generators/groq/groq.js";
 import {AiOllama} from "../ai-generators/ollama/ollama.js";
 
 // matrix-engine-wgpu repo root reference
@@ -36,13 +37,12 @@ console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCodexVertex Graph and FragmentShader Graph");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
-console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL Ollama -");
-console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL GoogleAI -");
+console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL Ollama            -");
+console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL groq              -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
-let test = new AiOllama();
-test.test();
-// AI_TOOL.test();
+let matrixOllama = new AiOllama();
+let matrixGroq = new AiGroq();
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
@@ -141,7 +141,9 @@ wss.on("connection", ws => {
   ws.on("message", async (msg) => {
     try {
       msg = JSON.parse(msg);
-      if(msg.action === "lp") {
+      if(msg.action === "aiGenGraphCall") {
+        aiGenGraphCall(msg, ws);
+      } else if(msg.action === "lp") {
         const folder = path.join(PROJECTS_DIR, "");
         const items = await fs.readdir(folder, {withFileTypes: true});
         ws.send(JSON.stringify({
@@ -862,4 +864,11 @@ function removeSceneBlock(text, type, objName) {
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function aiGenGraphCall(msg, ws) {
+  console.log('input for from ai tool service....', msg)
+  matrixOllama.aiGenGraphCall().then((r) => {
+    console.log('result from ai tool service....', r)
+  });
 }

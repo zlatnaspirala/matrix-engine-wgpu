@@ -105,3 +105,40 @@ export function catalogToText(catalog) {
 
   return out;
 }
+
+export let tasks = [
+  "On load print hello world",
+  "On load create a cube named box1 at position 0 0 0",
+  "Create a floor plane using generatorWall",
+  "Set texture for floor object",
+  "Set material standard for box1",
+  "Enable raycast for box1",
+  "Create 5 cubes in a row with spacing",
+  "Create a pyramid of cubes with 4 levels",
+  "Play mp3 audio on load",
+  "Create audio reactive node from music",
+  "Print beat value when detected",
+  "Rotate box1 slowly on Y axis every frame",
+  "Move box1 forward on Z axis over time",
+  "Oscillate box1 Y position between 0 and 2",
+  "Change box1 rotation using sine wave",
+  "Detect ray hit on any object",
+  "On ray hit print hit object name",
+  "Apply force to hit object in ray direction",
+  "Change texture of object when clicked",
+  "Generate random number and print it",
+  "If random number is greater than 0.5 print HIGH",
+  "If random number is less than or equal 0.5 print LOW",
+  "Set variable score to 0",
+  "Increase score by 1 on object hit",
+  "Print score value",
+  "Dispatch custom event named GAME_START",
+  "Listen to custom event GAME_START and print message",
+  "After 2 seconds create a new cube",
+  "Animate cube position using curve timeline",
+  "Enable vertex wave animation on floor"];
+
+export let providers = [
+  "groq",
+  "ollama"
+];

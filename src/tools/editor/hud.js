@@ -282,7 +282,6 @@ export default class EditorHud {
     });
 
     // run top many
-
     byId('saveMainGraphDOM').addEventListener('click', () => {
       // global for now.
       app.editor.fluxCodexVertex.compileGraph();
@@ -441,12 +440,11 @@ export default class EditorHud {
       }));
     });
 
-    // settings
-    setTimeout(() => {
-      this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
-      this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
-    }, 1500);
-
+    // // settings
+    // setTimeout(() => {
+    //   this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
+    //   this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
+    // }, 1500);
     //     <!--div id="cameraBox" class="drop-item">
     //    <p>📽️Camera</p>
     //    <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>

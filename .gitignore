@@ -13,3 +13,4 @@ public/res/meshes/nav-mesh/withtree_.blend
 src/tools/editor/ai-tools/config.js
 src/tools/editor/ai-generators/ollama/config.js
 src/tools/editor/ai-generators/bridge2/config.js
+src/tools/editor/ai-generators/config.js

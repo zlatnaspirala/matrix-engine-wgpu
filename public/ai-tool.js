@@ -19129,6 +19129,40 @@ var CurveStore = class {
   }
 };
 
+// ../generateAISchema.js
+var tasks = [
+  "On load print hello world",
+  "On load create a cube named box1 at position 0 0 0",
+  "Create a floor plane using generatorWall",
+  "Set texture for floor object",
+  "Set material standard for box1",
+  "Enable raycast for box1",
+  "Create 5 cubes in a row with spacing",
+  "Create a pyramid of cubes with 4 levels",
+  "Play mp3 audio on load",
+  "Create audio reactive node from music",
+  "Print beat value when detected",
+  "Rotate box1 slowly on Y axis every frame",
+  "Move box1 forward on Z axis over time",
+  "Oscillate box1 Y position between 0 and 2",
+  "Change box1 rotation using sine wave",
+  "Detect ray hit on any object",
+  "On ray hit print hit object name",
+  "Apply force to hit object in ray direction",
+  "Change texture of object when clicked",
+  "Generate random number and print it",
+  "If random number is greater than 0.5 print HIGH",
+  "If random number is less than or equal 0.5 print LOW",
+  "Set variable score to 0",
+  "Increase score by 1 on object hit",
+  "Print score value",
+  "Dispatch custom event named GAME_START",
+  "Listen to custom event GAME_START and print message",
+  "After 2 seconds create a new cube",
+  "Animate cube position using curve timeline",
+  "Enable vertex wave animation on floor"
+];
+
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
 var FluxCodexVertex = class {
@@ -19193,6 +19227,7 @@ var FluxCodexVertex = class {
       // IMPORTANT
     });
     this.createVariablesPopup();
+    this.createAIToolPopup();
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
@@ -19467,6 +19502,117 @@ var FluxCodexVertex = class {
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
+  }
+  createAIToolPopup() {
+    if (this._aiPopup) return;
+    const popup = document.createElement("div");
+    popup.id = "aiPopup";
+    this._aiPopup = popup;
+    Object.assign(popup.style, {
+      display: "none",
+      flexDirection: "column",
+      position: "absolute",
+      top: "10%",
+      left: "5%",
+      width: "70%",
+      height: "70%",
+      background: `
+    linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    )
+  `,
+      backgroundBlendMode: "overlay",
+      backgroundSize: "auto, 22px 22px, 22px 22px",
+      border: "1px solid rgba(255,255,255,0.15)",
+      borderRadius: "10px",
+      boxShadow: `
+    0 20px 40px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255,255,255,0.05)
+  `,
+      padding: "12px 14px",
+      zIndex: 9999,
+      color: "#e6e6e6",
+      overflowY: "auto",
+      overflowX: "hidden",
+      fontFamily: "Orbitron, monospace",
+      fontSize: "13px"
+    });
+    const title = document.createElement("div");
+    title.innerHTML = `FluxCodexVertex AI generator`;
+    title.style.marginBottom = "8px";
+    title.style.fontWeight = "bold";
+    popup.appendChild(title);
+    const selectPrompt = document.createElement("select");
+    selectPrompt.style.width = "400px";
+    const placeholder2 = document.createElement("option");
+    placeholder2.textContent = "Select task";
+    placeholder2.value = "";
+    placeholder2.disabled = true;
+    placeholder2.selected = true;
+    selectPrompt.appendChild(placeholder2);
+    tasks.forEach((shader, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.textContent = shader;
+      selectPrompt.appendChild(opt);
+    });
+    popup.appendChild(selectPrompt);
+    const list = document.createElement("textarea");
+    list.style.height = "500px";
+    list.id = "graphGenJSON";
+    Object.assign(list.style, {
+      height: "100%",
+      minHeight: "420px",
+      resize: "none",
+      background: "#0f0f0f",
+      color: "#d0f0ff",
+      border: "1px solid #333",
+      borderRadius: "6px",
+      padding: "10px",
+      marginBottom: "10px",
+      fontFamily: "JetBrains Mono, monospace",
+      fontSize: "12px",
+      lineHeight: "1.4",
+      outline: "none",
+      boxShadow: "inset 0 0 8px rgba(0,0,0,0.6)"
+    });
+    popup.appendChild(list);
+    const hideVPopup = document.createElement("button");
+    hideVPopup.innerText = `Hide`;
+    hideVPopup.classList.add("btn4");
+    hideVPopup.style.margin = "8px 8px 8px 8px";
+    hideVPopup.style.width = "200px";
+    hideVPopup.style.fontWeight = "bold";
+    hideVPopup.style.webkitTextStrokeWidth = "0px";
+    hideVPopup.addEventListener("click", () => {
+      byId("aiPopup").style.display = "none";
+    });
+    popup.appendChild(hideVPopup);
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Copy`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => {
+    });
+    popup.appendChild(saveVPopup);
+    document.body.appendChild(popup);
+    this.makePopupDraggable(popup);
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
@@ -23774,25 +23920,11 @@ var EditorHud = class {
     </div>
 
     <div class="top-item">
-      <div class="top-btn">Settings \u25BE</div>
+      <div class="top-btn">AI tools \u25BE</div>
       <div class="dropdown">
-        <div id="cameraBox" class="drop-item">
-           <p>\u{1F4FD}\uFE0FCamera</p>
-           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
-           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <!--div> Position :  </br>
-            
- 
-            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> 
-
-            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> 
-
-            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div-->
-        </div>
+        <div id="showAITools" class="drop-item">\u26AA AI graph generator</div>
       </div>
     </div>
-    
     
     <div class="top-item">
       <div class="top-btn">Script \u25BE</div>
@@ -23894,6 +24026,10 @@ var EditorHud = class {
       this.FS.request();
     });
     this.toolTip.attachTooltip(byId("fullScreenBtn"), "Just editor gui part for fullscreen - not fullscreen for real program.");
+    byId("showAITools").addEventListener("click", () => {
+      byId("aiPopup").style.display = "flex";
+    });
+    this.toolTip.attachTooltip(byId("showAITools"), "Experimental stage, MEWGPU use open source ollama platform. Possible to create less complex - assets data not yet involment...");
     byId("hideEditorBtn").addEventListener("click", () => {
       this.editorMenu.style.display = "none";
       this.assetsBox.style.display = "none";
@@ -23991,14 +24127,6 @@ var EditorHud = class {
       this.core.cameras.WASD.pitch = byId("camera-settings-pitch").value;
       this.core.cameras.WASD.yaw = byId("camera-settings-yaw").value;
     }, 1500);
-    byId("camera-settings-pitch").addEventListener("change", (e) => {
-      console.log("setting camera pitch ", e);
-      this.core.cameras.WASD.pitch = e.target.value;
-    });
-    byId("camera-settings-yaw").addEventListener("change", (e) => {
-      console.log("setting camera", e);
-      this.core.cameras.WASD.yaw = e.target.value;
-    });
     byId("showCodeEditorBtn").addEventListener("click", (e) => {
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });

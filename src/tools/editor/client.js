@@ -213,6 +213,16 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('aiGenGraphCall', (e) => {
+      console.info('%caiGenGraphCall fluxCodexVertex <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "aiGenGraphCall",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
     document.addEventListener('load-shader-graph', (e) => {
       console.info('%cLoad shader-graph <signal>', LOG_FUNNY_ARCADE);
       let o = {
