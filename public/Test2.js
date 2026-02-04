@@ -6188,18 +6188,9 @@ var GizmoEffect = class {
   }
   _initPipeline() {
     this._createTranslateGizmo();
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.gizmoSettingsBuffer = this.device.createBuffer({
-      size: 32,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.modelBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.gizmoSettingsBuffer = this.device.createBuffer({ size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this._updateGizmoSettings();
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
@@ -6259,14 +6250,12 @@ var GizmoEffect = class {
     const axisLength = 2;
     const arrowSize = 0.15;
     const positions = new Float32Array([
-      // X axis (red) - line
       0,
       0,
       0,
       axisLength,
       0,
       0,
-      // Arrow head X
       axisLength,
       0,
       0,
@@ -6291,14 +6280,12 @@ var GizmoEffect = class {
       axisLength - arrowSize,
       0,
       -arrowSize,
-      // Y axis (green) - line
       0,
       0,
       0,
       0,
       axisLength,
       0,
-      // Arrow head Y
       0,
       axisLength,
       0,
@@ -6323,14 +6310,12 @@ var GizmoEffect = class {
       0,
       axisLength - arrowSize,
       -arrowSize,
-      // Z axis (blue) - line
       0,
       0,
       0,
       0,
       0,
       axisLength,
-      // Arrow head Z
       0,
       0,
       axisLength,
@@ -6357,7 +6342,6 @@ var GizmoEffect = class {
       axisLength - arrowSize
     ]);
     const colors = new Float32Array([
-      // X axis (red)
       1,
       0,
       0,
@@ -6451,20 +6435,14 @@ var GizmoEffect = class {
       0,
       1
     ]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: positions.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
+    this.vertexBuffer = this.device.createBuffer({ size: positions.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(this.vertexBuffer, 0, positions);
-    this.colorBuffer = this.device.createBuffer({
-      size: colors.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
+    this.colorBuffer = this.device.createBuffer({ size: colors.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(this.colorBuffer, 0, colors);
     this.vertexCount = positions.length / 3;
   }
   _setupEventListeners() {
-    app.canvas.addEventListener("ray.hit.event", (e) => {
+    app.canvas.addEventListener("ray.hit.mousedown", (e) => {
       if (!this.enabled || !this.parentMesh) return;
       const detail = e.detail;
       console.log("Ray hit event:", detail.hitObject.name, "Parent:", this.parentMesh.name);
@@ -6519,7 +6497,6 @@ var GizmoEffect = class {
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const movementScale = 0.3;
-    const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
     switch (this.dragAxis) {
       case 1:
@@ -6529,10 +6506,9 @@ var GizmoEffect = class {
         this.parentMesh.position.y -= deltaY * movementScale;
         break;
       case 3:
-        this.parentMesh.position.z += direction * movementScale * 0.5;
+        this.parentMesh.position.z -= direction * movementScale * 0.5;
         break;
     }
-    console.log(`Moving ${["", "X", "Y", "Z"][this.dragAxis]}: ${this.parentMesh.position.x.toFixed(2)}, ${this.parentMesh.position.y.toFixed(2)}, ${this.parentMesh.position.z.toFixed(2)}`);
   }
   _raycastAxis(rayOrigin, rayDirection, mesh) {
     const gizmoPos = [
@@ -6578,9 +6554,7 @@ var GizmoEffect = class {
     const d = ray[0] * w[0] + ray[1] * w[1] + ray[2] * w[2];
     const e = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
     const denom = a * c - b * b;
-    if (Math.abs(denom) < 1e-4) {
-      return false;
-    }
+    if (Math.abs(denom) < 1e-4) return false;
     const sc = (b * e - c * d) / denom;
     const tc = (a * e - b * d) / denom;
     if (tc < 0 || tc > 1) return false;
@@ -6594,10 +6568,7 @@ var GizmoEffect = class {
       lineStart[1] + tc * line[1],
       lineStart[2] + tc * line[2]
     ];
-    const dist2 = Math.sqrt(
-      (closestOnRay[0] - closestOnLine[0]) ** 2 + (closestOnRay[1] - closestOnLine[1]) ** 2 + (closestOnRay[2] - closestOnLine[2]) ** 2
-    );
-    console.log("Distance to line:", dist2, "threshold:", threshold);
+    const dist2 = Math.sqrt((closestOnRay[0] - closestOnLine[0]) ** 2 + (closestOnRay[1] - closestOnLine[1]) ** 2 + (closestOnRay[2] - closestOnLine[2]) ** 2);
     return dist2 < threshold;
   }
   _updateGizmoSettings() {
@@ -26496,6 +26467,8 @@ function computeWorldVertsAndAABB(object) {
 function dispatchRayHitEvent(canvas, data) {
   if (data.eventName == "click") {
     canvas.dispatchEvent(new CustomEvent("ray.hit.event", { detail: data }));
+  } else if (data.eventName == "mousedown") {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", { detail: data }));
   } else {
     canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", { detail: data }));
   }
@@ -27836,7 +27809,7 @@ var app2 = new MatrixEngineWGPU(
   },
   (app3) => {
     addEventListener("AmmoReady", async () => {
-      addRaycastsListener();
+      addRaycastsListener("canvas1", "mousedown");
       app3.graph = graph_default;
       shaderGraphsProdc.forEach((gShader) => {
         let shaderReady = JSON.parse(gShader.content);
