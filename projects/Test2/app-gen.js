@@ -49,7 +49,47 @@ app.addLight();
       // ME END FLOOR addCube
 
   
-// [MAIN_REPLACE2]
+
+       // ME START nik addCube
+ downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
+   let texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'nik',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END nik addCube
+ 
+
+       // ME START nik useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('nik').useScale = true;
+ }, 800);
+ // ME END nik useScaleno info
+ 
+      // ME START nik updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('nik').scale[0] = 6;
+ }, 800);
+ // ME END nik updateScale0
+ 
+      // ME START nik updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('nik').scale[1] = 6;
+ }, 800);
+ // ME END nik updateScale1
+ 
+       // ME START nik updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('nik').scale[2] = 7;
+ }, 800);
+ // ME END nik updateScale2
+ 
+ // [MAIN_REPLACE2]
  })
 })
 window.app = app;

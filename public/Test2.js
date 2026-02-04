@@ -6415,10 +6415,29 @@ var MEMeshObj = class extends Materials {
           ]
         });
       }
+      this.topology = "triangle-list";
+      this.setTopology = (t) => {
+        const isStrip = t === "triangle-strip" || t === "line-strip";
+        if (isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: "uint16",
+            cullMode: "none",
+            frontFace: "ccw"
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode: "none",
+            frontFace: "ccw"
+          };
+        }
+        this.setupPipeline();
+      };
       this.primitive = {
-        topology: "triangle-list",
+        topology: this.topology,
         cullMode: "none",
-        // 'back', // typical for shadow passes
+        // 'back' typical for shadow passes
         frontFace: "ccw"
       };
       this.selectedBuffer = device2.createBuffer({
@@ -27069,6 +27088,31 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [25, 1, 25] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "nik",
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("nik").useScale = true;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("nik").scale[0] = 6;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("nik").scale[1] = 6;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("nik").scale[2] = 7;
+      }, 800);
     });
   }
 );

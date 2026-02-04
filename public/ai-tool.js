@@ -16176,6 +16176,9 @@ var MEEditorClient = class {
           } else if (data.methodLoads && data.ok == true) {
             mb.show("Graph loads \u2705", data);
             document.dispatchEvent(new CustomEvent("on-graph-load", { detail: data.graph }));
+          } else if (data.aiGenGraph && data.ok == true) {
+            mb.show("AIGraph Generator response graph part \u2705", data.aiGenNodes);
+            document.dispatchEvent(new CustomEvent("on-ai-graph-response", { detail: data.aiGenNodes }));
           } else {
             mb.show("From editorX:" + data.ok);
           }
@@ -18722,7 +18725,7 @@ var CurveEditor = class {
       border: "1px solid #333",
       padding: "5px",
       display: "none",
-      zIndex: 999999,
+      zIndex: 999,
       width: "650px",
       height: "409px",
       paddingLeft: "2px",
@@ -19171,6 +19174,10 @@ var FluxCodexVertex = class {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
+    document.addEventListener("on-ai-graph-response", (e) => {
+      console.log("AI RESPONSE:", e.detail);
+      byId("graphGenJSON").value = e.detail;
+    });
     document.addEventListener("keydown", (e) => {
       const target = e.composedPath && e.composedPath()[0] || e.target || document.activeElement;
       function isEditableElement(el2) {
@@ -19393,7 +19400,7 @@ var FluxCodexVertex = class {
       border: "1px solid #444",
       borderRadius: "8px",
       padding: "10px",
-      zIndex: 9999,
+      zIndex: 99,
       color: "#eee",
       overflowX: "hidden"
     });
@@ -19455,7 +19462,7 @@ var FluxCodexVertex = class {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "70%",
+      width: "50%",
       height: "70%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
@@ -19483,7 +19490,7 @@ var FluxCodexVertex = class {
     inset 0 1px 0 rgba(255,255,255,0.05)
   `,
       padding: "12px 14px",
-      zIndex: 9999,
+      zIndex: 99,
       color: "#e6e6e6",
       overflowY: "auto",
       overflowX: "hidden",
@@ -19535,12 +19542,14 @@ var FluxCodexVertex = class {
     call.style.fontWeight = "bold";
     call.style.webkitTextStrokeWidth = "0px";
     call.addEventListener("click", () => {
-      console.log("selectPrompt.selectedOptions.value", selectPrompt.selectedOptions.value);
+      if (selectPrompt.selectedIndex > 0) {
+      }
+      console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE2);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
         detail: {
           provider: providers[0],
           // hardcode
-          task: selectPrompt.selectedOptions.value
+          task: selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -19549,6 +19558,7 @@ var FluxCodexVertex = class {
     const list = document.createElement("textarea");
     list.style.height = "500px";
     list.id = "graphGenJSON";
+    list.disabled = true;
     Object.assign(list.style, {
       height: "100%",
       minHeight: "420px",
@@ -19568,29 +19578,32 @@ var FluxCodexVertex = class {
     });
     popup.appendChild(list);
     this.toolTip.attachTooltip(list, "If the exported graph is not valid, in the last case you can manually try to fix it, but it is best to make a new query \u26A0\uFE0F");
-    const hideVPopup = document.createElement("button");
-    hideVPopup.innerText = `Hide`;
-    hideVPopup.classList.add("btn4");
-    hideVPopup.classList.add("btnLeftBox");
-    hideVPopup.style.margin = "8px 8px 8px 8px";
-    hideVPopup.style.width = "200px";
-    hideVPopup.style.fontWeight = "bold";
-    hideVPopup.style.webkitTextStrokeWidth = "0px";
-    hideVPopup.addEventListener("click", () => {
+    const wrap1 = document.createElement("div");
+    wrap1.style.display = "flex";
+    wrap1.style.height = "50px";
+    popup.appendChild(wrap1);
+    const hideAIGen = document.createElement("button");
+    hideAIGen.innerText = `Hide`;
+    hideAIGen.classList.add("btn4");
+    hideAIGen.classList.add("btnLeftBox");
+    hideAIGen.style.margin = "8px 8px 8px 8px";
+    hideAIGen.style.width = "100px";
+    hideAIGen.style.fontWeight = "bold";
+    hideAIGen.style.webkitTextStrokeWidth = "0px";
+    hideAIGen.addEventListener("click", () => {
       byId("aiPopup").style.display = "none";
     });
-    popup.appendChild(hideVPopup);
-    const copyVPopup = document.createElement("button");
-    copyVPopup.innerText = `Copy`;
-    copyVPopup.classList.add("btnLeftBox");
-    copyVPopup.classList.add("btn4");
-    copyVPopup.style.margin = "8px 8px 8px 8px";
-    copyVPopup.style.width = "200px";
-    copyVPopup.style.height = "70px";
-    copyVPopup.style.fontWeight = "bold";
-    copyVPopup.style.color = "lime";
-    copyVPopup.style.webkitTextStrokeWidth = "0px";
-    copyVPopup.addEventListener("click", async () => {
+    wrap1.appendChild(hideAIGen);
+    const copy3 = document.createElement("button");
+    copy3.innerText = `Copy`;
+    copy3.classList.add("btnLeftBox");
+    copy3.classList.add("btn4");
+    copy3.style.margin = "8px 8px 8px 8px";
+    copy3.style.width = "100px";
+    copy3.style.fontWeight = "bold";
+    copy3.style.color = "lime";
+    copy3.style.webkitTextStrokeWidth = "0px";
+    copy3.addEventListener("click", async () => {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(list.value);
       } else {
@@ -19598,7 +19611,7 @@ var FluxCodexVertex = class {
         document.execCommand("copy");
       }
     });
-    popup.appendChild(copyVPopup);
+    wrap1.appendChild(copy3);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
   }
@@ -23948,15 +23961,15 @@ var EditorHud = class {
       <div class="top-btn">View \u25BE</div>
       <div class="dropdown">
         <div id="hideEditorBtn" class="drop-item">
-           <p>Hide Editor UI</p>
+           <h4>Hide Editor UI</h4>
            <small>Show editor - press F4 \u2328\uFE0F</small>
         </div>
         <div id="bg-transparent" class="drop-item">
-           <p>Background transparent</p>
+           <h4>Background transparent</h4>
            <small>Fancy style</small>
         </div>
         <div id="bg-tradicional" class="drop-item">
-           <p>Background tradicional</p>
+           <h4>Background tradicional</h4>
            <small>Old school</small>
         </div>
         <div id="fullScreenBtn" class="drop-item">

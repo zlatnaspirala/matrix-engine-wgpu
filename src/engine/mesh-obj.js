@@ -425,10 +425,36 @@ export default class MEMeshObj extends Materials {
         });
       }
       // Note: The frontFace and cullMode values have no effect on the 
-      // "point-list", "line-list", or "line-strip" topologies.
+      // 'triangle-list'   // standard meshes
+      // 'triangle-strip' // terrain, strips
+      // 'line-list'      // wireframe (manual index gen)
+      // 'line-strip'     // outlines
+      // 'point-list'     // particles
+      this.topology = 'triangle-list';
+      this.setTopology = (t) => {
+        const isStrip =
+          t === 'triangle-strip' ||
+          t === 'line-strip';
+        if(isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: 'uint16',
+            cullMode: 'none',
+            frontFace: 'ccw'
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode: 'none',
+            frontFace: 'ccw'
+          };
+        }
+        this.setupPipeline();
+      };
+
       this.primitive = {
-        topology: 'triangle-list',
-        cullMode: 'none', // 'back', // typical for shadow passes
+        topology: this.topology,
+        cullMode: 'none', // 'back' typical for shadow passes
         frontFace: 'ccw'
       }
 
