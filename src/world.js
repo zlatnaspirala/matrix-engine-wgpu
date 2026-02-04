@@ -463,7 +463,7 @@ export default class MatrixEngineWGPU {
       o.physics = {
         scale: [1, 1, 1],
         enabled: true,
-        geometry: "Sphere",//                   must be fixed<<
+        geometry: "Sphere", // must be fixed<<
         radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
         name: o.name,
         rotation: o.rotation

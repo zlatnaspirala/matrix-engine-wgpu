@@ -5884,120 +5884,288 @@ fn main(
   return output;
 }`;
 
-// ../../../shaders/standalone/pointer.effect.js
-var pointerEffect = `
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
+// ../../../shaders/topology-point/pointEffect.js
+var pointEffectShader = `struct Camera {
+  viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-struct Model {
-  modelMatrix : mat4x4<f32>,
+struct ModelData {
+  model : mat4x4<f32>,  // \u2705 ADD MODEL MATRIX
 };
-@group(0) @binding(1) var<uniform> model : Model;
+@group(0) @binding(1) var<uniform> modelData : ModelData;
 
-struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+struct PointSettings {
+  pointSize : f32,
+  _padding : vec3<f32>,
+};
+@group(0) @binding(2) var<uniform> pointSettings : PointSettings;  // \u2705 Move to binding 2
+
+struct VSIn {
+  @location(0) centerPos : vec3<f32>,
+  @location(1) color : vec3<f32>,
+  @builtin(vertex_index) vertexIdx : u32,
+  @builtin(instance_index) instanceIdx : u32,
 };
 
 struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
+  @builtin(position) position : vec4<f32>,
+  @location(0) color : vec3<f32>,
+  @location(1) uv : vec2<f32>
 };
 
 @vertex
-fn vsMain(input : VertexInput) -> VSOut {
-  var out : VSOut;
-  let worldPos = model.modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  return out;
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+  
+  let worldPos = modelData.model * vec4<f32>(input.centerPos, 1.0);
+  let clipPos = camera.viewProj * worldPos;
+  
+  let corners = array<vec2<f32>, 4>(
+    vec2(-1.0, -1.0),
+    vec2( 1.0, -1.0),
+    vec2(-1.0,  1.0),
+    vec2( 1.0,  1.0)
+  );
+  
+  // \u2705 Generate UV coordinates (0-1 range)
+  let uvs = array<vec2<f32>, 4>(
+    vec2(0.0, 0.0),
+    vec2(1.0, 0.0),
+    vec2(0.0, 1.0),
+    vec2(1.0, 1.0)
+  );
+  
+  let offset = corners[input.vertexIdx] * pointSettings.pointSize;
+  
+  let viewportSize = vec2<f32>(1920.0, 1080.0);
+  let ndcOffset = offset / viewportSize * 2.0;
+  
+  output.position = vec4<f32>(
+    clipPos.xy + ndcOffset * clipPos.w,
+    clipPos.z,
+    clipPos.w
+  );
+  
+  output.color = input.color;
+  output.uv = uvs[input.vertexIdx];  // \u2705 Pass UV
+  return output;
 }
 
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Center the UVs (0.0\u20131.0 \u2192 -1.0\u20131.0)
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-
-  // Distance from center
-  let dist = length(uv);
-
-  // Glow falloff
-  let glow = exp(-dist * 1.0); // try values 3.0\u20136.0 for tighter glow
-
-  // Gradient color (inner bright \u2192 outer dim)
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
-
-  // Blend based on glow strength
-  let color = mix(baseColor, glowColor, glow) * glow;
-
-  return vec4<f32>(color, 1.0);
+  let color = input.color * 0.5 + 0.5;
+  
+  // \u2705 Circular point using UV
+  let center = vec2<f32>(0.5, 0.5);
+  let dist = length(input.uv - center);
+  let alpha = 1.0 - smoothstep(0.4, 0.5, dist);
+  
+  // Discard pixels outside circle
+  if (alpha < 0.01) {
+    discard;
+  }
+  
+  return vec4<f32>(color * alpha, alpha);
 }`;
 
-// ../../../engine/effects/pointerEffect.js
-var PointerEffect = class {
+// ../../../engine/effects/topology-point.js
+var PointEffect2 = class {
   constructor(device2, format) {
     this.device = device2;
     this.format = format;
+    this.pointSize = 8;
     this.enabled = true;
     this._initPipeline();
   }
   _initPipeline() {
-    let S = 10;
-    const vertexData = new Float32Array([
-      -0.5 * S,
-      0.5 * S,
-      0 * S,
-      // top-left
-      0.5 * S,
-      0.5 * S,
-      0 * S,
-      // top-right
-      -0.1 * S,
-      -0.1 * S,
-      0 * S,
-      // bottom-left
-      0.1 * S,
-      -0.1 * S,
-      0 * S
-      // bottom-right
-    ]);
-    const uvData = new Float32Array([
-      0,
-      0,
-      1,
-      0,
-      0,
-      1,
-      1,
-      1
-    ]);
-    const indexData = new Uint16Array([
-      0,
-      2,
-      1,
-      1,
-      2,
-      3
-    ]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    this.modelBuffer = this.device.createBuffer({
+      size: 64,
+      // mat4x4
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    this.pointSettingsBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
+    this.device.queue.writeBuffer(
+      this.pointSettingsBuffer,
+      0,
+      new Float32Array([this.pointSize, 0, 0, 0])
+    );
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {} }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } },
+        { binding: 2, resource: { buffer: this.pointSettingsBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: pointEffectShader });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          {
+            arrayStride: 3 * 4,
+            stepMode: "instance",
+            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+          },
+          {
+            arrayStride: 3 * 4,
+            stepMode: "instance",
+            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
+          }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+          }
+        }]
+      },
+      primitive: { topology: "triangle-strip" },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less-equal",
+        format: "depth24plus"
+      }
+    });
+  }
+  // ✅ THIS MATCHES FlameEffect PATTERN
+  updateInstanceData(baseModelMatrix) {
+    this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
+  }
+  draw(pass2, cameraMatrix, vertexBuffer, colorBuffer, vertexCount) {
+    if (!this.enabled) return;
+    if (!vertexCount || typeof vertexCount !== "number" || vertexCount <= 0) {
+      console.warn("PointEffect: invalid vertexCount", vertexCount);
+      return;
+    }
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, vertexBuffer);
+    pass2.setVertexBuffer(1, colorBuffer);
+    pass2.draw(4, vertexCount, 0, 0);
+  }
+  render(pass2, mesh, viewProjMatrix) {
+    if (!mesh.vertexBuffer) {
+      console.warn("PointEffect: mesh has no vertexBuffer");
+      return;
+    }
+    let vertexCount = mesh.vertexCount;
+    if (!vertexCount && mesh.vertexBuffer.size) {
+      vertexCount = mesh.vertexBuffer.size / (3 * 4);
+    }
+    if (!vertexCount && mesh.geometry?.positions) {
+      vertexCount = mesh.geometry.positions.length / 3;
+    }
+    if (!vertexCount || vertexCount <= 0) {
+      console.warn("PointEffect: could not determine vertexCount", mesh);
+      return;
+    }
+    const colorBuffer = mesh.vertexNormalsBuffer;
+    if (!colorBuffer) {
+      console.warn("PointEffect: mesh has no vertexNormalsBuffer");
+      return;
+    }
+    this.draw(pass2, viewProjMatrix, mesh.vertexBuffer, colorBuffer, vertexCount);
+  }
+  setPointSize(size2) {
+    this.pointSize = size2;
+    this.device.queue.writeBuffer(
+      this.pointSettingsBuffer,
+      0,
+      new Float32Array([this.pointSize, 0, 0, 0])
+    );
+  }
+  setEnabled(enabled) {
+    this.enabled = enabled;
+  }
+};
+
+// ../../../shaders/gizmo/gimzoShader.js
+var gizmoEffect = `
+struct Camera {
+  viewProj : mat4x4<f32>
+};
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model : mat4x4<f32>,
+};
+@group(0) @binding(1) var<uniform> modelData : ModelData;
+
+struct GizmoSettings {
+  mode : u32,
+  size : f32,
+  selectedAxis : u32,
+  _padding : f32,
+};
+@group(0) @binding(2) var<uniform> gizmoSettings : GizmoSettings;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) color : vec3<f32>,
+};
+
+struct VSOut {
+  @builtin(position) position : vec4<f32>,
+  @location(0) color : vec3<f32>,
+};
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+  
+  let worldPos = modelData.model * vec4<f32>(input.position * gizmoSettings.size, 1.0);
+  output.position = camera.viewProj * worldPos;
+  
+  output.color = input.color;
+  return output;
+}
+
+@fragment
+fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+  return vec4<f32>(input.color, 1.0);
+}
+`;
+
+// ../../../engine/effects/gizmo.js
+var GizmoEffect = class {
+  constructor(device2, format) {
+    this.device = device2;
+    this.format = format;
+    this.enabled = true;
+    this.mode = 0;
+    this.size = 1;
+    this.selectedAxis = 0;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    this._createTranslateGizmo();
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -6006,55 +6174,315 @@ var PointerEffect = class {
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
+    this.gizmoSettingsBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateGizmoSettings();
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} }
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {} }
       ]
     });
     this.bindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
+        { binding: 1, resource: { buffer: this.modelBuffer } },
+        { binding: 2, resource: { buffer: this.gizmoSettingsBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: pointerEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    const shaderModule = this.device.createShaderModule({ code: gizmoEffect });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
     this.pipeline = this.device.createRenderPipeline({
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          {
+            arrayStride: 3 * 4,
+            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+          },
+          {
+            arrayStride: 3 * 4,
+            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
+          }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }]
+        targets: [{
+          format: this.format,
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+          }
+        }]
       },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: true, depthCompare: "always", format: "depth24plus" }
+      primitive: { topology: "line-list" },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less-equal",
+        format: "depth24plus"
+      }
     });
   }
-  draw(pass2, cameraMatrix, modelMatrix) {
+  _createTranslateGizmo() {
+    const axisLength = 1;
+    const positions = new Float32Array([
+      // X axis (red)
+      0,
+      0,
+      0,
+      axisLength,
+      0,
+      0,
+      // Arrow head X
+      axisLength,
+      0,
+      0,
+      axisLength * 0.85,
+      0.05,
+      0,
+      axisLength,
+      0,
+      0,
+      axisLength * 0.85,
+      -0.05,
+      0,
+      axisLength,
+      0,
+      0,
+      axisLength * 0.85,
+      0,
+      0.05,
+      axisLength,
+      0,
+      0,
+      axisLength * 0.85,
+      0,
+      -0.05,
+      // Y axis (green)
+      0,
+      0,
+      0,
+      0,
+      axisLength,
+      0,
+      // Arrow head Y
+      0,
+      axisLength,
+      0,
+      0.05,
+      axisLength * 0.85,
+      0,
+      0,
+      axisLength,
+      0,
+      -0.05,
+      axisLength * 0.85,
+      0,
+      0,
+      axisLength,
+      0,
+      0,
+      axisLength * 0.85,
+      0.05,
+      0,
+      axisLength,
+      0,
+      0,
+      axisLength * 0.85,
+      -0.05,
+      // Z axis (blue)
+      0,
+      0,
+      0,
+      0,
+      0,
+      axisLength,
+      // Arrow head Z
+      0,
+      0,
+      axisLength,
+      0.05,
+      0,
+      axisLength * 0.85,
+      0,
+      0,
+      axisLength,
+      -0.05,
+      0,
+      axisLength * 0.85,
+      0,
+      0,
+      axisLength,
+      0,
+      0.05,
+      axisLength * 0.85,
+      0,
+      0,
+      axisLength,
+      0,
+      -0.05,
+      axisLength * 0.85
+    ]);
+    const colors = new Float32Array([
+      // X axis (red)
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      // Y axis (green)
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      // Z axis (blue)
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1
+    ]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: positions.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, positions);
+    this.colorBuffer = this.device.createBuffer({
+      size: colors.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.colorBuffer, 0, colors);
+    this.vertexCount = positions.length / 3;
+  }
+  _updateGizmoSettings() {
+    const data = new Float32Array([
+      this.mode,
+      this.size,
+      this.selectedAxis,
+      0
+      // padding
+    ]);
+    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
+  }
+  updateInstanceData(baseModelMatrix) {
+    this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
+  }
+  draw(pass2, cameraMatrix) {
+    if (!this.enabled) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
     pass2.setPipeline(this.pipeline);
     pass2.setBindGroup(0, this.bindGroup);
     pass2.setVertexBuffer(0, this.vertexBuffer);
-    pass2.setVertexBuffer(1, this.uvBuffer);
-    pass2.setIndexBuffer(this.indexBuffer, "uint16");
-    pass2.drawIndexed(this.indexCount);
+    pass2.setVertexBuffer(1, this.colorBuffer);
+    pass2.draw(this.vertexCount);
   }
-  render(transPass, mesh, viewProjMatrix) {
-    const objPos = mesh.position;
-    const modelMatrix = mat4Impl.identity();
-    mat4Impl.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
-    this.draw(transPass, viewProjMatrix, modelMatrix);
+  render(pass2, mesh, viewProjMatrix) {
+    this.draw(pass2, viewProjMatrix);
+  }
+  setMode(mode) {
+    this.mode = mode;
+    this._updateGizmoSettings();
+  }
+  setSize(size2) {
+    this.size = size2;
+    this._updateGizmoSettings();
+  }
+  setSelectedAxis(axis) {
+    this.selectedAxis = axis;
+    this._updateGizmoSettings();
+  }
+  setEnabled(enabled) {
+    this.enabled = enabled;
+  }
+  // Ray picking helper (you'll need to implement this based on your input system)
+  raycast(rayOrigin, rayDirection, modelMatrix) {
+    return { hit: false, axis: 0 };
   }
 };
 
@@ -6071,6 +6499,7 @@ var MEMeshObj = class extends Materials {
     if (typeof o2.pointerEffect === "undefined") {
       this.pointerEffect = { enabled: false };
     }
+    this.pointerEffect = o2.pointerEffect;
     this.name = o2.name;
     this.done = false;
     this.canvas = canvas;
@@ -6415,10 +6844,29 @@ var MEMeshObj = class extends Materials {
           ]
         });
       }
+      this.topology = "triangle-list";
+      this.setTopology = (t) => {
+        const isStrip = t === "triangle-strip" || t === "line-strip";
+        if (isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: "uint16",
+            cullMode: "none",
+            frontFace: "ccw"
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode: "none",
+            frontFace: "ccw"
+          };
+        }
+        this.setupPipeline();
+      };
       this.primitive = {
-        topology: "triangle-list",
+        topology: this.topology,
         cullMode: "none",
-        // 'back', // typical for shadow passes
+        // 'back' typical for shadow passes
         frontFace: "ccw"
       };
       this.selectedBuffer = device2.createBuffer({
@@ -6675,9 +7123,14 @@ var MEMeshObj = class extends Materials {
         ]
       });
       this.effects = {};
+      console.log("TTTTTTTTTTTTTTTTTTTTTTTTTT");
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
-        let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.pointer = new PointerEffect(device2, pf, this, true);
+        if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
+          this.effects.pointEffect = new PointEffect2(device2, "rgba16float");
+        }
+        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
+          this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float");
+        }
       }
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
@@ -12068,6 +12521,180 @@ var BVHPlayer = class extends MEMeshObj {
   }
 };
 
+// ../../../shaders/standalone/pointer.effect.js
+var pointerEffect = `
+struct Camera {
+  viewProjMatrix : mat4x4<f32>,
+};
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct Model {
+  modelMatrix : mat4x4<f32>,
+};
+@group(0) @binding(1) var<uniform> model : Model;
+
+struct VertexInput {
+  @location(0) position : vec3<f32>,
+  @location(1) uv       : vec2<f32>,
+};
+
+struct VSOut {
+  @builtin(position) Position : vec4<f32>,
+  @location(0) v_uv : vec2<f32>,
+};
+
+@vertex
+fn vsMain(input : VertexInput) -> VSOut {
+  var out : VSOut;
+  let worldPos = model.modelMatrix * vec4<f32>(input.position,1.0);
+  out.Position = camera.viewProjMatrix * worldPos;
+  out.v_uv = input.uv;
+  return out;
+}
+
+@fragment
+fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+  // Center the UVs (0.0\u20131.0 \u2192 -1.0\u20131.0)
+  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+
+  // Distance from center
+  let dist = length(uv);
+
+  // Glow falloff
+  let glow = exp(-dist * 1.0); // try values 3.0\u20136.0 for tighter glow
+
+  // Gradient color (inner bright \u2192 outer dim)
+  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
+  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
+
+  // Blend based on glow strength
+  let color = mix(baseColor, glowColor, glow) * glow;
+
+  return vec4<f32>(color, 1.0);
+}`;
+
+// ../../../engine/effects/pointerEffect.js
+var PointerEffect = class {
+  constructor(device2, format) {
+    this.device = device2;
+    this.format = format;
+    this.enabled = true;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    let S = 10;
+    const vertexData = new Float32Array([
+      -0.5 * S,
+      0.5 * S,
+      0 * S,
+      // top-left
+      0.5 * S,
+      0.5 * S,
+      0 * S,
+      // top-right
+      -0.1 * S,
+      -0.1 * S,
+      0 * S,
+      // bottom-left
+      0.1 * S,
+      -0.1 * S,
+      0 * S
+      // bottom-right
+    ]);
+    const uvData = new Float32Array([
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1
+    ]);
+    const indexData = new Uint16Array([
+      0,
+      2,
+      1,
+      1,
+      2,
+      3
+    ]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: pointerEffect });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{ format: this.format }]
+      },
+      primitive: { topology: "triangle-list" },
+      depthStencil: { depthWriteEnabled: true, depthCompare: "always", format: "depth24plus" }
+    });
+  }
+  draw(pass2, cameraMatrix, modelMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    const objPos = mesh.position;
+    const modelMatrix = mat4Impl.identity();
+    mat4Impl.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
+    this.draw(transPass, viewProjMatrix, modelMatrix);
+  }
+};
+
 // ../../../shaders/instanced/fragment.instanced.wgsl.js
 var fragmentWGSLInstanced = `
 override shadowDepthTextureSize: f32 = 1024.0;
@@ -15338,6 +15965,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device2, pf);
+        }
+        if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
+          this.effects.pointEffect = new PointEffect(device2, pf);
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device2, pf);
@@ -26495,7 +27125,7 @@ var MatrixEngineWGPU = class {
         scale: [1, 1, 1],
         enabled: true,
         geometry: "Sphere",
-        //                   must be fixed<<
+        // must be fixed<<
         radius: typeof o2.scale == Number ? o2.scale : o2.scale[0],
         name: o2.name,
         rotation: o2.rotation

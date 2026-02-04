@@ -5,7 +5,9 @@ import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
-import {PointerEffect} from './effects/pointerEffect';
+// import {PointerEffect} from './effects/pointerEffect';
+import {PointEffect} from './effects/topology-point';
+import {GizmoEffect} from './effects/gizmo';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -18,6 +20,7 @@ export default class MEMeshObj extends Materials {
     }
 
     if(typeof o.pointerEffect === 'undefined') {this.pointerEffect = {enabled: false};}
+    this.pointerEffect = o.pointerEffect;
 
     this.name = o.name;
     this.done = false;
@@ -689,12 +692,18 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      // pointerEffect bonus
       // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
+      console.log("TTTTTTTTTTTTTTTTTTTTTTTTTT")
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
-        let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.pointer = new PointerEffect(device, pf, this, true);
+        // let pf = navigator.gpu.getPreferredCanvasFormat();
+        // this.effects.pointer = new PointerEffect(device, pf, this, true);
+        if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
+          this.effects.pointEffect = new PointEffect(device, 'rgba16float')//pf);
+        }
+        if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
+          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float')
+        }
       }
       // end
 
