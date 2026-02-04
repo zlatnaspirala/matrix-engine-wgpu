@@ -63,7 +63,13 @@ let app = new MatrixEngineWGPU(
 
 
 
-      // [MAIN_REPLACE2]
+       // ME START FLOOR useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').useScale = true;
+ }, 800);
+ // ME END FLOOR useScaleno info
+ 
+ // [MAIN_REPLACE2]
     })
   })
 window.app = app;

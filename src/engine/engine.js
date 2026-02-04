@@ -148,6 +148,7 @@ export class WASDCamera extends CameraBase {
       this.canvas = options.canvas;
       this.aspect = options.canvas.width / options.canvas.height;
       this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
+      this.suspendDrag = false;
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
@@ -167,9 +168,11 @@ export class WASDCamera extends CameraBase {
     const sign = (positive, negative) =>
       (positive ? 1 : 0) - (negative ? 1 : 0);
 
-    // Apply the delta rotation to the pitch and yaw angles
-    this.yaw -= input.analog.x * deltaTime * this.rotationSpeed;
-    this.pitch -= input.analog.y * deltaTime * this.rotationSpeed;
+    if(this.suspendDrag == false) {
+      // Apply the delta rotation to the pitch and yaw angles
+      this.yaw -= input.analog.x * deltaTime * this.rotationSpeed;
+      this.pitch -= input.analog.y * deltaTime * this.rotationSpeed;
+    }
 
     // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
     this.yaw = mod(this.yaw, Math.PI * 2);

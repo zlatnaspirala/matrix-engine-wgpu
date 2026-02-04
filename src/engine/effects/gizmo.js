@@ -8,6 +8,7 @@ export class GizmoEffect {
     this.mode = 0; // 0=translate, 1=rotate, 2=scale
     this.size = 1.0;
     this.selectedAxis = 0; // 0=none, 1=X, 2=Y, 3=Z
+    this.movementScale = 0.01;
     this.isDragging = false;
     this.dragStartPoint = null;
     this.dragAxis = 0;
@@ -127,55 +128,38 @@ export class GizmoEffect {
   }
 
   _setupEventListeners() {
-    // Listen for ray hit events
     app.canvas.addEventListener("ray.hit.mousedown", (e) => {
       if(!this.enabled || !this.parentMesh) return;
-
       const detail = e.detail;
-
-      console.log('Ray hit event:', detail.hitObject.name, 'Parent:', this.parentMesh.name);
-
-      // Check if we hit our parent mesh
       if(detail.hitObject === this.parentMesh || detail.hitObject.name === this.parentMesh.name) {
-        console.log('Hit parent mesh, checking axis...');
         this._handleRayHit(detail);
       }
     });
-
-    // Listen for mouse move (for dragging)
     app.canvas.addEventListener("mousemove", (e) => {
       if(this.isDragging && e.buttons === 1) {
         this._handleDrag(e);
+        if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if(this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
+      } else {
+        if(app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
       }
     });
-
-    // Listen for mouse up (stop dragging)
     app.canvas.addEventListener("mouseup", () => {
       if(this.isDragging) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        console.log('Gizmo: Stopped dragging');
+        // console.log('Gizmo: Stopped dragging');
       }
     });
   }
 
   _handleRayHit(detail) {
     const {rayOrigin, rayDirection, hitPoint, button, eventName} = detail;
-
-    console.log('Handling ray hit, eventName:', eventName);
-    console.log('Ray origin:', rayOrigin);
-    console.log('Ray direction:', rayDirection);
-
-    // Check which axis was clicked
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
-
-    console.log('Detected axis:', axis);
-
     if(axis > 0) {
       this.selectedAxis = axis;
       this.dragStartPoint = [...hitPoint];
@@ -186,12 +170,7 @@ export class GizmoEffect {
       };
       this.dragAxis = axis;
       this._updateGizmoSettings();
-
-      // Start dragging immediately on any click
       this.isDragging = true;
-      console.log(`Gizmo: Selected and dragging axis ${axis} (${['', 'X', 'Y', 'Z'][axis]})`);
-    } else {
-      console.log('No axis detected!');
     }
   }
 
@@ -199,53 +178,50 @@ export class GizmoEffect {
     if(!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
-    const movementScale = 0.3;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
-    switch(this.dragAxis) {
+    switch(this.mode) {
+      case 0:
+        switch(this.dragAxis) {
+          case 1: this.parentMesh.position.x += deltaX * this.movementScale; break;
+          case 2: this.parentMesh.position.y -= deltaY * this.movementScale; break;
+          case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
+        }
+        break;
       case 1:
-        this.parentMesh.position.x += deltaX * movementScale;
+        const rotSpeed = 0.1;
+        switch(this.dragAxis) {
+          case 1: this.parentMesh.rotation.x += deltaY * rotSpeed; break;
+          case 2: this.parentMesh.rotation.y += deltaX * rotSpeed; break;
+          case 3: this.parentMesh.rotation.z += direction * rotSpeed; break;
+        }
         break;
       case 2:
-        this.parentMesh.position.y -= deltaY * movementScale;
-        break;
-      case 3:
-        this.parentMesh.position.z -= direction * movementScale * 0.5;
+        const scaleSpeed = 0.01;
+        switch(this.dragAxis) {
+          case 1: this.parentMesh.scale[0] += deltaX * scaleSpeed; break;
+          case 2: this.parentMesh.scale[1] += -deltaY * scaleSpeed; break;
+          case 3: this.parentMesh.scale[2] += -direction * scaleSpeed; break;
+        }
         break;
     }
   }
 
   _raycastAxis(rayOrigin, rayDirection, mesh) {
-    // Get gizmo world position (parent mesh position)
     const gizmoPos = [
       mesh.position.x,
       mesh.position.y,
       mesh.position.z
     ];
-
-    console.log('Gizmo position:', gizmoPos);
-    console.log('Gizmo size:', this.size);
-
-    const threshold = 1.0 * this.size; // ✅ Increased hit detection radius
-
-    // Test each axis
-    // X axis (red)
+    const threshold = 1.0 * this.size;
     const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
     const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
-    console.log('X axis test:', xHit, 'from', gizmoPos, 'to', xEnd);
     if(xHit) return 1;
-
-    // Y axis (green)
     const yEnd = [gizmoPos[0], gizmoPos[1] + 2 * this.size, gizmoPos[2]];
     const yHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, yEnd, threshold);
-    console.log('Y axis test:', yHit, 'from', gizmoPos, 'to', yEnd);
     if(yHit) return 2;
-
-    // Z axis (blue)
     const zEnd = [gizmoPos[0], gizmoPos[1], gizmoPos[2] + 2 * this.size];
     const zHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, zEnd, threshold);
-    console.log('Z axis test:', zHit, 'from', gizmoPos, 'to', zEnd);
     if(zHit) return 3;
-
     return 0;
   }
 
@@ -290,12 +266,7 @@ export class GizmoEffect {
   }
 
   _updateGizmoSettings() {
-    const data = new Float32Array([
-      this.mode,
-      this.size,
-      this.selectedAxis,
-      1.0 // line thickness
-    ]);
+    const data = new Float32Array([this.mode, this.size, this.selectedAxis, 1.0]);
     this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
   }
 
