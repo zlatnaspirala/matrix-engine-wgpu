@@ -23,6 +23,11 @@ export class Editor {
           app.shaderGraph = e;
         })
       });
+
+      this.gizmoAttached = () => {
+        // maybe no need ...
+      };
+
       this.client = new MEEditorClient(this.check(a), projName);
       this.createFluxCodexVertexDOM();
       setTimeout(() => {

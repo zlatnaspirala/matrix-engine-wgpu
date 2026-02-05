@@ -128,10 +128,7 @@ export default class MatrixEngineWGPU {
         }
         this.editor.editorHud.updateSceneContainer();
       } else {
-        this.editor.editorHud.editorMenu.style.display = 'flex';
-        this.editor.editorHud.assetsBox.style.display = 'flex';
-        this.editor.editorHud.sceneProperty.style.display = 'flex';
-        this.editor.editorHud.sceneContainer.style.display = 'flex';
+        this.editor.editorHud.showHud();
       }
     };
 

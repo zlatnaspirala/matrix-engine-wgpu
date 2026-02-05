@@ -8,6 +8,7 @@ import {openFragmentShaderEditor} from "./flexCodexShader.js";
  */
 export default class EditorHud {
   constructor(core, a, toolTip) {
+    this.visible = false;
     this.core = core;
     this.sceneContainer = null;
     this.FS = new FullscreenManager();
@@ -15,6 +16,7 @@ export default class EditorHud {
     if(a == 'infly') {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
+      this.visible = true;
       this.createTopMenu();
       this.createAssets();
     } else if(a == "pre editor") {
@@ -24,6 +26,7 @@ export default class EditorHud {
     }
     this.createEditorSceneContainer();
     this.createScenePropertyBox();
+    this.createGizmoBtns();
     this.currentProperties = [];
 
     setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000);
@@ -315,12 +318,27 @@ export default class EditorHud {
     });
     this.toolTip.attachTooltip(byId('showAITools'), "Experimental stage, MEWGPU use open source ollama platform. Possible to create less complex - assets data not yet involment...");
 
-    byId('hideEditorBtn').addEventListener('click', () => {
+    this.hideHud = () => {
       this.editorMenu.style.display = 'none';
       this.assetsBox.style.display = 'none';
       this.sceneProperty.style.display = 'none';
       this.sceneContainer.style.display = 'none';
+      this.gizmoTop.style.display = 'none';
+      this.visible = false;
       byId('app').style.display = 'none';
+    };
+
+    this.showHud = () => {
+      this.editorMenu.style.display = 'flex';
+      this.assetsBox.style.display = 'flex';
+      this.sceneProperty.style.display = 'flex';
+      this.sceneContainer.style.display = 'flex';
+      this.gizmoTop.style.display = 'flex';
+      this.visible = true;
+    };
+
+    byId('hideEditorBtn').addEventListener('click', () => {
+      this.hideHud();
     });
 
     byId('bg-transparent').addEventListener('click', () => {
@@ -520,6 +538,33 @@ export default class EditorHud {
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
   }
 
+  createGizmoBtns() {
+    this.gizmoTop = document.createElement("div");
+    this.gizmoTop.id = "gizmoTop";
+    Object.assign(this.gizmoTop.style, {
+      position: "absolute",
+      top: "0",
+      left: "17.5%",
+      width: "7%",
+      height: "50px",
+      backgroundColor: "transparent",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.gizmoTop.innerHTML = `
+    <img style="width:40px;" onclick="app.setGizmoMode(1)" src="./res/textures/engine/mod1.png"/>
+    <img style="width:40px;" onclick="app.setGizmoMode(1)" src="./res/textures/engine/mod2.png"/>
+    <img style="width:40px;" onclick="app.setGizmoMode(1)" src="./res/textures/engine/mod3.png"/>
+    </div>`;
+    document.body.appendChild(this.gizmoTop);
+  }
+
   createAssets() {
     this.assetsBox = document.createElement("div");
     this.assetsBox.id = "assetsBox";
@@ -539,8 +584,6 @@ export default class EditorHud {
       boxSizing: "border-box",
       flexDirection: "column"
     });
-    this.assetsBox.innerHTML = "ASSTES";
-
     this.assetsBox.innerHTML = `
     <div id="folderTitle" >Root</div>
     <div id="folderBack" class="scenePropItem" >...</div>
