@@ -6,7 +6,7 @@ export class GizmoEffect {
     this.format = format;
     this.enabled = true;
     this.mode = 0; // 0=translate, 1=rotate, 2=scale
-    this.size = 1.0;
+    this.size = 3;
     this.selectedAxis = 0; // 0=none, 1=X, 2=Y, 3=Z
     this.movementScale = 0.01;
     this.isDragging = false;
@@ -152,7 +152,8 @@ export class GizmoEffect {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        // console.log('Gizmo: Stopped dragging');
+        console.log('Gizmo: Stopped dragging');
+
       }
     });
   }
@@ -174,6 +175,91 @@ export class GizmoEffect {
     }
   }
 
+  /**
+ * Get the screen-space direction of a world axis
+ * @param {number} axisIndex - 0=X, 1=Y, 2=Z
+ * @returns {{x: number, y: number}} - Normalized 2D screen direction
+ */
+  _getAxisScreenDirection(axisIndex) {
+    // Get world axis vector
+    const worldAxis = [
+      [1, 0, 0], // X
+      [0, 1, 0], // Y
+      [0, 0, 1]  // Z
+    ][axisIndex];
+    // Transform axis to camera space
+    const viewMatrix = app.cameras.WASD.matrix_;
+    const projMatrix = app.cameras.WASD.projectionMatrix;
+    const p1 = this.parentMesh.position;
+    // Point 2: Object position + axis direction
+    const p2 = {
+      x: p1.x + worldAxis[0],
+      y: p1.y + worldAxis[1],
+      z: p1.z + worldAxis[2]
+    };
+
+    // Project both points to screen space
+    const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
+    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
+
+    // Get screen-space direction
+    const dx = screen2.x - screen1.x;
+    const dy = screen2.y - screen1.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    // Return normalized direction
+    return {
+      x: length > 0.001 ? dx / length : 0,
+      y: length > 0.001 ? dy / length : 0
+    };
+  }
+
+
+  /**
+   * Project world position to screen coordinates
+   */
+  _worldToScreen(worldPos, viewMatrix, projMatrix) {
+    // Transform to clip space
+    const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+
+    // Perspective divide
+    const ndcX = clipPos.x / clipPos.w;
+    const ndcY = clipPos.y / clipPos.w;
+
+    // Convert to screen coordinates (assuming viewport)
+    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
+    const screenY = (1 - ndcY) * 0.5 * app.canvas.height; // Flip Y
+
+    return {x: screenX, y: screenY};
+  }
+
+  _transformPoint(point, viewMatrix, projMatrix) {
+    // Combine view * projection
+    const vp = this._multiplyMatrices(projMatrix, viewMatrix);
+
+    // Transform point
+    const x = vp[0] * point.x + vp[4] * point.y + vp[8] * point.z + vp[12];
+    const y = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
+    const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
+    const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
+
+    return {x, y, z, w};
+  }
+
+  _multiplyMatrices(a, b) {
+    const result = new Array(16);
+    for(let i = 0;i < 4;i++) {
+      for(let j = 0;j < 4;j++) {
+        result[i * 4 + j] =
+          a[i * 4 + 0] * b[0 * 4 + j] +
+          a[i * 4 + 1] * b[1 * 4 + j] +
+          a[i * 4 + 2] * b[2 * 4 + j] +
+          a[i * 4 + 3] * b[3 * 4 + j];
+      }
+    }
+    return result;
+  }
+
   _handleDrag(mouseEvent) {
     if(!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
     const deltaX = mouseEvent.movementX;
@@ -184,7 +270,14 @@ export class GizmoEffect {
         switch(this.dragAxis) {
           case 1: this.parentMesh.position.x += deltaX * this.movementScale; break;
           case 2: this.parentMesh.position.y -= deltaY * this.movementScale; break;
-          case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
+          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
+          case 3:
+            const zAxisScreenDir = this._getAxisScreenDirection(2); // Z = axis index 2
+            const mouseDelta = {x: deltaX, y: -deltaY}; // Flip Y for screen coords
+            // Dot product: how much does mouse movement align with Z-axis on screen?
+            const movement = (mouseDelta.x * zAxisScreenDir.x +
+              mouseDelta.y * zAxisScreenDir.y);
+            this.parentMesh.position.z += movement * this.movementScale;
         }
         break;
       case 1:
@@ -212,7 +305,7 @@ export class GizmoEffect {
       mesh.position.y,
       mesh.position.z
     ];
-    const threshold = 1.0 * this.size;
+    const threshold = 0.1 * this.size;
     const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
     const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
     if(xHit) return 1;

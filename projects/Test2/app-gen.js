@@ -51,7 +51,8 @@ let app = new MatrixEngineWGPU(
           pointerEffect: {
             enabled: true,
             pointEffect: true,
-            gizmoEffect: true
+            gizmoEffect: true,
+            destructionEffect: true
           },
           mesh: m.mesh,
           raycast: {enabled: true, radius: 2},

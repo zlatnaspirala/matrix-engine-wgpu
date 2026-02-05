@@ -8,6 +8,7 @@ import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
 // import {PointerEffect} from './effects/pointerEffect';
 import {PointEffect} from './effects/topology-point';
 import {GizmoEffect} from './effects/gizmo';
+import {DestructionEffect} from './effects/destruction';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -699,10 +700,17 @@ export default class MEMeshObj extends Materials {
         // let pf = navigator.gpu.getPreferredCanvasFormat();
         // this.effects.pointer = new PointerEffect(device, pf, this, true);
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, 'rgba16float')//pf);
+          this.effects.pointEffect = new PointEffect(device, 'rgba16float');//pf);
         }
         if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
-          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float')
+          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float');
+        }
+        if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
+          this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {
+            particleCount: 100,
+            duration: 2.5,
+            color: [0.6, 0.5, 0.4, 1.0]
+          });
         }
       }
       // end

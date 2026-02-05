@@ -6179,7 +6179,7 @@ var GizmoEffect = class {
     this.format = format;
     this.enabled = true;
     this.mode = 0;
-    this.size = 1;
+    this.size = 3;
     this.selectedAxis = 0;
     this.movementScale = 0.01;
     this.isDragging = false;
@@ -6470,6 +6470,7 @@ var GizmoEffect = class {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
+        console.log("Gizmo: Stopped dragging");
       }
     });
   }
@@ -6489,6 +6490,66 @@ var GizmoEffect = class {
       this.isDragging = true;
     }
   }
+  /**
+  * Get the screen-space direction of a world axis
+  * @param {number} axisIndex - 0=X, 1=Y, 2=Z
+  * @returns {{x: number, y: number}} - Normalized 2D screen direction
+  */
+  _getAxisScreenDirection(axisIndex) {
+    const worldAxis = [
+      [1, 0, 0],
+      // X
+      [0, 1, 0],
+      // Y
+      [0, 0, 1]
+      // Z
+    ][axisIndex];
+    const viewMatrix = app.cameras.WASD.matrix_;
+    const projMatrix = app.cameras.WASD.projectionMatrix;
+    const p1 = this.parentMesh.position;
+    const p2 = {
+      x: p1.x + worldAxis[0],
+      y: p1.y + worldAxis[1],
+      z: p1.z + worldAxis[2]
+    };
+    const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
+    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
+    const dx = screen2.x - screen1.x;
+    const dy = screen2.y - screen1.y;
+    const length2 = Math.sqrt(dx * dx + dy * dy);
+    return {
+      x: length2 > 1e-3 ? dx / length2 : 0,
+      y: length2 > 1e-3 ? dy / length2 : 0
+    };
+  }
+  /**
+   * Project world position to screen coordinates
+   */
+  _worldToScreen(worldPos, viewMatrix, projMatrix) {
+    const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+    const ndcX = clipPos.x / clipPos.w;
+    const ndcY = clipPos.y / clipPos.w;
+    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
+    const screenY = (1 - ndcY) * 0.5 * app.canvas.height;
+    return { x: screenX, y: screenY };
+  }
+  _transformPoint(point, viewMatrix, projMatrix) {
+    const vp = this._multiplyMatrices(projMatrix, viewMatrix);
+    const x2 = vp[0] * point.x + vp[4] * point.y + vp[8] * point.z + vp[12];
+    const y2 = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
+    const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
+    const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
+    return { x: x2, y: y2, z, w };
+  }
+  _multiplyMatrices(a, b) {
+    const result2 = new Array(16);
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        result2[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
+      }
+    }
+    return result2;
+  }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
     const deltaX = mouseEvent.movementX;
@@ -6503,9 +6564,12 @@ var GizmoEffect = class {
           case 2:
             this.parentMesh.position.y -= deltaY * this.movementScale;
             break;
+          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
           case 3:
-            this.parentMesh.position.z -= direction * this.movementScale;
-            break;
+            const zAxisScreenDir = this._getAxisScreenDirection(2);
+            const mouseDelta = { x: deltaX, y: -deltaY };
+            const movement = mouseDelta.x * zAxisScreenDir.x + mouseDelta.y * zAxisScreenDir.y;
+            this.parentMesh.position.z += movement * this.movementScale;
         }
         break;
       case 1:
@@ -6544,7 +6608,7 @@ var GizmoEffect = class {
       mesh.position.y,
       mesh.position.z
     ];
-    const threshold = 1 * this.size;
+    const threshold = 0.1 * this.size;
     const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
     const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
     if (xHit) return 1;
@@ -6628,6 +6692,472 @@ var GizmoEffect = class {
   }
   setEnabled(enabled) {
     this.enabled = enabled;
+  }
+};
+
+// ../../../shaders/desctruction/dust-shader.wgsl.js
+var dustShader = `
+
+// Uniforms
+struct Camera {
+  viewProj: mat4x4<f32>,
+};
+
+struct Model {
+  world: mat4x4<f32>,
+  time: f32,
+  intensity: f32,
+  _padding1: f32,
+  _padding2: f32,
+};
+
+@group(0) @binding(0) var<uniform> camera: Camera;
+@group(0) @binding(1) var<uniform> model: Model;
+
+// Vertex input (shared quad)
+struct VertexInput {
+  @location(0) position: vec3<f32>,      // Quad corner position
+  @location(1) uv: vec2<f32>,            // UV coordinates
+};
+
+// Instance input (per-particle data)
+struct InstanceInput {
+  @location(2) posSize: vec4<f32>,       // xyz = position, w = size
+  @location(3) velLife: vec4<f32>,       // xyz = velocity, w = life
+  @location(4) color: vec4<f32>,         // rgba = color
+};
+
+// Vertex output
+struct VertexOutput {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+  @location(1) color: vec4<f32>,
+  @location(2) life: f32,
+  @location(3) worldPos: vec3<f32>,
+};
+
+// Vertex shader - Billboard particles to face camera
+@vertex
+fn vsMain(
+  input: VertexInput,
+  instance: InstanceInput,
+  @builtin(instance_index) instanceIdx: u32
+) -> VertexOutput {
+  var output: VertexOutput;
+  
+  // Get particle world position
+  let particleWorldPos = (model.world * vec4<f32>(instance.posSize.xyz, 1.0)).xyz;
+  
+  // Extract camera right and up vectors from view matrix
+  // Since viewProj = projection * view, we need to extract view
+  // For billboarding, we'll use a simplified approach:
+  // Right = (1, 0, 0) in view space
+  // Up = (0, 1, 0) in view space
+  
+  // Simple billboarding: offset quad corners in screen space
+  let size = instance.posSize.w;
+  let quadOffset = input.position.xy * size;
+  
+  // Billboard quad (face camera)
+  // Extract camera right and up from inverse view
+  let right = normalize(vec3<f32>(camera.viewProj[0][0], camera.viewProj[1][0], camera.viewProj[2][0]));
+  let up = normalize(vec3<f32>(camera.viewProj[0][1], camera.viewProj[1][1], camera.viewProj[2][1]));
+  
+  // Compute final world position
+  let worldPos = particleWorldPos + right * quadOffset.x + up * quadOffset.y;
+  
+  // Project to clip space
+  output.position = camera.viewProj * vec4<f32>(worldPos, 1.0);
+  output.uv = input.uv;
+  output.color = instance.color;
+  output.life = instance.velLife.w;
+  output.worldPos = worldPos;
+  
+  return output;
+}
+
+// Procedural noise function (for organic particle appearance)
+fn hash(p: vec2<f32>) -> f32 {
+  var p2 = fract(p * vec2<f32>(123.34, 456.21));
+  p2 += dot(p2, p2 + 45.32);
+  return fract(p2.x * p2.y);
+}
+
+fn noise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  
+  let a = hash(i);
+  let b = hash(i + vec2<f32>(1.0, 0.0));
+  let c = hash(i + vec2<f32>(0.0, 1.0));
+  let d = hash(i + vec2<f32>(1.0, 1.0));
+  
+  let u = f * f * (3.0 - 2.0 * f);
+  
+  return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+// Fractal Brownian Motion (multi-octave noise)
+fn fbm(p: vec2<f32>) -> f32 {
+  var value = 0.0;
+  var amplitude = 0.5;
+  var frequency = 1.0;
+  var p2 = p;
+  
+  for (var i = 0; i < 4; i++) {
+    value += amplitude * noise(p2 * frequency);
+    frequency *= 2.0;
+    amplitude *= 0.5;
+  }
+  
+  return value;
+}
+
+// Fragment shader - Soft particle with noise
+@fragment
+fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
+  // Distance from center (for radial fade)
+  let center = vec2<f32>(0.5, 0.5);
+  let dist = length(input.uv - center);
+  
+  // Radial gradient (soft circular particle)
+  var alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+  
+  // Apply noise for organic look
+  let noiseScale = 3.0;
+  let noiseUV = input.uv * noiseScale + vec2<f32>(model.time * 0.1);
+  let noiseValue = fbm(noiseUV);
+  
+  // Modulate alpha with noise
+  alpha *= noiseValue * 1.5;
+  
+  // Fade based on particle life
+  let lifeFade = clamp(input.life / 0.5, 0.0, 1.0); // Fade in last 0.5s
+  alpha *= lifeFade;
+  
+  // Apply instance color
+  var finalColor = input.color;
+  finalColor.a *= alpha * model.intensity;
+  
+  // Discard fully transparent fragments
+  if (finalColor.a < 0.01) {
+    discard;
+  }
+  
+  return finalColor;
+}
+`;
+
+// ../../../engine/effects/destruction.js
+var DestructionEffect = class {
+  constructor(device2, format, config = {}) {
+    this.device = device2;
+    this.format = format;
+    this.particleCount = config.particleCount || 100;
+    this.duration = config.duration || 2.5;
+    this.spread = config.spread || 5;
+    this.time = 0;
+    this.enabled = false;
+    this.particles = [];
+    this.color = config.color || [0.6, 0.5, 0.4, 1];
+    this.intensity = 1;
+    this._initPipeline();
+    this._initParticles();
+  }
+  _initPipeline() {
+    const S = 1;
+    const vertexData = new Float32Array([
+      -0.5 * S,
+      0.5 * S,
+      0,
+      // Top-left
+      0.5 * S,
+      0.5 * S,
+      0,
+      // Top-right
+      -0.5 * S,
+      -0.5 * S,
+      0,
+      // Bottom-left
+      0.5 * S,
+      -0.5 * S,
+      0
+      // Bottom-right
+    ]);
+    const uvData = new Float32Array([
+      0,
+      0,
+      // Top-left
+      1,
+      0,
+      // Top-right
+      0,
+      1,
+      // Bottom-left
+      1,
+      1
+      // Bottom-right
+    ]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    const maxParticles = this.particleCount;
+    const instanceDataSize = maxParticles * (4 + 4 + 4) * 4;
+    this.instanceBuffer = this.device.createBuffer({
+      size: instanceDataSize,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      // mat4x4
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 64 + 16 + 16,
+      // model matrix + time + intensity (padded)
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        // camera
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+        // model + time
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: dustShader });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          // Vertex positions (per-vertex, shared quad)
+          {
+            arrayStride: 3 * 4,
+            stepMode: "vertex",
+            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+          },
+          // UVs (per-vertex, shared quad)
+          {
+            arrayStride: 2 * 4,
+            stepMode: "vertex",
+            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }]
+          },
+          // Instance data (per-particle)
+          {
+            arrayStride: 12 * 4,
+            // 3 vec4s = 12 floats
+            stepMode: "instance",
+            attributes: [
+              { shaderLocation: 2, offset: 0, format: "float32x4" },
+              // position + size
+              { shaderLocation: 3, offset: 16, format: "float32x4" },
+              // velocity + life
+              { shaderLocation: 4, offset: 32, format: "float32x4" }
+              // color
+            ]
+          }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+          }
+        }]
+      },
+      primitive: { topology: "triangle-list", cullMode: "none" },
+      depthStencil: {
+        depthWriteEnabled: false,
+        // Particles don't write depth
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    });
+  }
+  _initParticles() {
+    for (let i = 0; i < this.particleCount; i++) {
+      this.particles.push({
+        // Local position offset from parent
+        position: [0, 0, 0],
+        velocity: [0, 0, 0],
+        life: 0,
+        maxLife: 0,
+        size: 0,
+        color: [...this.color]
+      });
+    }
+  }
+  /**
+   * Trigger the destruction effect
+   * Spawns all particles with random velocities
+   */
+  trigger() {
+    this.enabled = true;
+    this.time = 0;
+    for (let i = 0; i < this.particleCount; i++) {
+      const particle = this.particles[i];
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r2 = Math.random() * 0.5;
+      particle.position = [
+        r2 * Math.sin(phi) * Math.cos(theta),
+        Math.random() * 1,
+        // Slightly upward bias
+        r2 * Math.sin(phi) * Math.sin(theta)
+      ];
+      const speed = 2 + Math.random() * 3;
+      const vTheta = Math.random() * Math.PI * 2;
+      const vPhi = Math.acos(2 * Math.random() - 1);
+      particle.velocity = [
+        speed * Math.sin(vPhi) * Math.cos(vTheta),
+        speed * Math.abs(Math.sin(vPhi)) * 2,
+        // Upward bias
+        speed * Math.sin(vPhi) * Math.sin(vTheta)
+      ];
+      particle.maxLife = 1 + Math.random() * 1.5;
+      particle.life = particle.maxLife;
+      particle.size = 0.5 + Math.random() * 1.5;
+      particle.color = [
+        this.color[0] + (Math.random() - 0.5) * 0.2,
+        this.color[1] + (Math.random() - 0.5) * 0.2,
+        this.color[2] + (Math.random() - 0.5) * 0.2,
+        1
+      ];
+    }
+  }
+  /**
+   * Update particle simulation
+   */
+  update(dt) {
+    if (!this.enabled) return;
+    this.time += dt;
+    let aliveCount = 0;
+    for (let i = 0; i < this.particleCount; i++) {
+      const p = this.particles[i];
+      if (p.life <= 0) continue;
+      p.velocity[1] -= 2 * dt;
+      p.velocity[0] *= 0.98;
+      p.velocity[1] *= 0.98;
+      p.velocity[2] *= 0.98;
+      p.position[0] += p.velocity[0] * dt;
+      p.position[1] += p.velocity[1] * dt;
+      p.position[2] += p.velocity[2] * dt;
+      p.life -= dt;
+      const lifeRatio = p.life / p.maxLife;
+      p.color[3] = lifeRatio * this.intensity;
+      p.size = (0.5 + Math.random() * 1.5) * (1 + (1 - lifeRatio) * 2);
+      aliveCount++;
+    }
+    if (aliveCount === 0 && this.time > this.duration) {
+      this.enabled = false;
+    }
+    this._updateInstanceBuffer();
+  }
+  _updateInstanceBuffer() {
+    const instanceData = new Float32Array(this.particleCount * 12);
+    for (let i = 0; i < this.particleCount; i++) {
+      const p = this.particles[i];
+      const offset = i * 12;
+      instanceData[offset + 0] = p.position[0];
+      instanceData[offset + 1] = p.position[1];
+      instanceData[offset + 2] = p.position[2];
+      instanceData[offset + 3] = p.size;
+      instanceData[offset + 4] = p.velocity[0];
+      instanceData[offset + 5] = p.velocity[1];
+      instanceData[offset + 6] = p.velocity[2];
+      instanceData[offset + 7] = p.life;
+      instanceData[offset + 8] = p.color[0];
+      instanceData[offset + 9] = p.color[1];
+      instanceData[offset + 10] = p.color[2];
+      instanceData[offset + 11] = p.color[3];
+    }
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, instanceData);
+  }
+  /**
+   * Update instance data with parent transform
+   * Called by parent object before rendering
+   */
+  updateInstanceData(baseModelMatrix) {
+    const local = mat4Impl.identity();
+    const finalMat = mat4Impl.identity();
+    mat4Impl.multiply(baseModelMatrix, local, finalMat);
+    const timeBuffer = new Float32Array([this.time]);
+    const intensityBuffer = new Float32Array([this.intensity]);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
+    this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
+  }
+  /**
+   * Draw particles
+   */
+  draw(pass2, cameraMatrix) {
+    if (!this.enabled) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setVertexBuffer(2, this.instanceBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount, this.particleCount);
+  }
+  /**
+   * Main render method (called by parent)
+   */
+  render(pass2, mesh, viewProjMatrix, dt = 0.016) {
+    if (!this.enabled) return;
+    this.update(dt);
+    this.draw(pass2, viewProjMatrix);
+  }
+  /**
+   * Set effect intensity
+   */
+  setIntensity(v) {
+    this.intensity = v;
+  }
+  /**
+   * Check if effect is still active
+   */
+  isActive() {
+    return this.enabled;
+  }
+  /**
+   * Reset effect
+   */
+  reset() {
+    this.enabled = false;
+    this.time = 0;
+    for (let p of this.particles) {
+      p.life = 0;
+    }
   }
 };
 
@@ -7275,6 +7805,13 @@ var MEMeshObj = class extends Materials {
         }
         if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float");
+        }
+        if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
+          this.effects.destructionEffect = new DestructionEffect(device2, "rgba16float", {
+            particleCount: 100,
+            duration: 2.5,
+            color: [0.6, 0.5, 0.4, 1]
+          });
         }
       }
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
@@ -27845,7 +28382,8 @@ var app2 = new MatrixEngineWGPU(
           pointerEffect: {
             enabled: true,
             pointEffect: true,
-            gizmoEffect: true
+            gizmoEffect: true,
+            destructionEffect: true
           },
           mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
