@@ -129,10 +129,21 @@ export class GizmoEffect {
 
   _setupEventListeners() {
     app.canvas.addEventListener("ray.hit.mousedown", (e) => {
-      if(!this.enabled || !this.parentMesh) return;
+      // if(!this.enabled || !this.parentMesh) return;
       const detail = e.detail;
-      if(detail.hitObject === this.parentMesh || detail.hitObject.name === this.parentMesh.name) {
+      if(detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log('Gizmo: ray.hit.mousedown :e.detail ', e.detail);
+        console.log('Gizmo: ray.hit.mousedown :name  ', detail.hitObject.name);
         this._handleRayHit(detail);
+      } else {
+        console.log('Gizmo: ray.hit.mousedown :OTHER OBJECT CLICK SELECT TRY  ', e.detail.hitObject.name);
+        console.log('Gizmo: ray.hit.mousedown :OTHER OBJECT INSTANCE TEST MUST BE GIZMO ', this);
+        e.detail.hitObject.effects.gizmoEffect = this;
+        this.parentMesh.effects.gizmoEffect = null;
+        this.parentMesh = e.detail.hitObject;
+        console.log('Gizmo: ray.hit.mousedown :FINLA   ', this.parentMesh.name);
+
+        
       }
     });
     app.canvas.addEventListener("mousemove", (e) => {
@@ -153,7 +164,6 @@ export class GizmoEffect {
         this.selectedAxis = 0;
         this._updateGizmoSettings();
         console.log('Gizmo: Stopped dragging');
-
       }
     });
   }
@@ -213,8 +223,6 @@ export class GizmoEffect {
       y: length > 0.001 ? dy / length : 0
     };
   }
-
-
   /**
    * Project world position to screen coordinates
    */

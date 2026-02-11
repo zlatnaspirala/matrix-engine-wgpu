@@ -70,7 +70,23 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END FLOOR useScaleno info
  
- // [MAIN_REPLACE2]
+ 
+       // ME START cube1 addCube
+ downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
+   let texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'cube1',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END cube1 addCube
+ 
+
+      // [MAIN_REPLACE2]
     })
   })
 window.app = app;

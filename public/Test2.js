@@ -6447,10 +6447,18 @@ var GizmoEffect = class {
   }
   _setupEventListeners() {
     app.canvas.addEventListener("ray.hit.mousedown", (e) => {
-      if (!this.enabled || !this.parentMesh) return;
       const detail = e.detail;
-      if (detail.hitObject === this.parentMesh || detail.hitObject.name === this.parentMesh.name) {
+      if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log("Gizmo: ray.hit.mousedown :e.detail ", e.detail);
+        console.log("Gizmo: ray.hit.mousedown :name  ", detail.hitObject.name);
         this._handleRayHit(detail);
+      } else {
+        console.log("Gizmo: ray.hit.mousedown :OTHER OBJECT CLICK SELECT TRY  ", e.detail.hitObject.name);
+        console.log("Gizmo: ray.hit.mousedown :OTHER OBJECT INSTANCE TEST MUST BE GIZMO ", this);
+        e.detail.hitObject.effects.gizmoEffect = this;
+        this.parentMesh.effects.gizmoEffect = null;
+        this.parentMesh = e.detail.hitObject;
+        console.log("Gizmo: ray.hit.mousedown :FINLA   ", this.parentMesh.name);
       }
     });
     app.canvas.addEventListener("mousemove", (e) => {
@@ -28019,7 +28027,6 @@ var MatrixEngineWGPU = class {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log("%c\u2705shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE2);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -28038,7 +28045,6 @@ var MatrixEngineWGPU = class {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log("%c\u2705shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE2);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -28071,7 +28077,7 @@ var MatrixEngineWGPU = class {
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach((effect_) => {
           const effect = mesh.effects[effect_];
-          if (effect.enabled == false) return;
+          if (effect == null || effect.enabled == false) return;
           let md = mesh.getModelMatrix(mesh.position);
           if (effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix);
@@ -28393,6 +28399,19 @@ var app2 = new MatrixEngineWGPU(
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").useScale = true;
       }, 800);
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "cube1",
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
     });
   }
 );
