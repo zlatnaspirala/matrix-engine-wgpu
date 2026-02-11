@@ -359,57 +359,18 @@ export default class MEMeshObj extends Materials {
         attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
       }
 
-      let tang = null;
-
-
-      // if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
-      //   // console.log('it is GLB ')
-      //   glbInfo = {
-      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
-      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
-      //   }
-      // } else {
-      //   // console.log('it is not  GLB ')
-      //   glbInfo = {
-      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
-      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
-      //   }
-      // }
-      // Create some common descriptors used for both the shadow pipeline
-      // and the color rendering pipeline.
       this.vertexBuffers = [
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // position
-              shaderLocation: 0,
-              offset: 0,
-              format: "float32x3",
-            }
-          ],
+          attributes: [{shaderLocation: 0, offset: 0, format: "float32x3", }],
         },
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // normal
-              shaderLocation: 1,
-              offset: 0,
-              format: "float32x3",
-            },
-          ],
+          attributes: [{shaderLocation: 1, offset: 0, format: "float32x3", },],
         },
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-          attributes: [
-            {
-              // uvs
-              shaderLocation: 2,
-              offset: 0,
-              format: "float32x2",
-            },
-          ],
+          attributes: [{shaderLocation: 2, offset: 0, format: "float32x2", },],
         },
         // joint indices
         {
@@ -456,18 +417,15 @@ export default class MEMeshObj extends Materials {
         this.setupPipeline();
       };
 
+      // 'back' typical for shadow passes
       this.primitive = {
         topology: this.topology,
-        cullMode: 'none', // 'back' typical for shadow passes
+        cullMode: 'none',
         frontFace: 'ccw'
       }
 
       // Selected effect
-      this.selectedBuffer = device.createBuffer({
-        size: 4, // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-
+      this.selectedBuffer = device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
       this.selectedBindGroupLayout = device.createBindGroupLayout({
         label: 'selectedBindGroupLayout mesh',
         entries: [
@@ -693,12 +651,9 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
-      console.log("TTTTTTTTTTTTTTTTTTTTTTTTTT")
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         // let pf = navigator.gpu.getPreferredCanvasFormat();
-        // this.effects.pointer = new PointerEffect(device, pf, this, true);
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect(device, 'rgba16float');//pf);
         }
@@ -713,7 +668,6 @@ export default class MEMeshObj extends Materials {
           });
         }
       }
-      // end
 
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
@@ -752,7 +706,6 @@ export default class MEMeshObj extends Materials {
         if(useScale == true) {
           mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
-
         return modelMatrix;
       };
 
@@ -769,10 +722,10 @@ export default class MEMeshObj extends Materials {
       this.done = true;
       try {
         this.setupPipeline();
-      } catch(err) {console.log('err in create pipeline in init ', err)}
+      } catch(err) {console.log('Err[create pipeline]:', err)}
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('after all updateMeshListBuffers...')
+        console.log('After all updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     })
@@ -1115,14 +1068,11 @@ export default class MEMeshObj extends Materials {
     if(testPB !== null) {
       try {
         app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
-        // global fix later
-        console.warn("Physics cleanup done for ", this.name);
       } catch(e) {
-        console.warn("Physics cleanup error:", e);
+        console.warn("Physics cleanup err:", e);
       }
     }
-
-    console.info(`🧹 MEMeshObj destroyed: ${this.name}`);
+    console.info(`🧹Destroyed: ${this.name}`);
   }
 
 }

@@ -320,6 +320,8 @@ export default class MatrixEngineWGPU {
       },
     });
 
+    this.createBloomBindGroup();
+
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
       size: this.MAX_SPOTLIGHTS * 144,
@@ -513,6 +515,22 @@ export default class MatrixEngineWGPU {
     }
   }
 
+  createBloomBindGroup() {
+    this.bloomBindGroup = this.device.createBindGroup({
+      layout: this.presentPipeline.getBindGroupLayout(0),
+      entries: [
+        {binding: 0, resource: this.bloomOutputTex},
+        {binding: 1, resource: this.presentSampler}
+      ]
+    })
+    this.noBloomBindGroup = this.device.createBindGroup({
+      layout: this.presentPipeline.getBindGroupLayout(0),
+      entries: [
+        {binding: 0, resource: this.sceneTexture.createView()},
+        {binding: 1, resource: this.presentSampler}
+      ]
+    })
+  }
   async run(callback) {
     // await this.device.queue.onSubmittedWorkDone();
     setTimeout(() => {requestAnimationFrame(this.frame)}, 1000);
@@ -624,14 +642,26 @@ export default class MatrixEngineWGPU {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-      for(const light of this.lightContainer) {
-        light.update()
-        this.mainRenderBundle.forEach((meItem, index) => {
-          meItem.position.update()
-          meItem.updateModelUniformBuffer()
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
+
+      // update meshes ONCE
+      this.mainRenderBundle.forEach((mesh, index) => {
+        mesh.position.update()
+        mesh.updateModelUniformBuffer()
+
+        this.lightContainer.forEach((light) => {
+          light.update()
+          mesh.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
-      }
+      })
+
+      // for(const light of this.lightContainer) {
+      //   light.update()
+      //   this.mainRenderBundle.forEach((meItem, index) => {
+      //     meItem.position.update()
+      //     meItem.updateModelUniformBuffer()
+      //     meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
+      //   })
+      // }
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
@@ -770,13 +800,7 @@ export default class MatrixEngineWGPU {
       });
 
       pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this.device.createBindGroup({
-        layout: this.presentPipeline.getBindGroupLayout(0),
-        entries: [
-          {binding: 0, resource: (this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView())},
-          {binding: 1, resource: this.presentSampler}
-        ]
-      }));
+      pass.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
 
       pass.draw(6);
       pass.end();

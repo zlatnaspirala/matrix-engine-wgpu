@@ -5714,8 +5714,6 @@ struct Scene {
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> postFXMode: u32;
 
-// \u274C No binding(4) here!
-
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
   @location(1) fragPos : vec3f,
@@ -5745,7 +5743,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
 
-  // \u2705 Correct way to sample video texture
+  // \u2705 Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
   let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 
@@ -7473,40 +7471,18 @@ var MEMeshObj = class extends Materials {
         // vec4<f32> = 4 * 4 bytes
         attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
       };
-      let tang = null;
       this.vertexBuffers = [
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // position
-              shaderLocation: 0,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
+          attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
         },
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // normal
-              shaderLocation: 1,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
+          attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
         },
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-          attributes: [
-            {
-              // uvs
-              shaderLocation: 2,
-              offset: 0,
-              format: "float32x2"
-            }
-          ]
+          attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }]
         },
         // joint indices
         {
@@ -7548,14 +7524,9 @@ var MEMeshObj = class extends Materials {
       this.primitive = {
         topology: this.topology,
         cullMode: "none",
-        // 'back' typical for shadow passes
         frontFace: "ccw"
       };
-      this.selectedBuffer = device2.createBuffer({
-        size: 4,
-        // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
+      this.selectedBuffer = device2.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       this.selectedBindGroupLayout = device2.createBindGroupLayout({
         label: "selectedBindGroupLayout mesh",
         entries: [
@@ -7805,7 +7776,6 @@ var MEMeshObj = class extends Materials {
         ]
       });
       this.effects = {};
-      console.log("TTTTTTTTTTTTTTTTTTTTTTTTTT");
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect2(device2, "rgba16float");
@@ -7870,11 +7840,11 @@ var MEMeshObj = class extends Materials {
       try {
         this.setupPipeline();
       } catch (err) {
-        console.log("err in create pipeline in init ", err);
+        console.log("Err[create pipeline]:", err);
       }
     }).then(() => {
       if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
-        console.log("after all updateMeshListBuffers...");
+        console.log("After all updateMeshListBuffers...");
         this.updateMeshListBuffers();
       }
     });
@@ -8178,12 +8148,11 @@ var MEMeshObj = class extends Materials {
     if (testPB !== null) {
       try {
         app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
-        console.warn("Physics cleanup done for ", this.name);
       } catch (e) {
-        console.warn("Physics cleanup error:", e);
+        console.warn("Physics cleanup err:", e);
       }
     }
-    console.info(`\u{1F9F9} MEMeshObj destroyed: ${this.name}`);
+    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
   };
 };
 
@@ -9133,7 +9102,7 @@ var SpotLight = class {
       minFilter: "linear"
     });
     this.renderPassDescriptor = {
-      label: "renderPassDescriptor shadowPass [per SpotLigth]",
+      label: "descriptor shadowPass[SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTexture.createView(),
@@ -9143,7 +9112,7 @@ var SpotLight = class {
       }
     };
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      label: "uniformBufferBindGroupLayout in light",
+      label: "uniformBufferBindGroupLayout light",
       entries: [
         {
           binding: 0,
@@ -9161,7 +9130,7 @@ var SpotLight = class {
         return this.shadowBindGroupContainer[index];
       }
       this.shadowBindGroupContainer[index] = this.device.createBindGroup({
-        label: "sceneBindGroupForShadow in light",
+        label: "sceneBindGroupForShadow light",
         layout: this.uniformBufferBindGroupLayout,
         entries: [
           {
@@ -9175,9 +9144,7 @@ var SpotLight = class {
       return this.shadowBindGroupContainer[index];
     };
     this.getShadowBindGroup_bones = (index) => {
-      if (this.shadowBindGroup[index]) {
-        return this.shadowBindGroup[index];
-      }
+      if (this.shadowBindGroup[index]) return this.shadowBindGroup[index];
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
         // 4x4 matrix
@@ -9198,7 +9165,7 @@ var SpotLight = class {
       return this.shadowBindGroup[index];
     };
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
-      label: "modelBindGroupLayout in light [one bindings]",
+      label: "modelBindGroupLayout light [one bindings]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
@@ -9206,7 +9173,7 @@ var SpotLight = class {
       ]
     });
     this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-      label: "modelBindGroupLayout in light [for skinned] [instanced]",
+      label: "modelBindGroupLayout light [skinned][instanced]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
         { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
@@ -9214,9 +9181,9 @@ var SpotLight = class {
       ]
     });
     this.shadowPipeline = this.device.createRenderPipeline({
-      label: "shadowPipeline per light",
+      label: "shadowPipeline light",
       layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout - uniformBufferBindGroupLayout light [regular]",
+        label: "uniformBufferBindGroupLayout light[regular]",
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayout
@@ -9227,10 +9194,8 @@ var SpotLight = class {
           code: vertexShadowWGSL
         }),
         buffers: [
-          // @location(0) - position
           {
             arrayStride: 12,
-            // 3 * 4 bytes (vec3f)
             attributes: [
               {
                 shaderLocation: 0,
@@ -9242,7 +9207,6 @@ var SpotLight = class {
           // ✅ ADD @location(1) - normal
           {
             arrayStride: 12,
-            // 3 * 4 bytes (vec3f)
             attributes: [
               {
                 shaderLocation: 1,
@@ -9254,7 +9218,6 @@ var SpotLight = class {
           // ✅ ADD @location(2) - uv
           {
             arrayStride: 8,
-            // 2 * 4 bytes (vec2f)
             attributes: [
               {
                 shaderLocation: 2,
@@ -9266,7 +9229,6 @@ var SpotLight = class {
           // ✅ ADD @location(3) - joints
           {
             arrayStride: 16,
-            // 4 * 4 bytes (vec4<u32>)
             attributes: [
               {
                 shaderLocation: 3,
@@ -9278,7 +9240,6 @@ var SpotLight = class {
           // ✅ ADD @location(4) - weights
           {
             arrayStride: 16,
-            // 4 * 4 bytes (vec4f)
             attributes: [
               {
                 shaderLocation: 4,
@@ -9297,9 +9258,9 @@ var SpotLight = class {
       primitive: this.primitive
     });
     this.shadowPipelineInstanced = this.device.createRenderPipeline({
-      label: "shadowPipeline [instanced] per light",
+      label: "shadowPipeline [instanced]light",
       layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout - uniformBufferBindGroupLayout light [instanced]",
+        label: "uniformBufferBindGroupLayout light[instanced]",
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayoutInstanced
@@ -9343,16 +9304,13 @@ var SpotLight = class {
       this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
-        // this should match the pipeline
         entries: [
           {
             binding: 0,
-            // must match @binding in shader for shadow texture
             resource: this.shadowTexture.createView()
           },
           {
             binding: 1,
-            // must match @binding in shader for shadow sampler
             resource: this.shadowSampler
           }
         ]
@@ -27721,6 +27679,7 @@ var MatrixEngineWGPU = class {
         // rgba16float  bgra8unorm
       }
     });
+    this.createBloomBindGroup();
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: "spotlightUniformBufferGLOBAL",
       size: this.MAX_SPOTLIGHTS * 144,
@@ -27929,6 +27888,22 @@ var MatrixEngineWGPU = class {
       this.editor.editorHud.updateSceneContainer();
     }
   };
+  createBloomBindGroup() {
+    this.bloomBindGroup = this.device.createBindGroup({
+      layout: this.presentPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: this.bloomOutputTex },
+        { binding: 1, resource: this.presentSampler }
+      ]
+    });
+    this.noBloomBindGroup = this.device.createBindGroup({
+      layout: this.presentPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: this.sceneTexture.createView() },
+        { binding: 1, resource: this.presentSampler }
+      ]
+    });
+  }
   async run(callback) {
     setTimeout(() => {
       requestAnimationFrame(this.frame);
@@ -28025,14 +28000,14 @@ var MatrixEngineWGPU = class {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-      for (const light of this.lightContainer) {
-        light.update();
-        this.mainRenderBundle.forEach((meItem, index) => {
-          meItem.position.update();
-          meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
+      this.mainRenderBundle.forEach((mesh, index) => {
+        mesh.position.update();
+        mesh.updateModelUniformBuffer();
+        this.lightContainer.forEach((light) => {
+          light.update();
+          mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
-      }
+      });
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -28151,13 +28126,7 @@ var MatrixEngineWGPU = class {
         }]
       });
       pass2.setPipeline(this.presentPipeline);
-      pass2.setBindGroup(0, this.device.createBindGroup({
-        layout: this.presentPipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView() },
-          { binding: 1, resource: this.presentSampler }
-        ]
-      }));
+      pass2.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
       pass2.draw(6);
       pass2.end();
       this.graphUpdate(now);
