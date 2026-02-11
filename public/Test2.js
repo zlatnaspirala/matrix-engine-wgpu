@@ -8063,11 +8063,11 @@ var MEMeshObj = class extends Materials {
   };
   drawElementsAnim = (renderPass, lightContainer) => {
     if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
-      console.log(" NULL 1");
+      console.log("NULL1");
       return;
     }
     if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
-      console.log(" NULL 2");
+      console.log("NULL2");
       return;
     }
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
@@ -8110,7 +8110,7 @@ var MEMeshObj = class extends Materials {
       }
     }
   };
-  drawShadows = (shadowPass, light) => {
+  drawShadows = (shadowPass) => {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -16779,17 +16779,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== "number") {
-      throw new Error("Invalid data array passed to createGPUBuffer");
+      throw new Error("Invalid array passed to createGPUBuffer");
     }
     const size2 = dataArray.length * dataArray.BYTES_PER_ELEMENT;
     if (!Number.isFinite(size2) || size2 <= 0) {
       throw new Error(`Invalid buffer size: ${size2}`);
     }
-    const buffer = this.device.createBuffer({
-      size: size2,
-      usage,
-      mappedAtCreation: true
-    });
+    const buffer = this.device.createBuffer({ size: size2, usage, mappedAtCreation: true });
     const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
     writeArray.set(dataArray);
     buffer.unmap();

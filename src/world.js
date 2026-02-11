@@ -685,33 +685,28 @@ export default class MatrixEngineWGPU {
         });
 
         now = performance.now() / 1000;
-        // shadowPass.setPipeline(light.shadowPipeline);
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position))
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
-            // must be base meshObj
             shadowPass.setPipeline(light.shadowPipeline);
           }
 
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            // if(mesh.glb && mesh.glb.skinnedMeshNodes) {
-            // shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
-            // } else {
             if(mesh instanceof BVHPlayerInstances) {
               shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
             } else {
               shadowPass.setBindGroup(1, mesh.modelBindGroup);
             }
-            // }
             mesh.drawShadows(shadowPass, light);
           }
         }
         shadowPass.end();
       }
-      // with no postprocessing 
+
+      // with no postprocessing
       // const currentTextureView = this.context.getCurrentTexture().createView();
       // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
@@ -760,7 +755,6 @@ export default class MatrixEngineWGPU {
       pass.end();
 
       if(this.collisionSystem) this.collisionSystem.update();
-      // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{view: this.sceneTextureView, loadOp: 'load', storeOp: 'store'}],
         depthStencilAttachment: {

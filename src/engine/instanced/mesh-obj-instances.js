@@ -796,21 +796,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   updateModelUniformBuffer = () => {}
 
   createGPUBuffer(dataArray, usage) {
-    if(!dataArray || typeof dataArray.length !== 'number') {
-      throw new Error('Invalid data array passed to createGPUBuffer');
-    }
-
+    if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}
     const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
-    if(!Number.isFinite(size) || size <= 0) {
-      throw new Error(`Invalid buffer size: ${size}`);
-    }
-
-    const buffer = this.device.createBuffer({
-      size,
-      usage,
-      mappedAtCreation: true,
-    });
-
+    if(!Number.isFinite(size) || size <= 0) {throw new Error(`Invalid buffer size: ${size}`)}
+    const buffer = this.device.createBuffer({size, usage, mappedAtCreation: true});
     const writeArray = dataArray.constructor === Float32Array
       ? new Float32Array(buffer.getMappedRange())
       : new Uint16Array(buffer.getMappedRange());

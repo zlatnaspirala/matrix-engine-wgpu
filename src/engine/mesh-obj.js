@@ -948,8 +948,8 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElementsAnim = (renderPass, lightContainer) => {
-    if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1'); return;}
-    if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2'); return;}
+    if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log('NULL1'); return;}
+    if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
 
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
@@ -1002,7 +1002,7 @@ export default class MEMeshObj extends Materials {
     }
   }
 
-  drawShadows = (shadowPass, light) => {
+  drawShadows = (shadowPass) => {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -1015,7 +1015,6 @@ export default class MEMeshObj extends Materials {
   destroy = () => {
     if(this._destroyed) return;
     this._destroyed = true;
-
     // --- GPU Buffers ---
     this.vertexBuffer?.destroy();
     this.vertexNormalsBuffer?.destroy();
@@ -1026,16 +1025,13 @@ export default class MEMeshObj extends Materials {
     this.sceneUniformBuffer?.destroy();
     this.bonesBuffer?.destroy();
     this.selectedBuffer?.destroy();
-
     // Skinning
     this.mesh?.weightsBuffer?.destroy();
     this.mesh?.jointsBuffer?.destroy();
     this.mesh?.tangentsBuffer?.destroy();
-
     // Dummy skin buffers
     this.joints?.buffer?.destroy();
     this.weights?.buffer?.destroy();
-
     // Obj sequence animation buffers
     if(this.objAnim?.meshList) {
       for(const k in this.objAnim.meshList) {
