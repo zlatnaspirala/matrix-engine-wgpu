@@ -24,7 +24,7 @@ export default class EditorProvider {
       switch(e.detail.propertyId) {
         case 'position':
           {
-            console.log('change signal for pos');
+            console.log('change signal for pos', e.detail);
             if(e.detail.property == 'x' ||
               e.detail.property == 'y' ||
               e.detail.property == 'z'
@@ -35,7 +35,7 @@ export default class EditorProvider {
           }
         case 'rotation':
           {
-            console.log('change signal for rot');
+            console.log('[signal][rot]');
             if(e.detail.property == 'x' ||
               e.detail.property == 'y' ||
               e.detail.property == 'z'
@@ -46,21 +46,12 @@ export default class EditorProvider {
           }
         case 'scale':
           {
-            console.log('change signal for scale');
+            console.log('[signal][scale]');
             if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
               document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
                 detail: e.detail
               }));
             }
-            //  else if(e.detail.property == '1') {
-            //   document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-            //     detail: e.detail
-            //   }));
-            // } else if(e.detail.property == '2') {
-            //   document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-            //     detail: e.detail
-            //   }));
-            // }
             break;
           }
         default:

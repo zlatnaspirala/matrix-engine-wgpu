@@ -17713,21 +17713,21 @@ var EditorProvider = class {
       console.log("[EDITOR-input]: ", e.detail);
       switch (e.detail.propertyId) {
         case "position": {
-          console.log("change signal for pos");
+          console.log("change signal for pos", e.detail);
           if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
             detail: e.detail
           }));
           break;
         }
         case "rotation": {
-          console.log("change signal for rot");
+          console.log("[signal][rot]");
           if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
             detail: e.detail
           }));
           break;
         }
         case "scale": {
-          console.log("change signal for scale");
+          console.log("[signal][scale]");
           if (e.detail.property == "0" || e.detail.property == "1" || e.detail.property == "2") {
             document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
               detail: e.detail
