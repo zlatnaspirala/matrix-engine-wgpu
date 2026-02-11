@@ -163,8 +163,9 @@ export class GizmoEffect {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        console.log('Gizmo: Stopped dragging');
+        console.log('Gizmo: Stopped dragging', this.parentMesh.name);
         // setup new values...
+
       }
     });
   }

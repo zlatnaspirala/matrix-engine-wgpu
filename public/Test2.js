@@ -6477,7 +6477,7 @@ var GizmoEffect = class {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        console.log("Gizmo: Stopped dragging");
+        console.log("Gizmo: Stopped dragging", this.parentMesh.name);
       }
     });
   }
@@ -17758,15 +17758,7 @@ var EditorProvider = class {
         }
         case "scale": {
           console.log("change signal for scale");
-          if (e.detail.property == "0") {
-            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e.detail
-            }));
-          } else if (e.detail.property == "1") {
-            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e.detail
-            }));
-          } else if (e.detail.property == "2") {
+          if (e.detail.property == "0" || e.detail.property == "1" || e.detail.property == "2") {
             document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
               detail: e.detail
             }));
@@ -25512,15 +25504,15 @@ var EditorHud = class {
       display: "flex",
       alignItems: "start",
       color: "white",
-      zIndex: "15",
+      zIndex: "10",
       padding: "2px",
       boxSizing: "border-box",
       flexDirection: "row"
     });
     this.gizmoBox.innerHTML = `
-    <img id="mode0" data-mode="0" class="gizmo-icon" onclick="" src="./res/textures/editor/0.png" width="48px" height="48px"/>
-    <img id="mode1" data-mode="1" class="gizmo-icon" onclick="dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail : {mode: 1}}))" src="./res/textures/editor/1.png" width="48px" height="48px"/>
-    <img id="mode2" data-mode="2" class="gizmo-icon" onclick="dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail : {mode: 2}}))" src="./res/textures/editor/2.png" width="48px" height="48px"/>
+    <img id="mode0" data-mode="0" class="gizmo-icon" src="./res/textures/editor/0.png" width="48px" height="48px"/>
+    <img id="mode1" data-mode="1" class="gizmo-icon" src="./res/textures/editor/1.png" width="48px" height="48px"/>
+    <img id="mode2" data-mode="2" class="gizmo-icon" src="./res/textures/editor/2.png" width="48px" height="48px"/>
     </div>`;
     document.body.appendChild(this.gizmoBox);
     if (!document.getElementById("gizmo-style")) {
@@ -28405,7 +28397,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 115, "y": 394, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n2": { "id": "n2", "title": "getNumberLiteral", "x": 326, "y": 283, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n3": { "id": "n3", "title": "getNumberLiteral", "x": 332, "y": 508, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n4": { "id": "n4", "title": "Mul", "x": 593, "y": 381, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "fields": [], "displayEl": {} }, "n5": { "id": "n5", "title": "Print", "x": 863, "y": 294, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "noselfExec": true, "displayEl": {} } }, "links": [{ "id": "l1", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n2", "pin": "exec" }, "type": "action" }, { "id": "l2", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n3", "pin": "exec" }, "type": "action" }, { "id": "l3", "from": { "node": "n2", "pin": "execOut" }, "to": { "node": "n5", "pin": "exec" }, "type": "action" }, { "id": "l4", "from": { "node": "n2", "pin": "value" }, "to": { "node": "n4", "pin": "a" }, "type": "value" }, { "id": "l5", "from": { "node": "n3", "pin": "value" }, "to": { "node": "n4", "pin": "b" }, "type": "value" }, { "id": "l6", "from": { "node": "n4", "pin": "result" }, "to": { "node": "n5", "pin": "value" }, "type": "value" }], "nodeCounter": 1, "linkCounter": 1, "pan": [-48, 38], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 65.11114501953125, "y": 314.1041831970215, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n2": { "id": "n2", "title": "getNumberLiteral", "x": 326, "y": 283, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n3": { "id": "n3", "title": "getNumberLiteral", "x": 332, "y": 508, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n4": { "id": "n4", "title": "Mul", "x": 593, "y": 381, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "fields": [], "displayEl": {} }, "n5": { "id": "n5", "title": "Print", "x": 863, "y": 294, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "noselfExec": true, "displayEl": {} } }, "links": [{ "id": "l1", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n2", "pin": "exec" }, "type": "action" }, { "id": "l2", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n3", "pin": "exec" }, "type": "action" }, { "id": "l3", "from": { "node": "n2", "pin": "execOut" }, "to": { "node": "n5", "pin": "exec" }, "type": "action" }, { "id": "l4", "from": { "node": "n2", "pin": "value" }, "to": { "node": "n4", "pin": "a" }, "type": "value" }, { "id": "l5", "from": { "node": "n3", "pin": "value" }, "to": { "node": "n4", "pin": "b" }, "type": "value" }, { "id": "l6", "from": { "node": "n4", "pin": "result" }, "to": { "node": "n5", "pin": "value" }, "type": "value" }], "nodeCounter": 1, "linkCounter": 1, "pan": [-49, 38], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [

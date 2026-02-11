@@ -6179,7 +6179,7 @@ var GizmoEffect = class {
     this.format = format;
     this.enabled = true;
     this.mode = 0;
-    this.size = 1;
+    this.size = 3;
     this.selectedAxis = 0;
     this.movementScale = 0.01;
     this.isDragging = false;
@@ -6189,6 +6189,10 @@ var GizmoEffect = class {
     this.initialPosition = null;
     this._initPipeline();
     this._setupEventListeners();
+    addEventListener("editor-set-gizmo-mode", (e) => {
+      console.log("MODE:", e.detail.mode);
+      this.setMode(e.detail.mode);
+    });
   }
   _initPipeline() {
     this._createTranslateGizmo();
@@ -6447,10 +6451,13 @@ var GizmoEffect = class {
   }
   _setupEventListeners() {
     app.canvas.addEventListener("ray.hit.mousedown", (e) => {
-      if (!this.enabled || !this.parentMesh) return;
       const detail = e.detail;
-      if (detail.hitObject === this.parentMesh || detail.hitObject.name === this.parentMesh.name) {
+      if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
         this._handleRayHit(detail);
+      } else {
+        e.detail.hitObject.effects.gizmoEffect = this;
+        this.parentMesh.effects.gizmoEffect = null;
+        this.parentMesh = e.detail.hitObject;
       }
     });
     app.canvas.addEventListener("mousemove", (e) => {
@@ -6470,7 +6477,7 @@ var GizmoEffect = class {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        console.log("Gizmo: Stopped dragging");
+        console.log("Gizmo: Stopped dragging", this.parentMesh.name);
       }
     });
   }
@@ -6490,6 +6497,66 @@ var GizmoEffect = class {
       this.isDragging = true;
     }
   }
+  /**
+  * Get the screen-space direction of a world axis
+  * @param {number} axisIndex - 0=X, 1=Y, 2=Z
+  * @returns {{x: number, y: number}} - Normalized 2D screen direction
+  */
+  _getAxisScreenDirection(axisIndex) {
+    const worldAxis = [
+      [1, 0, 0],
+      // X
+      [0, 1, 0],
+      // Y
+      [0, 0, 1]
+      // Z
+    ][axisIndex];
+    const viewMatrix = app.cameras.WASD.matrix_;
+    const projMatrix = app.cameras.WASD.projectionMatrix;
+    const p1 = this.parentMesh.position;
+    const p2 = {
+      x: p1.x + worldAxis[0],
+      y: p1.y + worldAxis[1],
+      z: p1.z + worldAxis[2]
+    };
+    const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
+    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
+    const dx = screen2.x - screen1.x;
+    const dy = screen2.y - screen1.y;
+    const length2 = Math.sqrt(dx * dx + dy * dy);
+    return {
+      x: length2 > 1e-3 ? dx / length2 : 0,
+      y: length2 > 1e-3 ? dy / length2 : 0
+    };
+  }
+  /**
+   * Project world position to screen coordinates
+   */
+  _worldToScreen(worldPos, viewMatrix, projMatrix) {
+    const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+    const ndcX = clipPos.x / clipPos.w;
+    const ndcY = clipPos.y / clipPos.w;
+    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
+    const screenY = (1 - ndcY) * 0.5 * app.canvas.height;
+    return { x: screenX, y: screenY };
+  }
+  _transformPoint(point, viewMatrix, projMatrix) {
+    const vp = this._multiplyMatrices(projMatrix, viewMatrix);
+    const x2 = vp[0] * point.x + vp[4] * point.y + vp[8] * point.z + vp[12];
+    const y2 = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
+    const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
+    const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
+    return { x: x2, y: y2, z, w };
+  }
+  _multiplyMatrices(a, b) {
+    const result2 = new Array(16);
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        result2[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
+      }
+    }
+    return result2;
+  }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
     const deltaX = mouseEvent.movementX;
@@ -6504,9 +6571,12 @@ var GizmoEffect = class {
           case 2:
             this.parentMesh.position.y -= deltaY * this.movementScale;
             break;
+          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
           case 3:
-            this.parentMesh.position.z -= direction * this.movementScale;
-            break;
+            const zAxisScreenDir = this._getAxisScreenDirection(2);
+            const mouseDelta = { x: deltaX, y: -deltaY };
+            const movement = mouseDelta.x * zAxisScreenDir.x + mouseDelta.y * zAxisScreenDir.y;
+            this.parentMesh.position.z += movement * this.movementScale;
         }
         break;
       case 1:
@@ -6545,7 +6615,7 @@ var GizmoEffect = class {
       mesh.position.y,
       mesh.position.z
     ];
-    const threshold = 1 * this.size;
+    const threshold = 0.1 * this.size;
     const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
     const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
     if (xHit) return 1;
@@ -7744,7 +7814,11 @@ var MEMeshObj = class extends Materials {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float");
         }
         if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
-          this.effects.destructionEffect = new DestructionEffect(device2, "rgba16float");
+          this.effects.destructionEffect = new DestructionEffect(device2, "rgba16float", {
+            particleCount: 100,
+            duration: 2.5,
+            color: [0.6, 0.5, 0.4, 1]
+          });
         }
       }
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
@@ -17684,15 +17758,7 @@ var EditorProvider = class {
         }
         case "scale": {
           console.log("change signal for scale");
-          if (e.detail.property == "0") {
-            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e.detail
-            }));
-          } else if (e.detail.property == "1") {
-            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e.detail
-            }));
-          } else if (e.detail.property == "2") {
+          if (e.detail.property == "0" || e.detail.property == "1" || e.detail.property == "2") {
             document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
               detail: e.detail
             }));
@@ -25010,6 +25076,7 @@ var EditorHud = class {
     } else if (a == "created from editor") {
       this.createTopMenu();
       this.createAssets();
+      this.createGizmoIcons();
     } else if (a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -25417,11 +25484,73 @@ var EditorHud = class {
   \u{1F3AF} Save system - direct code line [file-protocol]
   \u{1F3AF} Adding Visual Scripting System called 
      FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+  \u{1F3AF} Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
         `);
     };
     byId("showAboutEditor").addEventListener("click", this.showAboutModal);
+  }
+  createGizmoIcons() {
+    this.gizmoBox = document.createElement("div");
+    this.assetsBox.id = "gizmoBox";
+    Object.assign(this.gizmoBox.style, {
+      position: "absolute",
+      top: "0",
+      left: "17.55%",
+      width: "190px",
+      height: "64px",
+      backgroundColor: "transparent",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      zIndex: "12",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.gizmoBox.innerHTML = `
+    <img id="mode0" data-mode="0" class="gizmo-icon" src="./res/textures/editor/0.png" width="48px" height="48px"/>
+    <img id="mode1" data-mode="1" class="gizmo-icon" src="./res/textures/editor/1.png" width="48px" height="48px"/>
+    <img id="mode2" data-mode="2" class="gizmo-icon" src="./res/textures/editor/2.png" width="48px" height="48px"/>
+    </div>`;
+    document.body.appendChild(this.gizmoBox);
+    if (!document.getElementById("gizmo-style")) {
+      const style = document.createElement("style");
+      style.id = "gizmo-style";
+      style.innerHTML = `
+            .gizmo-icon {
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            /* Hover State */
+            .gizmo-icon:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+                transform: scale(1.1);
+                filter: brightness(1.2);
+            }
+            /* Active/Click State */
+            .gizmo-icon:active {
+                transform: scale(0.95);
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+        `;
+      document.head.appendChild(style);
+    }
+    const setMode = (e) => {
+      dispatchEvent(new CustomEvent("editor-set-gizmo-mode", { detail: { mode: parseInt(e.target.getAttribute("data-mode")) } }));
+    };
+    ["mode0", "mode1", "mode2"].forEach((id2) => {
+      byId(id2).addEventListener("pointerdown", setMode);
+    });
+    this.toolTip.attachTooltip(byId("mode0"), `Set gizmo mode to 'translate'.
+`);
+    this.toolTip.attachTooltip(byId("mode1"), `Set gizmo mode to 'rotate'.
+`);
+    this.toolTip.attachTooltip(byId("mode2"), `Set gizmo mode to 'scale'.
+`);
   }
   createAssets() {
     this.assetsBox = document.createElement("div");
@@ -27952,7 +28081,6 @@ var MatrixEngineWGPU = class {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log("%c\u2705shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE2);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -27971,7 +28099,6 @@ var MatrixEngineWGPU = class {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log("%c\u2705shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE2);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -28004,7 +28131,7 @@ var MatrixEngineWGPU = class {
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach((effect_) => {
           const effect = mesh.effects[effect_];
-          if (effect.enabled == false) return;
+          if (effect == null || effect.enabled == false) return;
           let md = mesh.getModelMatrix(mesh.position);
           if (effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix);

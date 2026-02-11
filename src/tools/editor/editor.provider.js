@@ -47,19 +47,20 @@ export default class EditorProvider {
         case 'scale':
           {
             console.log('change signal for scale');
-            if(e.detail.property == '0') {
-              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-                detail: e.detail
-              }));
-            } else if(e.detail.property == '1') {
-              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-                detail: e.detail
-              }));
-            } else if(e.detail.property == '2') {
+            if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
               document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
                 detail: e.detail
               }));
             }
+            //  else if(e.detail.property == '1') {
+            //   document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+            //     detail: e.detail
+            //   }));
+            // } else if(e.detail.property == '2') {
+            //   document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+            //     detail: e.detail
+            //   }));
+            // }
             break;
           }
         default:

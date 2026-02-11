@@ -535,15 +535,15 @@ export default class EditorHud {
       display: "flex",
       alignItems: "start",
       color: "white",
-      zIndex: "15",
+      zIndex: "10",
       padding: "2px",
       boxSizing: "border-box",
       flexDirection: "row"
     });
     this.gizmoBox.innerHTML = `
-    <img id="mode0" data-mode="0" class="gizmo-icon" onclick="" src="./res/textures/editor/0.png" width="48px" height="48px"/>
-    <img id="mode1" data-mode="1" class="gizmo-icon" onclick="dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail : {mode: 1}}))" src="./res/textures/editor/1.png" width="48px" height="48px"/>
-    <img id="mode2" data-mode="2" class="gizmo-icon" onclick="dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail : {mode: 2}}))" src="./res/textures/editor/2.png" width="48px" height="48px"/>
+    <img id="mode0" data-mode="0" class="gizmo-icon" src="./res/textures/editor/0.png" width="48px" height="48px"/>
+    <img id="mode1" data-mode="1" class="gizmo-icon" src="./res/textures/editor/1.png" width="48px" height="48px"/>
+    <img id="mode2" data-mode="2" class="gizmo-icon" src="./res/textures/editor/2.png" width="48px" height="48px"/>
     </div>`;
     document.body.appendChild(this.gizmoBox);
     if(!document.getElementById('gizmo-style')) {
