@@ -135,7 +135,6 @@ export class GizmoEffect {
 
   _setupEventListeners() {
     app.canvas.addEventListener("ray.hit.mousedown", (e) => {
-      // if(!this.enabled || !this.parentMesh) return;
       const detail = e.detail;
       if(detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
         this._handleRayHit(detail);
@@ -143,6 +142,7 @@ export class GizmoEffect {
         e.detail.hitObject.effects.gizmoEffect = this;
         this.parentMesh.effects.gizmoEffect = null;
         this.parentMesh = e.detail.hitObject;
+        app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
         // console.log('Gizmo: ray.hit.mousedown :FINLA   ', this.parentMesh.name);
       }
     });
@@ -160,18 +160,49 @@ export class GizmoEffect {
     });
     app.canvas.addEventListener("mouseup", () => {
       if(this.isDragging) {
+        console.log('Gizmo: Stopped dragging:', this.parentMesh.name);
+        console.log('What is selectedAxis: ', this.selectedAxis)
+        console.log('What is operation: ', this.mode)
+        if(this.mode == 0) {
+          // 1 x   2 y  3 z
+          if(this.selectedAxis == 1) {
+            // transla x
+          } else if(this.selectedAxis == 2) {
+
+          } else if(this.selectedAxis == 3) {
+
+          }
+
+        } else if(this.mode == 1) {
+          // 1 x   2 y  3 z
+          if(this.selectedAxis == 1) {
+
+          } else if(this.selectedAxis == 2) {
+
+          } else if(this.selectedAxis == 3) {
+
+          }
+        } else if(this.mode == 2) {
+          // 1 x   2 y  3 z
+          if(this.selectedAxis == 1) {
+
+          } else if(this.selectedAxis == 2) {
+
+          } else if(this.selectedAxis == 3) {
+
+          }
+        }
+        // finish job
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        console.log('Gizmo: Stopped dragging', this.parentMesh.name);
         // setup new values...
-
       }
     });
   }
 
   _handleRayHit(detail) {
-    const {rayOrigin, rayDirection, hitPoint, button, eventName} = detail;
+    const {rayOrigin, rayDirection, hitPoint} = detail;
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if(axis > 0) {
       this.selectedAxis = axis;
@@ -225,9 +256,7 @@ export class GizmoEffect {
       y: length > 0.001 ? dy / length : 0
     };
   }
-  /**
-   * Project world position to screen coordinates
-   */
+
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
     // Transform to clip space
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);

@@ -541,10 +541,12 @@ export default class EditorHud {
       flexDirection: "row"
     });
     this.gizmoBox.innerHTML = `
+    <div>
     <img id="mode0" data-mode="0" class="gizmo-icon" src="./res/textures/editor/0.png" width="48px" height="48px"/>
     <img id="mode1" data-mode="1" class="gizmo-icon" src="./res/textures/editor/1.png" width="48px" height="48px"/>
     <img id="mode2" data-mode="2" class="gizmo-icon" src="./res/textures/editor/2.png" width="48px" height="48px"/>
-    </div>`;
+    </div>
+    `;
     document.body.appendChild(this.gizmoBox);
     if(!document.getElementById('gizmo-style')) {
       const style = document.createElement('style');
@@ -570,7 +572,24 @@ export default class EditorHud {
         `;
       document.head.appendChild(style);
     }
-    const setMode = (e) => {dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: parseInt(e.target.getAttribute("data-mode"))}}))}
+    const setMode = (e) => {
+      let m = parseInt(e.target.getAttribute("data-mode"));
+      dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: m}}))
+      if(m == 0) {
+        byId('mode0').style.border = 'gray 1px solid';
+        byId('mode1').style.border = 'none';
+        byId('mode2').style.border = 'none';
+      } else if(m == 1) {
+        byId('mode0').style.border = 'none';
+        byId('mode1').style.border = 'gray 1px solid';
+        byId('mode2').style.border = 'none';
+      } else if(m == 2) {
+        byId('mode0').style.border = 'none';
+        byId('mode1').style.border = 'none';
+        byId('mode2').style.border = 'gray 1px solid';
+      }
+
+    }
     ['mode0', 'mode1', 'mode2'].forEach(id => {
       byId(id).addEventListener("pointerdown", setMode);
     });
@@ -986,10 +1005,29 @@ export default class EditorHud {
         this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
       }
     });
-
     // Add editor events system
     this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
+  }
 
+  updateSceneObjPropertiesFromGizmo = (name) => {
+    this.currentProperties = [];
+    this.objectProperiesTitle.style.fontSize = '120%';
+    this.objectProperiesTitle.innerHTML = `Scene object properties`;
+    this.objectProperies.innerHTML = ``;
+    const currentSO = this.core.getSceneObjectByName(name);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${name}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+    const OK = Object.keys(currentSO);
+    OK.forEach((prop) => {
+      // console.log('[key]:', prop);
+      if(prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO, this.core));
+      } else {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
+      }
+    });
+    // Add editor events system
+    this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
   }
 }
 

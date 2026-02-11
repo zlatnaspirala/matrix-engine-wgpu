@@ -6456,6 +6456,7 @@ var GizmoEffect = class {
         e.detail.hitObject.effects.gizmoEffect = this;
         this.parentMesh.effects.gizmoEffect = null;
         this.parentMesh = e.detail.hitObject;
+        app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
       }
     });
     app.canvas.addEventListener("mousemove", (e) => {
@@ -6472,15 +6473,33 @@ var GizmoEffect = class {
     });
     app.canvas.addEventListener("mouseup", () => {
       if (this.isDragging) {
+        console.log("Gizmo: Stopped dragging:", this.parentMesh.name);
+        console.log("What is selectedAxis: ", this.selectedAxis);
+        console.log("What is operation: ", this.mode);
+        if (this.mode == 0) {
+          if (this.selectedAxis == 1) {
+          } else if (this.selectedAxis == 2) {
+          } else if (this.selectedAxis == 3) {
+          }
+        } else if (this.mode == 1) {
+          if (this.selectedAxis == 1) {
+          } else if (this.selectedAxis == 2) {
+          } else if (this.selectedAxis == 3) {
+          }
+        } else if (this.mode == 2) {
+          if (this.selectedAxis == 1) {
+          } else if (this.selectedAxis == 2) {
+          } else if (this.selectedAxis == 3) {
+          }
+        }
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        console.log("Gizmo: Stopped dragging", this.parentMesh.name);
       }
     });
   }
   _handleRayHit(detail) {
-    const { rayOrigin, rayDirection, hitPoint, button, eventName } = detail;
+    const { rayOrigin, rayDirection, hitPoint } = detail;
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if (axis > 0) {
       this.selectedAxis = axis;
@@ -6527,9 +6546,6 @@ var GizmoEffect = class {
       y: length2 > 1e-3 ? dy / length2 : 0
     };
   }
-  /**
-   * Project world position to screen coordinates
-   */
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
     const ndcX = clipPos.x / clipPos.w;
@@ -25468,10 +25484,12 @@ var EditorHud = class {
       flexDirection: "row"
     });
     this.gizmoBox.innerHTML = `
+    <div>
     <img id="mode0" data-mode="0" class="gizmo-icon" src="./res/textures/editor/0.png" width="48px" height="48px"/>
     <img id="mode1" data-mode="1" class="gizmo-icon" src="./res/textures/editor/1.png" width="48px" height="48px"/>
     <img id="mode2" data-mode="2" class="gizmo-icon" src="./res/textures/editor/2.png" width="48px" height="48px"/>
-    </div>`;
+    </div>
+    `;
     document.body.appendChild(this.gizmoBox);
     if (!document.getElementById("gizmo-style")) {
       const style = document.createElement("style");
@@ -25498,7 +25516,21 @@ var EditorHud = class {
       document.head.appendChild(style);
     }
     const setMode = (e) => {
-      dispatchEvent(new CustomEvent("editor-set-gizmo-mode", { detail: { mode: parseInt(e.target.getAttribute("data-mode")) } }));
+      let m = parseInt(e.target.getAttribute("data-mode"));
+      dispatchEvent(new CustomEvent("editor-set-gizmo-mode", { detail: { mode: m } }));
+      if (m == 0) {
+        byId("mode0").style.border = "gray 1px solid";
+        byId("mode1").style.border = "none";
+        byId("mode2").style.border = "none";
+      } else if (m == 1) {
+        byId("mode0").style.border = "none";
+        byId("mode1").style.border = "gray 1px solid";
+        byId("mode2").style.border = "none";
+      } else if (m == 2) {
+        byId("mode0").style.border = "none";
+        byId("mode1").style.border = "none";
+        byId("mode2").style.border = "gray 1px solid";
+      }
     };
     ["mode0", "mode1", "mode2"].forEach((id2) => {
       byId(id2).addEventListener("pointerdown", setMode);
@@ -25864,6 +25896,24 @@ var EditorHud = class {
     this.objectProperies.innerHTML = ``;
     const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
     this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+    const OK = Object.keys(currentSO);
+    OK.forEach((prop) => {
+      if (prop == "glb" && typeof currentSO[prop] !== "undefined" && currentSO[prop] != null) {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "glb", currentSO, this.core));
+      } else {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
+      }
+    });
+    this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "editor-events", currentSO, this.core));
+  };
+  updateSceneObjPropertiesFromGizmo = (name2) => {
+    this.currentProperties = [];
+    this.objectProperiesTitle.style.fontSize = "120%";
+    this.objectProperiesTitle.innerHTML = `Scene object properties`;
+    this.objectProperies.innerHTML = ``;
+    const currentSO = this.core.getSceneObjectByName(name2);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${name2}</span> 
       <span style="color:yellow;"> [${currentSO.constructor.name}]`;
     const OK = Object.keys(currentSO);
     OK.forEach((prop) => {
