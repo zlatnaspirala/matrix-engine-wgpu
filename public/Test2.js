@@ -27527,6 +27527,15 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.logLoopError = true;
+    if (typeof options2.alphaMode == "undefined") {
+      options2.alphaMode = "no";
+    } else if (options2.alphaMode != "opaque" && options2.alphaMode != "premultiplied") {
+      console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied' !!!");
+      return;
+    }
+    if (typeof options2.useContex == "undefined") {
+      options2.useContex = "webgpu";
+    }
     if (typeof options2.dontUsePhysics == "undefined") {
       this.matrixAmmo = new MatrixAmmo();
     }
@@ -27611,7 +27620,13 @@ var MatrixEngineWGPU = class {
     this.device = await this.adapter.requestDevice({
       extensions: ["ray_tracing"]
     });
-    this.context = canvas.getContext("webgpu");
+    if (this.options.alphaMode == "no") {
+      this.context = canvas.getContext("webgpu");
+    } else if (this.options.alphaMode == "opaque") {
+      this.context = canvas.getContext("webgpu", { alphaMode: "opaque" });
+    } else if (this.options.alphaMode == "opaque") {
+      this.context = canvas.getContext("webgpu", { alphaMode: "premultiplied" });
+    }
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = canvas.clientHeight * devicePixelRatio;
@@ -27630,10 +27645,10 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.8.9 ", LOG_FUNNY);
+    console.log("%c Version 1.9.0 ", LOG_FUNNY);
     console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Port is open.\nCreative power loaded with visual scripting.\nLast features : audioReactiveNode, onDraw , onKey , curve editor.\nNo tracking. No hype. Just solutions. \u{1F525}",
+      "%cMatrix Engine WGPU - Port is open.\nCreative power loaded with visual scripting.\nLast features : Adding Gizmo , Optimised render in name of performance,\n audioReactiveNode, onDraw , onKey , curve editor.\nNo tracking. No hype. Just solutions. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
@@ -28489,6 +28504,9 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("cube1").position.SetX(-4.379999999999993);
+      }, 800);
     });
   }
 );

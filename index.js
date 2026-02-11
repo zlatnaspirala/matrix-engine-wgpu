@@ -27,6 +27,7 @@ var about = () => {
   console.info(" - Physics used Ammo.js build")
   console.info(" - Raycaster HIT/CLICK on object scene")
   console.info(" - Light cast shadow multi lights")
+  console.info(" - NEXT FOR NPM - Run Visual Scripting Editor")
   console.info("--------------------------------------------")
 }
 

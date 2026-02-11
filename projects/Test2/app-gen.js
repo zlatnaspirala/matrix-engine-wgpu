@@ -86,7 +86,13 @@ let app = new MatrixEngineWGPU(
  // ME END cube1 addCube
  
 
-      // [MAIN_REPLACE2]
+          // ME START cube1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetX(-4.379999999999993);
+ }, 800);
+ // ME END cube1 updatePosx
+ 
+ // [MAIN_REPLACE2]
     })
   })
 window.app = app;

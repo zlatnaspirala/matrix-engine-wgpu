@@ -3,7 +3,7 @@ import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery, LOGO_FRAMES, LOG_FUNNY_BIG_TERMINAL, LOG_INFO, LOG_FUNNY, LOG_FUNNY_EXTRABIG} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -28,7 +28,6 @@ import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
  * @github zlatnaspirala
  */
 export default class MatrixEngineWGPU {
-
   // save class reference
   reference = {
     MEMeshObj,
@@ -92,6 +91,18 @@ export default class MatrixEngineWGPU {
     }
 
     this.logLoopError = true;
+    // context select options
+    if(typeof options.alphaMode == 'undefined') {
+      options.alphaMode = "no";
+    } else if(options.alphaMode != 'opaque' && options.alphaMode != 'premultiplied') {
+      console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied' !!!");
+      return;
+    }
+    if(typeof options.useContex == 'undefined') {
+      options.useContex = "webgpu";
+      // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
+      // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
+    }
 
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
@@ -186,9 +197,14 @@ export default class MatrixEngineWGPU {
       extensions: ["ray_tracing"]
     });
 
-    this.context = canvas.getContext('webgpu');
-    // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
-    // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
+    if(this.options.alphaMode == "no") {
+      this.context = canvas.getContext('webgpu');
+    } else if(this.options.alphaMode == "opaque") {
+      this.context = canvas.getContext('webgpu', {alphaMode: 'opaque'});
+    } else if(this.options.alphaMode == "opaque") {
+      this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
+    }
+
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = canvas.clientHeight * devicePixelRatio;
@@ -212,17 +228,17 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.8.9 ", LOG_FUNNY);
+    console.log("%c Version 1.9.0 ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Port is open.\n" +
       "Creative power loaded with visual scripting.\n" +
-      "Last features : audioReactiveNode, onDraw , onKey , curve editor.\n" +
+      "Last features : Adding Gizmo , Optimised render in name of performance,\n" +
+      " audioReactiveNode, onDraw , onKey , curve editor.\n" +
       "No tracking. No hype. Just solutions. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
-
     // pseude async
     setTimeout(() => {this.run(callback)}, 50);
   };
@@ -643,7 +659,7 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
 
-      // update meshes ONCE
+      // update meshes
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update()
         mesh.updateModelUniformBuffer()
@@ -653,15 +669,6 @@ export default class MatrixEngineWGPU {
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
       })
-
-      // for(const light of this.lightContainer) {
-      //   light.update()
-      //   this.mainRenderBundle.forEach((meItem, index) => {
-      //     meItem.position.update()
-      //     meItem.updateModelUniformBuffer()
-      //     meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
-      //   })
-      // }
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
