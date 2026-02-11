@@ -6478,6 +6478,14 @@ var GizmoEffect = class {
         console.log("What is operation: ", this.mode);
         if (this.mode == 0) {
           if (this.selectedAxis == 1) {
+            document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
+              detail: {
+                inputFor: this.parentMesh.name,
+                propertyId: "position",
+                property: "x",
+                value: this.parentMesh.position.x
+              }
+            }));
           } else if (this.selectedAxis == 2) {
           } else if (this.selectedAxis == 3) {
           }

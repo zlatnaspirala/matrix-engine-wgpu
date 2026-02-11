@@ -164,9 +164,18 @@ export class GizmoEffect {
         console.log('What is selectedAxis: ', this.selectedAxis)
         console.log('What is operation: ', this.mode)
         if(this.mode == 0) {
-          // 1 x   2 y  3 z
+          // 1 x  2 y  3 z
           if(this.selectedAxis == 1) {
             // transla x
+            // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
+            document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
+              detail: {
+                inputFor: this.parentMesh.name,
+                propertyId: "position",
+                property: "x",
+                value: this.parentMesh.position.x
+              }
+            }));
           } else if(this.selectedAxis == 2) {
 
           } else if(this.selectedAxis == 3) {
