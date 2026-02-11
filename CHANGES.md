@@ -3,7 +3,7 @@
 [1.9.0]
 
 - Gimzo implementation
-- Optimised render loop
+- Optimised render loop GPU
 
 ```js
 // New ++++
@@ -24,4 +24,10 @@ this.mainRenderBundle.forEach((mesh, index) => {
 //     meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
 //   })
 // }
+
+
+  // Aboid creating bind group in loop
+  // +++
+  pass.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
+
 ```
