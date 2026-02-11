@@ -5,9 +5,10 @@ export class GizmoEffect {
     this.device = device;
     this.format = format;
     this.enabled = true;
-    this.mode = 0; // 0=translate, 1=rotate, 2=scale
+    // 0=translate, 1=rotate, 2=scale
+    this.mode = 0;
     this.size = 3;
-    this.selectedAxis = 0; // 0=none, 1=X, 2=Y, 3=Z
+    this.selectedAxis = 0;
     this.movementScale = 0.01;
     this.isDragging = false;
     this.dragStartPoint = null;
@@ -16,6 +17,11 @@ export class GizmoEffect {
     this.initialPosition = null;
     this._initPipeline();
     this._setupEventListeners();
+
+    addEventListener("editor-set-gizmo-mode", (e) => {
+      console.log("MODE:", e.detail.mode)
+      this.setMode(e.detail.mode);
+    })
   }
 
   _initPipeline() {
@@ -132,18 +138,12 @@ export class GizmoEffect {
       // if(!this.enabled || !this.parentMesh) return;
       const detail = e.detail;
       if(detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
-        console.log('Gizmo: ray.hit.mousedown :e.detail ', e.detail);
-        console.log('Gizmo: ray.hit.mousedown :name  ', detail.hitObject.name);
         this._handleRayHit(detail);
       } else {
-        console.log('Gizmo: ray.hit.mousedown :OTHER OBJECT CLICK SELECT TRY  ', e.detail.hitObject.name);
-        console.log('Gizmo: ray.hit.mousedown :OTHER OBJECT INSTANCE TEST MUST BE GIZMO ', this);
         e.detail.hitObject.effects.gizmoEffect = this;
         this.parentMesh.effects.gizmoEffect = null;
         this.parentMesh = e.detail.hitObject;
-        console.log('Gizmo: ray.hit.mousedown :FINLA   ', this.parentMesh.name);
-
-        
+        // console.log('Gizmo: ray.hit.mousedown :FINLA   ', this.parentMesh.name);
       }
     });
     app.canvas.addEventListener("mousemove", (e) => {
@@ -164,6 +164,7 @@ export class GizmoEffect {
         this.selectedAxis = 0;
         this._updateGizmoSettings();
         console.log('Gizmo: Stopped dragging');
+        // setup new values...
       }
     });
   }

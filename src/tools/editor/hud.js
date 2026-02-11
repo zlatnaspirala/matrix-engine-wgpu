@@ -17,6 +17,7 @@ export default class EditorHud {
     } else if(a == "created from editor") {
       this.createTopMenu();
       this.createAssets();
+      this.createGizmoIcons();
     } else if(a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -513,11 +514,69 @@ export default class EditorHud {
   🎯 Save system - direct code line [file-protocol]
   🎯 Adding Visual Scripting System called 
      FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+  🎯 Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+
+  createGizmoIcons() {
+    this.gizmoBox = document.createElement("div");
+    this.assetsBox.id = "gizmoBox";
+    Object.assign(this.gizmoBox.style, {
+      position: "absolute",
+      top: "0",
+      left: "17.55%",
+      width: "190px",
+      height: "64px",
+      backgroundColor: "transparent",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.gizmoBox.innerHTML = `
+    <img id="mode0" data-mode="0" class="gizmo-icon" onclick="" src="./res/textures/editor/0.png" width="48px" height="48px"/>
+    <img id="mode1" data-mode="1" class="gizmo-icon" onclick="dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail : {mode: 1}}))" src="./res/textures/editor/1.png" width="48px" height="48px"/>
+    <img id="mode2" data-mode="2" class="gizmo-icon" onclick="dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail : {mode: 2}}))" src="./res/textures/editor/2.png" width="48px" height="48px"/>
+    </div>`;
+    document.body.appendChild(this.gizmoBox);
+    if(!document.getElementById('gizmo-style')) {
+      const style = document.createElement('style');
+      style.id = 'gizmo-style';
+      style.innerHTML = `
+            .gizmo-icon {
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            /* Hover State */
+            .gizmo-icon:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+                transform: scale(1.1);
+                filter: brightness(1.2);
+            }
+            /* Active/Click State */
+            .gizmo-icon:active {
+                transform: scale(0.95);
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+        `;
+      document.head.appendChild(style);
+    }
+    const setMode = (e) => {dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: parseInt(e.target.getAttribute("data-mode"))}}))}
+    ['mode0', 'mode1', 'mode2'].forEach(id => {
+      byId(id).addEventListener("pointerdown", setMode);
+    });
+    this.toolTip.attachTooltip(byId('mode0'), `Set gizmo mode to 'translate'.\n`);
+    this.toolTip.attachTooltip(byId('mode1'), `Set gizmo mode to 'rotate'.\n`);
+    this.toolTip.attachTooltip(byId('mode2'), `Set gizmo mode to 'scale'.\n`);
   }
 
   createAssets() {
