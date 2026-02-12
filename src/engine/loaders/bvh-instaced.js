@@ -1,7 +1,8 @@
 // import MEBvh from "bvh-loader";
-import {mat4, vec3, quat} from "wgpu-matrix";
+import {mat4, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
+
 // export var animBVH = new MEBvh();
 // export let loadBVH = (path) => {
 //   return new Promise((resolve, reject) => {
@@ -35,7 +36,7 @@ import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
 export class BVHPlayerInstances extends MEMeshObjInstances {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
     super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
-    // bvh arg not actula at the moment
+    // bvh arg not actual at the moment
     this.bvh = {};
     this.glb = glb;
     this.currentFrame = 0;
@@ -188,9 +189,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     const byteLength =
       accessor.count *
       this.getNumComponents(accessor.type) *
-      (accessor.componentType === 5126 ? 4 : 2); // adjust per type
+      (accessor.componentType === 5126 ? 4 : 2);
     const bufferDef = glb.glbBinaryBuffer;
-    // ✅ now just slice:
     const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
     switch(accessor.componentType) {
       case 5126: // FLOAT
@@ -209,7 +209,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       case "translation": return "VEC3";
       case "rotation": return "VEC4";
       case "scale": return "VEC3";
-      case "weights": return "VECN"; // if needed
+      case "weights": return "VECN";
       default: throw new Error("Unknown channel path: " + path);
     }
   }
@@ -251,12 +251,10 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         bufferDef.byteOffset + (byteOffset || 0) + byteLength
       );
     }
-
     // Already have a raw ArrayBuffer:
     if(bufferDef instanceof ArrayBuffer) {
       return bufferDef.slice(byteOffset, byteOffset + byteLength);
     }
-
     // Some loaders store it as .data or ._data:
     if(bufferDef && bufferDef.data instanceof ArrayBuffer) {
       return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
@@ -264,7 +262,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     if(bufferDef && bufferDef._data instanceof ArrayBuffer) {
       return bufferDef._data.slice(byteOffset, byteOffset + byteLength);
     }
-
     throw new Error("No binary data found in GLB buffer[0]");
   }
 
@@ -309,20 +306,16 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     mat4.multiply(m, rot, m);
     mat4.scale(m, scale, m);
     return m;
-
     // const m = mat4.identity();
     // mat4.translate(m, translation, m);
     // const rot = mat4.fromQuat(rotationQuat);
     // mat4.multiply(m, rot, m);
     // mat4.scale(m, scale, m);
-
     // // Flip Y globally
     // const flipY = mat4.identity();
     // mat4.scale(flipY, [1, 1, -1], flipY);
     // mat4.multiply(m, flipY, m);
-
     // return m;
-
   }
 
   decomposeMatrix(m) {
@@ -332,26 +325,21 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     //   m2 m6 m10 m14
     //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
-
     // Extract the 3 column vectors (upper-left 3x3)
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-
     // Lengths = scales
     const len = v => Math.hypot(v[0], v[1], v[2]);
     let sx = len(cx), sy = len(cy), sz = len(cz);
-
     // If any scale nearly zero, avoid divide-by-zero
     if(sx === 0) sx = 1.0;
     if(sy === 0) sy = 1.0;
     if(sz === 0) sz = 1.0;
-
     // Normalize columns to produce a pure rotation matrix
     const r00 = m[0] / sx, r01 = m[4] / sy, r02 = m[8] / sz;
     const r10 = m[1] / sx, r11 = m[5] / sy, r12 = m[9] / sz;
     const r20 = m[2] / sx, r21 = m[6] / sy, r22 = m[10] / sz;
-
     // Fix negative-scale (reflection) case: if determinant < 0, flip sign of one scale and corresponding column
     const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
     if(det3 < 0) {
@@ -366,7 +354,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       // Here we flip the third column:
       // r02 = -r02; r12 = -r12; r22 = -r22;
     }
-
     // Build quaternion from rotation matrix (r00..r22)
     // Using standard conversion (column-major rotation)
     const trace = r00 + r11 + r22;
@@ -405,7 +392,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   slerp(q0, q1, t, out) {
     let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
     if(dot < 0) {dot = -dot; q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];}
-
     if(dot > 0.9995) {
       // linear
       for(let i = 0;i < 4;i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
@@ -414,15 +400,12 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       for(let i = 0;i < 4;i++) out[i] /= len;
       return;
     }
-
     const theta0 = Math.acos(dot);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
-
     const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-
     for(let i = 0;i < 4;i++) {
       out[i] = s0 * q0[i] + s1 * q1[i];
     }
@@ -440,19 +423,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     for(let j = 0;j < this.skeleton.length;j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-
       // --- Initialize node TRS if needed
       if(!node.translation) node.translation = new Float32Array([0, 0, 0]);
       if(!node.rotation) node.rotation = quat.create();
       if(!node.scale) node.scale = new Float32Array([1, 1, 1]);
-
       // --- Keep original TRS for additive animation
       if(!node.originalTranslation) node.originalTranslation = node.translation.slice();
       if(!node.originalRotation) node.originalRotation = node.rotation.slice();
       if(!node.originalScale) node.originalScale = node.scale.slice();
-
       const channelsForNode = nodeChannels.get(nodeIndex) || [];
-
       for(const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
         const sampler = samplers[channel.sampler];
@@ -498,9 +477,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         mat4.copy(node.transform, node.worldMatrix);
       }
 
-      // maybe no need to exist...
       mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-
       if(node.children) {
         for(const childIndex of node.children) computeWorld(childIndex);
       }

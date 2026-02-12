@@ -149,6 +149,8 @@ export class WASDCamera extends CameraBase {
       this.aspect = options.canvas.width / options.canvas.height;
       this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
       this.suspendDrag = false;
+      if(options.pitch) this.setPitch(options.pitch)
+      if(options.yaw) this.setYaw(options.yaw)
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
@@ -450,20 +452,16 @@ export class RPGCamera extends CameraBase {
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-  // Returns velocity vector
-
   // Inside your camera control init
   scrollY = 50;
   minY = 50.5;   // minimum camera height
   maxY = 135.0;   // maximum camera height
   scrollSpeed = 1;
 
-
-
   get velocity() {
     return this.velocity_;
   }
-  // Assigns `vec` to the velocity vector
+
   set velocity(vec) {
     vec3.copy(vec, this.velocity_);
   }

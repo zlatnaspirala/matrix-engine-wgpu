@@ -1752,9 +1752,11 @@ export default class FluxCodexVertex {
         ],
         outputs: [
           {name: "execOut", type: "action"},
+          {name: "complete", type: "action"},
+          {name: "error", type: "action"}
         ],
         fields: [
-          {key: "path", value: "res/meshes/shapes/cube.obj"},
+          {key: "path", value: "res/meshes/blender/cube.obj"},
           {key: "material", value: "standard"},
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
@@ -4166,32 +4168,46 @@ export default class FluxCodexVertex {
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
-        const isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
-        let delay = this.getValue(nodeId, "delay");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
         let raycast = this.getValue(nodeId, "raycast");
         let scale = this.getValue(nodeId, "scale");
         let name = this.getValue(nodeId, "name");
-        // spec adaptation
+        // spec adaptation - nature of stuff
         if(raycast == "true") {raycast = true} else {raycast = false;}
         if(isInstancedObj == "true") {isInstancedObj = true} else {isInstancedObj = false;}
+        if(isPhysicsBody == "true") {isPhysicsBody = true} else {isPhysicsBody = false;}
         if(typeof pos == 'string') eval("pos = " + pos);
         if(typeof rot == 'string') eval("rot = " + rot);
+          console.warn("[Generator] scale...", scale);
         if(typeof scale == 'string') eval("scale = " + scale);
-
-        if(!texturePath || !pos) {
+        if(!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
           return;
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-
-          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj, delay).then((objects) => {
-            console.log('!ADD OBJ FROM GRAPH COMPLETE!');
-            n._returnCache = objects;
+          // MEMeshObjInstances
+          // path,
+          //   material = "standard",
+          //   pos,
+          //   rot,
+          //   texturePath,
+          //   name,
+          //   isPhysicsBody = false,
+          //   raycast = false,
+          //   scale = [1, 1, 1],
+          //   isInstancedObj = false
+          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+            console.log('!ADD OBJ FROM GRAPH COMPLETE!', object);
+            n._returnCache = object;
             this.enqueueOutputs(n, "complete");
+          }).catch((err) => {
+            console.log('!ADD OBJ ERROR GRAPH!');
+            n._returnCache = null;
+            this.enqueueOutputs(n, "error");
           })
           // createdField.value = true;
         }

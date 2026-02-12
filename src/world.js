@@ -14,7 +14,7 @@ import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
-import {addOBJ, physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/phisicsBodies.js";
+import {addOBJ, physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/generator.js";
 import {TextureCache} from "./engine/core-cache.js";
 import {AudioAssetManager} from "./sounds/audioAsset.js";
 import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
@@ -168,9 +168,10 @@ export default class MatrixEngineWGPU {
       responseCoef: this.options.mainCameraParams.responseCoef
     };
 
+    // add defaul generatl config later
     this.cameras = {
       arcball: new ArcballCamera({position: initialCameraPosition}),
-      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas}),
+      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18 , yaw: -0.1}),
       RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
@@ -548,6 +549,7 @@ export default class MatrixEngineWGPU {
       ]
     })
   }
+
   async run(callback) {
     // await this.device.queue.onSubmittedWorkDone();
     setTimeout(() => {requestAnimationFrame(this.frame)}, 1000);

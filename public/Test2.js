@@ -2712,6 +2712,8 @@ var WASDCamera = class extends CameraBase {
       this.aspect = options2.canvas.width / options2.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
       this.suspendDrag = false;
+      if (options2.pitch) this.setPitch(options2.pitch);
+      if (options2.yaw) this.setYaw(options2.yaw);
     }
   }
   // Returns the camera matrix
@@ -2942,7 +2944,6 @@ var RPGCamera = class extends CameraBase {
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-  // Returns velocity vector
   // Inside your camera control init
   scrollY = 50;
   minY = 50.5;
@@ -2953,7 +2954,6 @@ var RPGCamera = class extends CameraBase {
   get velocity() {
     return this.velocity_;
   }
-  // Assigns `vec` to the velocity vector
   set velocity(vec) {
     vec3Impl.copy(vec, this.velocity_);
   }
@@ -5403,8 +5403,8 @@ var Materials = class {
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
   async loadTex0(texturesPaths) {
-    const path = texturesPaths[0];
-    const { texture, sampler } = await this.textureCache.get(path, this.getFormat());
+    const path2 = texturesPaths[0];
+    const { texture, sampler } = await this.textureCache.get(path2, this.getFormat());
     this.texture0 = texture;
     this.sampler = sampler;
   }
@@ -8546,23 +8546,23 @@ var MatrixSounds = class {
   unmuteAll() {
     this.enabled = true;
   }
-  createClones(c, name2, path) {
+  createClones(c, name2, path2) {
     for (let x2 = 1; x2 < c; x2++) {
-      const a = new Audio(path);
+      const a = new Audio(path2);
       a.id = name2 + x2;
       a.volume = this.volume;
       this.audios[name2 + x2] = a;
       document.body.append(a);
     }
   }
-  createAudio(name2, path, useClones) {
-    const a = new Audio(path);
+  createAudio(name2, path2, useClones) {
+    const a = new Audio(path2);
     a.id = name2;
     a.volume = this.volume;
     this.audios[name2] = a;
     document.body.append(a);
     if (typeof useClones !== "undefined") {
-      this.createClones(useClones, name2, path);
+      this.createClones(useClones, name2, path2);
     }
   }
   play(name2) {
@@ -12924,8 +12924,8 @@ var BVHPlayer = class extends MEMeshObj {
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
   }
-  getAccessorTypeForChannel(path) {
-    switch (path) {
+  getAccessorTypeForChannel(path2) {
+    switch (path2) {
       case "translation":
         return "VEC3";
       case "rotation":
@@ -12936,7 +12936,7 @@ var BVHPlayer = class extends MEMeshObj {
         return "VECN";
       // if needed
       default:
-        throw new Error("Unknown channel path: " + path);
+        throw new Error("Unknown channel path: " + path2);
     }
   }
   getNumComponents(type2) {
@@ -13138,11 +13138,11 @@ var BVHPlayer = class extends MEMeshObj {
       if (!node2.originalScale) node2.originalScale = node2.scale.slice();
       const channelsForNode = nodeChannels.get(nodeIndex) || [];
       for (const channel of channelsForNode) {
-        const path = channel.target.path;
+        const path2 = channel.target.path;
         const sampler = samplers[channel.sampler];
         const inputTimes = this.getAccessorArray(this.glb, sampler.input);
         const outputArray = this.getAccessorArray(this.glb, sampler.output);
-        const numComponents = path === "rotation" ? 4 : 3;
+        const numComponents = path2 === "rotation" ? 4 : 3;
         const animTime = time % inputTimes[inputTimes.length - 1];
         let i = 0;
         while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
@@ -13154,13 +13154,13 @@ var BVHPlayer = class extends MEMeshObj {
           Math.min(i + 1, inputTimes.length - 1) * numComponents,
           Math.min(i + 2, inputTimes.length) * numComponents
         );
-        if (path === "translation") {
+        if (path2 === "translation") {
           for (let k = 0; k < 3; k++)
             node2.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "scale") {
+        } else if (path2 === "scale") {
           for (let k = 0; k < 3; k++)
             node2.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "rotation") {
+        } else if (path2 === "rotation") {
           this.slerp(v0, v1, factor, node2.rotation);
         }
       }
@@ -15730,7 +15730,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen-tex.js
 var GenGeoTexture = class {
-  constructor(device2, format, type2 = "sphere", path, scale4 = 1) {
+  constructor(device2, format, type2 = "sphere", path2, scale4 = 1) {
     this.device = device2;
     this.format = format;
     const geom = GeometryFactory.create(type2, scale4);
@@ -15741,7 +15741,7 @@ var GenGeoTexture = class {
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
-    this.loadTexture(path).then(() => {
+    this.loadTexture(path2).then(() => {
       this._initPipeline();
     });
   }
@@ -15909,7 +15909,7 @@ var GenGeoTexture = class {
 
 // ../../../engine/effects/gen-tex2.js
 var GenGeoTexture2 = class {
-  constructor(device2, format, type2 = "sphere", path, scale4 = 1) {
+  constructor(device2, format, type2 = "sphere", path2, scale4 = 1) {
     this.device = device2;
     this.format = format;
     const geom = GeometryFactory.create(type2, scale4);
@@ -15920,7 +15920,7 @@ var GenGeoTexture2 = class {
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
-    this.loadTexture(path).then(() => {
+    this.loadTexture(path2).then(() => {
       this._initPipeline();
     });
   }
@@ -17103,8 +17103,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
   }
-  getAccessorTypeForChannel(path) {
-    switch (path) {
+  getAccessorTypeForChannel(path2) {
+    switch (path2) {
       case "translation":
         return "VEC3";
       case "rotation":
@@ -17113,9 +17113,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         return "VEC3";
       case "weights":
         return "VECN";
-      // if needed
       default:
-        throw new Error("Unknown channel path: " + path);
+        throw new Error("Unknown channel path: " + path2);
     }
   }
   getNumComponents(type2) {
@@ -17317,11 +17316,11 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       if (!node2.originalScale) node2.originalScale = node2.scale.slice();
       const channelsForNode = nodeChannels.get(nodeIndex) || [];
       for (const channel of channelsForNode) {
-        const path = channel.target.path;
+        const path2 = channel.target.path;
         const sampler = samplers[channel.sampler];
         const inputTimes = this.getAccessorArray(this.glb, sampler.input);
         const outputArray = this.getAccessorArray(this.glb, sampler.output);
-        const numComponents = path === "rotation" ? 4 : 3;
+        const numComponents = path2 === "rotation" ? 4 : 3;
         const animTime = time % inputTimes[inputTimes.length - 1];
         let i = 0;
         while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
@@ -17333,13 +17332,13 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
           Math.min(i + 1, inputTimes.length - 1) * numComponents,
           Math.min(i + 2, inputTimes.length) * numComponents
         );
-        if (path === "translation") {
+        if (path2 === "translation") {
           for (let k = 0; k < 3; k++)
             node2.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "scale") {
+        } else if (path2 === "scale") {
           for (let k = 0; k < 3; k++)
             node2.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "rotation") {
+        } else if (path2 === "rotation") {
           this.slerp(v0, v1, factor, node2.rotation);
         }
       }
@@ -18932,13 +18931,13 @@ var ConnectionLayer = class {
     this.shaderGraph.connections.forEach((c) => this.redrawConnection(c));
   }
   redrawConnection(conn) {
-    const path = this.path();
-    path.dataset.from = `${conn.fromNode.id}:${conn.fromPin}`;
-    path.dataset.to = `${conn.toNode.id}:${conn.toPin}`;
-    this.svg.appendChild(path);
+    const path2 = this.path();
+    path2.dataset.from = `${conn.fromNode.id}:${conn.fromPin}`;
+    path2.dataset.to = `${conn.toNode.id}:${conn.toPin}`;
+    this.svg.appendChild(path2);
     const a = document.querySelector(`.pinShader.output[data-node="${conn.fromNode.id}"][data-pin="${conn.fromPin}"]`);
     const b = document.querySelector(`.pinShader.input[data-node="${conn.toNode.id}"][data-pin="${conn.toPin}"]`);
-    if (a && b) this.draw(path, this.center(a), this.center(b));
+    if (a && b) this.draw(path2, this.center(a), this.center(b));
   }
   path() {
     const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -19661,11 +19660,11 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
           return;
         }
         shaderGraph.connect(fromNode, fromPin, toNode, toPin);
-        const path = shaderGraph.connectionLayer.path();
-        path.dataset.from = `${fromNode.id}:${fromPin}`;
-        path.dataset.to = `${toNode.id}:${toPin}`;
-        shaderGraph.connectionLayer.svg.appendChild(path);
-        shaderGraph.connectionLayer.redrawAll(path);
+        const path2 = shaderGraph.connectionLayer.path();
+        path2.dataset.from = `${fromNode.id}:${fromPin}`;
+        path2.dataset.to = `${toNode.id}:${toPin}`;
+        shaderGraph.connectionLayer.svg.appendChild(path2);
+        shaderGraph.connectionLayer.redrawAll(path2);
       }), 50);
       return true;
     });
@@ -21338,8 +21337,8 @@ var FluxCodexVertex = class {
       if (getSubNode.objectPreviewEl)
         getSubNode.objectPreviewEl.value = previewField.value;
     }
-    const path = getSubNode.fields?.find((f) => f.key === "path")?.value;
-    const target = this.resolvePath(obj2, path);
+    const path2 = getSubNode.fields?.find((f) => f.key === "path")?.value;
+    const target = this.resolvePath(obj2, path2);
     this.adaptSubObjectPins(getSubNode, target);
     getSubNode._subCache = {};
     if (target && typeof target === "object") {
@@ -21822,6 +21821,45 @@ var FluxCodexVertex = class {
           { key: "scale", value: [1, 1, 1] },
           { key: "spacing", value: 10 },
           { key: "delay", value: 500 },
+          { key: "created", value: false }
+        ],
+        noselfExec: "true"
+      }),
+      addObj: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Add OBJ",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "path", type: "string" },
+          { name: "material", type: "string" },
+          { name: "pos", type: "object" },
+          { name: "rot", type: "object" },
+          { name: "texturePath", type: "string" },
+          { name: "name", type: "string" },
+          { name: "raycast", type: "boolean" },
+          { name: "scale", type: "object" },
+          { name: "isPhysicsBody", type: "boolean" },
+          { name: "isInstancedObj", type: "boolean" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" },
+          { name: "complete", type: "action" },
+          { name: "error", type: "action" }
+        ],
+        fields: [
+          { key: "path", value: "res/meshes/blender/cube.obj" },
+          { key: "material", value: "standard" },
+          { key: "pos", value: "{x:0, y:0, z:-20}" },
+          { key: "rot", value: "{x:0, y:0, z:0}" },
+          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "name", value: "TEST" },
+          { key: "raycast", value: true },
+          { key: "scale", value: [1, 1, 1] },
+          { key: "isPhysicsBody", type: false },
+          { key: "isInstancedObj", type: false },
           { key: "created", value: false }
         ],
         noselfExec: "true"
@@ -23359,8 +23397,8 @@ var FluxCodexVertex = class {
         const varField = link.node.fields?.find((f) => f.key === "var");
         const varName = varField?.value;
         const rootObj = this.variables?.object?.[varName];
-        const path = input.value;
-        const target = this.resolvePath(rootObj, path);
+        const path2 = input.value;
+        const target = this.resolvePath(rootObj, path2);
         node2._subCache = {};
         node2._subCache = target;
         node2.outputs = node2.outputs.filter((p) => p.type === "action");
@@ -23379,9 +23417,9 @@ var FluxCodexVertex = class {
     }
     return input;
   }
-  resolvePath(obj2, path) {
-    if (!obj2 || !path) return obj2;
-    const parts = path.split(".").filter((p) => p.length);
+  resolvePath(obj2, path2) {
+    if (!obj2 || !path2) return obj2;
+    const parts = path2.split(".").filter((p) => p.length);
     let current = obj2;
     for (const part of parts) {
       if (current && typeof current === "object" && part in current) {
@@ -23855,11 +23893,11 @@ var FluxCodexVertex = class {
     }
     if (n.title === "Get Sub Object") {
       const obj2 = this.getValue(n.id, "object");
-      let path = n.fields.find((f) => f.key === "path")?.value;
-      let target = this.resolvePath(obj2, path);
+      let path2 = n.fields.find((f) => f.key === "path")?.value;
+      let target = this.resolvePath(obj2, path2);
       if (target === void 0) {
-        path = path.replace("value.", "");
-        target = this.resolvePath(obj2, path);
+        path2 = path2.replace("value.", "");
+        target = this.resolvePath(obj2, path2);
       }
       console.warn("SET CACHE target is ", target);
       n._subCache = target;
@@ -24188,6 +24226,55 @@ var FluxCodexVertex = class {
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Add OBJ") {
+        const path = this.getValue(nodeId, "path");
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let rot = this.getValue(nodeId, "rot");
+        let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (isInstancedObj == "true") {
+          isInstancedObj = true;
+        } else {
+          isInstancedObj = false;
+        }
+        if (isPhysicsBody == "true") {
+          isPhysicsBody = true;
+        } else {
+          isPhysicsBody = false;
+        }
+        if (typeof pos == "string") eval("pos = " + pos);
+        if (typeof rot == "string") eval("rot = " + rot);
+        console.warn("[Generator] scale...", scale);
+        if (typeof scale == "string") eval("scale = " + scale);
+        if (!texturePath || !path) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find((f) => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+            console.log("!ADD OBJ FROM GRAPH COMPLETE!", object);
+            n._returnCache = object;
+            this.enqueueOutputs(n, "complete");
+          }).catch((err) => {
+            console.log("!ADD OBJ ERROR GRAPH!");
+            n._returnCache = null;
+            this.enqueueOutputs(n, "error");
+          });
         }
         this.enqueueOutputs(n, "execOut");
         return;
@@ -24746,8 +24833,8 @@ var FluxCodexVertex = class {
       this.adaptNodeToAccessMethod(node, objName, fnName);
     };
   }
-  getByPath(obj2, path) {
-    return path.split(".").reduce((acc, key) => acc?.[key], obj2);
+  getByPath(obj2, path2) {
+    return path2.split(".").reduce((acc, key) => acc?.[key], obj2);
   }
   getVariable(type2, key) {
     const entry = this.variables[type2]?.[key];
@@ -24836,16 +24923,16 @@ var FluxCodexVertex = class {
       const fRect = fromDot.getBoundingClientRect(), tRect = toDot.getBoundingClientRect();
       const x1 = fRect.left - bRect.left + 6, y1 = fRect.top - bRect.top + 6;
       const x2 = tRect.left - bRect.left + 6, y2 = tRect.top - bRect.top + 6;
-      const path = document.createElementNS(
+      const path2 = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "path"
       );
-      path.setAttribute("class", "link " + (l.type === "value" ? "value" : ""));
-      path.setAttribute(
+      path2.setAttribute("class", "link " + (l.type === "value" ? "value" : ""));
+      path2.setAttribute(
         "d",
         `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`
       );
-      this.svg.appendChild(path);
+      this.svg.appendChild(path2);
     });
   }
   runGraph() {
@@ -26636,6 +26723,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add OBJ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
@@ -27145,7 +27233,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
   });
 }
 
-// ../../../engine/generators/phisicsBodies.js
+// ../../../engine/generators/generator.js
 function stabilizeTowerBody(body2) {
   body2.setDamping(0.8, 0.95);
   body2.setSleepingThresholds(0.4, 0.4);
@@ -27358,6 +27446,42 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
+function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = { mesh: path2 };
+    function handler(m) {
+      const RAY = { enabled: !!raycast2, radius: 1 };
+      if (isInstancedObj2 == false) {
+        console.info("add cube form graph..");
+        engine.addMeshObj({
+          material: { type: material },
+          position: {
+            x: pos2.x,
+            y: pos2.y,
+            z: pos2.z
+          },
+          rotation: rot2,
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturePath2],
+          name: name2,
+          mesh: m.mesh,
+          physics: {
+            scale: scale4,
+            enabled: isPhysicsBody2,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+      } else {
+      }
+      const o2 = app.getSceneObjectByName(name2);
+      runtimeCacheObjs.push(o2);
+      resolve(o2);
+    }
+    downloadMeshes(inputCube, handler, { scale: scale4 });
+  });
+}
 
 // ../../../engine/core-cache.js
 var TextureCache = class {
@@ -27365,16 +27489,16 @@ var TextureCache = class {
     this.device = device2;
     this.cache = /* @__PURE__ */ new Map();
   }
-  async get(path, format) {
-    if (this.cache.has(path)) {
-      return this.cache.get(path);
+  async get(path2, format) {
+    if (this.cache.has(path2)) {
+      return this.cache.get(path2);
     }
-    const promise = this.#load(path, format);
-    this.cache.set(path, promise);
+    const promise = this.#load(path2, format);
+    this.cache.set(path2, promise);
     return promise;
   }
-  async #load(path, format) {
-    const response = await fetch(path);
+  async #load(path2, format) {
+    const response = await fetch(path2);
     const blob = await response.blob();
     const imageBitmap = await createImageBitmap(blob);
     const texture = this.device.createTexture({
@@ -27404,26 +27528,26 @@ var AudioAssetManager = class {
     this.assets = /* @__PURE__ */ new Map();
     this.loading = /* @__PURE__ */ new Map();
   }
-  load(path, options2 = {}) {
-    if (this.assets.has(path)) {
-      return Promise.resolve(this.assets.get(path));
+  load(path2, options2 = {}) {
+    if (this.assets.has(path2)) {
+      return Promise.resolve(this.assets.get(path2));
     }
-    if (this.loading.has(path)) {
-      return this.loading.get(path);
+    if (this.loading.has(path2)) {
+      return this.loading.get(path2);
     }
-    const asset = new MatrixMusicAsset({ path, ...options2 });
+    const asset = new MatrixMusicAsset({ path: path2, ...options2 });
     const promise = asset.init().then((a) => {
-      this.assets.set(path, a);
-      this.loading.delete(path);
+      this.assets.set(path2, a);
+      this.loading.delete(path2);
       return a;
     });
-    this.loading.set(path, promise);
+    this.loading.set(path2, promise);
     return promise;
   }
 };
 var MatrixMusicAsset = class {
-  constructor({ path, autoplay = true, containerId = null }) {
-    this.path = path;
+  constructor({ path: path2, autoplay = true, containerId = null }) {
+    this.path = path2;
     this.autoplay = autoplay;
     this.containerId = containerId;
     this.audio = null;
@@ -27530,6 +27654,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower.bind(this);
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
+    this.editorAddOBJ = addOBJ.bind(this);
     this.logLoopError = true;
     if (typeof options2.alphaMode == "undefined") {
       options2.alphaMode = "no";
@@ -27598,7 +27723,7 @@ var MatrixEngineWGPU = class {
     };
     this.cameras = {
       arcball: new ArcballCamera({ position: initialCameraPosition }),
-      WASD: new WASDCamera({ position: initialCameraPosition, canvas }),
+      WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1 }),
       RPG: new RPGCamera({ position: initialCameraPosition, canvas })
     };
     this.label = new MultiLang();
@@ -28439,7 +28564,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 65.11114501953125, "y": 314.1041831970215, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n2": { "id": "n2", "title": "getNumberLiteral", "x": 326, "y": 283, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n3": { "id": "n3", "title": "getNumberLiteral", "x": 332, "y": 508, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 10 }], "noselfExec": true }, "n4": { "id": "n4", "title": "Mul", "x": 593, "y": 381, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "fields": [], "displayEl": {} }, "n5": { "id": "n5", "title": "Print", "x": 863, "y": 294, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "noselfExec": true, "displayEl": {} } }, "links": [{ "id": "l1", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n2", "pin": "exec" }, "type": "action" }, { "id": "l2", "from": { "node": "n1", "pin": "exec" }, "to": { "node": "n3", "pin": "exec" }, "type": "action" }, { "id": "l3", "from": { "node": "n2", "pin": "execOut" }, "to": { "node": "n5", "pin": "exec" }, "type": "action" }, { "id": "l4", "from": { "node": "n2", "pin": "value" }, "to": { "node": "n4", "pin": "a" }, "type": "value" }, { "id": "l5", "from": { "node": "n3", "pin": "value" }, "to": { "node": "n4", "pin": "b" }, "type": "value" }, { "id": "l6", "from": { "node": "n4", "pin": "result" }, "to": { "node": "n5", "pin": "value" }, "type": "value" }], "nodeCounter": 1, "linkCounter": 1, "pan": [-49, 38], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 39.42364501953125, "y": 246.42709350585938, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_1": { "id": "node_1", "x": 386.64239501953125, "y": 241.68405151367188, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/shapes/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "[3,1,3]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false, "value": "false" }, { "key": "created", "value": "false" }], "noselfExec": "true" }, "node_2": { "id": "node_2", "title": "Print", "x": 763.8194580078125, "y": 200.44097900390625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_3": { "id": "node_3", "title": "Print", "x": 774.5104370117188, "y": 467.1493225097656, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "n1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_1", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_1", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }], "nodeCounter": 4, "linkCounter": 4, "pan": [55, 89], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [
@@ -28510,6 +28635,18 @@ var app2 = new MatrixEngineWGPU(
       }, { scale: [1, 1, 1] });
       setTimeout(() => {
         app3.getSceneObjectByName("cube1").position.SetX(-4.379999999999993);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetX(-0.02);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-3.430000000000009);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("TEST").position.SetX(-0.14999999999999966);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("TEST").position.SetY(-1.250000000000006);
       }, 800);
     });
   }
