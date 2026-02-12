@@ -2591,72 +2591,6 @@ export default class FluxCodexVertex {
         ],
       }),
 
-      setVertexAnim: (id, x, y) => ({
-        id, x, y,
-        title: "Set VertexAnim Intesity",
-        category: "scene",
-        inputs: [
-          {name: "exec", type: "action"},
-          {name: "sceneObjectName", semantic: "string"},
-          {name: "intensity", type: "number"},
-          {name: "enableTwist", type: "boolean"},
-          //  setTwistParams: (speed, amount)
-          {name: "Twist speed", type: "number"},
-          {name: "Twist amount", type: "number"},
-          {name: "enableNoise", type: "boolean"},
-          {name: "Noise Scale", type: "number"},
-          {name: "Noise Strength", type: "number"},
-          {name: "Noise Speed", type: "number"},
-          // setNoiseParams: (scale, strength, speed)
-          {name: "enableOcean", type: "boolean"},
-          {name: "Ocean Scale", type: "number"},
-          {name: "Ocean Height", type: "number"},
-          {name: "Ocean speed", type: "number"},
-          // setOceanParams: (scale, height, speed) => {
-        ],
-        outputs: [{name: "execOut", type: "action"}],
-        fields: [
-          {key: "sceneObjectName", value: "FLOOR"},
-          {key: "enableWave", value: false},
-          {key: "enableWind", value: false},
-          {key: "enablePulse", value: false},
-          {key: "enableTwist", value: false},
-          {key: "enableNoise", value: false},
-          {key: "enableOcean", value: false},
-          {key: "Intensity", value: 1},
-          {key: "Wave Speed", value: "number"},
-          {key: "Wave Amplitude", value: "number"},
-          {key: "Wave Speed", value: "number"},
-          {key: "Wave Frequency", value: "number"},
-          // setWaveParams: (speed, amplitude, frequency) 
-          {key: "enableWind", value: "boolean"},
-          {key: "Wind Speed", value: "number"},
-          {key: "Wind Strength", value: "number"},
-          {key: "Wind HeightInfluence", value: "number"},
-          {key: "Wind Turbulence", value: "number"},
-          // setWindParams: (speed, strength, heightInfluence, turbulence)
-          {key: "enablePulse", value: "boolean"},
-          {key: "Pulse speed", value: "number"},
-          {key: "Pulse amount", value: "number"},
-          {key: "Pulse centerX", value: "number"},
-          {key: "Pulse centerY", value: "number"},
-          // setPulseParams: (speed, amount, centerX = 0, centerY = 0)
-          {key: "enableTwist", value: "boolean"},
-          //  setTwistParams: (speed, amount)
-          {key: "Twist speed", value: "number"},
-          {key: "Twist amount", value: "number"},
-          {key: "enableNoise", value: "boolean"},
-          {key: "Noise Scale", value: "number"},
-          {key: "Noise Strength", value: "number"},
-          {key: "Noise Speed", value: "number"},
-          // setNoiseParams: (scale, strength, speed)
-          {key: "enableOcean", value: "boolean"},
-          {key: "Ocean Scale", value: "number"},
-          {key: "Ocean Height", value: "number"},
-          {key: "Ocean speed", value: "number"},
-        ],
-      }),
-
       setVertexWave: (id, x, y) => ({
         id, x, y,
         title: "Set Vertex Wave",
@@ -4180,7 +4114,7 @@ export default class FluxCodexVertex {
         if(isPhysicsBody == "true") {isPhysicsBody = true} else {isPhysicsBody = false;}
         if(typeof pos == 'string') eval("pos = " + pos);
         if(typeof rot == 'string') eval("rot = " + rot);
-          console.warn("[Generator] scale...", scale);
+        console.warn("[Generator] scale...", scale);
         if(typeof scale == 'string') eval("scale = " + scale);
         if(!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
@@ -4189,19 +4123,9 @@ export default class FluxCodexVertex {
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          // MEMeshObjInstances
-          // path,
-          //   material = "standard",
-          //   pos,
-          //   rot,
-          //   texturePath,
-          //   name,
-          //   isPhysicsBody = false,
-          //   raycast = false,
-          //   scale = [1, 1, 1],
-          //   isInstancedObj = false
           app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             console.log('!ADD OBJ FROM GRAPH COMPLETE!', object);
+            object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {

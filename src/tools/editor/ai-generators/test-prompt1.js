@@ -733,103 +733,6 @@ Fields:
 - sceneObjectName : string
 - materialType : string
 
-Node: setWaterParams
-Category: scene
-Inputs:
-- exec : action
-- sceneObjectName : undefined
-- deepColor(vec3f) : undefined
-- waveSpeed : undefined
-- shallowColor(vec3f) : undefined
-- waveScale : undefined
-- waveHeight : undefined
-- fresnelPower : undefined
-- specularPower : undefined
-Outputs:
-- execOut : action
-Fields:
-- sceneObjectName : string
-- deepColor(vec3f) : string
-- waveSpeed : string
-- shallowColor(vec3f) : string
-- waveScale : string
-- waveHeight : string
-- fresnelPower : string
-- specularPower : string
-
-Node: setVertexAnim
-Category: scene
-Inputs:
-- exec : action
-- sceneObjectName : undefined
-- intensity : number
-- enableTwist : boolean
-- Twist speed : number
-- Twist amount : number
-- enableNoise : boolean
-- Noise Scale : number
-- Noise Strength : number
-- Noise Speed : number
-- enableOcean : boolean
-- Ocean Scale : number
-- Ocean Height : number
-- Ocean speed : number
-Outputs:
-- execOut : action
-Fields:
-- sceneObjectName : string
-- enableWave : boolean
-- enableWind : boolean
-- enablePulse : boolean
-- enableTwist : boolean
-- enableNoise : boolean
-- enableOcean : boolean
-- Intensity : number
-- Wave Speed : string
-- Wave Amplitude : string
-- Wave Speed : string
-- Wave Frequency : string
-- enableWind : string
-- Wind Speed : string
-- Wind Strength : string
-- Wind HeightInfluence : string
-- Wind Turbulence : string
-- enablePulse : string
-- Pulse speed : string
-- Pulse amount : string
-- Pulse centerX : string
-- Pulse centerY : string
-- enableTwist : string
-- Twist speed : string
-- Twist amount : string
-- enableNoise : string
-- Noise Scale : string
-- Noise Strength : string
-- Noise Speed : string
-- enableOcean : string
-- Ocean Scale : string
-- Ocean Height : string
-- Ocean speed : string
-
-Node: setVertexWave
-Category: scene
-Inputs:
-- exec : action
-- sceneObjectName : undefined
-- intensity : number
-- enableWave : boolean
-- Wave Speed : number
-- Wave Amplitude : number
-- Wave Frequency : number
-Outputs:
-- execOut : action
-Fields:
-- sceneObjectName : string
-- enableWave : boolean
-- Wave Speed : number
-- Wave Amplitude : number
-- Wave Frequency : number
-
 Node: setVertexWind
 Category: scene
 Inputs:
@@ -1040,7 +943,7 @@ Fields:
 - path : string
 
 Node: forEach
-Category: undefined
+Category: action
 Inputs:
 - exec : action
 - array : any
@@ -1049,6 +952,195 @@ Outputs:
 - completed : action
 - item : any
 - index : number
+
+Node: addObj
+Category: action
+Inputs:
+- exec : action
+- path : string
+- material : string
+- pos : object
+- rot : object
+- texturePath : string
+- name : string
+- raycast : boolean
+- scale : object
+- isPhysicsBody : boolean
+- isInstancedObj : boolean
+Outputs:
+- execOut : action
+- complete : action
+- error : action
+Fields:
+- path : string
+- material : string
+- pos : string
+- rot : string
+- texturePath : string
+- name : string
+- raycast : boolean
+- scale : object
+- isPhysicsBody : boolean
+- isInstancedObj : boolean
+- created : boolean
+noselfExec: true
+
+Node: setProductionMode
+Category: scene
+Inputs:
+- exec : action
+- disableLoopWarns : boolean
+Outputs:
+- execOut : action
+Fields:
+- disableLoopWarns : boolean
+
+Node: setMaterial
+Category: scene
+Inputs:
+- exec : action
+- materialType : string
+- sceneObjectName : string
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- materialType : string
+
+Node: setWaterParams
+Category: scene
+Inputs:
+- exec : action
+- sceneObjectName : string
+- deepColor(vec3f) : object
+- waveSpeed : number
+- shallowColor(vec3f) : object
+- waveScale : number
+- waveHeight : number
+- fresnelPower : number
+- specularPower : number
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- deepColor(vec3f) : string
+- waveSpeed : number
+- shallowColor(vec3f) : string
+- waveScale : number
+- waveHeight : number
+- fresnelPower : number
+- specularPower : number
+
+Node: setVertexWave
+Category: scene
+Inputs:
+- exec : action
+- sceneObjectName : string
+- intensity : number
+- enableWave : boolean
+- Wave Speed : number
+- Wave Amplitude : number
+- Wave Frequency : number
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- enableWave : boolean
+- Wave Speed : number
+- Wave Amplitude : number
+- Wave Frequency : number
+
+Node: setVertexWind
+Category: scene
+Inputs:
+- exec : action
+- sceneObjectName : string
+- enableWind : boolean
+- Wind Speed : number
+- Wind Strength : number
+- Wind HeightInfluence : number
+- Wind Turbulence : number
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- enableWind : boolean
+- Wind Speed : number
+- Wind Strength : number
+- Wind HeightInfluence : number
+- Wind Turbulence : number
+
+Node: setVertexPulse
+Category: scene
+Inputs:
+- exec : action
+- sceneObjectName : string
+- enablePulse : boolean
+- Pulse speed : number
+- Pulse amount : number
+- Pulse centerX : number
+- Pulse centerY : number
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- enablePulse : boolean
+- Pulse speed : number
+- Pulse amount : number
+- Pulse centerX : number
+- Pulse centerY : number
+
+Node: setVertexTwist
+Category: scene
+Inputs:
+- exec : action
+- sceneObjectName : string
+- enableTwist : boolean
+- Twist speed : number
+- Twist amount : number
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- enableTwist : boolean
+- Twist speed : number
+- Twist amount : number
+
+Node: setVertexNoise
+Category: scene
+Inputs:
+- exec : action
+- sceneObjectName : string
+- enableNoise : boolean
+- Noise Scale : number
+- Noise Strength : number
+- Noise Speed : number
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- enableNoise : boolean
+- Noise Scale : number
+- Noise Strength : number
+- Noise Speed : number
+
+Node: setVertexOcean
+Category: scene
+Inputs:
+- exec : action
+- sceneObjectName : string
+- enableOcean : boolean
+- Ocean Scale : number
+- Ocean Height : number
+- Ocean speed : number
+Outputs:
+- execOut : action
+Fields:
+- sceneObjectName : string
+- enableOcean : boolean
+- Ocean Scale : number
+- Ocean Height : number
+- Ocean speed : number
 
 STRICT RULES (DO NOT VIOLATE):
 
@@ -1109,6 +1201,12 @@ SCENE:
 - setSpeed
 - setMaterial
 - setTexture
+- setVertexPulse
+- setVertexOcean
+- setVertexNoise
+- setVertexTwist
+- setVertexWind
+- setVertexWave
 
 STRING OPS:
 - startsWith, endsWith, includes

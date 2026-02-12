@@ -6473,9 +6473,7 @@ var GizmoEffect = class {
     });
     app.canvas.addEventListener("mouseup", () => {
       if (this.isDragging) {
-        console.log("Gizmo: Stopped dragging:", this.parentMesh.name);
-        console.log("What is selectedAxis: ", this.selectedAxis);
-        console.log("What is operation: ", this.mode);
+        if (this.parentMesh._GRAPH_CACHE) return;
         if (this.mode == 0) {
           document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
             detail: {
@@ -22810,73 +22808,6 @@ var FluxCodexVertex = class {
           { key: "specularPower", value: "128" }
         ]
       }),
-      setVertexAnim: (id2, x2, y2) => ({
-        id: id2,
-        x: x2,
-        y: y2,
-        title: "Set VertexAnim Intesity",
-        category: "scene",
-        inputs: [
-          { name: "exec", type: "action" },
-          { name: "sceneObjectName", semantic: "string" },
-          { name: "intensity", type: "number" },
-          { name: "enableTwist", type: "boolean" },
-          //  setTwistParams: (speed, amount)
-          { name: "Twist speed", type: "number" },
-          { name: "Twist amount", type: "number" },
-          { name: "enableNoise", type: "boolean" },
-          { name: "Noise Scale", type: "number" },
-          { name: "Noise Strength", type: "number" },
-          { name: "Noise Speed", type: "number" },
-          // setNoiseParams: (scale, strength, speed)
-          { name: "enableOcean", type: "boolean" },
-          { name: "Ocean Scale", type: "number" },
-          { name: "Ocean Height", type: "number" },
-          { name: "Ocean speed", type: "number" }
-          // setOceanParams: (scale, height, speed) => {
-        ],
-        outputs: [{ name: "execOut", type: "action" }],
-        fields: [
-          { key: "sceneObjectName", value: "FLOOR" },
-          { key: "enableWave", value: false },
-          { key: "enableWind", value: false },
-          { key: "enablePulse", value: false },
-          { key: "enableTwist", value: false },
-          { key: "enableNoise", value: false },
-          { key: "enableOcean", value: false },
-          { key: "Intensity", value: 1 },
-          { key: "Wave Speed", value: "number" },
-          { key: "Wave Amplitude", value: "number" },
-          { key: "Wave Speed", value: "number" },
-          { key: "Wave Frequency", value: "number" },
-          // setWaveParams: (speed, amplitude, frequency) 
-          { key: "enableWind", value: "boolean" },
-          { key: "Wind Speed", value: "number" },
-          { key: "Wind Strength", value: "number" },
-          { key: "Wind HeightInfluence", value: "number" },
-          { key: "Wind Turbulence", value: "number" },
-          // setWindParams: (speed, strength, heightInfluence, turbulence)
-          { key: "enablePulse", value: "boolean" },
-          { key: "Pulse speed", value: "number" },
-          { key: "Pulse amount", value: "number" },
-          { key: "Pulse centerX", value: "number" },
-          { key: "Pulse centerY", value: "number" },
-          // setPulseParams: (speed, amount, centerX = 0, centerY = 0)
-          { key: "enableTwist", value: "boolean" },
-          //  setTwistParams: (speed, amount)
-          { key: "Twist speed", value: "number" },
-          { key: "Twist amount", value: "number" },
-          { key: "enableNoise", value: "boolean" },
-          { key: "Noise Scale", value: "number" },
-          { key: "Noise Strength", value: "number" },
-          { key: "Noise Speed", value: "number" },
-          // setNoiseParams: (scale, strength, speed)
-          { key: "enableOcean", value: "boolean" },
-          { key: "Ocean Scale", value: "number" },
-          { key: "Ocean Height", value: "number" },
-          { key: "Ocean speed", value: "number" }
-        ]
-      }),
       setVertexWave: (id2, x2, y2) => ({
         id: id2,
         x: x2,
@@ -24268,6 +24199,7 @@ var FluxCodexVertex = class {
         if (createdField.value == "false" || createdField.value == false) {
           app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             console.log("!ADD OBJ FROM GRAPH COMPLETE!", object);
+            object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
@@ -28564,7 +28496,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 39.42364501953125, "y": 246.42709350585938, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_1": { "id": "node_1", "x": 386.64239501953125, "y": 241.68405151367188, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/shapes/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "[3,1,3]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false, "value": "false" }, { "key": "created", "value": "false" }], "noselfExec": "true" }, "node_2": { "id": "node_2", "title": "Print", "x": 763.8194580078125, "y": 200.44097900390625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_3": { "id": "node_3", "title": "Print", "x": 774.5104370117188, "y": 467.1493225097656, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "n1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_1", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_1", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }], "nodeCounter": 4, "linkCounter": 4, "pan": [55, 89], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 81.52081298828125, "y": 125.53475952148438, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_1": { "id": "node_1", "x": 428.25, "y": 159.3194580078125, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/shapes/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "[3,1,3]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false, "value": "false" }, { "key": "created", "value": "false" }], "noselfExec": "true" }, "node_2": { "id": "node_2", "title": "Print", "x": 763.8194580078125, "y": 200.44097900390625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_3": { "id": "node_3", "title": "Print", "x": 774.5104370117188, "y": 467.1493225097656, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "n1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_1", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_1", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }], "nodeCounter": 4, "linkCounter": 4, "pan": [-12, 106], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [
@@ -28637,16 +28569,10 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("cube1").position.SetX(-4.379999999999993);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(-0.02);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetY(-3.430000000000009);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("TEST").position.SetX(-0.14999999999999966);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("TEST").position.SetY(-1.250000000000006);
+        app3.getSceneObjectByName("FLOOR").position.SetX(-0.07);
       }, 800);
     });
   }

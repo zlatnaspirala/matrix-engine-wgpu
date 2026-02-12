@@ -160,9 +160,10 @@ export class GizmoEffect {
     });
     app.canvas.addEventListener("mouseup", () => {
       if(this.isDragging) {
-        console.log('Gizmo: Stopped dragging:', this.parentMesh.name);
-        console.log('What is selectedAxis: ', this.selectedAxis)
-        console.log('What is operation: ', this.mode)
+        // console.log('Gizmo: Stopped dragging:', this.parentMesh.name);
+        // console.log('What is selectedAxis: ', this.selectedAxis)
+        // console.log('What is operation: ', this.mode)
+        if (this.parentMesh._GRAPH_CACHE) return;
         if(this.mode == 0) {
           // 1 x  2 y  3 z
           // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
