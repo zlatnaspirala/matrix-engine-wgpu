@@ -125,6 +125,13 @@ All changes in graph must be saved manually/clicking for now 💾 (no autosave f
 
 ---
 
+
+## Api documentation
+
+Live :
+https://maximumroulette.com/apps/webgpu/api-docs/
+
+
 ## Features
 
 ### Scene Management
