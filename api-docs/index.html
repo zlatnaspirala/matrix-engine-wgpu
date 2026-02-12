@@ -1,0 +1,553 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Matrix Engine Api Documentation - v1.9.0</title><meta name="description" content="Documentation for Matrix Engine Api Documentation"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">Matrix Engine Api Documentation - v1.9.0</a><div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>Matrix Engine Api Documentation - v1.9.0</h1></div><div class="tsd-panel tsd-typography"><h1 id="matrix-engine-wgpu" class="tsd-anchor-link">matrix-engine-wgpu<a href="#matrix-engine-wgpu" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p><strong>Author:</strong> Nikola Lukić
+📧 <a href="mailto:zlatnaspirala@gmail.com">zlatnaspirala@gmail.com</a>
+📅 Version: 1.8.6 2026</p>
+<hr>
+<h2 id="logo" class="tsd-anchor-link">Logo<a href="#logo" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true" />
+<blockquote>
+<p>Logo includes the official WebGPU logo.
+<strong>WebGPU logo by <a href="https://www.w3.org/">W3C</a></strong>
+Licensed under <a href="https://www.w3.org/2023/02/webgpu-logos.html">Creative Commons Attribution 4.0</a></p>
+</blockquote>
+<hr>
+<h2 id="description" class="tsd-anchor-link">Description<a href="#description" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>This project is a work-in-progress WebGPU engine inspired by the original <strong>matrix-engine</strong> for WebGL.
+It uses the <code>wgpu-matrix</code> npm package as a replacement for <code>gl-matrix</code> to handle model-view-projection matrices.</p>
+<p>Published on npm as: <strong><code>matrix-engine-wgpu</code></strong></p>
+<hr>
+<h2 id="done-list-" class="tsd-anchor-link">Done list []<a href="#done-list-" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>✔️ Support for 3D objects and scene transformations</li>
+<li>✔️ Ammo.js physics integration</li>
+<li>✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -&gt; frontend</li>
+<li>✔️ Bloom post processing</li>
+<li>📦 Based on the <code>shadowMapping</code> sample from <a href="https://webgpu.github.io/webgpu-samples/?sample=shadowMapping">webgpu-samples</a></li>
+<li>✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex)</li>
+<li>✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader)</li>
+<li>✔️ Dynamic shadow cast (done also for skinned meshes)</li>
+<li>✔️ VertexShader displacment (done also for skinned meshes), nice for water effect</li>
+</ul>
+<h2 id="roadmap" class="tsd-anchor-link">Roadmap<a href="#roadmap" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>(Preparing API DOCs)[<a href="https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API">https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API</a>]</li>
+<li>🎯 Test linux OS -&gt; Editor creates and manages files internally (Windows tested only!)</li>
+<li>🎯 Add editor nav arrows in editor mode</li>
+<li>🎯 Test others physics libraries [same interface/drive system]</li>
+<li>🎯 Sync npm version and make editor posible from <code>npm i matrix-engine-wgpu</code></li>
+<li>🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[<a href="https://github.com/zlatnaspirala/me-webgpu-react">https://github.com/zlatnaspirala/me-webgpu-react</a>]</li>
+</ul>
+<h2 id="fluxcodexvertex-web-editor-🚀-since-version-180" class="tsd-anchor-link">FluxCodexVertex Web Editor 🚀 (since version 1.8.0)<a href="#fluxcodexvertex-web-editor-🚀-since-version-180" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>EditorX has <strong>two main parts</strong>:</p>
+<ul>
+<li><strong>Frontend</strong> (<code>./src/tools/editor</code>)</li>
+<li><strong>Backend</strong> (<code>./src/tools/editor/backend</code>)</li>
+</ul>
+<blockquote>
+<p><strong>Before running anything</strong>, install dependencies with <code>npm i</code>:</p>
+<ul>
+<li>in the <strong>root</strong> folder</li>
+<li>and also inside <code>./src/tools/editor/backend</code></li>
+</ul>
+</blockquote>
+<p>The backend is built using <strong>Node.js</strong> 🟢</p>
+<hr>
+<h2 id="general-features-🧩" class="tsd-anchor-link">General Features 🧩<a href="#general-features-🧩" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>Editor creates and manages files internally (Windows tested only!).</li>
+<li>Scene container [adding objs -&gt; auto save]</li>
+<li>SceneObject property container [selected object] [auto save]</li>
+<li>Assets toolbar added (bottom panel)
+<ul>
+<li>Add <strong>GLB</strong> or <strong>OBJ</strong> files (also mp3) from the asset toolbox by selecting them.</li>
+</ul>
+</li>
+<li>Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️</li>
+<li>Integrated Visual Scripting system 🧠 FluxCodexVertex</li>
+</ul>
+<hr>
+<h2 id="visual-scripting-implemented-features-✅" class="tsd-anchor-link">Visual Scripting – Implemented Features ✅<a href="#visual-scripting-implemented-features-✅" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>Add <strong>Math nodes</strong>, <strong>events / custom methods</strong>, <strong>variable popup</strong>, <strong>SceneObject access</strong></li>
+<li>Get SceneObject → set position → bind <code>onTargetReach</code> events</li>
+<li>SetTexture, setMaterial,</li>
+<li>Fetch, GetArray, forEach, Print, IF, Math, compare, string operation etc...</li>
+<li>Custom func editor - Function Manager after creating use it from visual scripting.</li>
+<li>Generator physics bodies in sequence pos in choosen geometry in world pos (Pyramid, wall, in place).</li>
+<li>onDraw Event node - called on every frame.Can be multiply used and set skip value. More skip less calls.</li>
+<li>Audio reactive node Audio to pos , rot, scale or geometry or any... Outputs low, mid, high, energy and beat.</li>
+<li>Run the graph ▶️</li>
+<li>Stop the graph Just basic - clear dinamic created object and stops onDraw calls.</li>
+<li>Save graph
+<ul>
+<li>Saved to file direct also cached on <strong>LocalStorage</strong></li>
+<li>For final builds, becomes a real <strong>JS object</strong> injected into the app flow.[DONE]</li>
+</ul>
+</li>
+<li>Export graph to <strong>JSON</strong></li>
+<li>Import graph from <strong>JSON</strong></li>
+</ul>
+<hr>
+<h2 id="⚠️-important-notes" class="tsd-anchor-link">⚠️ Important Notes<a href="#⚠️-important-notes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Visual Scripting is only available when running the engine <strong>from source</strong><br>
+(not from <code>npm i matrix-engine-wgpu</code>).</p>
+<p>You must clone or download the engine source from the <strong>GitHub repository</strong>.</p>
+<hr>
+<h2 id="instructions-📌" class="tsd-anchor-link">Instructions 📌<a href="#instructions-📌" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Editor use esbuild compiler but still present browserify, both works perfect.</p>
+<ul>
+<li>Run the editor with:</li>
+</ul>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">editorx</span>
+</code><button type="button">Copy</button></pre>
+
+<p>from the engine root directory.
+EditorX is an alias for FluxCodexVertex backend part (needed three words to keep the name unique)
+Run the scene by pressing F6 or by clicking Run in the left panel
+If you delete all objects from the scene, you must refresh the page and add at least one object again
+Before importing a graph, delete all nodes from the FluxCodexVertex graph
+After deleting everything, click Save to store an empty [] array.
+All changes in graph must be saved manually/clicking for now 💾 (no autosave for graphs).</p>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-fetch.png?raw=true" />
+<hr>
+<h2 id="features" class="tsd-anchor-link">Features<a href="#features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="scene-management" class="tsd-anchor-link">Scene Management<a href="#scene-management" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>
+<p>Canvas is dynamically created in JavaScript—no <code>&lt;canvas&gt;</code> element needed in HTML.</p>
+</li>
+<li>
+<p>Access the main scene objects:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">];</span>
+</code><button type="button">Copy</button></pre>
+
+<p>or by name:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-0">getSceneObjectByName</span><span class="hl-1">(</span><span class="hl-2">&quot;Sphere1&quot;</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p>Add meshes with <code>.addMeshObj()</code>, supporting <code>.obj</code> loading, unlit textures, cubes, spheres, etc.</p>
+</li>
+<li>
+<p>Destroy sceneObj:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-0">removeSceneObjectByName</span><span class="hl-1">(</span><span class="hl-2">&quot;Sphere1&quot;</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p>Also interest for clearing physics body and render part:</p>
+<pre><code class="js"><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-0">destroyByPrefix</span><span class="hl-1">(</span><span class="hl-2">&quot;towers&quot;</span><span class="hl-1">);</span><br/><span class="hl-5">// OR</span><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-0">destroyBySufix</span><span class="hl-1">(</span><span class="hl-2">&quot;_001&quot;</span><span class="hl-1">);</span><br/><span class="hl-5">// Destroy objects become true after calling flushDestroyQueue function.</span><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-0">flushDestroyQueue</span><span class="hl-1">();</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p>Cleanly destroy the scene:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-0">destroyProgram</span><span class="hl-1">();</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+</ul>
+<hr>
+<h3 id="camera-options" class="tsd-anchor-link">Camera Options<a href="#camera-options" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>For now translation is only with <code>WASD</code> keyboard keys.</p>
+<p>Supported types: <code>WASD</code>, <code>arcball</code></p>
+<p><code>WASD</code> also use 'c' and 'v' for up and down camera position.</p>
+<pre><code class="js"><span class="hl-6">mainCameraParams</span><span class="hl-1">: {</span><br/><span class="hl-1">  </span><span class="hl-6">type</span><span class="hl-1">: </span><span class="hl-2">&#39;WASD&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-6">responseCoef</span><span class="hl-1">: </span><span class="hl-4">1000</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<h3 id="object-position" class="tsd-anchor-link">Object Position<a href="#object-position" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Best way for access physics body object:
+app.matrixAmmo.getBodyByName(name)
+also app.matrixAmmo.getNameByBody</p>
+<p>Control object position:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-0">translateByX</span><span class="hl-1">(</span><span class="hl-4">12</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Teleport / set directly:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-0">SetX</span><span class="hl-1">(-</span><span class="hl-4">2</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Adjust movement speed:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-3">thrust</span><span class="hl-1"> = </span><span class="hl-4">0.1</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<blockquote>
+<p>⚠️ For physics-enabled objects, use Ammo.js functions — <code>.position</code> and <code>.rotation</code> are not visually applied but can be read.</p>
+</blockquote>
+<p>Example:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">matrixAmmo</span><span class="hl-1">.</span><span class="hl-3">rigidBodies</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-0">setAngularVelocity</span><span class="hl-1">(</span><span class="hl-7">new</span><span class="hl-1"> </span><span class="hl-3">Ammo</span><span class="hl-1">.</span><span class="hl-0">btVector3</span><span class="hl-1">(</span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-4">2</span><span class="hl-1">, </span><span class="hl-4">0</span><span class="hl-1">));</span><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">matrixAmmo</span><span class="hl-1">.</span><span class="hl-3">rigidBodies</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-0">setLinearVelocity</span><span class="hl-1">(</span><span class="hl-7">new</span><span class="hl-1"> </span><span class="hl-3">Ammo</span><span class="hl-1">.</span><span class="hl-0">btVector3</span><span class="hl-1">(</span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-4">7</span><span class="hl-1">, </span><span class="hl-4">0</span><span class="hl-1">));</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<h3 id="object-rotation" class="tsd-anchor-link">Object Rotation<a href="#object-rotation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Manual rotation:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">rotation</span><span class="hl-1">.</span><span class="hl-3">x</span><span class="hl-1"> = </span><span class="hl-4">45</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Auto-rotate:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">rotation</span><span class="hl-1">.</span><span class="hl-3">rotationSpeed</span><span class="hl-1">.</span><span class="hl-3">y</span><span class="hl-1"> = </span><span class="hl-4">10</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Stop rotation:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">rotation</span><span class="hl-1">.</span><span class="hl-3">rotationSpeed</span><span class="hl-1">.</span><span class="hl-3">y</span><span class="hl-1"> = </span><span class="hl-4">0</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<blockquote>
+<p>⚠️ For physics-enabled objects, use Ammo.js methods (e.g., <code>.setLinearVelocity()</code>).</p>
+</blockquote>
+<hr>
+<h3 id="3d-camera-example" class="tsd-anchor-link">3D Camera Example<a href="#3d-camera-example" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Manipulate WASD camera:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">cameras</span><span class="hl-1">.</span><span class="hl-8">WASD</span><span class="hl-1">.</span><span class="hl-3">pitch</span><span class="hl-1"> = </span><span class="hl-4">0.2</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<p>💡 Lighting System</p>
+<p>Matrix Engine WGPU now supports independent light entities, meaning lights are no longer tied to the camera. You can freely place and configure lights in the scene, and they will affect objects based on their type and parameters.</p>
+<p>Supported Light Types</p>
+<p>SpotLight – Emits light in a cone shape with configurable cutoff angles.</p>
+<p>(Planned: PointLight, DirectionalLight, AmbientLight)</p>
+<p>Features</p>
+<p>✅ Supports multiple lights (4 max), ~20 for next update.
+✅ Shadow-ready (spotlight0 shadows implemented, extendable to others)</p>
+<pre><code class="json"><span class="hl-1">## Important Required to be added manual:</span>
+</code><button type="button">Copy</button></pre>
+
+<pre><code class="js"><span class="hl-3">engine</span><span class="hl-1">.</span><span class="hl-0">addLight</span><span class="hl-1">();</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Access lights with array lightContainer:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">lightContainer</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">];</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Small behavior object.</p>
+<ul>
+<li>For now just one ocs0 object
+Everytime if called than updated (light.position[0] = light.behavior.setPath0())
+behavior.setOsc0(min, max, step);
+app.lightContainer[0].behavior.osc0.on<em>maximum_value = function() {/</em> what ever*/};
+app.lightContainer[0].behavior.osc0.on_minimum_value = function() {/* what ever_/};</li>
+</ul>
+<p>Make light move by x.</p>
+<pre><code class="js"><span class="hl-3">loadObjFile</span><span class="hl-1">.</span><span class="hl-0">addLight</span><span class="hl-1">();</span><br/><span class="hl-3">loadObjFile</span><span class="hl-1">.</span><span class="hl-3">lightContainer</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">behavior</span><span class="hl-1">.</span><span class="hl-0">setOsc0</span><span class="hl-1">(-</span><span class="hl-4">1</span><span class="hl-1">, </span><span class="hl-4">1</span><span class="hl-1">, </span><span class="hl-4">0.01</span><span class="hl-1">);</span><br/><span class="hl-3">loadObjFile</span><span class="hl-1">.</span><span class="hl-3">lightContainer</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">behavior</span><span class="hl-1">.</span><span class="hl-3">value_</span><span class="hl-1"> = -</span><span class="hl-4">1</span><span class="hl-1">;</span><br/><span class="hl-3">loadObjFile</span><span class="hl-1">.</span><span class="hl-3">lightContainer</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">updater</span><span class="hl-1">.</span><span class="hl-0">push</span><span class="hl-1">(</span><span class="hl-3">light</span><span class="hl-1"> </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-3">light</span><span class="hl-1">.</span><span class="hl-3">position</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">] = </span><span class="hl-3">light</span><span class="hl-1">.</span><span class="hl-3">behavior</span><span class="hl-1">.</span><span class="hl-0">setPath0</span><span class="hl-1">();</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="materials" class="tsd-anchor-link">Materials<a href="#materials" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>With last glb feature materials become part of engine also.</p>
+<pre><code class="js"><span class="hl-6">material</span><span class="hl-1">: {</span><span class="hl-6">type</span><span class="hl-1">: </span><span class="hl-2">&#39;standard&#39;</span><span class="hl-1">}</span><br/><span class="hl-6">material</span><span class="hl-1">: {</span><span class="hl-6">type</span><span class="hl-1">: </span><span class="hl-2">&#39;pong&#39;</span><span class="hl-1">}</span><br/><span class="hl-6">material</span><span class="hl-1">: {</span><span class="hl-6">type</span><span class="hl-1">: </span><span class="hl-2">&#39;power&#39;</span><span class="hl-1">}</span><br/><span class="hl-6">material</span><span class="hl-1">: {</span><span class="hl-6">type</span><span class="hl-1">: </span><span class="hl-2">&#39;water&#39;</span><span class="hl-1">}</span><br/><span class="hl-6">material</span><span class="hl-1">: {</span><span class="hl-6">type</span><span class="hl-1">: </span><span class="hl-2">&#39;metal&#39;</span><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<ul>
+<li>Standard is fully supported with lights shadow cast down (not for anims yet)</li>
+<li>Pong</li>
+<li>Power - no shadows cast</li>
+</ul>
+<pre><code class="js"><span class="hl-5">// Also for addMeshObj</span><br/><span class="hl-8">TEST_ANIM</span><span class="hl-1">.</span><span class="hl-0">addGlbObj</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-3">material:</span><span class="hl-1"> {</span><span class="hl-3">type:</span><span class="hl-1"> </span><span class="hl-2">&#39;power&#39;</span><span class="hl-1">},</span><br/><span class="hl-1">...</span><br/><span class="hl-1">}, </span><span class="hl-7">null</span><span class="hl-1">, </span><span class="hl-3">glbFile</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Change only textures (no recreation of pipeline)</p>
+<pre><code class="js"><span class="hl-9">await</span><span class="hl-1"> </span><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-0">loadTex0</span><span class="hl-1">([</span><span class="hl-2">&quot;res/icons/editor/chatgpt-gen-bg.png&quot;</span><span class="hl-1">]);</span><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-0">changeTexture</span><span class="hl-1">(</span><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">texture0</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Setup Blend (For water mat use blend!)</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-0">setBlend</span><span class="hl-1">(</span><span class="hl-4">0.5</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Examples for setup water params:</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-0">updateWaterParams</span><span class="hl-1">(</span><br/><span class="hl-1">  [</span><span class="hl-4">0.0</span><span class="hl-1">, </span><span class="hl-4">0.1</span><span class="hl-1">, </span><span class="hl-4">0.3</span><span class="hl-1">],      </span><span class="hl-5">// Deep: navy</span><br/><span class="hl-1">  [</span><span class="hl-4">0.2</span><span class="hl-1">, </span><span class="hl-4">0.6</span><span class="hl-1">, </span><span class="hl-4">0.9</span><span class="hl-1">],      </span><span class="hl-5">// Shallow: blue</span><br/><span class="hl-1">  </span><span class="hl-4">2.0</span><span class="hl-1">,                   </span><span class="hl-5">// Wave speed: fast continuous</span><br/><span class="hl-1">  </span><span class="hl-4">1.8</span><span class="hl-1">,                   </span><span class="hl-5">// Wave scale: rolling waves</span><br/><span class="hl-1">  </span><span class="hl-4">0.5</span><span class="hl-1">,                   </span><span class="hl-5">// Wave height: tall active waves</span><br/><span class="hl-1">  </span><span class="hl-4">1.5</span><span class="hl-1">,                   </span><span class="hl-5">// Fresnel: strong</span><br/><span class="hl-1">  </span><span class="hl-4">50.0</span><span class="hl-1">                   </span><span class="hl-5">// Specular: soft highlights</span><br/><span class="hl-1">);</span><br/><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-0">updateWaterParams</span><span class="hl-1">(</span><br/><span class="hl-1">  [</span><span class="hl-4">0.0</span><span class="hl-1">, </span><span class="hl-4">0.3</span><span class="hl-1">, </span><span class="hl-4">0.5</span><span class="hl-1">],      </span><span class="hl-5">// Deep: medium blue</span><br/><span class="hl-1">  [</span><span class="hl-4">0.3</span><span class="hl-1">, </span><span class="hl-4">0.8</span><span class="hl-1">, </span><span class="hl-4">1.0</span><span class="hl-1">],      </span><span class="hl-5">// Shallow: bright cyan</span><br/><span class="hl-1">  </span><span class="hl-4">1.2</span><span class="hl-1">,                   </span><span class="hl-5">// Wave speed: gentle continuous (changed from 0.6)</span><br/><span class="hl-1">  </span><span class="hl-4">2.5</span><span class="hl-1">,                   </span><span class="hl-5">// Wave scale: smooth ripples (changed from 5.0)</span><br/><span class="hl-1">  </span><span class="hl-4">0.3</span><span class="hl-1">,                   </span><span class="hl-5">// Wave height: visible movement</span><br/><span class="hl-1">  </span><span class="hl-4">2.5</span><span class="hl-1">,                   </span><span class="hl-5">// Fresnel: moderate reflection</span><br/><span class="hl-1">  </span><span class="hl-4">100.0</span><span class="hl-1">                  </span><span class="hl-5">// Specular: sharp sparkles</span><br/><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="bloom-post-processing" class="tsd-anchor-link">Bloom post processing<a href="#bloom-post-processing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Activete with :</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-0">activateBloomEffect</span><span class="hl-1">();</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Manipulate with <code>app.bloomPass</code>:
+setKnee
+setIntensity
+setThreshold
+setBlurRadius</p>
+<p>Fancy results:
+<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" /></p>
+<h3 id="object-interaction-raycasting" class="tsd-anchor-link">Object Interaction (Raycasting)<a href="#object-interaction-raycasting" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The raycast returns:</p>
+<pre><code class="js"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-6">rayOrigin</span><span class="hl-1">: [</span><span class="hl-3">x</span><span class="hl-1">, </span><span class="hl-3">y</span><span class="hl-1">, </span><span class="hl-3">z</span><span class="hl-1">],</span><br/><span class="hl-1">  </span><span class="hl-6">rayDirection</span><span class="hl-1">: [</span><span class="hl-3">x</span><span class="hl-1">, </span><span class="hl-3">y</span><span class="hl-1">, </span><span class="hl-3">z</span><span class="hl-1">] </span><span class="hl-5">// normalized</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Manual raycast example:</p>
+<pre><code class="js"><span class="hl-3">window</span><span class="hl-1">.</span><span class="hl-0">addEventListener</span><span class="hl-1">(</span><span class="hl-2">&quot;click&quot;</span><span class="hl-1">, </span><span class="hl-3">event</span><span class="hl-1"> </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-7">let</span><span class="hl-1"> </span><span class="hl-3">canvas</span><span class="hl-1"> = </span><span class="hl-3">document</span><span class="hl-1">.</span><span class="hl-0">querySelector</span><span class="hl-1">(</span><span class="hl-2">&quot;canvas&quot;</span><span class="hl-1">);</span><br/><span class="hl-1">  </span><span class="hl-7">let</span><span class="hl-1"> </span><span class="hl-3">camera</span><span class="hl-1"> = </span><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">cameras</span><span class="hl-1">.</span><span class="hl-8">WASD</span><span class="hl-1">;</span><br/><span class="hl-1">  </span><span class="hl-7">const</span><span class="hl-1"> {</span><span class="hl-8">rayOrigin</span><span class="hl-1">, </span><span class="hl-8">rayDirection</span><span class="hl-1">} = </span><span class="hl-0">getRayFromMouse</span><span class="hl-1">(</span><span class="hl-3">event</span><span class="hl-1">, </span><span class="hl-3">canvas</span><span class="hl-1">, </span><span class="hl-3">camera</span><span class="hl-1">);</span><br/><br/><span class="hl-1">  </span><span class="hl-9">for</span><span class="hl-1"> (</span><span class="hl-7">const</span><span class="hl-1"> </span><span class="hl-8">object</span><span class="hl-1"> </span><span class="hl-7">of</span><span class="hl-1"> </span><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">) {</span><br/><span class="hl-1">    </span><span class="hl-9">if</span><span class="hl-1"> (</span><br/><span class="hl-1">      </span><span class="hl-0">rayIntersectsSphere</span><span class="hl-1">(</span><br/><span class="hl-1">        </span><span class="hl-3">rayOrigin</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">rayDirection</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">object</span><span class="hl-1">.</span><span class="hl-3">position</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">object</span><span class="hl-1">.</span><span class="hl-3">raycast</span><span class="hl-1">.</span><span class="hl-3">radius</span><br/><span class="hl-1">      )</span><br/><span class="hl-1">    ) {</span><br/><span class="hl-1">      </span><span class="hl-3">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-2">&quot;Object clicked:&quot;</span><span class="hl-1">, </span><span class="hl-3">object</span><span class="hl-1">.</span><span class="hl-3">name</span><span class="hl-1">);</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Automatic raycast listener:</p>
+<pre><code class="js"><span class="hl-0">addRaycastListener</span><span class="hl-1">();</span><br/><br/><span class="hl-5">// Must be app.canvas or [Program name].canvas</span><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">canvas</span><span class="hl-1">.</span><span class="hl-0">addEventListener</span><span class="hl-1">(</span><span class="hl-2">&quot;ray.hit.event&quot;</span><span class="hl-1">, </span><span class="hl-3">event</span><span class="hl-1"> </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-3">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-2">&quot;Ray hit:&quot;</span><span class="hl-1">, </span><span class="hl-3">event</span><span class="hl-1">.</span><span class="hl-3">detail</span><span class="hl-1">.</span><span class="hl-3">hitObject</span><span class="hl-1">);</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Engine also exports (box):</p>
+<ul>
+<li>addRaycastsAABBListener</li>
+<li>rayIntersectsAABB,</li>
+<li>computeAABB,</li>
+<li>computeWorldVertsAndAABB,</li>
+</ul>
+<hr>
+<h3 id="how-to-load-models" class="tsd-anchor-link">How to Load <code>.obj</code> Models<a href="#how-to-load-models" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<pre><code class="js"><span class="hl-9">import</span><span class="hl-1"> </span><span class="hl-3">MatrixEngineWGPU</span><span class="hl-1"> </span><span class="hl-9">from</span><span class="hl-1"> </span><span class="hl-2">&quot;./src/world.js&quot;</span><span class="hl-1">;</span><br/><span class="hl-9">import</span><span class="hl-1"> {</span><span class="hl-3">downloadMeshes</span><span class="hl-1">} </span><span class="hl-9">from</span><span class="hl-1"> </span><span class="hl-2">&quot;./src/engine/loader-obj.js&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-9">export</span><span class="hl-1"> </span><span class="hl-7">let</span><span class="hl-1"> </span><span class="hl-3">application</span><span class="hl-1"> = </span><span class="hl-7">new</span><span class="hl-1"> </span><span class="hl-0">MatrixEngineWGPU</span><span class="hl-1">(</span><br/><span class="hl-1">  {</span><br/><span class="hl-1">    </span><span class="hl-3">useSingleRenderPass:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-3">canvasSize:</span><span class="hl-1"> </span><span class="hl-2">&quot;fullscreen&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-3">mainCameraParams:</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-3">type:</span><span class="hl-1"> </span><span class="hl-2">&quot;WASD&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-3">responseCoef:</span><span class="hl-1"> </span><span class="hl-4">1000</span><span class="hl-1">,</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  () </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-0">addEventListener</span><span class="hl-1">(</span><span class="hl-2">&quot;AmmoReady&quot;</span><span class="hl-1">, () </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-0">downloadMeshes</span><span class="hl-1">(</span><br/><span class="hl-1">        {</span><br/><span class="hl-1">          </span><span class="hl-3">welcomeText:</span><span class="hl-1"> </span><span class="hl-2">&quot;./res/meshes/blender/piramyd.obj&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">armor:</span><span class="hl-1"> </span><span class="hl-2">&quot;./res/meshes/obj/armor.obj&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">sphere:</span><span class="hl-1"> </span><span class="hl-2">&quot;./res/meshes/blender/sphere.obj&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">cube:</span><span class="hl-1"> </span><span class="hl-2">&quot;./res/meshes/blender/cube.obj&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        },</span><br/><span class="hl-1">        </span><span class="hl-3">onLoadObj</span><br/><span class="hl-1">      );</span><br/><span class="hl-1">    });</span><br/><br/><span class="hl-1">    </span><span class="hl-7">function</span><span class="hl-1"> </span><span class="hl-0">onLoadObj</span><span class="hl-1">(</span><span class="hl-3">meshes</span><span class="hl-1">) {</span><br/><span class="hl-1">      </span><span class="hl-3">application</span><span class="hl-1">.</span><span class="hl-3">myLoadedMeshes</span><span class="hl-1"> = </span><span class="hl-3">meshes</span><span class="hl-1">;</span><br/><span class="hl-1">      </span><span class="hl-9">for</span><span class="hl-1"> (</span><span class="hl-7">const</span><span class="hl-1"> </span><span class="hl-8">key</span><span class="hl-1"> </span><span class="hl-7">in</span><span class="hl-1"> </span><span class="hl-3">meshes</span><span class="hl-1">) {</span><br/><span class="hl-1">        </span><span class="hl-3">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-2">`%c Loaded obj: </span><span class="hl-7">${</span><span class="hl-3">key</span><span class="hl-7">}</span><span class="hl-2"> `</span><span class="hl-1">, </span><span class="hl-8">LOG_MATRIX</span><span class="hl-1">);</span><br/><span class="hl-1">      }</span><br/><br/><span class="hl-1">      </span><span class="hl-3">application</span><span class="hl-1">.</span><span class="hl-0">addMeshObj</span><span class="hl-1">({</span><br/><span class="hl-1">        </span><span class="hl-3">position:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">2</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> -</span><span class="hl-4">10</span><span class="hl-1">},</span><br/><span class="hl-1">        </span><span class="hl-3">rotation:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">},</span><br/><span class="hl-1">        </span><span class="hl-3">rotationSpeed:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">},</span><br/><span class="hl-1">        </span><span class="hl-3">texturesPaths:</span><span class="hl-1"> [</span><span class="hl-2">&quot;./res/meshes/blender/cube.png&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">        </span><span class="hl-3">name:</span><span class="hl-1"> </span><span class="hl-2">&quot;CubePhysics&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">mesh:</span><span class="hl-1"> </span><span class="hl-3">meshes</span><span class="hl-1">.</span><span class="hl-3">cube</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">physics:</span><span class="hl-1"> {</span><br/><span class="hl-1">          </span><span class="hl-3">enabled:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">geometry:</span><span class="hl-1"> </span><span class="hl-2">&quot;Cube&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        },</span><br/><span class="hl-1">      });</span><br/><br/><span class="hl-1">      </span><span class="hl-3">application</span><span class="hl-1">.</span><span class="hl-0">addMeshObj</span><span class="hl-1">({</span><br/><span class="hl-1">        </span><span class="hl-3">position:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">2</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> -</span><span class="hl-4">10</span><span class="hl-1">},</span><br/><span class="hl-1">        </span><span class="hl-3">rotation:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">},</span><br/><span class="hl-1">        </span><span class="hl-3">rotationSpeed:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">},</span><br/><span class="hl-1">        </span><span class="hl-3">texturesPaths:</span><span class="hl-1"> [</span><span class="hl-2">&quot;./res/meshes/blender/cube.png&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">        </span><span class="hl-3">name:</span><span class="hl-1"> </span><span class="hl-2">&quot;SpherePhysics&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">mesh:</span><span class="hl-1"> </span><span class="hl-3">meshes</span><span class="hl-1">.</span><span class="hl-3">sphere</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">physics:</span><span class="hl-1"> {</span><br/><span class="hl-1">          </span><span class="hl-3">enabled:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">geometry:</span><span class="hl-1"> </span><span class="hl-2">&quot;Sphere&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        },</span><br/><span class="hl-1">      });</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">);</span><br/><br/><span class="hl-3">window</span><span class="hl-1">.</span><span class="hl-3">app</span><span class="hl-1"> = </span><span class="hl-3">application</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="🔁-load-obj-sequence-animation" class="tsd-anchor-link">🔁 Load OBJ Sequence Animation<a href="#🔁-load-obj-sequence-animation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>This example shows how to load and animate a sequence of .obj files to simulate mesh-based animation (e.g. walking character).</p>
+<pre><code class="js"><span class="hl-9">import</span><span class="hl-1"> </span><span class="hl-3">MatrixEngineWGPU</span><span class="hl-1"> </span><span class="hl-9">from</span><span class="hl-1"> </span><span class="hl-2">&quot;../src/world.js&quot;</span><span class="hl-1">;</span><br/><span class="hl-9">import</span><span class="hl-1"> {</span><span class="hl-3">downloadMeshes</span><span class="hl-1">, </span><span class="hl-3">makeObjSeqArg</span><span class="hl-1">} </span><span class="hl-9">from</span><span class="hl-1"> </span><span class="hl-2">&quot;../src/engine/loader-obj.js&quot;</span><span class="hl-1">;</span><br/><span class="hl-9">import</span><span class="hl-1"> {</span><span class="hl-3">LOG_MATRIX</span><span class="hl-1">} </span><span class="hl-9">from</span><span class="hl-1"> </span><span class="hl-2">&quot;../src/engine/utils.js&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-9">export</span><span class="hl-1"> </span><span class="hl-7">var</span><span class="hl-1"> </span><span class="hl-0">loadObjsSequence</span><span class="hl-1"> = </span><span class="hl-7">function</span><span class="hl-1"> () {</span><br/><span class="hl-1">  </span><span class="hl-7">let</span><span class="hl-1"> </span><span class="hl-3">loadObjFile</span><span class="hl-1"> = </span><span class="hl-7">new</span><span class="hl-1"> </span><span class="hl-0">MatrixEngineWGPU</span><span class="hl-1">(</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-3">useSingleRenderPass:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-3">canvasSize:</span><span class="hl-1"> </span><span class="hl-2">&quot;fullscreen&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-3">mainCameraParams:</span><span class="hl-1"> {</span><br/><span class="hl-1">        </span><span class="hl-3">type:</span><span class="hl-1"> </span><span class="hl-2">&quot;WASD&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-3">responseCoef:</span><span class="hl-1"> </span><span class="hl-4">1000</span><span class="hl-1">,</span><br/><span class="hl-1">      },</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">    () </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-0">addEventListener</span><span class="hl-1">(</span><span class="hl-2">&quot;AmmoReady&quot;</span><span class="hl-1">, () </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">        </span><span class="hl-0">downloadMeshes</span><span class="hl-1">(</span><br/><span class="hl-1">          </span><span class="hl-0">makeObjSeqArg</span><span class="hl-1">({</span><br/><span class="hl-1">            </span><span class="hl-3">id:</span><span class="hl-1"> </span><span class="hl-2">&quot;swat-walk-pistol&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">            </span><span class="hl-3">path:</span><span class="hl-1"> </span><span class="hl-2">&quot;res/meshes/objs-sequence/swat-walk-pistol&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">            </span><span class="hl-3">from:</span><span class="hl-1"> </span><span class="hl-4">1</span><span class="hl-1">,</span><br/><span class="hl-1">            </span><span class="hl-3">to:</span><span class="hl-1"> </span><span class="hl-4">20</span><span class="hl-1">,</span><br/><span class="hl-1">          }),</span><br/><span class="hl-1">          </span><span class="hl-3">onLoadObj</span><span class="hl-1">,</span><br/><span class="hl-1">          {</span><span class="hl-3">scale:</span><span class="hl-1"> [</span><span class="hl-4">10</span><span class="hl-1">, </span><span class="hl-4">10</span><span class="hl-1">, </span><span class="hl-4">10</span><span class="hl-1">]}</span><br/><span class="hl-1">        );</span><br/><span class="hl-1">      });</span><br/><br/><span class="hl-1">      </span><span class="hl-7">function</span><span class="hl-1"> </span><span class="hl-0">onLoadObj</span><span class="hl-1">(</span><span class="hl-3">m</span><span class="hl-1">) {</span><br/><span class="hl-1">        </span><span class="hl-3">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-2">`%c Loaded objs: </span><span class="hl-7">${</span><span class="hl-3">m</span><span class="hl-7">}</span><span class="hl-2"> `</span><span class="hl-1">, </span><span class="hl-8">LOG_MATRIX</span><span class="hl-1">);</span><br/><span class="hl-1">        </span><span class="hl-7">var</span><span class="hl-1"> </span><span class="hl-3">objAnim</span><span class="hl-1"> = {</span><br/><span class="hl-1">          </span><span class="hl-3">id:</span><span class="hl-1"> </span><span class="hl-2">&quot;swat-walk-pistol&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">meshList:</span><span class="hl-1"> </span><span class="hl-3">m</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">currentAni:</span><span class="hl-1"> </span><span class="hl-4">1</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">animations:</span><span class="hl-1"> {</span><br/><span class="hl-1">            </span><span class="hl-3">active:</span><span class="hl-1"> </span><span class="hl-2">&quot;walk&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">            </span><span class="hl-3">walk:</span><span class="hl-1"> {</span><span class="hl-3">from:</span><span class="hl-1"> </span><span class="hl-4">1</span><span class="hl-1">, </span><span class="hl-3">to:</span><span class="hl-1"> </span><span class="hl-4">20</span><span class="hl-1">, </span><span class="hl-3">speed:</span><span class="hl-1"> </span><span class="hl-4">3</span><span class="hl-1">},</span><br/><span class="hl-1">            </span><span class="hl-3">walkPistol:</span><span class="hl-1"> {</span><span class="hl-3">from:</span><span class="hl-1"> </span><span class="hl-4">36</span><span class="hl-1">, </span><span class="hl-3">to:</span><span class="hl-1"> </span><span class="hl-4">60</span><span class="hl-1">, </span><span class="hl-3">speed:</span><span class="hl-1"> </span><span class="hl-4">3</span><span class="hl-1">},</span><br/><span class="hl-1">          },</span><br/><span class="hl-1">        };</span><br/><br/><span class="hl-1">        </span><span class="hl-3">loadObjFile</span><span class="hl-1">.</span><span class="hl-0">addMeshObj</span><span class="hl-1">({</span><br/><span class="hl-1">          </span><span class="hl-3">position:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">2</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> -</span><span class="hl-4">10</span><span class="hl-1">},</span><br/><span class="hl-1">          </span><span class="hl-3">rotation:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">},</span><br/><span class="hl-1">          </span><span class="hl-3">rotationSpeed:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">},</span><br/><span class="hl-1">          </span><span class="hl-3">scale:</span><span class="hl-1"> [</span><span class="hl-4">100</span><span class="hl-1">, </span><span class="hl-4">100</span><span class="hl-1">, </span><span class="hl-4">100</span><span class="hl-1">],</span><br/><span class="hl-1">          </span><span class="hl-3">texturesPaths:</span><span class="hl-1"> [</span><span class="hl-2">&quot;./res/meshes/blender/cube.png&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">          </span><span class="hl-3">name:</span><span class="hl-1"> </span><span class="hl-2">&quot;swat&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-3">mesh:</span><span class="hl-1"> </span><span class="hl-3">m</span><span class="hl-1">[</span><span class="hl-2">&quot;swat-walk-pistol&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">          </span><span class="hl-3">physics:</span><span class="hl-1"> {</span><br/><span class="hl-1">            </span><span class="hl-3">enabled:</span><span class="hl-1"> </span><span class="hl-7">false</span><span class="hl-1">,</span><br/><span class="hl-1">            </span><span class="hl-3">geometry:</span><span class="hl-1"> </span><span class="hl-2">&quot;Cube&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          },</span><br/><span class="hl-1">          </span><span class="hl-3">objAnim:</span><span class="hl-1"> </span><span class="hl-3">objAnim</span><span class="hl-1">,</span><br/><span class="hl-1">        });</span><br/><br/><span class="hl-1">        </span><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">objAnim</span><span class="hl-1">.</span><span class="hl-0">play</span><span class="hl-1">(</span><span class="hl-2">&quot;walk&quot;</span><span class="hl-1">);</span><br/><span class="hl-1">      }</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  );</span><br/><br/><span class="hl-1">  </span><span class="hl-3">window</span><span class="hl-1">.</span><span class="hl-3">app</span><span class="hl-1"> = </span><span class="hl-3">loadObjFile</span><span class="hl-1">;</span><br/><span class="hl-1">};</span>
+</code><button type="button">Copy</button></pre>
+
+<p>💡 GLB binary loading bvh(rig)animations.</p>
+<ul>
+<li>See examples glb-loader.js (build with npm run glb-loader)</li>
+<li>Next update materials improvements!</li>
+<li>Light affect just for first frame or t-pose.</li>
+<li>For npm service import uploadGLBModel.</li>
+</ul>
+<p>From 1.6.0 glb support multi skinned mesh + mutli primitives cases.</p>
+<p>Limitation:
+glb loader not handled for non animation case. Use obj loader for static mesh.</p>
+<p>Must powerfull call is new class MEMeshObjInstances.
+MEMeshObj is good now for optimised call(less conditionals).
+You can add instanced draws and modify basic color for each individualy also
+transformation good for fantazy or any game dev.</p>
+<p>Example:</p>
+<pre><code class="js"><span class="hl-7">var</span><span class="hl-1"> </span><span class="hl-3">glbFile01</span><span class="hl-1"> = </span><span class="hl-9">await</span><span class="hl-1"> </span><span class="hl-0">fetch</span><span class="hl-1">(</span><span class="hl-3">p</span><span class="hl-1">).</span><span class="hl-0">then</span><span class="hl-1">(</span><span class="hl-3">res</span><span class="hl-1"> </span><span class="hl-7">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-3">res</span><span class="hl-1">.</span><span class="hl-0">arrayBuffer</span><span class="hl-1">().</span><span class="hl-0">then</span><span class="hl-1">(</span><span class="hl-3">buf</span><span class="hl-1"> </span><span class="hl-7">=&gt;</span><span class="hl-1"> </span><span class="hl-0">uploadGLBModel</span><span class="hl-1">(</span><span class="hl-3">buf</span><span class="hl-1">, </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">core</span><span class="hl-1">.</span><span class="hl-3">device</span><span class="hl-1">))</span><br/><span class="hl-1">);</span><br/><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">core</span><span class="hl-1">.</span><span class="hl-0">addGlbObjInctance</span><span class="hl-1">(</span><br/><span class="hl-1">  {</span><br/><span class="hl-1">    </span><span class="hl-3">material:</span><span class="hl-1"> {</span><span class="hl-3">type:</span><span class="hl-1"> </span><span class="hl-2">&quot;standard&quot;</span><span class="hl-1">, </span><span class="hl-3">useTextureFromGlb:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">},</span><br/><span class="hl-1">    </span><span class="hl-3">scale:</span><span class="hl-1"> [</span><span class="hl-4">20</span><span class="hl-1">, </span><span class="hl-4">20</span><span class="hl-1">, </span><span class="hl-4">20</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-3">position:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> -</span><span class="hl-4">4</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> -</span><span class="hl-4">220</span><span class="hl-1">},</span><br/><span class="hl-1">    </span><span class="hl-3">name:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">name</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-3">texturesPaths:</span><span class="hl-1"> [</span><span class="hl-2">&quot;./res/meshes/glb/textures/mutant_origin.png&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-3">raycast:</span><span class="hl-1"> {</span><span class="hl-3">enabled:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">, </span><span class="hl-3">radius:</span><span class="hl-1"> </span><span class="hl-4">1.5</span><span class="hl-1">},</span><br/><span class="hl-1">    </span><span class="hl-3">pointerEffect:</span><span class="hl-1"> {</span><span class="hl-3">enabled:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">},</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-7">null</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-3">glbFile01</span><br/><span class="hl-1">);</span><br/><br/><span class="hl-5">// access  - index -0 is BASE MESH ! I added maxLimit = 5 you can change this from engine source.</span><br/><span class="hl-5">// added lepr smoot translate , also color+.</span><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">1</span><span class="hl-1">].</span><span class="hl-3">instanceTargets</span><span class="hl-1">[</span><span class="hl-4">1</span><span class="hl-1">].</span><span class="hl-3">position</span><span class="hl-1">[</span><span class="hl-4">2</span><span class="hl-1">] = </span><span class="hl-4">10</span><span class="hl-1">;</span><br/><span class="hl-5">// This recreate buffer it is not for loop call space</span><br/><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">mainRenderBundle</span><span class="hl-1">[</span><span class="hl-4">1</span><span class="hl-1">].</span><span class="hl-0">updateInstances</span><span class="hl-1">(</span><span class="hl-4">5</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="📽️-video-textures" class="tsd-anchor-link">📽️ Video textures<a href="#📽️-video-textures" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<pre><code class="js"><span class="hl-8">TEST</span><span class="hl-1">.</span><span class="hl-0">loadVideoTexture</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-3">type:</span><span class="hl-1"> </span><span class="hl-2">&quot;video&quot;</span><span class="hl-1">, </span><span class="hl-5">// video , camera  //not tested canvas2d, canvas2dinline</span><br/><span class="hl-1">  </span><span class="hl-3">src:</span><span class="hl-1"> </span><span class="hl-2">&quot;res/videos/tunel.mp4&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>For canvasinline attach this to arg (example for direct draw on canvas2d and passing intro webgpu pipeline):</p>
+<pre><code class="js"><span class="hl-6">canvaInlineProgram</span><span class="hl-1">: (</span><span class="hl-3">ctx</span><span class="hl-1">, </span><span class="hl-3">canvas</span><span class="hl-1">) </span><span class="hl-7">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-3">ctx</span><span class="hl-1">.</span><span class="hl-3">fillStyle</span><span class="hl-1"> = </span><span class="hl-2">&quot;black&quot;</span><span class="hl-1">;</span><br/><span class="hl-1">  </span><span class="hl-3">ctx</span><span class="hl-1">.</span><span class="hl-0">fillRect</span><span class="hl-1">(</span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-4">0</span><span class="hl-1">, </span><span class="hl-3">canvas</span><span class="hl-1">.</span><span class="hl-3">width</span><span class="hl-1">, </span><span class="hl-3">canvas</span><span class="hl-1">.</span><span class="hl-3">height</span><span class="hl-1">);</span><br/><span class="hl-1">  </span><span class="hl-3">ctx</span><span class="hl-1">.</span><span class="hl-3">fillStyle</span><span class="hl-1"> = </span><span class="hl-2">&quot;white&quot;</span><span class="hl-1">;</span><br/><span class="hl-1">  </span><span class="hl-3">ctx</span><span class="hl-1">.</span><span class="hl-3">font</span><span class="hl-1"> = </span><span class="hl-2">&quot;20px Orbitron&quot;</span><span class="hl-1">;</span><br/><span class="hl-1">  </span><span class="hl-3">ctx</span><span class="hl-1">.</span><span class="hl-0">fillText</span><span class="hl-1">(</span><span class="hl-2">`FPS: </span><span class="hl-7">${</span><span class="hl-3">Math</span><span class="hl-10">.</span><span class="hl-0">round</span><span class="hl-10">(</span><span class="hl-3">performance</span><span class="hl-10">.</span><span class="hl-0">now</span><span class="hl-10">() </span><span class="hl-1">%</span><span class="hl-10"> </span><span class="hl-4">60</span><span class="hl-10">)</span><span class="hl-7">}</span><span class="hl-2">`</span><span class="hl-1">, </span><span class="hl-4">10</span><span class="hl-1">, </span><span class="hl-4">30</span><span class="hl-1">);</span><br/><span class="hl-1">};</span>
+</code><button type="button">Copy</button></pre>
+
+<pre>
+| Scenario                       | Best Approach                      |
+| ------------------------------ | ---------------------------------- |
+| Dynamic 2D canvas animation    | `canvas.captureStream()` → `video` |
+| Static canvas snapshot         | `createImageBitmap(canvas)`        |
+| Replaying real video or webcam | Direct `video` element             |
+</pre>
+<h3 id="note" class="tsd-anchor-link">Note<a href="#note" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>If this happen less then 15 times (Loading procces) then it is ok probably...</p>
+<pre><code class="json"><span class="hl-1">Draw func (err):TypeError: Failed to execute &#39;beginRenderPass&#39; on &#39;GPUCommandEncoder&#39;: The provided value is not of type &#39;GPURenderPassDescriptor&#39;.</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="note-videotexture" class="tsd-anchor-link">Note VideoTexture<a href="#note-videotexture" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>It is possible for 1 or 2 warn in middle time when mesh switch to the videoTexture.
+Will be fixxed in next update.</p>
+<pre><code class="js"><span class="hl-0">Dimension</span><span class="hl-1"> (</span><span class="hl-3">TextureViewDimension</span><span class="hl-1">::</span><span class="hl-3">e2DArray</span><span class="hl-1">) </span><span class="hl-7">of</span><span class="hl-1"> [</span><span class="hl-3">TextureView</span><span class="hl-1"> </span><span class="hl-7">of</span><span class="hl-1"> </span><span class="hl-3">Texture</span><span class="hl-1"> </span><span class="hl-2">&quot;shadowTextureArray[GLOBAL] num of light 1&quot;</span><span class="hl-1">] </span><span class="hl-3">doesn</span><span class="hl-2">&#39;t match the expected dimension (TextureViewDimension::e2D)</span><span class="hl-11">.</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="networking" class="tsd-anchor-link">Networking<a href="#networking" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>From 1.7.0 engine powered by networking. Used kurento&amp;Openvidu server for backend.
+Very good for handling streams, channels etc...</p>
+<p>See example code at <code>./examples/games/rpg/</code></p>
+<p>Buildin net sync basic:
+Lets say app is engine root object and net is networking object.
+webRTC tech with openvidu server middleware server</p>
+<pre><code class="js"><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">net</span><span class="hl-1"> = </span><span class="hl-7">new</span><span class="hl-1"> </span><span class="hl-0">MatrixStream</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-3">active:</span><span class="hl-1"> </span><span class="hl-7">true</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-3">domain:</span><span class="hl-1"> </span><span class="hl-2">&quot;maximumroulette.com&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-3">port:</span><span class="hl-1"> </span><span class="hl-4">2020</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-3">sessionName:</span><span class="hl-1"> </span><span class="hl-2">&quot;forestOfHollowBlood-free-for-all&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-3">resolution:</span><span class="hl-1"> </span><span class="hl-2">&quot;160x240&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-3">isDataOnly:</span><span class="hl-1"> </span><span class="hl-3">urlQuery</span><span class="hl-1">.</span><span class="hl-3">camera</span><span class="hl-1"> || </span><span class="hl-3">urlQuery</span><span class="hl-1">.</span><span class="hl-3">audio</span><span class="hl-1"> ? </span><span class="hl-7">false</span><span class="hl-1"> : </span><span class="hl-7">true</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-3">customData:</span><span class="hl-1"> </span><span class="hl-3">forestOfHollowBlood</span><span class="hl-1">.</span><span class="hl-3">player</span><span class="hl-1">.</span><span class="hl-3">data</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><br/><span class="hl-5">// `customData` if you wanna pass some extra meta data on connection-created event</span><br/><span class="hl-5">// No need always camera and mic we can use is like data signaling only.</span>
+</code><button type="button">Copy</button></pre>
+
+<p>How to use buildin network operations:</p>
+<pre><code class="js"><span class="hl-5">// Activate emiting remote position, on remote side adapted on scene object with same name</span><br/><span class="hl-3">sceneObject</span><span class="hl-1">.</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-3">netObject</span><span class="hl-1"> = </span><span class="hl-3">sceneObject</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">name</span><span class="hl-1">;</span><br/><span class="hl-5">// For now net view for rot is axis separated - cost is ok for orientaion remote pass</span><br/><span class="hl-3">sceneObject</span><span class="hl-1">.</span><span class="hl-3">rotation</span><span class="hl-1">.</span><span class="hl-3">emitY</span><span class="hl-1"> = </span><span class="hl-3">sceneObject</span><span class="hl-1">.</span><span class="hl-3">name</span><span class="hl-1">;</span><br/><span class="hl-5">// If you need oposite remote/local situation. For example:</span><br/><span class="hl-5">// you friendly object is enemy object at remote machine that just setup another flag</span><br/><span class="hl-3">sceneObject</span><span class="hl-1">.</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-3">netObject</span><span class="hl-1"> = </span><span class="hl-3">sceneObject</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">name</span><span class="hl-1">; </span><span class="hl-5">// we still need this setup!</span><br/><span class="hl-3">sceneObject</span><span class="hl-1">.</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-3">remoteName</span><span class="hl-1"> = </span><span class="hl-3">sceneObjecOposite</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">name</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Use toRemote arg prop in send pass, if not it is default [] emit to all.</p>
+<p>Intelegent emit for teams (two teams implemented).
+Position will be emited for teams[0] and received for uniq scene obj name.
+Position will be emited for teams[1] and received for oposite (eg. enemy) uniq scene obj name.
+In this case toRemote is overrided (Don't pass it).
+Used for RPGMOG project.</p>
+<pre><code class="js"><span class="hl-3">mesh</span><span class="hl-1">.</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">] = [</span><span class="hl-3">connId0</span><span class="hl-1">, </span><span class="hl-3">connId1</span><span class="hl-1">];</span><br/><span class="hl-3">mesh</span><span class="hl-1">.</span><span class="hl-3">position</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">[</span><span class="hl-4">1</span><span class="hl-1">] = [</span><span class="hl-3">connId2</span><span class="hl-1">, </span><span class="hl-3">connId3</span><span class="hl-1">];</span><br/><br/><span class="hl-5">// emiter in core engine file</span><br/><span class="hl-9">if</span><span class="hl-1"> (</span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">.</span><span class="hl-3">length</span><span class="hl-1"> &gt; </span><span class="hl-4">0</span><span class="hl-1">)</span><br/><span class="hl-1">  </span><span class="hl-9">if</span><span class="hl-1"> (</span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">].</span><span class="hl-3">length</span><span class="hl-1"> &gt; </span><span class="hl-4">0</span><span class="hl-1">)</span><br/><span class="hl-1">    </span><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">net</span><span class="hl-1">.</span><span class="hl-0">send</span><span class="hl-1">({</span><br/><span class="hl-1">      </span><span class="hl-3">toRemote:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">[</span><span class="hl-4">0</span><span class="hl-1">], </span><span class="hl-5">// default null remote conns</span><br/><span class="hl-1">      </span><span class="hl-3">sceneName:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">netObject</span><span class="hl-1">, </span><span class="hl-5">// origin scene name to receive</span><br/><span class="hl-1">      </span><span class="hl-3">netPos:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">x</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">y</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">z</span><span class="hl-1">},</span><br/><span class="hl-1">    });</span><br/><span class="hl-9">if</span><span class="hl-1"> (</span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">.</span><span class="hl-3">length</span><span class="hl-1"> &gt; </span><span class="hl-4">0</span><span class="hl-1">)</span><br/><span class="hl-1">  </span><span class="hl-9">if</span><span class="hl-1"> (</span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">[</span><span class="hl-4">1</span><span class="hl-1">].</span><span class="hl-3">length</span><span class="hl-1"> &gt; </span><span class="hl-4">0</span><span class="hl-1">)</span><br/><span class="hl-1">    </span><span class="hl-3">app</span><span class="hl-1">.</span><span class="hl-3">net</span><span class="hl-1">.</span><span class="hl-0">send</span><span class="hl-1">({</span><br/><span class="hl-1">      </span><span class="hl-3">toRemote:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">teams</span><span class="hl-1">[</span><span class="hl-4">1</span><span class="hl-1">], </span><span class="hl-5">// default null remote conns</span><br/><span class="hl-1">      </span><span class="hl-3">remoteName:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">remoteName</span><span class="hl-1">, </span><span class="hl-5">// to enemy players</span><br/><span class="hl-1">      </span><span class="hl-3">sceneName:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">netObject</span><span class="hl-1">, </span><span class="hl-5">// now not important</span><br/><span class="hl-1">      </span><span class="hl-3">netPos:</span><span class="hl-1"> {</span><span class="hl-3">x:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">x</span><span class="hl-1">, </span><span class="hl-3">y:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">y</span><span class="hl-1">, </span><span class="hl-3">z:</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1">.</span><span class="hl-3">z</span><span class="hl-1">},</span><br/><span class="hl-1">    });</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="about-urlparams" class="tsd-anchor-link">About URLParams<a href="#about-urlparams" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Buildin Url Param check for multiLang. MultiLang feature is also buildin options.</p>
+<p>Load multilang json file data.</p>
+<ul>
+<li>?lang=en</li>
+</ul>
+<p>Access from code:</p>
+<pre><code class="js"><span class="hl-3">urlQuery</span><span class="hl-1">.</span><span class="hl-3">lang</span><span class="hl-1">;</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<h2 id="about" class="tsd-anchor-link">About <code>main.js</code><a href="#about" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><code>main.js</code> is the main instance for the jamb 3d deluxe game template.
+It contains the game context, e.g., <code>dices</code>.</p>
+<p>What ever you find here onder main.js is open source part.
+Next level of upgrade is commercial part.</p>
+<p>For a clean startup without extra logic, use <code>empty.js</code>.
+This minimal build is ideal for online editors like CodePen or StackOverflow snippets.</p>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
+<hr>
+<h2 id="npm-scripts" class="tsd-anchor-link">NPM Scripts<a href="#npm-scripts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Uses <code>watchify</code> to bundle JavaScript.</p>
+<pre><code class="json"><span class="hl-2">&quot;main-worker&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-2">&quot;examples&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-2">&quot;main&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;watchify main.js -p [esmify --noImplicitAny] -o public/app.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-2">&quot;empty&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-2">&quot;build-all&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;npm run main-worker &amp;&amp; npm run examples &amp;&amp; npm run main &amp;&amp; npm run build-empty&quot;</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<h2 id="resources" class="tsd-anchor-link">Resources<a href="#resources" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>All resources and output go into the <code>./public</code> folder — everything you need in one place.
+This is static file storage.</p>
+<hr>
+<h2 id="proof-of-concept" class="tsd-anchor-link">Proof of Concept<a href="#proof-of-concept" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>🎲 The first full app example will be a WebGPU-powered <strong>Jamb 3d deluxe</strong> game.</p>
+<h2 id="moba-game-beta-version-done" class="tsd-anchor-link">MOBA game Beta version done<a href="#moba-game-beta-version-done" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Features done:</p>
+<ul>
+<li>Navigation mesh</li>
+<li>Hero class</li>
+<li>GLB animations</li>
+<li>Automatic team selection (South vs North)</li>
+<li>Homebase stone (tron / enemytron)</li>
+<li>Invertory (construct from 2 or 3 new upgraded item)</li>
+</ul>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game2.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game3.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game4.png?raw=true" />
+<p>Install it on your desktop with one click.
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" /></p>
+<p><a href="https://goldenspiral.itch.io/forest-of-hollow-blood">Invest in Forest Of Hollow Blood 9,660$</a>
+See more details at <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Support-the-Future-of-Forest-of-Hollow-Blood">FOHB Wiki</a></p>
+<hr>
+<h2 id="live-demos-dev-links" class="tsd-anchor-link">Live Demos &amp; Dev Links<a href="#live-demos-dev-links" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>
+<p><a href="https://maximumroulette.com/apps/webgpu/examples.html">Matrix-engine-wgpu Live demos</a></p>
+</li>
+<li>
+<p>💲💲💲 Support JAMB 3D this project on <a href="https://goldenspiral.itch.io/jamb-3d-deluxe">itch.io</a></p>
+</li>
+<li>
+<p><a href="https://maximumroulette.com/apps/webgpu/examples.html">MOBA Forest Of Hollow Blood Live</a></p>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
+</li>
+<li>
+<p><a href="https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011">CodePen Demo</a>
+→ Uses <code>empty.js</code> build from:
+<a href="https://maximumroulette.com/apps/megpu/empty.js">https://maximumroulette.com/apps/megpu/empty.js</a></p>
+</li>
+<li>
+<p><a href="https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16">CodeSandbox Implementation</a></p>
+</li>
+</ul>
+<hr>
+<p>Performance for Jamb game:</p>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
+<p>Special licence for MOBA example:</p>
+<pre><code><span class="hl-3">Creative</span><span class="hl-1"> </span><span class="hl-3">Commons</span><span class="hl-1"> </span><span class="hl-3">Attribution</span><span class="hl-1"> </span><span class="hl-4">4.0</span><span class="hl-1"> </span><span class="hl-0">International</span><span class="hl-1"> (</span><span class="hl-8">CC</span><span class="hl-1"> </span><span class="hl-8">BY</span><span class="hl-1"> </span><span class="hl-4">4.0</span><span class="hl-1">)</span><br/><br/><span class="hl-3">You</span><span class="hl-1"> </span><span class="hl-3">are</span><span class="hl-1"> </span><span class="hl-3">free</span><span class="hl-1"> </span><span class="hl-3">to</span><span class="hl-1"> </span><span class="hl-3">share</span><span class="hl-1"> </span><span class="hl-3">and</span><span class="hl-1"> </span><span class="hl-3">adapt</span><span class="hl-1"> </span><span class="hl-7">this</span><span class="hl-1"> </span><span class="hl-3">project</span><span class="hl-1">, </span><span class="hl-3">provided</span><span class="hl-1"> </span><span class="hl-3">that</span><span class="hl-1"> </span><span class="hl-3">you</span><span class="hl-1"> </span><span class="hl-3">give</span><span class="hl-1"> </span><span class="hl-3">appropriate</span><span class="hl-1"> </span><span class="hl-3">credit</span><span class="hl-1">.</span><br/><span class="hl-3">Attribution</span><span class="hl-1"> </span><span class="hl-6">requirement</span><span class="hl-1">:</span><br/><span class="hl-3">Include</span><span class="hl-1"> </span><span class="hl-3">the</span><span class="hl-1"> </span><span class="hl-3">following</span><span class="hl-1"> </span><span class="hl-0">notice</span><span class="hl-1"> (</span><span class="hl-3">with</span><span class="hl-1"> </span><span class="hl-3">working</span><span class="hl-1"> </span><span class="hl-3">link</span><span class="hl-1">) </span><span class="hl-7">in</span><span class="hl-1"> </span><span class="hl-3">any</span><span class="hl-1"> </span><span class="hl-3">distributed</span><span class="hl-1"> </span><span class="hl-3">version</span><span class="hl-1"> </span><span class="hl-3">or</span><span class="hl-1"> </span><span class="hl-3">about</span><span class="hl-1"> </span><span class="hl-6">page</span><span class="hl-1">:</span><br/><br/><span class="hl-2">&quot;Forest Of Hollow Blood — an MOBA example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)&quot;</span><br/>
+</code><button>Copy</button></pre>
+
+<h2 id="web-editor-fluxcodexvertex-from-version-180" class="tsd-anchor-link">Web Editor FluxCodexVertex from version [1.8.0]<a href="#web-editor-fluxcodexvertex-from-version-180" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Run editor</p>
+<pre><code class="js"><span class="hl-3">npm</span><span class="hl-1"> </span><span class="hl-3">run</span><span class="hl-1"> </span><span class="hl-3">editorx</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Navigate to <code>matrix-engine.html</code> it is landing page for editor.
+After create new project or load project page will be redirect to
+<code>./public/&lt;PROJECT_NAME&gt;.html</code>
+Source location : <code>./projects/&lt;PROJECT_NAME&gt;</code></p>
+<p>Features :</p>
+<ul>
+<li>
+<p>Create new project/ load project - only on landing page</p>
+</li>
+<li>
+<p>Create cubeMesh</p>
+</li>
+<li>
+<p>Properties box for selected sceneObj</p>
+</li>
+<li>
+<p>Events system (Create func and attach to sceneObj)</p>
+</li>
+<li>
+<p>Resource navigation</p>
+</li>
+<li>
+<p>Visual Scripting</p>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
+</li>
+</ul>
+<p>@Note
+License for fluxCodexVertex.js (MPL 2.0)
+Affect only this file! Just leave comment licence part in header of file.</p>
+<p>YT video promotion :</p>
+<p>About 'In fly' regime:
+Editor can be activated even without backend node but in that case no
+saves.</p>
+<h2 id="license-credits" class="tsd-anchor-link">License &amp;&amp; Credits<a href="#license-credits" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="usage-note" class="tsd-anchor-link">Usage Note<a href="#usage-note" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).</p>
+<h2 id="you-need-just-to-copy-paste-this-text-to-about-form-on-your-web-page-or-any-other-type-of-app" class="tsd-anchor-link">You need just to copy paste this text to about form on your web page or any other type of app.<a href="#you-need-just-to-copy-paste-this-text-to-about-form-on-your-web-page-or-any-other-type-of-app" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="attribution-credits" class="tsd-anchor-link">Attribution &amp; Credits<a href="#attribution-credits" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>
+<p>Engine design and scene structure inspired by:
+<a href="https://webgpu.github.io/webgpu-samples/?sample=shadowMapping">WebGPU Samples</a></p>
+</li>
+<li>
+<p>OBJ Loader adapted from:
+<a href="http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html">http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html</a></p>
+</li>
+<li>
+<p>Dice roll sound <code>roll1.wav</code> sourced from:
+<a href="https://wavbvkery.com/dice-rolling-sound/">https://wavbvkery.com/dice-rolling-sound/</a></p>
+</li>
+<li>
+<p>Raycasting logic and glb loader assisted by ChatGPT.</p>
+</li>
+<li>
+<p>GLTF Loader: <a href="https://github.com/Twinklebear/webgpu-gltf">https://github.com/Twinklebear/webgpu-gltf</a>, improved with chatgpt.</p>
+</li>
+<li>
+<p>Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a></p>
+</li>
+<li>
+<p>Characters used from great <a href="http://mixamo.com">mixamo.com</a>
+-✅What you can do
+You can use Mixamo characters and animations royalty-free in commercial, personal, or non‑profit projects (games, films, prints, etc.).You own your creations / how you use <a href="http://them.No">them.No</a> requirement to credit Adobe / Mixamo (though allowed).
+-🚫What you cannot do
+You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others).
+You can’t use Mixamo’s content (or outputs) to train AI / machine learning models.</p>
+</li>
+<li>
+<p>Music used: BLACK FLY by Audionautix | <a href="http://audionautix.com">http://audionautix.com</a>
+Music promoted by <a href="https://www.free-stock-music.com">https://www.free-stock-music.com</a>
+Creative Commons Attribution-ShareAlike 3.0 Unported</p>
+</li>
+<li>
+<p>Used free assets from great <a href="https://craftpix.net">https://craftpix.net</a>
+Magic icons : <a href="https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/">https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/</a></p>
+</li>
+<li>
+<p>For background music in rpg template used:
+Music by <a href="https://pixabay.com/users/sonican-38947841/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Dvir Silverstone</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Pixabay</a>
+Sound Effect by <a href="https://pixabay.com/users/freesound_crunchpixstudio-49769582/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Crunchpix Studio</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Pixabay</a>
+Music by <a href="https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Emmraan</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Pixabay</a></p>
+<p>'Ruined rock fence' (<a href="https://skfb.ly/6RLwN">https://skfb.ly/6RLwN</a>) by VladNeko is licensed under Creative Commons Attribution (<a href="http://creativecommons.org/licenses/by/4.0/">http://creativecommons.org/licenses/by/4.0/</a>).</p>
+<p>// test
+&quot;fantasy rock&quot; (<a href="https://skfb.ly/oHXAz">https://skfb.ly/oHXAz</a>) by duckcracker02 is licensed under Creative Commons Attribution (<a href="http://creativecommons.org/licenses/by/4.0/">http://creativecommons.org/licenses/by/4.0/</a>).</p>
+<p>&quot;Fantasy Rock&quot; (<a href="https://skfb.ly/oHZSq">https://skfb.ly/oHZSq</a>) by lalune is licensed under Creative Commons Attribution (<a href="http://creativecommons.org/licenses/by/4.0/">http://creativecommons.org/licenses/by/4.0/</a>).</p>
+<p>Invertory images
+<a href="https://djinnbestiary.itch.io/ancient-oddities-vol-1-13-free-potions">https://djinnbestiary.itch.io/ancient-oddities-vol-1-13-free-potions</a></p>
+</li>
+</ul>
+<hr>
+<h3 id="bsd-3-clause-license-from-webgpu-samples" class="tsd-anchor-link">BSD 3-Clause License (from WebGPU Samples)<a href="#bsd-3-clause-license-from-webgpu-samples" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><a href="https://github.com/webgpu/webgpu-samples/blob/main/LICENSE.txt">Full License Text</a></p>
+<p>Top level main.js instance (Jamb 3d deluxe)</p>
+<hr>
+<h2 id="📘-learning-resource" class="tsd-anchor-link">📘 Learning Resource:<a href="#📘-learning-resource" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><a href="https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/">WebGPU Ray Tracing</a>
+ChatGPT , claude ai</p>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#matrix-engine-wgpu"><span>matrix-<wbr/>engine-<wbr/>wgpu</span></a><ul><li><a href="#logo"><span>Logo</span></a></li><li><a href="#description"><span>Description</span></a></li><li><a href="#done-list-"><span>Done list []</span></a></li><li><a href="#roadmap"><span>Roadmap</span></a></li><li><a href="#fluxcodexvertex-web-editor-🚀-since-version-180"><span>Flux<wbr/>Codex<wbr/>Vertex <wbr/>Web <wbr/>Editor 🚀 (since version 1.8.0)</span></a></li><li><a href="#general-features-🧩"><span>General <wbr/>Features 🧩</span></a></li><li><a href="#visual-scripting-implemented-features-✅"><span>Visual <wbr/>Scripting – <wbr/>Implemented <wbr/>Features ✅</span></a></li><li><a href="#⚠️-important-notes"><span>⚠️ <wbr/>Important <wbr/>Notes</span></a></li><li><a href="#instructions-📌"><span>Instructions 📌</span></a></li><li><a href="#features"><span>Features</span></a></li><li><ul><li><a href="#scene-management"><span>Scene <wbr/>Management</span></a></li><li><a href="#camera-options"><span>Camera <wbr/>Options</span></a></li><li><a href="#object-position"><span>Object <wbr/>Position</span></a></li><li><a href="#object-rotation"><span>Object <wbr/>Rotation</span></a></li><li><a href="#3d-camera-example"><span>3<wbr/>D <wbr/>Camera <wbr/>Example</span></a></li><li><a href="#materials"><span>Materials</span></a></li><li><a href="#bloom-post-processing"><span>Bloom post processing</span></a></li><li><a href="#object-interaction-raycasting"><span>Object <wbr/>Interaction (<wbr/>Raycasting)</span></a></li><li><a href="#how-to-load-models"><span>How to <wbr/>Load  <wbr/>Models</span></a></li><li><a href="#🔁-load-obj-sequence-animation"><span>🔁 <wbr/>Load <wbr/>OBJ <wbr/>Sequence <wbr/>Animation</span></a></li><li><a href="#📽️-video-textures"><span>📽️ <wbr/>Video textures</span></a></li><li><a href="#note"><span>Note</span></a></li><li><a href="#note-videotexture"><span>Note <wbr/>Video<wbr/>Texture</span></a></li><li><a href="#networking"><span>Networking</span></a></li><li><a href="#about-urlparams"><span>About <wbr/>URL<wbr/>Params</span></a></li></ul></li><li><a href="#about"><span>About </span></a></li><li><a href="#npm-scripts"><span>NPM <wbr/>Scripts</span></a></li><li><a href="#resources"><span>Resources</span></a></li><li><a href="#proof-of-concept"><span>Proof of <wbr/>Concept</span></a></li><li><a href="#moba-game-beta-version-done"><span>MOBA game <wbr/>Beta version done</span></a></li><li><a href="#live-demos-dev-links"><span>Live <wbr/>Demos &amp; <wbr/>Dev <wbr/>Links</span></a></li><li><a href="#web-editor-fluxcodexvertex-from-version-180"><span>Web <wbr/>Editor <wbr/>Flux<wbr/>Codex<wbr/>Vertex from version [1.8.0]</span></a></li><li><a href="#license-credits"><span>License &amp;&amp; <wbr/>Credits</span></a></li><li><ul><li><a href="#usage-note"><span>Usage <wbr/>Note</span></a></li></ul></li><li><a href="#you-need-just-to-copy-paste-this-text-to-about-form-on-your-web-page-or-any-other-type-of-app"><span>You need just to copy paste this text to about form on your web page or any other type of app.</span></a></li><li><ul><li><a href="#attribution-credits"><span>Attribution &amp; <wbr/>Credits</span></a></li><li><a href="#bsd-3-clause-license-from-webgpu-samples"><span>BSD 3-<wbr/>Clause <wbr/>License (from <wbr/>Web<wbr/>GPU <wbr/>Samples)</span></a></li></ul></li><li><a href="#📘-learning-resource"><span>📘 <wbr/>Learning <wbr/>Resource:</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">Matrix Engine Api Documentation - v1.9.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>

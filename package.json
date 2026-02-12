@@ -26,6 +26,7 @@
     "esmify": "^2.1.1",
     "http-server": "^14.1.1",
     "ollama": "^0.6.3",
+    "typedoc": "^0.28.16",
     "watchify": "^4.0.0",
     "wgpu-matrix": "^2.0.0"
   },

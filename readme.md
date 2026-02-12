@@ -105,6 +105,8 @@ You must clone or download the engine source from the **GitHub repository**.
 
 ## Instructions 📌
 
+Editor use esbuild compiler but still present browserify, both works perfect.
+
 - Run the editor with:
 
 ```bash
@@ -112,12 +114,11 @@ npm run editorx
 ```
 
 from the engine root directory.
-EditorX is an alias for FluxCodexVertex (needed three words to keep the name unique)
+EditorX is an alias for FluxCodexVertex backend part (needed three words to keep the name unique)
 Run the scene by pressing F6 or by clicking Run in the left panel
 If you delete all objects from the scene, you must refresh the page and add at least one object again
 Before importing a graph, delete all nodes from the FluxCodexVertex graph
-Saving is still based on LocalStorage
-After deleting everything, click Save to store an empty [] array
+After deleting everything, click Save to store an empty [] array.
 All changes in graph must be saved manually/clicking for now 💾 (no autosave for graphs).
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-fetch.png?raw=true" />
@@ -874,8 +875,9 @@ saves.
 ### Usage Note
 
 You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).
-
-## You need just to copy paste this text to about form on your web page or any other type of app.
+- Most important is reference on matrix-engine-wgpu.
+- You need just to copy paste this text to about form on your web page or any other type of app.
+- You can remove almost all licence for assets if you remove current assest from your project
 
 ### Attribution & Credits
 

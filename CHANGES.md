@@ -25,9 +25,33 @@ this.mainRenderBundle.forEach((mesh, index) => {
 //   })
 // }
 
+// Aboid creating bind group in loop
+// +++
+pass.setBindGroup(
+  0,
+  this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup,
+);
+```
 
-  // Aboid creating bind group in loop
-  // +++
-  pass.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
+- Added typedoc dev tool for documetation generation.
+
+```js
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["index.js"],
+  "out": "api-docs",
+  "name": "Matrix Engine Api Documentation",
+  "includeVersion": true,
+  "searchInComments": true,
+
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "module": "ESNext",
+    "target": "ESNext",
+    "lib": ["DOM", "ESNext"],
+    "moduleResolution": "node"
+  }
+}
 
 ```

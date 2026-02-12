@@ -5714,8 +5714,6 @@ struct Scene {
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> postFXMode: u32;
 
-// \u274C No binding(4) here!
-
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
   @location(1) fragPos : vec3f,
@@ -5745,7 +5743,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
 
-  // \u2705 Correct way to sample video texture
+  // \u2705 Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
   let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 
@@ -6458,6 +6456,7 @@ var GizmoEffect = class {
         e.detail.hitObject.effects.gizmoEffect = this;
         this.parentMesh.effects.gizmoEffect = null;
         this.parentMesh = e.detail.hitObject;
+        app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
       }
     });
     app.canvas.addEventListener("mousemove", (e) => {
@@ -6474,15 +6473,45 @@ var GizmoEffect = class {
     });
     app.canvas.addEventListener("mouseup", () => {
       if (this.isDragging) {
+        console.log("Gizmo: Stopped dragging:", this.parentMesh.name);
+        console.log("What is selectedAxis: ", this.selectedAxis);
+        console.log("What is operation: ", this.mode);
+        if (this.mode == 0) {
+          document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "position",
+              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
+              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z
+            }
+          }));
+        } else if (this.mode == 1) {
+          document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "rotation",
+              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
+              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
+            }
+          }));
+        } else if (this.mode == 2) {
+          document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "scale",
+              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2",
+              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
+            }
+          }));
+        }
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        console.log("Gizmo: Stopped dragging", this.parentMesh.name);
       }
     });
   }
   _handleRayHit(detail) {
-    const { rayOrigin, rayDirection, hitPoint, button, eventName } = detail;
+    const { rayOrigin, rayDirection, hitPoint } = detail;
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if (axis > 0) {
       this.selectedAxis = axis;
@@ -6529,9 +6558,6 @@ var GizmoEffect = class {
       y: length2 > 1e-3 ? dy / length2 : 0
     };
   }
-  /**
-   * Project world position to screen coordinates
-   */
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
     const ndcX = clipPos.x / clipPos.w;
@@ -7473,40 +7499,18 @@ var MEMeshObj = class extends Materials {
         // vec4<f32> = 4 * 4 bytes
         attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
       };
-      let tang = null;
       this.vertexBuffers = [
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // position
-              shaderLocation: 0,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
+          attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
         },
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // normal
-              shaderLocation: 1,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
+          attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
         },
         {
           arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-          attributes: [
-            {
-              // uvs
-              shaderLocation: 2,
-              offset: 0,
-              format: "float32x2"
-            }
-          ]
+          attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }]
         },
         // joint indices
         {
@@ -7548,14 +7552,9 @@ var MEMeshObj = class extends Materials {
       this.primitive = {
         topology: this.topology,
         cullMode: "none",
-        // 'back' typical for shadow passes
         frontFace: "ccw"
       };
-      this.selectedBuffer = device2.createBuffer({
-        size: 4,
-        // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
+      this.selectedBuffer = device2.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       this.selectedBindGroupLayout = device2.createBindGroupLayout({
         label: "selectedBindGroupLayout mesh",
         entries: [
@@ -7805,7 +7804,6 @@ var MEMeshObj = class extends Materials {
         ]
       });
       this.effects = {};
-      console.log("TTTTTTTTTTTTTTTTTTTTTTTTTT");
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect2(device2, "rgba16float");
@@ -7870,11 +7868,11 @@ var MEMeshObj = class extends Materials {
       try {
         this.setupPipeline();
       } catch (err) {
-        console.log("err in create pipeline in init ", err);
+        console.log("Err[create pipeline]:", err);
       }
     }).then(() => {
       if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
-        console.log("after all updateMeshListBuffers...");
+        console.log("After all updateMeshListBuffers...");
         this.updateMeshListBuffers();
       }
     });
@@ -8077,11 +8075,11 @@ var MEMeshObj = class extends Materials {
   };
   drawElementsAnim = (renderPass, lightContainer) => {
     if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
-      console.log(" NULL 1");
+      console.log("NULL1");
       return;
     }
     if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
-      console.log(" NULL 2");
+      console.log("NULL2");
       return;
     }
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
@@ -8124,7 +8122,7 @@ var MEMeshObj = class extends Materials {
       }
     }
   };
-  drawShadows = (shadowPass, light) => {
+  drawShadows = (shadowPass) => {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -8178,12 +8176,11 @@ var MEMeshObj = class extends Materials {
     if (testPB !== null) {
       try {
         app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
-        console.warn("Physics cleanup done for ", this.name);
       } catch (e) {
-        console.warn("Physics cleanup error:", e);
+        console.warn("Physics cleanup err:", e);
       }
     }
-    console.info(`\u{1F9F9} MEMeshObj destroyed: ${this.name}`);
+    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
   };
 };
 
@@ -9133,7 +9130,7 @@ var SpotLight = class {
       minFilter: "linear"
     });
     this.renderPassDescriptor = {
-      label: "renderPassDescriptor shadowPass [per SpotLigth]",
+      label: "descriptor shadowPass[SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTexture.createView(),
@@ -9143,7 +9140,7 @@ var SpotLight = class {
       }
     };
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      label: "uniformBufferBindGroupLayout in light",
+      label: "uniformBufferBindGroupLayout light",
       entries: [
         {
           binding: 0,
@@ -9161,7 +9158,7 @@ var SpotLight = class {
         return this.shadowBindGroupContainer[index];
       }
       this.shadowBindGroupContainer[index] = this.device.createBindGroup({
-        label: "sceneBindGroupForShadow in light",
+        label: "sceneBindGroupForShadow light",
         layout: this.uniformBufferBindGroupLayout,
         entries: [
           {
@@ -9175,9 +9172,7 @@ var SpotLight = class {
       return this.shadowBindGroupContainer[index];
     };
     this.getShadowBindGroup_bones = (index) => {
-      if (this.shadowBindGroup[index]) {
-        return this.shadowBindGroup[index];
-      }
+      if (this.shadowBindGroup[index]) return this.shadowBindGroup[index];
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
         // 4x4 matrix
@@ -9198,7 +9193,7 @@ var SpotLight = class {
       return this.shadowBindGroup[index];
     };
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
-      label: "modelBindGroupLayout in light [one bindings]",
+      label: "modelBindGroupLayout light [one bindings]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
@@ -9206,7 +9201,7 @@ var SpotLight = class {
       ]
     });
     this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-      label: "modelBindGroupLayout in light [for skinned] [instanced]",
+      label: "modelBindGroupLayout light [skinned][instanced]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
         { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
@@ -9214,9 +9209,9 @@ var SpotLight = class {
       ]
     });
     this.shadowPipeline = this.device.createRenderPipeline({
-      label: "shadowPipeline per light",
+      label: "shadowPipeline light",
       layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout - uniformBufferBindGroupLayout light [regular]",
+        label: "uniformBufferBindGroupLayout light[regular]",
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayout
@@ -9227,10 +9222,8 @@ var SpotLight = class {
           code: vertexShadowWGSL
         }),
         buffers: [
-          // @location(0) - position
           {
             arrayStride: 12,
-            // 3 * 4 bytes (vec3f)
             attributes: [
               {
                 shaderLocation: 0,
@@ -9242,7 +9235,6 @@ var SpotLight = class {
           // ✅ ADD @location(1) - normal
           {
             arrayStride: 12,
-            // 3 * 4 bytes (vec3f)
             attributes: [
               {
                 shaderLocation: 1,
@@ -9254,7 +9246,6 @@ var SpotLight = class {
           // ✅ ADD @location(2) - uv
           {
             arrayStride: 8,
-            // 2 * 4 bytes (vec2f)
             attributes: [
               {
                 shaderLocation: 2,
@@ -9266,7 +9257,6 @@ var SpotLight = class {
           // ✅ ADD @location(3) - joints
           {
             arrayStride: 16,
-            // 4 * 4 bytes (vec4<u32>)
             attributes: [
               {
                 shaderLocation: 3,
@@ -9278,7 +9268,6 @@ var SpotLight = class {
           // ✅ ADD @location(4) - weights
           {
             arrayStride: 16,
-            // 4 * 4 bytes (vec4f)
             attributes: [
               {
                 shaderLocation: 4,
@@ -9297,9 +9286,9 @@ var SpotLight = class {
       primitive: this.primitive
     });
     this.shadowPipelineInstanced = this.device.createRenderPipeline({
-      label: "shadowPipeline [instanced] per light",
+      label: "shadowPipeline [instanced]light",
       layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout - uniformBufferBindGroupLayout light [instanced]",
+        label: "uniformBufferBindGroupLayout light[instanced]",
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayoutInstanced
@@ -9343,16 +9332,13 @@ var SpotLight = class {
       this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
-        // this should match the pipeline
         entries: [
           {
             binding: 0,
-            // must match @binding in shader for shadow texture
             resource: this.shadowTexture.createView()
           },
           {
             binding: 1,
-            // must match @binding in shader for shadow sampler
             resource: this.shadowSampler
           }
         ]
@@ -16805,17 +16791,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== "number") {
-      throw new Error("Invalid data array passed to createGPUBuffer");
+      throw new Error("Invalid array passed to createGPUBuffer");
     }
     const size2 = dataArray.length * dataArray.BYTES_PER_ELEMENT;
     if (!Number.isFinite(size2) || size2 <= 0) {
       throw new Error(`Invalid buffer size: ${size2}`);
     }
-    const buffer = this.device.createBuffer({
-      size: size2,
-      usage,
-      mappedAtCreation: true
-    });
+    const buffer = this.device.createBuffer({ size: size2, usage, mappedAtCreation: true });
     const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
     writeArray.set(dataArray);
     buffer.unmap();
@@ -17743,21 +17725,21 @@ var EditorProvider = class {
       console.log("[EDITOR-input]: ", e.detail);
       switch (e.detail.propertyId) {
         case "position": {
-          console.log("change signal for pos");
+          console.log("change signal for pos", e.detail);
           if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
             detail: e.detail
           }));
           break;
         }
         case "rotation": {
-          console.log("change signal for rot");
+          console.log("[signal][rot]");
           if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
             detail: e.detail
           }));
           break;
         }
         case "scale": {
-          console.log("change signal for scale");
+          console.log("[signal][scale]");
           if (e.detail.property == "0" || e.detail.property == "1" || e.detail.property == "2") {
             document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
               detail: e.detail
@@ -25504,16 +25486,18 @@ var EditorHud = class {
       display: "flex",
       alignItems: "start",
       color: "white",
-      zIndex: "12",
+      zIndex: "10",
       padding: "2px",
       boxSizing: "border-box",
       flexDirection: "row"
     });
     this.gizmoBox.innerHTML = `
+    <div>
     <img id="mode0" data-mode="0" class="gizmo-icon" src="./res/textures/editor/0.png" width="48px" height="48px"/>
     <img id="mode1" data-mode="1" class="gizmo-icon" src="./res/textures/editor/1.png" width="48px" height="48px"/>
     <img id="mode2" data-mode="2" class="gizmo-icon" src="./res/textures/editor/2.png" width="48px" height="48px"/>
-    </div>`;
+    </div>
+    `;
     document.body.appendChild(this.gizmoBox);
     if (!document.getElementById("gizmo-style")) {
       const style = document.createElement("style");
@@ -25540,7 +25524,21 @@ var EditorHud = class {
       document.head.appendChild(style);
     }
     const setMode = (e) => {
-      dispatchEvent(new CustomEvent("editor-set-gizmo-mode", { detail: { mode: parseInt(e.target.getAttribute("data-mode")) } }));
+      let m = parseInt(e.target.getAttribute("data-mode"));
+      dispatchEvent(new CustomEvent("editor-set-gizmo-mode", { detail: { mode: m } }));
+      if (m == 0) {
+        byId("mode0").style.border = "gray 1px solid";
+        byId("mode1").style.border = "none";
+        byId("mode2").style.border = "none";
+      } else if (m == 1) {
+        byId("mode0").style.border = "none";
+        byId("mode1").style.border = "gray 1px solid";
+        byId("mode2").style.border = "none";
+      } else if (m == 2) {
+        byId("mode0").style.border = "none";
+        byId("mode1").style.border = "none";
+        byId("mode2").style.border = "gray 1px solid";
+      }
     };
     ["mode0", "mode1", "mode2"].forEach((id2) => {
       byId(id2).addEventListener("pointerdown", setMode);
@@ -25906,6 +25904,24 @@ var EditorHud = class {
     this.objectProperies.innerHTML = ``;
     const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
     this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+    const OK = Object.keys(currentSO);
+    OK.forEach((prop) => {
+      if (prop == "glb" && typeof currentSO[prop] !== "undefined" && currentSO[prop] != null) {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "glb", currentSO, this.core));
+      } else {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
+      }
+    });
+    this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "editor-events", currentSO, this.core));
+  };
+  updateSceneObjPropertiesFromGizmo = (name2) => {
+    this.currentProperties = [];
+    this.objectProperiesTitle.style.fontSize = "120%";
+    this.objectProperiesTitle.innerHTML = `Scene object properties`;
+    this.objectProperies.innerHTML = ``;
+    const currentSO = this.core.getSceneObjectByName(name2);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${name2}</span> 
       <span style="color:yellow;"> [${currentSO.constructor.name}]`;
     const OK = Object.keys(currentSO);
     OK.forEach((prop) => {
@@ -27515,6 +27531,15 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.logLoopError = true;
+    if (typeof options2.alphaMode == "undefined") {
+      options2.alphaMode = "no";
+    } else if (options2.alphaMode != "opaque" && options2.alphaMode != "premultiplied") {
+      console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied' !!!");
+      return;
+    }
+    if (typeof options2.useContex == "undefined") {
+      options2.useContex = "webgpu";
+    }
     if (typeof options2.dontUsePhysics == "undefined") {
       this.matrixAmmo = new MatrixAmmo();
     }
@@ -27599,7 +27624,13 @@ var MatrixEngineWGPU = class {
     this.device = await this.adapter.requestDevice({
       extensions: ["ray_tracing"]
     });
-    this.context = canvas.getContext("webgpu");
+    if (this.options.alphaMode == "no") {
+      this.context = canvas.getContext("webgpu");
+    } else if (this.options.alphaMode == "opaque") {
+      this.context = canvas.getContext("webgpu", { alphaMode: "opaque" });
+    } else if (this.options.alphaMode == "opaque") {
+      this.context = canvas.getContext("webgpu", { alphaMode: "premultiplied" });
+    }
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = canvas.clientHeight * devicePixelRatio;
@@ -27618,10 +27649,10 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.8.9 ", LOG_FUNNY);
+    console.log("%c Version 1.9.0 ", LOG_FUNNY);
     console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Port is open.\nCreative power loaded with visual scripting.\nLast features : audioReactiveNode, onDraw , onKey , curve editor.\nNo tracking. No hype. Just solutions. \u{1F525}",
+      "%cMatrix Engine WGPU - Port is open.\nCreative power loaded with visual scripting.\nLast features : Adding Gizmo , Optimised render in name of performance,\n audioReactiveNode, onDraw , onKey , curve editor.\nNo tracking. No hype. Just solutions. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
@@ -27721,6 +27752,7 @@ var MatrixEngineWGPU = class {
         // rgba16float  bgra8unorm
       }
     });
+    this.createBloomBindGroup();
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: "spotlightUniformBufferGLOBAL",
       size: this.MAX_SPOTLIGHTS * 144,
@@ -27929,6 +27961,22 @@ var MatrixEngineWGPU = class {
       this.editor.editorHud.updateSceneContainer();
     }
   };
+  createBloomBindGroup() {
+    this.bloomBindGroup = this.device.createBindGroup({
+      layout: this.presentPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: this.bloomOutputTex },
+        { binding: 1, resource: this.presentSampler }
+      ]
+    });
+    this.noBloomBindGroup = this.device.createBindGroup({
+      layout: this.presentPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: this.sceneTexture.createView() },
+        { binding: 1, resource: this.presentSampler }
+      ]
+    });
+  }
   async run(callback) {
     setTimeout(() => {
       requestAnimationFrame(this.frame);
@@ -28025,14 +28073,14 @@ var MatrixEngineWGPU = class {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-      for (const light of this.lightContainer) {
-        light.update();
-        this.mainRenderBundle.forEach((meItem, index) => {
-          meItem.position.update();
-          meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
+      this.mainRenderBundle.forEach((mesh, index) => {
+        mesh.position.update();
+        mesh.updateModelUniformBuffer();
+        this.lightContainer.forEach((light) => {
+          light.update();
+          mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
-      }
+      });
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -28151,13 +28199,7 @@ var MatrixEngineWGPU = class {
         }]
       });
       pass2.setPipeline(this.presentPipeline);
-      pass2.setBindGroup(0, this.device.createBindGroup({
-        layout: this.presentPipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView() },
-          { binding: 1, resource: this.presentSampler }
-        ]
-      }));
+      pass2.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
       pass2.draw(6);
       pass2.end();
       this.graphUpdate(now);

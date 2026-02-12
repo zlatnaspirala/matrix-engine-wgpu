@@ -1,0 +1,17 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["index.js"],
+  "out": "api-docs",
+  "name": "Matrix Engine Api Documentation",
+  "includeVersion": true,
+  "searchInComments": true,
+
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "module": "ESNext",
+    "target": "ESNext",
+    "lib": ["DOM", "ESNext"],
+    "moduleResolution": "node"
+  }
+}

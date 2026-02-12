@@ -165,47 +165,45 @@ export class GizmoEffect {
         console.log('What is operation: ', this.mode)
         if(this.mode == 0) {
           // 1 x  2 y  3 z
-          if(this.selectedAxis == 1) {
-            // transla x
-            // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-            document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
+          // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
+          document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "position",
+              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ?
+                "y" : "z",
+              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ?
+                this.parentMesh.position.y : this.parentMesh.position.z
+            }
+          }))
+        } else if(this.mode == 1) {
+          document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "rotation",
+              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ?
+                "y" : "z",
+              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ?
+                this.parentMesh.rotation.y : this.parentMesh.rotation.z
+            }
+          }));
+        } else if(this.mode == 2) {
+          // if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
+            document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
               detail: {
                 inputFor: this.parentMesh.name,
-                propertyId: "position",
-                property: "x",
-                value: this.parentMesh.position.x
+                propertyId: "scale",
+                property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ?
+                  "1" : "2",
+                value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ?
+                  this.parentMesh.rotation.y : this.parentMesh.rotation.z
               }
             }));
-          } else if(this.selectedAxis == 2) {
-
-          } else if(this.selectedAxis == 3) {
-
-          }
-
-        } else if(this.mode == 1) {
-          // 1 x   2 y  3 z
-          if(this.selectedAxis == 1) {
-
-          } else if(this.selectedAxis == 2) {
-
-          } else if(this.selectedAxis == 3) {
-
-          }
-        } else if(this.mode == 2) {
-          // 1 x   2 y  3 z
-          if(this.selectedAxis == 1) {
-
-          } else if(this.selectedAxis == 2) {
-
-          } else if(this.selectedAxis == 3) {
-
-          }
         }
         // finish job
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-        // setup new values...
       }
     });
   }
