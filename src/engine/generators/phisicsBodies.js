@@ -234,13 +234,13 @@ export function physicsBodiesGeneratorDeepPyramid(
       const lastIndex = totalCubes - 1;
       const RAY = {enabled: !!raycast, radius: 1};
       const objects = [];
-      for (let y = 0; y < levels; y++) {
+      for(let y = 0;y < levels;y++) {
         const sizeX = levels - y;
         const sizeZ = levels - y;
         const xOffset = (sizeX - 1) * spacing * 0.5;
         const zOffset = (sizeZ - 1) * spacing * 0.5;
-        for (let x = 0; x < sizeX; x++) {
-          for (let z = 0; z < sizeZ; z++) {
+        for(let x = 0;x < sizeX;x++) {
+          for(let z = 0;z < sizeZ;z++) {
             const cubeName = `${name}_${index}`;
             const currentIndex = index;
             setTimeout(() => {
@@ -271,7 +271,7 @@ export function physicsBodiesGeneratorDeepPyramid(
               runtimeCacheObjs.push(o);
               objects.push(o.name);
 
-              if (currentIndex === lastIndex) {
+              if(currentIndex === lastIndex) {
                 // console.log("Last cube added!");
                 resolve(objects);
               }
@@ -336,4 +336,53 @@ export function physicsBodiesGeneratorTower(
   }
 
   downloadMeshes(inputCube, handler, {scale});
+}
+
+// universal (both physics and non physics objects)
+// app.editorAddOBJ(mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj
+export function addOBJ(
+  path,
+  material = "standard",
+  pos,
+  rot,
+  texturePath,
+  name,
+  isPhysicsBody = false,
+  raycast = false,
+  scale = [1, 1, 1],
+  isInstancedObj = false
+) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = {mesh: path};
+    function handler(m) {
+      const RAY = {enabled: !!raycast, radius: 1};
+
+      engine.addMeshObj({
+        material: {type: material},
+        position: {
+          x: pos.x + x * spacing - xOffset,
+          y: pos.y + y * spacing,
+          z: pos.z + z * spacing - zOffset
+        },
+        rotation: rot,
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: [texturePath],
+        name: name,
+        mesh: m.mesh,
+        physics: {
+          scale: scale,
+          enabled: isPhysicsBody,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
+
+      const b = app.matrixAmmo.getBodyByName(name);
+      const o = app.getSceneObjectByName(name);
+      runtimeCacheObjs.push(o);
+      resolve(objects);
+    }
+    downloadMeshes(inputCube, handler, {scale});
+  });
 }

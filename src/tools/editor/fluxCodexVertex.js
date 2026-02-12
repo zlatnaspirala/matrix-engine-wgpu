@@ -1734,6 +1734,41 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
+      addObj: (id, x, y) => ({
+        id, x, y, title: "Add OBJ",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "path", type: "string"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "isPhysicsBody", type: "boolean"},
+          {name: "isInstancedObj", type: "boolean"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+        ],
+        fields: [
+          {key: "path", value: "res/meshes/shapes/cube.obj"},
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "isPhysicsBody", type: false},
+          {key: "isInstancedObj", type: false},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
       setForceOnHit: (id, x, y) => ({
         id, x, y, title: "Set Force On Hit",
         category: "action",
@@ -4124,6 +4159,43 @@ export default class FluxCodexVertex {
           // createdField.value = true;
         }
 
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Add OBJ") {
+        const path = this.getValue(nodeId, "path");
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(isInstancedObj == "true") {isInstancedObj = true} else {isInstancedObj = false;}
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+
+          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj, delay).then((objects) => {
+            console.log('!ADD OBJ FROM GRAPH COMPLETE!');
+            n._returnCache = objects;
+            this.enqueueOutputs(n, "complete");
+          })
+          // createdField.value = true;
+        }
+        // sync
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Generator Pyramid") {
