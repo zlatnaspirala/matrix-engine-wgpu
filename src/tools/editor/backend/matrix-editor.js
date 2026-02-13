@@ -432,11 +432,6 @@ function createHTMLProjectDocument(name) {
 }
 
 async function navFolder(data, ws) {
-  if(data.rootFolder) {
-    // console.log('data.rootFolder ', data.rootFolder);
-  } else {
-    console.log('data.rootFolder no defined');
-  }
   const folder = path.join(data.rootFolder, data.name);
   const items = await fs.readdir(folder, {withFileTypes: true});
   ws.send(JSON.stringify({
@@ -869,9 +864,12 @@ function escapeRegExp(str) {
 }
 
 async function aiGenGraphCall(msg, ws) {
-  internal_navFolder({rootFolder: PUBLIC_RES, name: "textures"}, ws).then((res_list) => {
-    console.log('result res.list...>>>>', res_list);
-    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(SYSTEM_PROMPT, res_list);
+  internal_navFolder({rootFolder: PUBLIC_RES, name: "textures"}, ws).then((res) => {
+    let res_list_tex = res[0];
+    let res_list_obj = res[1];
+    const listOfTexs = res_list_tex.map(t => t.relativePath).join(", ");
+    const listOfObjs = res_list_obj.map(t => t.relativePath).join(", ");
+    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(SYSTEM_PROMPT, listOfTexs, listOfObjs);
     matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
       // console.log('result from ai tool service....>>>>', res_list)
       ws.send(JSON.stringify({
@@ -886,27 +884,44 @@ async function aiGenGraphCall(msg, ws) {
 async function internal_navFolder(data, ws) {
   return new Promise(async (resolve, reject) => {
     if(!data.rootFolder) {reject('no root folder'); return;}
-    const folder = path.join(data.rootFolder, data.name);
-    const items = await fs.readdir(folder, {withFileTypes: true});
-
-    console.log('result RES FILENAMES....>>>>', items[0]);
-    let resList = items.map(d => ({
-      name: d.name,
-      type: 'textures',
-      path: items[0].path.split('public')[1]
-    }));
-    console.log('result RES FILENAMES....>>>>', resList);
-
+    const folderTex = path.join(data.rootFolder, data.name);
+    let listOfPngs = await getAllFilenamesFrom(folderTex, ".png");
+    let listOfJpgs = await getAllFilenamesFrom(folderTex, ".jpg");
+    let listOfTexures = [...listOfJpgs, ...listOfPngs];
+    // console.log('result RES FILENAMES....>>>>', listOfPngs);
+    const folderObjs = path.join(data.rootFolder, "meshes");
+    let listOfObjs = await getAllFilenamesFrom(folderObjs, ".obj")
     ws.send(JSON.stringify({
       // IMPLEMENT LATER ! on front can be used for texture drop down in fcv graph.
-      listAssets: "list-assets-textures",
+      listAssetsForGraph: "list-assets",
       ok: true,
       rootFolder: path.join(data.rootFolder, data.name),
-      payload: items.map(d => ({
-        name: d.name,
-        isDir: d.isDirectory()
-      }))
+      resources: {
+        objs: listOfObjs.map(d => ({name: d.name, relativePath: d.relativePath})),
+        textures: listOfPngs.map(d => ({name: d.name, relativePath: d.relativePath}))
+      }
     }));
-    resolve(resList);
+    resolve([listOfTexures, listOfObjs]);
   })
+}
+
+export async function getAllFilenamesFrom(dirPath, ext) {
+  let results = [];
+  const list = await fs.readdir(dirPath, { withFileTypes: true });
+  for (const dirent of list) {
+    const fullPath = path.join(dirPath, dirent.name);
+    if (dirent.isDirectory()) {
+      const recursiveResults = await getAllFilenamesFrom(fullPath, ext);
+      results = results.concat(recursiveResults);
+    } else {
+      if (path.extname(dirent.name).toLowerCase() === ext.toLowerCase()) {
+        results.push({
+          filename: dirent.name,
+          fullpath: fullPath,
+          relativePath: fullPath.split('public' + path.sep).pop().replace(/\\/g, '/')
+        });
+      }
+    }
+  }
+  return results;
 }

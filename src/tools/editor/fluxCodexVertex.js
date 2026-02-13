@@ -101,6 +101,7 @@ export default class FluxCodexVertex {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
+       document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
       byId("graph-status").innerHTML = '⚫';
     };
 
@@ -131,6 +132,7 @@ export default class FluxCodexVertex {
       //
       console.log("AI RESPONSE:", e.detail);
       byId("graphGenJSON").value = e.detail;
+      byId('ai-status').removeAttribute('data-ai-status')
     });
     document.addEventListener("keydown", e => {
       const target = (e.composedPath && e.composedPath()[0]) || e.target || document.activeElement;
@@ -541,11 +543,11 @@ export default class FluxCodexVertex {
       if(selectPrompt.selectedIndex > 0) {
         // use select task...
       }
-      if (e.target.getAttribute("data-ai-status") == null ) {
+      if(e.target.getAttribute("data-ai-status") == null) {
         console.info('first time gen ai tool call !!!!!!!!!!!!!!!!')
         e.target.setAttribute("data-ai-status", "wip");
       } else {
-        if (e.target.getAttribute("data-ai-status") == "wip" ) {
+        if(e.target.getAttribute("data-ai-status") == "wip") {
           console.info('gen ai tool call PREVENT ')
           return;
         } else {
@@ -621,8 +623,57 @@ export default class FluxCodexVertex {
       }
     });
     wrap1.appendChild(copy);
+
+    const exportJSON = document.createElement("button");
+    exportJSON.innerText = `Export JSON`;
+    exportJSON.classList.add("btnLeftBox");
+    exportJSON.classList.add("btn4");
+    exportJSON.style.margin = "8px 8px 8px 8px";
+    exportJSON.style.width = "100px";
+    exportJSON.style.fontWeight = "bold";
+    exportJSON.style.color = "lime";
+    exportJSON.style.webkitTextStrokeWidth = "0px";
+    exportJSON.addEventListener("click", async () => {
+      this.exportAIGenJson(byId("graphGenJSON").value);
+    });
+    wrap1.appendChild(exportJSON);
+
+    const insertGraph = document.createElement("button");
+    insertGraph.innerText = `Insert graph`;
+    insertGraph.classList.add("btnLeftBox");
+    insertGraph.classList.add("btn4");
+    insertGraph.style.margin = "8px 8px 8px 8px";
+    insertGraph.style.width = "100px";
+    insertGraph.style.fontWeight = "bold";
+    insertGraph.style.color = "lime";
+    insertGraph.style.webkitTextStrokeWidth = "0px";
+    insertGraph.addEventListener("click", async () => {
+      console.log("TEST OVERRIDE", list.value);
+      let test = JSON.parse(list.value)
+      this.mergeGraphBundle(test)
+    });
+    wrap1.appendChild(insertGraph);
+
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
+  }
+
+  exportAIGenJson(graphData, fileName = 'ai-gen-fcv-graph.json') {
+    try {
+      // const jsonString = JSON.stringify(graphData, null, 2);
+      const blob = new Blob([graphData], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log("Graph exported successfully.");
+    } catch(error) {
+      console.error("Failed to export graph:", error);
+    }
   }
 
   _refreshVarsList(container) {
@@ -4898,7 +4949,7 @@ export default class FluxCodexVertex {
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
     document.dispatchEvent(new CustomEvent('save-graph', {detail: d}));
-    this.log("Graph saved to LocalStorage and final script");
+    // this.log("Graph saved to LocalStorage and final script");
   }
 
   clearStorage() {
@@ -5092,4 +5143,81 @@ export default class FluxCodexVertex {
     });
     this.curveEditor.toggleEditor(true);
   }
+
+mergeGraphBundle(data) {
+  if (!data || !data.nodes) return;
+
+  const nodeOffset = this.nodeCounter;
+  const linkOffset = this.linkCounter;
+  const nodeIdMap = {};
+
+  // 1. Map and Create Nodes
+  Object.values(data.nodes).forEach(node => {
+    const oldId = node.id;
+    // Ensure we create a truly unique ID string
+    const newId = "n" + (this.nodeCounter++); 
+    nodeIdMap[oldId] = newId;
+
+    const newNode = {
+      ...node,
+      id: newId,
+      // Offset so they don't overlap existing nodes
+      x: (node.x || 0) + 100,
+      y: (node.y || 0) + 100
+    };
+
+    this.nodes[newId] = newNode;
+    
+    // Create DOM element
+    const domEl = this.createNodeDOM(newNode);
+    this.board.appendChild(domEl);
+
+    if((newNode.category === "value" && newNode.title !== "GenRandInt") ||
+       newNode.category === "math" || newNode.title === "Print") {
+      newNode.displayEl = domEl.querySelector(".value-display");
+    }
+  });
+
+  // 2. Map and Create Links
+  if (Array.isArray(data.links)) {
+    data.links.forEach(link => {
+      const newLinkId = "l" + (this.linkCounter++);
+
+      const newLink = {
+        ...link,
+        id: newLinkId,
+        from: { 
+          ...link.from, 
+          node: nodeIdMap[link.from.node] 
+        },
+        to: { 
+          ...link.to, 
+          node: nodeIdMap[link.to.node] 
+        }
+      };
+
+      // Only add link if BOTH nodes were successfully remapped
+      if (this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
+        this.links.push(newLink);
+      }
+    });
+  }
+
+  // 3. Critical UI Refresh Sequence
+  // First, update the DOM positions for the new nodes
+  Object.keys(nodeIdMap).forEach(oldId => {
+    this.updateNodeDOM(nodeIdMap[oldId]);
+  });
+
+  // Second, tell the engine to draw the lines
+  this.updateLinks(); 
+  
+  // Third, if your engine requires runtime binding (like events/logic)
+  if (this.restoreConnectionsRuntime) {
+    this.restoreConnectionsRuntime();
+  }
+
+  this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
+  this.compileGraph(); // Save to LocalStorage
+}
 }

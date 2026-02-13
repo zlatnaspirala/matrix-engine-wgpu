@@ -33,6 +33,11 @@ export class MEEditorClient {
           setTimeout(() => location.assign(data.name + ".html"), 2000);
         } else if(data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
+        } else if(data.listAssetsForGraph) {
+          // later in graphs ... 
+          document.dispatchEvent(new CustomEvent('editorx-update-assets-list', {
+            detail: data
+          }))
         } else if(data.listAssets) {
           document.dispatchEvent(new CustomEvent('la', {
             detail: data

@@ -17438,6 +17438,10 @@ var MEEditorClient = class {
           setTimeout(() => location.assign(data.name + ".html"), 2e3);
         } else if (data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
+        } else if (data.listAssetsForGraph) {
+          document.dispatchEvent(new CustomEvent("editorx-update-assets-list", {
+            detail: data
+          }));
         } else if (data.listAssets) {
           document.dispatchEvent(new CustomEvent("la", {
             detail: data
@@ -20362,10 +20366,9 @@ var CurveStore = class {
 var tasks = [
   "On load print hello world",
   "On load create a cube named box1 at position 0 0 0",
-  "Create a floor plane using generatorWall",
+  "Create a the labyrinth using generatorWall",
   "Set texture for floor object",
-  "Set material standard for box1",
-  "Enable raycast for box1",
+  "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
   "Create a pyramid of cubes with 4 levels",
   "Play mp3 audio on load",
@@ -20375,18 +20378,13 @@ var tasks = [
   "Move box1 forward on Z axis over time",
   "Oscillate box1 Y position between 0 and 2",
   "Change box1 rotation using sine wave",
-  "Detect ray hit on any object",
   "On ray hit print hit object name",
   "Apply force to hit object in ray direction",
-  "Change texture of object when clicked",
+  "Change texture of object when clicked new texture rust metal",
   "Generate random number and print it",
-  "If random number is greater than 0.5 print HIGH",
-  "If random number is less than or equal 0.5 print LOW",
   "Set variable score to 0",
-  "Increase score by 1 on object hit",
-  "Print score value",
+  "Increase score by 1 on object hit, Print score value",
   "Dispatch custom event named GAME_START",
-  "Listen to custom event GAME_START and print message",
   "After 2 seconds create a new cube",
   "Animate cube position using curve timeline",
   "Enable vertex wave animation on floor"
@@ -20467,6 +20465,7 @@ var FluxCodexVertex = class {
     document.addEventListener("on-ai-graph-response", (e) => {
       console.log("AI RESPONSE:", e.detail);
       byId("graphGenJSON").value = e.detail;
+      byId("ai-status").removeAttribute("data-ai-status");
     });
     document.addEventListener("keydown", (e) => {
       const target = e.composedPath && e.composedPath()[0] || e.target || document.activeElement;
@@ -20914,8 +20913,52 @@ var FluxCodexVertex = class {
       }
     });
     wrap1.appendChild(copy3);
+    const exportJSON = document.createElement("button");
+    exportJSON.innerText = `Export JSON`;
+    exportJSON.classList.add("btnLeftBox");
+    exportJSON.classList.add("btn4");
+    exportJSON.style.margin = "8px 8px 8px 8px";
+    exportJSON.style.width = "100px";
+    exportJSON.style.fontWeight = "bold";
+    exportJSON.style.color = "lime";
+    exportJSON.style.webkitTextStrokeWidth = "0px";
+    exportJSON.addEventListener("click", async () => {
+      this.exportAIGenJson(byId("graphGenJSON").value);
+    });
+    wrap1.appendChild(exportJSON);
+    const insertGraph = document.createElement("button");
+    insertGraph.innerText = `Insert graph`;
+    insertGraph.classList.add("btnLeftBox");
+    insertGraph.classList.add("btn4");
+    insertGraph.style.margin = "8px 8px 8px 8px";
+    insertGraph.style.width = "100px";
+    insertGraph.style.fontWeight = "bold";
+    insertGraph.style.color = "lime";
+    insertGraph.style.webkitTextStrokeWidth = "0px";
+    insertGraph.addEventListener("click", async () => {
+      console.log("TEST OVERRIDE", list.value);
+      let test = JSON.parse(list.value);
+      this.mergeGraphBundle(test);
+    });
+    wrap1.appendChild(insertGraph);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
+  }
+  exportAIGenJson(graphData, fileName = "ai-gen-fcv-graph.json") {
+    try {
+      const blob = new Blob([graphData], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log("Graph exported successfully.");
+    } catch (error) {
+      console.error("Failed to export graph:", error);
+    }
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
@@ -24913,7 +24956,6 @@ var FluxCodexVertex = class {
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
     document.dispatchEvent(new CustomEvent("save-graph", { detail: d }));
-    this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
     let ask = confirm("\u26A0\uFE0F This will delete all nodes. Are you sure?");
@@ -25074,6 +25116,59 @@ var FluxCodexVertex = class {
       idNode: node2.id
     });
     this.curveEditor.toggleEditor(true);
+  }
+  mergeGraphBundle(data) {
+    if (!data || !data.nodes) return;
+    const nodeOffset = this.nodeCounter;
+    const linkOffset = this.linkCounter;
+    const nodeIdMap = {};
+    Object.values(data.nodes).forEach((node2) => {
+      const oldId = node2.id;
+      const newId = "n" + this.nodeCounter++;
+      nodeIdMap[oldId] = newId;
+      const newNode = {
+        ...node2,
+        id: newId,
+        // Offset so they don't overlap existing nodes
+        x: (node2.x || 0) + 100,
+        y: (node2.y || 0) + 100
+      };
+      this.nodes[newId] = newNode;
+      const domEl = this.createNodeDOM(newNode);
+      this.board.appendChild(domEl);
+      if (newNode.category === "value" && newNode.title !== "GenRandInt" || newNode.category === "math" || newNode.title === "Print") {
+        newNode.displayEl = domEl.querySelector(".value-display");
+      }
+    });
+    if (Array.isArray(data.links)) {
+      data.links.forEach((link) => {
+        const newLinkId = "l" + this.linkCounter++;
+        const newLink = {
+          ...link,
+          id: newLinkId,
+          from: {
+            ...link.from,
+            node: nodeIdMap[link.from.node]
+          },
+          to: {
+            ...link.to,
+            node: nodeIdMap[link.to.node]
+          }
+        };
+        if (this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
+          this.links.push(newLink);
+        }
+      });
+    }
+    Object.keys(nodeIdMap).forEach((oldId) => {
+      this.updateNodeDOM(nodeIdMap[oldId]);
+    });
+    this.updateLinks();
+    if (this.restoreConnectionsRuntime) {
+      this.restoreConnectionsRuntime();
+    }
+    this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
+    this.compileGraph();
   }
 };
 

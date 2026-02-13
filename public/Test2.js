@@ -17438,6 +17438,10 @@ var MEEditorClient = class {
           setTimeout(() => location.assign(data.name + ".html"), 2e3);
         } else if (data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
+        } else if (data.listAssetsForGraph) {
+          document.dispatchEvent(new CustomEvent("editorx-update-assets-list", {
+            detail: data
+          }));
         } else if (data.listAssets) {
           document.dispatchEvent(new CustomEvent("la", {
             detail: data
@@ -20362,10 +20366,9 @@ var CurveStore = class {
 var tasks = [
   "On load print hello world",
   "On load create a cube named box1 at position 0 0 0",
-  "Create a floor plane using generatorWall",
+  "Create a the labyrinth using generatorWall",
   "Set texture for floor object",
-  "Set material standard for box1",
-  "Enable raycast for box1",
+  "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
   "Create a pyramid of cubes with 4 levels",
   "Play mp3 audio on load",
@@ -20375,18 +20378,13 @@ var tasks = [
   "Move box1 forward on Z axis over time",
   "Oscillate box1 Y position between 0 and 2",
   "Change box1 rotation using sine wave",
-  "Detect ray hit on any object",
   "On ray hit print hit object name",
   "Apply force to hit object in ray direction",
-  "Change texture of object when clicked",
+  "Change texture of object when clicked new texture rust metal",
   "Generate random number and print it",
-  "If random number is greater than 0.5 print HIGH",
-  "If random number is less than or equal 0.5 print LOW",
   "Set variable score to 0",
-  "Increase score by 1 on object hit",
-  "Print score value",
+  "Increase score by 1 on object hit, Print score value",
   "Dispatch custom event named GAME_START",
-  "Listen to custom event GAME_START and print message",
   "After 2 seconds create a new cube",
   "Animate cube position using curve timeline",
   "Enable vertex wave animation on floor"
@@ -20444,6 +20442,7 @@ var FluxCodexVertex = class {
       for (let x3 = 0; x3 < runtimeCacheObjs.length; x3++) {
         app.removeSceneObjectByName(runtimeCacheObjs[x3].name);
       }
+      document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} }));
       byId("graph-status").innerHTML = "\u26AB";
     };
     this.setZoom = (z) => {
@@ -20467,6 +20466,7 @@ var FluxCodexVertex = class {
     document.addEventListener("on-ai-graph-response", (e) => {
       console.log("AI RESPONSE:", e.detail);
       byId("graphGenJSON").value = e.detail;
+      byId("ai-status").removeAttribute("data-ai-status");
     });
     document.addEventListener("keydown", (e) => {
       const target = e.composedPath && e.composedPath()[0] || e.target || document.activeElement;
@@ -20914,8 +20914,52 @@ var FluxCodexVertex = class {
       }
     });
     wrap1.appendChild(copy3);
+    const exportJSON = document.createElement("button");
+    exportJSON.innerText = `Export JSON`;
+    exportJSON.classList.add("btnLeftBox");
+    exportJSON.classList.add("btn4");
+    exportJSON.style.margin = "8px 8px 8px 8px";
+    exportJSON.style.width = "100px";
+    exportJSON.style.fontWeight = "bold";
+    exportJSON.style.color = "lime";
+    exportJSON.style.webkitTextStrokeWidth = "0px";
+    exportJSON.addEventListener("click", async () => {
+      this.exportAIGenJson(byId("graphGenJSON").value);
+    });
+    wrap1.appendChild(exportJSON);
+    const insertGraph = document.createElement("button");
+    insertGraph.innerText = `Insert graph`;
+    insertGraph.classList.add("btnLeftBox");
+    insertGraph.classList.add("btn4");
+    insertGraph.style.margin = "8px 8px 8px 8px";
+    insertGraph.style.width = "100px";
+    insertGraph.style.fontWeight = "bold";
+    insertGraph.style.color = "lime";
+    insertGraph.style.webkitTextStrokeWidth = "0px";
+    insertGraph.addEventListener("click", async () => {
+      console.log("TEST OVERRIDE", list.value);
+      let test = JSON.parse(list.value);
+      this.mergeGraphBundle(test);
+    });
+    wrap1.appendChild(insertGraph);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
+  }
+  exportAIGenJson(graphData, fileName = "ai-gen-fcv-graph.json") {
+    try {
+      const blob = new Blob([graphData], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log("Graph exported successfully.");
+    } catch (error) {
+      console.error("Failed to export graph:", error);
+    }
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
@@ -24913,7 +24957,6 @@ var FluxCodexVertex = class {
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
     document.dispatchEvent(new CustomEvent("save-graph", { detail: d }));
-    this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
     let ask = confirm("\u26A0\uFE0F This will delete all nodes. Are you sure?");
@@ -25074,6 +25117,59 @@ var FluxCodexVertex = class {
       idNode: node2.id
     });
     this.curveEditor.toggleEditor(true);
+  }
+  mergeGraphBundle(data) {
+    if (!data || !data.nodes) return;
+    const nodeOffset = this.nodeCounter;
+    const linkOffset = this.linkCounter;
+    const nodeIdMap = {};
+    Object.values(data.nodes).forEach((node2) => {
+      const oldId = node2.id;
+      const newId = "n" + this.nodeCounter++;
+      nodeIdMap[oldId] = newId;
+      const newNode = {
+        ...node2,
+        id: newId,
+        // Offset so they don't overlap existing nodes
+        x: (node2.x || 0) + 100,
+        y: (node2.y || 0) + 100
+      };
+      this.nodes[newId] = newNode;
+      const domEl = this.createNodeDOM(newNode);
+      this.board.appendChild(domEl);
+      if (newNode.category === "value" && newNode.title !== "GenRandInt" || newNode.category === "math" || newNode.title === "Print") {
+        newNode.displayEl = domEl.querySelector(".value-display");
+      }
+    });
+    if (Array.isArray(data.links)) {
+      data.links.forEach((link) => {
+        const newLinkId = "l" + this.linkCounter++;
+        const newLink = {
+          ...link,
+          id: newLinkId,
+          from: {
+            ...link.from,
+            node: nodeIdMap[link.from.node]
+          },
+          to: {
+            ...link.to,
+            node: nodeIdMap[link.to.node]
+          }
+        };
+        if (this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
+          this.links.push(newLink);
+        }
+      });
+    }
+    Object.keys(nodeIdMap).forEach((oldId) => {
+      this.updateNodeDOM(nodeIdMap[oldId]);
+    });
+    this.updateLinks();
+    if (this.restoreConnectionsRuntime) {
+      this.restoreConnectionsRuntime();
+    }
+    this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
+    this.compileGraph();
   }
 };
 
@@ -28508,7 +28604,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n1": { "id": "n1", "title": "onLoad", "x": 81.52081298828125, "y": 125.53475952148438, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_1": { "id": "node_1", "x": 428.25, "y": 159.3194580078125, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/shapes/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "[3,1,3]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false, "value": "false" }, { "key": "created", "value": "false" }], "noselfExec": "true" }, "node_2": { "id": "node_2", "title": "Print", "x": 763.8194580078125, "y": 200.44097900390625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_3": { "id": "node_3", "title": "Print", "x": 774.5104370117188, "y": 467.1493225097656, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "n1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_1", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_1", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }], "nodeCounter": 4, "linkCounter": 4, "pan": [-12, 106], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n21": { "id": "n21", "title": "onLoad", "x": 100, "y": 100, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n22": { "id": "n22", "title": "Generator Wall", "x": 350, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0,y:0,z:0}" }, { "key": "rot", "value": "{x:0,y:0,z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "LabyrinthWall" }, { "key": "size", "value": "10x10" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[1,1,1]" }, { "key": "spacing", "value": "2" }, { "key": "delay", "value": "100" }, { "key": "created", "value": false }], "noselfExec": true }, "n23": { "id": "n23", "title": "Print", "x": 600, "y": 100, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Labyrinth generated" }], "noselfExec": true, "displayEl": {} } }, "links": [{ "id": "l20", "from": { "node": "n21", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n22", "pin": "exec" }, "type": "action" }, { "id": "l21", "from": { "node": "n22", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n23", "pin": "exec" }, "type": "action" }], "nodeCounter": 24, "linkCounter": 22, "pan": [112, 66], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [
@@ -28578,16 +28674,16 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetX(-4.379999999999993);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(-0.16000000000000017);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetZ(-19.5959686775923);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetY(-4.030000000000009);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("cube1").position.SetX(-5.839999999999996);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetX(-0.30999999999999933);
       }, 800);
     });
   }

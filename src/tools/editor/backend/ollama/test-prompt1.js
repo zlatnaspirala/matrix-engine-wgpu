@@ -86,7 +86,7 @@ Fields:
 - created : boolean
 noselfExec: true
 
-Node: generatorWall
+Node: Generator Wall
 Category: action
 Inputs:
 - exec : action
@@ -116,7 +116,7 @@ Fields:
 - created : boolean
 noselfExec: true
 
-Node: generatorPyramid
+Node: Generator Pyramid
 Category: action
 Inputs:
 - exec : action
@@ -1157,7 +1157,7 @@ EVENT NODES:
 
 ACTION / LOGIC:
 - generator
-- generatorWall
+- generator Wall
 - generatorPyramid
 - audioMP3
 - audioReactiveNode
@@ -1253,7 +1253,582 @@ Node ids must be short and incremental: nik1, nik2, nik3…
 Link ids must be incremental: l1, l2, l3…
 
 
-GRAPH Example01
+GRAPH ExampleAddObjDefaultsNoPin
+
+{"nodes":{"n1":{"id":"n1","title":"onLoad","x":81.52081298828125,"y":125.53475952148438,"category":"event","inputs":[],"outputs":[{"name":"exec","type":"action"}],"fields":[]},"node_1":{"id":"node_1","x":428.25,"y":159.3194580078125,"title":"Add OBJ","category":"action","inputs":[{"name":"exec","type":"action"},{"name":"path","type":"string"},{"name":"material","type":"string"},{"name":"pos","type":"object"},{"name":"rot","type":"object"},{"name":"texturePath","type":"string"},{"name":"name","type":"string"},{"name":"raycast","type":"boolean"},{"name":"scale","type":"object"},{"name":"isPhysicsBody","type":"boolean"},{"name":"isInstancedObj","type":"boolean"}],"outputs":[{"name":"execOut","type":"action"},{"name":"complete","type":"action"},{"name":"error","type":"action"}],"fields":[{"key":"path","value":"res/meshes/shapes/cube.obj"},{"key":"material","value":"standard"},{"key":"pos","value":"{x:0, y:0, z:-20}"},{"key":"rot","value":"{x:0, y:0, z:0}"},{"key":"texturePath","value":"res/textures/star1.png"},{"key":"name","value":"TEST"},{"key":"raycast","value":"true"},{"key":"scale","value":"[3,1,3]"},{"key":"isPhysicsBody","type":false,"value":"false"},{"key":"isInstancedObj","type":false,"value":"false"},{"key":"created","value":"false"}],"noselfExec":"true"},"node_2":{"id":"node_2","title":"Print","x":763.8194580078125,"y":200.44097900390625,"category":"actionprint","inputs":[{"name":"exec","type":"action"},{"name":"value","type":"any"}],"outputs":[{"name":"execOut","type":"action"}],"fields":[{"key":"label","value":"Result"}],"builtIn":true,"noselfExec":"true","displayEl":{}},"node_3":{"id":"node_3","title":"Print","x":774.5104370117188,"y":467.1493225097656,"category":"actionprint","inputs":[{"name":"exec","type":"action"},{"name":"value","type":"any"}],"outputs":[{"name":"execOut","type":"action"}],"fields":[{"key":"label","value":"Result"}],"builtIn":true,"noselfExec":"true","displayEl":{}}},"links":[{"id":"link_1","from":{"node":"n1","pin":"exec","type":"action","out":true},"to":{"node":"node_1","pin":"exec"},"type":"action"},{"id":"link_2","from":{"node":"node_1","pin":"complete","type":"action","out":true},"to":{"node":"node_2","pin":"exec"},"type":"action"},{"id":"link_3","from":{"node":"node_1","pin":"error","type":"action","out":true},"to":{"node":"node_3","pin":"exec"},"type":"action"}],"nodeCounter":4,"linkCounter":4,"pan":[-12,106],"variables":{"number":{},"boolean":{},"string":{},"object":{}},"version":1}
+
+GRAPH ExamplesAddObjUseSоmePins
+
+{
+  "nodes": {
+    "n1": {
+      "id": "n1",
+      "title": "onLoad",
+      "x": 81.52081298828125,
+      "y": 125.53475952148438,
+      "category": "event",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        }
+      ],
+      "fields": []
+    },
+    "node_1": {
+      "id": "node_1",
+      "x": 594.3577270507812,
+      "y": 179.41668701171875,
+      "title": "Add OBJ",
+      "category": "action",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "material",
+          "type": "string"
+        },
+        {
+          "name": "pos",
+          "type": "object"
+        },
+        {
+          "name": "rot",
+          "type": "object"
+        },
+        {
+          "name": "texturePath",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "raycast",
+          "type": "boolean"
+        },
+        {
+          "name": "scale",
+          "type": "object"
+        },
+        {
+          "name": "isPhysicsBody",
+          "type": "boolean"
+        },
+        {
+          "name": "isInstancedObj",
+          "type": "boolean"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "type": "action"
+        },
+        {
+          "name": "complete",
+          "type": "action"
+        },
+        {
+          "name": "error",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "path",
+          "value": "res/meshes/shapes/cube.obj"
+        },
+        {
+          "key": "material",
+          "value": "standard"
+        },
+        {
+          "key": "pos",
+          "value": "{x:0, y:0, z:-20}"
+        },
+        {
+          "key": "rot",
+          "value": "{x:0, y:0, z:0}"
+        },
+        {
+          "key": "texturePath",
+          "value": "res/textures/star1.png"
+        },
+        {
+          "key": "name",
+          "value": "TEST"
+        },
+        {
+          "key": "raycast",
+          "value": "true"
+        },
+        {
+          "key": "scale",
+          "value": "[3,1,3]"
+        },
+        {
+          "key": "isPhysicsBody",
+          "type": false,
+          "value": "false"
+        },
+        {
+          "key": "isInstancedObj",
+          "type": false,
+          "value": "false"
+        },
+        {
+          "key": "created",
+          "value": "false"
+        }
+      ],
+      "noselfExec": "true"
+    },
+    "node_2": {
+      "id": "node_2",
+      "title": "Print",
+      "x": 945.9304809570312,
+      "y": 171.54513549804688,
+      "category": "actionprint",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "value",
+          "type": "any"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "label",
+          "value": "Result"
+        }
+      ],
+      "builtIn": true,
+      "noselfExec": "true",
+      "displayEl": {}
+    },
+    "node_3": {
+      "id": "node_3",
+      "title": "Print",
+      "x": 1041.6076049804688,
+      "y": 511.24658203125,
+      "category": "actionprint",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "value",
+          "type": "any"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "label",
+          "value": "Result"
+        }
+      ],
+      "builtIn": true,
+      "noselfExec": "true",
+      "displayEl": {}
+    },
+    "node_4": {
+      "id": "node_4",
+      "title": "Get String",
+      "x": 122.35418701171875,
+      "y": 245.29515838623047,
+      "category": "value",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "string"
+        }
+      ],
+      "fields": [
+        {
+          "key": "var",
+          "value": "NEW_OBJ1_PATH"
+        }
+      ],
+      "isGetterNode": true,
+      "displayEl": {}
+    },
+    "node_5": {
+      "id": "node_5",
+      "title": "Get String",
+      "x": 135.96527099609375,
+      "y": 394.15279388427734,
+      "category": "value",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "string"
+        }
+      ],
+      "fields": [
+        {
+          "key": "var",
+          "value": "material_new_obj1"
+        }
+      ],
+      "isGetterNode": true,
+      "displayEl": {}
+    },
+    "node_6": {
+      "id": "node_6",
+      "title": "Get Boolean",
+      "x": 128.82293701171875,
+      "y": 554.1389694213867,
+      "category": "value",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "boolean"
+        }
+      ],
+      "fields": [
+        {
+          "key": "var",
+          "value": "newobj1_raycast"
+        }
+      ],
+      "isGetterNode": true,
+      "displayEl": {}
+    }
+  },
+  "links": [
+    {
+      "id": "link_1",
+      "from": {
+        "node": "n1",
+        "pin": "exec",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "node_1",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "link_2",
+      "from": {
+        "node": "node_1",
+        "pin": "complete",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "node_2",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "link_3",
+      "from": {
+        "node": "node_1",
+        "pin": "error",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "node_3",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "link_4",
+      "from": {
+        "node": "node_4",
+        "pin": "result",
+        "type": "string",
+        "out": true
+      },
+      "to": {
+        "node": "node_1",
+        "pin": "path"
+      },
+      "type": "string"
+    },
+    {
+      "id": "link_5",
+      "from": {
+        "node": "node_5",
+        "pin": "result",
+        "type": "string",
+        "out": true
+      },
+      "to": {
+        "node": "node_1",
+        "pin": "material"
+      },
+      "type": "string"
+    },
+    {
+      "id": "link_6",
+      "from": {
+        "node": "node_6",
+        "pin": "result",
+        "type": "boolean",
+        "out": true
+      },
+      "to": {
+        "node": "node_1",
+        "pin": "raycast"
+      },
+      "type": "boolean"
+    }
+  ],
+  "nodeCounter": 7,
+  "linkCounter": 7,
+  "pan": [
+    40,
+    86
+  ],
+  "variables": {
+    "number": {},
+    "boolean": {
+      "newobj1_raycast": true
+    },
+    "string": {
+      "NEW_OBJ1_PATH": "res/meshes/obj/reel.obj",
+      "material_new_obj1": "standard"
+    },
+    "object": {}
+  },
+  "version": 1
+}
+
+GRAPH ExampleGeneratorWall
+
+{
+  "nodes": {
+    "n17": {
+      "id": "n17",
+      "title": "onLoad",
+      "x": 203.53469848632812,
+      "y": 409.53472900390625,
+      "category": "event",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        }
+      ],
+      "fields": []
+    },
+    "n18": {
+      "id": "n18",
+      "title": "Generator Wall",
+      "x": 552.1528015136719,
+      "y": 485.138916015625,
+      "category": "action",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "material",
+          "type": "string"
+        },
+        {
+          "name": "pos",
+          "type": "object"
+        },
+        {
+          "name": "rot",
+          "type": "object"
+        },
+        {
+          "name": "texturePath",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "size",
+          "type": "string"
+        },
+        {
+          "name": "raycast",
+          "type": "boolean"
+        },
+        {
+          "name": "scale",
+          "type": "object"
+        },
+        {
+          "name": "spacing",
+          "type": "value"
+        },
+        {
+          "name": "delay",
+          "type": "value"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "material",
+          "value": "standard"
+        },
+        {
+          "key": "pos",
+          "value": "{x:0,y:0,z:0}"
+        },
+        {
+          "key": "rot",
+          "value": "{x:0,y:0,z:0}"
+        },
+        {
+          "key": "texturePath",
+          "value": "res/textures/default.png"
+        },
+        {
+          "key": "name",
+          "value": "LabyrinthWall"
+        },
+        {
+          "key": "size",
+          "value": "5x5"
+        },
+        {
+          "key": "raycast",
+          "value": true
+        },
+        {
+          "key": "scale",
+          "value": "[1,1,1]"
+        },
+        {
+          "key": "spacing",
+          "value": "2"
+        },
+        {
+          "key": "delay",
+          "value": "110"
+        },
+        {
+          "key": "created",
+          "value": false
+        }
+      ],
+      "noselfExec": true
+    },
+    "n19": {
+      "id": "n19",
+      "title": "Print",
+      "x": 857.3124084472656,
+      "y": 370.3194580078125,
+      "category": "actionprint",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "value",
+          "type": "any"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "label",
+          "value": "Labyrinth generated"
+        }
+      ],
+      "noselfExec": true,
+      "displayEl": {}
+    }
+  },
+  "links": [
+    {
+      "id": "l18",
+      "from": {
+        "node": "n17",
+        "pin": "exec",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "n18",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "l19",
+      "from": {
+        "node": "n18",
+        "pin": "execOut",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "n19",
+        "pin": "exec"
+      },
+      "type": "action"
+    }
+  ],
+  "nodeCounter": 21,
+  "linkCounter": 20,
+  "pan": [
+    -67,
+    -21
+  ],
+  "variables": {
+    "number": {},
+    "boolean": {},
+    "string": {},
+    "object": {}
+  },
+  "version": 1
+}
+
+GRAPH ExampleComplex1
 
 {
   "nodes": {
