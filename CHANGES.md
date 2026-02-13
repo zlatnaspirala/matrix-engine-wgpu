@@ -1,11 +1,14 @@
 ## CHANGES [Started from feb 2026]
 
+
+
 [1.9.0]
 
-- Improved AI GEN graph tool 
+- Improved AI GEN graph tool:
   ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now. [Open account/open source/free service quota](https://ollama.com/)
-- Gimzo implementation
-- Optimised render loop GPU
+- Gimzo implementation.
+- Added typedoc for auto gen api-docs.
+- Optimised render loop GPU.
 
 ```js
 // New ++++
