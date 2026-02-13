@@ -92,17 +92,23 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END cube1 updatePosx
  
-  // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-3.430000000000009);
- }, 800);
- // ME END FLOOR updatePosy
- 
   // ME START FLOOR updatePosx
  setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(-0.07);
+  app.getSceneObjectByName('FLOOR').position.SetX(-0.16000000000000017);
  }, 800);
  // ME END FLOOR updatePosx
+ 
+  // ME START FLOOR updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetZ(-19.5959686775923);
+ }, 800);
+ // ME END FLOOR updatePosz
+ 
+   // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-4.030000000000009);
+ }, 800);
+ // ME END FLOOR updatePosy
  
  // [MAIN_REPLACE2]
     })

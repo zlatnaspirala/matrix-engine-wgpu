@@ -17413,7 +17413,7 @@ var MEEditorClient = class {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
       if (typeOfRun == "created from editor") {
-        console.log("%cCreated from editor. Watch <signal>", LOG_FUNNY_ARCADE2);
+        console.log(`%cCreated from editor. Watch <signal> ${name2}`, LOG_FUNNY_ARCADE2);
         let o2 = {
           action: "watch",
           name: name2
@@ -20824,6 +20824,7 @@ var FluxCodexVertex = class {
     });
     popup.appendChild(selectPromptProvider);
     const call = document.createElement("button");
+    call.id = "ai-status";
     call.innerText = `Generate`;
     call.classList.add("btnLeftBox");
     call.classList.add("btn4");
@@ -20831,8 +20832,19 @@ var FluxCodexVertex = class {
     call.style.width = "200px";
     call.style.fontWeight = "bold";
     call.style.webkitTextStrokeWidth = "0px";
-    call.addEventListener("click", () => {
+    call.addEventListener("click", (e) => {
       if (selectPrompt.selectedIndex > 0) {
+      }
+      if (e.target.getAttribute("data-ai-status") == null) {
+        console.info("first time gen ai tool call !!!!!!!!!!!!!!!!");
+        e.target.setAttribute("data-ai-status", "wip");
+      } else {
+        if (e.target.getAttribute("data-ai-status") == "wip") {
+          console.info("gen ai tool call PREVENT ");
+          return;
+        } else {
+          console.info("gen ai tool call !!!!!!!!!!!!!!!! else ");
+        }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE2);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
@@ -28569,10 +28581,13 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("cube1").position.SetX(-4.379999999999993);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-3.430000000000009);
+        app3.getSceneObjectByName("FLOOR").position.SetX(-0.16000000000000017);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(-0.07);
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-19.5959686775923);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-4.030000000000009);
       }, 800);
     });
   }

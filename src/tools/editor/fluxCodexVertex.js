@@ -529,6 +529,7 @@ export default class FluxCodexVertex {
     popup.appendChild(selectPromptProvider);
 
     const call = document.createElement("button");
+    call.id = "ai-status";
     call.innerText = `Generate`;
     call.classList.add("btnLeftBox");
     call.classList.add("btn4");
@@ -536,9 +537,20 @@ export default class FluxCodexVertex {
     call.style.width = "200px";
     call.style.fontWeight = "bold";
     call.style.webkitTextStrokeWidth = "0px";
-    call.addEventListener("click", () => {
+    call.addEventListener("click", (e) => {
       if(selectPrompt.selectedIndex > 0) {
         // use select task...
+      }
+      if (e.target.getAttribute("data-ai-status") == null ) {
+        console.info('first time gen ai tool call !!!!!!!!!!!!!!!!')
+        e.target.setAttribute("data-ai-status", "wip");
+      } else {
+        if (e.target.getAttribute("data-ai-status") == "wip" ) {
+          console.info('gen ai tool call PREVENT ')
+          return;
+        } else {
+          console.info('gen ai tool call !!!!!!!!!!!!!!!! else ')
+        }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {

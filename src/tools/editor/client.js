@@ -7,7 +7,7 @@ export class MEEditorClient {
 
     this.ws.onopen = () => {
       if(typeOfRun == 'created from editor') {
-        console.log("%cCreated from editor. Watch <signal>", LOG_FUNNY_ARCADE);
+        console.log(`%cCreated from editor. Watch <signal> ${name}`, LOG_FUNNY_ARCADE);
         let o = {
           action: "watch",
           name: name

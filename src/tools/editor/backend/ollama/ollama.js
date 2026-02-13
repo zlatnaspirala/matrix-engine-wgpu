@@ -1,11 +1,9 @@
 import {aiConfig} from "../config.js";
-import {SYSTEM_PROMPT} from "../test-prompt1.js";
+// import {SYSTEM_PROMPT} from "./test-prompt1.js";
 import {Ollama} from "ollama";
 
 export class AiOllama {
-  constructor() {
-    this.USER_PROMPT = `Create me simple multiply two literal number 10 and print results.`
-  }
+  constructor() {}
   async aiGenGraphCall(i) {
     const ollama = new Ollama({
       host: "https://ollama.com",
@@ -14,8 +12,8 @@ export class AiOllama {
     const response = await ollama.chat({
       model: "gpt-oss:120b",
       messages: [
-        {role: "system", content: SYSTEM_PROMPT},
-        {role: "user", content: i}
+        {role: "system", content: i.finalSysPrompt},
+        {role: "user", content: i.task}
       ],
       stream: true,
     });

@@ -12,8 +12,10 @@ import {WebSocketServer} from "ws";
 import {DEFAULT_GRAPH_JS} from "./graph.js";
 import {DEFAUL_METHODS} from "./methods.js";
 import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
-import {AiGroq} from "../ai-generators/groq/groq.js";
-import {AiOllama} from "../ai-generators/ollama/ollama.js";
+import {AiGroq} from "./groq/groq.js";
+import {AiOllama} from "./ollama/ollama.js";
+import {AvailableResources} from "./ollama/get-available-resources.js";
+import {SYSTEM_PROMPT} from "./ollama/test-prompt1.js";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
@@ -38,7 +40,7 @@ console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCo
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL Ollama            -");
-console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL groq              -");
+// console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL groq              -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 let matrixOllama = new AiOllama();
@@ -867,14 +869,44 @@ function escapeRegExp(str) {
 }
 
 async function aiGenGraphCall(msg, ws) {
-  console.log('input for from ai tool service....', msg.prompt.provider)
-  console.log('input for from ai tool service....', msg.prompt.task)
-  matrixOllama.aiGenGraphCall(msg.prompt.task).then((r) => {
-    console.log('result from ai tool service....>>>>', r)
-    ws.send(JSON.stringify({
-      ok: true,
-      aiGenGraph: 'OK',
-      aiGenNodes: r
-    }));
+  internal_navFolder({rootFolder: PUBLIC_RES, name: "textures"}, ws).then((res_list) => {
+    console.log('result res.list...>>>>', res_list);
+    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(SYSTEM_PROMPT, res_list);
+    matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
+      // console.log('result from ai tool service....>>>>', res_list)
+      ws.send(JSON.stringify({
+        ok: true,
+        aiGenGraph: 'OK',
+        aiGenNodes: r
+      }));
+    })
   });
+}
+
+async function internal_navFolder(data, ws) {
+  return new Promise(async (resolve, reject) => {
+    if(!data.rootFolder) {reject('no root folder'); return;}
+    const folder = path.join(data.rootFolder, data.name);
+    const items = await fs.readdir(folder, {withFileTypes: true});
+
+    console.log('result RES FILENAMES....>>>>', items[0]);
+    let resList = items.map(d => ({
+      name: d.name,
+      type: 'textures',
+      path: items[0].path.split('public')[1]
+    }));
+    console.log('result RES FILENAMES....>>>>', resList);
+
+    ws.send(JSON.stringify({
+      // IMPLEMENT LATER ! on front can be used for texture drop down in fcv graph.
+      listAssets: "list-assets-textures",
+      ok: true,
+      rootFolder: path.join(data.rootFolder, data.name),
+      payload: items.map(d => ({
+        name: d.name,
+        isDir: d.isDirectory()
+      }))
+    }));
+    resolve(resList);
+  })
 }

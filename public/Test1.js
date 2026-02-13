@@ -12,14 +12,14 @@ function setDefaultType$5(ctor) {
   VecType$1 = ctor;
   return oldType;
 }
-function create$4(x2, y2, z2) {
+function create$4(x2, y2, z) {
   const dst = new VecType$1(3);
   if (x2 !== void 0) {
     dst[0] = x2;
     if (y2 !== void 0) {
       dst[1] = y2;
-      if (z2 !== void 0) {
-        dst[2] = z2;
+      if (z !== void 0) {
+        dst[2] = z;
       }
     }
   }
@@ -32,11 +32,11 @@ var ctorMap = /* @__PURE__ */ new Map([
 ]);
 var newMat3 = ctorMap.get(Float32Array);
 var fromValues$2 = create$4;
-function set$3(x2, y2, z2, dst) {
+function set$3(x2, y2, z, dst) {
   dst = dst || new VecType$1(3);
   dst[0] = x2;
   dst[1] = y2;
-  dst[2] = z2;
+  dst[2] = z;
   return dst;
 }
 function ceil$1(v, dst) {
@@ -250,11 +250,11 @@ var div$1 = divide$1;
 function random(scale4 = 1, dst) {
   dst = dst || new VecType$1(3);
   const angle2 = Math.random() * 2 * Math.PI;
-  const z2 = Math.random() * 2 - 1;
-  const zScale = Math.sqrt(1 - z2 * z2) * scale4;
+  const z = Math.random() * 2 - 1;
+  const zScale = Math.sqrt(1 - z * z) * scale4;
   dst[0] = Math.cos(angle2) * zScale;
   dst[1] = Math.sin(angle2) * zScale;
-  dst[2] = z2 * scale4;
+  dst[2] = z * scale4;
   return dst;
 }
 function zero$1(dst) {
@@ -268,11 +268,11 @@ function transformMat4$1(v, m, dst) {
   dst = dst || new VecType$1(3);
   const x2 = v[0];
   const y2 = v[1];
-  const z2 = v[2];
-  const w = m[3] * x2 + m[7] * y2 + m[11] * z2 + m[15] || 1;
-  dst[0] = (m[0] * x2 + m[4] * y2 + m[8] * z2 + m[12]) / w;
-  dst[1] = (m[1] * x2 + m[5] * y2 + m[9] * z2 + m[13]) / w;
-  dst[2] = (m[2] * x2 + m[6] * y2 + m[10] * z2 + m[14]) / w;
+  const z = v[2];
+  const w = m[3] * x2 + m[7] * y2 + m[11] * z + m[15] || 1;
+  dst[0] = (m[0] * x2 + m[4] * y2 + m[8] * z + m[12]) / w;
+  dst[1] = (m[1] * x2 + m[5] * y2 + m[9] * z + m[13]) / w;
+  dst[2] = (m[2] * x2 + m[6] * y2 + m[10] * z + m[14]) / w;
   return dst;
 }
 function transformMat4Upper3x3(v, m, dst) {
@@ -289,10 +289,10 @@ function transformMat3(v, m, dst) {
   dst = dst || new VecType$1(3);
   const x2 = v[0];
   const y2 = v[1];
-  const z2 = v[2];
-  dst[0] = x2 * m[0] + y2 * m[4] + z2 * m[8];
-  dst[1] = x2 * m[1] + y2 * m[5] + z2 * m[9];
-  dst[2] = x2 * m[2] + y2 * m[6] + z2 * m[10];
+  const z = v[2];
+  dst[0] = x2 * m[0] + y2 * m[4] + z * m[8];
+  dst[1] = x2 * m[1] + y2 * m[5] + z * m[9];
+  dst[2] = x2 * m[2] + y2 * m[6] + z * m[10];
   return dst;
 }
 function transformQuat(v, q, dst) {
@@ -303,13 +303,13 @@ function transformQuat(v, q, dst) {
   const w2 = q[3] * 2;
   const x2 = v[0];
   const y2 = v[1];
-  const z2 = v[2];
-  const uvX = qy * z2 - qz * y2;
-  const uvY = qz * x2 - qx * z2;
+  const z = v[2];
+  const uvX = qy * z - qz * y2;
+  const uvY = qz * x2 - qx * z;
   const uvZ = qx * y2 - qy * x2;
   dst[0] = x2 + uvX * w2 + (qy * uvZ - qz * uvY) * 2;
   dst[1] = y2 + uvY * w2 + (qz * uvX - qx * uvZ) * 2;
-  dst[2] = z2 + uvZ * w2 + (qx * uvY - qy * uvX) * 2;
+  dst[2] = z + uvZ * w2 + (qx * uvY - qy * uvX) * 2;
   return dst;
 }
 function getTranslation$1(m, dst) {
@@ -499,20 +499,20 @@ function fromQuat(q, dst) {
   dst = dst || new MatType(16);
   const x2 = q[0];
   const y2 = q[1];
-  const z2 = q[2];
+  const z = q[2];
   const w = q[3];
   const x22 = x2 + x2;
   const y22 = y2 + y2;
-  const z22 = z2 + z2;
+  const z2 = z + z;
   const xx = x2 * x22;
   const yx = y2 * x22;
   const yy = y2 * y22;
-  const zx = z2 * x22;
-  const zy = z2 * y22;
-  const zz = z2 * z22;
+  const zx = z * x22;
+  const zy = z * y22;
+  const zz = z * z2;
   const wx = w * x22;
   const wy = w * y22;
-  const wz = w * z22;
+  const wz = w * z2;
   dst[0] = 1 - yy - zz;
   dst[1] = yx + wz;
   dst[2] = zx - wy;
@@ -1251,27 +1251,27 @@ function axisRotation(axis, angleInRadians, dst) {
   dst = dst || new MatType(16);
   let x2 = axis[0];
   let y2 = axis[1];
-  let z2 = axis[2];
-  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+  let z = axis[2];
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   x2 /= n2;
   y2 /= n2;
-  z2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
-  const zz = z2 * z2;
+  const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   dst[0] = xx + (1 - xx) * c;
-  dst[1] = x2 * y2 * oneMinusCosine + z2 * s;
-  dst[2] = x2 * z2 * oneMinusCosine - y2 * s;
+  dst[1] = x2 * y2 * oneMinusCosine + z * s;
+  dst[2] = x2 * z * oneMinusCosine - y2 * s;
   dst[3] = 0;
-  dst[4] = x2 * y2 * oneMinusCosine - z2 * s;
+  dst[4] = x2 * y2 * oneMinusCosine - z * s;
   dst[5] = yy + (1 - yy) * c;
-  dst[6] = y2 * z2 * oneMinusCosine + x2 * s;
+  dst[6] = y2 * z * oneMinusCosine + x2 * s;
   dst[7] = 0;
-  dst[8] = x2 * z2 * oneMinusCosine + y2 * s;
-  dst[9] = y2 * z2 * oneMinusCosine - x2 * s;
+  dst[8] = x2 * z * oneMinusCosine + y2 * s;
+  dst[9] = y2 * z * oneMinusCosine - x2 * s;
   dst[10] = zz + (1 - zz) * c;
   dst[11] = 0;
   dst[12] = 0;
@@ -1285,25 +1285,25 @@ function axisRotate(m, axis, angleInRadians, dst) {
   dst = dst || new MatType(16);
   let x2 = axis[0];
   let y2 = axis[1];
-  let z2 = axis[2];
-  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+  let z = axis[2];
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   x2 /= n2;
   y2 /= n2;
-  z2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
-  const zz = z2 * z2;
+  const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   const r00 = xx + (1 - xx) * c;
-  const r01 = x2 * y2 * oneMinusCosine + z2 * s;
-  const r02 = x2 * z2 * oneMinusCosine - y2 * s;
-  const r10 = x2 * y2 * oneMinusCosine - z2 * s;
+  const r01 = x2 * y2 * oneMinusCosine + z * s;
+  const r02 = x2 * z * oneMinusCosine - y2 * s;
+  const r10 = x2 * y2 * oneMinusCosine - z * s;
   const r11 = yy + (1 - yy) * c;
-  const r12 = y2 * z2 * oneMinusCosine + x2 * s;
-  const r20 = x2 * z2 * oneMinusCosine + y2 * s;
-  const r21 = y2 * z2 * oneMinusCosine - x2 * s;
+  const r12 = y2 * z * oneMinusCosine + x2 * s;
+  const r20 = x2 * z * oneMinusCosine + y2 * s;
+  const r21 = y2 * z * oneMinusCosine - x2 * s;
   const r22 = zz + (1 - zz) * c;
   const m00 = m[0];
   const m01 = m[1];
@@ -1478,14 +1478,14 @@ function setDefaultType$2(ctor) {
   QuatType = ctor;
   return oldType;
 }
-function create$1(x2, y2, z2, w) {
+function create$1(x2, y2, z, w) {
   const dst = new QuatType(4);
   if (x2 !== void 0) {
     dst[0] = x2;
     if (y2 !== void 0) {
       dst[1] = y2;
-      if (z2 !== void 0) {
-        dst[2] = z2;
+      if (z !== void 0) {
+        dst[2] = z;
         if (w !== void 0) {
           dst[3] = w;
         }
@@ -1495,11 +1495,11 @@ function create$1(x2, y2, z2, w) {
   return dst;
 }
 var fromValues$1 = create$1;
-function set$1(x2, y2, z2, w, dst) {
+function set$1(x2, y2, z, w, dst) {
   dst = dst || new QuatType(4);
   dst[0] = x2;
   dst[1] = y2;
-  dst[2] = z2;
+  dst[2] = z;
   dst[3] = w;
   return dst;
 }
@@ -1926,14 +1926,14 @@ function setDefaultType$1(ctor) {
   VecType = ctor;
   return oldType;
 }
-function create(x2, y2, z2, w) {
+function create(x2, y2, z, w) {
   const dst = new VecType(4);
   if (x2 !== void 0) {
     dst[0] = x2;
     if (y2 !== void 0) {
       dst[1] = y2;
-      if (z2 !== void 0) {
-        dst[2] = z2;
+      if (z !== void 0) {
+        dst[2] = z;
         if (w !== void 0) {
           dst[3] = w;
         }
@@ -1943,11 +1943,11 @@ function create(x2, y2, z2, w) {
   return dst;
 }
 var fromValues = create;
-function set(x2, y2, z2, w, dst) {
+function set(x2, y2, z, w, dst) {
   dst = dst || new VecType(4);
   dst[0] = x2;
   dst[1] = y2;
-  dst[2] = z2;
+  dst[2] = z;
   dst[3] = w;
   return dst;
 }
@@ -2174,12 +2174,12 @@ function transformMat4(v, m, dst) {
   dst = dst || new VecType(4);
   const x2 = v[0];
   const y2 = v[1];
-  const z2 = v[2];
+  const z = v[2];
   const w = v[3];
-  dst[0] = m[0] * x2 + m[4] * y2 + m[8] * z2 + m[12] * w;
-  dst[1] = m[1] * x2 + m[5] * y2 + m[9] * z2 + m[13] * w;
-  dst[2] = m[2] * x2 + m[6] * y2 + m[10] * z2 + m[14] * w;
-  dst[3] = m[3] * x2 + m[7] * y2 + m[11] * z2 + m[15] * w;
+  dst[0] = m[0] * x2 + m[4] * y2 + m[8] * z + m[12] * w;
+  dst[1] = m[1] * x2 + m[5] * y2 + m[9] * z + m[13] * w;
+  dst[2] = m[2] * x2 + m[6] * y2 + m[10] * z + m[14] * w;
+  dst[3] = m[3] * x2 + m[7] * y2 + m[11] * z + m[15] * w;
   return dst;
 }
 var vec4Impl = /* @__PURE__ */ Object.freeze({
@@ -2676,8 +2676,8 @@ var WASDCamera = class extends CameraBase {
   setY = (y2) => {
     this.position[1] = y2;
   };
-  setZ = (z2) => {
-    this.position[2] = z2;
+  setZ = (z) => {
+    this.position[2] = z;
   };
   // The movement veloicty readonly
   velocity_ = vec3Impl.create();
@@ -2712,6 +2712,8 @@ var WASDCamera = class extends CameraBase {
       this.aspect = options2.canvas.width / options2.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
       this.suspendDrag = false;
+      if (options2.pitch) this.setPitch(options2.pitch);
+      if (options2.yaw) this.setYaw(options2.yaw);
     }
   }
   // Returns the camera matrix
@@ -2942,7 +2944,6 @@ var RPGCamera = class extends CameraBase {
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-  // Returns velocity vector
   // Inside your camera control init
   scrollY = 50;
   minY = 50.5;
@@ -2953,7 +2954,6 @@ var RPGCamera = class extends CameraBase {
   get velocity() {
     return this.velocity_;
   }
-  // Assigns `vec` to the velocity vector
   set velocity(vec) {
     vec3Impl.copy(vec, this.velocity_);
   }
@@ -3039,7 +3039,7 @@ var RPGCamera = class extends CameraBase {
 
 // ../../../engine/matrix-class.js
 var Position = class {
-  constructor(x2, y2, z2) {
+  constructor(x2, y2, z) {
     this.remoteName = null;
     this.netObject = null;
     this.toRemote = [];
@@ -3048,17 +3048,17 @@ var Position = class {
     this.netTolerance__ = 0;
     if (typeof x2 == "undefined") x2 = 0;
     if (typeof y2 == "undefined") y2 = 0;
-    if (typeof z2 == "undefined") z2 = 0;
+    if (typeof z == "undefined") z = 0;
     this.x = parseFloat(x2);
     this.y = parseFloat(y2);
-    this.z = parseFloat(z2);
+    this.z = parseFloat(z);
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
     this.inMove = false;
     this.targetX = parseFloat(x2);
     this.targetY = parseFloat(y2);
-    this.targetZ = parseFloat(z2);
+    this.targetZ = parseFloat(z);
     this.thrust = 0.01;
     return this;
   }
@@ -3082,10 +3082,10 @@ var Position = class {
     this.inMove = true;
     this.targetY = parseFloat(y2);
   }
-  translateByZ(z2) {
-    if (parseFloat(z2) == this.targetZ) return;
+  translateByZ(z) {
+    if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
-    this.targetZ = parseFloat(z2);
+    this.targetZ = parseFloat(z);
   }
   translateByXY(x2, y2) {
     if (parseFloat(y2) == this.targetY && parseFloat(x2) == this.targetX) return;
@@ -3093,17 +3093,17 @@ var Position = class {
     this.targetX = parseFloat(x2);
     this.targetY = parseFloat(y2);
   }
-  translateByXZ(x2, z2) {
-    if (parseFloat(z2) == this.targetZ && parseFloat(x2) == this.targetX) return;
+  translateByXZ(x2, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x2) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x2);
-    this.targetZ = parseFloat(z2);
+    this.targetZ = parseFloat(z);
   }
-  translateByYZ(y2, z2) {
-    if (parseFloat(y2) == this.targetY && parseFloat(z2) == this.targetZ) return;
+  translateByYZ(y2, z) {
+    if (parseFloat(y2) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetY = parseFloat(y2);
-    this.targetZ = parseFloat(z2);
+    this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {
   }
@@ -3235,7 +3235,7 @@ var Position = class {
   }
 };
 var Rotation = class {
-  constructor(x2, y2, z2) {
+  constructor(x2, y2, z) {
     this.toRemote = [];
     this.teams = [];
     this.remoteName = null;
@@ -3244,20 +3244,20 @@ var Rotation = class {
     this.emitZ = null;
     if (typeof x2 == "undefined") x2 = 0;
     if (typeof y2 == "undefined") y2 = 0;
-    if (typeof z2 == "undefined") z2 = 0;
+    if (typeof z == "undefined") z = 0;
     this.x = x2;
     this.y = y2;
-    this.z = z2;
+    this.z = z;
     this.netx = x2;
     this.nety = y2;
-    this.netz = z2;
+    this.netz = z;
     this.rotationSpeed = { x: 0, y: 0, z: 0 };
     this.angle = 0;
     this.axis = { x: 0, y: 0, z: 0 };
     this.matrixRotation = null;
   }
-  setRotate = (x2, y2, z2) => {
-    this.rotationSpeed = { x: x2, y: y2, z: z2 };
+  setRotate = (x2, y2, z) => {
+    this.rotationSpeed = { x: x2, y: y2, z };
   };
   setRotateX = (x2) => {
     this.rotationSpeed.x = x2;
@@ -3265,13 +3265,13 @@ var Rotation = class {
   setRotateY = (y2) => {
     this.rotationSpeed.y = y2;
   };
-  setRotateZ = (z2) => {
-    this.rotationSpeed.z = z2;
+  setRotateZ = (z) => {
+    this.rotationSpeed.z = z;
   };
-  setRotation = (x2, y2, z2) => {
+  setRotation = (x2, y2, z) => {
     this.x = x2;
     this.y = y2;
-    this.z = z2;
+    this.z = z;
   };
   setRotationX = (x2) => {
     this.x = x2;
@@ -3279,8 +3279,8 @@ var Rotation = class {
   setRotationY = (y2) => {
     this.y = y2;
   };
-  setRotationZ = (z2) => {
-    this.z = z2;
+  setRotationZ = (z) => {
+    this.z = z;
   };
   toDegree = () => {
     return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
@@ -6473,9 +6473,7 @@ var GizmoEffect = class {
     });
     app.canvas.addEventListener("mouseup", () => {
       if (this.isDragging) {
-        console.log("Gizmo: Stopped dragging:", this.parentMesh.name);
-        console.log("What is selectedAxis: ", this.selectedAxis);
-        console.log("What is operation: ", this.mode);
+        if (this.parentMesh._GRAPH_CACHE) return;
         if (this.mode == 0) {
           document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
             detail: {
@@ -6570,9 +6568,9 @@ var GizmoEffect = class {
     const vp = this._multiplyMatrices(projMatrix, viewMatrix);
     const x2 = vp[0] * point.x + vp[4] * point.y + vp[8] * point.z + vp[12];
     const y2 = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
-    const z2 = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
+    const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
     const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
-    return { x: x2, y: y2, z: z2, w };
+    return { x: x2, y: y2, z, w };
   }
   _multiplyMatrices(a, b) {
     const result2 = new Array(16);
@@ -8297,12 +8295,12 @@ var MatrixAmmo = class {
     this.rigidBodies.push(body2);
     return body2;
   }
-  setBodyVelocity = (body2, x2, y2, z2) => {
+  setBodyVelocity = (body2, x2, y2, z) => {
     var tbv30 = new Ammo.btVector3();
-    tbv30.setValue(x2, y2, z2);
+    tbv30.setValue(x2, y2, z);
     body2.setLinearVelocity(tbv30);
   };
-  setKinematicTransform = (body2, x2, y2, z2, rx, ry, rz) => {
+  setKinematicTransform = (body2, x2, y2, z, rx, ry, rz) => {
     if (typeof rx == "undefined") {
       var rx = 0;
     }
@@ -8317,7 +8315,7 @@ var MatrixAmmo = class {
     let localRot = body2.getWorldTransform().getRotation();
     pos2.setX(pos2.x() + x2);
     pos2.setY(pos2.y() + y2);
-    pos2.setZ(pos2.z() + z2);
+    pos2.setZ(pos2.z() + z);
     localRot.setX(rx);
     localRot.setY(ry);
     localRot.setZ(rz);
@@ -9384,8 +9382,8 @@ var SpotLight = class {
   setPosY = (y2) => {
     this.position[1] = y2;
   };
-  setPosZ = (z2) => {
-    this.position[2] = z2;
+  setPosZ = (z) => {
+    this.position[2] = z;
   };
   setInnerCutoff = (innerCutoff) => {
     this.innerCutoff = innerCutoff;
@@ -9428,14 +9426,14 @@ var ctorMap2 = /* @__PURE__ */ new Map([
 ]);
 var newMat32 = ctorMap2.get(Float32Array);
 var VecType$12 = Float32Array;
-function create$22(x2, y2, z2) {
+function create$22(x2, y2, z) {
   const dst = new VecType$12(3);
   if (x2 !== void 0) {
     dst[0] = x2;
     if (y2 !== void 0) {
       dst[1] = y2;
-      if (z2 !== void 0) {
-        dst[2] = z2;
+      if (z !== void 0) {
+        dst[2] = z;
       }
     }
   }
@@ -10195,27 +10193,27 @@ function axisRotation2(axis, angleInRadians, dst) {
   dst = dst || new MatType2(16);
   let x2 = axis[0];
   let y2 = axis[1];
-  let z2 = axis[2];
-  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+  let z = axis[2];
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   x2 /= n2;
   y2 /= n2;
-  z2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
-  const zz = z2 * z2;
+  const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   dst[0] = xx + (1 - xx) * c;
-  dst[1] = x2 * y2 * oneMinusCosine + z2 * s;
-  dst[2] = x2 * z2 * oneMinusCosine - y2 * s;
+  dst[1] = x2 * y2 * oneMinusCosine + z * s;
+  dst[2] = x2 * z * oneMinusCosine - y2 * s;
   dst[3] = 0;
-  dst[4] = x2 * y2 * oneMinusCosine - z2 * s;
+  dst[4] = x2 * y2 * oneMinusCosine - z * s;
   dst[5] = yy + (1 - yy) * c;
-  dst[6] = y2 * z2 * oneMinusCosine + x2 * s;
+  dst[6] = y2 * z * oneMinusCosine + x2 * s;
   dst[7] = 0;
-  dst[8] = x2 * z2 * oneMinusCosine + y2 * s;
-  dst[9] = y2 * z2 * oneMinusCosine - x2 * s;
+  dst[8] = x2 * z * oneMinusCosine + y2 * s;
+  dst[9] = y2 * z * oneMinusCosine - x2 * s;
   dst[10] = zz + (1 - zz) * c;
   dst[11] = 0;
   dst[12] = 0;
@@ -10229,25 +10227,25 @@ function axisRotate2(m, axis, angleInRadians, dst) {
   dst = dst || new MatType2(16);
   let x2 = axis[0];
   let y2 = axis[1];
-  let z2 = axis[2];
-  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+  let z = axis[2];
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   x2 /= n2;
   y2 /= n2;
-  z2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
-  const zz = z2 * z2;
+  const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   const r00 = xx + (1 - xx) * c;
-  const r01 = x2 * y2 * oneMinusCosine + z2 * s;
-  const r02 = x2 * z2 * oneMinusCosine - y2 * s;
-  const r10 = x2 * y2 * oneMinusCosine - z2 * s;
+  const r01 = x2 * y2 * oneMinusCosine + z * s;
+  const r02 = x2 * z * oneMinusCosine - y2 * s;
+  const r10 = x2 * y2 * oneMinusCosine - z * s;
   const r11 = yy + (1 - yy) * c;
-  const r12 = y2 * z2 * oneMinusCosine + x2 * s;
-  const r20 = x2 * z2 * oneMinusCosine + y2 * s;
-  const r21 = y2 * z2 * oneMinusCosine - x2 * s;
+  const r12 = y2 * z * oneMinusCosine + x2 * s;
+  const r20 = x2 * z * oneMinusCosine + y2 * s;
+  const r21 = y2 * z * oneMinusCosine - x2 * s;
   const r22 = zz + (1 - zz) * c;
   const m00 = m[0];
   const m01 = m[1];
@@ -11307,15 +11305,15 @@ function multiply3(out, a, b) {
   return out;
 }
 function translate3(out, a, v) {
-  var x2 = v[0], y2 = v[1], z2 = v[2];
+  var x2 = v[0], y2 = v[1], z = v[2];
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
   var a20, a21, a22, a23;
   if (a === out) {
-    out[12] = a[0] * x2 + a[4] * y2 + a[8] * z2 + a[12];
-    out[13] = a[1] * x2 + a[5] * y2 + a[9] * z2 + a[13];
-    out[14] = a[2] * x2 + a[6] * y2 + a[10] * z2 + a[14];
-    out[15] = a[3] * x2 + a[7] * y2 + a[11] * z2 + a[15];
+    out[12] = a[0] * x2 + a[4] * y2 + a[8] * z + a[12];
+    out[13] = a[1] * x2 + a[5] * y2 + a[9] * z + a[13];
+    out[14] = a[2] * x2 + a[6] * y2 + a[10] * z + a[14];
+    out[15] = a[3] * x2 + a[7] * y2 + a[11] * z + a[15];
   } else {
     a00 = a[0];
     a01 = a[1];
@@ -11341,15 +11339,15 @@ function translate3(out, a, v) {
     out[9] = a21;
     out[10] = a22;
     out[11] = a23;
-    out[12] = a00 * x2 + a10 * y2 + a20 * z2 + a[12];
-    out[13] = a01 * x2 + a11 * y2 + a21 * z2 + a[13];
-    out[14] = a02 * x2 + a12 * y2 + a22 * z2 + a[14];
-    out[15] = a03 * x2 + a13 * y2 + a23 * z2 + a[15];
+    out[12] = a00 * x2 + a10 * y2 + a20 * z + a[12];
+    out[13] = a01 * x2 + a11 * y2 + a21 * z + a[13];
+    out[14] = a02 * x2 + a12 * y2 + a22 * z + a[14];
+    out[15] = a03 * x2 + a13 * y2 + a23 * z + a[15];
   }
   return out;
 }
 function scale3(out, a, v) {
-  var x2 = v[0], y2 = v[1], z2 = v[2];
+  var x2 = v[0], y2 = v[1], z = v[2];
   out[0] = a[0] * x2;
   out[1] = a[1] * x2;
   out[2] = a[2] * x2;
@@ -11358,10 +11356,10 @@ function scale3(out, a, v) {
   out[5] = a[5] * y2;
   out[6] = a[6] * y2;
   out[7] = a[7] * y2;
-  out[8] = a[8] * z2;
-  out[9] = a[9] * z2;
-  out[10] = a[10] * z2;
-  out[11] = a[11] * z2;
+  out[8] = a[8] * z;
+  out[9] = a[9] * z;
+  out[10] = a[10] * z;
+  out[11] = a[11] * z;
   out[12] = a[12];
   out[13] = a[13];
   out[14] = a[14];
@@ -11369,8 +11367,8 @@ function scale3(out, a, v) {
   return out;
 }
 function rotate4(out, a, rad, axis) {
-  var x2 = axis[0], y2 = axis[1], z2 = axis[2];
-  var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+  var x2 = axis[0], y2 = axis[1], z = axis[2];
+  var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
@@ -11384,7 +11382,7 @@ function rotate4(out, a, rad, axis) {
   len2 = 1 / len2;
   x2 *= len2;
   y2 *= len2;
-  z2 *= len2;
+  z *= len2;
   s = Math.sin(rad);
   c = Math.cos(rad);
   t = 1 - c;
@@ -11401,14 +11399,14 @@ function rotate4(out, a, rad, axis) {
   a22 = a[10];
   a23 = a[11];
   b00 = x2 * x2 * t + c;
-  b01 = y2 * x2 * t + z2 * s;
-  b02 = z2 * x2 * t - y2 * s;
-  b10 = x2 * y2 * t - z2 * s;
+  b01 = y2 * x2 * t + z * s;
+  b02 = z * x2 * t - y2 * s;
+  b10 = x2 * y2 * t - z * s;
   b11 = y2 * y2 * t + c;
-  b12 = z2 * y2 * t + x2 * s;
-  b20 = x2 * z2 * t + y2 * s;
-  b21 = y2 * z2 * t - x2 * s;
-  b22 = z2 * z2 * t + c;
+  b12 = z * y2 * t + x2 * s;
+  b20 = x2 * z * t + y2 * s;
+  b21 = y2 * z * t - x2 * s;
+  b22 = z * z * t + c;
   out[0] = a00 * b00 + a10 * b01 + a20 * b02;
   out[1] = a01 * b00 + a11 * b01 + a21 * b02;
   out[2] = a02 * b00 + a12 * b01 + a22 * b02;
@@ -11561,8 +11559,8 @@ function fromScaling(out, v) {
   return out;
 }
 function fromRotation(out, rad, axis) {
-  var x2 = axis[0], y2 = axis[1], z2 = axis[2];
-  var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+  var x2 = axis[0], y2 = axis[1], z = axis[2];
+  var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
   if (len2 < EPSILON3) {
     return null;
@@ -11570,21 +11568,21 @@ function fromRotation(out, rad, axis) {
   len2 = 1 / len2;
   x2 *= len2;
   y2 *= len2;
-  z2 *= len2;
+  z *= len2;
   s = Math.sin(rad);
   c = Math.cos(rad);
   t = 1 - c;
   out[0] = x2 * x2 * t + c;
-  out[1] = y2 * x2 * t + z2 * s;
-  out[2] = z2 * x2 * t - y2 * s;
+  out[1] = y2 * x2 * t + z * s;
+  out[2] = z * x2 * t - y2 * s;
   out[3] = 0;
-  out[4] = x2 * y2 * t - z2 * s;
+  out[4] = x2 * y2 * t - z * s;
   out[5] = y2 * y2 * t + c;
-  out[6] = z2 * y2 * t + x2 * s;
+  out[6] = z * y2 * t + x2 * s;
   out[7] = 0;
-  out[8] = x2 * z2 * t + y2 * s;
-  out[9] = y2 * z2 * t - x2 * s;
-  out[10] = z2 * z2 * t + c;
+  out[8] = x2 * z * t + y2 * s;
+  out[9] = y2 * z * t - x2 * s;
+  out[10] = z * z * t + c;
   out[11] = 0;
   out[12] = 0;
   out[13] = 0;
@@ -11656,19 +11654,19 @@ function fromZRotation(out, rad) {
   return out;
 }
 function fromRotationTranslation(out, q, v) {
-  var x2 = q[0], y2 = q[1], z2 = q[2], w = q[3];
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
   var x22 = x2 + x2;
   var y22 = y2 + y2;
-  var z22 = z2 + z2;
+  var z2 = z + z;
   var xx = x2 * x22;
   var xy = x2 * y22;
-  var xz = x2 * z22;
+  var xz = x2 * z2;
   var yy = y2 * y22;
-  var yz = y2 * z22;
-  var zz = z2 * z22;
+  var yz = y2 * z2;
+  var zz = z * z2;
   var wx = w * x22;
   var wy = w * y22;
-  var wz = w * z22;
+  var wz = w * z2;
   out[0] = 1 - (yy + zz);
   out[1] = xy + wz;
   out[2] = xz - wy;
@@ -11826,19 +11824,19 @@ function decompose(out_r, out_t, out_s, mat2) {
   return out_r;
 }
 function fromRotationTranslationScale(out, q, v, s) {
-  var x2 = q[0], y2 = q[1], z2 = q[2], w = q[3];
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
   var x22 = x2 + x2;
   var y22 = y2 + y2;
-  var z22 = z2 + z2;
+  var z2 = z + z;
   var xx = x2 * x22;
   var xy = x2 * y22;
-  var xz = x2 * z22;
+  var xz = x2 * z2;
   var yy = y2 * y22;
-  var yz = y2 * z22;
-  var zz = z2 * z22;
+  var yz = y2 * z2;
+  var zz = z * z2;
   var wx = w * x22;
   var wy = w * y22;
-  var wz = w * z22;
+  var wz = w * z2;
   var sx = s[0];
   var sy = s[1];
   var sz = s[2];
@@ -11861,19 +11859,19 @@ function fromRotationTranslationScale(out, q, v, s) {
   return out;
 }
 function fromRotationTranslationScaleOrigin(out, q, v, s, o2) {
-  var x2 = q[0], y2 = q[1], z2 = q[2], w = q[3];
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
   var x22 = x2 + x2;
   var y22 = y2 + y2;
-  var z22 = z2 + z2;
+  var z2 = z + z;
   var xx = x2 * x22;
   var xy = x2 * y22;
-  var xz = x2 * z22;
+  var xz = x2 * z2;
   var yy = y2 * y22;
-  var yz = y2 * z22;
-  var zz = z2 * z22;
+  var yz = y2 * z2;
+  var zz = z * z2;
   var wx = w * x22;
   var wy = w * y22;
-  var wz = w * z22;
+  var wz = w * z2;
   var sx = s[0];
   var sy = s[1];
   var sz = s[2];
@@ -11908,19 +11906,19 @@ function fromRotationTranslationScaleOrigin(out, q, v, s, o2) {
   return out;
 }
 function fromQuat3(out, q) {
-  var x2 = q[0], y2 = q[1], z2 = q[2], w = q[3];
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
   var x22 = x2 + x2;
   var y22 = y2 + y2;
-  var z22 = z2 + z2;
+  var z2 = z + z;
   var xx = x2 * x22;
   var yx = y2 * x22;
   var yy = y2 * y22;
-  var zx = z2 * x22;
-  var zy = z2 * y22;
-  var zz = z2 * z22;
+  var zx = z * x22;
+  var zy = z * y22;
+  var zz = z * z2;
   var wx = w * x22;
   var wy = w * y22;
-  var wz = w * z22;
+  var wz = w * z2;
   out[0] = 1 - yy - zz;
   out[1] = yx + wz;
   out[2] = zx - wy;
@@ -13018,9 +13016,9 @@ var BVHPlayer = class extends MEMeshObj {
   }
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
-    const [x2, y2, z2, w] = q;
-    const xx = x2 * x2, yy = y2 * y2, zz = z2 * z2;
-    const xy = x2 * y2, xz = x2 * z2, yz = y2 * z2, wx = w * x2, wy = w * y2, wz = w * z2;
+    const [x2, y2, z, w] = q;
+    const xx = x2 * x2, yy = y2 * y2, zz = z * z;
+    const xy = x2 * y2, xz = x2 * z, yz = y2 * z, wx = w * x2, wy = w * y2, wz = w * z;
     return new Float32Array([
       1 - 2 * (yy + zz),
       2 * (xy + wz),
@@ -14518,8 +14516,8 @@ var GeometryFactory = class _GeometryFactory {
     for (let i = 1; i < 8; i++) {
       const x2 = (Math.random() - 0.5) * 0.2 * S;
       const y2 = i * (S / 7);
-      const z2 = (Math.random() - 0.5) * 0.1 * S;
-      pts.push(x2, y2, z2);
+      const z = (Math.random() - 0.5) * 0.1 * S;
+      pts.push(x2, y2, z);
     }
     const p = [], uv = [], ind = [];
     for (let i = 0; i < pts.length / 3 - 1; i++) {
@@ -14582,9 +14580,9 @@ var GeometryFactory = class _GeometryFactory {
       const angle2 = i / segments * Math.PI * 2;
       const x2 = Math.cos(angle2) * radius;
       const y2 = 0;
-      const z2 = Math.sin(angle2) * radius;
-      positions.push(x2, y2, z2);
-      uvs.push((x2 / radius + 1) / 2, (z2 / radius + 1) / 2);
+      const z = Math.sin(angle2) * radius;
+      positions.push(x2, y2, z);
+      uvs.push((x2 / radius + 1) / 2, (z / radius + 1) / 2);
     }
     for (let i = 1; i <= segments; i++) {
       indices.push(0, i, i + 1);
@@ -17196,9 +17194,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   }
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
-    const [x2, y2, z2, w] = q;
-    const xx = x2 * x2, yy = y2 * y2, zz = z2 * z2;
-    const xy = x2 * y2, xz = x2 * z2, yz = y2 * z2, wx = w * x2, wy = w * y2, wz = w * z2;
+    const [x2, y2, z, w] = q;
+    const xx = x2 * x2, yy = y2 * y2, zz = z * z;
+    const xy = x2 * y2, xz = x2 * z, yz = y2 * z, wx = w * x2, wy = w * y2, wz = w * z;
     return new Float32Array([
       1 - 2 * (yy + zz),
       2 * (xy + wz),
@@ -17415,7 +17413,7 @@ var MEEditorClient = class {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
       if (typeOfRun == "created from editor") {
-        console.log("%cCreated from editor. Watch <signal>", LOG_FUNNY_ARCADE2);
+        console.log(`%cCreated from editor. Watch <signal> ${name2}`, LOG_FUNNY_ARCADE2);
         let o2 = {
           action: "watch",
           name: name2
@@ -18781,10 +18779,10 @@ var CombineVec4Node = class extends ShaderNode {
     const connW = ctx.shaderGraph.getInput(this, "w");
     const x2 = connX ? ctx.resolve(connX.fromNode, connX.fromPin) : this.inputs.x.default;
     const y2 = connY ? ctx.resolve(connY.fromNode, connY.fromPin) : this.inputs.y.default;
-    const z2 = connZ ? ctx.resolve(connZ.fromNode, connZ.fromPin) : this.inputs.z.default;
+    const z = connZ ? ctx.resolve(connZ.fromNode, connZ.fromPin) : this.inputs.z.default;
     const w = connW ? ctx.resolve(connW.fromNode, connW.fromPin) : this.inputs.w.default;
     return {
-      out: ctx.temp("vec4f", `vec4f(${x2}, ${y2}, ${z2}, ${w})`),
+      out: ctx.temp("vec4f", `vec4f(${x2}, ${y2}, ${z}, ${w})`),
       type: "vec4f"
     };
   }
@@ -20448,8 +20446,8 @@ var FluxCodexVertex = class {
       }
       byId("graph-status").innerHTML = "\u26AB";
     };
-    this.setZoom = (z2) => {
-      this.state.zoom = Math.max(0.2, Math.min(2.5, z2));
+    this.setZoom = (z) => {
+      this.state.zoom = Math.max(0.2, Math.min(2.5, z));
       this.board.style.transform = `scale(${this.state.zoom})`;
     };
     this.onWheel = (e) => {
@@ -20826,6 +20824,7 @@ var FluxCodexVertex = class {
     });
     popup.appendChild(selectPromptProvider);
     const call = document.createElement("button");
+    call.id = "ai-status";
     call.innerText = `Generate`;
     call.classList.add("btnLeftBox");
     call.classList.add("btn4");
@@ -20833,8 +20832,19 @@ var FluxCodexVertex = class {
     call.style.width = "200px";
     call.style.fontWeight = "bold";
     call.style.webkitTextStrokeWidth = "0px";
-    call.addEventListener("click", () => {
+    call.addEventListener("click", (e) => {
       if (selectPrompt.selectedIndex > 0) {
+      }
+      if (e.target.getAttribute("data-ai-status") == null) {
+        console.info("first time gen ai tool call !!!!!!!!!!!!!!!!");
+        e.target.setAttribute("data-ai-status", "wip");
+      } else {
+        if (e.target.getAttribute("data-ai-status") == "wip") {
+          console.info("gen ai tool call PREVENT ");
+          return;
+        } else {
+          console.info("gen ai tool call !!!!!!!!!!!!!!!! else ");
+        }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE2);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
@@ -21850,7 +21860,7 @@ var FluxCodexVertex = class {
           { name: "error", type: "action" }
         ],
         fields: [
-          { key: "path", value: "res/meshes/shapes/cube.obj" },
+          { key: "path", value: "res/meshes/blender/cube.obj" },
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
@@ -22808,73 +22818,6 @@ var FluxCodexVertex = class {
           { key: "waveHeight", value: "0.15" },
           { key: "fresnelPower", value: "3.0" },
           { key: "specularPower", value: "128" }
-        ]
-      }),
-      setVertexAnim: (id2, x2, y2) => ({
-        id: id2,
-        x: x2,
-        y: y2,
-        title: "Set VertexAnim Intesity",
-        category: "scene",
-        inputs: [
-          { name: "exec", type: "action" },
-          { name: "sceneObjectName", semantic: "string" },
-          { name: "intensity", type: "number" },
-          { name: "enableTwist", type: "boolean" },
-          //  setTwistParams: (speed, amount)
-          { name: "Twist speed", type: "number" },
-          { name: "Twist amount", type: "number" },
-          { name: "enableNoise", type: "boolean" },
-          { name: "Noise Scale", type: "number" },
-          { name: "Noise Strength", type: "number" },
-          { name: "Noise Speed", type: "number" },
-          // setNoiseParams: (scale, strength, speed)
-          { name: "enableOcean", type: "boolean" },
-          { name: "Ocean Scale", type: "number" },
-          { name: "Ocean Height", type: "number" },
-          { name: "Ocean speed", type: "number" }
-          // setOceanParams: (scale, height, speed) => {
-        ],
-        outputs: [{ name: "execOut", type: "action" }],
-        fields: [
-          { key: "sceneObjectName", value: "FLOOR" },
-          { key: "enableWave", value: false },
-          { key: "enableWind", value: false },
-          { key: "enablePulse", value: false },
-          { key: "enableTwist", value: false },
-          { key: "enableNoise", value: false },
-          { key: "enableOcean", value: false },
-          { key: "Intensity", value: 1 },
-          { key: "Wave Speed", value: "number" },
-          { key: "Wave Amplitude", value: "number" },
-          { key: "Wave Speed", value: "number" },
-          { key: "Wave Frequency", value: "number" },
-          // setWaveParams: (speed, amplitude, frequency) 
-          { key: "enableWind", value: "boolean" },
-          { key: "Wind Speed", value: "number" },
-          { key: "Wind Strength", value: "number" },
-          { key: "Wind HeightInfluence", value: "number" },
-          { key: "Wind Turbulence", value: "number" },
-          // setWindParams: (speed, strength, heightInfluence, turbulence)
-          { key: "enablePulse", value: "boolean" },
-          { key: "Pulse speed", value: "number" },
-          { key: "Pulse amount", value: "number" },
-          { key: "Pulse centerX", value: "number" },
-          { key: "Pulse centerY", value: "number" },
-          // setPulseParams: (speed, amount, centerX = 0, centerY = 0)
-          { key: "enableTwist", value: "boolean" },
-          //  setTwistParams: (speed, amount)
-          { key: "Twist speed", value: "number" },
-          { key: "Twist amount", value: "number" },
-          { key: "enableNoise", value: "boolean" },
-          { key: "Noise Scale", value: "number" },
-          { key: "Noise Strength", value: "number" },
-          { key: "Noise Speed", value: "number" },
-          // setNoiseParams: (scale, strength, speed)
-          { key: "enableOcean", value: "boolean" },
-          { key: "Ocean Scale", value: "number" },
-          { key: "Ocean Height", value: "number" },
-          { key: "Ocean speed", value: "number" }
         ]
       }),
       setVertexWave: (id2, x2, y2) => ({
@@ -24234,7 +24177,7 @@ var FluxCodexVertex = class {
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
-        const isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
         let raycast = this.getValue(nodeId, "raycast");
@@ -24250,8 +24193,14 @@ var FluxCodexVertex = class {
         } else {
           isInstancedObj = false;
         }
+        if (isPhysicsBody == "true") {
+          isPhysicsBody = true;
+        } else {
+          isPhysicsBody = false;
+        }
         if (typeof pos == "string") eval("pos = " + pos);
         if (typeof rot == "string") eval("rot = " + rot);
+        console.warn("[Generator] scale...", scale);
         if (typeof scale == "string") eval("scale = " + scale);
         if (!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
@@ -24261,7 +24210,8 @@ var FluxCodexVertex = class {
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
           app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
-            console.log("!ADD OBJ FROM GRAPH COMPLETE!");
+            console.log("!ADD OBJ FROM GRAPH COMPLETE!", object);
+            object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
@@ -27315,14 +27265,14 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
     const RAY = { enabled: !!raycast2, radius: 1 };
     for (let y2 = 0; y2 < levels2; y2++) {
       const rowCount = levels2 - y2;
-      const xOffset2 = (rowCount - 1) * spacing2 * 0.5;
+      const xOffset = (rowCount - 1) * spacing2 * 0.5;
       for (let x2 = 0; x2 < rowCount; x2++) {
         const cubeName2 = `${name2}_${index}`;
         setTimeout(() => {
           engine.addMeshObj({
             material: { type: material },
             position: {
-              x: pos2.x + x2 * spacing2 - xOffset2,
+              x: pos2.x + x2 * spacing2 - xOffset,
               y: pos2.y + y2 * spacing2,
               z: pos2.z
             },
@@ -27361,19 +27311,19 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
       for (let y2 = 0; y2 < levels2; y2++) {
         const sizeX = levels2 - y2;
         const sizeZ = levels2 - y2;
-        const xOffset2 = (sizeX - 1) * spacing2 * 0.5;
-        const zOffset2 = (sizeZ - 1) * spacing2 * 0.5;
+        const xOffset = (sizeX - 1) * spacing2 * 0.5;
+        const zOffset = (sizeZ - 1) * spacing2 * 0.5;
         for (let x2 = 0; x2 < sizeX; x2++) {
-          for (let z2 = 0; z2 < sizeZ; z2++) {
+          for (let z = 0; z < sizeZ; z++) {
             const cubeName2 = `${name2}_${index}`;
             const currentIndex = index;
             setTimeout(() => {
               engine.addMeshObj({
                 material: { type: material },
                 position: {
-                  x: pos2.x + x2 * spacing2 - xOffset2,
+                  x: pos2.x + x2 * spacing2 - xOffset,
                   y: pos2.y + y2 * spacing2,
-                  z: pos2.z + z2 * spacing2 - zOffset2
+                  z: pos2.z + z * spacing2 - zOffset
                 },
                 rotation: rot2,
                 rotationSpeed: { x: 0, y: 0, z: 0 },
@@ -27446,13 +27396,14 @@ function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, i
     const inputCube = { mesh: path2 };
     function handler(m) {
       const RAY = { enabled: !!raycast2, radius: 1 };
-      if (isInstancedObj2 == true) {
+      if (isInstancedObj2 == false) {
+        console.info("add cube form graph..");
         engine.addMeshObj({
           material: { type: material },
           position: {
-            x: pos2.x + x * spacing - xOffset,
-            y: pos2.y + y * spacing,
-            z: pos2.z + z * spacing - zOffset
+            x: pos2.x,
+            y: pos2.y,
+            z: pos2.z
           },
           rotation: rot2,
           rotationSpeed: { x: 0, y: 0, z: 0 },
@@ -27470,7 +27421,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, i
       }
       const o2 = app.getSceneObjectByName(name2);
       runtimeCacheObjs.push(o2);
-      resolve(objects);
+      resolve(o2);
     }
     downloadMeshes(inputCube, handler, { scale: scale4 });
   });
@@ -27716,7 +27667,7 @@ var MatrixEngineWGPU = class {
     };
     this.cameras = {
       arcball: new ArcballCamera({ position: initialCameraPosition }),
-      WASD: new WASDCamera({ position: initialCameraPosition, canvas }),
+      WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1 }),
       RPG: new RPGCamera({ position: initialCameraPosition, canvas })
     };
     this.label = new MultiLang();

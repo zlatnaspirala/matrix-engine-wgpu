@@ -14,3 +14,4 @@ src/tools/editor/ai-tools/config.js
 src/tools/editor/ai-generators/ollama/config.js
 src/tools/editor/ai-generators/bridge2/config.js
 src/tools/editor/ai-generators/config.js
+src/tools/editor/backend/config.js

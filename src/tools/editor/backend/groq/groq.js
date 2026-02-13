@@ -1,5 +1,5 @@
 import { aiConfig } from "../config.js";
-import { SYSTEM_PROMPT } from "../test-prompt1.js";
+import { SYSTEM_PROMPT } from "../ollama/test-prompt1.js";
 import Groq from "groq-sdk";
 
 export class AiGroq {

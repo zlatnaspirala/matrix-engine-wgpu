@@ -1,3 +1,6 @@
+import {AvailableResources} from "./get-available-resources.js";
+
+
 export const SYSTEM_PROMPT = `You are a Visual Scripting Graph Generator.
 
 Your task:
@@ -721,18 +724,6 @@ Outputs:
 Fields:
 - disableLoopWarns : string
 
-Node: setMaterial
-Category: scene
-Inputs:
-- exec : action
-- materialType : undefined
-- sceneObjectName : undefined
-Outputs:
-- execOut : action
-Fields:
-- sceneObjectName : string
-- materialType : string
-
 Node: setVertexWind
 Category: scene
 Inputs:
@@ -1222,6 +1213,8 @@ EXECUTION RULES:
 If a request is impossible, output an empty graph:
 { "nodes": [], "links": [] }
 
+
+____INJECT_RES_MANIFEST____
 
 OUTPUT FORMAT:
 
