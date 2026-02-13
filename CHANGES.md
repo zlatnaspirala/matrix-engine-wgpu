@@ -2,6 +2,8 @@
 
 [1.9.0]
 
+- Improved AI GEN graph tool 
+  ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now. [Open account/open source/free service quota](https://ollama.com/)
 - Gimzo implementation
 - Optimised render loop GPU
 

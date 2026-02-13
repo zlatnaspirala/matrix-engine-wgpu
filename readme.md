@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.8.6 2026
+📅 Version: 1.9.0 2026
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## Description
 
-This project is a work-in-progress WebGPU engine inspired by the original **matrix-engine** for WebGL.
+This project is a `stable` but also `work-in-progress` WebGPU engine inspired by the original **matrix-engine** for WebGL.
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`**
@@ -36,6 +36,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader)
 - ✔️ Dynamic shadow cast (done also for skinned meshes)
 - ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect
+- ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/)
 
 ## Roadmap
 
@@ -47,7 +48,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
 
 
-## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
+## FluxCodexVertex Web Graph Editor 🚀 (since version 1.8.0)
 
 EditorX has **two main parts**:
 - **Frontend** (`./src/tools/editor`)
@@ -70,7 +71,8 @@ The backend is built using **Node.js** 🟢
 - Assets toolbar added (bottom panel)
   - Add **GLB** or **OBJ** files (also mp3) from the asset toolbox by selecting them.
 - Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
-- Integrated Visual Scripting system 🧠 FluxCodexVertex
+- Integrated Visual Scripting system 🧠 FluxCodexVertex for program exec flow.
+- Integrated Visual Scripting system 🧠 FluxCodexShader for shader.
 
 ---
 
@@ -91,6 +93,18 @@ The backend is built using **Node.js** 🟢
   - For final builds, becomes a real **JS object** injected into the app flow.[DONE]
 - Export graph to **JSON**
 - Import graph from **JSON**
+- [Experimental] Generate graphs with ai tools services First working graph done with ollama platform.
+  You need to open account on ollama platform for free quota service. Get API key and add it
+  to the aitool config file (src\tools\editor\backend\config.js) Backend Config.js is on git ignored list.
+  If you need to create it use this format:
+  ```js
+  export const aiConfig = {
+    ollama: '***********',
+    qrok: '************'
+  }
+  ```
+  For now i create graphs with simple tasks.
+  In future it will be able to create whole scenes or simple games.
 
 ---
 
