@@ -8,6 +8,7 @@
   ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now. [Open account/open source/free service quota](https://ollama.com/)
 - Gimzo implementation.
 - Added typedoc for auto gen api-docs.
+- Added some default shader graph
 - Optimised render loop GPU.
 
 ```js
