@@ -98,17 +98,41 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END FLOOR updatePosy
  
-   // ME START cube1 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('cube1').position.SetX(-5.839999999999996);
- }, 800);
- // ME END cube1 updatePosx
- 
-    // ME START FLOOR updatePosx
+   // ME START FLOOR updatePosx
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetX(-0.30999999999999933);
  }, 800);
  // ME END FLOOR updatePosx
+ 
+  // ME START cube1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetX(-0.09999999999999618);
+ }, 800);
+ // ME END cube1 updatePosx
+ 
+   // ME START cube1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetY(2.349999999999998);
+ }, 800);
+ // ME END cube1 updatePosy
+ 
+     // ME START cube1 updateRoty
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').rotation.y = -0;
+ }, 800);
+ // ME END cube1 updateRoty
+ 
+  // ME START cube1 updateRotz
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').rotation.z = 0;
+ }, 800);
+ // ME END cube1 updateRotz
+ 
+    // ME START cube1 updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').rotation.x = -7.7000000000000055;
+ }, 800);
+ // ME END cube1 updateRotx
  
  // [MAIN_REPLACE2]
     })

@@ -1245,7 +1245,10 @@ class SceneObjectProperty {
       } else if(subobj[prop] == false) {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
-      } else if(subobj[prop] == "") {
+      } else if (typeof subobj[prop] === 'function') {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >[Available from graph]</div>`;
+       } else if(subobj[prop] == "") {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
       } else {

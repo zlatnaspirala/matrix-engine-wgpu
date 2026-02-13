@@ -101,7 +101,7 @@ export default class FluxCodexVertex {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
-       document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
+      document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
       byId("graph-status").innerHTML = '⚫';
     };
 
@@ -126,11 +126,9 @@ export default class FluxCodexVertex {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-
     // global events
     document.addEventListener("on-ai-graph-response", e => {
-      //
-      console.log("AI RESPONSE:", e.detail);
+      console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
       byId("graphGenJSON").value = e.detail;
       byId('ai-status').removeAttribute('data-ai-status')
     });
@@ -544,7 +542,6 @@ export default class FluxCodexVertex {
         // use select task...
       }
       if(e.target.getAttribute("data-ai-status") == null) {
-        console.info('first time gen ai tool call !!!!!!!!!!!!!!!!')
         e.target.setAttribute("data-ai-status", "wip");
       } else {
         if(e.target.getAttribute("data-ai-status") == "wip") {
@@ -3937,13 +3934,13 @@ export default class FluxCodexVertex {
     }
 
     if(n.category === "event" && typeof n.noselfExec === 'undefined') {
-      console.log('EMPTY EXEC :  ', n.title)
+      console.info(`%c<EMPTY EXEC>: ${n.title}`, LOG_FUNNY_ARCADE);
       this.enqueueOutputs(n, "exec");
       return;
     }
 
     if(n.category === "event" && typeof n.noselfExec != 'undefined') {
-      console.log('PREVENT SELF EXEC')
+      console.log('<PREVENT SELF EXEC>')
       return;
     }
 
@@ -4153,7 +4150,6 @@ export default class FluxCodexVertex {
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          // console.log('!GEN WALL! ONCE!');
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
           // createdField.value = true;
         }
@@ -4177,7 +4173,6 @@ export default class FluxCodexVertex {
         if(isPhysicsBody == "true") {isPhysicsBody = true} else {isPhysicsBody = false;}
         if(typeof pos == 'string') eval("pos = " + pos);
         if(typeof rot == 'string') eval("rot = " + rot);
-        console.warn("[Generator] scale...", scale);
         if(typeof scale == 'string') eval("scale = " + scale);
         if(!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
@@ -4187,12 +4182,11 @@ export default class FluxCodexVertex {
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
           app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
-            console.log('!ADD OBJ FROM GRAPH COMPLETE!', object);
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
-            console.log('!ADD OBJ ERROR GRAPH!');
+            console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           })
@@ -5144,80 +5138,80 @@ export default class FluxCodexVertex {
     this.curveEditor.toggleEditor(true);
   }
 
-mergeGraphBundle(data) {
-  if (!data || !data.nodes) return;
+  mergeGraphBundle(data) {
+    if(!data || !data.nodes) return;
 
-  const nodeOffset = this.nodeCounter;
-  const linkOffset = this.linkCounter;
-  const nodeIdMap = {};
+    const nodeOffset = this.nodeCounter;
+    const linkOffset = this.linkCounter;
+    const nodeIdMap = {};
 
-  // 1. Map and Create Nodes
-  Object.values(data.nodes).forEach(node => {
-    const oldId = node.id;
-    // Ensure we create a truly unique ID string
-    const newId = "n" + (this.nodeCounter++); 
-    nodeIdMap[oldId] = newId;
+    // 1. Map and Create Nodes
+    Object.values(data.nodes).forEach(node => {
+      const oldId = node.id;
+      // Ensure we create a truly unique ID string
+      const newId = "n" + (this.nodeCounter++);
+      nodeIdMap[oldId] = newId;
 
-    const newNode = {
-      ...node,
-      id: newId,
-      // Offset so they don't overlap existing nodes
-      x: (node.x || 0) + 100,
-      y: (node.y || 0) + 100
-    };
-
-    this.nodes[newId] = newNode;
-    
-    // Create DOM element
-    const domEl = this.createNodeDOM(newNode);
-    this.board.appendChild(domEl);
-
-    if((newNode.category === "value" && newNode.title !== "GenRandInt") ||
-       newNode.category === "math" || newNode.title === "Print") {
-      newNode.displayEl = domEl.querySelector(".value-display");
-    }
-  });
-
-  // 2. Map and Create Links
-  if (Array.isArray(data.links)) {
-    data.links.forEach(link => {
-      const newLinkId = "l" + (this.linkCounter++);
-
-      const newLink = {
-        ...link,
-        id: newLinkId,
-        from: { 
-          ...link.from, 
-          node: nodeIdMap[link.from.node] 
-        },
-        to: { 
-          ...link.to, 
-          node: nodeIdMap[link.to.node] 
-        }
+      const newNode = {
+        ...node,
+        id: newId,
+        // Offset so they don't overlap existing nodes
+        x: (node.x || 0) + 100,
+        y: (node.y || 0) + 100
       };
 
-      // Only add link if BOTH nodes were successfully remapped
-      if (this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
-        this.links.push(newLink);
+      this.nodes[newId] = newNode;
+
+      // Create DOM element
+      const domEl = this.createNodeDOM(newNode);
+      this.board.appendChild(domEl);
+
+      if((newNode.category === "value" && newNode.title !== "GenRandInt") ||
+        newNode.category === "math" || newNode.title === "Print") {
+        newNode.displayEl = domEl.querySelector(".value-display");
       }
     });
+
+    // 2. Map and Create Links
+    if(Array.isArray(data.links)) {
+      data.links.forEach(link => {
+        const newLinkId = "l" + (this.linkCounter++);
+
+        const newLink = {
+          ...link,
+          id: newLinkId,
+          from: {
+            ...link.from,
+            node: nodeIdMap[link.from.node]
+          },
+          to: {
+            ...link.to,
+            node: nodeIdMap[link.to.node]
+          }
+        };
+
+        // Only add link if BOTH nodes were successfully remapped
+        if(this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
+          this.links.push(newLink);
+        }
+      });
+    }
+
+    // 3. Critical UI Refresh Sequence
+    // First, update the DOM positions for the new nodes
+    Object.keys(nodeIdMap).forEach(oldId => {
+      this.updateNodeDOM(nodeIdMap[oldId]);
+    });
+
+    // Second, tell the engine to draw the lines
+    this.updateLinks();
+
+    // Third, if your engine requires runtime binding (like events/logic)
+    if(this.restoreConnectionsRuntime) {
+      this.restoreConnectionsRuntime();
+    }
+
+    this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
+    this.compileGraph(); // Save to LocalStorage
   }
-
-  // 3. Critical UI Refresh Sequence
-  // First, update the DOM positions for the new nodes
-  Object.keys(nodeIdMap).forEach(oldId => {
-    this.updateNodeDOM(nodeIdMap[oldId]);
-  });
-
-  // Second, tell the engine to draw the lines
-  this.updateLinks(); 
-  
-  // Third, if your engine requires runtime binding (like events/logic)
-  if (this.restoreConnectionsRuntime) {
-    this.restoreConnectionsRuntime();
-  }
-
-  this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
-  this.compileGraph(); // Save to LocalStorage
-}
 }

@@ -28598,10 +28598,32 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n24": { "id": "n24", "title": "onLoad", "x": 171.11114501953125, "y": 775.111083984375, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n25": { "id": "n25", "title": "Add OBJ", "x": 444.416748046875, "y": 721.4270935058594, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/shapes/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "box1" }, { "key": "raycast", "value": "false" }, { "key": "scale", "value": "[1,1,1]" }, { "key": "isPhysicsBody", "value": "false" }, { "key": "isInstancedObj", "value": "false" }, { "key": "created", "value": false }], "noselfExec": true }, "node_26": { "id": "node_26", "title": "Print", "x": 806.7917175292969, "y": 729.2569580078125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_27": { "id": "node_27", "title": "Print", "x": 830.8646087646484, "y": 1009.013916015625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "l22", "from": { "node": "n24", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n25", "pin": "exec" }, "type": "action" }, { "id": "link_23", "from": { "node": "n25", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_26", "pin": "exec" }, "type": "action" }, { "id": "link_24", "from": { "node": "n25", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_27", "pin": "exec" }, "type": "action" }], "nodeCounter": 28, "linkCounter": 25, "pan": [-169, -490], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+// ../../../../projects/test3/graph.js
+var graph_default = {
+  nodes: {
+    node_1: {
+      id: "node_1",
+      title: "onLoad",
+      x: 299.34460239409304,
+      y: 127.5731482201762,
+      category: "event",
+      inputs: [],
+      outputs: [{ name: "exec", type: "action" }]
+    }
+  },
+  links: [],
+  nodeCounter: 2,
+  linkCounter: 1,
+  pan: [0, 0],
+  variables: {
+    number: {},
+    boolean: {},
+    string: {},
+    object: {}
+  }
+};
 
-// ../../../../projects/Test2/shader-graphs.js
+// ../../../../projects/test3/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
@@ -28609,12 +28631,12 @@ var shaderGraphsProdc = [
   }
 ];
 
-// ../../../../projects/Test2/app-gen.js
+// ../../../../projects/test3/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
     projectType: "created from editor",
-    projectName: "Test2",
+    projectName: "test3",
     useSingleRenderPass: true,
     canvasSize: "fullscreen",
     mainCameraParams: {
@@ -28625,7 +28647,6 @@ var app2 = new MatrixEngineWGPU(
   },
   (app3) => {
     addEventListener("AmmoReady", async () => {
-      addRaycastsListener("canvas1", "mousedown");
       app3.graph = graph_default;
       shaderGraphsProdc.forEach((gShader) => {
         let shaderReady = JSON.parse(gShader.content);
@@ -28641,57 +28662,11 @@ var app2 = new MatrixEngineWGPU(
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           name: "FLOOR",
-          pointerEffect: {
-            enabled: true,
-            pointEffect: true,
-            gizmoEffect: true,
-            destructionEffect: true
-          },
           mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [25, 1, 25] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").useScale = true;
-      }, 800);
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "cube1",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-19.5959686775923);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-4.030000000000009);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(-0.30999999999999933);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetX(-0.09999999999999618);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetY(2.349999999999998);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").rotation.y = -0;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").rotation.z = 0;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").rotation.x = -7.7000000000000055;
-      }, 800);
     });
   }
 );
@@ -28706,4 +28681,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=Test2.js.map
+//# sourceMappingURL=test3.js.map

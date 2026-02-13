@@ -357,31 +357,26 @@ export function addOBJ(
     const inputCube = {mesh: path};
     function handler(m) {
       const RAY = {enabled: !!raycast, radius: 1};
-      if(isInstancedObj == false) {
-        console.info('add cube form graph..')
-        
-        engine.addMeshObj({
-          material: {type: material},
-          position: {
-            x: pos.x,
-            y: pos.y,
-            z: pos.z
-          },
-          rotation: rot,
-          rotationSpeed: {x: 0, y: 0, z: 0},
-          texturesPaths: [texturePath],
-          name: name,
-          mesh: m.mesh,
-          physics: {
-            scale: scale,
-            enabled: isPhysicsBody,
-            geometry: "Cube"
-          },
-          raycast: RAY
-        });
-      } else {
-        //
-      }
+      // console.info('add cube form graph..')
+      engine.addMeshObj({
+        material: {type: material},
+        position: {
+          x: pos.x,
+          y: pos.y,
+          z: pos.z
+        },
+        rotation: rot,
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: [texturePath],
+        name: name,
+        mesh: m.mesh,
+        physics: {
+          scale: scale,
+          enabled: isPhysicsBody,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
       // const b = app.matrixAmmo.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
       runtimeCacheObjs.push(o);
