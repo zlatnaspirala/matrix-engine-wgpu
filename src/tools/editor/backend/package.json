@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/zlatnaspirala/matrix-engine-wgpu#readme",
   "dependencies": {
+    "ollama": "^0.6.3",
     "ws": "^8.18.3"
   }
 }

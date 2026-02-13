@@ -9,7 +9,6 @@ import {loadGLBLoader} from "./examples/glb-loader.js";
 import {loadObjFile} from "./examples/load-obj-file.js";
 import {loadObjsSequence} from "./examples/load-objs-sequence.js";
 import {physicsPlayground} from "./examples/physics-playground.js";
-import {unlitTextures} from "./examples/unlit-textures.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId} from "./src/engine/utils.js";
 
@@ -33,14 +32,6 @@ byId('physicsPlayground').addEventListener("click", () => {
   }
   destroyJambDoms();
   physicsPlayground();
-})
-
-byId('unlitTextures').addEventListener("click", () => {
-  // byId('unlitTextures').setAttribute('disabled', true)
-  // byId('loadObjFile').removeAttribute('disabled')
-  if(typeof app !== "undefined") app.destroyProgram()
-  destroyJambDoms();
-  unlitTextures();
 })
 
 byId('camera-texture').addEventListener("click", () => {

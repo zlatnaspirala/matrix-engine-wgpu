@@ -2,11 +2,9 @@ import {mat4, vec3} from 'wgpu-matrix';
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import Behavior from './behavior';
 import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.instanced.wgsl';
-import {randomIntFromTo} from './utils';
-
 /**
  * @description
- * Spot light with shodow cast.
+ * Spot light with shadow cast.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
@@ -43,7 +41,7 @@ export class SpotLight {
     target = vec3.create(0, 0, -20),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
 
-    aspect = 1; //hot fix
+    aspect = 1; // hot fix
     this.name = "light" + indexx;
     this.getName = () => {return "light" + indexx};
     this.fov = fov;
@@ -58,7 +56,7 @@ export class SpotLight {
     this.up = vec3.create(0, 0, -1);
     this.direction = vec3.normalize(vec3.subtract(target, position));
     this.intensity = 1.0;
-    this.color = vec3.create(1.0, 1.0, 1.0); // white
+    this.color = vec3.create(1.0, 1.0, 1.0);
 
     this.viewMatrix = mat4.lookAt(position, target, this.up);
     this.projectionMatrix = mat4.perspective(
@@ -113,7 +111,7 @@ export class SpotLight {
     });
 
     this.renderPassDescriptor = {
-      label: "renderPassDescriptor shadowPass [per SpotLigth]",
+      label: "descriptor shadowPass[SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTexture.createView(),
@@ -124,7 +122,7 @@ export class SpotLight {
     }
 
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'uniformBufferBindGroupLayout in light',
+      label: 'uniformBufferBindGroupLayout light',
       entries: [
         {
           binding: 0,
@@ -146,7 +144,7 @@ export class SpotLight {
       }
 
       this.shadowBindGroupContainer[index] = this.device.createBindGroup({
-        label: 'sceneBindGroupForShadow in light',
+        label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
         entries: [
           {
@@ -161,10 +159,7 @@ export class SpotLight {
     }
 
     this.getShadowBindGroup_bones = (index) => {
-
-      if(this.shadowBindGroup[index]) {
-        return this.shadowBindGroup[index];
-      }
+      if(this.shadowBindGroup[index]) return this.shadowBindGroup[index];
 
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16, // 4x4 matrix
@@ -187,7 +182,7 @@ export class SpotLight {
     }
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'modelBindGroupLayout in light [one bindings]',
+      label: 'modelBindGroupLayout light [one bindings]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
@@ -196,7 +191,7 @@ export class SpotLight {
     });
 
     this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-      label: 'modelBindGroupLayout in light [for skinned] [instanced]',
+      label: 'modelBindGroupLayout light [skinned][instanced]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
@@ -205,9 +200,9 @@ export class SpotLight {
     });
 
     this.shadowPipeline = this.device.createRenderPipeline({
-      label: 'shadowPipeline per light',
+      label: 'shadowPipeline light',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout - uniformBufferBindGroupLayout light [regular]',
+        label: 'uniformBufferBindGroupLayout light[regular]',
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayout,
@@ -218,9 +213,8 @@ export class SpotLight {
           code: vertexShadowWGSL,
         }),
         buffers: [
-          // @location(0) - position
           {
-            arrayStride: 12, // 3 * 4 bytes (vec3f)
+            arrayStride: 12,
             attributes: [
               {
                 shaderLocation: 0,
@@ -231,7 +225,7 @@ export class SpotLight {
           },
           // ✅ ADD @location(1) - normal
           {
-            arrayStride: 12, // 3 * 4 bytes (vec3f)
+            arrayStride: 12,
             attributes: [
               {
                 shaderLocation: 1,
@@ -242,7 +236,7 @@ export class SpotLight {
           },
           // ✅ ADD @location(2) - uv
           {
-            arrayStride: 8, // 2 * 4 bytes (vec2f)
+            arrayStride: 8,
             attributes: [
               {
                 shaderLocation: 2,
@@ -253,7 +247,7 @@ export class SpotLight {
           },
           // ✅ ADD @location(3) - joints
           {
-            arrayStride: 16, // 4 * 4 bytes (vec4<u32>)
+            arrayStride: 16,
             attributes: [
               {
                 shaderLocation: 3,
@@ -264,7 +258,7 @@ export class SpotLight {
           },
           // ✅ ADD @location(4) - weights
           {
-            arrayStride: 16, // 4 * 4 bytes (vec4f)
+            arrayStride: 16,
             attributes: [
               {
                 shaderLocation: 4,
@@ -282,10 +276,11 @@ export class SpotLight {
       },
       primitive: this.primitive,
     });
+
     this.shadowPipelineInstanced = this.device.createRenderPipeline({
-      label: 'shadowPipeline [instanced] per light',
+      label: 'shadowPipeline [instanced]light',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout - uniformBufferBindGroupLayout light [instanced]',
+        label: 'uniformBufferBindGroupLayout light[instanced]',
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayoutInstanced,
@@ -321,20 +316,20 @@ export class SpotLight {
     this.getMainPassBindGroup = function(mesh) {
       // You can cache it per mesh to avoid recreating each frame
       if(!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
-      const index = mesh._lightBindGroupIndex || 0; // assign unique per mesh if needed
+      const index = mesh._lightBindGroupIndex || 0;
       if(this.mainPassBindGroupContainer[index]) {
         return this.mainPassBindGroupContainer[index];
       }
       this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
-        layout: mesh.mainPassBindGroupLayout, // this should match the pipeline
+        layout: mesh.mainPassBindGroupLayout,
         entries: [
           {
-            binding: 0, // must match @binding in shader for shadow texture
+            binding: 0,
             resource: this.shadowTexture.createView(),
           },
           {
-            binding: 1, // must match @binding in shader for shadow sampler
+            binding: 1,
             resource: this.shadowSampler,
           },
         ],
@@ -416,5 +411,4 @@ export class SpotLight {
   setShadowBias = (shadowBias) => {
     this.shadowBias = shadowBias;
   }
-
 }

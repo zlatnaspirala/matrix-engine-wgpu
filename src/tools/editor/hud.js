@@ -1,7 +1,5 @@
-import {METoolTip} from "../../engine/plugin/tooltip/ToolTip.js";
 import {byId, FullscreenManager, isMobile, jsonHeaders, LOG_FUNNY_ARCADE, mb} from "../../engine/utils.js";
 import {openFragmentShaderEditor} from "./flexCodexShader.js";
-
 /**
  * @Author NIkola Lukic
  * @description
@@ -9,16 +7,17 @@ import {openFragmentShaderEditor} from "./flexCodexShader.js";
  * Using "file protocol" in direct way no virtual/syntetic assets
  */
 export default class EditorHud {
-  constructor(core, a) {
+  constructor(core, a, toolTip) {
     this.core = core;
     this.sceneContainer = null;
     this.FS = new FullscreenManager();
-    this.toolTip = new METoolTip();
+    this.toolTip = toolTip;
     if(a == 'infly') {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
       this.createTopMenu();
       this.createAssets();
+      this.createGizmoIcons();
     } else if(a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -189,22 +188,11 @@ export default class EditorHud {
     </div>
 
     <div class="top-item">
-      <div class="top-btn">Settings ▾</div>
+      <div class="top-btn">AI tools ▾</div>
       <div class="dropdown">
-        <div id="cameraBox" class="drop-item">
-           <p>📽️Camera</p>
-           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
-           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <!--div> Position :  </br>
-            \n 
-            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
-            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
-            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div-->
-        </div>
+        <div id="showAITools" class="drop-item">⚪ AI graph generator</div>
       </div>
     </div>
-    
     
     <div class="top-item">
       <div class="top-btn">Script ▾</div>
@@ -240,15 +228,15 @@ export default class EditorHud {
       <div class="top-btn">View ▾</div>
       <div class="dropdown">
         <div id="hideEditorBtn" class="drop-item">
-           <p>Hide Editor UI</p>
+           <h4>Hide Editor UI</h4>
            <small>Show editor - press F4 ⌨️</small>
         </div>
         <div id="bg-transparent" class="drop-item">
-           <p>Background transparent</p>
+           <h4>Background transparent</h4>
            <small>Fancy style</small>
         </div>
         <div id="bg-tradicional" class="drop-item">
-           <p>Background tradicional</p>
+           <h4>Background tradicional</h4>
            <small>Old school</small>
         </div>
         <div id="fullScreenBtn" class="drop-item">
@@ -292,14 +280,10 @@ export default class EditorHud {
       });
     });
 
-    // run top many
-
     byId('saveMainGraphDOM').addEventListener('click', () => {
-      // global for now.
       app.editor.fluxCodexVertex.compileGraph();
     });
     byId('runMainGraphDOM').addEventListener('click', () => {
-      // global for now.
       app.editor.fluxCodexVertex.runGraph();
     });
 
@@ -326,6 +310,11 @@ export default class EditorHud {
     });
 
     this.toolTip.attachTooltip(byId('fullScreenBtn'), "Just editor gui part for fullscreen - not fullscreen for real program.");
+
+    byId('showAITools').addEventListener('click', () => {
+      byId('aiPopup').style.display = 'flex';
+    });
+    this.toolTip.attachTooltip(byId('showAITools'), "Experimental stage, MEWGPU use open source ollama platform. Possible to create less complex - assets data not yet involment...");
 
     byId('hideEditorBtn').addEventListener('click', () => {
       this.editorMenu.style.display = 'none';
@@ -446,20 +435,30 @@ export default class EditorHud {
       }));
     });
 
-    // settings
-    setTimeout(() => {
-      this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
-      this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
-    }, 1500);
-
-    byId('camera-settings-pitch').addEventListener('change', (e) => {
-      console.log('setting camera pitch ', e);
-      this.core.cameras.WASD.pitch = e.target.value;
-    })
-    byId('camera-settings-yaw').addEventListener('change', (e) => {
-      console.log('setting camera', e)
-      this.core.cameras.WASD.yaw = e.target.value;
-    })
+    // // settings
+    // setTimeout(() => {
+    //   this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
+    //   this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
+    // }, 1500);
+    //     <!--div id="cameraBox" class="drop-item">
+    //    <p>📽️Camera</p>
+    //    <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
+    //    <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
+    //    <!--div> Position :  </br>
+    //     \n 
+    //     X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
+    //     Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
+    //     Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
+    //    </div-->
+    // </div-->
+    // byId('camera-settings-pitch').addEventListener('change', (e) => {
+    //   console.log('setting camera pitch ', e);
+    //   this.core.cameras.WASD.pitch = e.target.value;
+    // })
+    // byId('camera-settings-yaw').addEventListener('change', (e) => {
+    //   console.log('setting camera', e)
+    //   this.core.cameras.WASD.yaw = e.target.value;
+    // })
 
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
@@ -515,11 +514,88 @@ export default class EditorHud {
   🎯 Save system - direct code line [file-protocol]
   🎯 Adding Visual Scripting System called 
      FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+  🎯 Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+
+  createGizmoIcons() {
+    this.gizmoBox = document.createElement("div");
+    this.assetsBox.id = "gizmoBox";
+    Object.assign(this.gizmoBox.style, {
+      position: "absolute",
+      top: "0",
+      left: "17.55%",
+      width: "190px",
+      height: "64px",
+      backgroundColor: "transparent",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      zIndex: "10",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.gizmoBox.innerHTML = `
+    <div>
+    <img id="mode0" data-mode="0" class="gizmo-icon" src="./res/textures/editor/0.png" width="48px" height="48px"/>
+    <img id="mode1" data-mode="1" class="gizmo-icon" src="./res/textures/editor/1.png" width="48px" height="48px"/>
+    <img id="mode2" data-mode="2" class="gizmo-icon" src="./res/textures/editor/2.png" width="48px" height="48px"/>
+    </div>
+    `;
+    document.body.appendChild(this.gizmoBox);
+    if(!document.getElementById('gizmo-style')) {
+      const style = document.createElement('style');
+      style.id = 'gizmo-style';
+      style.innerHTML = `
+            .gizmo-icon {
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            /* Hover State */
+            .gizmo-icon:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+                transform: scale(1.1);
+                filter: brightness(1.2);
+            }
+            /* Active/Click State */
+            .gizmo-icon:active {
+                transform: scale(0.95);
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+        `;
+      document.head.appendChild(style);
+    }
+    const setMode = (e) => {
+      let m = parseInt(e.target.getAttribute("data-mode"));
+      dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: m}}))
+      if(m == 0) {
+        byId('mode0').style.border = 'gray 1px solid';
+        byId('mode1').style.border = 'none';
+        byId('mode2').style.border = 'none';
+      } else if(m == 1) {
+        byId('mode0').style.border = 'none';
+        byId('mode1').style.border = 'gray 1px solid';
+        byId('mode2').style.border = 'none';
+      } else if(m == 2) {
+        byId('mode0').style.border = 'none';
+        byId('mode1').style.border = 'none';
+        byId('mode2').style.border = 'gray 1px solid';
+      }
+
+    }
+    ['mode0', 'mode1', 'mode2'].forEach(id => {
+      byId(id).addEventListener("pointerdown", setMode);
+    });
+    this.toolTip.attachTooltip(byId('mode0'), `Set gizmo mode to 'translate'.\n`);
+    this.toolTip.attachTooltip(byId('mode1'), `Set gizmo mode to 'rotate'.\n`);
+    this.toolTip.attachTooltip(byId('mode2'), `Set gizmo mode to 'scale'.\n`);
   }
 
   createAssets() {
@@ -929,10 +1005,29 @@ export default class EditorHud {
         this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
       }
     });
-
     // Add editor events system
     this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
+  }
 
+  updateSceneObjPropertiesFromGizmo = (name) => {
+    this.currentProperties = [];
+    this.objectProperiesTitle.style.fontSize = '120%';
+    this.objectProperiesTitle.innerHTML = `Scene object properties`;
+    this.objectProperies.innerHTML = ``;
+    const currentSO = this.core.getSceneObjectByName(name);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${name}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+    const OK = Object.keys(currentSO);
+    OK.forEach((prop) => {
+      // console.log('[key]:', prop);
+      if(prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO, this.core));
+      } else {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
+      }
+    });
+    // Add editor events system
+    this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
   }
 }
 
@@ -1150,7 +1245,10 @@ class SceneObjectProperty {
       } else if(subobj[prop] == false) {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
-      } else if(subobj[prop] == "") {
+      } else if (typeof subobj[prop] === 'function') {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >[Available from graph]</div>`;
+       } else if(subobj[prop] == "") {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
       } else {

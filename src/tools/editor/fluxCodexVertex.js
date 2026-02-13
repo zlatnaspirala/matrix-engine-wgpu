@@ -35,22 +35,19 @@
  *
  * - MPL applies ONLY to this file
  */
-import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
-import {MatrixMusicAsset} from "../../sounds/audioAsset";
+// import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
-import {graphAdapter} from "./flexCodexShaderAdapter";
-
+// import {graphAdapter} from "./flexCodexShaderAdapter";
+import {catalogToText, generateAICatalog, providers, tasks} from "./generateAISchema.js"
 // Engine agnostic
 export let runtimeCacheObjs = [];
 
 export default class FluxCodexVertex {
-  constructor(boardId, boardWrapId, logId, methodsManager, projName) {
+  constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
-    this.toolTip = new METoolTip();
-
+    this.toolTip = toolTip;
     this.curveEditor = new CurveEditor();
-
     this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
     this.variables = {
@@ -59,7 +56,6 @@ export default class FluxCodexVertex {
       string: {},
       object: {},
     };
-
     // DOM Elements
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
@@ -105,6 +101,7 @@ export default class FluxCodexVertex {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
+      document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
       byId("graph-status").innerHTML = '⚫';
     };
 
@@ -125,11 +122,16 @@ export default class FluxCodexVertex {
 
     // Bind event listeners
     this.createVariablesPopup();
+    this.createAIToolPopup();
     this._createImportInput();
     this.bindGlobalListeners();
-
     this._varInputs = {};
-
+    // global events
+    document.addEventListener("on-ai-graph-response", e => {
+      console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
+      byId("graphGenJSON").value = e.detail;
+      byId('ai-status').removeAttribute('data-ai-status')
+    });
     document.addEventListener("keydown", e => {
       const target = (e.composedPath && e.composedPath()[0]) || e.target || document.activeElement;
       function isEditableElement(el) {
@@ -390,7 +392,7 @@ export default class FluxCodexVertex {
       border: "1px solid #444",
       borderRadius: "8px",
       padding: "10px",
-      zIndex: 9999,
+      zIndex: 99,
       color: "#eee",
       overflowX: "hidden",
     });
@@ -440,6 +442,235 @@ export default class FluxCodexVertex {
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
+  }
+
+  createAIToolPopup() {
+    if(this._aiPopup) return;
+    const popup = document.createElement("div");
+    popup.id = "aiPopup";
+    this._aiPopup = popup;
+    Object.assign(popup.style, {
+      display: "none",
+      flexDirection: "column",
+      alignItems: "flex-start",
+      position: "absolute",
+      top: "10%",
+      left: "5%",
+      width: "50%",
+      height: "70%",
+      background: `
+    linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 22px
+    )
+  `,
+      backgroundBlendMode: "overlay",
+      backgroundSize: "auto, 22px 22px, 22px 22px",
+      border: "1px solid rgba(255,255,255,0.15)",
+      borderRadius: "10px",
+      boxShadow: `
+    0 20px 40px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255,255,255,0.05)
+  `,
+      padding: "12px 14px",
+      zIndex: 99,
+      color: "#e6e6e6",
+      overflowY: "auto",
+      overflowX: "hidden",
+      fontFamily: "Orbitron, monospace",
+      fontSize: "13px",
+    });
+    const title = document.createElement("div");
+    title.innerHTML = `FluxCodexVertex AI generator [Experimental]`;
+    title.style.marginBottom = "18px";
+    title.style.fontWeight = "bold";
+    title.style.fontSize = "20px";
+    popup.appendChild(title);
+    const label1 = document.createElement("span");
+    label1.innerText = `Select task for ai`;
+    popup.appendChild(label1);
+    const selectPrompt = document.createElement("select");
+    selectPrompt.style.width = '400px';
+    const placeholder = document.createElement("option");
+    placeholder.textContent = "Select task";
+    placeholder.value = "";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    selectPrompt.appendChild(placeholder);
+    tasks.forEach((t, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = t;
+      selectPrompt.appendChild(opt);
+    });
+    popup.appendChild(selectPrompt)
+    const label2 = document.createElement("span");
+    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    popup.appendChild(label2);
+    const selectPromptProvider = document.createElement("select");
+    selectPromptProvider.style.width = '400px';
+    providers.forEach((p, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = p;
+      selectPromptProvider.appendChild(opt);
+    });
+    popup.appendChild(selectPromptProvider);
+
+    const call = document.createElement("button");
+    call.id = "ai-status";
+    call.innerText = `Generate`;
+    call.classList.add("btnLeftBox");
+    call.classList.add("btn4");
+    call.style.margin = "8px 8px 8px 8px";
+    call.style.width = "200px";
+    call.style.fontWeight = "bold";
+    call.style.webkitTextStrokeWidth = "0px";
+    call.addEventListener("click", (e) => {
+      if(selectPrompt.selectedIndex > 0) {
+        // use select task...
+      }
+      if(e.target.getAttribute("data-ai-status") == null) {
+        e.target.setAttribute("data-ai-status", "wip");
+      } else {
+        if(e.target.getAttribute("data-ai-status") == "wip") {
+          console.info('gen ai tool call PREVENT ')
+          return;
+        } else {
+          console.info('gen ai tool call !!!!!!!!!!!!!!!! else ')
+        }
+      }
+      console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
+      document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
+        detail: {
+          provider: providers[0], // hardcode
+          task: selectPrompt.selectedOptions[0].innerText
+        }
+      }));
+    });
+    popup.appendChild(call);
+    this.toolTip.attachTooltip(call, "AI will try to generate graph. It is not guaranteed to work ⚠️");
+    const list = document.createElement("textarea");
+    list.style.height = '500px';
+    list.id = "graphGenJSON";
+    list.disabled = true;
+    Object.assign(list.style, {
+      height: "100%",
+      minHeight: "420px",
+      resize: "none",
+      background: "#0f0f0f",
+      color: "#d0f0ff",
+      border: "1px solid #333",
+      borderRadius: "6px",
+      padding: "10px",
+      marginBottom: "10px",
+      fontFamily: "JetBrains Mono, monospace",
+      fontSize: "12px",
+      lineHeight: "1.4",
+      width: "98%",
+      outline: "none",
+      boxShadow: "inset 0 0 8px rgba(0,0,0,0.6)"
+    });
+    popup.appendChild(list);
+    this.toolTip.attachTooltip(list, "If the exported graph is not valid, in the last case you can manually try to fix it, but it is best to make a new query ⚠️");
+    // popup.appendChild(btns);
+
+    const wrap1 = document.createElement("div");
+    wrap1.style.display = 'flex';
+    wrap1.style.height = '50px';
+    popup.appendChild(wrap1);
+
+    const hideAIGen = document.createElement("button");
+    hideAIGen.innerText = `Hide`;
+    hideAIGen.classList.add("btn4");
+    hideAIGen.classList.add("btnLeftBox");
+    hideAIGen.style.margin = "8px 8px 8px 8px";
+    hideAIGen.style.width = "100px";
+    hideAIGen.style.fontWeight = "bold";
+    hideAIGen.style.webkitTextStrokeWidth = "0px";
+    hideAIGen.addEventListener("click", () => {byId("aiPopup").style.display = "none";});
+    wrap1.appendChild(hideAIGen);
+
+    const copy = document.createElement("button");
+    copy.innerText = `Copy`;
+    copy.classList.add("btnLeftBox");
+    copy.classList.add("btn4");
+    copy.style.margin = "8px 8px 8px 8px";
+    copy.style.width = "100px";
+    copy.style.fontWeight = "bold";
+    copy.style.color = "lime";
+    copy.style.webkitTextStrokeWidth = "0px";
+    copy.addEventListener("click", async () => {
+      if(navigator.clipboard) {
+        await navigator.clipboard.writeText(list.value);
+      } else {
+        list.select();
+        document.execCommand("copy");
+      }
+    });
+    wrap1.appendChild(copy);
+
+    const exportJSON = document.createElement("button");
+    exportJSON.innerText = `Export JSON`;
+    exportJSON.classList.add("btnLeftBox");
+    exportJSON.classList.add("btn4");
+    exportJSON.style.margin = "8px 8px 8px 8px";
+    exportJSON.style.width = "100px";
+    exportJSON.style.fontWeight = "bold";
+    exportJSON.style.color = "lime";
+    exportJSON.style.webkitTextStrokeWidth = "0px";
+    exportJSON.addEventListener("click", async () => {
+      this.exportAIGenJson(byId("graphGenJSON").value);
+    });
+    wrap1.appendChild(exportJSON);
+
+    const insertGraph = document.createElement("button");
+    insertGraph.innerText = `Insert graph`;
+    insertGraph.classList.add("btnLeftBox");
+    insertGraph.classList.add("btn4");
+    insertGraph.style.margin = "8px 8px 8px 8px";
+    insertGraph.style.width = "100px";
+    insertGraph.style.fontWeight = "bold";
+    insertGraph.style.color = "lime";
+    insertGraph.style.webkitTextStrokeWidth = "0px";
+    insertGraph.addEventListener("click", async () => {
+      console.log("TEST OVERRIDE", list.value);
+      let test = JSON.parse(list.value)
+      this.mergeGraphBundle(test)
+    });
+    wrap1.appendChild(insertGraph);
+
+    document.body.appendChild(popup);
+    this.makePopupDraggable(popup);
+  }
+
+  exportAIGenJson(graphData, fileName = 'ai-gen-fcv-graph.json') {
+    try {
+      // const jsonString = JSON.stringify(graphData, null, 2);
+      const blob = new Blob([graphData], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log("Graph exported successfully.");
+    } catch(error) {
+      console.error("Failed to export graph:", error);
+    }
   }
 
   _refreshVarsList(container) {
@@ -1563,6 +1794,43 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
+      addObj: (id, x, y) => ({
+        id, x, y, title: "Add OBJ",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "path", type: "string"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "isPhysicsBody", type: "boolean"},
+          {name: "isInstancedObj", type: "boolean"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "complete", type: "action"},
+          {name: "error", type: "action"}
+        ],
+        fields: [
+          {key: "path", value: "res/meshes/blender/cube.obj"},
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "isPhysicsBody", type: false},
+          {key: "isInstancedObj", type: false},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
       setForceOnHit: (id, x, y) => ({
         id, x, y, title: "Set Force On Hit",
         category: "action",
@@ -2383,72 +2651,6 @@ export default class FluxCodexVertex {
         ],
       }),
 
-      setVertexAnim: (id, x, y) => ({
-        id, x, y,
-        title: "Set VertexAnim Intesity",
-        category: "scene",
-        inputs: [
-          {name: "exec", type: "action"},
-          {name: "sceneObjectName", semantic: "string"},
-          {name: "intensity", type: "number"},
-          {name: "enableTwist", type: "boolean"},
-          //  setTwistParams: (speed, amount)
-          {name: "Twist speed", type: "number"},
-          {name: "Twist amount", type: "number"},
-          {name: "enableNoise", type: "boolean"},
-          {name: "Noise Scale", type: "number"},
-          {name: "Noise Strength", type: "number"},
-          {name: "Noise Speed", type: "number"},
-          // setNoiseParams: (scale, strength, speed)
-          {name: "enableOcean", type: "boolean"},
-          {name: "Ocean Scale", type: "number"},
-          {name: "Ocean Height", type: "number"},
-          {name: "Ocean speed", type: "number"},
-          // setOceanParams: (scale, height, speed) => {
-        ],
-        outputs: [{name: "execOut", type: "action"}],
-        fields: [
-          {key: "sceneObjectName", value: "FLOOR"},
-          {key: "enableWave", value: false},
-          {key: "enableWind", value: false},
-          {key: "enablePulse", value: false},
-          {key: "enableTwist", value: false},
-          {key: "enableNoise", value: false},
-          {key: "enableOcean", value: false},
-          {key: "Intensity", value: 1},
-          {key: "Wave Speed", value: "number"},
-          {key: "Wave Amplitude", value: "number"},
-          {key: "Wave Speed", value: "number"},
-          {key: "Wave Frequency", value: "number"},
-          // setWaveParams: (speed, amplitude, frequency) 
-          {key: "enableWind", value: "boolean"},
-          {key: "Wind Speed", value: "number"},
-          {key: "Wind Strength", value: "number"},
-          {key: "Wind HeightInfluence", value: "number"},
-          {key: "Wind Turbulence", value: "number"},
-          // setWindParams: (speed, strength, heightInfluence, turbulence)
-          {key: "enablePulse", value: "boolean"},
-          {key: "Pulse speed", value: "number"},
-          {key: "Pulse amount", value: "number"},
-          {key: "Pulse centerX", value: "number"},
-          {key: "Pulse centerY", value: "number"},
-          // setPulseParams: (speed, amount, centerX = 0, centerY = 0)
-          {key: "enableTwist", value: "boolean"},
-          //  setTwistParams: (speed, amount)
-          {key: "Twist speed", value: "number"},
-          {key: "Twist amount", value: "number"},
-          {key: "enableNoise", value: "boolean"},
-          {key: "Noise Scale", value: "number"},
-          {key: "Noise Strength", value: "number"},
-          {key: "Noise Speed", value: "number"},
-          // setNoiseParams: (scale, strength, speed)
-          {key: "enableOcean", value: "boolean"},
-          {key: "Ocean Scale", value: "number"},
-          {key: "Ocean Height", value: "number"},
-          {key: "Ocean speed", value: "number"},
-        ],
-      }),
-
       setVertexWave: (id, x, y) => ({
         id, x, y,
         title: "Set Vertex Wave",
@@ -2809,6 +3011,13 @@ export default class FluxCodexVertex {
         }
       }
     }
+
+    // TEST
+    // const catalog = generateAICatalog(nodeFactories);
+    // const systemCatalogText = catalogToText(catalog);
+    // console.log(systemCatalogText);
+    // localStorage.setItem('systemCatalogText', systemCatalogText);
+    // TEST
 
     if(spec) {
       const dom = this.createNodeDOM(spec);
@@ -3725,13 +3934,13 @@ export default class FluxCodexVertex {
     }
 
     if(n.category === "event" && typeof n.noselfExec === 'undefined') {
-      console.log('EMPTY EXEC :  ', n.title)
+      console.info(`%c<EMPTY EXEC>: ${n.title}`, LOG_FUNNY_ARCADE);
       this.enqueueOutputs(n, "exec");
       return;
     }
 
     if(n.category === "event" && typeof n.noselfExec != 'undefined') {
-      console.log('PREVENT SELF EXEC')
+      console.log('<PREVENT SELF EXEC>')
       return;
     }
 
@@ -3941,11 +4150,49 @@ export default class FluxCodexVertex {
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          // console.log('!GEN WALL! ONCE!');
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
           // createdField.value = true;
         }
 
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Add OBJ") {
+        const path = this.getValue(nodeId, "path");
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let rot = this.getValue(nodeId, "rot");
+        let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation - nature of stuff
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(isInstancedObj == "true") {isInstancedObj = true} else {isInstancedObj = false;}
+        if(isPhysicsBody == "true") {isPhysicsBody = true} else {isPhysicsBody = false;}
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+        if(!texturePath || !path) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+            object._GRAPH_CACHE = true;
+            n._returnCache = object;
+            this.enqueueOutputs(n, "complete");
+          }).catch((err) => {
+            console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            n._returnCache = null;
+            this.enqueueOutputs(n, "error");
+          })
+          // createdField.value = true;
+        }
+        // sync
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Generator Pyramid") {
@@ -4671,6 +4918,7 @@ export default class FluxCodexVertex {
   }
 
   compileGraph() {
+    // this is save !!!
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -4695,7 +4943,7 @@ export default class FluxCodexVertex {
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
     document.dispatchEvent(new CustomEvent('save-graph', {detail: d}));
-    this.log("Graph saved to LocalStorage and final script");
+    // this.log("Graph saved to LocalStorage and final script");
   }
 
   clearStorage() {
@@ -4888,5 +5136,82 @@ export default class FluxCodexVertex {
       idNode: node.id
     });
     this.curveEditor.toggleEditor(true);
+  }
+
+  mergeGraphBundle(data) {
+    if(!data || !data.nodes) return;
+
+    const nodeOffset = this.nodeCounter;
+    const linkOffset = this.linkCounter;
+    const nodeIdMap = {};
+
+    // 1. Map and Create Nodes
+    Object.values(data.nodes).forEach(node => {
+      const oldId = node.id;
+      // Ensure we create a truly unique ID string
+      const newId = "n" + (this.nodeCounter++);
+      nodeIdMap[oldId] = newId;
+
+      const newNode = {
+        ...node,
+        id: newId,
+        // Offset so they don't overlap existing nodes
+        x: (node.x || 0) + 100,
+        y: (node.y || 0) + 100
+      };
+
+      this.nodes[newId] = newNode;
+
+      // Create DOM element
+      const domEl = this.createNodeDOM(newNode);
+      this.board.appendChild(domEl);
+
+      if((newNode.category === "value" && newNode.title !== "GenRandInt") ||
+        newNode.category === "math" || newNode.title === "Print") {
+        newNode.displayEl = domEl.querySelector(".value-display");
+      }
+    });
+
+    // 2. Map and Create Links
+    if(Array.isArray(data.links)) {
+      data.links.forEach(link => {
+        const newLinkId = "l" + (this.linkCounter++);
+
+        const newLink = {
+          ...link,
+          id: newLinkId,
+          from: {
+            ...link.from,
+            node: nodeIdMap[link.from.node]
+          },
+          to: {
+            ...link.to,
+            node: nodeIdMap[link.to.node]
+          }
+        };
+
+        // Only add link if BOTH nodes were successfully remapped
+        if(this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
+          this.links.push(newLink);
+        }
+      });
+    }
+
+    // 3. Critical UI Refresh Sequence
+    // First, update the DOM positions for the new nodes
+    Object.keys(nodeIdMap).forEach(oldId => {
+      this.updateNodeDOM(nodeIdMap[oldId]);
+    });
+
+    // Second, tell the engine to draw the lines
+    this.updateLinks();
+
+    // Third, if your engine requires runtime binding (like events/logic)
+    if(this.restoreConnectionsRuntime) {
+      this.restoreConnectionsRuntime();
+    }
+
+    this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
+    this.compileGraph(); // Save to LocalStorage
   }
 }

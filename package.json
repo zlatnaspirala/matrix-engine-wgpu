@@ -1,7 +1,7 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.8.8",
-  "description": "1.8.8 [setMaterial, water effect, shaderEditor done, audiosReactive node low, mid, high, beat, curve node and curve editor] 1.8.4[Bloom implemented] [1.8.2]For visual scripting added fetch, getArra and forEach. Networking implemented - based on kurento openvidu server. fix arcball camera,instanced draws added also effect pipeline blend with instancing option.Normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
+  "version": "1.9.0",
+  "description": "1.9.0 au gen graph tool backend ollama free service. 1.8.8 [setMaterial, water effect, shaderEditor done, audiosReactive node low, mid, high, beat, curve node and curve editor] 1.8.4[Bloom implemented] [1.8.2]For visual scripting added fetch, getArra and forEach. Networking implemented - based on kurento openvidu server. fix arcball camera,instanced draws added also effect pipeline blend with instancing option.Normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
@@ -25,12 +25,15 @@
     "esbuild": "^0.27.1",
     "esmify": "^2.1.1",
     "http-server": "^14.1.1",
+    "ollama": "^0.6.3",
+    "typedoc": "^0.28.16",
     "watchify": "^4.0.0",
     "wgpu-matrix": "^2.0.0"
   },
   "dependencies": {
     "bvh-loader": "1.0.10",
-    "gl-matrix": "^3.4.4"
+    "gl-matrix": "^3.4.4",
+    "groq-sdk": "^0.37.0"
   },
   "peerDependencies": {
     "wgpu-matrix": "^2.0.0"
@@ -70,6 +73,13 @@
     "webgpu-obj-loader",
     "webgpu-fps",
     "navigation-mesh",
-    "navMesh"
+    "navMesh",
+    "AI-generator",
+    "AI-Graph-generator",
+    "Natural-language-to-3d-game",
+    "Natural-language-to-game",
+    "Natural-language-to-graph",
+    "ollama-backend",
+    "ollama-tool"
   ]
 }

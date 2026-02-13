@@ -13,8 +13,6 @@ struct Scene {
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> postFXMode: u32;
 
-// ❌ No binding(4) here!
-
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
   @location(1) fragPos : vec3f,
@@ -44,7 +42,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
 
-  // ✅ Correct way to sample video texture
+  // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
   let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 

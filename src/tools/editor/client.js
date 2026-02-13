@@ -7,7 +7,7 @@ export class MEEditorClient {
 
     this.ws.onopen = () => {
       if(typeOfRun == 'created from editor') {
-        console.log("%cCreated from editor. Watch <signal>", LOG_FUNNY_ARCADE);
+        console.log(`%cCreated from editor. Watch <signal> ${name}`, LOG_FUNNY_ARCADE);
         let o = {
           action: "watch",
           name: name
@@ -33,6 +33,11 @@ export class MEEditorClient {
           setTimeout(() => location.assign(data.name + ".html"), 2000);
         } else if(data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
+        } else if(data.listAssetsForGraph) {
+          // later in graphs ... 
+          document.dispatchEvent(new CustomEvent('editorx-update-assets-list', {
+            detail: data
+          }))
         } else if(data.listAssets) {
           document.dispatchEvent(new CustomEvent('la', {
             detail: data
@@ -65,9 +70,8 @@ export class MEEditorClient {
         } else {
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");
-            console.log('Graph saved ✅ test ', data.graphName);
+            // console.log('Graph saved ✅ test ', data.graphName);
             if (typeof data.graphName === "string") document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
-
           }
           if(data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list ✅" + data.shaderGraphs);
@@ -75,6 +79,9 @@ export class MEEditorClient {
           } else if(data.methodLoads && data.ok == true) {
             mb.show("Graph loads ✅", data);
             document.dispatchEvent(new CustomEvent('on-graph-load', {detail: data.graph}));
+          } else if(data.aiGenGraph && data.ok == true) {
+            mb.show("AIGraph Generator response graph part ✅", data.aiGenNodes);
+            document.dispatchEvent(new CustomEvent('on-ai-graph-response', {detail: data.aiGenNodes}));
           }
           else {
             mb.show("From editorX:" + data.ok);
@@ -208,6 +215,16 @@ export class MEEditorClient {
       let o = {
         action: "save-shader-graph",
         graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('aiGenGraphCall', (e) => {
+      console.info('%caiGenGraphCall fluxCodexVertex <signal>', LOG_FUNNY_ARCADE);
+      let o = {
+        action: "aiGenGraphCall",
+        prompt: e.detail
       };
       o = JSON.stringify(o);
       this.ws.send(o);

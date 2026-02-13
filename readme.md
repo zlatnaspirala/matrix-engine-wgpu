@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.8.6 2026
+📅 Version: 1.9.0 2026
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## Description
 
-This project is a work-in-progress WebGPU engine inspired by the original **matrix-engine** for WebGL.
+This project is a `stable` but also `work-in-progress` WebGPU engine inspired by the original **matrix-engine** for WebGL.
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`**
@@ -36,6 +36,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader)
 - ✔️ Dynamic shadow cast (done also for skinned meshes)
 - ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect
+- ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/)
 
 ## Roadmap
 
@@ -47,7 +48,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
 
 
-## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
+## FluxCodexVertex Web Graph Editor 🚀 (since version 1.8.0)
 
 EditorX has **two main parts**:
 - **Frontend** (`./src/tools/editor`)
@@ -70,7 +71,8 @@ The backend is built using **Node.js** 🟢
 - Assets toolbar added (bottom panel)
   - Add **GLB** or **OBJ** files (also mp3) from the asset toolbox by selecting them.
 - Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
-- Integrated Visual Scripting system 🧠 FluxCodexVertex
+- Integrated Visual Scripting system 🧠 FluxCodexVertex for program exec flow.
+- Integrated Visual Scripting system 🧠 FluxCodexShader for shader.
 
 ---
 
@@ -91,6 +93,18 @@ The backend is built using **Node.js** 🟢
   - For final builds, becomes a real **JS object** injected into the app flow.[DONE]
 - Export graph to **JSON**
 - Import graph from **JSON**
+- [Experimental] Generate graphs with ai tools services First working graph done with ollama platform.
+  You need to open account on ollama platform for free quota service. Get API key and add it
+  to the aitool config file (src\tools\editor\backend\config.js) Backend Config.js is on git ignored list.
+  If you need to create it use this format:
+  ```js
+  export const aiConfig = {
+    ollama: '***********',
+    qrok: '************'
+  }
+  ```
+  For now i create graphs with simple tasks.
+  In future it will be able to create whole scenes or simple games.
 
 ---
 
@@ -105,6 +119,8 @@ You must clone or download the engine source from the **GitHub repository**.
 
 ## Instructions 📌
 
+Editor use esbuild compiler but still present browserify, both works perfect.
+
 - Run the editor with:
 
 ```bash
@@ -112,17 +128,23 @@ npm run editorx
 ```
 
 from the engine root directory.
-EditorX is an alias for FluxCodexVertex (needed three words to keep the name unique)
+EditorX is an alias for FluxCodexVertex backend part (needed three words to keep the name unique)
 Run the scene by pressing F6 or by clicking Run in the left panel
 If you delete all objects from the scene, you must refresh the page and add at least one object again
 Before importing a graph, delete all nodes from the FluxCodexVertex graph
-Saving is still based on LocalStorage
-After deleting everything, click Save to store an empty [] array
+After deleting everything, click Save to store an empty [] array.
 All changes in graph must be saved manually/clicking for now 💾 (no autosave for graphs).
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-fetch.png?raw=true" />
 
 ---
+
+
+## Api documentation
+
+Live :
+https://maximumroulette.com/apps/webgpu/api-docs/
+
 
 ## Features
 
@@ -874,8 +896,9 @@ saves.
 ### Usage Note
 
 You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).
-
-## You need just to copy paste this text to about form on your web page or any other type of app.
+- Most important is reference on matrix-engine-wgpu.
+- You need just to copy paste this text to about form on your web page or any other type of app.
+- You can remove almost all licence for assets if you remove current assest from your project
 
 ### Attribution & Credits
 

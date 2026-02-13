@@ -1,3 +1,4 @@
+import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId} from "../../engine/utils";
 import {MEEditorClient} from "./client";
 import EditorProvider from "./editor.provider";
@@ -7,11 +8,11 @@ import EditorHud from "./hud";
 import MethodsManager from "./methodsManager";
 
 export class Editor {
-
   constructor(core, a, projName) {
     this.core = core;
+    this.toolTip = new METoolTip();
     this.methodsManager = new MethodsManager(this.check(a));
-    this.editorHud = new EditorHud(core, this.check(a));
+    this.editorHud = new EditorHud(core, this.check(a), this.toolTip);
     this.editorProvider = new EditorProvider(core, this.check(a));
     if(this.check(a) == 'pre editor') {
       this.client = new MEEditorClient(this.check(a));
@@ -26,7 +27,7 @@ export class Editor {
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
         console.log("MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
-        this.fluxCodexVertex = new FluxCodexVertex('board', 'boardWrap', 'log', this.methodsManager, projName);
+        this.fluxCodexVertex = new FluxCodexVertex('board', 'boardWrap', 'log', this.methodsManager, projName, this.toolTip);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
         }, 2500);
@@ -68,6 +69,7 @@ export class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add OBJ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>

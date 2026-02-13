@@ -633,6 +633,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device, pf);
         }
+        if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
+          this.effects.pointEffect = new PointEffect(device, pf);
+        }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, pf);
         }
@@ -793,21 +796,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   updateModelUniformBuffer = () => {}
 
   createGPUBuffer(dataArray, usage) {
-    if(!dataArray || typeof dataArray.length !== 'number') {
-      throw new Error('Invalid data array passed to createGPUBuffer');
-    }
-
+    if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}
     const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
-    if(!Number.isFinite(size) || size <= 0) {
-      throw new Error(`Invalid buffer size: ${size}`);
-    }
-
-    const buffer = this.device.createBuffer({
-      size,
-      usage,
-      mappedAtCreation: true,
-    });
-
+    if(!Number.isFinite(size) || size <= 0) {throw new Error(`Invalid buffer size: ${size}`)}
+    const buffer = this.device.createBuffer({size, usage, mappedAtCreation: true});
     const writeArray = dataArray.constructor === Float32Array
       ? new Float32Array(buffer.getMappedRange())
       : new Uint16Array(buffer.getMappedRange());

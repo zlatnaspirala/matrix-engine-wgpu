@@ -12,7 +12,10 @@ import {WebSocketServer} from "ws";
 import {DEFAULT_GRAPH_JS} from "./graph.js";
 import {DEFAUL_METHODS} from "./methods.js";
 import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
-import {ME_AI_TOOL} from "./ai/me-ollama.js";
+import {AiGroq} from "./groq/groq.js";
+import {AiOllama} from "./ollama/ollama.js";
+import {AvailableResources} from "./ollama/get-available-resources.js";
+import {SYSTEM_PROMPT} from "./ollama/test-prompt1.js";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
@@ -36,12 +39,12 @@ console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCodexVertex Graph and FragmentShader Graph");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
-console.log("\x1b[92m%s\x1b[0m", "- Experimental ME_AI_TOOL Ollama -");
+console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL Ollama            -");
+// console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL groq              -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
-let AI_TOOL = new ME_AI_TOOL();
-// AI_TOOL.test();
-
+let matrixOllama = new AiOllama();
+let matrixGroq = new AiGroq();
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
@@ -140,7 +143,9 @@ wss.on("connection", ws => {
   ws.on("message", async (msg) => {
     try {
       msg = JSON.parse(msg);
-      if(msg.action === "lp") {
+      if(msg.action === "aiGenGraphCall") {
+        aiGenGraphCall(msg, ws);
+      } else if(msg.action === "lp") {
         const folder = path.join(PROJECTS_DIR, "");
         const items = await fs.readdir(folder, {withFileTypes: true});
         ws.send(JSON.stringify({
@@ -427,11 +432,6 @@ function createHTMLProjectDocument(name) {
 }
 
 async function navFolder(data, ws) {
-  if(data.rootFolder) {
-    // console.log('data.rootFolder ', data.rootFolder);
-  } else {
-    console.log('data.rootFolder no defined');
-  }
   const folder = path.join(data.rootFolder, data.name);
   const items = await fs.readdir(folder, {withFileTypes: true});
   ws.send(JSON.stringify({
@@ -861,4 +861,67 @@ function removeSceneBlock(text, type, objName) {
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function aiGenGraphCall(msg, ws) {
+  internal_navFolder({rootFolder: PUBLIC_RES, name: "textures"}, ws).then((res) => {
+    let res_list_tex = res[0];
+    let res_list_obj = res[1];
+    const listOfTexs = res_list_tex.map(t => t.relativePath).join(", ");
+    const listOfObjs = res_list_obj.map(t => t.relativePath).join(", ");
+    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(SYSTEM_PROMPT, listOfTexs, listOfObjs);
+    matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
+      // console.log('result from ai tool service....>>>>', res_list)
+      ws.send(JSON.stringify({
+        ok: true,
+        aiGenGraph: 'OK',
+        aiGenNodes: r
+      }));
+    })
+  });
+}
+
+async function internal_navFolder(data, ws) {
+  return new Promise(async (resolve, reject) => {
+    if(!data.rootFolder) {reject('no root folder'); return;}
+    const folderTex = path.join(data.rootFolder, data.name);
+    let listOfPngs = await getAllFilenamesFrom(folderTex, ".png");
+    let listOfJpgs = await getAllFilenamesFrom(folderTex, ".jpg");
+    let listOfTexures = [...listOfJpgs, ...listOfPngs];
+    // console.log('result RES FILENAMES....>>>>', listOfPngs);
+    const folderObjs = path.join(data.rootFolder, "meshes");
+    let listOfObjs = await getAllFilenamesFrom(folderObjs, ".obj")
+    ws.send(JSON.stringify({
+      // IMPLEMENT LATER ! on front can be used for texture drop down in fcv graph.
+      listAssetsForGraph: "list-assets",
+      ok: true,
+      rootFolder: path.join(data.rootFolder, data.name),
+      resources: {
+        objs: listOfObjs.map(d => ({name: d.name, relativePath: d.relativePath})),
+        textures: listOfPngs.map(d => ({name: d.name, relativePath: d.relativePath}))
+      }
+    }));
+    resolve([listOfTexures, listOfObjs]);
+  })
+}
+
+export async function getAllFilenamesFrom(dirPath, ext) {
+  let results = [];
+  const list = await fs.readdir(dirPath, { withFileTypes: true });
+  for (const dirent of list) {
+    const fullPath = path.join(dirPath, dirent.name);
+    if (dirent.isDirectory()) {
+      const recursiveResults = await getAllFilenamesFrom(fullPath, ext);
+      results = results.concat(recursiveResults);
+    } else {
+      if (path.extname(dirent.name).toLowerCase() === ext.toLowerCase()) {
+        results.push({
+          filename: dirent.name,
+          fullpath: fullPath,
+          relativePath: fullPath.split('public' + path.sep).pop().replace(/\\/g, '/')
+        });
+      }
+    }
+  }
+  return results;
 }

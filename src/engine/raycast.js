@@ -107,8 +107,10 @@ export function computeWorldVertsAndAABB(object) {
 
 // 🧠 Dispatch rich event
 function dispatchRayHitEvent(canvas, data) {
-  if (data.eventName == 'click') {
+  if(data.eventName == 'click') {
     canvas.dispatchEvent(new CustomEvent("ray.hit.event", {detail: data}));
+  } else if(data.eventName == 'mousedown') {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", {detail: data}));
   } else {
     canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", {detail: data}));
   }
@@ -159,8 +161,6 @@ export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
     }
   });
 }
-
-
 
 export function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   const canvas = document.getElementById(canvasId);

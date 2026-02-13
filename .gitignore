@@ -1,4 +1,5 @@
 node_modules/
+src/tools/editor/ai-tools/config.js
 public/res/meshes/glb/**.blend
 public/res/meshes/glb/**.blend1
 public/res/meshes/glb/maria_arhive/*.blend
@@ -9,3 +10,8 @@ public/res/meshes/glb/warrok.blend11
 public/res/meshes/glb/DEVELOP-COPY.blend11
 public/res/meshes/glb/DEVELOP-COPY.blend11
 public/res/meshes/nav-mesh/withtree_.blend
+src/tools/editor/ai-tools/config.js
+src/tools/editor/ai-generators/ollama/config.js
+src/tools/editor/ai-generators/bridge2/config.js
+src/tools/editor/ai-generators/config.js
+src/tools/editor/backend/config.js
