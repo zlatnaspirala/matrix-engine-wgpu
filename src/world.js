@@ -796,9 +796,7 @@ export default class MatrixEngineWGPU {
       // volumetric
 
       if(this.volumetricPass.enabled === true) {
-
         const cam = this.cameras[this.mainCameraParams.type];
-
         // You need invViewProj — compute it from your existing matrices:
         // cam.invViewProjectionMatrix should be mat4.invert(viewProjMatrix)
         // If you don't store it yet, compute once per frame:
@@ -1035,7 +1033,6 @@ export default class MatrixEngineWGPU {
 
   activateVolumetricEffect = () => {
     if(this.volumetricPass.enabled != true) {
-
       this.volumetricPass = new VolumetricPass(
         this.canvas.width,
         this.canvas.height,
@@ -1048,7 +1045,6 @@ export default class MatrixEngineWGPU {
           lightColor: [1.0, 0.88, 0.65],  // warm sunlight
         }
       ).init();
-
       this.volumetricPass.enabled = true;
     }
   }
