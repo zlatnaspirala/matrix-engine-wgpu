@@ -27630,6 +27630,426 @@ var MatrixMusicAsset = class {
   }
 };
 
+// ../../../engine/postprocessing/volumetric.js
+var VolumetricPass = class {
+  constructor(width, height, device2, options2 = {}) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.volumetricTex = this._createTexture(width, height);
+    this.sampler = device2.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+    this.depthSampler = device2.createSampler({
+      magFilter: "nearest",
+      minFilter: "nearest",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+    this.params = {
+      density: options2.density ?? 0.03,
+      steps: options2.steps ?? 32,
+      scatterStrength: options2.scatterStrength ?? 1,
+      heightFalloff: options2.heightFalloff ?? 0.1
+    };
+    this.lightParams = {
+      color: options2.lightColor ?? [1, 0.85, 0.6],
+      direction: [0, -1, 0.5]
+      // update each frame via setLightDirection
+    };
+    this.paramsBuffer = device2.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.invViewProjBuffer = device2.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.lightViewProjBuffer = device2.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.lightDirBuffer = device2.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.lightColorBuffer = device2.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateParams();
+    this._updateLightColor();
+    this.marchPipeline = this._createMarchPipeline();
+    this.compositePipeline = this._createCompositePipeline();
+  }
+  // ─── Public setters ────────────────────────────────────────────────────────
+  setDensity = (v) => {
+    this.params.density = v;
+    this._updateParams();
+  };
+  setSteps = (v) => {
+    this.params.steps = v;
+    this._updateParams();
+  };
+  setScatterStrength = (v) => {
+    this.params.scatterStrength = v;
+    this._updateParams();
+  };
+  setHeightFalloff = (v) => {
+    this.params.heightFalloff = v;
+    this._updateParams();
+  };
+  setLightColor = (r2, g, b) => {
+    this.lightParams.color = [r2, g, b];
+    this._updateLightColor();
+  };
+  setLightDirection = (x2, y2, z) => {
+    this.lightParams.direction = [x2, y2, z];
+    this.device.queue.writeBuffer(
+      this.lightDirBuffer,
+      0,
+      new Float32Array([x2, y2, z, 0])
+    );
+  };
+  // ─── Internal updates ──────────────────────────────────────────────────────
+  _updateParams() {
+    this.device.queue.writeBuffer(
+      this.paramsBuffer,
+      0,
+      new Float32Array([
+        this.params.density,
+        this.params.steps,
+        this.params.scatterStrength,
+        this.params.heightFalloff
+      ])
+    );
+  }
+  _updateLightColor() {
+    this.device.queue.writeBuffer(
+      this.lightColorBuffer,
+      0,
+      new Float32Array([...this.lightParams.color, 0])
+    );
+  }
+  // ─── Texture + Pipeline helpers ────────────────────────────────────────────
+  _createTexture(w, h) {
+    return this.device.createTexture({
+      size: [w, h],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _createMarchPipeline() {
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        // 0: scene depth
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
+        // 1: shadow map array
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth", viewDimension: "2d-array" } },
+        // 2: depth sampler
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "non-filtering" } },
+        // 3: invViewProj
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        // 4: lightViewProj
+        { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        // 5: lightDir
+        { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        // 6: lightColor
+        { binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        // 7: params
+        { binding: 7, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
+    return this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+      vertex: {
+        module: this.device.createShaderModule({ code: volumetricFullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: volumetricMarchWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _createCompositePipeline() {
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        // 0: scene color
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        // 1: volumetric result
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        // 2: sampler
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        // 3: params (for scatterStrength)
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
+    return this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+      vertex: {
+        module: this.device.createShaderModule({ code: volumetricFullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: volumetricCompositeWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _marchBindGroup(depthView, shadowArrayView) {
+    return this.device.createBindGroup({
+      layout: this.marchPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: depthView },
+        { binding: 1, resource: shadowArrayView },
+        { binding: 2, resource: this.depthSampler },
+        { binding: 3, resource: { buffer: this.invViewProjBuffer } },
+        { binding: 4, resource: { buffer: this.lightViewProjBuffer } },
+        { binding: 5, resource: { buffer: this.lightDirBuffer } },
+        { binding: 6, resource: { buffer: this.lightColorBuffer } },
+        { binding: 7, resource: { buffer: this.paramsBuffer } }
+      ]
+    });
+  }
+  _compositeBindGroup(sceneView) {
+    return this.device.createBindGroup({
+      layout: this.compositePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: sceneView },
+        { binding: 1, resource: this.volumetricTex.createView() },
+        { binding: 2, resource: this.sampler },
+        { binding: 3, resource: { buffer: this.paramsBuffer } }
+      ]
+    });
+  }
+  _beginFullscreenPass(encoder, targetView) {
+    return encoder.beginRenderPass({
+      colorAttachments: [{
+        view: targetView,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    });
+  }
+  // ─── Main render — call after transPass.end(), before bloom ───────────────
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTextureView} sceneView       — your sceneTextureView
+   * @param {GPUTextureView} depthView       — your mainDepthView
+   * @param {GPUTextureView} shadowArrayView — your shadowArrayView
+   * @param {object} camera  — needs .invViewProjectionMatrix (Float32Array 16)
+   * @param {object} light   — needs .viewProjectionMatrix (Float32Array 16)
+   *                           and .direction [x,y,z]
+   */
+  render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
+    this.device.queue.writeBuffer(
+      this.invViewProjBuffer,
+      0,
+      camera.invViewProjectionMatrix
+    );
+    this.device.queue.writeBuffer(
+      this.lightViewProjBuffer,
+      0,
+      light.viewProjectionMatrix
+    );
+    this.device.queue.writeBuffer(
+      this.lightDirBuffer,
+      0,
+      new Float32Array([...light.direction, 0])
+    );
+    {
+      const pass2 = this._beginFullscreenPass(encoder, this.volumetricTex.createView());
+      pass2.setPipeline(this.marchPipeline);
+      pass2.setBindGroup(0, this._marchBindGroup(depthView, shadowArrayView));
+      pass2.draw(6);
+      pass2.end();
+    }
+    {
+      const pass2 = this._beginFullscreenPass(encoder, this.compositeOutputTex.createView());
+      pass2.setPipeline(this.compositePipeline);
+      pass2.setBindGroup(0, this._compositeBindGroup(sceneView));
+      pass2.draw(6);
+      pass2.end();
+    }
+  }
+  /**
+   * Call once after constructor — creates the composite output texture.
+   * Separated so you can call it on resize too.
+   */
+  init() {
+    this.compositeOutputTex = this._createTexture(this.width, this.height);
+    return this;
+  }
+  /**
+   * Call on canvas resize
+   */
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.volumetricTex = this._createTexture(width, height);
+    this.compositeOutputTex = this._createTexture(width, height);
+  }
+};
+function volumetricFullscreenQuadWGSL() {
+  return (
+    /* wgsl */
+    `
+    @vertex
+    fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0,  1.0),
+        vec2(-1.0,  1.0), vec2(1.0, -1.0), vec2(1.0,  1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `
+  );
+}
+function volumetricMarchWGSL() {
+  return (
+    /* wgsl */
+    `
+
+  // \u2500\u2500 Bindings \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  @group(0) @binding(0) var depthTex:      texture_depth_2d;
+  @group(0) @binding(1) var shadowTex:     texture_depth_2d_array;
+  @group(0) @binding(2) var depthSampler:  sampler_comparison;
+  @group(0) @binding(3) var<uniform> invViewProj:   mat4x4<f32>;
+  @group(0) @binding(4) var<uniform> lightViewProj: mat4x4<f32>;
+  @group(0) @binding(5) var<uniform> lightDir:      vec4<f32>;
+  @group(0) @binding(6) var<uniform> lightColor:    vec4<f32>;
+
+  struct Params {
+    density:        f32,
+    steps:          f32,  // float so no layout issues
+    scatterStrength: f32,
+    heightFalloff:  f32,
+  };
+  @group(0) @binding(7) var<uniform> params: Params;
+
+  // \u2500\u2500 Reconstruct world position from NDC depth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  fn worldFromDepth(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+    let ndc = vec4(uv * 2.0 - 1.0, depth, 1.0);
+    // Flip Y \u2014 WebGPU NDC Y is inverted vs GL
+    let ndc_wgpu = vec4(ndc.x, -ndc.y, ndc.z, ndc.w);
+    let worldH = invViewProj * ndc_wgpu;
+    return worldH.xyz / worldH.w;
+  }
+
+  // \u2500\u2500 Shadow test against light's shadow map (layer 0 = first light) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  fn inShadow(worldPos: vec3<f32>) -> f32 {
+    let lightSpace = lightViewProj * vec4(worldPos, 1.0);
+    var proj = lightSpace.xyz / lightSpace.w;
+    // NDC \u2192 UV
+    let uv = proj.xy * 0.5 + 0.5;
+    // clamp to valid range
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+      return 1.0; // outside shadow map = lit
+    }
+    // WebGPU shadow comparison: returns 1.0 if NOT in shadow
+    return textureSampleCompare(shadowTex, depthSampler, uv, 0, proj.z - 0.002);
+  }
+
+  // \u2500\u2500 Height-based fog density \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  fn fogDensity(worldPos: vec3<f32>) -> f32 {
+    let heightFog = exp(-max(worldPos.y, 0.0) * params.heightFalloff);
+    return params.density * heightFog;
+  }
+
+  // \u2500\u2500 Main fragment \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  @fragment
+  fn main(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
+
+    let texSize  = vec2<f32>(textureDimensions(depthTex));
+    let uv       = fragCoord.xy / texSize;
+
+    // Scene depth at this pixel \u2192 gives us ray end point
+    let sceneDepth = textureLoad(depthTex, vec2<i32>(fragCoord.xy), 0);
+
+    // Camera origin (NDC depth 0 = near plane)
+    let rayOrigin = worldFromDepth(uv, 0.0);
+    let rayTarget = worldFromDepth(uv, sceneDepth);
+    let rayVec    = rayTarget - rayOrigin;
+    let rayLen    = length(rayVec);
+    let rayDir    = normalize(rayVec);
+
+    let numSteps  = max(i32(params.steps), 8);
+    let stepSize  = rayLen / f32(numSteps);
+
+    var accumulated  = vec3<f32>(0.0);
+    var transmittance = 1.0;
+
+    for (var i = 0; i < numSteps; i++) {
+      let t   = (f32(i) + 0.5) * stepSize;
+      let pos = rayOrigin + rayDir * t;
+
+      let density = fogDensity(pos) * stepSize;
+      if (density < 0.0001) { continue; }
+
+      // Beer\u2013Lambert extinction for this step
+      let extinction = exp(-density);
+      let lit = inShadow(pos);
+
+      // In-scattering contribution
+      let scatter = transmittance * (1.0 - extinction) * lit * params.scatterStrength;
+      accumulated += scatter * lightColor.rgb;
+
+      transmittance *= extinction;
+      if (transmittance < 0.01) { break; }
+    }
+
+    // alpha = how much the fog blocks the scene
+    return vec4<f32>(accumulated, 1.0 - transmittance);
+  }
+  `
+  );
+}
+function volumetricCompositeWGSL() {
+  return (
+    /* wgsl */
+    `
+
+  struct Params {
+    density:        f32,
+    steps:          f32,
+    scatterStrength: f32,
+    heightFalloff:  f32,
+  };
+
+  @group(0) @binding(0) var sceneTex:      texture_2d<f32>;
+  @group(0) @binding(1) var volumetricTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp:          sampler;
+  @group(0) @binding(3) var<uniform> params: Params;
+
+  @fragment
+  fn main(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(sceneTex));
+    let uv   = fragCoord.xy / size;
+
+    let scene = textureSample(sceneTex, samp, uv);
+    let vol   = textureSample(volumetricTex, samp, uv);
+
+    // vol.rgb = scattered light color
+    // vol.a   = fog opacity (how much it blocks scene)
+    // Result: scene dimmed by fog + scattered light added
+    let color = scene.rgb * (1.0 - vol.a) + vol.rgb;
+
+    return vec4<f32>(color, scene.a);
+  }
+  `
+  );
+}
+
 // ../../../world.js
 var MatrixEngineWGPU = class {
   // save class reference
@@ -27865,6 +28285,9 @@ var MatrixEngineWGPU = class {
       },
       setThreshold: (v) => {
       }
+    };
+    this.volumetrixPass = {
+      enabled: false
     };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -28346,9 +28769,33 @@ var MatrixEngineWGPU = class {
         });
       }
       transPass.end();
+      if (this.volumetricPass.enabled === true) {
+        const cam = this.cameras[this.mainCameraParams.type];
+        const invViewProj = mat4Impl.invert(
+          mat4Impl.multiply(cam.projectionMatrix, cam.view, mat4Impl.identity())
+        );
+        const light = this.lightContainer[0];
+        this.volumetricPass.render(
+          commandEncoder,
+          this.sceneTextureView,
+          // ← your existing scene color
+          this.mainDepthView,
+          // ← your existing depth
+          this.shadowArrayView,
+          // ← your existing shadow array
+          { invViewProjectionMatrix: invViewProj },
+          {
+            viewProjectionMatrix: light.viewProjectionMatrix,
+            // Float32Array 16
+            direction: light.direction
+            // [x, y, z]
+          }
+        );
+      }
       const canvasView = this.context.getCurrentTexture().createView();
       if (this.bloomPass.enabled == true) {
-        this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
+        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTex.createView() : this.sceneTextureView;
+        this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
       }
       pass2 = commandEncoder.beginRenderPass({
         colorAttachments: [{
@@ -28594,6 +29041,24 @@ var MatrixEngineWGPU = class {
     if (this.bloomPass.enabled != true) {
       this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
       this.bloomPass.enabled = true;
+    }
+  };
+  activateVolumetricEffect = () => {
+    if (this.volumetricPass.enabled != true) {
+      this.volumetricPass = new VolumetricPass(
+        this.canvas.width,
+        this.canvas.height,
+        this.device,
+        {
+          density: 0.03,
+          steps: 32,
+          scatterStrength: 1.2,
+          heightFalloff: 0.08,
+          lightColor: [1, 0.88, 0.65]
+          // warm sunlight
+        }
+      ).init();
+      this.volumetricPass.enabled = true;
     }
   };
 };
