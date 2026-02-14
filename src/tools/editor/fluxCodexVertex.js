@@ -4449,19 +4449,10 @@ export default class FluxCodexVertex {
       let specularPower = this.getValue(nodeId, "specularPower");
       let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(deepColor && sceneObjectName) {
-        console.log('deepColor', deepColor)
         deepColor = JSON.parse(deepColor);
         shallowColor = JSON.parse(shallowColor);
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.updateWaterParams(
-          deepColor,
-          shallowColor,
-          waveSpeed,
-          waveScale,
-          waveHeight,
-          fresnelPower,
-          specularPower
-        );
+        obj.updateWaterParams(deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower);
       }
       this.enqueueOutputs(n, "execOut");
       return;
