@@ -1,6 +1,9 @@
 ## CHANGES [Started from feb 2026]
 
 
+[1.9.1]
+ - Prevent double call mediadevice for video tex vs run/stop graph
+
 
 [1.9.0]
 

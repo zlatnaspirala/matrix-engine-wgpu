@@ -3,6 +3,7 @@ import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 import graph from "./graph.js";
 import {shaderGraphsProdc} from "./shader-graphs.js"
+import {addRaycastsListener} from "../../src/engine/raycast.js";
 
 let app = new MatrixEngineWGPU(
   {
@@ -27,6 +28,8 @@ let app = new MatrixEngineWGPU(
     });
 
     addEventListener('AmmoReady', async () => {
+
+      addRaycastsListener("canvas1", "mousedown");
       // [light]
       app.addLight();
       // ME START Cube_0 addCube

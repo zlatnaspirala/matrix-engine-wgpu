@@ -17,26 +17,7 @@ let app = new MatrixEngineWGPU({
    (app) => {
     console.log("AUTOGEN NORMAL MAIN !");
   addEventListener('AmmoReady', async () => {
-
-    console.log("AUTOGEN NORMAL MAIN !");
-    // setTimeout(() => {
-    //   app.cameras.WASD.yaw = -0.03;
-    //   app.cameras.WASD.pitch = -0.49;
-    //   app.cameras.WASD.position[2] = 0;
-    //   app.cameras.WASD.position[1] = 23;
-    // }, 2000);
-
-    // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
-
-    // // // Monster1
-    // var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'standard', useTextureFromGlb: true},
-    //   scale: [20, 20, 20],
-    //   position: {x: 0, y: -4, z: -70},
-    //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-    // }, null, glbFile01);
+    console.log("AUTOGEN START UP");
   })
 })
 window.app = app;
