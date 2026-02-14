@@ -645,7 +645,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         if(typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
-
         if(typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
           this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }

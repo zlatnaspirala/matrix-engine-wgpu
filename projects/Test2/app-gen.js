@@ -108,7 +108,7 @@ let app = new MatrixEngineWGPU(
       // ME START monster
       var glbFile01 = await fetch('res/meshes/glb/monster.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
       texturesPaths = ['./res/meshes/blender/cube.png'];
-      app.addGlbObj({
+      app.addGlbObjInctance({
         position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: [texturesPaths],
         scale: [2, 2, 2],
@@ -121,7 +121,7 @@ let app = new MatrixEngineWGPU(
           enabled: true,
           // pointEffect: true,
           // destructionEffect: true
-          flameEmitter: true
+          flameEffect: true
         },
       }, null, glbFile01);
       // ME END monster
@@ -133,59 +133,59 @@ let app = new MatrixEngineWGPU(
       }, 800);
       // ME END monster-MutantMesh-0 useScaleno info
 
-      // ME START cube1 updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('cube1').position.SetY(3.8000000000000544);
-      }, 800);
-      // ME END cube1 updatePosy
-
-      // ME START cube1 updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('cube1').position.SetX(0.12000000000000396);
-      }, 800);
-      // ME END cube1 updatePosx
-
-      // ME START cube1 updatePosz
-      setTimeout(() => {
-        app.getSceneObjectByName('cube1').position.SetZ(-20.119742224156198);
-      }, 800);
-      // ME END cube1 updatePosz
-
       // ME START FLOOR updatePosz
       setTimeout(() => {
         app.getSceneObjectByName('FLOOR').position.SetZ(-18.454014167181374);
       }, 800);
       // ME END FLOOR updatePosz
 
-      // ME START FLOOR updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').position.SetX(0.3700000000000121);
-      }, 800);
-      // ME END FLOOR updatePosx
-
-         // ME START monster-MutantMesh-0 updatePosz
+      // ME START monster-MutantMesh-0 updatePosz
  setTimeout(() => {
   app.getSceneObjectByName('monster-MutantMesh-0').position.SetZ(-12.069985717161437);
  }, 800);
  // ME END monster-MutantMesh-0 updatePosz
- 
-  // ME START monster-MutantMesh-0 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').position.SetY(2.0800000000000063);
- }, 800);
- // ME END monster-MutantMesh-0 updatePosy
- 
-          // ME START monster-MutantMesh-0 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').position.SetX(0);
- }, 800);
- // ME END monster-MutantMesh-0 updatePosx
  
   // ME START FLOOR updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetY(-4.849999999999987);
  }, 800);
  // ME END FLOOR updatePosy
+ 
+  // ME START cube1 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetZ(-20.119742224156198);
+ }, 800);
+ // ME END cube1 updatePosz
+ 
+   // ME START cube1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetX(0.12000000000000396);
+ }, 800);
+ // ME END cube1 updatePosx
+ 
+  // ME START monster-MutantMesh-0 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').position.SetX(0.6900000000000002);
+ }, 800);
+ // ME END monster-MutantMesh-0 updatePosx
+ 
+    // ME START monster-MutantMesh-0 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').position.SetY(-2.919999999999992);
+ }, 800);
+ // ME END monster-MutantMesh-0 updatePosy
+ 
+  // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(0.6600000000000117);
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+   // ME START cube1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetY(3.870000000000072);
+ }, 800);
+ // ME END cube1 updatePosy
  
  // [MAIN_REPLACE2]
     })

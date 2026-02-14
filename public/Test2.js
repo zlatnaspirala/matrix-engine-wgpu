@@ -7204,11 +7204,16 @@ struct Camera {
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// Matches JS layout: mat4 (64 bytes) + time vec4 (16 bytes) + intensity vec4 (16 bytes)
+// Uniform buffer layout (112 bytes, all vec4-aligned):
+//   offset   0 : model        mat4x4<f32>   (64 bytes)
+//   offset  64 : timeSpeed    vec4<f32>     (.x = time, .y = speed)
+//   offset  80 : params       vec4<f32>     (.x = intensity, .y = turbulence, .z = stretch)
+//   offset  96 : tint         vec4<f32>     (.xyz = rgb tint colour, .w = tint strength 0..1)
 struct ModelData {
   model     : mat4x4<f32>,
-  time      : vec4<f32>,
-  intensity : vec4<f32>,
+  timeSpeed : vec4<f32>,
+  params    : vec4<f32>,
+  tint      : vec4<f32>,
 };
 @group(0) @binding(1) var<uniform> modelData : ModelData;
 
@@ -7218,26 +7223,42 @@ struct VSIn {
 };
 
 struct VSOut {
-  @builtin(position) position : vec4<f32>,
-  @location(0) uv        : vec2<f32>,
-  @location(1) time      : f32,
-  @location(2) intensity : f32,
+  @builtin(position) position  : vec4<f32>,
+  @location(0)       uv        : vec2<f32>,
+  // Pack all scalar params into two interpolants to stay within limits
+  @location(1)       p0        : vec4<f32>, // .x=time .y=speed .z=intensity .w=turbulence
+  @location(2)       p1        : vec4<f32>, // .x=stretch .y=tintStrength
+  @location(3)       tintColor : vec3<f32>,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
   var output : VSOut;
 
-  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
-  output.position = camera.viewProj * worldPos;
+  let worldPos     = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position  = camera.viewProj * worldPos;
   output.uv        = input.uv;
-  output.time      = modelData.time.x;
-  output.intensity = modelData.intensity.x;
+
+  output.p0 = vec4<f32>(
+    modelData.timeSpeed.x,  // time
+    modelData.timeSpeed.y,  // speed
+    modelData.params.x,     // intensity
+    modelData.params.y      // turbulence
+  );
+  output.p1 = vec4<f32>(
+    modelData.params.z,     // stretch
+    modelData.tint.w,       // tintStrength
+    0.0, 0.0
+  );
+  output.tintColor = modelData.tint.xyz;
+
   return output;
 }
 
-// --- Simple procedural noise ---
-fn hash(n : vec2<f32>) -> f32 {
+// ---------------------------------------------------------------------------
+// Noise helpers
+// ---------------------------------------------------------------------------
+fn hash2(n : vec2<f32>) -> f32 {
   return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
@@ -7246,43 +7267,83 @@ fn noise(p : vec2<f32>) -> f32 {
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   return mix(
-    mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
-    mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+    mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+    mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
     u.y
   );
 }
 
+// Two-octave fBm for richer turbulence shape
+fn fbm(p : vec2<f32>) -> f32 {
+  var v   = 0.0;
+  var a   = 0.5;
+  var pos = p;
+  for (var i = 0; i < 2; i++) {
+    v   += a * noise(pos);
+    pos  = pos * 2.1 + vec2<f32>(1.7, 9.2);
+    a   *= 0.5;
+  }
+  return v;
+}
+
+// ---------------------------------------------------------------------------
+// Fragment
+// ---------------------------------------------------------------------------
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+  // Unpack
+  let time       = input.p0.x;
+  let speed      = input.p0.y;
+  let intensity  = input.p0.z;
+  let turbulence = input.p0.w;   // 0 = calm, 1 = chaotic
+  let stretch    = input.p1.x;   // 1 = normal, >1 = tall/thin, <1 = short/wide
+  let tintStr    = input.p1.y;   // 0 = natural fire colours, 1 = full tint
+  let tintColor  = input.tintColor;
+
+  let t = time * speed * 2.0;
+
+  // --- UV: apply stretch then turbulence warp ---
   var uv = input.uv;
-  let t = input.time * 2.0;
+  // Compress v-range so flame occupies more of the quad when stretch > 1
+  uv.y = uv.y / max(stretch, 0.01);
 
-  // Animate upward and sideways
-  uv.y += t * 0.4;
-  uv.x += sin(t * 0.7) * 0.1;
+  let warpAmt = turbulence * 0.18;
+  let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
+  let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
+  var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
 
-  var n = noise(uv * 6.0 + vec2<f32>(0.0, t * 0.8));
-  n = pow(n, 3.0); // sharpen flame texture
+  // Upward scroll + sideways sway scaled by turbulence
+  warpedUV.y += t * 0.4;
+  warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
 
-  let intensity = input.intensity;
+  // --- Flame density ---
+  var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
+  // Higher turbulence softens the exponent \u2192 wilder, fluffier edges
+  n = pow(n, 3.0 - turbulence * 1.2);
 
-  // Flame palette: deep red core -> orange -> yellow tip
-  let hotColor  = vec3<f32>(1.0, 0.9, 0.3);  // yellow-white
-  let midColor  = vec3<f32>(1.0, 0.4, 0.05); // orange
-  let coolColor = vec3<f32>(0.6, 0.05, 0.0); // deep red
+  // --- Base flame palette (dark core \u2192 orange \u2192 hot yellow) ---
+  let hotColor  = vec3<f32>(1.0,  0.92, 0.35);
+  let midColor  = vec3<f32>(1.0,  0.38, 0.04);
+  let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
 
-  let t1 = smoothstep(0.0, 0.5, n);
-  let t2 = smoothstep(0.5, 1.0, n);
-  let baseColor = mix(mix(coolColor, midColor, t1), hotColor, t2);
+  let g1 = smoothstep(0.0, 0.5, n);
+  let g2 = smoothstep(0.5, 1.0, n);
+  var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
 
-  var finalColor = baseColor * n * intensity;
+  // --- Tint: blend base palette toward tintColor in the bright parts only ---
+  // tintStr = 0 \u2192 pure natural fire;  tintStr = 1 \u2192 fully tinted flame
+  let tintMask  = smoothstep(0.0, 0.5, n);
+  baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
 
-  // Fade out toward top (uv.y == 1) and edges (uv.x near 0 or 1)
-  let edgeMask = smoothstep(0.0, 0.15, input.uv.x)
-               * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
-  let topFade  = 1.0 - smoothstep(0.3, 1.0, input.uv.y);
+  let finalColor = baseColor * n * intensity;
 
-  let alpha = smoothstep(0.1, 0.7, n) * edgeMask * topFade;
+  // --- Alpha mask: soft edges + top fade that respects stretch ---
+  let edgeMask  = smoothstep(0.0, 0.15, input.uv.x)
+                * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
+  let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
+  let topFade   = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
+
+  let alpha = smoothstep(0.08, 0.65, n) * edgeMask * topFade;
 
   // Premultiplied alpha for additive blending
   return vec4<f32>(finalColor * alpha, alpha);
@@ -7291,16 +7352,133 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 );
 
 // ../../../engine/effects/flame.js
-var FlameEffect = class {
-  constructor(device2, format, colorFormat) {
+var FlamePresets = {
+  // Natural campfire / torch
+  natural: {
+    intensity: 12,
+    speed: 1,
+    turbulence: 0.5,
+    stretch: 1,
+    tint: [1, 1, 1],
+    // neutral → pure fire palette
+    tintStrength: 0
+  },
+  // Tall torch / pillar of fire
+  torch: {
+    intensity: 14,
+    speed: 1.2,
+    turbulence: 0.35,
+    stretch: 2,
+    // double height
+    tint: [1, 1, 1],
+    tintStrength: 0
+  },
+  // Wide, low bonfire
+  bonfire: {
+    intensity: 10,
+    speed: 0.8,
+    turbulence: 0.9,
+    stretch: 0.5,
+    // short & wide
+    tint: [1, 1, 1],
+    tintStrength: 0
+  },
+  // Magical blue flame
+  magic: {
+    intensity: 8,
+    speed: 1.4,
+    turbulence: 0.6,
+    stretch: 1.3,
+    tint: [0.1, 0.4, 1],
+    // blue
+    tintStrength: 0.85
+  },
+  // Hellfire — dark purple/red
+  hell: {
+    intensity: 16,
+    speed: 0.9,
+    turbulence: 0.8,
+    stretch: 1.6,
+    tint: [0.6, 0, 0.8],
+    // purple
+    tintStrength: 0.7
+  },
+  // Poison green
+  poison: {
+    intensity: 9,
+    speed: 1.1,
+    turbulence: 0.7,
+    stretch: 1.1,
+    tint: [0.1, 1, 0.15],
+    // green
+    tintStrength: 0.9
+  }
+};
+var FlameEffect = class _FlameEffect {
+  /**
+   * @param {GPUDevice}  device
+   * @param {string}     format       - swap-chain / canvas format (e.g. "bgra8unorm")
+   * @param {string}     colorFormat  - render-pass color attachment format (e.g. "rgba16float")
+   * @param {object}     params       - initial flame parameters (see defaults below)
+   */
+  constructor(device2, format, colorFormat, params = {}) {
     this.device = device2;
     this.format = format;
     this.colorFormat = colorFormat ?? format;
+    const defaults = FlamePresets.natural;
+    this.intensity = params.intensity ?? defaults.intensity;
+    this.speed = params.speed ?? defaults.speed;
+    this.turbulence = params.turbulence ?? defaults.turbulence;
+    this.stretch = params.stretch ?? defaults.stretch;
+    this.tint = params.tint ?? defaults.tint;
+    this.tintStrength = params.tintStrength ?? defaults.tintStrength;
     this.time = 0;
-    this.intensity = 12;
     this.enabled = true;
     this._initPipeline();
   }
+  /** Convenience factory: new FlameEffect.fromPreset(device, fmt, hdrFmt, 'magic') */
+  static fromPreset(device2, format, colorFormat, presetName) {
+    const preset = FlamePresets[presetName];
+    if (!preset) throw new Error(`Unknown FlamePreset: "${presetName}". Available: ${Object.keys(FlamePresets).join(", ")}`);
+    return new _FlameEffect(device2, format, colorFormat, preset);
+  }
+  // -------------------------------------------------------------------------
+  // Public setters  (call any time — written to GPU on next updateInstanceData)
+  // -------------------------------------------------------------------------
+  setIntensity(v) {
+    this.intensity = v;
+  }
+  setSpeed(v) {
+    this.speed = v;
+  }
+  setTurbulence(v) {
+    this.turbulence = Math.max(0, Math.min(1, v));
+  }
+  setStretch(v) {
+    this.stretch = Math.max(0.05, v);
+  }
+  /** @param {[number,number,number]} rgb  e.g. [0.1, 0.4, 1.0] for blue */
+  setTint(rgb) {
+    this.tint = rgb;
+  }
+  /** @param {number} v  0 = natural fire colours, 1 = fully tinted */
+  setTintStrength(v) {
+    this.tintStrength = Math.max(0, Math.min(1, v));
+  }
+  /** Apply a named preset instantly */
+  applyPreset(name2) {
+    const p = FlamePresets[name2];
+    if (!p) throw new Error(`Unknown FlamePreset: "${name2}"`);
+    Object.assign(this, {
+      intensity: p.intensity,
+      speed: p.speed,
+      turbulence: p.turbulence,
+      stretch: p.stretch,
+      tint: p.tint,
+      tintStrength: p.tintStrength
+    });
+  }
+  // -------------------------------------------------------------------------
   _initPipeline() {
     const S = 40;
     const vertexData = new Float32Array([
@@ -7317,27 +7495,10 @@ var FlameEffect = class {
       -0.5 * S,
       0
     ]);
-    const uvData = new Float32Array([
-      0,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0
-    ]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.vertexBuffer = this._uploadVertex(vertexData);
+    this.uvBuffer = this._uploadVertex(uvData);
     this.indexBuffer = this.device.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
@@ -7349,7 +7510,7 @@ var FlameEffect = class {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.modelBuffer = this.device.createBuffer({
-      size: 96,
+      size: 112,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
@@ -7382,8 +7543,6 @@ var FlameEffect = class {
         entryPoint: "fsMain",
         targets: [{
           format: this.colorFormat,
-          // must match the render pass attachment
-          // ✅ blend belongs here, inside targets[], not at pipeline root
           blend: {
             color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
             alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
@@ -7391,12 +7550,30 @@ var FlameEffect = class {
         }]
       },
       primitive: { topology: "triangle-list" },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "always",
-        format: "depth24plus"
-      }
+      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
+  }
+  _uploadVertex(data) {
+    const buf = this.device.createBuffer({
+      size: data.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buf, 0, data);
+    return buf;
+  }
+  // -------------------------------------------------------------------------
+  updateInstanceData(baseModelMatrix) {
+    const local = mat4Impl.identity();
+    mat4Impl.translate(local, [0, 20, 0], local);
+    const finalMat = mat4Impl.identity();
+    mat4Impl.multiply(baseModelMatrix, local, finalMat);
+    const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
+    const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
+    const tint = new Float32Array([...this.tint, this.tintStrength]);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, timeSpeed);
+    this.device.queue.writeBuffer(this.modelBuffer, 80, params);
+    this.device.queue.writeBuffer(this.modelBuffer, 96, tint);
   }
   draw(pass2, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
@@ -7407,24 +7584,10 @@ var FlameEffect = class {
     pass2.setIndexBuffer(this.indexBuffer, "uint16");
     pass2.drawIndexed(this.indexCount);
   }
-  updateInstanceData(baseModelMatrix) {
-    const local = mat4Impl.identity();
-    mat4Impl.translate(local, [0, 20, 0], local);
-    mat4Impl.scale(local, [1, 1, 1], local);
-    const finalMat = mat4Impl.identity();
-    mat4Impl.multiply(baseModelMatrix, local, finalMat);
-    const timeBuffer = new Float32Array([this.time, 0, 0, 0]);
-    const intensityBuffer = new Float32Array([this.intensity, 0, 0, 0]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
-  }
   render(pass2, mesh, viewProjMatrix, dt = 0.01) {
+    if (!this.enabled) return;
     this.time += dt;
     this.draw(pass2, viewProjMatrix);
-  }
-  setIntensity(v) {
-    this.intensity = v;
   }
 };
 
@@ -8373,7 +8536,7 @@ var MEMeshObj = class extends Materials {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float");
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device2, pf, "rgba16float");
+          this.effects.flameEffect = FlameEffect.fromPreset(device2, pf, "rgba16float", "torch");
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float");
@@ -29110,7 +29273,7 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
       texturesPaths = ["./res/meshes/blender/cube.png"];
-      app3.addGlbObj({
+      app3.addGlbObjInctance({
         position: { x: 0, y: 0, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
@@ -29124,38 +29287,38 @@ var app2 = new MatrixEngineWGPU(
           enabled: true,
           // pointEffect: true,
           // destructionEffect: true
-          flameEmitter: true
+          flameEffect: true
         }
       }, null, glbFile01);
       setTimeout(() => {
         app3.getSceneObjectByName("monster-MutantMesh-0").useScale = true;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetY(3.8000000000000544);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetX(0.12000000000000396);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetZ(-20.119742224156198);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetZ(-18.454014167181374);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(0.3700000000000121);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("monster-MutantMesh-0").position.SetZ(-12.069985717161437);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster-MutantMesh-0").position.SetY(2.0800000000000063);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster-MutantMesh-0").position.SetX(0);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetY(-4.849999999999987);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("cube1").position.SetZ(-20.119742224156198);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("cube1").position.SetX(0.12000000000000396);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster-MutantMesh-0").position.SetX(0.6900000000000002);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster-MutantMesh-0").position.SetY(-2.919999999999992);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetX(0.6600000000000117);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("cube1").position.SetY(3.870000000000072);
       }, 800);
     });
   }

@@ -7194,6 +7194,729 @@ var DestructionEffect = class {
   }
 };
 
+// ../../../shaders/flame-effect/flameEffect.js
+var flameEffect = (
+  /* wgsl */
+  `
+
+struct Camera {
+  viewProj : mat4x4<f32>
+};
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+// Uniform buffer layout (112 bytes, all vec4-aligned):
+//   offset   0 : model        mat4x4<f32>   (64 bytes)
+//   offset  64 : timeSpeed    vec4<f32>     (.x = time, .y = speed)
+//   offset  80 : params       vec4<f32>     (.x = intensity, .y = turbulence, .z = stretch)
+//   offset  96 : tint         vec4<f32>     (.xyz = rgb tint colour, .w = tint strength 0..1)
+struct ModelData {
+  model     : mat4x4<f32>,
+  timeSpeed : vec4<f32>,
+  params    : vec4<f32>,
+  tint      : vec4<f32>,
+};
+@group(0) @binding(1) var<uniform> modelData : ModelData;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) uv       : vec2<f32>,
+};
+
+struct VSOut {
+  @builtin(position) position  : vec4<f32>,
+  @location(0)       uv        : vec2<f32>,
+  // Pack all scalar params into two interpolants to stay within limits
+  @location(1)       p0        : vec4<f32>, // .x=time .y=speed .z=intensity .w=turbulence
+  @location(2)       p1        : vec4<f32>, // .x=stretch .y=tintStrength
+  @location(3)       tintColor : vec3<f32>,
+};
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+
+  let worldPos     = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position  = camera.viewProj * worldPos;
+  output.uv        = input.uv;
+
+  output.p0 = vec4<f32>(
+    modelData.timeSpeed.x,  // time
+    modelData.timeSpeed.y,  // speed
+    modelData.params.x,     // intensity
+    modelData.params.y      // turbulence
+  );
+  output.p1 = vec4<f32>(
+    modelData.params.z,     // stretch
+    modelData.tint.w,       // tintStrength
+    0.0, 0.0
+  );
+  output.tintColor = modelData.tint.xyz;
+
+  return output;
+}
+
+// ---------------------------------------------------------------------------
+// Noise helpers
+// ---------------------------------------------------------------------------
+fn hash2(n : vec2<f32>) -> f32 {
+  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn noise(p : vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+    mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+// Two-octave fBm for richer turbulence shape
+fn fbm(p : vec2<f32>) -> f32 {
+  var v   = 0.0;
+  var a   = 0.5;
+  var pos = p;
+  for (var i = 0; i < 2; i++) {
+    v   += a * noise(pos);
+    pos  = pos * 2.1 + vec2<f32>(1.7, 9.2);
+    a   *= 0.5;
+  }
+  return v;
+}
+
+// ---------------------------------------------------------------------------
+// Fragment
+// ---------------------------------------------------------------------------
+@fragment
+fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+  // Unpack
+  let time       = input.p0.x;
+  let speed      = input.p0.y;
+  let intensity  = input.p0.z;
+  let turbulence = input.p0.w;   // 0 = calm, 1 = chaotic
+  let stretch    = input.p1.x;   // 1 = normal, >1 = tall/thin, <1 = short/wide
+  let tintStr    = input.p1.y;   // 0 = natural fire colours, 1 = full tint
+  let tintColor  = input.tintColor;
+
+  let t = time * speed * 2.0;
+
+  // --- UV: apply stretch then turbulence warp ---
+  var uv = input.uv;
+  // Compress v-range so flame occupies more of the quad when stretch > 1
+  uv.y = uv.y / max(stretch, 0.01);
+
+  let warpAmt = turbulence * 0.18;
+  let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
+  let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
+  var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
+
+  // Upward scroll + sideways sway scaled by turbulence
+  warpedUV.y += t * 0.4;
+  warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
+
+  // --- Flame density ---
+  var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
+  // Higher turbulence softens the exponent \u2192 wilder, fluffier edges
+  n = pow(n, 3.0 - turbulence * 1.2);
+
+  // --- Base flame palette (dark core \u2192 orange \u2192 hot yellow) ---
+  let hotColor  = vec3<f32>(1.0,  0.92, 0.35);
+  let midColor  = vec3<f32>(1.0,  0.38, 0.04);
+  let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
+
+  let g1 = smoothstep(0.0, 0.5, n);
+  let g2 = smoothstep(0.5, 1.0, n);
+  var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
+
+  // --- Tint: blend base palette toward tintColor in the bright parts only ---
+  // tintStr = 0 \u2192 pure natural fire;  tintStr = 1 \u2192 fully tinted flame
+  let tintMask  = smoothstep(0.0, 0.5, n);
+  baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
+
+  let finalColor = baseColor * n * intensity;
+
+  // --- Alpha mask: soft edges + top fade that respects stretch ---
+  let edgeMask  = smoothstep(0.0, 0.15, input.uv.x)
+                * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
+  let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
+  let topFade   = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
+
+  let alpha = smoothstep(0.08, 0.65, n) * edgeMask * topFade;
+
+  // Premultiplied alpha for additive blending
+  return vec4<f32>(finalColor * alpha, alpha);
+}
+`
+);
+
+// ../../../engine/effects/flame.js
+var FlamePresets = {
+  // Natural campfire / torch
+  natural: {
+    intensity: 12,
+    speed: 1,
+    turbulence: 0.5,
+    stretch: 1,
+    tint: [1, 1, 1],
+    // neutral → pure fire palette
+    tintStrength: 0
+  },
+  // Tall torch / pillar of fire
+  torch: {
+    intensity: 14,
+    speed: 1.2,
+    turbulence: 0.35,
+    stretch: 2,
+    // double height
+    tint: [1, 1, 1],
+    tintStrength: 0
+  },
+  // Wide, low bonfire
+  bonfire: {
+    intensity: 10,
+    speed: 0.8,
+    turbulence: 0.9,
+    stretch: 0.5,
+    // short & wide
+    tint: [1, 1, 1],
+    tintStrength: 0
+  },
+  // Magical blue flame
+  magic: {
+    intensity: 8,
+    speed: 1.4,
+    turbulence: 0.6,
+    stretch: 1.3,
+    tint: [0.1, 0.4, 1],
+    // blue
+    tintStrength: 0.85
+  },
+  // Hellfire — dark purple/red
+  hell: {
+    intensity: 16,
+    speed: 0.9,
+    turbulence: 0.8,
+    stretch: 1.6,
+    tint: [0.6, 0, 0.8],
+    // purple
+    tintStrength: 0.7
+  },
+  // Poison green
+  poison: {
+    intensity: 9,
+    speed: 1.1,
+    turbulence: 0.7,
+    stretch: 1.1,
+    tint: [0.1, 1, 0.15],
+    // green
+    tintStrength: 0.9
+  }
+};
+var FlameEffect = class _FlameEffect {
+  /**
+   * @param {GPUDevice}  device
+   * @param {string}     format       - swap-chain / canvas format (e.g. "bgra8unorm")
+   * @param {string}     colorFormat  - render-pass color attachment format (e.g. "rgba16float")
+   * @param {object}     params       - initial flame parameters (see defaults below)
+   */
+  constructor(device2, format, colorFormat, params = {}) {
+    this.device = device2;
+    this.format = format;
+    this.colorFormat = colorFormat ?? format;
+    const defaults = FlamePresets.natural;
+    this.intensity = params.intensity ?? defaults.intensity;
+    this.speed = params.speed ?? defaults.speed;
+    this.turbulence = params.turbulence ?? defaults.turbulence;
+    this.stretch = params.stretch ?? defaults.stretch;
+    this.tint = params.tint ?? defaults.tint;
+    this.tintStrength = params.tintStrength ?? defaults.tintStrength;
+    this.time = 0;
+    this.enabled = true;
+    this._initPipeline();
+  }
+  /** Convenience factory: new FlameEffect.fromPreset(device, fmt, hdrFmt, 'magic') */
+  static fromPreset(device2, format, colorFormat, presetName) {
+    const preset = FlamePresets[presetName];
+    if (!preset) throw new Error(`Unknown FlamePreset: "${presetName}". Available: ${Object.keys(FlamePresets).join(", ")}`);
+    return new _FlameEffect(device2, format, colorFormat, preset);
+  }
+  // -------------------------------------------------------------------------
+  // Public setters  (call any time — written to GPU on next updateInstanceData)
+  // -------------------------------------------------------------------------
+  setIntensity(v) {
+    this.intensity = v;
+  }
+  setSpeed(v) {
+    this.speed = v;
+  }
+  setTurbulence(v) {
+    this.turbulence = Math.max(0, Math.min(1, v));
+  }
+  setStretch(v) {
+    this.stretch = Math.max(0.05, v);
+  }
+  /** @param {[number,number,number]} rgb  e.g. [0.1, 0.4, 1.0] for blue */
+  setTint(rgb) {
+    this.tint = rgb;
+  }
+  /** @param {number} v  0 = natural fire colours, 1 = fully tinted */
+  setTintStrength(v) {
+    this.tintStrength = Math.max(0, Math.min(1, v));
+  }
+  /** Apply a named preset instantly */
+  applyPreset(name2) {
+    const p = FlamePresets[name2];
+    if (!p) throw new Error(`Unknown FlamePreset: "${name2}"`);
+    Object.assign(this, {
+      intensity: p.intensity,
+      speed: p.speed,
+      turbulence: p.turbulence,
+      stretch: p.stretch,
+      tint: p.tint,
+      tintStrength: p.tintStrength
+    });
+  }
+  // -------------------------------------------------------------------------
+  _initPipeline() {
+    const S = 40;
+    const vertexData = new Float32Array([
+      -0.5 * S,
+      0.5 * S,
+      0,
+      0.5 * S,
+      0.5 * S,
+      0,
+      -0.5 * S,
+      -0.5 * S,
+      0,
+      0.5 * S,
+      -0.5 * S,
+      0
+    ]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    this.vertexBuffer = this._uploadVertex(vertexData);
+    this.uvBuffer = this._uploadVertex(uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: flameEffect });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.colorFormat,
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+          }
+        }]
+      },
+      primitive: { topology: "triangle-list" },
+      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
+    });
+  }
+  _uploadVertex(data) {
+    const buf = this.device.createBuffer({
+      size: data.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buf, 0, data);
+    return buf;
+  }
+  // -------------------------------------------------------------------------
+  updateInstanceData(baseModelMatrix) {
+    const local = mat4Impl.identity();
+    mat4Impl.translate(local, [0, 20, 0], local);
+    const finalMat = mat4Impl.identity();
+    mat4Impl.multiply(baseModelMatrix, local, finalMat);
+    const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
+    const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
+    const tint = new Float32Array([...this.tint, this.tintStrength]);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, timeSpeed);
+    this.device.queue.writeBuffer(this.modelBuffer, 80, params);
+    this.device.queue.writeBuffer(this.modelBuffer, 96, tint);
+  }
+  draw(pass2, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount);
+  }
+  render(pass2, mesh, viewProjMatrix, dt = 0.01) {
+    if (!this.enabled) return;
+    this.time += dt;
+    this.draw(pass2, viewProjMatrix);
+  }
+};
+
+// ../../../shaders/flame-effect/flame-instanced.js
+var flameEffectInstance = `struct Camera {
+  viewProj : mat4x4<f32>
+};
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+// Array of particle instances
+struct ModelData {
+  model : mat4x4<f32>,
+  time : vec4<f32>,       // x = time
+  intensity : vec4<f32>,  // x = intensity
+  color : vec4<f32>,      // rgba color
+};
+@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) uv : vec2<f32>,
+  @builtin(instance_index) instanceIdx : u32,
+};
+
+struct VSOut {
+  @builtin(position) position : vec4<f32>,
+  @location(0) uv : vec2<f32>,
+  @location(1) time : f32,
+  @location(2) intensity : f32,
+  @location(3) @interpolate(flat) instanceIdx : u32,
+};
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+  let modelData = modelDataArray[input.instanceIdx];
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position = camera.viewProj * worldPos;
+  output.uv = input.uv;
+  output.time = modelData.time.x;
+  output.intensity = modelData.intensity.x;
+  output.instanceIdx = input.instanceIdx;
+  return output;
+}
+
+// Simple procedural flame noise (value in 0..1)
+fn hash(n : vec2<f32>) -> f32 {
+  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn noise(p : vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
+    mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), u.x),
+    u.y
+  );
+}
+
+// Flame color gradient: black -> red -> orange -> yellow -> white
+fn flameColor(n: f32) -> vec3<f32> {
+  if (n < 0.3) {
+    return vec3<f32>(n * 3.0, 0.0, 0.0);               // dark red
+  } else if (n < 0.6) {
+    return vec3<f32>(1.0, (n - 0.3) * 3.33, 0.0);      // red -> orange
+  } else {
+    return vec3<f32>(1.0, 1.0, (n - 0.6) * 2.5);       // orange -> yellow -> white
+  }
+}
+
+@fragment
+fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
+  // Read per-instance data
+  let modelData = modelDataArray[in.instanceIdx];
+  let baseColor = modelData.color.xyz;
+  let instanceAlpha = modelData.color.w;
+  let instIntensity = max(0.0, modelData.intensity.x);
+
+  // time with small instance offset
+  let t = in.time * 2.0 + f32(in.instanceIdx) * 0.13;
+
+  var uv = in.uv;
+  uv.y += t * 0.2;
+
+  // procedural noise
+  var n = noise(uv * 5.0 + vec2<f32>(0.0, t * 0.5));
+  // keep some brightness: milder sharpening than pow(n,3)
+  n = pow(n, 1.5);
+
+  // base flame color from gradient
+  let grad = flameColor(n);
+
+  let userColor = modelData.color.xyz;
+
+  // mix ratio (0.0 = pure red, 1.0 = user color)
+  let mixFactor = 0.5;
+  let mixedColor = mix(grad, userColor, mixFactor);
+
+  // flicker multipliers (shifted into positive range)
+  let flickR = 0.7 + 0.3 * sin(t * 3.0); // 0.4 .. 1.0
+  let flickG = 0.6 + 0.4 * cos(t * 2.0); // 0.2 .. 1.0
+  let flickB = 0.8 + 0.2 * sin(t * 1.5); // 0.6 .. 1.0
+
+  // combine gradient with per-instance baseColor and flicker
+  // var color = grad * baseColor * vec3<f32>(flickR, flickG, flickB);
+  var color = mixedColor * vec3<f32>(flickR, flickG, flickB);
+
+  // apply instance/global intensity
+  color = color * instIntensity;
+
+  // soft alpha based on noise and instance alpha
+  var alpha = smoothstep(0.0, 0.6, n) * instanceAlpha * instIntensity;
+
+  // final clamp to avoid negative or NaN values
+  color = clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)); // allow HDR-like values for additive blending
+  alpha = clamp(alpha, 0.0, 1.0);
+
+  return vec4<f32>(color, alpha);
+}
+`;
+
+// ../../../engine/effects/flame-emmiter.js
+var FlameEmitter = class {
+  constructor(device2, format, maxParticles = 20) {
+    this.device = device2;
+    this.format = format;
+    this.time = 0;
+    this.intensity = 3;
+    this.enabled = true;
+    this.maxParticles = maxParticles;
+    this.instanceTargets = [];
+    this.floatsPerInstance = 28;
+    this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
+    this.smoothFlickeringScale = 0.1;
+    this.maxY = 1.9;
+    this.minY = 0;
+    this.swap0 = 0;
+    this.swap1 = 1;
+    this.swap2 = 2;
+    for (let i = 0; i < maxParticles; i++) {
+      this.instanceTargets.push({
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        rotation: 0.1,
+        color: [1, 0.3, 0, 0.1],
+        time: 1,
+        intensity: 1,
+        riseSpeed: 1
+      });
+    }
+    this._initPipeline();
+  }
+  recreateVertexData(S) {
+    const vertexData = new Float32Array([
+      -0.4 * S,
+      0.5 * S,
+      0 * S,
+      0.4 * S,
+      0.5 * S,
+      0 * S,
+      -0.2 * S,
+      -0.5 * S,
+      0 * S,
+      0.2 * S,
+      -0.5 * S,
+      0 * S
+    ]);
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+  }
+  recreateVertexDataRND(S) {
+    const vertexData = new Float32Array([
+      -randomFloatFromTo(0.1, 0.8) * S,
+      randomFloatFromTo(0.4, 0.6) * S,
+      0 * S,
+      randomFloatFromTo(0.1, 0.8) * S,
+      randomFloatFromTo(0.4, 0.6) * S,
+      0 * S,
+      -randomFloatFromTo(0.1, 0.4) * S,
+      -randomFloatFromTo(0.4, 0.6) * S,
+      0 * S,
+      randomFloatFromTo(0.1, 0.4) * S,
+      -randomFloatFromTo(0.4, 0.6) * S,
+      0 * S
+    ]);
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+  }
+  _initPipeline() {
+    const S = 5;
+    const vertexData = new Float32Array([
+      -0.2 * S,
+      -0.5 * S,
+      0 * S,
+      0.2 * S,
+      -0.5 * S,
+      0 * S,
+      -0.4 * S,
+      0.5 * S,
+      0 * S,
+      0.4 * S,
+      0.5 * S,
+      0 * S
+    ]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.modelBuffer = this.device.createBuffer({
+      size: this.maxParticles * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: flameEffectInstance });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{ format: this.format }]
+      },
+      primitive: { topology: "triangle-list" },
+      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" },
+      blend: {
+        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
+        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+        color: {
+          srcFactor: "src-alpha",
+          dstFactor: "one-minus-src-alpha",
+          operation: "add"
+        },
+        alpha: {
+          srcFactor: "one",
+          dstFactor: "one-minus-src-alpha",
+          operation: "add"
+        }
+      }
+    });
+  }
+  updateInstanceData = (baseModelMatrix) => {
+    const count = Math.min(this.instanceTargets.length, this.maxParticles);
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
+      }
+      const local = mat4Impl.identity();
+      mat4Impl.translate(local, t.currentPosition, local);
+      mat4Impl.rotateY(local, t.rotation, local);
+      mat4Impl.scale(local, t.currentScale, local);
+      const finalMat = mat4Impl.identity();
+      mat4Impl.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
+      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1], offset + 24);
+    }
+    this.device.queue.writeBuffer(
+      this.modelBuffer,
+      0,
+      this.instanceData.subarray(0, count * this.floatsPerInstance)
+    );
+  };
+  render(pass2, mesh, viewProjMatrix, dt = 0.1) {
+    this.time += dt;
+    for (const p of this.instanceTargets) {
+      p.position[this.swap1] += dt * p.riseSpeed;
+      if (p.position[this.swap1] > this.maxY) {
+        p.position[this.swap1] = this.minY + Math.random() * 0.5;
+        p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
+        p.riseSpeed = 0.2 + Math.random() * 1;
+      }
+      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2 + p.position[this.swap1]) * 0.1;
+      p.rotation += dt * randomIntFromTo(3, 15);
+    }
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass2.setPipeline(this.pipeline);
+    pass2.setBindGroup(0, this.bindGroup);
+    pass2.setVertexBuffer(0, this.vertexBuffer);
+    pass2.setVertexBuffer(1, this.uvBuffer);
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.drawIndexed(this.indexCount, this.instanceTargets.length);
+  }
+  setIntensity(v) {
+    this.intensity = v;
+  }
+};
+
 // ../../../engine/mesh-obj.js
 var MEMeshObj = class extends Materials {
   constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -7805,11 +8528,18 @@ var MEMeshObj = class extends Materials {
       });
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
+        let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect2(device2, "rgba16float");
         }
         if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float");
+        }
+        if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
+          this.effects.flameEffect = FlameEffect.fromPreset(device2, pf, "rgba16float", "torch");
+        }
+        if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
+          this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float");
         }
         if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device2, "rgba16float", {
@@ -15103,547 +15833,6 @@ var MANABarEffect = class {
     const modelMatrix = mat4Impl.identity();
     mat4Impl.translate(modelMatrix, [pos2.x, pos2.y + this.offsetY, pos2.z], modelMatrix);
     this.draw(pass2, viewProjMatrix, modelMatrix);
-  }
-};
-
-// ../../../shaders/flame-effect/flameEffect.js
-var flameEffect = (
-  /* wgsl */
-  `struct Camera {
-  viewProj : mat4x4<f32>
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
-struct ModelData {
-  model : mat4x4<f32>,
-  time : vec4<f32>,
-  intensity : vec4<f32>,
-};
-@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
-
-struct VSIn {
-  @location(0) position : vec3<f32>,
-  @location(1) uv : vec2<f32>,
-  @builtin(instance_index) instanceIdx : u32,
-};
-
-struct VSOut {
-  @builtin(position) position : vec4<f32>,
-  @location(0) uv : vec2<f32>,
-  @location(1) time : f32,
-  @location(2) intensity : f32,
-};
-
-@vertex
-fn vsMain(input : VSIn) -> VSOut {
-  var output : VSOut;
-  let data = modelDataArray[input.instanceIdx];
-
-  let worldPos = data.model * vec4<f32>(input.position, 1.0);
-  output.position = camera.viewProj * worldPos;
-  output.uv = input.uv;
-  output.time = data.time.x;
-  output.intensity = data.intensity.x;
-  return output;
-}
-
-// --- Simple procedural noise ---
-fn hash(n : vec2<f32>) -> f32 {
-  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-}
-
-fn noise(p : vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
-    mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), u.x),
-    u.y
-  );
-}
-
-@fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  var uv = input.uv;
-  let t = input.time * 2.0;
-
-  // Animate upward
-  uv.y += t * 0.4;
-  uv.x += sin(t * 0.7) * 0.1;
-
-  var n = noise(uv * 6.0 + vec2<f32>(0.0, t * 0.8));
-  n = pow(n, 3.0); // sharper flame texture
-
-  let baseColor = input.color.rgb;
-  let intensity = input.intensity;
-  let alphaBase = input.color.a;
-
-  // color and intensity modulation
-  var finalColor = baseColor * n * intensity;
-
-  // smooth alpha mask
-  let alpha = smoothstep(0.1, 0.7, n) * alphaBase;
-
-  // output with premultiplied color (for additive/soft blending)
-  return vec4<f32>(finalColor * alpha, alpha);
-}
-`
-);
-
-// ../../../engine/effects/flame.js
-var FlameEffect = class {
-  constructor(device2, format) {
-    this.device = device2;
-    this.format = format;
-    this.time = 0;
-    this.intensity = 12;
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    const S = 40;
-    const vertexData = new Float32Array([
-      -0.5 * S,
-      0.5 * S,
-      0,
-      0.5 * S,
-      0.5 * S,
-      0,
-      -0.5 * S,
-      -0.5 * S,
-      0,
-      0.5 * S,
-      -0.5 * S,
-      0
-    ]);
-    const uvData = new Float32Array([
-      0,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0
-    ]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
-      // model + time/intensity padded
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: flameEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" },
-      blend: {
-        color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
-        alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-      }
-    });
-  }
-  draw(pass2, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass2.setPipeline(this.pipeline);
-    pass2.setBindGroup(0, this.bindGroup);
-    pass2.setVertexBuffer(0, this.vertexBuffer);
-    pass2.setVertexBuffer(1, this.uvBuffer);
-    pass2.setIndexBuffer(this.indexBuffer, "uint16");
-    pass2.drawIndexed(this.indexCount);
-  }
-  updateInstanceData = (baseModelMatrix) => {
-    const local = mat4Impl.identity();
-    mat4Impl.translate(local, [0, 20, 0], local);
-    mat4Impl.scale(local, [1, 1, 1], local);
-    const finalMat = mat4Impl.identity();
-    mat4Impl.multiply(baseModelMatrix, local, finalMat);
-    const timeBuffer = new Float32Array([this.time]);
-    const intensityBuffer = new Float32Array([this.intensity]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
-  };
-  render(pass2, mesh, viewProjMatrix, dt = 0.01, offsetY = 50) {
-    this.time += dt;
-    this.draw(pass2, viewProjMatrix);
-  }
-  setIntensity(v) {
-    this.intensity = v;
-  }
-};
-
-// ../../../shaders/flame-effect/flame-instanced.js
-var flameEffectInstance = `struct Camera {
-  viewProj : mat4x4<f32>
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
-// Array of particle instances
-struct ModelData {
-  model : mat4x4<f32>,
-  time : vec4<f32>,       // x = time
-  intensity : vec4<f32>,  // x = intensity
-  color : vec4<f32>,      // rgba color
-};
-@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
-
-struct VSIn {
-  @location(0) position : vec3<f32>,
-  @location(1) uv : vec2<f32>,
-  @builtin(instance_index) instanceIdx : u32,
-};
-
-struct VSOut {
-  @builtin(position) position : vec4<f32>,
-  @location(0) uv : vec2<f32>,
-  @location(1) time : f32,
-  @location(2) intensity : f32,
-  @location(3) @interpolate(flat) instanceIdx : u32,
-};
-
-@vertex
-fn vsMain(input : VSIn) -> VSOut {
-  var output : VSOut;
-  let modelData = modelDataArray[input.instanceIdx];
-  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
-  output.position = camera.viewProj * worldPos;
-  output.uv = input.uv;
-  output.time = modelData.time.x;
-  output.intensity = modelData.intensity.x;
-  output.instanceIdx = input.instanceIdx;
-  return output;
-}
-
-// Simple procedural flame noise (value in 0..1)
-fn hash(n : vec2<f32>) -> f32 {
-  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-}
-
-fn noise(p : vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
-    mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), u.x),
-    u.y
-  );
-}
-
-// Flame color gradient: black -> red -> orange -> yellow -> white
-fn flameColor(n: f32) -> vec3<f32> {
-  if (n < 0.3) {
-    return vec3<f32>(n * 3.0, 0.0, 0.0);               // dark red
-  } else if (n < 0.6) {
-    return vec3<f32>(1.0, (n - 0.3) * 3.33, 0.0);      // red -> orange
-  } else {
-    return vec3<f32>(1.0, 1.0, (n - 0.6) * 2.5);       // orange -> yellow -> white
-  }
-}
-
-@fragment
-fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
-  // Read per-instance data
-  let modelData = modelDataArray[in.instanceIdx];
-  let baseColor = modelData.color.xyz;
-  let instanceAlpha = modelData.color.w;
-  let instIntensity = max(0.0, modelData.intensity.x);
-
-  // time with small instance offset
-  let t = in.time * 2.0 + f32(in.instanceIdx) * 0.13;
-
-  var uv = in.uv;
-  uv.y += t * 0.2;
-
-  // procedural noise
-  var n = noise(uv * 5.0 + vec2<f32>(0.0, t * 0.5));
-  // keep some brightness: milder sharpening than pow(n,3)
-  n = pow(n, 1.5);
-
-  // base flame color from gradient
-  let grad = flameColor(n);
-
-  let userColor = modelData.color.xyz;
-
-  // mix ratio (0.0 = pure red, 1.0 = user color)
-  let mixFactor = 0.5;
-  let mixedColor = mix(grad, userColor, mixFactor);
-
-  // flicker multipliers (shifted into positive range)
-  let flickR = 0.7 + 0.3 * sin(t * 3.0); // 0.4 .. 1.0
-  let flickG = 0.6 + 0.4 * cos(t * 2.0); // 0.2 .. 1.0
-  let flickB = 0.8 + 0.2 * sin(t * 1.5); // 0.6 .. 1.0
-
-  // combine gradient with per-instance baseColor and flicker
-  // var color = grad * baseColor * vec3<f32>(flickR, flickG, flickB);
-  var color = mixedColor * vec3<f32>(flickR, flickG, flickB);
-
-  // apply instance/global intensity
-  color = color * instIntensity;
-
-  // soft alpha based on noise and instance alpha
-  var alpha = smoothstep(0.0, 0.6, n) * instanceAlpha * instIntensity;
-
-  // final clamp to avoid negative or NaN values
-  color = clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)); // allow HDR-like values for additive blending
-  alpha = clamp(alpha, 0.0, 1.0);
-
-  return vec4<f32>(color, alpha);
-}
-`;
-
-// ../../../engine/effects/flame-emmiter.js
-var FlameEmitter = class {
-  constructor(device2, format, maxParticles = 20) {
-    this.device = device2;
-    this.format = format;
-    this.time = 0;
-    this.intensity = 3;
-    this.enabled = true;
-    this.maxParticles = maxParticles;
-    this.instanceTargets = [];
-    this.floatsPerInstance = 28;
-    this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
-    this.smoothFlickeringScale = 0.1;
-    this.maxY = 1.9;
-    this.minY = 0;
-    this.swap0 = 0;
-    this.swap1 = 1;
-    this.swap2 = 2;
-    for (let i = 0; i < maxParticles; i++) {
-      this.instanceTargets.push({
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        rotation: 0.1,
-        color: [1, 0.3, 0, 0.1],
-        time: 1,
-        intensity: 1,
-        riseSpeed: 1
-      });
-    }
-    this._initPipeline();
-  }
-  recreateVertexData(S) {
-    const vertexData = new Float32Array([
-      -0.4 * S,
-      0.5 * S,
-      0 * S,
-      0.4 * S,
-      0.5 * S,
-      0 * S,
-      -0.2 * S,
-      -0.5 * S,
-      0 * S,
-      0.2 * S,
-      -0.5 * S,
-      0 * S
-    ]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-  }
-  recreateVertexDataRND(S) {
-    const vertexData = new Float32Array([
-      -randomFloatFromTo(0.1, 0.8) * S,
-      randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
-      randomFloatFromTo(0.1, 0.8) * S,
-      randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
-      -randomFloatFromTo(0.1, 0.4) * S,
-      -randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
-      randomFloatFromTo(0.1, 0.4) * S,
-      -randomFloatFromTo(0.4, 0.6) * S,
-      0 * S
-    ]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-  }
-  _initPipeline() {
-    const S = 5;
-    const vertexData = new Float32Array([
-      -0.2 * S,
-      -0.5 * S,
-      0 * S,
-      0.2 * S,
-      -0.5 * S,
-      0 * S,
-      -0.4 * S,
-      0.5 * S,
-      0 * S,
-      0.4 * S,
-      0.5 * S,
-      0 * S
-    ]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.modelBuffer = this.device.createBuffer({
-      size: this.maxParticles * this.floatsPerInstance * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: flameEffectInstance });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" },
-      blend: {
-        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-        color: {
-          srcFactor: "src-alpha",
-          dstFactor: "one-minus-src-alpha",
-          operation: "add"
-        },
-        alpha: {
-          srcFactor: "one",
-          dstFactor: "one-minus-src-alpha",
-          operation: "add"
-        }
-      }
-    });
-  }
-  updateInstanceData = (baseModelMatrix) => {
-    const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
-      }
-      const local = mat4Impl.identity();
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.rotateY(local, t.rotation, local);
-      mat4Impl.scale(local, t.currentScale, local);
-      const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1], offset + 24);
-    }
-    this.device.queue.writeBuffer(
-      this.modelBuffer,
-      0,
-      this.instanceData.subarray(0, count * this.floatsPerInstance)
-    );
-  };
-  render(pass2, mesh, viewProjMatrix, dt = 0.1) {
-    this.time += dt;
-    for (const p of this.instanceTargets) {
-      p.position[this.swap1] += dt * p.riseSpeed;
-      if (p.position[this.swap1] > this.maxY) {
-        p.position[this.swap1] = this.minY + Math.random() * 0.5;
-        p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
-        p.riseSpeed = 0.2 + Math.random() * 1;
-      }
-      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * randomIntFromTo(3, 15);
-    }
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass2.setPipeline(this.pipeline);
-    pass2.setBindGroup(0, this.bindGroup);
-    pass2.setVertexBuffer(0, this.vertexBuffer);
-    pass2.setVertexBuffer(1, this.uvBuffer);
-    pass2.setIndexBuffer(this.indexBuffer, "uint16");
-    pass2.drawIndexed(this.indexCount, this.instanceTargets.length);
-  }
-  setIntensity(v) {
-    this.intensity = v;
   }
 };
 
@@ -27639,16 +27828,15 @@ var VolumetricPass = class {
     this.height = height;
     this.volumetricTex = this._createTexture(width, height);
     this.sampler = device2.createSampler({
+      label: "VolumetricPass.linearSampler",
       magFilter: "linear",
       minFilter: "linear",
       addressModeU: "clamp-to-edge",
       addressModeV: "clamp-to-edge"
     });
     this.depthSampler = device2.createSampler({
-      magFilter: "nearest",
-      minFilter: "nearest",
-      addressModeU: "clamp-to-edge",
-      addressModeV: "clamp-to-edge"
+      label: "VolumetricPass.comparisonSampler",
+      compare: "less-equal"
     });
     this.params = {
       density: options2.density ?? 0.03,
@@ -27659,25 +27847,29 @@ var VolumetricPass = class {
     this.lightParams = {
       color: options2.lightColor ?? [1, 0.85, 0.6],
       direction: [0, -1, 0.5]
-      // update each frame via setLightDirection
     };
     this.paramsBuffer = device2.createBuffer({
+      label: "VolumetricPass.paramsBuffer",
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.invViewProjBuffer = device2.createBuffer({
+      label: "VolumetricPass.invViewProjBuffer",
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.lightViewProjBuffer = device2.createBuffer({
+      label: "VolumetricPass.lightViewProjBuffer",
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.lightDirBuffer = device2.createBuffer({
+      label: "VolumetricPass.lightDirBuffer",
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.lightColorBuffer = device2.createBuffer({
+      label: "VolumetricPass.lightColorBuffer",
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
@@ -27709,24 +27901,16 @@ var VolumetricPass = class {
   };
   setLightDirection = (x2, y2, z) => {
     this.lightParams.direction = [x2, y2, z];
-    this.device.queue.writeBuffer(
-      this.lightDirBuffer,
-      0,
-      new Float32Array([x2, y2, z, 0])
-    );
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, new Float32Array([x2, y2, z, 0]));
   };
-  // ─── Internal updates ──────────────────────────────────────────────────────
+  // ─── Internal ─────────────────────────────────────────────────────────────
   _updateParams() {
-    this.device.queue.writeBuffer(
-      this.paramsBuffer,
-      0,
-      new Float32Array([
-        this.params.density,
-        this.params.steps,
-        this.params.scatterStrength,
-        this.params.heightFalloff
-      ])
-    );
+    this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([
+      this.params.density,
+      this.params.steps,
+      this.params.scatterStrength,
+      this.params.heightFalloff
+    ]));
   }
   _updateLightColor() {
     this.device.queue.writeBuffer(
@@ -27735,43 +27919,53 @@ var VolumetricPass = class {
       new Float32Array([...this.lightParams.color, 0])
     );
   }
-  // ─── Texture + Pipeline helpers ────────────────────────────────────────────
   _createTexture(w, h) {
     return this.device.createTexture({
+      label: "VolumetricPass.texture",
       size: [w, h],
       format: "rgba16float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
   }
+  _beginPass(encoder, targetView, label) {
+    return encoder.beginRenderPass({
+      label,
+      colorAttachments: [{
+        view: targetView,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    });
+  }
+  // ─── Pipelines ─────────────────────────────────────────────────────────────
   _createMarchPipeline() {
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    const bgl = this.device.createBindGroupLayout({
+      label: "VolumetricPass.marchBGL",
       entries: [
-        // 0: scene depth
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
-        // 1: shadow map array
         { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth", viewDimension: "2d-array" } },
-        // 2: depth sampler
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "non-filtering" } },
-        // 3: invViewProj
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } },
+        // ← must be 'comparison'
         { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        // 4: lightViewProj
         { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        // 5: lightDir
         { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        // 6: lightColor
         { binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        // 7: params
         { binding: 7, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
       ]
     });
     return this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+      label: "VolumetricPass.marchPipeline",
+      layout: this.device.createPipelineLayout({
+        label: "VolumetricPass.marchPipelineLayout",
+        bindGroupLayouts: [bgl]
+      }),
       vertex: {
-        module: this.device.createShaderModule({ code: volumetricFullscreenQuadWGSL() }),
+        module: this.device.createShaderModule({ label: "VolumetricPass.vert", code: fullscreenVertWGSL() }),
         entryPoint: "vert"
       },
       fragment: {
-        module: this.device.createShaderModule({ code: volumetricMarchWGSL() }),
+        module: this.device.createShaderModule({ label: "VolumetricPass.marchFrag", code: marchFragWGSL() }),
         entryPoint: "main",
         targets: [{ format: "rgba16float" }]
       },
@@ -27779,39 +27973,43 @@ var VolumetricPass = class {
     });
   }
   _createCompositePipeline() {
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    const bgl = this.device.createBindGroupLayout({
+      label: "VolumetricPass.compositeBGL",
       entries: [
-        // 0: scene color
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        // 1: volumetric result
         { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        // 2: sampler
         { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        // 3: params (for scatterStrength)
         { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
       ]
     });
     return this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+      label: "VolumetricPass.compositePipeline",
+      layout: this.device.createPipelineLayout({
+        label: "VolumetricPass.compositePipelineLayout",
+        bindGroupLayouts: [bgl]
+      }),
       vertex: {
-        module: this.device.createShaderModule({ code: volumetricFullscreenQuadWGSL() }),
+        module: this.device.createShaderModule({ label: "VolumetricPass.compositeVert", code: fullscreenVertWGSL() }),
         entryPoint: "vert"
       },
       fragment: {
-        module: this.device.createShaderModule({ code: volumetricCompositeWGSL() }),
+        module: this.device.createShaderModule({ label: "VolumetricPass.compositeFrag", code: compositeFragWGSL() }),
         entryPoint: "main",
         targets: [{ format: "rgba16float" }]
       },
       primitive: { topology: "triangle-list" }
     });
   }
+  // ─── Bind Groups ───────────────────────────────────────────────────────────
   _marchBindGroup(depthView, shadowArrayView) {
     return this.device.createBindGroup({
+      label: "VolumetricPass.marchBindGroup",
       layout: this.marchPipeline.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: depthView },
         { binding: 1, resource: shadowArrayView },
         { binding: 2, resource: this.depthSampler },
+        // comparison sampler
         { binding: 3, resource: { buffer: this.invViewProjBuffer } },
         { binding: 4, resource: { buffer: this.lightViewProjBuffer } },
         { binding: 5, resource: { buffer: this.lightDirBuffer } },
@@ -27822,6 +28020,7 @@ var VolumetricPass = class {
   }
   _compositeBindGroup(sceneView) {
     return this.device.createBindGroup({
+      label: "VolumetricPass.compositeBindGroup",
       layout: this.compositePipeline.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: sceneView },
@@ -27831,68 +28030,40 @@ var VolumetricPass = class {
       ]
     });
   }
-  _beginFullscreenPass(encoder, targetView) {
-    return encoder.beginRenderPass({
-      colorAttachments: [{
-        view: targetView,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: { r: 0, g: 0, b: 0, a: 0 }
-      }]
-    });
-  }
-  // ─── Main render — call after transPass.end(), before bloom ───────────────
+  // ─── Render ────────────────────────────────────────────────────────────────
   /**
    * @param {GPUCommandEncoder} encoder
-   * @param {GPUTextureView} sceneView       — your sceneTextureView
-   * @param {GPUTextureView} depthView       — your mainDepthView
-   * @param {GPUTextureView} shadowArrayView — your shadowArrayView
-   * @param {object} camera  — needs .invViewProjectionMatrix (Float32Array 16)
-   * @param {object} light   — needs .viewProjectionMatrix (Float32Array 16)
-   *                           and .direction [x,y,z]
+   * @param {GPUTextureView} sceneView        — your sceneTextureView
+   * @param {GPUTextureView} depthView        — your mainDepthView
+   * @param {GPUTextureView} shadowArrayView  — your shadowArrayView
+   * @param {object} camera  — { invViewProjectionMatrix: Float32Array(16) }
+   * @param {object} light   — { viewProjectionMatrix: Float32Array(16), direction: [x,y,z] }
    */
   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
-    this.device.queue.writeBuffer(
-      this.invViewProjBuffer,
-      0,
-      camera.invViewProjectionMatrix
-    );
-    this.device.queue.writeBuffer(
-      this.lightViewProjBuffer,
-      0,
-      light.viewProjectionMatrix
-    );
-    this.device.queue.writeBuffer(
-      this.lightDirBuffer,
-      0,
-      new Float32Array([...light.direction, 0])
-    );
+    this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
+    this.device.queue.writeBuffer(this.lightViewProjBuffer, 0, light.viewProjectionMatrix);
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, new Float32Array([...light.direction, 0]));
     {
-      const pass2 = this._beginFullscreenPass(encoder, this.volumetricTex.createView());
+      const pass2 = this._beginPass(encoder, this.volumetricTex.createView(), "VolumetricPass.marchPass");
       pass2.setPipeline(this.marchPipeline);
       pass2.setBindGroup(0, this._marchBindGroup(depthView, shadowArrayView));
       pass2.draw(6);
       pass2.end();
     }
     {
-      const pass2 = this._beginFullscreenPass(encoder, this.compositeOutputTex.createView());
+      const pass2 = this._beginPass(encoder, this.compositeOutputTex.createView(), "VolumetricPass.compositePass");
       pass2.setPipeline(this.compositePipeline);
       pass2.setBindGroup(0, this._compositeBindGroup(sceneView));
       pass2.draw(6);
       pass2.end();
     }
   }
-  /**
-   * Call once after constructor — creates the composite output texture.
-   * Separated so you can call it on resize too.
-   */
+  /** Call once after constructor. Chainable: new VolumetricPass(...).init() */
   init() {
     this.compositeOutputTex = this._createTexture(this.width, this.height);
     return this;
   }
-  /**
-   * Call on canvas resize
-   */
+  /** Call on canvas resize */
   resize(width, height) {
     this.width = width;
     this.height = height;
@@ -27900,7 +28071,7 @@ var VolumetricPass = class {
     this.compositeOutputTex = this._createTexture(width, height);
   }
 };
-function volumetricFullscreenQuadWGSL() {
+function fullscreenVertWGSL() {
   return (
     /* wgsl */
     `
@@ -27915,136 +28086,93 @@ function volumetricFullscreenQuadWGSL() {
   `
   );
 }
-function volumetricMarchWGSL() {
+function marchFragWGSL() {
   return (
     /* wgsl */
     `
 
-  // \u2500\u2500 Bindings \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  @group(0) @binding(0) var depthTex:      texture_depth_2d;
-  @group(0) @binding(1) var shadowTex:     texture_depth_2d_array;
-  @group(0) @binding(2) var depthSampler:  sampler_comparison;
+  @group(0) @binding(0) var depthTex:   texture_depth_2d;
+  @group(0) @binding(1) var shadowTex:  texture_depth_2d_array;
+  @group(0) @binding(2) var cmpSamp:    sampler_comparison;
   @group(0) @binding(3) var<uniform> invViewProj:   mat4x4<f32>;
   @group(0) @binding(4) var<uniform> lightViewProj: mat4x4<f32>;
   @group(0) @binding(5) var<uniform> lightDir:      vec4<f32>;
   @group(0) @binding(6) var<uniform> lightColor:    vec4<f32>;
 
-  struct Params {
-    density:        f32,
-    steps:          f32,  // float so no layout issues
-    scatterStrength: f32,
-    heightFalloff:  f32,
-  };
+  struct Params { density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32 }
   @group(0) @binding(7) var<uniform> params: Params;
 
-  // \u2500\u2500 Reconstruct world position from NDC depth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  fn worldFromDepth(uv: vec2<f32>, depth: f32) -> vec3<f32> {
-    let ndc = vec4(uv * 2.0 - 1.0, depth, 1.0);
-    // Flip Y \u2014 WebGPU NDC Y is inverted vs GL
-    let ndc_wgpu = vec4(ndc.x, -ndc.y, ndc.z, ndc.w);
-    let worldH = invViewProj * ndc_wgpu;
-    return worldH.xyz / worldH.w;
+  fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+    let ndc   = vec4(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+    let world = invViewProj * ndc;
+    return world.xyz / world.w;
   }
 
-  // \u2500\u2500 Shadow test against light's shadow map (layer 0 = first light) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  fn inShadow(worldPos: vec3<f32>) -> f32 {
-    let lightSpace = lightViewProj * vec4(worldPos, 1.0);
-    var proj = lightSpace.xyz / lightSpace.w;
-    // NDC \u2192 UV
-    let uv = proj.xy * 0.5 + 0.5;
-    // clamp to valid range
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-      return 1.0; // outside shadow map = lit
-    }
-    // WebGPU shadow comparison: returns 1.0 if NOT in shadow
-    return textureSampleCompare(shadowTex, depthSampler, uv, 0, proj.z - 0.002);
+  fn fogDensity(p: vec3<f32>) -> f32 {
+    return params.density * exp(-max(p.y, 0.0) * params.heightFalloff);
   }
 
-  // \u2500\u2500 Height-based fog density \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  fn fogDensity(worldPos: vec3<f32>) -> f32 {
-    let heightFog = exp(-max(worldPos.y, 0.0) * params.heightFalloff);
-    return params.density * heightFog;
-  }
-
-  // \u2500\u2500 Main fragment \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   @fragment
-  fn main(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
+  fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+    let sz    = vec2<f32>(textureDimensions(depthTex));
+    let uv    = fc.xy / sz;
+    let depth = textureLoad(depthTex, vec2<i32>(fc.xy), 0);
 
-    let texSize  = vec2<f32>(textureDimensions(depthTex));
-    let uv       = fragCoord.xy / texSize;
+    let ro    = worldPos(uv, 0.0);
+    let rt    = worldPos(uv, depth);
+    let rlen  = length(rt - ro);
+    let rdir  = normalize(rt - ro);
+    let steps = max(i32(params.steps), 8);
+    let step  = rlen / f32(steps);
 
-    // Scene depth at this pixel \u2192 gives us ray end point
-    let sceneDepth = textureLoad(depthTex, vec2<i32>(fragCoord.xy), 0);
+    var accum = vec3<f32>(0.0);
+    var trans = 1.0;
 
-    // Camera origin (NDC depth 0 = near plane)
-    let rayOrigin = worldFromDepth(uv, 0.0);
-    let rayTarget = worldFromDepth(uv, sceneDepth);
-    let rayVec    = rayTarget - rayOrigin;
-    let rayLen    = length(rayVec);
-    let rayDir    = normalize(rayVec);
+    for (var i = 0; i < steps; i++) {
+      let p = ro + rdir * ((f32(i) + 0.5) * step);
 
-    let numSteps  = max(i32(params.steps), 8);
-    let stepSize  = rayLen / f32(numSteps);
+      // \u2500\u2500 textureSampleCompare MUST be in uniform control flow \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+      // Compute shadow coords for every sample unconditionally.
+      // Gate the contribution with branchless math \u2014 never use if/continue/break above this call.
+      let ls  = lightViewProj * vec4(p, 1.0);
+      let lp  = ls.xyz / ls.w;
+      let suv = lp.xy * 0.5 + 0.5;
 
-    var accumulated  = vec3<f32>(0.0);
-    var transmittance = 1.0;
+      let shadow   = textureSampleCompare(shadowTex, cmpSamp, suv, 0, lp.z - 0.002);
+      let inBounds = f32(suv.x >= 0.0 && suv.x <= 1.0 && suv.y >= 0.0 && suv.y <= 1.0);
+      let lit      = shadow * inBounds;
 
-    for (var i = 0; i < numSteps; i++) {
-      let t   = (f32(i) + 0.5) * stepSize;
-      let pos = rayOrigin + rayDir * t;
+      let d   = fogDensity(p) * step;
+      let ext = exp(-d);
+      let s   = trans * (1.0 - ext) * lit * params.scatterStrength * f32(d > 0.0001);
 
-      let density = fogDensity(pos) * stepSize;
-      if (density < 0.0001) { continue; }
-
-      // Beer\u2013Lambert extinction for this step
-      let extinction = exp(-density);
-      let lit = inShadow(pos);
-
-      // In-scattering contribution
-      let scatter = transmittance * (1.0 - extinction) * lit * params.scatterStrength;
-      accumulated += scatter * lightColor.rgb;
-
-      transmittance *= extinction;
-      if (transmittance < 0.01) { break; }
+      accum += s * lightColor.rgb;
+      trans *= select(1.0, ext, d > 0.0001);
     }
 
-    // alpha = how much the fog blocks the scene
-    return vec4<f32>(accumulated, 1.0 - transmittance);
+    return vec4<f32>(accum, 1.0 - trans);
   }
   `
   );
 }
-function volumetricCompositeWGSL() {
+function compositeFragWGSL() {
   return (
     /* wgsl */
     `
 
-  struct Params {
-    density:        f32,
-    steps:          f32,
-    scatterStrength: f32,
-    heightFalloff:  f32,
-  };
-
-  @group(0) @binding(0) var sceneTex:      texture_2d<f32>;
-  @group(0) @binding(1) var volumetricTex: texture_2d<f32>;
-  @group(0) @binding(2) var samp:          sampler;
+  @group(0) @binding(0) var sceneTex: texture_2d<f32>;
+  @group(0) @binding(1) var volTex:   texture_2d<f32>;
+  @group(0) @binding(2) var samp:     sampler;
+  struct Params { density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32 }
   @group(0) @binding(3) var<uniform> params: Params;
 
   @fragment
-  fn main(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
-    let size = vec2<f32>(textureDimensions(sceneTex));
-    let uv   = fragCoord.xy / size;
-
+  fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+    let uv    = fc.xy / vec2<f32>(textureDimensions(sceneTex));
     let scene = textureSample(sceneTex, samp, uv);
-    let vol   = textureSample(volumetricTex, samp, uv);
-
-    // vol.rgb = scattered light color
-    // vol.a   = fog opacity (how much it blocks scene)
-    // Result: scene dimmed by fog + scattered light added
-    let color = scene.rgb * (1.0 - vol.a) + vol.rgb;
-
-    return vec4<f32>(color, scene.a);
+    let vol   = textureSample(volTex, samp, uv);
+    // vol.rgb = scattered light | vol.a = fog opacity
+    return vec4<f32>(scene.rgb * (1.0 - vol.a) + vol.rgb, scene.a);
   }
   `
   );
@@ -28286,7 +28414,7 @@ var MatrixEngineWGPU = class {
       setThreshold: (v) => {
       }
     };
-    this.volumetrixPass = {
+    this.volumetricPass = {
       enabled: false
     };
     this.bloomOutputTex = this.device.createTexture({
@@ -28659,6 +28787,7 @@ var MatrixEngineWGPU = class {
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();
+        if (mesh.update) mesh.update();
         this.lightContainer.forEach((light) => {
           light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
@@ -28785,7 +28914,7 @@ var MatrixEngineWGPU = class {
           // ← your existing shadow array
           { invViewProjectionMatrix: invViewProj },
           {
-            viewProjectionMatrix: light.viewProjectionMatrix,
+            viewProjectionMatrix: light.viewProjMatrix,
             // Float32Array 16
             direction: light.direction
             // [x, y, z]
