@@ -23,6 +23,12 @@ It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle
 
 Published on npm as: **`matrix-engine-wgpu`**
 
+Browser support list:
+ - Chrome    - desktop [windows]
+ - Firefox   - desktop [windows]
+ - Edge      - desktop [windows]
+ - Opera     - desktop [windows]
+
 ---
 
 ## Done list []

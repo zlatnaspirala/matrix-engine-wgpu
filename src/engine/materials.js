@@ -5,7 +5,7 @@ import {fragmentWGSLPong} from "../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
 import {fragmentWGSLMix1} from "../shaders/mixed/fragmentMix1.wgsl";
 import {fragmentWaterWGSL} from "../shaders/water/water-c.wgls";
-import {LOG_FUNNY_ARCADE} from "./utils";
+import {byId, LOG_FUNNY_ARCADE} from "./utils";
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -343,26 +343,29 @@ export default class Materials {
       this.video = arg.el;
       await this.video.play();
     } else if(arg.type === 'camera') {
-      this.video = document.createElement('video');
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = 'none';
-      document.body.append(this.video);
-      try {
-        const stream = await (navigator.mediaDevices?.getUserMedia?.({
-          video: {
-            width: {ideal: 1280},
-            height: {ideal: 720},
-          },
-          audio: false
-        }));
-        this.video.srcObject = stream;
-        await this.video.play();
-        this.isVideo = true;
-      } catch(err) {
-        console.error("❌ Failed to access camera:", err);
-        return;
+      if(!byId(`core-${this.name}`)) {
+        this.video = document.createElement('video');
+        this.video.id = `core-${this.name}`;
+        this.video.autoplay = true;
+        this.video.muted = true;
+        this.video.playsInline = true;
+        this.video.style.display = 'none';
+        document.body.append(this.video);
+        try {
+          const stream = await (navigator.mediaDevices?.getUserMedia?.({
+            video: {
+              width: {ideal: 1280},
+              height: {ideal: 720},
+            },
+            audio: false
+          }));
+          this.video.srcObject = stream;
+          await this.video.play();
+          this.isVideo = true;
+        } catch(err) {
+          console.info("❌ Failed to access camera:", err);
+          // return;
+        }
       }
     } else if(arg.type === 'canvas2d') {
       // Existing canvas (arg.el) — assume it's actively drawing
