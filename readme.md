@@ -101,7 +101,7 @@ The backend is built using **Node.js** 🟢
 - Import graph from **JSON**
 - [Experimental] Generate graphs with ai tools services First working graph done with ollama platform.
   You need to open account on ollama platform for free quota service. Get API key and add it
-  to the aitool config file (src\tools\editor\backend\config.js) Backend Config.js is on git ignored list.
+  to the aitool config file (src\tools\editor\backend\config.js) Backend Config.js is in git ignored list.
   If you need to create it use this format:
   ```js
   export const aiConfig = {
