@@ -403,6 +403,13 @@ setBlurRadius
 Fancy results:
 <img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" />
 
+### Volumetric effect
+
+In [1.9.2] added `activateVolumetricEffect`
+  !Note volumetric works only if bloom is activated. Bloom can work alone.
+  !To avoid createing bind group in loop. 
+
+
 ### Object Interaction (Raycasting)
 
 The raycast returns:

@@ -1,6 +1,16 @@
 ## CHANGES [Started from feb 2026]
 
 
+
+[1.9.2]
+  - Add activateVolumetricEffect
+  Note volumetric works only if bloom is activated. Bloom can work alone.
+  To avoid createing bind group in loop 
+
+  From claude suggestion:
+  `You are 100% right, I contradicted myself! Creating bind groups in the render loop is bad — it allocates GPU objects every frame.
+  And your instinct is correct — just always enable bloom when volumetric is on. They naturally belong together anyway (god rays + bloom = 🔥).`
+
 [1.9.1]
  - Prevent double call media device for video tex in context of "run/stop graph".
  - On "clearRuntime" :
