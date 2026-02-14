@@ -305,7 +305,11 @@ async function cnp(ws, msg) {
             name: 'FLOOR',
             mesh: m.mesh,
             raycast: {enabled: true, radius: 2},
-            physics: {enabled: false, geometry: "Cube"}
+            physics: {enabled: false, geometry: "Cube"},
+            pointerEffect: {
+              enabled: true,
+              gizmoEffect: true
+          },
           });
         }, {scale: [25, 1, 25]});\n
       // ME END FLOOR addCube\n
