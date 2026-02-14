@@ -5,6 +5,7 @@ import graph from "./graph.js";
 import {shaderGraphsProdc} from "./shader-graphs.js"
 import {gizmoEffect} from "../../src/shaders/gizmo/gimzoShader.js";
 import {addRaycastsListener} from "../../src/engine/raycast.js";
+import {flameEffect} from "../../src/shaders/flame-effect/flameEffect.js";
 
 let app = new MatrixEngineWGPU(
 
@@ -50,9 +51,10 @@ let app = new MatrixEngineWGPU(
           name: 'FLOOR',
           pointerEffect: {
             enabled: true,
-            pointEffect: true,
+            // pointEffect: true,
             gizmoEffect: true,
-            destructionEffect: true
+            // flameEffect: true,
+            // destructionEffect: true
           },
           mesh: m.mesh,
           raycast: {enabled: true, radius: 2},
@@ -86,37 +88,7 @@ let app = new MatrixEngineWGPU(
  // ME END cube1 addCube
  
 
-          // ME START FLOOR updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetZ(-19.5959686775923);
- }, 800);
- // ME END FLOOR updatePosz
- 
-   // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-4.030000000000009);
- }, 800);
- // ME END FLOOR updatePosy
- 
-   // ME START FLOOR updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(-0.30999999999999933);
- }, 800);
- // ME END FLOOR updatePosx
- 
-  // ME START cube1 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('cube1').position.SetX(-0.09999999999999618);
- }, 800);
- // ME END cube1 updatePosx
- 
-   // ME START cube1 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('cube1').position.SetY(2.349999999999998);
- }, 800);
- // ME END cube1 updatePosy
- 
-     // ME START cube1 updateRoty
+          // ME START cube1 updateRoty
  setTimeout(() => {
   app.getSceneObjectByName('cube1').rotation.y = -0;
  }, 800);
@@ -133,6 +105,75 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('cube1').rotation.x = -7.7000000000000055;
  }, 800);
  // ME END cube1 updateRotx
+ 
+  // ME START monster
+ var glbFile01 = await fetch('res/meshes/glb/monster.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+   texturesPaths = ['./res/meshes/blender/cube.png']; 
+    app.addGlbObj({ 
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     scale: [2, 2, 2],
+     name:  app.getNameFromPath('res/meshes/glb/monster.glb'),
+     material: {type: 'standard', useTextureFromGlb: true},
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: true, geometry: "Cube"}
+   }, null, glbFile01);
+ // ME END monster
+ 
+
+       // ME START monster-MutantMesh-0 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').useScale = true;
+ }, 800);
+ // ME END monster-MutantMesh-0 useScaleno info
+ 
+  // ME START cube1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetY(3.8000000000000544);
+ }, 800);
+ // ME END cube1 updatePosy
+ 
+    // ME START monster-MutantMesh-0 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').position.SetX(0.09999999999999187);
+ }, 800);
+ // ME END monster-MutantMesh-0 updatePosx
+ 
+  // ME START monster-MutantMesh-0 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').position.SetY(-4.5699999999999825);
+ }, 800);
+ // ME END monster-MutantMesh-0 updatePosy
+ 
+  // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-4.0500000000000025);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+  // ME START cube1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetX(0.12000000000000396);
+ }, 800);
+ // ME END cube1 updatePosx
+ 
+  // ME START cube1 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('cube1').position.SetZ(-20.119742224156198);
+ }, 800);
+ // ME END cube1 updatePosz
+ 
+  // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(0.7100000000000011);
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+   // ME START FLOOR updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetZ(-18.49554978527227);
+ }, 800);
+ // ME END FLOOR updatePosz
  
  // [MAIN_REPLACE2]
     })

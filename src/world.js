@@ -18,6 +18,7 @@ import {addOBJ, physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physi
 import {TextureCache} from "./engine/core-cache.js";
 import {AudioAssetManager} from "./sounds/audioAsset.js";
 import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
+import {VolumetricPass} from "./engine/postprocessing/volumetric.js";
 
 /**
  * @description
@@ -171,7 +172,7 @@ export default class MatrixEngineWGPU {
     // add defaul generatl config later
     this.cameras = {
       arcball: new ArcballCamera({position: initialCameraPosition}),
-      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18 , yaw: -0.1}),
+      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
       RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
@@ -286,6 +287,10 @@ export default class MatrixEngineWGPU {
       setKnee: (v) => {},
       setBlurRadius: (v) => {},
       setThreshold: (v) => {},
+    };
+
+    this.volumetricPass = {
+      enabled: false
     };
 
     this.bloomOutputTex = this.device.createTexture({
@@ -664,12 +669,12 @@ export default class MatrixEngineWGPU {
 
       // update meshes
       this.mainRenderBundle.forEach((mesh, index) => {
-        mesh.position.update()
-        mesh.updateModelUniformBuffer()
-
+        mesh.position.update();
+        mesh.updateModelUniformBuffer();
+        if (mesh.update) mesh.update();
         this.lightContainer.forEach((light) => {
-          light.update()
-          mesh.getTransformationMatrix(this.mainRenderBundle, light, index)
+          light.update();
+          mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
         })
       })
 
@@ -788,10 +793,44 @@ export default class MatrixEngineWGPU {
       }
       transPass.end();
 
+      // volumetric
+
+      if(this.volumetricPass.enabled === true) {
+        const cam = this.cameras[this.mainCameraParams.type];
+        // You need invViewProj — compute it from your existing matrices:
+        // cam.invViewProjectionMatrix should be mat4.invert(viewProjMatrix)
+        // If you don't store it yet, compute once per frame:
+        const invViewProj = mat4.invert(
+          mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
+        );
+
+        // Grab first light for direction + shadow matrix
+        const light = this.lightContainer[0];
+
+        this.volumetricPass.render(
+          commandEncoder,
+          this.sceneTextureView,        // ← your existing scene color
+          this.mainDepthView,           // ← your existing depth
+          this.shadowArrayView,         // ← your existing shadow array
+          {invViewProjectionMatrix: invViewProj},
+          {
+            viewProjectionMatrix: light.viewProjMatrix, // Float32Array 16
+            direction: light.direction,                       // [x, y, z]
+          }
+        );
+      }
+
+      //
+
       const canvasView = this.context.getCurrentTexture().createView();
       // Bloom
       if(this.bloomPass.enabled == true) {
-        this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
+        const bloomInput = this.volumetricPass.enabled
+          ? this.volumetricPass.compositeOutputTex.createView()
+          : this.sceneTextureView;
+        this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+        // ori
+        // this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
 
       pass = commandEncoder.beginRenderPass({
@@ -989,6 +1028,24 @@ export default class MatrixEngineWGPU {
     if(this.bloomPass.enabled != true) {
       this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
       this.bloomPass.enabled = true;
+    }
+  }
+
+  activateVolumetricEffect = () => {
+    if(this.volumetricPass.enabled != true) {
+      this.volumetricPass = new VolumetricPass(
+        this.canvas.width,
+        this.canvas.height,
+        this.device,
+        {
+          density: 0.03,
+          steps: 32,
+          scatterStrength: 1.2,
+          heightFalloff: 0.08,
+          lightColor: [1.0, 0.88, 0.65],  // warm sunlight
+        }
+      ).init();
+      this.volumetricPass.enabled = true;
     }
   }
 }

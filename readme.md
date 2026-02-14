@@ -101,7 +101,7 @@ The backend is built using **Node.js** 🟢
 - Import graph from **JSON**
 - [Experimental] Generate graphs with ai tools services First working graph done with ollama platform.
   You need to open account on ollama platform for free quota service. Get API key and add it
-  to the aitool config file (src\tools\editor\backend\config.js) Backend Config.js is on git ignored list.
+  to the aitool config file (src\tools\editor\backend\config.js) Backend Config.js is in git ignored list.
   If you need to create it use this format:
   ```js
   export const aiConfig = {
@@ -402,6 +402,13 @@ setBlurRadius
 
 Fancy results:
 <img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" />
+
+### Volumetric effect
+
+In [1.9.2] added `activateVolumetricEffect`
+  !Note volumetric works only if bloom is activated. Bloom can work alone.
+  !To avoid createing bind group in loop. 
+
 
 ### Object Interaction (Raycasting)
 
