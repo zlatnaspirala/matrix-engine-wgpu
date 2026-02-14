@@ -91,7 +91,7 @@ export default class FluxCodexVertex {
         allOnDraws[x]._listenerAttached = false;
       }
       let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled == false)
-      getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = true;
+      if (getCurrentGIzmoObj.length>0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = true;
       // stop vertext anims
       // let allVertexAnims = Object.values(this.nodes).filter((n) =>
       //   n.title == "Set Vertex Wave" || n.title == "Set Vertex Wind" || n.title == "Set Vertex Pulse" ||
@@ -4820,7 +4820,9 @@ export default class FluxCodexVertex {
       "mousedown",
       this.handleBoardWrapMouseDown.bind(this)
     );
-
+    this.boardWrap.addEventListener("click", () => {
+      byId("app").style.opacity = 1;
+    });
     this.board.addEventListener("click", () => {
       byId("app").style.opacity = 1;
     });
@@ -4900,7 +4902,7 @@ export default class FluxCodexVertex {
       return;
     }
     let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled)
-    getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
+    if (getCurrentGIzmoObj.length>0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
 
     byId("app").style.opacity = 0.5;
     this.initEventNodes();
