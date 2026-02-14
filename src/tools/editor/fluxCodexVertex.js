@@ -90,13 +90,13 @@ export default class FluxCodexVertex {
       for(var x = 0;x < allOnDraws.length;x++) {
         allOnDraws[x]._listenerAttached = false;
       }
-
+      let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled == false)
+      if (getCurrentGIzmoObj.length>0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = true;
       // stop vertext anims
       // let allVertexAnims = Object.values(this.nodes).filter((n) =>
       //   n.title == "Set Vertex Wave" || n.title == "Set Vertex Wind" || n.title == "Set Vertex Pulse" ||
       //   n.title == "Set Vertex Twist" || n.title == "Set Vertex Ocean" || n.title == "Set Vertex Noise");
       app.mainRenderBundle.forEach((o) => {o.vertexAnim.disableAll()});
-
       for(let x = 0;x < runtimeCacheObjs.length;x++) {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
@@ -4449,19 +4449,10 @@ export default class FluxCodexVertex {
       let specularPower = this.getValue(nodeId, "specularPower");
       let sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(deepColor && sceneObjectName) {
-        console.log('deepColor', deepColor)
         deepColor = JSON.parse(deepColor);
         shallowColor = JSON.parse(shallowColor);
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.updateWaterParams(
-          deepColor,
-          shallowColor,
-          waveSpeed,
-          waveScale,
-          waveHeight,
-          fresnelPower,
-          specularPower
-        );
+        obj.updateWaterParams(deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower);
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -4829,7 +4820,9 @@ export default class FluxCodexVertex {
       "mousedown",
       this.handleBoardWrapMouseDown.bind(this)
     );
-
+    this.boardWrap.addEventListener("mousedown", () => {
+      byId("app").style.opacity = 1;
+    });
     this.board.addEventListener("click", () => {
       byId("app").style.opacity = 1;
     });
@@ -4903,11 +4896,14 @@ export default class FluxCodexVertex {
 
   runGraph() {
     if(byId("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
-      // Just dummy thoughts —> this is wrong.
-      // Every data in DOMs is good to use like status flas or any others calls.
+      // Dummy thoughts —> this is wrong.
+      // Every data in DOMs is good to use like status flags or any others calls.
       if(mb) mb.show('FluxCodexVertex not ready yet...');
       return;
     }
+    let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled)
+    if (getCurrentGIzmoObj.length>0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
+
     byId("app").style.opacity = 0.5;
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => (n._returnCache = undefined));

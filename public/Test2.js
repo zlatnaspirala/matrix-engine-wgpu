@@ -5427,26 +5427,28 @@ var Materials = class {
       this.video = arg.el;
       await this.video.play();
     } else if (arg.type === "camera") {
-      this.video = document.createElement("video");
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = "none";
-      document.body.append(this.video);
-      try {
-        const stream = await navigator.mediaDevices?.getUserMedia?.({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        });
-        this.video.srcObject = stream;
-        await this.video.play();
-        this.isVideo = true;
-      } catch (err) {
-        console.error("\u274C Failed to access camera:", err);
-        return;
+      if (!byId(`core-${this.name}`)) {
+        this.video = document.createElement("video");
+        this.video.id = `core-${this.name}`;
+        this.video.autoplay = true;
+        this.video.muted = true;
+        this.video.playsInline = true;
+        this.video.style.display = "none";
+        document.body.append(this.video);
+        try {
+          const stream = await navigator.mediaDevices?.getUserMedia?.({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+          this.video.srcObject = stream;
+          await this.video.play();
+          this.isVideo = true;
+        } catch (err) {
+          console.info("\u274C Failed to access camera:", err);
+        }
       }
     } else if (arg.type === "canvas2d") {
       this.video = document.createElement("video");

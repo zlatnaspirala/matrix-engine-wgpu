@@ -225,7 +225,8 @@ function CBimport() {
 import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 import graph from "./graph.js";
-import {shaderGraphsProdc} from "./shader-graphs.js"
+import {shaderGraphsProdc} from "./shader-graphs.js";
+import {addRaycastsListener} from "../../src/engine/raycast.js";
 `;
 }
 
@@ -287,6 +288,9 @@ async function cnp(ws, msg) {
   content.addLine(`   if (typeof shaderReady.final === "undefined") console.warn(\`Shader \${shaderReady.name} is not compiled.\`);`);
   content.addLine(` });`);
 
+  // not sure for now - for prodc final...
+  content.addLine(`addRaycastsListener("canvas1", "mousedown");`);
+
   // graph
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);
@@ -301,7 +305,11 @@ async function cnp(ws, msg) {
             name: 'FLOOR',
             mesh: m.mesh,
             raycast: {enabled: true, radius: 2},
-            physics: {enabled: false, geometry: "Cube"}
+            physics: {enabled: false, geometry: "Cube"},
+            pointerEffect: {
+              enabled: true,
+              gizmoEffect: true
+          },
           });
         }, {scale: [25, 1, 25]});\n
       // ME END FLOOR addCube\n

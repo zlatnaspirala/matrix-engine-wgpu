@@ -1,6 +1,15 @@
 ## CHANGES [Started from feb 2026]
 
 
+[1.9.1]
+ - Prevent double call media device for video tex in context of "run/stop graph".
+ - On "clearRuntime" :
+    let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled == false)
+    getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = true;
+   On "runGraph"
+    let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled)
+    getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
+
 
 [1.9.0]
 

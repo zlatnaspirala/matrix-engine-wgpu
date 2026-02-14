@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.9.0 2026
+📅 Version: 1.9.1 2026
 
 ---
 
@@ -22,6 +22,12 @@ This project is a `stable` but also `work-in-progress` WebGPU engine inspired by
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`**
+
+Browser support list:
+ - Chrome    - desktop [windows]
+ - Firefox   - desktop [windows]
+ - Edge      - desktop [windows]
+ - Opera     - desktop [windows]
 
 ---
 
