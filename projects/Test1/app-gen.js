@@ -158,12 +158,6 @@ let app = new MatrixEngineWGPU(
       }, 800);
       // ME END REEL_2 updateScale1
 
-      // ME START REEL_2 updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('REEL_2').position.SetX(0);
-      }, 800);
-      // ME END REEL_2 updatePosx
-
       // ME START REEL_3
       downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => {
         const texturesPaths = ['./res/meshes/blender/cube.png'];
@@ -232,12 +226,6 @@ let app = new MatrixEngineWGPU(
         app.getSceneObjectByName('REEL_3').position.SetY(3);
       }, 800);
       // ME END REEL_3 updatePosy
-
-      // ME START L_BOX updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('L_BOX').position.SetY(1);
-      }, 800);
-      // ME END L_BOX updatePosy
 
       // ME START R_BOX updatePosy
       setTimeout(() => {
@@ -546,13 +534,7 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END R_BOX updatePosz
  
-     // ME START BANNER2 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('BANNER2').position.SetX(-9);
- }, 800);
- // ME END BANNER2 updatePosx
- 
-   // ME START BANNER1 updatePosy
+     // ME START BANNER1 updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('BANNER1').position.SetY(9);
  }, 800);
@@ -587,6 +569,30 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('REEL_TOP').position.SetY(3);
  }, 800);
  // ME END REEL_TOP updatePosy
+ 
+  // ME START BANNER2 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').position.SetX(-9);
+ }, 800);
+ // ME END BANNER2 updatePosx
+ 
+  // ME START L_BOX updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').position.SetY(0.6600000000000011);
+ }, 800);
+ // ME END L_BOX updatePosy
+ 
+   // ME START REEL_2 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').position.SetX(0.03);
+ }, 800);
+ // ME END REEL_2 updatePosx
+ 
+   // ME START REEL_TOP updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').position.SetZ(-19.232895546643668);
+ }, 800);
+ // ME END REEL_TOP updatePosz
  
  // [MAIN_REPLACE2]
 

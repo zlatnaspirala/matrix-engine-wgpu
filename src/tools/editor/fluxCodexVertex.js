@@ -4820,7 +4820,7 @@ export default class FluxCodexVertex {
       "mousedown",
       this.handleBoardWrapMouseDown.bind(this)
     );
-    this.boardWrap.addEventListener("click", () => {
+    this.boardWrap.addEventListener("mousedown", () => {
       byId("app").style.opacity = 1;
     });
     this.board.addEventListener("click", () => {
