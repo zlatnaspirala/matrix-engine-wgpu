@@ -269,7 +269,7 @@ export default class Materials {
 
   setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0) {
     if(!metallicFactor) metallicFactor = 0.5;
-    if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
     if(!roughnessFactor) roughnessFactor = 0.5;
     const materialArray = new Float32Array([
       ...baseColorFactor,

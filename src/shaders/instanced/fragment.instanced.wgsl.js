@@ -237,7 +237,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // let alpha = input.colorMult.a; // use alpha for blending
     // return vec4f(finalColor, alpha);
 
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
-    // ✅ Return color with alpha from material
+    let alpha = materialData.alpha;
     return vec4f(finalColor, alpha);
+    // return vec4f(1.0, 0.0, 0.0, 0.1);
 }`;

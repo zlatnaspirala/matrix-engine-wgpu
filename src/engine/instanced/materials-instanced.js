@@ -236,7 +236,7 @@ export default class MaterialsInstanced {
 
   setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
     if(!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
-    if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
     if(!roughnessFactor) roughnessFactor = 0.5;
     const pad = [0.0];
     const materialArray = new Float32Array([

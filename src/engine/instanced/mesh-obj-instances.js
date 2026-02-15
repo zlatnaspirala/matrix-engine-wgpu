@@ -34,7 +34,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
-    this.blendInstanced = false;
 
     this.useScale = o.useScale || false;
 
@@ -719,7 +718,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
         const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR(false, false, false, effectMix, 1.0);
+
+        // Pass explicit alpha — 0.5 = semi transparent
+        this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
       }
       //
       this.modelBindGroup = this.device.createBindGroup({
@@ -849,31 +850,54 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   setupPipeline = () => {
     this.createBindGroupForRender();
 
-    const baseDesc = {
-      label: 'Mesh Pipeline Base',
-      layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout Mesh',
-        bindGroupLayouts: [
-          this.bglForRender,
-          this.uniformBufferBindGroupLayoutInstanced,
-          this.selectedBindGroupLayout
-        ],
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: vertexWGSLInstanced,
-        }),
-        buffers: this.vertexBuffers,
-      },
+    console.log('%c[Pipeline Debug]', 'color: cyan', {
+      meshName: this.label ?? this.name ?? 'unknown',
+      useBlend: this.material?.useBlend,
+      baseColorA: this.material?.baseColorFactor?.[3],
+      shaderPreview: this.getMaterial?.().slice(0, 80),
+    });
+
+    const pipelineLayout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Mesh',
+      bindGroupLayouts: [
+        this.bglForRender,
+        this.uniformBufferBindGroupLayoutInstanced,
+        this.selectedBindGroupLayout
+      ],
+    });
+
+    const vertexModule = this.device.createShaderModule({
+      label: 'VertexShader Mesh',
+      code: vertexWGSLInstanced,
+    });
+
+    const fragmentModule = this.device.createShaderModule({
+      label: 'FragmentShader Mesh',
+      code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial(),
+    });
+
+    const vertexState = {
+      entryPoint: 'main',
+      module: vertexModule,
+      buffers: this.vertexBuffers,
+    };
+
+    const fragmentConstants = {
+      shadowDepthTextureSize: this.shadowDepthTextureSize,
+    };
+
+    // ── Opaque pipeline ───────────────────────────────────────────────────────
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'Pipeline Opaque ✅',
+      layout: pipelineLayout,
+      vertex: vertexState,
       fragment: {
         entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: (this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()),
-        }),
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize,
-        },
+        module: fragmentModule,
+        constants: fragmentConstants,
+        targets: [{
+          format: 'rgba16float',
+        }],
       },
       depthStencil: {
         depthWriteEnabled: true,
@@ -881,29 +905,19 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         format: 'depth24plus',
       },
       primitive: this.primitive,
-    };
-
-    // --- Normal (no blending)
-    this.pipeline = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: 'Mesh Pipeline Opaque ✅',
-      fragment: {
-        ...baseDesc.fragment,
-        targets: [{
-          format: 'rgba16float', //this.presentationFormat,
-          blend: undefined,
-        }],
-      },
     });
 
-    // --- Blended (alpha)
-    this.pipelineBlended = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: 'Mesh Pipeline Blended ✅',
+    // ── Transparent pipeline ──────────────────────────────────────────────────
+    this.pipelineTransparent = this.device.createRenderPipeline({
+      label: 'Pipeline Transparent ✅',
+      layout: pipelineLayout,
+      vertex: vertexState,
       fragment: {
-        ...baseDesc.fragment,
+        entryPoint: 'main',
+        module: fragmentModule,
+        constants: fragmentConstants,
         targets: [{
-          format: this.presentationFormat,
+          format: 'rgba16float',
           blend: {
             color: {
               srcFactor: 'src-alpha',
@@ -919,13 +933,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }],
       },
       depthStencil: {
-        depthWriteEnabled: false, // <<< disable depth write for transparency
+        depthWriteEnabled: false,  // transparent never writes depth
         depthCompare: 'less',
         format: 'depth24plus',
       },
+      primitive: this.primitive,
     });
-
-    // console.log('✅Pipelines done');
   };
 
   updateModelUniformBuffer = () => {
@@ -1039,11 +1052,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     }
 
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
-    pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
+    // pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
-    // pipelineBlended
-    if(this.blendInstanced == true) pass.setPipeline(this.pipelineBlended)
+    // pipelineTransparent
+    if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
     else pass.setPipeline(this.pipeline);
 
     for(var ins = 1;ins < this.instanceCount;ins++) {
