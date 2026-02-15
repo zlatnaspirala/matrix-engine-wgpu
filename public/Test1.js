@@ -5357,7 +5357,7 @@ var Materials = class {
   }
   setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0, lightingEnabled = 1) {
     if (!metallicFactor) metallicFactor = 0.5;
-    if (!baseColorFactor) baseColorFactor = [1, 1, 1, 1];
+    if (!baseColorFactor) baseColorFactor = [1, 1, 1, 0.5];
     if (!roughnessFactor) roughnessFactor = 0.5;
     const materialArray = new Float32Array([
       ...baseColorFactor,
@@ -8510,7 +8510,7 @@ var MEMeshObj = class extends Materials {
         this.vertexAnimParams[0] = this.time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
         const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR(false, false, false, effectMix, 1);
+        this.setupMaterialPBR([1, 1, 1, 0.5], false, false, effectMix, 1);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
@@ -14386,9 +14386,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // let alpha = input.colorMult.a; // use alpha for blending
     // return vec4f(finalColor, alpha);
 
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
-    // \u2705 Return color with alpha from material
+    let alpha = materialData.alpha;
     return vec4f(finalColor, alpha);
+    // return vec4f(1.0, 0.0, 0.0, 0.1);
 }`;
 
 // ../../../engine/instanced/materials-instanced.js
@@ -14605,7 +14605,7 @@ var MaterialsInstanced = class {
   }
   setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
     if (!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
-    if (!baseColorFactor) baseColorFactor = [1, 1, 1, 1];
+    if (!baseColorFactor) baseColorFactor = [1, 1, 1, 0.5];
     if (!roughnessFactor) roughnessFactor = 0.5;
     const pad = [0];
     const materialArray = new Float32Array([
@@ -16485,7 +16485,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
-    this.blendInstanced = false;
     this.useScale = o2.useScale || false;
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
@@ -17127,7 +17126,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
         const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR(false, false, false, effectMix, 1);
+        this.setupMaterialPBR([1, 1, 1, 0.5], false, false, effectMix, 1);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
@@ -17246,31 +17245,47 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
-    const baseDesc = {
-      label: "Mesh Pipeline Base",
-      layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout Mesh",
-        bindGroupLayouts: [
-          this.bglForRender,
-          this.uniformBufferBindGroupLayoutInstanced,
-          this.selectedBindGroupLayout
-        ]
-      }),
-      vertex: {
-        entryPoint: "main",
-        module: this.device.createShaderModule({
-          code: vertexWGSLInstanced
-        }),
-        buffers: this.vertexBuffers
-      },
+    console.log("%c[Pipeline Debug]", "color: cyan", {
+      meshName: this.label ?? this.name ?? "unknown",
+      useBlend: this.material?.useBlend,
+      baseColorA: this.material?.baseColorFactor?.[3],
+      shaderPreview: this.getMaterial?.().slice(0, 80)
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      label: "PipelineLayout Mesh",
+      bindGroupLayouts: [
+        this.bglForRender,
+        this.uniformBufferBindGroupLayoutInstanced,
+        this.selectedBindGroupLayout
+      ]
+    });
+    const vertexModule = this.device.createShaderModule({
+      label: "VertexShader Mesh",
+      code: vertexWGSLInstanced
+    });
+    const fragmentModule = this.device.createShaderModule({
+      label: "FragmentShader Mesh",
+      code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()
+    });
+    const vertexState = {
+      entryPoint: "main",
+      module: vertexModule,
+      buffers: this.vertexBuffers
+    };
+    const fragmentConstants = {
+      shadowDepthTextureSize: this.shadowDepthTextureSize
+    };
+    this.pipeline = this.device.createRenderPipeline({
+      label: "Pipeline Opaque \u2705",
+      layout: pipelineLayout,
+      vertex: vertexState,
       fragment: {
         entryPoint: "main",
-        module: this.device.createShaderModule({
-          code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()
-        }),
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
-        }
+        module: fragmentModule,
+        constants: fragmentConstants,
+        targets: [{
+          format: "rgba16float"
+        }]
       },
       depthStencil: {
         depthWriteEnabled: true,
@@ -17278,26 +17293,17 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         format: "depth24plus"
       },
       primitive: this.primitive
-    };
-    this.pipeline = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: "Mesh Pipeline Opaque \u2705",
+    });
+    this.pipelineTransparent = this.device.createRenderPipeline({
+      label: "Pipeline Transparent \u2705",
+      layout: pipelineLayout,
+      vertex: vertexState,
       fragment: {
-        ...baseDesc.fragment,
+        entryPoint: "main",
+        module: fragmentModule,
+        constants: fragmentConstants,
         targets: [{
           format: "rgba16float",
-          //this.presentationFormat,
-          blend: void 0
-        }]
-      }
-    });
-    this.pipelineBlended = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: "Mesh Pipeline Blended \u2705",
-      fragment: {
-        ...baseDesc.fragment,
-        targets: [{
-          format: this.presentationFormat,
           blend: {
             color: {
               srcFactor: "src-alpha",
@@ -17314,10 +17320,11 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        // <<< disable depth write for transparency
+        // transparent never writes depth
         depthCompare: "less",
         format: "depth24plus"
-      }
+      },
+      primitive: this.primitive
     });
   };
   updateModelUniformBuffer = () => {
@@ -17408,8 +17415,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       pass2.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
     pass2.setIndexBuffer(this.indexBuffer, "uint16");
-    pass2.drawIndexed(this.indexCount, 1, 0, 0, 0);
-    if (this.blendInstanced == true) pass2.setPipeline(this.pipelineBlended);
+    if (this.material.useBlend == true) pass2.setPipeline(this.pipelineTransparent);
     else pass2.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
       pass2.drawIndexed(this.indexCount, 1, 0, 0, ins);
@@ -23338,6 +23344,23 @@ var FluxCodexVertex = class {
         ],
         outputs: [{ name: "execOut", type: "action" }]
       }),
+      setBlend: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Blend",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "alpha", type: "number" },
+          { name: "sceneObjectName", semantic: "string" }
+        ],
+        fields: [
+          { key: "sceneObjectName", value: "FLOOR" },
+          { key: "alpha", value: 0.5 }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
       setProductionMode: (id2, x2, y2) => ({
         id: id2,
         x: x2,
@@ -25161,6 +25184,15 @@ var FluxCodexVertex = class {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Blend") {
+      const a = parseFloat(this.getValue(nodeId, "alpha"));
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if (sceneObjectName) {
+        let obj2 = app.getSceneObjectByName(sceneObjectName);
+        obj2.setBlend(a);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if (n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
@@ -25731,26 +25763,22 @@ var EditorHud = class {
       let getPATH = e.detail.details.path.split("public")[1];
       const ext = getPATH.split(".").pop();
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
-        let name2 = prompt("\u{1F4E6} GLB file : ", getPATH);
-        let objName = prompt("\u{1F4E6} Enter uniq name: ");
+        let objName = prompt(`Path: ${getPATH} 
+ \u{1F4E6} Enter Uniq Name: `);
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o2 = {
             physics: true,
             path: getPATH,
             index: objName
           };
-          document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
-            detail: o2
-          }));
+          document.dispatchEvent(new CustomEvent("web.editor.addGlb", { detail: o2 }));
         } else {
           let o2 = {
             physics: false,
             path: getPATH,
             index: objName
           };
-          document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
-            detail: o2
-          }));
+          document.dispatchEvent(new CustomEvent("web.editor.addGlb", { detail: o2 }));
         }
       } else if (ext == "obj" && confirm("OBJ FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt("\u{1F4E6} Enter uniq name: ");
@@ -26569,6 +26597,11 @@ var EditorHud = class {
       }
     });
     this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "editor-events", currentSO, this.core));
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentSO.name);
+    } else {
+      document.execCommand("copy", true, currentSO.name);
+    }
   };
   updateSceneObjPropertiesFromGizmo = (name2) => {
     this.currentProperties = [];
@@ -26818,13 +26851,11 @@ var SceneObjectProperty = class {
            ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> 
            </div>`;
       } else if (Array.isArray(subobj[prop]) && prop == "nodes") {
-        console.log("init prop: " + rootKey);
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length}
          </div>`;
       } else if (Array.isArray(subobj[prop]) && prop == "skins") {
-        console.log("init prop: " + rootKey);
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].map((item) => {
@@ -27299,6 +27330,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>

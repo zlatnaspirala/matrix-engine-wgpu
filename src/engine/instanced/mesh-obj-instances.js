@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
-import {degToRad, genName, LOG_FUNNY_SMALL} from '../utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
 import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
@@ -717,10 +717,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-
+        // const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
         // Pass explicit alpha — 0.5 = semi transparent
-        this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
+        // this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
       }
       //
       this.modelBindGroup = this.device.createBindGroup({
@@ -829,19 +828,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if((this.glb || this.objAnim) && useScale == true) {
-          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
       this.done = true;
       try {
         this.setupPipeline();
-      } catch(err) {console.log('err in create pipeline in init ', err)}
+      } catch(err) {console.log(`Err in create pipeline ${err}`, LOG_WARN)}
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('after all updateMeshListBuffers...')
+        console.log('updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     })
@@ -849,14 +846,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
   setupPipeline = () => {
     this.createBindGroupForRender();
-
-    console.log('%c[Pipeline Debug]', 'color: cyan', {
-      meshName: this.label ?? this.name ?? 'unknown',
-      useBlend: this.material?.useBlend,
-      baseColorA: this.material?.baseColorFactor?.[3],
-      shaderPreview: this.getMaterial?.().slice(0, 80),
-    });
-
     const pipelineLayout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
       bindGroupLayouts: [
