@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
-import {degToRad, genName, LOG_FUNNY_SMALL} from '../utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
 import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
@@ -828,19 +828,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if((this.glb || this.objAnim) && useScale == true) {
-          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
       this.done = true;
       try {
         this.setupPipeline();
-      } catch(err) {console.log('err in create pipeline in init ', err)}
+      } catch(err) {console.log(`Err in create pipeline ${err}`, LOG_WARN)}
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('after all updateMeshListBuffers...')
+        console.log('updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     })

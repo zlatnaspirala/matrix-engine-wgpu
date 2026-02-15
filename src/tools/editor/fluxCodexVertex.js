@@ -3002,7 +3002,14 @@ export default class FluxCodexVertex {
 
     if(type === 'dynamicFunction') {
       // Exception for dynamic access
-      let AO = prompt(`Add global access object !`);
+      let AO = prompt(`
+Add global access object and explore all method inside!
+(in theory can be any object)
+LIST OF INTEREST OBJECT:
+ - app            (from main objects yuo can access func like 'activateBloomEffect' of 'activateVolumetricEffect')
+ - app.bloomPass  (After activateBloomEffect now you can access bloom params)
+ - app.cameras.WASD (Access camera methods)
+        `);
       if(AO) {
         console.warn("Adding AO ", eval(AO));
         options.accessObject = eval(AO);

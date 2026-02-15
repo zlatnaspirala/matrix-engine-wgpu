@@ -67,8 +67,6 @@ struct SkinResult {
   normal:   vec3f,
 };
 
-// ── Copy exact functions from vertexShadowWGSL ────────────────────────────────
-
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -158,8 +156,6 @@ fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
   p = mix(pos, p, vertexAnim.globalIntensity);
   return SkinResult(vec4f(p, 1.0), normal);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 @vertex
 fn main(

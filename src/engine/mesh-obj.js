@@ -654,10 +654,10 @@ export default class MEMeshObj extends Materials {
           this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float');
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-           this.effects.flameEffect = FlameEffect.fromPreset(device, pf, "rgba16float", "torch");
+          this.effects.flameEffect = FlameEffect.fromPreset(device, pf, "rgba16float", "torch");
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
+          this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
         }
 
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
@@ -700,12 +700,7 @@ export default class MEMeshObj extends Materials {
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // if(this.glb || this.objAnim) {
-        //   // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        // }
-        if(useScale == true) {
-          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
         return modelMatrix;
       };
 

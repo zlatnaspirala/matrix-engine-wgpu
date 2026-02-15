@@ -8580,9 +8580,7 @@ var MEMeshObj = class extends Materials {
           mat4Impl.rotateY(modelMatrix2, this.rotation.getRotY(), modelMatrix2);
           mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
         }
-        if (useScale == true) {
-          mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
-        }
+        if (useScale == true) mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
         return modelMatrix2;
       };
       const modelMatrix = mat4Impl.translation([0, 0, 0]);
@@ -9818,8 +9816,6 @@ struct SkinResult {
   normal:   vec3f,
 };
 
-// \u2500\u2500 Copy exact functions from vertexShadowWGSL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -9909,8 +9905,6 @@ fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
   p = mix(pos, p, vertexAnim.globalIntensity);
   return SkinResult(vec4f(p, 1.0), normal);
 }
-
-// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 @vertex
 fn main(
@@ -17380,20 +17374,18 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if ((this.glb || this.objAnim) && useScale == true) {
-          mat4Impl.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        if (useScale == true) mat4Impl.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
       this.done = true;
       try {
         this.setupPipeline();
       } catch (err) {
-        console.log("err in create pipeline in init ", err);
+        console.log(`Err in create pipeline ${err}`, LOG_WARN);
       }
     }).then(() => {
       if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
-        console.log("after all updateMeshListBuffers...");
+        console.log("updateMeshListBuffers...");
         this.updateMeshListBuffers();
       }
     });
@@ -23927,7 +23919,14 @@ var FluxCodexVertex = class {
     };
     let spec = null;
     if (type === "dynamicFunction") {
-      let AO = prompt(`Add global access object !`);
+      let AO = prompt(`
+Add global access object and explore all method inside!
+(in theory can be any object)
+LIST OF INTEREST OBJECT:
+ - app            (from main objects yuo can access func like 'activateBloomEffect' of 'activateVolumetricEffect')
+ - app.bloomPass  (After activateBloomEffect now you can access bloom params)
+ - app.cameras.WASD (Access camera methods)
+        `);
       if (AO) {
         console.warn("Adding AO ", eval(AO));
         options.accessObject = eval(AO);
@@ -29813,10 +29812,10 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("monster_MutantMesh").position.SetX(-1.0699999999999996);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(1.5700000000000014);
+        app3.getSceneObjectByName("FLOOR").position.SetY(-2.9399999999999866);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-2.9399999999999866);
+        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(-0.18999999999999517);
       }, 800);
     });
   }
