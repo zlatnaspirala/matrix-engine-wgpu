@@ -91,7 +91,7 @@ export default class FluxCodexVertex {
         allOnDraws[x]._listenerAttached = false;
       }
       let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled == false)
-      if (getCurrentGIzmoObj.length>0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = true;
+      if(getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = true;
       // stop vertext anims
       // let allVertexAnims = Object.values(this.nodes).filter((n) =>
       //   n.title == "Set Vertex Wave" || n.title == "Set Vertex Wind" || n.title == "Set Vertex Pulse" ||
@@ -2593,6 +2593,22 @@ export default class FluxCodexVertex {
         outputs: [{name: "execOut", type: "action"}],
       }),
 
+      setBlend: (id, x, y) => ({
+        id, x, y,
+        title: "Set Blend",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "alpha", type: "number"},
+          {name: "sceneObjectName", semantic: "string"},
+        ],
+        fields: [
+          {key: "sceneObjectName", value: "FLOOR"},
+          {key: "alpha", value: 0.5},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
       setProductionMode: (id, x, y) => ({
         id, x, y,
         title: "Set Production Mode",
@@ -4578,6 +4594,15 @@ export default class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if(n.title === "Set Blend") {
+      const a = parseFloat(this.getValue(nodeId, "alpha"));
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if(sceneObjectName) {
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.setBlend(a);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if(n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
@@ -4902,7 +4927,7 @@ export default class FluxCodexVertex {
       return;
     }
     let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled)
-    if (getCurrentGIzmoObj.length>0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
+    if(getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
 
     byId("app").style.opacity = 0.5;
     this.initEventNodes();

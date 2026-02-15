@@ -40,7 +40,7 @@ console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCo
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL Ollama            -");
-// console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL groq              -");
+console.log("\x1b[92m%s\x1b[0m", "- Experimental AI_TOOL Groq              -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 let matrixOllama = new AiOllama();
@@ -681,13 +681,14 @@ async function addGlb(msg, ws) {
   content.addLine(` // ME START ${getNameFromPath(msg.options.path)}`);
   content.addLine(` var glbFile01 = await fetch('${msg.options.path}').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));`);
   content.addLine(`   texturesPaths = ['./res/meshes/blender/cube.png']; `);
-  content.addLine(`    app.addGlbObj({ `);
+  content.addLine(`    app.addGlbObjInctance({ `);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
   content.addLine(`     scale: [2, 2, 2],`);
   content.addLine(`     name:  app.getNameFromPath('${msg.options.path}'),`);
   content.addLine(`     material: {type: 'standard', useTextureFromGlb: true},`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     pointerEffect: {enabled: true},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }, null, glbFile01);`);
   content.addLine(` // ME END ${getNameFromPath(msg.options.path)}`);

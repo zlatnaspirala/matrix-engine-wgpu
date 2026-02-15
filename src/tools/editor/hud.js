@@ -37,8 +37,9 @@ export default class EditorHud {
       const ext = getPATH.split('.').pop();
 
       if(ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
-        let name = prompt("📦 GLB file : ", getPATH);
-        let objName = prompt("📦 Enter uniq name: ");
+        // let name = prompt("📦 GLB file : ", getPATH);
+        // instanced is standard - top level sceneobj CLASS ...
+        let objName = prompt(`Path: ${getPATH} \n 📦 Enter Uniq Name: `);
         if(confirm("⚛ Enable physics (Ammo)?")) {
           // infly
           let o = {
@@ -46,9 +47,7 @@ export default class EditorHud {
             path: getPATH,
             index: objName
           }
-          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
-            detail: o
-          }));
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {detail: o}));
         } else {
           // infly
           let o = {
@@ -56,9 +55,7 @@ export default class EditorHud {
             path: getPATH,
             index: objName
           }
-          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
-            detail: o
-          }));
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {detail: o}));
         }
       } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
         let objName = prompt("📦 Enter uniq name: ");
@@ -1005,6 +1002,12 @@ export default class EditorHud {
     });
     // Add editor events system
     this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
+
+    if(navigator.clipboard) {
+      navigator.clipboard.writeText(currentSO.name);
+    } else {
+      document.execCommand("copy", true, currentSO.name);
+    }
   }
 
   updateSceneObjPropertiesFromGizmo = (name) => {
@@ -1243,10 +1246,10 @@ class SceneObjectProperty {
       } else if(subobj[prop] == false) {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
-      } else if (typeof subobj[prop] === 'function') {
+      } else if(typeof subobj[prop] === 'function') {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >[Available from graph]</div>`;
-       } else if(subobj[prop] == "") {
+      } else if(subobj[prop] == "") {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
       } else {
@@ -1288,13 +1291,13 @@ class SceneObjectProperty {
            ${(rootKey == "adapterInfo" ? "disabled='true'" : "")}" type="number" value="${subobj[prop]}" /> 
            </div>`;
       } else if(Array.isArray(subobj[prop]) && prop == "nodes") {
-        console.log("init prop: " + rootKey)
+        // console.log("init prop: " + rootKey)
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${(subobj[prop].length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
             ${(subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length)}
          </div>`;
       } else if(Array.isArray(subobj[prop]) && prop == "skins") {
-        console.log("init prop: " + rootKey)
+        // console.log("init prop: " + rootKey)
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${(subobj[prop].length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
             ${(subobj[prop].length == 0 ? "[Empty array]" :

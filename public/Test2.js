@@ -8509,8 +8509,6 @@ var MEMeshObj = class extends Materials {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = this.time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR([1, 1, 1, 0.5], false, false, effectMix, 1);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
@@ -9751,33 +9749,192 @@ var Behavior = class {
 };
 
 // ../../../shaders/instanced/vertexShadow.instanced.wgsl.js
-var vertexShadowWGSLInstanced = `struct Scene {
-  lightViewProjMatrix: mat4x4f,
-  cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
-}
+var vertexShadowWGSLInstanced = `
+const MAX_BONES = 100u;
 
-// keep it for switch on end
-struct Model {
-  modelMatrix: mat4x4f,
+struct Scene {
+  lightViewProjMatrix:  mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  lightPos:             vec3f,
 }
 
 struct InstanceData {
-  model : mat4x4<f32>,
+  model: mat4x4<f32>,
 };
 
-@group(0) @binding(0) var<uniform> scene : Scene;
-// @group(1) @binding(0) var<uniform> model : Model;
-@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
+struct Bones {
+  boneMatrices: array<mat4x4f, MAX_BONES>
+}
+
+struct VertexAnimParams {
+  time:                f32,
+  flags:               f32,
+  globalIntensity:     f32,
+  _pad0:               f32,
+  waveSpeed:           f32,
+  waveAmplitude:       f32,
+  waveFrequency:       f32,
+  _pad1:               f32,
+  windSpeed:           f32,
+  windStrength:        f32,
+  windHeightInfluence: f32,
+  windTurbulence:      f32,
+  pulseSpeed:          f32,
+  pulseAmount:         f32,
+  pulseCenterX:        f32,
+  pulseCenterY:        f32,
+  twistSpeed:          f32,
+  twistAmount:         f32,
+  _pad2:               f32,
+  _pad3:               f32,
+  noiseScale:          f32,
+  noiseStrength:       f32,
+  noiseSpeed:          f32,
+  _pad4:               f32,
+  oceanWaveScale:      f32,
+  oceanWaveHeight:     f32,
+  oceanWaveSpeed:      f32,
+  _pad5:               f32,
+  displacementStrength: f32,
+  displacementSpeed:   f32,
+  _pad6:               f32,
+  _pad7:               f32,
+}
+
+@group(0) @binding(0) var<uniform>      scene      : Scene;
+@group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
+@group(1) @binding(1) var<uniform>      bones      : Bones;
+@group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
+
+const ANIM_WAVE:  u32 = 1u;
+const ANIM_WIND:  u32 = 2u;
+const ANIM_PULSE: u32 = 4u;
+const ANIM_TWIST: u32 = 8u;
+const ANIM_NOISE: u32 = 16u;
+const ANIM_OCEAN: u32 = 32u;
+
+struct SkinResult {
+  position: vec4f,
+  normal:   vec3f,
+};
+
+// \u2500\u2500 Copy exact functions from vertexShadowWGSL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0,0.0)), hash(i + vec2f(1.0,0.0)), u.x),
+    mix(hash(i + vec2f(0.0,1.0)), hash(i + vec2f(1.0,1.0)), u.x),
+    u.y
+  );
+}
+
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+  var skinnedPos  = vec4f(0.0);
+  var skinnedNorm = vec3f(0.0);
+  for (var i: u32 = 0u; i < 4u; i++) {
+    let w = weights[i];
+    if (w > 0.0) {
+      let boneMat  = bones.boneMatrices[joints[i]];
+      skinnedPos  += (boneMat * pos) * w;
+      skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+    }
+  }
+  return SkinResult(skinnedPos, skinnedNorm);
+}
+
+fn applyWave(pos: vec3f) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) *
+             cos(pos.z * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn applyWind(pos: vec3f, normal: vec3f) -> vec3f {
+  let heightFactor = max(0.0, pos.y) * vertexAnim.windHeightInfluence;
+  let windDir = vec2f(
+    sin(vertexAnim.time * vertexAnim.windSpeed),
+    cos(vertexAnim.time * vertexAnim.windSpeed * 0.7)
+  ) * vertexAnim.windStrength;
+  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3) * vertexAnim.windTurbulence;
+  return vec3f(
+    pos.x + windDir.x * heightFactor * (1.0 + turbulence),
+    pos.y,
+    pos.z + windDir.y * heightFactor * (1.0 + turbulence)
+  );
+}
+
+fn applyPulse(pos: vec3f) -> vec3f {
+  let pulse = sin(vertexAnim.time * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+  let center = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+  return center + (pos - center) * (1.0 + pulse);
+}
+
+fn applyTwist(pos: vec3f) -> vec3f {
+  let angle = pos.y * vertexAnim.twistAmount * sin(vertexAnim.time * vertexAnim.twistSpeed);
+  let cosA = cos(angle); let sinA = sin(angle);
+  return vec3f(pos.x * cosA - pos.z * sinA, pos.y, pos.x * sinA + pos.z * cosA);
+}
+
+fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + vertexAnim.time * vertexAnim.noiseSpeed);
+  return vec3f(pos.x, pos.y + (noiseVal - 0.5) * vertexAnim.noiseStrength, pos.z);
+}
+
+fn applyOcean(pos: vec3f) -> vec3f {
+  let t = vertexAnim.time * vertexAnim.oceanWaveSpeed;
+  let s = vertexAnim.oceanWaveScale;
+  let w1 = sin(dot(pos.xz, vec2f(1.0, 0.0)) * s + t)           * vertexAnim.oceanWaveHeight;
+  let w2 = sin(dot(pos.xz, vec2f(0.7, 0.7)) * s * 1.2 + t*1.3) * vertexAnim.oceanWaveHeight * 0.7;
+  let w3 = sin(dot(pos.xz, vec2f(0.0, 1.0)) * s * 0.8 + t*0.9) * vertexAnim.oceanWaveHeight * 0.5;
+  return vec3f(pos.x, pos.y + w1 + w2 + w3, pos.z);
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+  var p = pos;
+  let flags = u32(vertexAnim.flags);
+  if ((flags & ANIM_WAVE)  != 0u) { p = applyWave(p); }
+  if ((flags & ANIM_WIND)  != 0u) { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  p = mix(pos, p, vertexAnim.globalIntensity);
+  return SkinResult(vec4f(p, 1.0), normal);
+}
+
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 @vertex
 fn main(
   @location(0) position: vec3f,
+  @location(1) normal:   vec3f,
+  @location(2) uv:       vec2f,
+  @location(3) joints:   vec4<u32>,
+  @location(4) weights:  vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> @builtin(position) vec4f {
-   let worldPos = instances[instId].model * vec4(position, 1.0);
+
+  // Skinning
+  let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  var finalPos = skinned.position.xyz;
+
+  // Vertex animation
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+    let animated = applyVertexAnimation(finalPos, skinned.normal);
+    finalPos = animated.position.xyz;
+  }
+
+  // Per-instance model matrix from storage buffer
+  let worldPos = instances[instId].model * vec4f(finalPos, 1.0);
   return scene.lightViewProjMatrix * worldPos;
-  // return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
 `;
 
@@ -17125,8 +17282,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR([1, 1, 1, 0.5], false, false, effectMix, 1);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
@@ -23344,6 +23499,23 @@ var FluxCodexVertex = class {
         ],
         outputs: [{ name: "execOut", type: "action" }]
       }),
+      setBlend: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Blend",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "alpha", type: "number" },
+          { name: "sceneObjectName", semantic: "string" }
+        ],
+        fields: [
+          { key: "sceneObjectName", value: "FLOOR" },
+          { key: "alpha", value: 0.5 }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
       setProductionMode: (id2, x2, y2) => ({
         id: id2,
         x: x2,
@@ -25167,6 +25339,15 @@ var FluxCodexVertex = class {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Blend") {
+      const a = parseFloat(this.getValue(nodeId, "alpha"));
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if (sceneObjectName) {
+        let obj2 = app.getSceneObjectByName(sceneObjectName);
+        obj2.setBlend(a);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if (n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
@@ -25737,26 +25918,22 @@ var EditorHud = class {
       let getPATH = e.detail.details.path.split("public")[1];
       const ext = getPATH.split(".").pop();
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
-        let name2 = prompt("\u{1F4E6} GLB file : ", getPATH);
-        let objName = prompt("\u{1F4E6} Enter uniq name: ");
+        let objName = prompt(`Path: ${getPATH} 
+ \u{1F4E6} Enter Uniq Name: `);
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o2 = {
             physics: true,
             path: getPATH,
             index: objName
           };
-          document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
-            detail: o2
-          }));
+          document.dispatchEvent(new CustomEvent("web.editor.addGlb", { detail: o2 }));
         } else {
           let o2 = {
             physics: false,
             path: getPATH,
             index: objName
           };
-          document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
-            detail: o2
-          }));
+          document.dispatchEvent(new CustomEvent("web.editor.addGlb", { detail: o2 }));
         }
       } else if (ext == "obj" && confirm("OBJ FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt("\u{1F4E6} Enter uniq name: ");
@@ -26575,6 +26752,11 @@ var EditorHud = class {
       }
     });
     this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "editor-events", currentSO, this.core));
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentSO.name);
+    } else {
+      document.execCommand("copy", true, currentSO.name);
+    }
   };
   updateSceneObjPropertiesFromGizmo = (name2) => {
     this.currentProperties = [];
@@ -26824,13 +27006,11 @@ var SceneObjectProperty = class {
            ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> 
            </div>`;
       } else if (Array.isArray(subobj[prop]) && prop == "nodes") {
-        console.log("init prop: " + rootKey);
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length}
          </div>`;
       } else if (Array.isArray(subobj[prop]) && prop == "skins") {
-        console.log("init prop: " + rootKey);
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].map((item) => {
@@ -27305,6 +27485,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
@@ -29548,7 +29729,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n24": { "id": "n24", "title": "onLoad", "x": 171.11114501953125, "y": 775.111083984375, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n25": { "id": "n25", "title": "Add OBJ", "x": 444.416748046875, "y": 721.4270935058594, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/shapes/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "box1" }, { "key": "raycast", "value": "false" }, { "key": "scale", "value": "[1,1,1]" }, { "key": "isPhysicsBody", "value": "false" }, { "key": "isInstancedObj", "value": "false" }, { "key": "created", "value": false }], "noselfExec": true }, "node_26": { "id": "node_26", "title": "Print", "x": 806.7917175292969, "y": 729.2569580078125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_27": { "id": "node_27", "title": "Print", "x": 830.8646087646484, "y": 1009.013916015625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "l22", "from": { "node": "n24", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n25", "pin": "exec" }, "type": "action" }, { "id": "link_23", "from": { "node": "n25", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_26", "pin": "exec" }, "type": "action" }, { "id": "link_24", "from": { "node": "n25", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_27", "pin": "exec" }, "type": "action" }], "nodeCounter": 28, "linkCounter": 25, "pan": [-169, -490], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n24": { "id": "n24", "title": "onLoad", "x": 139.420166015625, "y": 688.4270935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_28": { "id": "node_28", "x": 484.607666015625, "y": 686.1840515136719, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster-MutantMesh-0" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] } }, "links": [{ "id": "link_25", "from": { "node": "n24", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }], "nodeCounter": 29, "linkCounter": 26, "pan": [36, -411], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [
@@ -29604,6 +29785,12 @@ var app2 = new MatrixEngineWGPU(
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").useScale = true;
       }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetX(0.9600000000000115);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-10.40350282773407);
+      }, 800);
       var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
       texturesPaths = ["./res/meshes/blender/cube.png"];
       app3.addGlbObjInctance({
@@ -29611,27 +29798,27 @@ var app2 = new MatrixEngineWGPU(
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: [texturesPaths],
-        scale: [10, 10, 10],
+        scale: [2, 2, 2],
         name: app3.getNameFromPath("res/meshes/glb/monster.glb"),
         material: { type: "standard", useTextureFromGlb: true },
         raycast: { enabled: true, radius: 2 },
-        physics: { enabled: true, geometry: "Cube" },
-        useScale: true,
-        pointerEffect: {
-          enabled: false
-          // pointEffect: true,
-          // destructionEffect: true
-          // flameEmitter: true
-        }
+        pointerEffect: { enabled: true },
+        physics: { enabled: true, geometry: "Cube" }
       }, null, glbFile01);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-3.9799999999999853);
+        app3.getSceneObjectByName("monster-MutantMesh-0").useScale = true;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(0.9600000000000115);
+        app3.getSceneObjectByName("monster_MutantMesh").useScale = true;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-10.40350282773407);
+        app3.getSceneObjectByName("monster_MutantMesh").position.SetX(-1.0699999999999996);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-2.2499999999999876);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(1.6000000000000014);
       }, 800);
     });
   }

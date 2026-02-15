@@ -72,34 +72,7 @@ let app = new MatrixEngineWGPU(
       // ME END FLOOR useScaleno info
 
 
-      // ME START monster
-      var glbFile01 = await fetch('res/meshes/glb/monster.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
-      texturesPaths = ['./res/meshes/blender/cube.png'];
-      app.addGlbObjInctance({
-        position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: [texturesPaths],
-        scale: [10, 10, 10],
-        name: app.getNameFromPath('res/meshes/glb/monster.glb'),
-        material: {type: 'standard', useTextureFromGlb: true},
-        raycast: {enabled: true, radius: 2},
-        physics: {enabled: true, geometry: "Cube"},
-        useScale: true,
-        pointerEffect: {
-          enabled: false,
-          // pointEffect: true,
-          // destructionEffect: true
-          // flameEmitter: true
-        },
-      }, null, glbFile01);
-      // ME END monster
-
-      // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-3.9799999999999853);
- }, 800);
- // ME END FLOOR updatePosy
- 
-  // ME START FLOOR updatePosx
+      // ME START FLOOR updatePosx
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetX(0.9600000000000115);
  }, 800);
@@ -110,6 +83,53 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('FLOOR').position.SetZ(-10.40350282773407);
  }, 800);
  // ME END FLOOR updatePosz
+ 
+ 
+       // ME START monster
+ var glbFile01 = await fetch('res/meshes/glb/monster.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+   texturesPaths = ['./res/meshes/blender/cube.png']; 
+    app.addGlbObjInctance({ 
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     scale: [2, 2, 2],
+     name:  app.getNameFromPath('res/meshes/glb/monster.glb'),
+     material: {type: 'standard', useTextureFromGlb: true},
+     raycast: {enabled: true, radius: 2},
+     pointerEffect: {enabled: true},
+     physics: {enabled: true, geometry: "Cube"}
+   }, null, glbFile01);
+ // ME END monster
+ 
+
+       // ME START monster-MutantMesh-0 useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('monster-MutantMesh-0').useScale = true;
+ }, 800);
+ // ME END monster-MutantMesh-0 useScaleno info
+ 
+   // ME START monster_MutantMesh useScaleno info
+ setTimeout(() => {
+  app.getSceneObjectByName('monster_MutantMesh').useScale = true;
+ }, 800);
+ // ME END monster_MutantMesh useScaleno info
+ 
+  // ME START monster_MutantMesh updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('monster_MutantMesh').position.SetX(-1.0699999999999996);
+ }, 800);
+ // ME END monster_MutantMesh updatePosx
+ 
+    // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-2.2499999999999876);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+  // ME START monster_MutantMesh updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('monster_MutantMesh').position.SetY(1.6000000000000014);
+ }, 800);
+ // ME END monster_MutantMesh updatePosy
  
  // [MAIN_REPLACE2]
     })
