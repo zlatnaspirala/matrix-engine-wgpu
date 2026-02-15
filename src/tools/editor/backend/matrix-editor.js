@@ -93,6 +93,7 @@ async function buildAllProjectsOnStartup() {
         sourcemap: true,
         platform: "browser",
         minify: false,
+        external: ["typedoc"], 
         logOverride: {
           'direct-eval': 'silent',
         }
@@ -366,6 +367,7 @@ async function buildProject(projectName, ws, payload) {
     sourcemap: true,
     platform: "browser",
     minify: false,
+    external: ["typedoc"], 
     logOverride: {
       'direct-eval': 'silent',
     }

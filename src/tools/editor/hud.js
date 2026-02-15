@@ -27,8 +27,6 @@ export default class EditorHud {
     this.createScenePropertyBox();
     this.currentProperties = [];
 
-    setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000);
-
     document.addEventListener('editor-not-running', () => {
       this.noEditorConn();
     });

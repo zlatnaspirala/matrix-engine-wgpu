@@ -10040,6 +10040,50 @@ var SpotLight = class {
                 format: "float32x3"
               }
             ]
+          },
+          // ✅ ADD @location(1) - normal
+          {
+            arrayStride: 12,
+            attributes: [
+              {
+                shaderLocation: 1,
+                offset: 0,
+                format: "float32x3"
+              }
+            ]
+          },
+          // ✅ ADD @location(2) - uv
+          {
+            arrayStride: 8,
+            attributes: [
+              {
+                shaderLocation: 2,
+                offset: 0,
+                format: "float32x2"
+              }
+            ]
+          },
+          // ✅ ADD @location(3) - joints
+          {
+            arrayStride: 16,
+            attributes: [
+              {
+                shaderLocation: 3,
+                offset: 0,
+                format: "uint32x4"
+              }
+            ]
+          },
+          // ✅ ADD @location(4) - weights
+          {
+            arrayStride: 16,
+            attributes: [
+              {
+                shaderLocation: 4,
+                offset: 0,
+                format: "float32x4"
+              }
+            ]
           }
         ]
       },
@@ -16440,6 +16484,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.blendInstanced = false;
+    this.useScale = o2.useScale || false;
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
     }
@@ -16848,7 +16893,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
-        let m = this.getModelMatrix(this.position);
+        let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: "modelBindGroup in mesh [instanced]",
@@ -16856,7 +16901,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           entries: [
             //
             { binding: 0, resource: { buffer: this.instanceBuffer } },
-            { binding: 1, resource: { buffer: this.bonesBuffer } }
+            { binding: 1, resource: { buffer: this.bonesBuffer } },
+            { binding: 2, resource: { buffer: this.vertexAnimBuffer } }
           ]
         });
       };
@@ -25668,7 +25714,6 @@ var EditorHud = class {
     this.createEditorSceneContainer();
     this.createScenePropertyBox();
     this.currentProperties = [];
-    setTimeout(() => document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} })), 1e3);
     document.addEventListener("editor-not-running", () => {
       this.noEditorConn();
     });
@@ -29181,7 +29226,7 @@ var MatrixEngineWGPU = class {
         if (mesh.effects) Object.keys(mesh.effects).forEach((effect_) => {
           const effect = mesh.effects[effect_];
           if (effect == null || effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position);
+          let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
           if (effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix);
         });
@@ -29332,10 +29377,10 @@ var MatrixEngineWGPU = class {
         skinnedNodeIndex++;
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
+        this.mainRenderBundle.push(bvhPlayer);
         setTimeout(() => {
-          this.mainRenderBundle.push(bvhPlayer);
-          setTimeout(() => document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} })), 100);
-        }, 500);
+          document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} }));
+        }, 50);
         c++;
       }
     }
@@ -29385,7 +29430,7 @@ var MatrixEngineWGPU = class {
     o2.cameras = this.cameras;
     if (typeof o2.physics === "undefined") {
       o2.physics = {
-        scale: [1, 1, 1],
+        scale: o2.scale,
         enabled: true,
         geometry: "Sphere",
         //                   must be fixed<<
@@ -29446,6 +29491,9 @@ var MatrixEngineWGPU = class {
         bvhPlayer.clearColor = clearColor;
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
+          setTimeout(() => {
+            document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} }));
+          }, 50);
         }, 200);
         c++;
       }
@@ -29493,6 +29541,7 @@ var shaderGraphsProdc = [
 ];
 
 // ../../../../projects/Test2/app-gen.js
+import { TupleType } from "typedoc";
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
@@ -29538,28 +29587,6 @@ var app2 = new MatrixEngineWGPU(
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").useScale = true;
       }, 800);
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "cube1",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").rotation.y = -0;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").rotation.z = 0;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").rotation.x = -7.7000000000000055;
-      }, 800);
       var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
       texturesPaths = ["./res/meshes/blender/cube.png"];
       app3.addGlbObjInctance({
@@ -29572,6 +29599,7 @@ var app2 = new MatrixEngineWGPU(
         material: { type: "standard", useTextureFromGlb: true },
         raycast: { enabled: true, radius: 2 },
         physics: { enabled: true, geometry: "Cube" },
+        useScale: true,
         pointerEffect: {
           enabled: true,
           // pointEffect: true,
@@ -29580,28 +29608,13 @@ var app2 = new MatrixEngineWGPU(
         }
       }, null, glbFile01);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster-MutantMesh-0").useScale = true;
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetZ(-18.454014167181374);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster-MutantMesh-0").position.SetZ(-12.069985717161437);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-4.849999999999987);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetZ(-20.119742224156198);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetX(0.12000000000000396);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("cube1").position.SetY(3.870000000000072);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetX(-0.09999999999998835);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-3.9799999999999853);
       }, 800);
     });
   }
