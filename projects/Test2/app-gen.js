@@ -121,7 +121,7 @@ let app = new MatrixEngineWGPU(
           enabled: true,
           // pointEffect: true,
           // destructionEffect: true
-          flameEffect: true
+          flameEmitter: true
         },
       }, null, glbFile01);
       // ME END monster
@@ -163,29 +163,17 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END cube1 updatePosx
  
-  // ME START monster-MutantMesh-0 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').position.SetX(0.6900000000000002);
- }, 800);
- // ME END monster-MutantMesh-0 updatePosx
- 
-    // ME START monster-MutantMesh-0 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').position.SetY(-2.919999999999992);
- }, 800);
- // ME END monster-MutantMesh-0 updatePosy
- 
-  // ME START FLOOR updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(0.6600000000000117);
- }, 800);
- // ME END FLOOR updatePosx
- 
-   // ME START cube1 updatePosy
+  // ME START cube1 updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('cube1').position.SetY(3.870000000000072);
  }, 800);
  // ME END cube1 updatePosy
+ 
+  // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(-0.09999999999998835);
+ }, 800);
+ // ME END FLOOR updatePosx
  
  // [MAIN_REPLACE2]
     })

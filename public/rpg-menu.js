@@ -25551,7 +25551,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }]
       });
       this.effects = {};
-      // console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
+      console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>');
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
