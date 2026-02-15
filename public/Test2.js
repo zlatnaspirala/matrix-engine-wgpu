@@ -29150,7 +29150,7 @@ var MatrixEngineWGPU = class {
         now = performance.now() / 1e3;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh instanceof BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position));
+            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
@@ -29541,7 +29541,6 @@ var shaderGraphsProdc = [
 ];
 
 // ../../../../projects/Test2/app-gen.js
-import { TupleType } from "typedoc";
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
@@ -29594,7 +29593,7 @@ var app2 = new MatrixEngineWGPU(
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: [texturesPaths],
-        scale: [2, 2, 2],
+        scale: [20, 20, 20],
         name: app3.getNameFromPath("res/meshes/glb/monster.glb"),
         material: { type: "standard", useTextureFromGlb: true },
         raycast: { enabled: true, radius: 2 },

@@ -6,7 +6,6 @@ import {shaderGraphsProdc} from "./shader-graphs.js"
 import {gizmoEffect} from "../../src/shaders/gizmo/gimzoShader.js";
 import {addRaycastsListener} from "../../src/engine/raycast.js";
 import {flameEffect} from "../../src/shaders/flame-effect/flameEffect.js";
-import {TupleType} from "typedoc";
 
 let app = new MatrixEngineWGPU(
 
@@ -79,7 +78,7 @@ let app = new MatrixEngineWGPU(
       app.addGlbObjInctance({
         position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: [texturesPaths],
-        scale: [2, 2, 2],
+        scale: [20, 20, 20],
         name: app.getNameFromPath('res/meshes/glb/monster.glb'),
         material: {type: 'standard', useTextureFromGlb: true},
         raycast: {enabled: true, radius: 2},

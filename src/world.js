@@ -702,7 +702,7 @@ export default class MatrixEngineWGPU {
         now = performance.now() / 1000;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position))
+            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
