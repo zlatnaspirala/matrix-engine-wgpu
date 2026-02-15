@@ -9,6 +9,8 @@ import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
 import {PointEffect} from './effects/topology-point';
 import {GizmoEffect} from './effects/gizmo';
 import {DestructionEffect} from './effects/destruction';
+import {FlameEffect} from './effects/flame';
+import {FlameEmitter} from './effects/flame-emmiter';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -653,13 +655,20 @@ export default class MEMeshObj extends Materials {
 
       this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
-        // let pf = navigator.gpu.getPreferredCanvasFormat();
+        let pf = navigator.gpu.getPreferredCanvasFormat();
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, 'rgba16float');//pf);
+          this.effects.pointEffect = new PointEffect(device, 'rgba16float');
         }
         if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
           this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float');
         }
+        if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
+           this.effects.flameEffect = FlameEffect.fromPreset(device, pf, "rgba16float", "torch");
+        }
+        if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
+           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
+        }
+
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {
             particleCount: 100,

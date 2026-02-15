@@ -35,6 +35,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.globalAmbient = [...globalAmbient];
     this.blendInstanced = false;
 
+    this.useScale = o.useScale || false;
+
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -500,7 +502,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        let m = this.getModelMatrix(this.position);
+        let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
 
         this.modelBindGroupInstanced = this.device.createBindGroup({
@@ -508,7 +510,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           layout: this.uniformBufferBindGroupLayoutInstanced,
           entries: [ //
             {binding: 0, resource: {buffer: this.instanceBuffer, }},
-            {binding: 1, resource: {buffer: this.bonesBuffer}}
+            {binding: 1, resource: {buffer: this.bonesBuffer}},
+            {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
           ],
         });
       };
@@ -536,7 +539,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
-        size: 176,
+        size: 192, //176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -546,26 +549,16 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
           {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
         ],
       });
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [regular]',
         entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: 'uniform',
-            },
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: 'uniform',
-            },
-          },
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
         ],
       });
 
@@ -589,6 +582,137 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
+
+      //
+      // vertex Anim
+      this.vertexAnimParams = new Float32Array([
+        0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
+      ]);
+
+      this.vertexAnimBuffer = this.device.createBuffer({
+        label: "Vertex Animation Params",
+        size: this.vertexAnimParams.byteLength, // 128 bytes
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      this.vertexAnim = {
+        enableWave: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
+          this.updateVertexAnimBuffer();
+        },
+        disableWave: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
+          this.updateVertexAnimBuffer();
+        },
+        enableWind: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
+          this.updateVertexAnimBuffer();
+        },
+        disableWind: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
+          this.updateVertexAnimBuffer();
+        },
+        enablePulse: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
+          this.updateVertexAnimBuffer();
+        },
+        disablePulse: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
+          this.updateVertexAnimBuffer();
+        },
+        enableTwist: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
+          this.updateVertexAnimBuffer();
+        },
+        disableTwist: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
+          this.updateVertexAnimBuffer();
+        },
+        enableNoise: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
+          this.updateVertexAnimBuffer();
+        },
+        disableNoise: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
+          this.updateVertexAnimBuffer();
+        },
+        enableOcean: () => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
+          this.updateVertexAnimBuffer();
+        },
+        disableOcean: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
+          this.updateVertexAnimBuffer();
+        },
+        enable: (...effects) => {
+          effects.forEach(effect => {
+            this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+          });
+          this.updateVertexAnimBuffer();
+        },
+        disable: (...effects) => {
+          effects.forEach(effect => {
+            this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+          });
+          this.updateVertexAnimBuffer();
+        },
+        disableAll: () => {
+          this.vertexAnimParams[1] = 0;
+          this.updateVertexAnimBuffer();
+        },
+        isEnabled: (effect) => {return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;},
+        setWaveParams: (speed, amplitude, frequency) => {
+          this.vertexAnimParams[4] = speed;
+          this.vertexAnimParams[5] = amplitude;
+          this.vertexAnimParams[6] = frequency;
+          this.updateVertexAnimBuffer();
+        },
+        setWindParams: (speed, strength, heightInfluence, turbulence) => {
+          this.vertexAnimParams[8] = speed;
+          this.vertexAnimParams[9] = strength;
+          this.vertexAnimParams[10] = heightInfluence;
+          this.vertexAnimParams[11] = turbulence;
+          this.updateVertexAnimBuffer();
+        },
+        setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
+          this.vertexAnimParams[12] = speed;
+          this.vertexAnimParams[13] = amount;
+          this.vertexAnimParams[14] = centerX;
+          this.vertexAnimParams[15] = centerY;
+          this.updateVertexAnimBuffer();
+        },
+        setTwistParams: (speed, amount) => {
+          this.vertexAnimParams[16] = speed;
+          this.vertexAnimParams[17] = amount;
+          this.updateVertexAnimBuffer();
+        },
+        setNoiseParams: (scale, strength, speed) => {
+          this.vertexAnimParams[20] = scale;
+          this.vertexAnimParams[21] = strength;
+          this.vertexAnimParams[22] = speed;
+          this.updateVertexAnimBuffer();
+        },
+        setOceanParams: (scale, height, speed) => {
+          this.vertexAnimParams[24] = scale;
+          this.vertexAnimParams[25] = height;
+          this.vertexAnimParams[26] = speed;
+          this.updateVertexAnimBuffer();
+        },
+        setIntensity: (value) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+          this.updateVertexAnimBuffer();
+        },
+        getIntensity: () => {return this.vertexAnimParams[2]}
+      };
+
+      this.updateVertexAnimBuffer = () => {
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      };
+
+      // globalIntensity
+      this.vertexAnimParams[2] = 1.0;
+      this.updateVertexAnimBuffer();
+      //
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
@@ -604,7 +728,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         layout: this.uniformBufferBindGroupLayoutInstanced,
         entries: [ //
           {binding: 0, resource: {buffer: this.instanceBuffer, }},
-          {binding: 1, resource: {buffer: this.bonesBuffer}}
+          {binding: 1, resource: {buffer: this.bonesBuffer}},
+
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
         ],
       });
 
@@ -617,9 +743,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.effects = {};
-      // console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
+      console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
+        pf = 'rgba16float';
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
           this.effects.pointer = new PointerEffect(device, pf, this, true);
         }
@@ -645,7 +772,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         if(typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
-
         if(typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
           this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
@@ -755,7 +881,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       fragment: {
         ...baseDesc.fragment,
         targets: [{
-          format: this.presentationFormat,
+          format: 'rgba16float', //this.presentationFormat,
           blend: undefined,
         }],
       },
@@ -793,7 +919,21 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     // console.log('✅Pipelines done');
   };
 
-  updateModelUniformBuffer = () => {}
+  updateModelUniformBuffer = () => {
+
+    // // JUST TEST ORI EMPTY s
+    //     if(this.done == false) return;
+    // // Per-object model matrix only
+    // const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    // this.device.queue.writeBuffer(
+    //   this.modelUniformBuffer,
+    //   0,
+    //   modelMatrix.buffer,
+    //   modelMatrix.byteOffset,
+    //   modelMatrix.byteLength
+    // );
+
+  }
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}

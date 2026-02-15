@@ -301,6 +301,50 @@ export class SpotLight {
               },
             ],
           },
+           // ✅ ADD @location(1) - normal
+          {
+            arrayStride: 12,
+            attributes: [
+              {
+                shaderLocation: 1,
+                offset: 0,
+                format: "float32x3",
+              },
+            ],
+          },
+          // ✅ ADD @location(2) - uv
+          {
+            arrayStride: 8,
+            attributes: [
+              {
+                shaderLocation: 2,
+                offset: 0,
+                format: "float32x2",
+              },
+            ],
+          },
+          // ✅ ADD @location(3) - joints
+          {
+            arrayStride: 16,
+            attributes: [
+              {
+                shaderLocation: 3,
+                offset: 0,
+                format: "uint32x4",
+              },
+            ],
+          },
+          // ✅ ADD @location(4) - weights
+          {
+            arrayStride: 16,
+            attributes: [
+              {
+                shaderLocation: 4,
+                offset: 0,
+                format: "float32x4",
+              },
+            ],
+          },
         ]
       },
       depthStencil: {

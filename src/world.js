@@ -671,7 +671,7 @@ export default class MatrixEngineWGPU {
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();
-        if (mesh.update) mesh.update();
+        if(mesh.update) mesh.update();
         this.lightContainer.forEach((light) => {
           light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
@@ -702,7 +702,7 @@ export default class MatrixEngineWGPU {
         now = performance.now() / 1000;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position))
+            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
@@ -786,7 +786,7 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if(effect == null || effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position);
+          let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
           if(effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix)
         });
@@ -926,11 +926,10 @@ export default class MatrixEngineWGPU {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
+        this.mainRenderBundle.push(bvhPlayer);
         setTimeout(() => {
-          this.mainRenderBundle.push(bvhPlayer);
-          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 100)
-        }, 500);
-        // this.mainRenderBundle.push(bvhPlayer)
+          document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
+        }, 50);
         c++;
       }
     }
@@ -961,7 +960,7 @@ export default class MatrixEngineWGPU {
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {
       o.physics = {
-        scale: [1, 1, 1],
+        scale: o.scale,
         enabled: true,
         geometry: "Sphere",//                   must be fixed<<
         radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
@@ -1014,7 +1013,12 @@ export default class MatrixEngineWGPU {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
-        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 200)
+        setTimeout(() => {
+          this.mainRenderBundle.push(bvhPlayer);
+          setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
+          }, 50);
+        }, 200)
         c++;
       }
       skinnedNodeIndex++;
