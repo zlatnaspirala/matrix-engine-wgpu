@@ -17400,12 +17400,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
-    console.log("%c[Pipeline Debug]", "color: cyan", {
-      meshName: this.label ?? this.name ?? "unknown",
-      useBlend: this.material?.useBlend,
-      baseColorA: this.material?.baseColorFactor?.[3],
-      shaderPreview: this.getMaterial?.().slice(0, 80)
-    });
     const pipelineLayout = this.device.createPipelineLayout({
       label: "PipelineLayout Mesh",
       bindGroupLayouts: [
@@ -28718,7 +28712,14 @@ var MatrixEngineWGPU = class {
     BVHPlayer,
     downloadMeshes,
     addRaycastsListener,
-    graphAdapter
+    graphAdapter,
+    effectsClassRef: {
+      FlameEffect,
+      FlameEmitter,
+      PointerEffect,
+      HPBarEffect,
+      MANABarEffect
+    }
   };
   mainRenderBundle = [];
   lightContainer = [];
@@ -29729,7 +29730,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n24": { "id": "n24", "title": "onLoad", "x": 139.420166015625, "y": 688.4270935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_28": { "id": "node_28", "x": 484.607666015625, "y": 686.1840515136719, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster-MutantMesh-0" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] } }, "links": [{ "id": "link_25", "from": { "node": "n24", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }], "nodeCounter": 29, "linkCounter": 26, "pan": [36, -411], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n24": { "id": "n24", "title": "onLoad", "x": 91.6319580078125, "y": 478.6319885253906, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_28": { "id": "node_28", "x": 475.71185302734375, "y": 510.29168701171875, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "alpha", "value": "0.5" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_29": { "id": "node_29", "x": 483.357666015625, "y": 749.3264465332031, "title": "Set Material", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "materialType", "semantic": "string", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "materialType", "value": "water", "placeholder": "standard|power|water" }] }, "node_30": { "id": "node_30", "x": 481.3958740234375, "y": 968.3402862548828, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster_MutantMesh" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_31": { "id": "node_31", "x": 483.78131103515625, "y": 1160.8368225097656, "title": "Set Vertex Ocean", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableOcean", "type": "boolean" }, { "name": "Ocean Scale", "type": "value" }, { "name": "Ocean Height", "type": "value" }, { "name": "Ocean speed", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableOcean", "value": "true" }, { "key": "Ocean Scale", "value": 2 }, { "key": "Ocean Height", "value": 0.08 }, { "key": "Ocean speed", "value": 1.5 }] }, "node_32": { "id": "node_32", "title": "functions", "x": 811.2118530273438, "y": 1037.7535095214844, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_33": { "id": "node_33", "title": "functions", "x": 1284.7014465332031, "y": 1080.3507080078125, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "100" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" } }, "links": [{ "id": "link_25", "from": { "node": "n24", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }, { "id": "link_26", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_29", "pin": "exec" }, "type": "action" }, { "id": "link_27", "from": { "node": "node_29", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_30", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_30", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_31", "pin": "exec" }, "type": "action" }, { "id": "link_29", "from": { "node": "node_31", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_32", "pin": "exec" }, "type": "action" }, { "id": "link_30", "from": { "node": "node_32", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_33", "pin": "exec" }, "type": "action" }], "nodeCounter": 34, "linkCounter": 31, "pan": [-252, -334], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [
@@ -29806,19 +29807,16 @@ var app2 = new MatrixEngineWGPU(
         physics: { enabled: true, geometry: "Cube" }
       }, null, glbFile01);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster-MutantMesh-0").useScale = true;
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("monster_MutantMesh").useScale = true;
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("monster_MutantMesh").position.SetX(-1.0699999999999996);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-2.2499999999999876);
+        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(1.5700000000000014);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(1.6000000000000014);
+        app3.getSceneObjectByName("FLOOR").position.SetY(-2.9399999999999866);
       }, 800);
     });
   }

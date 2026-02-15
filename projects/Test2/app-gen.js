@@ -100,12 +100,7 @@ let app = new MatrixEngineWGPU(
    }, null, glbFile01);
  // ME END monster
  
-
-       // ME START monster-MutantMesh-0 useScaleno info
- setTimeout(() => {
-  app.getSceneObjectByName('monster-MutantMesh-0').useScale = true;
- }, 800);
- // ME END monster-MutantMesh-0 useScaleno info
+ 
  
    // ME START monster_MutantMesh useScaleno info
  setTimeout(() => {
@@ -119,17 +114,17 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END monster_MutantMesh updatePosx
  
-    // ME START FLOOR updatePosy
+    // ME START monster_MutantMesh updatePosy
  setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-2.2499999999999876);
- }, 800);
- // ME END FLOOR updatePosy
- 
-  // ME START monster_MutantMesh updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('monster_MutantMesh').position.SetY(1.6000000000000014);
+  app.getSceneObjectByName('monster_MutantMesh').position.SetY(1.5700000000000014);
  }, 800);
  // ME END monster_MutantMesh updatePosy
+ 
+  // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-2.9399999999999866);
+ }, 800);
+ // ME END FLOOR updatePosy
  
  // [MAIN_REPLACE2]
     })

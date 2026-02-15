@@ -848,14 +848,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
   setupPipeline = () => {
     this.createBindGroupForRender();
-
-    console.log('%c[Pipeline Debug]', 'color: cyan', {
-      meshName: this.label ?? this.name ?? 'unknown',
-      useBlend: this.material?.useBlend,
-      baseColorA: this.material?.baseColorFactor?.[3],
-      shaderPreview: this.getMaterial?.().slice(0, 80),
-    });
-
     const pipelineLayout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
       bindGroupLayouts: [

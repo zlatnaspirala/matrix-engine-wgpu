@@ -19,6 +19,12 @@ import {TextureCache} from "./engine/core-cache.js";
 import {AudioAssetManager} from "./sounds/audioAsset.js";
 import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
 import {VolumetricPass} from "./engine/postprocessing/volumetric.js";
+import {FlameEmitter} from "./engine/effects/flame-emmiter.js";
+// import {pointerEffect} from "./shaders/standalone/pointer.effect.js";
+import {HPBarEffect} from "./engine/effects/energy-bar.js";
+import {MANABarEffect} from "./engine/effects/mana-bar.js";
+import {PointerEffect} from "./engine/effects/pointerEffect.js";
+import {FlameEffect} from "./engine/effects/flame.js";
 
 /**
  * @description
@@ -37,7 +43,14 @@ export default class MatrixEngineWGPU {
     BVHPlayer,
     downloadMeshes,
     addRaycastsListener,
-    graphAdapter
+    graphAdapter,
+    effectsClassRef : {
+      FlameEffect,
+      FlameEmitter,
+      PointerEffect,
+      HPBarEffect,
+      MANABarEffect,
+    }
   }
 
   mainRenderBundle = [];
