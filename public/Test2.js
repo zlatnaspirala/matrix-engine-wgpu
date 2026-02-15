@@ -3601,33 +3601,33 @@ fn main(
   @location(4) weights: vec4<f32>
 ) -> VertexOutput {
   var output : VertexOutput;
-  var pos = vec4(position, 1.0);
-  var nrm = normal;
-  // Apply skinning first
-  let skinned = skinVertex(pos, nrm, joints, weights);
-  let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-  // var finalPos = skinned.position.xyz;
-  // var finalNorm = skinned.normal;
-  var finalPos = animated.position.xyz;
-  var finalNorm = animated.normal;
-  // Only apply animation if enabled > 0.5 (simple check)
-  // Check if any animation flags are set
+
+  // 1. Skin first
+  let skinned = skinVertex(vec4(position, 1.0), normal, joints, weights);
+
+  // 2. Animate once, conditionally
+  var finalPos  = skinned.position.xyz;
+  var finalNorm = skinned.normal;
+
   if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
-    finalPos = animated.position.xyz;
+    finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
+
+  // 3. World-space transform
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
-  output.Position = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos = worldPos.xyz;
+
+  output.Position  = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm = normalize(normalMatrix * finalNorm);
-  output.uv = uv;
+  output.fragNorm  = normalize(normalMatrix * finalNorm);
+  output.uv        = uv;
   return output;
 }`;
 
@@ -7917,6 +7917,25 @@ var FlameEmitter = class {
   }
 };
 
+// ../../../engine/literals.js
+var VERTEX_ANIM_FLAGS = {
+  NONE: 0,
+  WAVE: 1 << 0,
+  // 1
+  WIND: 1 << 1,
+  // 2
+  PULSE: 1 << 2,
+  // 4
+  TWIST: 1 << 3,
+  // 8
+  NOISE: 1 << 4,
+  // 16
+  OCEAN: 1 << 5,
+  // 32
+  DISPLACEMENT: 1 << 6
+  // 64
+};
+
 // ../../../engine/mesh-obj.js
 var MEMeshObj = class extends Materials {
   constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -8328,23 +8347,6 @@ var MEMeshObj = class extends Materials {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const VERTEX_ANIM_FLAGS2 = {
-        NONE: 0,
-        WAVE: 1 << 0,
-        // 1
-        WIND: 1 << 1,
-        // 2
-        PULSE: 1 << 2,
-        // 4
-        TWIST: 1 << 3,
-        // 8
-        NOISE: 1 << 4,
-        // 16
-        OCEAN: 1 << 5,
-        // 32
-        DISPLACEMENT: 1 << 6
-        // 64
-      };
       this.vertexAnimParams = new Float32Array([
         0,
         0,
@@ -8387,62 +8389,62 @@ var MEMeshObj = class extends Materials {
       });
       this.vertexAnim = {
         enableWave: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS2.WAVE;
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
         disableWave: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS2.WAVE;
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
         enableWind: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS2.WIND;
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
         disableWind: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS2.WIND;
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
         enablePulse: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS2.PULSE;
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
         disablePulse: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS2.PULSE;
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
         enableTwist: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS2.TWIST;
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
         disableTwist: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS2.TWIST;
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
         enableNoise: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS2.NOISE;
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
         disableNoise: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS2.NOISE;
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
         enableOcean: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS2.OCEAN;
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
         disableOcean: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS2.OCEAN;
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
         enable: (...effects) => {
           effects.forEach((effect) => {
-            this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS2[effect.toUpperCase()];
+            this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
           });
           this.updateVertexAnimBuffer();
         },
         disable: (...effects) => {
           effects.forEach((effect) => {
-            this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS2[effect.toUpperCase()];
+            this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
           });
           this.updateVertexAnimBuffer();
         },
@@ -8451,7 +8453,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         isEnabled: (effect) => {
-          return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS2[effect.toUpperCase()]) !== 0;
+          return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
         },
         setWaveParams: (speed, amplitude, frequency) => {
           this.vertexAnimParams[4] = speed;
@@ -16998,8 +17000,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       ]);
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
-        size: this.vertexAnimParams.byteLength,
-        // 128 bytes
+        size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
+        // 256, //this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -17120,6 +17122,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       };
       this.vertexAnimParams[2] = 1;
       this.updateVertexAnimBuffer();
+      this.updateTime = (time) => {
+        this.time += time * this.deltaTimeAdapter;
+        this.vertexAnimParams[0] = time;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
+        this.setupMaterialPBR(false, false, false, effectMix, 1);
+      };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
         layout: this.uniformBufferBindGroupLayout,
@@ -29121,7 +29130,10 @@ var MatrixEngineWGPU = class {
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();
-        if (mesh.update) mesh.update();
+        if (mesh.update) mesh.update(mesh.time);
+        if (mesh.updateTime) {
+          mesh.updateTime(currentTime);
+        }
         this.lightContainer.forEach((light) => {
           light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
@@ -29593,27 +29605,27 @@ var app2 = new MatrixEngineWGPU(
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: [texturesPaths],
-        scale: [20, 20, 20],
+        scale: [10, 10, 10],
         name: app3.getNameFromPath("res/meshes/glb/monster.glb"),
         material: { type: "standard", useTextureFromGlb: true },
         raycast: { enabled: true, radius: 2 },
         physics: { enabled: true, geometry: "Cube" },
         useScale: true,
         pointerEffect: {
-          enabled: true,
+          enabled: false
           // pointEffect: true,
           // destructionEffect: true
-          flameEmitter: true
+          // flameEmitter: true
         }
       }, null, glbFile01);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-18.454014167181374);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(-0.09999999999998835);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetY(-3.9799999999999853);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetX(0.9600000000000115);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-10.40350282773407);
       }, 800);
     });
   }

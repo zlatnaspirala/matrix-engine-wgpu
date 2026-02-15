@@ -238,32 +238,32 @@ fn main(
   @location(4) weights: vec4<f32>
 ) -> VertexOutput {
   var output : VertexOutput;
-  var pos = vec4(position, 1.0);
-  var nrm = normal;
-  // Apply skinning first
-  let skinned = skinVertex(pos, nrm, joints, weights);
-  let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-  // var finalPos = skinned.position.xyz;
-  // var finalNorm = skinned.normal;
-  var finalPos = animated.position.xyz;
-  var finalNorm = animated.normal;
-  // Only apply animation if enabled > 0.5 (simple check)
-  // Check if any animation flags are set
+
+  // 1. Skin first
+  let skinned = skinVertex(vec4(position, 1.0), normal, joints, weights);
+
+  // 2. Animate once, conditionally
+  var finalPos  = skinned.position.xyz;
+  var finalNorm = skinned.normal;
+
   if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
-    finalPos = animated.position.xyz;
+    finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
+
+  // 3. World-space transform
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
-  output.Position = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos = worldPos.xyz;
+
+  output.Position  = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm = normalize(normalMatrix * finalNorm);
-  output.uv = uv;
+  output.fragNorm  = normalize(normalMatrix * finalNorm);
+  output.uv        = uv;
   return output;
 }`;

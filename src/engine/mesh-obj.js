@@ -11,6 +11,7 @@ import {GizmoEffect} from './effects/gizmo';
 import {DestructionEffect} from './effects/destruction';
 import {FlameEffect} from './effects/flame';
 import {FlameEmitter} from './effects/flame-emmiter';
+import {VERTEX_ANIM_FLAGS} from './literals';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -487,16 +488,6 @@ export default class MEMeshObj extends Materials {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const VERTEX_ANIM_FLAGS = {
-        NONE: 0,
-        WAVE: 1 << 0,      // 1
-        WIND: 1 << 1,      // 2
-        PULSE: 1 << 2,     // 4
-        TWIST: 1 << 3,     // 8
-        NOISE: 1 << 4,     // 16
-        OCEAN: 1 << 5,     // 32
-        DISPLACEMENT: 1 << 6 // 64
-      };
 
       // vertex Anim
       this.vertexAnimParams = new Float32Array([
