@@ -786,7 +786,7 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if(effect == null || effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position);
+          let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
           if(effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix)
         });

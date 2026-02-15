@@ -35,6 +35,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.globalAmbient = [...globalAmbient];
     this.blendInstanced = false;
 
+    this.useScale = o.useScale || false;
+
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -500,7 +502,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        let m = this.getModelMatrix(this.position);
+        let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
 
         this.modelBindGroupInstanced = this.device.createBindGroup({
@@ -508,7 +510,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           layout: this.uniformBufferBindGroupLayoutInstanced,
           entries: [ //
             {binding: 0, resource: {buffer: this.instanceBuffer, }},
-            {binding: 1, resource: {buffer: this.bonesBuffer}}
+            {binding: 1, resource: {buffer: this.bonesBuffer}},
+            {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
           ],
         });
       };
@@ -546,8 +549,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
           {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },
-
-                    {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
         ],
       });
 
@@ -556,7 +558,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
           {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
-
           {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
         ],
       });
@@ -729,7 +730,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           {binding: 0, resource: {buffer: this.instanceBuffer, }},
           {binding: 1, resource: {buffer: this.bonesBuffer}},
 
-                    {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
         ],
       });
 
@@ -918,7 +919,21 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     // console.log('✅Pipelines done');
   };
 
-  updateModelUniformBuffer = () => {}
+  updateModelUniformBuffer = () => {
+
+    // // JUST TEST ORI EMPTY s
+    //     if(this.done == false) return;
+    // // Per-object model matrix only
+    // const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    // this.device.queue.writeBuffer(
+    //   this.modelUniformBuffer,
+    //   0,
+    //   modelMatrix.buffer,
+    //   modelMatrix.byteOffset,
+    //   modelMatrix.byteLength
+    // );
+
+  }
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}
