@@ -207,8 +207,20 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
     
     // Enhanced foam on wave peaks
-    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+
+    // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
+    let isFireMode = f32(waterParams.waveSpeed > 1.5);
+
+    // Water foam — white peaks
+    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
     let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+
+    // Fire embers — bright yellow-white tips
+    let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
+    let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
+
     
     // Add some caustics-like effect based on waves
     let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
@@ -216,7 +228,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let causticsColor = waterColor * caustics;
     
     // Final color with enhanced effects
-    let finalColor = ambient + diffuse + specular + foam + causticsColor;
+    let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
     
     // MUCH more transparent - alpha between 0.2 and 0.5
     let alpha = mix(0.2, 0.5, fresnel);
