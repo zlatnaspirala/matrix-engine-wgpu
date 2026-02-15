@@ -13,6 +13,7 @@ import {FlameEffect} from '../effects/flame';
 import {FlameEmitter} from '../effects/flame-emmiter';
 import {GenGeoTexture} from '../effects/gen-tex';
 import {GenGeoTexture2} from '../effects/gen-tex2';
+import {VERTEX_ANIM_FLAGS} from '../literals';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -591,7 +592,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
-        size: this.vertexAnimParams.byteLength, // 128 bytes
+        size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256, // 256, //this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -712,6 +713,14 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       // globalIntensity
       this.vertexAnimParams[2] = 1.0;
       this.updateVertexAnimBuffer();
+
+      this.updateTime = (time) => {
+        this.time += time * this.deltaTimeAdapter;
+        this.vertexAnimParams[0] = time;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
+        this.setupMaterialPBR(false, false, false, effectMix, 1.0);
+      }
       //
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',

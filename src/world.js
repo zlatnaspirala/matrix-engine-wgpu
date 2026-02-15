@@ -671,7 +671,9 @@ export default class MatrixEngineWGPU {
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();
-        if(mesh.update) mesh.update();
+        if(mesh.update) mesh.update(mesh.time);
+        if(mesh.updateTime) {mesh.updateTime(currentTime);}
+
         this.lightContainer.forEach((light) => {
           light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
@@ -797,16 +799,12 @@ export default class MatrixEngineWGPU {
 
       if(this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
-        // You need invViewProj — compute it from your existing matrices:
-        // cam.invViewProjectionMatrix should be mat4.invert(viewProjMatrix)
         // If you don't store it yet, compute once per frame:
         const invViewProj = mat4.invert(
           mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
         );
-
         // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
-
         this.volumetricPass.render(
           commandEncoder,
           this.sceneTextureView,        // ← your existing scene color
@@ -819,8 +817,6 @@ export default class MatrixEngineWGPU {
           }
         );
       }
-
-      //
 
       const canvasView = this.context.getCurrentTexture().createView();
       // Bloom

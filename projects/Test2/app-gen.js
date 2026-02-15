@@ -78,40 +78,38 @@ let app = new MatrixEngineWGPU(
       app.addGlbObjInctance({
         position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: [texturesPaths],
-        scale: [20, 20, 20],
+        scale: [10, 10, 10],
         name: app.getNameFromPath('res/meshes/glb/monster.glb'),
         material: {type: 'standard', useTextureFromGlb: true},
         raycast: {enabled: true, radius: 2},
         physics: {enabled: true, geometry: "Cube"},
         useScale: true,
         pointerEffect: {
-          enabled: true,
+          enabled: false,
           // pointEffect: true,
           // destructionEffect: true
-          flameEmitter: true
+          // flameEmitter: true
         },
       }, null, glbFile01);
       // ME END monster
 
-      // ME START FLOOR updatePosz
-      setTimeout(() => {
-        app.getSceneObjectByName('FLOOR').position.SetZ(-18.454014167181374);
-      }, 800);
-      // ME END FLOOR updatePosz
-
- 
- 
-  // ME START FLOOR updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(-0.09999999999998835);
- }, 800);
- // ME END FLOOR updatePosx
- 
-   // ME START FLOOR updatePosy
+      // ME START FLOOR updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetY(-3.9799999999999853);
  }, 800);
  // ME END FLOOR updatePosy
+ 
+  // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(0.9600000000000115);
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+   // ME START FLOOR updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetZ(-10.40350282773407);
+ }, 800);
+ // ME END FLOOR updatePosz
  
  // [MAIN_REPLACE2]
     })
