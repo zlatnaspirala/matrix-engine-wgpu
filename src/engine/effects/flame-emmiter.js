@@ -112,6 +112,7 @@ export class FlameEmitter {
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
 
     this.pipeline = this.device.createRenderPipeline({
+      label: 'flame-emmiter pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

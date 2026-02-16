@@ -77,6 +77,7 @@ export class PointerEffect {
 
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
     this.pipeline = this.device.createRenderPipeline({
+      label: 'pointEffect Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

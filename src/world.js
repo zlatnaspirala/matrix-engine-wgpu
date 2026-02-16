@@ -64,6 +64,8 @@ export default class MatrixEngineWGPU {
     depthStoreOp: 'store'
   }
 
+  autoUpdate = [];
+  
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
 
@@ -493,7 +495,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
-    if(typeof o.useScale === 'undefined') {o.useScale = false;}
+    if(typeof o.useScale === 'undefined') {o.useScale = true;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {
@@ -878,7 +880,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
     if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
-    if(typeof o.useScale === 'undefined') {o.useScale = false;}
+    if(typeof o.useScale === 'undefined') {o.useScale = true;}
 
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -963,7 +965,7 @@ export default class MatrixEngineWGPU {
         ballEffect: false
       };
     }
-    if(typeof o.useScale === 'undefined') {o.useScale = false;}
+    if(typeof o.useScale === 'undefined') {o.useScale = true;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

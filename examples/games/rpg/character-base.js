@@ -6,6 +6,7 @@ import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
 import {creepPoints, startUpPositions} from "./static";
 import {FriendlyHero} from "./friendly-character";
+import {FireballSystem} from "../../../src/engine/procedures/fireball";
 
 export class Character extends Hero {
 
@@ -184,7 +185,17 @@ export class Character extends Hero {
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
             if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           })
-          if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+          if(id == 0) {
+            subMesh.sharedState.emitAnimationEvent = true;
+            // subMesh
+            console.log("on player cast (wherever your ability input is)");
+            this.core.autoUpdate.push(subMesh.fireballSystem);
+            subMesh.fireballSystem = new FireballSystem(subMesh);
+            subMesh.fireballSystem.spawn(
+              subMesh.position,
+              this.heroFocusAttackOn
+            );
+          }
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         if(app.localHero.heroe_bodies[0].effects) {
@@ -380,6 +391,14 @@ export class Character extends Hero {
       })
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
+    // test fireball
+    //
+    this.heroe_bodies[0].fireballSystem.spawn(
+      this.heroe_bodies[0].position,
+      this.heroFocusAttackOn
+    );
+
+
   }
 
   setWalkCreep(creepIndex) {
