@@ -2578,6 +2578,9 @@ var FullscreenManager = class {
     );
   }
 };
+function alignTo256(n2) {
+  return Math.ceil(n2 / 256) * 256;
+}
 
 // ../../../engine/engine.js
 var CameraBase = class {
@@ -8344,14 +8347,14 @@ var MEMeshObj = class extends Materials {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo256(n2) {
+      function alignTo2562(n2) {
         return Math.ceil(n2 / 256) * 256;
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
+        size: alignTo2562(64 * MAX_BONES),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       const bones = new Float32Array(this.MAX_BONES * 16);
@@ -15079,6 +15082,7 @@ var MaterialsInstanced = class {
 
 // ../../../shaders/instanced/vertex.instanced.wgsl.js
 var vertexWGSLInstanced = `const MAX_BONES = 100u;
+const MAX_INSTANCES = 10u; 
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -15091,7 +15095,7 @@ struct Model {
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
+  boneMatrices : array<mat4x4f, 1000u>
 }
 
 struct SkinResult {
@@ -15160,21 +15164,42 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+//     var skinnedPos  = vec4f(0.0);
+//     var skinnedNorm = vec3f(0.0);
+//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+//         let jointIndex = joints[i];
+//         let w = weights[i];
+//         if (w > 0.0) {
+//           let boneMat  = bones.boneMatrices[jointIndex];
+//           skinnedPos  += (boneMat * pos) * w;
+//           let boneMat3 = mat3x3f(
+//             boneMat[0].xyz,
+//             boneMat[1].xyz,
+//             boneMat[2].xyz
+//           );
+//           skinnedNorm += (boneMat3 * nrm) * w;
+//         }
+//     }
+//     return SkinResult(skinnedPos, skinnedNorm);
+// }
+
+// 2. skinVertex gets instId passed in
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
         let jointIndex = joints[i];
         let w = weights[i];
         if (w > 0.0) {
-          let boneMat  = bones.boneMatrices[jointIndex];
-          skinnedPos  += (boneMat * pos) * w;
-          let boneMat3 = mat3x3f(
-            boneMat[0].xyz,
-            boneMat[1].xyz,
-            boneMat[2].xyz
-          );
-          skinnedNorm += (boneMat3 * nrm) * w;
+            let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // \u2190 offset by instance
+            skinnedPos  += (boneMat * pos) * w;
+            let boneMat3 = mat3x3f(
+                boneMat[0].xyz,
+                boneMat[1].xyz,
+                boneMat[2].xyz
+            );
+            skinnedNorm += (boneMat3 * nrm) * w;
         }
     }
     return SkinResult(skinnedPos, skinnedNorm);
@@ -15291,7 +15316,7 @@ fn main(
   let inst = instances[instId];
 
   var output : VertexOutput;
-  let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights);
+  let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
   let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
 
   let worldPos = inst.model * animated.position;
@@ -17111,18 +17136,20 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo256(n2) {
+      function alignTo2562(n2) {
         return Math.ceil(n2 / 256) * 256;
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
+      const TRAIL_INSTANCES = 10;
+      const BYTES_PER_INSTANCE = alignTo2562(64 * this.MAX_BONES);
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
+        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      const bones = new Float32Array(this.MAX_BONES * 16);
-      for (let i = 0; i < this.MAX_BONES; i++) {
+      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
+      for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
@@ -17567,10 +17594,10 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     if (this.mesh.tangentsBuffer) {
       pass2.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
-    pass2.setIndexBuffer(this.indexBuffer, "uint16");
     if (this.material.useBlend == true) pass2.setPipeline(this.pipelineTransparent);
     else pass2.setPipeline(this.pipeline);
-    for (var ins = 1; ins < this.instanceCount; ins++) {
+    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    for (var ins = 0; ins < this.instanceCount; ins++) {
       pass2.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   };
@@ -17648,6 +17675,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this.trailAnimation = {
+      enabled: false,
+      delay: 100
+    };
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     if (!this.bvh.sharedState) {
@@ -17771,10 +17802,29 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         }));
       }, inTime * 1e3);
     }
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+      if (this.trailAnimation.enabled == true) {
+        for (let i = 0; i < this.maxInstances; i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
+          const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+          this.updateSingleBoneCubeAnimation(
+            this.glb.glbJsonData.animations[this.glb.animationIndex],
+            this.glb.nodes,
+            // ← same nodes, no clone
+            currentTime,
+            // ← only this changes per instance
+            boneMatrices,
+            i
+            // ← writes to correct buffer slot
+          );
+        }
+      } else {
+        const currentTime = performance.now() / this.animationSpeed - this.startTime;
+        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 1);
+      }
     }
   }
   getAccessorArray(glb, accessorIndex) {
@@ -17989,7 +18039,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       out[i] = s0 * q0[i] + s1 * q1[i];
     }
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     const nodeChannels = /* @__PURE__ */ new Map();
@@ -18061,7 +18111,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
       boneMatrices.set(finalMat, j * 16);
     }
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+    const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
 };
@@ -29741,7 +29792,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "n24": { "id": "n24", "title": "onLoad", "x": 186.7430419921875, "y": 417.73960876464844, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "node_28": { "id": "node_28", "x": 476.82293701171875, "y": 523.388916015625, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "alpha", "value": "0.5" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_29": { "id": "node_29", "x": 483.357666015625, "y": 749.3264465332031, "title": "Set Material", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "materialType", "semantic": "string", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "materialType", "value": "water", "placeholder": "standard|power|water" }] }, "node_30": { "id": "node_30", "x": 481.3958740234375, "y": 968.3402862548828, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster_MutantMesh" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_31": { "id": "node_31", "x": 722.8785247802734, "y": 1185.9445190429688, "title": "Set Vertex Ocean", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableOcean", "type": "boolean" }, { "name": "Ocean Scale", "type": "value" }, { "name": "Ocean Height", "type": "value" }, { "name": "Ocean speed", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableOcean", "value": "true" }, { "key": "Ocean Scale", "value": "1" }, { "key": "Ocean Height", "value": "0.02" }, { "key": "Ocean speed", "value": "0.5" }] } }, "links": [{ "id": "link_25", "from": { "node": "n24", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }, { "id": "link_26", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_29", "pin": "exec" }, "type": "action" }, { "id": "link_27", "from": { "node": "node_29", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_30", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_30", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_31", "pin": "exec" }, "type": "action" }], "nodeCounter": 34, "linkCounter": 31, "pan": [33, -70], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "node_28": { "id": "node_28", "x": 476.82293701171875, "y": 523.388916015625, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "alpha", "value": "0.5" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_29": { "id": "node_29", "x": 483.357666015625, "y": 749.3264465332031, "title": "Set Material", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "materialType", "semantic": "string", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "materialType", "value": "water", "placeholder": "standard|power|water" }] }, "node_30": { "id": "node_30", "x": 481.3958740234375, "y": 968.3402862548828, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster_MutantMesh" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_31": { "id": "node_31", "x": 722.8785247802734, "y": 1185.9445190429688, "title": "Set Vertex Ocean", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableOcean", "type": "boolean" }, { "name": "Ocean Scale", "type": "value" }, { "name": "Ocean Height", "type": "value" }, { "name": "Ocean speed", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableOcean", "value": "true" }, { "key": "Ocean Scale", "value": "1" }, { "key": "Ocean Height", "value": "0.02" }, { "key": "Ocean speed", "value": "0.5" }] }, "node_34": { "id": "node_34", "title": "functions", "x": 279.02435302734375, "y": 263.8055648803711, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "0.1" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_35": { "id": "node_35", "title": "onLoad", "x": 33.9862060546875, "y": 212.0382080078125, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] } }, "links": [{ "id": "link_26", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_29", "pin": "exec" }, "type": "action" }, { "id": "link_27", "from": { "node": "node_29", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_30", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_30", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_31", "pin": "exec" }, "type": "action" }, { "id": "link_31", "from": { "node": "node_35", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_34", "pin": "exec" }, "type": "action" }, { "id": "link_32", "from": { "node": "node_34", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }], "nodeCounter": 36, "linkCounter": 33, "pan": [215, 110], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test2/shader-graphs.js
 var shaderGraphsProdc = [
@@ -29815,19 +29866,22 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("monster_MutantMesh").useScale = true;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetX(-1.0699999999999996);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-9.226682931566936);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-3.4699999999999873);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetX(-0.029999999999988973);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(-0.18999999999999517);
+        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(-2.419999999999977);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster_MutantMesh").position.SetX(-0.7299999999999921);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("monster_MutantMesh").position.SetZ(-12.003727183092838);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-4.881266945378257);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-4.269999999999999);
       }, 800);
     });
   }

@@ -2578,6 +2578,9 @@ var FullscreenManager = class {
     );
   }
 };
+function alignTo256(n2) {
+  return Math.ceil(n2 / 256) * 256;
+}
 
 // ../../../engine/engine.js
 var CameraBase = class {
@@ -5089,8 +5092,20 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
     
     // Enhanced foam on wave peaks
-    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+
+    // WITH this \u2014 mode flag based on waveSpeed (fast = fire, slow = water):
+    let isFireMode = f32(waterParams.waveSpeed > 1.5);
+
+    // Water foam \u2014 white peaks
+    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
     let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+
+    // Fire embers \u2014 bright yellow-white tips
+    let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
+    let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
+
     
     // Add some caustics-like effect based on waves
     let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
@@ -5098,7 +5113,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let causticsColor = waterColor * caustics;
     
     // Final color with enhanced effects
-    let finalColor = ambient + diffuse + specular + foam + causticsColor;
+    let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
     
     // MUCH more transparent - alpha between 0.2 and 0.5
     let alpha = mix(0.2, 0.5, fresnel);
@@ -8332,14 +8347,14 @@ var MEMeshObj = class extends Materials {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo256(n2) {
+      function alignTo2562(n2) {
         return Math.ceil(n2 / 256) * 256;
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
+        size: alignTo2562(64 * MAX_BONES),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       const bones = new Float32Array(this.MAX_BONES * 16);
@@ -8509,8 +8524,6 @@ var MEMeshObj = class extends Materials {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = this.time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR([1, 1, 1, 0.5], false, false, effectMix, 1);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
@@ -8582,9 +8595,7 @@ var MEMeshObj = class extends Materials {
           mat4Impl.rotateY(modelMatrix2, this.rotation.getRotY(), modelMatrix2);
           mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
         }
-        if (useScale == true) {
-          mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
-        }
+        if (useScale == true) mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
         return modelMatrix2;
       };
       const modelMatrix = mat4Impl.translation([0, 0, 0]);
@@ -9751,33 +9762,188 @@ var Behavior = class {
 };
 
 // ../../../shaders/instanced/vertexShadow.instanced.wgsl.js
-var vertexShadowWGSLInstanced = `struct Scene {
-  lightViewProjMatrix: mat4x4f,
-  cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
-}
+var vertexShadowWGSLInstanced = `
+const MAX_BONES = 100u;
 
-// keep it for switch on end
-struct Model {
-  modelMatrix: mat4x4f,
+struct Scene {
+  lightViewProjMatrix:  mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  lightPos:             vec3f,
 }
 
 struct InstanceData {
-  model : mat4x4<f32>,
+  model: mat4x4<f32>,
 };
 
-@group(0) @binding(0) var<uniform> scene : Scene;
-// @group(1) @binding(0) var<uniform> model : Model;
-@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
+struct Bones {
+  boneMatrices: array<mat4x4f, MAX_BONES>
+}
+
+struct VertexAnimParams {
+  time:                f32,
+  flags:               f32,
+  globalIntensity:     f32,
+  _pad0:               f32,
+  waveSpeed:           f32,
+  waveAmplitude:       f32,
+  waveFrequency:       f32,
+  _pad1:               f32,
+  windSpeed:           f32,
+  windStrength:        f32,
+  windHeightInfluence: f32,
+  windTurbulence:      f32,
+  pulseSpeed:          f32,
+  pulseAmount:         f32,
+  pulseCenterX:        f32,
+  pulseCenterY:        f32,
+  twistSpeed:          f32,
+  twistAmount:         f32,
+  _pad2:               f32,
+  _pad3:               f32,
+  noiseScale:          f32,
+  noiseStrength:       f32,
+  noiseSpeed:          f32,
+  _pad4:               f32,
+  oceanWaveScale:      f32,
+  oceanWaveHeight:     f32,
+  oceanWaveSpeed:      f32,
+  _pad5:               f32,
+  displacementStrength: f32,
+  displacementSpeed:   f32,
+  _pad6:               f32,
+  _pad7:               f32,
+}
+
+@group(0) @binding(0) var<uniform>      scene      : Scene;
+@group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
+@group(1) @binding(1) var<uniform>      bones      : Bones;
+@group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
+
+const ANIM_WAVE:  u32 = 1u;
+const ANIM_WIND:  u32 = 2u;
+const ANIM_PULSE: u32 = 4u;
+const ANIM_TWIST: u32 = 8u;
+const ANIM_NOISE: u32 = 16u;
+const ANIM_OCEAN: u32 = 32u;
+
+struct SkinResult {
+  position: vec4f,
+  normal:   vec3f,
+};
+
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0,0.0)), hash(i + vec2f(1.0,0.0)), u.x),
+    mix(hash(i + vec2f(0.0,1.0)), hash(i + vec2f(1.0,1.0)), u.x),
+    u.y
+  );
+}
+
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+  var skinnedPos  = vec4f(0.0);
+  var skinnedNorm = vec3f(0.0);
+  for (var i: u32 = 0u; i < 4u; i++) {
+    let w = weights[i];
+    if (w > 0.0) {
+      let boneMat  = bones.boneMatrices[joints[i]];
+      skinnedPos  += (boneMat * pos) * w;
+      skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+    }
+  }
+  return SkinResult(skinnedPos, skinnedNorm);
+}
+
+fn applyWave(pos: vec3f) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) *
+             cos(pos.z * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn applyWind(pos: vec3f, normal: vec3f) -> vec3f {
+  let heightFactor = max(0.0, pos.y) * vertexAnim.windHeightInfluence;
+  let windDir = vec2f(
+    sin(vertexAnim.time * vertexAnim.windSpeed),
+    cos(vertexAnim.time * vertexAnim.windSpeed * 0.7)
+  ) * vertexAnim.windStrength;
+  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3) * vertexAnim.windTurbulence;
+  return vec3f(
+    pos.x + windDir.x * heightFactor * (1.0 + turbulence),
+    pos.y,
+    pos.z + windDir.y * heightFactor * (1.0 + turbulence)
+  );
+}
+
+fn applyPulse(pos: vec3f) -> vec3f {
+  let pulse = sin(vertexAnim.time * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+  let center = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+  return center + (pos - center) * (1.0 + pulse);
+}
+
+fn applyTwist(pos: vec3f) -> vec3f {
+  let angle = pos.y * vertexAnim.twistAmount * sin(vertexAnim.time * vertexAnim.twistSpeed);
+  let cosA = cos(angle); let sinA = sin(angle);
+  return vec3f(pos.x * cosA - pos.z * sinA, pos.y, pos.x * sinA + pos.z * cosA);
+}
+
+fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + vertexAnim.time * vertexAnim.noiseSpeed);
+  return vec3f(pos.x, pos.y + (noiseVal - 0.5) * vertexAnim.noiseStrength, pos.z);
+}
+
+fn applyOcean(pos: vec3f) -> vec3f {
+  let t = vertexAnim.time * vertexAnim.oceanWaveSpeed;
+  let s = vertexAnim.oceanWaveScale;
+  let w1 = sin(dot(pos.xz, vec2f(1.0, 0.0)) * s + t)           * vertexAnim.oceanWaveHeight;
+  let w2 = sin(dot(pos.xz, vec2f(0.7, 0.7)) * s * 1.2 + t*1.3) * vertexAnim.oceanWaveHeight * 0.7;
+  let w3 = sin(dot(pos.xz, vec2f(0.0, 1.0)) * s * 0.8 + t*0.9) * vertexAnim.oceanWaveHeight * 0.5;
+  return vec3f(pos.x, pos.y + w1 + w2 + w3, pos.z);
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+  var p = pos;
+  let flags = u32(vertexAnim.flags);
+  if ((flags & ANIM_WAVE)  != 0u) { p = applyWave(p); }
+  if ((flags & ANIM_WIND)  != 0u) { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  p = mix(pos, p, vertexAnim.globalIntensity);
+  return SkinResult(vec4f(p, 1.0), normal);
+}
 
 @vertex
 fn main(
   @location(0) position: vec3f,
+  @location(1) normal:   vec3f,
+  @location(2) uv:       vec2f,
+  @location(3) joints:   vec4<u32>,
+  @location(4) weights:  vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> @builtin(position) vec4f {
-   let worldPos = instances[instId].model * vec4(position, 1.0);
+
+  // Skinning
+  let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  var finalPos = skinned.position.xyz;
+
+  // Vertex animation
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+    let animated = applyVertexAnimation(finalPos, skinned.normal);
+    finalPos = animated.position.xyz;
+  }
+
+  // Per-instance model matrix from storage buffer
+  let worldPos = instances[instId].model * vec4f(finalPos, 1.0);
   return scene.lightViewProjMatrix * worldPos;
-  // return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
 `;
 
@@ -14916,6 +15082,7 @@ var MaterialsInstanced = class {
 
 // ../../../shaders/instanced/vertex.instanced.wgsl.js
 var vertexWGSLInstanced = `const MAX_BONES = 100u;
+const MAX_INSTANCES = 10u; 
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -14928,7 +15095,7 @@ struct Model {
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
+  boneMatrices : array<mat4x4f, 1000u>
 }
 
 struct SkinResult {
@@ -14997,21 +15164,42 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+//     var skinnedPos  = vec4f(0.0);
+//     var skinnedNorm = vec3f(0.0);
+//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+//         let jointIndex = joints[i];
+//         let w = weights[i];
+//         if (w > 0.0) {
+//           let boneMat  = bones.boneMatrices[jointIndex];
+//           skinnedPos  += (boneMat * pos) * w;
+//           let boneMat3 = mat3x3f(
+//             boneMat[0].xyz,
+//             boneMat[1].xyz,
+//             boneMat[2].xyz
+//           );
+//           skinnedNorm += (boneMat3 * nrm) * w;
+//         }
+//     }
+//     return SkinResult(skinnedPos, skinnedNorm);
+// }
+
+// 2. skinVertex gets instId passed in
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
         let jointIndex = joints[i];
         let w = weights[i];
         if (w > 0.0) {
-          let boneMat  = bones.boneMatrices[jointIndex];
-          skinnedPos  += (boneMat * pos) * w;
-          let boneMat3 = mat3x3f(
-            boneMat[0].xyz,
-            boneMat[1].xyz,
-            boneMat[2].xyz
-          );
-          skinnedNorm += (boneMat3 * nrm) * w;
+            let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // \u2190 offset by instance
+            skinnedPos  += (boneMat * pos) * w;
+            let boneMat3 = mat3x3f(
+                boneMat[0].xyz,
+                boneMat[1].xyz,
+                boneMat[2].xyz
+            );
+            skinnedNorm += (boneMat3 * nrm) * w;
         }
     }
     return SkinResult(skinnedPos, skinnedNorm);
@@ -15128,7 +15316,7 @@ fn main(
   let inst = instances[instId];
 
   var output : VertexOutput;
-  let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights);
+  let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
   let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
 
   let worldPos = inst.model * animated.position;
@@ -16948,18 +17136,20 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo256(n2) {
+      function alignTo2562(n2) {
         return Math.ceil(n2 / 256) * 256;
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
+      const TRAIL_INSTANCES = 10;
+      const BYTES_PER_INSTANCE = alignTo2562(64 * this.MAX_BONES);
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
+        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      const bones = new Float32Array(this.MAX_BONES * 16);
-      for (let i = 0; i < this.MAX_BONES; i++) {
+      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
+      for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
@@ -17125,8 +17315,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR([1, 1, 1, 0.5], false, false, effectMix, 1);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup in mesh",
@@ -17225,32 +17413,24 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if ((this.glb || this.objAnim) && useScale == true) {
-          mat4Impl.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        if (useScale == true) mat4Impl.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
       this.done = true;
       try {
         this.setupPipeline();
       } catch (err) {
-        console.log("err in create pipeline in init ", err);
+        console.log(`Err in create pipeline ${err}`, LOG_WARN);
       }
     }).then(() => {
       if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
-        console.log("after all updateMeshListBuffers...");
+        console.log("updateMeshListBuffers...");
         this.updateMeshListBuffers();
       }
     });
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
-    console.log("%c[Pipeline Debug]", "color: cyan", {
-      meshName: this.label ?? this.name ?? "unknown",
-      useBlend: this.material?.useBlend,
-      baseColorA: this.material?.baseColorFactor?.[3],
-      shaderPreview: this.getMaterial?.().slice(0, 80)
-    });
     const pipelineLayout = this.device.createPipelineLayout({
       label: "PipelineLayout Mesh",
       bindGroupLayouts: [
@@ -17495,6 +17675,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this.trailAnimation = {
+      enabled: false,
+      delay: 100
+    };
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     if (!this.bvh.sharedState) {
@@ -17618,10 +17802,28 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         }));
       }, inTime * 1e3);
     }
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+      if (this.trailAnimation.enabled == true) {
+        for (let i = 0; i < 5; i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
+          const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+          this.updateSingleBoneCubeAnimation(
+            this.glb.glbJsonData.animations[this.glb.animationIndex],
+            this.glb.nodes,
+            // ← same nodes, no clone
+            currentTime,
+            // ← only this changes per instance
+            boneMatrices,
+            i
+            // ← writes to correct buffer slot
+          );
+        }
+      } else {
+        const currentTime = performance.now() / this.animationSpeed - this.startTime;
+        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+      }
     }
   }
   getAccessorArray(glb, accessorIndex) {
@@ -17836,7 +18038,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       out[i] = s0 * q0[i] + s1 * q1[i];
     }
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     const nodeChannels = /* @__PURE__ */ new Map();
@@ -17908,7 +18110,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
       boneMatrices.set(finalMat, j * 16);
     }
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+    const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
 };
@@ -23778,7 +23981,14 @@ var FluxCodexVertex = class {
     };
     let spec = null;
     if (type === "dynamicFunction") {
-      let AO = prompt(`Add global access object !`);
+      let AO = prompt(`
+Add global access object and explore all method inside!
+(in theory can be any object)
+LIST OF INTEREST OBJECT:
+ - app            (from main objects yuo can access func like 'activateBloomEffect' of 'activateVolumetricEffect')
+ - app.bloomPass  (After activateBloomEffect now you can access bloom params)
+ - app.cameras.WASD (Access camera methods)
+        `);
       if (AO) {
         console.warn("Adding AO ", eval(AO));
         options.accessObject = eval(AO);
@@ -28563,7 +28773,14 @@ var MatrixEngineWGPU = class {
     BVHPlayer,
     downloadMeshes,
     addRaycastsListener,
-    graphAdapter
+    graphAdapter,
+    effectsClassRef: {
+      FlameEffect,
+      FlameEmitter,
+      PointerEffect,
+      HPBarEffect,
+      MANABarEffect
+    }
   };
   mainRenderBundle = [];
   lightContainer = [];

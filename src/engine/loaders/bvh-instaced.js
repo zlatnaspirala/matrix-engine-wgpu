@@ -2,6 +2,7 @@
 import {mat4, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
+import {alignTo256} from "../utils.js";
 
 // export var animBVH = new MEBvh();
 // export let loadBVH = (path) => {
@@ -42,6 +43,10 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this.trailAnimation = {
+      enabled: false,
+      delay: 100
+    };
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
@@ -128,7 +133,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   getNumberOfFramesCurAni() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     let maxFrames = 0;
-    if (typeof anim == 'undefined') {
+    if(typeof anim == 'undefined') {
       console.log('[anim undefined]', this.name)
       return 1;
     }
@@ -175,10 +180,26 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         }))
       }, inTime * 1000)
     }
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices)
+      if(this.trailAnimation.enabled == true) {
+        for(let i = 0;i < this.maxInstances;i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
+          const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+          this.updateSingleBoneCubeAnimation(
+            this.glb.glbJsonData.animations[this.glb.animationIndex],
+            this.glb.nodes,   // ← same nodes, no clone
+            currentTime,      // ← only this changes per instance
+            boneMatrices,
+            i                 // ← writes to correct buffer slot
+          );
+        }
+      } else {
+        const currentTime = performance.now() / this.animationSpeed - this.startTime;
+        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 0)
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 1)
+      }
     }
   }
 
@@ -411,7 +432,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
   }
 
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
@@ -493,8 +514,11 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
       boneMatrices.set(finalMat, j * 16);
     }
+
+    const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
+
     // --- Upload to GPU
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
 }

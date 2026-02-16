@@ -569,15 +569,29 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
+      // this.bonesBuffer = device.createBuffer({
+      //   label: "bonesBuffer",
+      //   size: alignTo256(64 * MAX_BONES),
+      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      // });
+
+      // const bones = new Float32Array(this.MAX_BONES * 16);
+      // for(let i = 0;i < this.MAX_BONES;i++) {
+      //   // identity matrices
+      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      // }
+      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+      const TRAIL_INSTANCES = 10; // your total instance count
+      const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
+        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      const bones = new Float32Array(this.MAX_BONES * 16);
-      for(let i = 0;i < this.MAX_BONES;i++) {
-        // identity matrices
+      // identity init for all slots
+      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
+      for(let i = 0;i < this.MAX_BONES * TRAIL_INSTANCES;i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
@@ -1040,14 +1054,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
 
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
-
-    // pipelineTransparent
     if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
     else pass.setPipeline(this.pipeline);
-
-    for(var ins = 1;ins < this.instanceCount;ins++) {
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    for(var ins = 0;ins < this.instanceCount;ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   }
