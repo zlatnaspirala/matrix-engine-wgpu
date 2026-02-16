@@ -1218,3 +1218,5 @@ export class FullscreenManager {
     );
   }
 }
+
+export function alignTo256(n) {return Math.ceil(n / 256) * 256;}
