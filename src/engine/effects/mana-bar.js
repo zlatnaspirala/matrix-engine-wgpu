@@ -88,6 +88,7 @@ export class MANABarEffect {
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
 
     this.pipeline = this.device.createRenderPipeline({
+      label: 'mana Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

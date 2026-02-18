@@ -1903,3 +1903,19 @@ svg.connections {
 
   animation: gridDrift 160s linear infinite;
 }
+
+.cd-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    border-radius: 6px;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25%       { transform: translateX(-4px); }
+    75%       { transform: translateX(4px); }
+}

@@ -57,6 +57,7 @@ export class PointEffect {
     });
 
     this.pipeline = this.device.createRenderPipeline({
+      label: 'Topology Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

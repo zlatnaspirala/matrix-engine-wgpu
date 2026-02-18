@@ -182,6 +182,7 @@ export class FlameEffect {
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
 
     this.pipeline = this.device.createRenderPipeline({
+      label: 'flame pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

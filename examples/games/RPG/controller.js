@@ -277,6 +277,7 @@ export class Controller {
   }
 
   distance3D(a, b) {
+    if (!b) return 1000; // fix this later
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const dz = a.z - b.z;

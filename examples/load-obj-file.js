@@ -51,26 +51,31 @@ export var loadObjFile = function() {
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
-        material: { type: 'standard'},
+        material: {type: 'standard'},
         position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1.png'],
         name: 'cube1',
         mesh: m.cube,
         physics: {
           enabled: false,
           geometry: "Cube",
         },
-        // raycast: { enabled: true , radius: 2 }
+        pointerEffect: {
+          enabled: true,
+          flameEffect: false,
+          flameEmitter: true,
+        },
+        raycast: {enabled: true, radius: 2}
       })
 
       loadObjFile.addMeshObj({
-        material: { type: 'standard'},
+        material: {type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 111, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/spiral-1.png'],
         name: 'ball1',
         mesh: m.ball,
         physics: {
@@ -79,16 +84,19 @@ export var loadObjFile = function() {
         }
       })
 
-      var TEST = loadObjFile.getSceneObjectByName('cube2');
+
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
       loadObjFile.addLight();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.1)
+      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
       })
       loadObjFile.lightContainer[0].position[1] = 9;
+
+      var TEST = loadObjFile.getSceneObjectByName('cube2');
+
 
     }
   })

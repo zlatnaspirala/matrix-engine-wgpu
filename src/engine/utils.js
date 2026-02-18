@@ -1220,3 +1220,58 @@ export class FullscreenManager {
 }
 
 export function alignTo256(n) {return Math.ceil(n / 256) * 256;}
+
+// export let ADDITIVE_BLEND_CONFIGURATIONS = {
+//   color: {
+//                 srcFactor: 'src-alpha', // This makes intensity scale correctly
+//                 dstFactor: 'one',       // This is the "Additive" part
+//                 operation: 'add',
+//               },
+//               alpha: {
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//                 operation: 'add',
+//               },
+//               color: {
+//                 // Result = (ShaderColor * ShaderAlpha) + (DestColor * 1)
+//                 operation: 'add',
+//                 srcFactor: 'src-alpha',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 // Keeps the background alpha as is
+//                 operation: 'add',
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//               }
+//               color: {
+//                 operation: 'add',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one-minus-src-alpha',
+//               },
+//               alpha: {
+//                 operation: 'add',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one-minus-src-alpha',
+//               }
+//               color: {
+//                 operation: 'add',
+//                 srcFactor: 'one-minus-dst-color',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 operation: 'add',
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//               }
+//               color: {
+//                 operation: 'max', // Take whichever is brighter
+//                 srcFactor: 'one',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 operation: 'max',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one',
+//               }
+// }

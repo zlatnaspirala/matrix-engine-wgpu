@@ -157,7 +157,7 @@ export class VolumetricPass {
       ]
     });
     return this.device.createRenderPipeline({
-      label: 'VolumetricPass.marchPipeline',
+      label: 'Volumetric Pipeline',
       layout: this.device.createPipelineLayout({
         label: 'VolumetricPass.marchPipelineLayout',
         bindGroupLayouts: [bgl]
@@ -186,7 +186,7 @@ export class VolumetricPass {
       ]
     });
     return this.device.createRenderPipeline({
-      label: 'VolumetricPass.compositePipeline',
+      label: 'VolumetricCompose Pipeline',
       layout: this.device.createPipelineLayout({
         label: 'VolumetricPass.compositePipelineLayout',
         bindGroupLayouts: [bgl]

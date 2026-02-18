@@ -43,7 +43,7 @@ export default class MatrixEngineWGPU {
     downloadMeshes,
     addRaycastsListener,
     graphAdapter,
-    effectsClassRef : {
+    effectsClassRef: {
       FlameEffect,
       FlameEmitter,
       PointerEffect,
@@ -63,6 +63,8 @@ export default class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
+
+  autoUpdate = [];
 
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
@@ -104,7 +106,7 @@ export default class MatrixEngineWGPU {
     }
     this.editorAddOBJ = addOBJ.bind(this);
 
-    this.logLoopError = true;
+    this.logLoopError = false;
     // context select options
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -240,6 +242,11 @@ export default class MatrixEngineWGPU {
     this.createGlobalStuff();
     this.shadersPack = {};
 
+    if('OffscreenCanvas' in window) {
+      console.log(`OffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+    } else {
+      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+    }
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
@@ -493,7 +500,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
-    if(typeof o.useScale === 'undefined') {o.useScale = false;}
+    if(typeof o.useScale === 'undefined') {o.useScale = true;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {
@@ -649,6 +656,8 @@ export default class MatrixEngineWGPU {
       setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
       return;
     }
+
+    this.autoUpdate.forEach((_) => _.update())
     let now;
     const currentTime = performance.now() / 1000;
     const bufferUpdates = [];
@@ -678,8 +687,6 @@ export default class MatrixEngineWGPU {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-
-      // update meshes
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();
@@ -785,7 +792,12 @@ export default class MatrixEngineWGPU {
 
       if(this.collisionSystem) this.collisionSystem.update();
       const transPassDesc = {
-        colorAttachments: [{view: this.sceneTextureView, loadOp: 'load', storeOp: 'store'}],
+        colorAttachments: [{
+          view: this.sceneTextureView,
+          loadOp: 'load',
+          storeOp: 'store',
+          clearValue: {r: 0, g: 1, b: 0, a: 1},
+        }],
         depthStencilAttachment: {
           view: this.mainDepthView,
           depthLoadOp: 'load',
@@ -806,9 +818,7 @@ export default class MatrixEngineWGPU {
         });
       }
       transPass.end();
-
       // volumetric
-
       if(this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
         // If you don't store it yet, compute once per frame:
@@ -878,7 +888,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
     if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
-    if(typeof o.useScale === 'undefined') {o.useScale = false;}
+    if(typeof o.useScale === 'undefined') {o.useScale = true;}
 
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -963,7 +973,7 @@ export default class MatrixEngineWGPU {
         ballEffect: false
       };
     }
-    if(typeof o.useScale === 'undefined') {o.useScale = false;}
+    if(typeof o.useScale === 'undefined') {o.useScale = true;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

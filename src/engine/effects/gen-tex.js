@@ -120,6 +120,7 @@ export class GenGeoTexture {
     const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect});
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
     this.pipeline = this.device.createRenderPipeline({
+      label: 'gen-geo-tex pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

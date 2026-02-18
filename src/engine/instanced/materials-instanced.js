@@ -425,7 +425,7 @@ export default class MaterialsInstanced {
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       if(!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if(!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+      // if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
       if(typeof textureResource === 'undefined') {
         this.updateVideoTexture();
       }

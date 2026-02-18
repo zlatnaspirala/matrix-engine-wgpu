@@ -262,6 +262,7 @@ export class Creep extends Hero {
               }
             });
 
+            if(!app.enemytron) return;
             let enemytron = this.core.RPG.distance3D(
               this.heroe_bodies[0].position,
               app.enemytron.position);

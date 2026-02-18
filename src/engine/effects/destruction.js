@@ -124,6 +124,7 @@ export class DestructionEffect {
 
     // Render pipeline with alpha blending
     this.pipeline = this.device.createRenderPipeline({
+      label: 'destruction Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

@@ -82,6 +82,7 @@ export class GenGeo {
     const shaderModule = this.device.createShaderModule({code: geoInstancedEffect});
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
     this.pipeline = this.device.createRenderPipeline({
+      label: 'geo gen Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

@@ -50,6 +50,7 @@ export class GizmoEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'gizmo Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

@@ -173,6 +173,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         // if(this.name.indexOf('_') != -1) {
         //   n = this.name.split('_')[0];
         // }
+        // hardcode must be sync
+        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
@@ -182,7 +184,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if(this.trailAnimation.enabled == true) {
-        for(let i = 0;i < this.maxInstances;i++) {
+        for(let i = 0;i < this.instanceCount;i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
           const boneMatrices = new Float32Array(this.MAX_BONES * 16);
@@ -516,7 +518,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
 
     const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
-
+    // console.log(this.name, 'instanceIndex:', instanceIndex, 'byteOffset:', byteOffset, 'bufferSize:', this.bonesBuffer.size);
     // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;

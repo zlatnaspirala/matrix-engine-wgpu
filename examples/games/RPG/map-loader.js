@@ -180,17 +180,17 @@ export class MEMapLoader {
         });
       })
       // this.pointerEffect.circlePlaneTexPath
-      app.tron.effects.circle = new GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.tron.effects.circle = new GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
 
-      app.enemytron.effects.circle = new GenGeoTexture2(app.device, app.enemytron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.enemytron.effects.circle = new GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
       app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
 
       // emit pos
       app.tron.position.teams[0] = app.player.remoteByTeam[app.player.data.team];
       app.tron.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
       app.tron.position.netObject = app.tron.name;
-      let t =  app.tron.name.replace('friendlytron', 'enemytron');
+      let t = app.tron.name.replace('friendlytron', 'enemytron');
       app.tron.position.remoteName = t;
 
       this.core.collisionSystem.register(app.tron.name, app.tron.position, 25.0, 'friendly');

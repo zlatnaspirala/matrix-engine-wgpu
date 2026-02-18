@@ -81,6 +81,7 @@ export class BloomPass {
     });
 
     return this.device.createRenderPipeline({
+      label: 'bloom pipeline',
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [bindGroupLayout]
       }),

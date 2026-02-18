@@ -69,6 +69,7 @@ export class HPBarEffect {
 
     // BindGroup
     const bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'energy-bar bindGroupLayout',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
         {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {}}
@@ -76,6 +77,7 @@ export class HPBarEffect {
     });
 
     this.bindGroup = this.device.createBindGroup({
+      label: 'energy-bar bindGroup',
       layout: bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
@@ -88,6 +90,7 @@ export class HPBarEffect {
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
 
     this.pipeline = this.device.createRenderPipeline({
+      label: 'energy-bar pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

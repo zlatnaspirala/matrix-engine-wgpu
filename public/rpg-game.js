@@ -13,6 +13,7 @@ var _creepCharacter = require("./creep-character");
 var _navMesh = require("./nav-mesh");
 var _static = require("./static");
 var _friendlyCharacter = require("./friendly-character");
+var _fireball = require("../../../src/engine/procedures/fireball");
 class Character extends _hero.Hero {
   friendlyLocal = {
     heroes: [],
@@ -204,7 +205,18 @@ class Character extends _hero.Hero {
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
             if (a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
-          if (id == 0) subMesh.sharedState.emitAnimationEvent = true;
+          if (id == 0) {
+            subMesh.sharedState.emitAnimationEvent = true;
+            // subMesh
+
+            subMesh.updateMaxInstances(5);
+            subMesh.updateInstances(5);
+            subMesh.trailAnimation.enabled = true;
+            console.log("on player cast ***************************************");
+            subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
+            this.core.autoUpdate.push(subMesh.fireballSystem);
+          }
+          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         if (app.localHero.heroe_bodies[0].effects) {
@@ -307,7 +319,7 @@ class Character extends _hero.Hero {
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
   navigateCreep(creep, index) {
-    if (creep.creepFocusAttackOn != null) {
+    if (creep.creepFocusAttackOn != null || !creep.heroe_bodies) {
       // console.log('test attacher nuuu return ');
       return;
     }
@@ -388,6 +400,8 @@ class Character extends _hero.Hero {
       });
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
+    // test fireball
+    this.heroe_bodies[0].fireballSystem.spawn(this.heroe_bodies[0].position, this.heroFocusAttackOn);
   }
   setWalkCreep(creepIndex) {
     console.info(`%cfriendly setWalkCreep!`, _utils.LOG_MATRIX);
@@ -721,7 +735,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":57,"../../../src/engine/utils":67,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":15,"wgpu-matrix":32}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/procedures/fireball":67,"../../../src/engine/utils":69,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":15,"wgpu-matrix":32}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -998,6 +1012,7 @@ class Controller {
     });
   }
   distance3D(a, b) {
+    if (!b) return 1000; // fix this later
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const dz = a.z - b.z;
@@ -1006,7 +1021,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":66,"../../../src/engine/utils.js":67,"./nav-mesh.js":13,"wgpu-matrix":32}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":68,"../../../src/engine/utils.js":69,"./nav-mesh.js":13,"wgpu-matrix":32}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1247,6 +1262,7 @@ class Creep extends _hero.Hero {
                 return;
               }
             });
+            if (!app.enemytron) return;
             let enemytron = this.core.RPG.distance3D(this.heroe_bodies[0].position, app.enemytron.position);
             if (enemytron < this.core.RPG.distanceForAction) {
               console.log(`%c ATTACK ENEMY TRON ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
@@ -1282,7 +1298,7 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/loaders/webgpu-gltf":57,"../../../src/engine/utils":67,"./hero":8,"./static":15}],4:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":69,"./hero":8,"./static":15}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1502,7 +1518,7 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":57,"../../../src/engine/utils":67,"./hero":8,"./nav-mesh":13,"./static":15}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":69,"./hero":8,"./nav-mesh":13,"./static":15}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1949,7 +1965,7 @@ let forestOfHollowBlood = new _world.default({
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../public/res/multilang/en-backup.js":33,"../../../src/engine/collision-sub-system.js":35,"../../../src/engine/networking/matrix-stream.js":61,"../../../src/engine/networking/net.js":62,"../../../src/engine/utils.js":67,"../../../src/world.js":105,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./rocket-crafting-account.js":14,"./static.js":15,"./tts.js":16}],7:[function(require,module,exports){
+},{"../../../public/res/multilang/en-backup.js":33,"../../../src/engine/collision-sub-system.js":35,"../../../src/engine/networking/matrix-stream.js":62,"../../../src/engine/networking/net.js":63,"../../../src/engine/utils.js":69,"../../../src/world.js":107,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./rocket-crafting-account.js":14,"./static.js":15,"./tts.js":16}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2097,7 +2113,7 @@ class FriendlyHero extends _hero.Hero {
 }
 exports.FriendlyHero = FriendlyHero;
 
-},{"../../../src/engine/loaders/webgpu-gltf":57,"../../../src/engine/utils":67,"./hero":8,"./static":15}],8:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":69,"./hero":8,"./static":15}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2380,6 +2396,29 @@ class HeroProps {
       hpRegen: 1,
       mpRegen: 1
     };
+    this.abilityCooldowns = [{
+      baseCooldown: 10,
+      manaCost: 80
+    },
+    // Spell 1
+    {
+      baseCooldown: 14,
+      manaCost: 120
+    },
+    // Spell 2
+    {
+      baseCooldown: 18,
+      manaCost: 150
+    },
+    // Spell 3
+    {
+      baseCooldown: 90,
+      manaCost: 200
+    } // Ultimate
+    ];
+
+    // runtime state — tracks when each spell was last cast
+    this.abilityLastCast = [0, 0, 0, 0];
     this.updateStats();
   }
   updateStats() {
@@ -2438,7 +2477,7 @@ class HeroProps {
     this.gold += goldReward;
 
     // for creep any way - rule if they kill hero
-    // maybe some smlall reward... checkLevelUp
+    // maybe some small reward... checkLevelUp
     console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
     this.checkLevelUp();
   }
@@ -2452,25 +2491,15 @@ class HeroProps {
         console.log(`${this.name} leveled up! Now level ${this.currentLevel}`);
         this.updateStats();
         this.currentXP -= nextLevelXP;
+        dispatchEvent(new CustomEvent('hero-levelup', {
+          detail: {
+            level: this.currentLevel,
+            abilityPoints: this.abilityPoints,
+            abilities: this.abilities
+          }
+        }));
       } else break;
     }
-
-    // emit for hud
-    // dispatchEvent(new CustomEvent('stats-localhero', {
-    //   detail: {
-    //     gold: this.gold,
-    //     currentLevel: this.currentLevel,
-    //     xp: this.currentXP,
-    //     hp: this.hp,
-    //     mana: this.mana,
-    //     attack: this.attack,
-    //     armor: this.armor,
-    //     moveSpeed: this.moveSpeed,
-    //     attackSpeed: this.attackSpeed,
-    //     hpRegen: this.hpRegen,
-    //     mpRegen: this.mpRegen,
-    //   }
-    // }))
   }
 
   // --- Upgrade abilities
@@ -2573,6 +2602,93 @@ class HeroProps {
       crit: crit > 1.0
     };
   }
+
+  // Add these methods to HeroProps:
+
+  // Returns effective cooldown in ms after attackSpeed + spell level reduction
+  getEffectiveCooldown(spellIndex) {
+    const cd = this.abilityCooldowns[spellIndex];
+    const spell = this.abilities[spellIndex];
+    if (!cd || !spell) return Infinity;
+
+    // each spell level reduces cooldown by 8%
+    const levelReduction = 1 - spell.level * 0.08;
+    // attackSpeed stat reduces cooldown (1.0 = no reduction, 2.0 = 50% reduction)
+    const speedReduction = 1 / this.attackSpeed;
+    return cd.baseCooldown * 1000 * levelReduction * speedReduction; // in ms
+  }
+
+  // Returns remaining cooldown in ms (0 = ready)
+  getCooldownRemaining(spellIndex) {
+    const elapsed = performance.now() - this.abilityLastCast[spellIndex];
+    const effective = this.getEffectiveCooldown(spellIndex);
+    return Math.max(0, effective - elapsed);
+  }
+
+  // Returns 0.0 → 1.0 progress for HUD fill animation
+  getCooldownProgress(spellIndex) {
+    const remaining = this.getCooldownRemaining(spellIndex);
+    const effective = this.getEffectiveCooldown(spellIndex);
+    if (effective === 0) return 1;
+    return 1 - remaining / effective;
+  }
+
+  // Main gate — call this before any cast
+  trySpell(spellIndex) {
+    const spell = this.abilities[spellIndex];
+    const cd = this.abilityCooldowns[spellIndex];
+
+    // ── Not unlocked
+    if (!spell || spell.level === 0) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {
+          spellIndex,
+          reason: 'locked'
+        }
+      }));
+      return false;
+    }
+
+    // ── On cooldown
+    const remaining = this.getCooldownRemaining(spellIndex);
+    if (remaining > 0) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {
+          spellIndex,
+          reason: 'cooldown',
+          remaining
+        }
+      }));
+      return false;
+    }
+
+    // ── Not enough mana
+    if (this.mana < cd.manaCost) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {
+          spellIndex,
+          reason: 'mana',
+          have: this.mana,
+          need: cd.manaCost
+        }
+      }));
+      return false;
+    }
+
+    // ── All checks pass — consume mana, stamp cooldown
+    this.mana -= cd.manaCost;
+    this.abilityLastCast[spellIndex] = performance.now();
+    dispatchEvent(new CustomEvent('spell-cast', {
+      detail: {
+        spellIndex,
+        spellName: spell.name,
+        manaCost: cd.manaCost,
+        cooldownMs: this.getEffectiveCooldown(spellIndex),
+        manaLeft: this.mana
+      }
+    }));
+    return true; // ← cast is allowed
+  }
 }
 exports.HeroProps = HeroProps;
 class Hero extends HeroProps {
@@ -2657,11 +2773,63 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.HUD = void 0;
 var _utils = require("../../../src/engine/utils.js");
+function startCooldownOverlay(slot, spellIndex) {
+  const cdMs = app.localHero.heroProps.getEffectiveCooldown(spellIndex);
+
+  // add overlay div if not present
+  let overlay = slot.querySelector('.cd-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'cd-overlay';
+    slot.appendChild(overlay);
+  }
+
+  // CSS transition sweeps the overlay away over cdMs
+  overlay.style.transition = 'none';
+  overlay.style.height = '100%';
+  requestAnimationFrame(() => {
+    overlay.style.transition = `height ${cdMs}ms linear`;
+    overlay.style.height = '0%';
+  });
+}
 class HUD {
   constructor(localHero) {
     this.localHero = localHero;
     this.construct();
     this.setCursor();
+    document.addEventListener('hero-levelup', e => {
+      const {
+        abilities
+      } = e.detail;
+      console.log('LEVEL UP');
+      abilities.forEach((spell, i) => {
+        const slot = document.getElementById(`magic-slot-${i}`);
+        if (!slot) return;
+        if (spell.level > 0) {
+          // unlocked — remove locked state
+          slot.innerText = '';
+          slot.style.opacity = '1';
+          slot.style.cursor = 'pointer';
+          // slot.classList.add('unlocked');
+        } else if (e.detail.abilityPoints > 0) {
+          // available to unlock — show pulsing hint
+          slot.innerText = '!';
+          slot.style.border = '2px solid gold';
+        }
+      });
+    });
+    document.addEventListener('spell-fail', e => {
+      const slot = document.getElementById(`magic-slot-${e.detail.spellIndex}`);
+      if (!slot) return;
+      if (e.detail.reason === 'cooldown') {
+        slot.style.animation = 'shake 0.3s ease';
+        setTimeout(() => slot.style.animation = '', 300);
+      }
+      if (e.detail.reason === 'mana') {
+        slot.style.boxShadow = '0 0 12px 4px #4af inset';
+        setTimeout(() => slot.style.boxShadow = '', 500);
+      }
+    });
   }
   construct() {
     const hud = document.createElement("div");
@@ -3208,7 +3376,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{"../../../src/engine/utils.js":67}],10:[function(require,module,exports){
+},{"../../../src/engine/utils.js":69}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3608,9 +3776,9 @@ class MEMapLoader {
         });
       });
       // this.pointerEffect.circlePlaneTexPath
-      app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
-      app.enemytron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.enemytron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.enemytron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
       app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
 
       // emit pos
@@ -3815,7 +3983,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen-tex2.js":42,"../../../src/engine/effects/gen.js":43,"../../../src/engine/loader-obj.js":54,"../../../src/engine/loaders/webgpu-gltf.js":57,"../../../src/engine/utils.js":67,"./nav-mesh.js":13,"./static.js":15}],12:[function(require,module,exports){
+},{"../../../src/engine/effects/gen-tex2.js":42,"../../../src/engine/effects/gen.js":43,"../../../src/engine/loader-obj.js":55,"../../../src/engine/loaders/webgpu-gltf.js":58,"../../../src/engine/utils.js":69,"./nav-mesh.js":13,"./static.js":15}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4905,7 +5073,7 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":67}],14:[function(require,module,exports){
+},{"../../../src/engine/utils.js":69}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5396,7 +5564,7 @@ var ROCK_RANK = exports.ROCK_RANK = {
   }
 };
 
-},{"../../../src/engine/utils.js":67}],15:[function(require,module,exports){
+},{"../../../src/engine/utils.js":69}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5670,7 +5838,7 @@ const speakBot = exports.speakBot = {
 
 },{}],17:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":67,"dup":13}],18:[function(require,module,exports){
+},{"../../../src/engine/utils.js":69,"dup":13}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23566,7 +23734,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":67}],35:[function(require,module,exports){
+},{"./utils":69}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23814,6 +23982,7 @@ class DestructionEffect {
 
     // Render pipeline with alpha blending
     this.pipeline = this.device.createRenderPipeline({
+      label: 'destruction Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -24099,7 +24268,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":70,"wgpu-matrix":32}],38:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":72,"wgpu-matrix":32}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24158,6 +24327,7 @@ class HPBarEffect {
 
     // BindGroup
     const bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'energy-bar bindGroupLayout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -24169,6 +24339,7 @@ class HPBarEffect {
       }]
     });
     this.bindGroup = this.device.createBindGroup({
+      label: 'energy-bar bindGroup',
       layout: bindGroupLayout,
       entries: [{
         binding: 0,
@@ -24191,6 +24362,7 @@ class HPBarEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'energy-bar pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -24262,7 +24434,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":71,"wgpu-matrix":32}],39:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":73,"wgpu-matrix":32}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24277,7 +24449,7 @@ class FlameEmitter {
     this.device = device;
     this.format = format;
     this.time = 0;
-    this.intensity = 3.0;
+    this.intensity = 1.0;
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
@@ -24289,6 +24461,7 @@ class FlameEmitter {
     this.swap0 = 0;
     this.swap1 = 1;
     this.swap2 = 2;
+    this.riseDirection = 1;
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -24313,7 +24486,7 @@ class FlameEmitter {
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
   }
   _initPipeline() {
-    const S = 5;
+    const S = 50;
     const vertexData = new Float32Array([-0.2 * S, -0.5 * S, 0.0 * S, 0.2 * S, -0.5 * S, 0.0 * S, -0.4 * S, 0.5 * S, 0.0 * S, 0.4 * S, 0.5 * S, 0.0 * S]);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
@@ -24377,6 +24550,7 @@ class FlameEmitter {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'flame-emmiter pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -24447,8 +24621,8 @@ class FlameEmitter {
       const offset = i * this.floatsPerInstance;
       this.instanceData.set(finalMat, offset); // 0..15
       this.instanceData.set([t.time, 0, 0, 0], offset + 16); // 16..19
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20); // 20..23
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1.0], offset + 24); // 24..27
+      this.instanceData.set([t.intensity & this.intensity, 0, 0, 0], offset + 20); // 20..23
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 0.5], offset + 24); // 24..27
     }
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
   };
@@ -24456,12 +24630,17 @@ class FlameEmitter {
     // update global time
     this.time += dt;
     for (const p of this.instanceTargets) {
-      p.position[this.swap1] += dt * p.riseSpeed;
+      p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
       // Reset if too high
-      if (p.position[this.swap1] > this.maxY) {
-        p.position[this.swap1] = this.minY + Math.random() * 0.5;
+      const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxY : p.position[this.swap1] < this.minY;
+      if (resetCondition) {
+        // Reset along the rise axis
+        p.position[this.swap1] = this.riseDirection > 0 ? this.minY + Math.random() * 0.5 : this.maxY - Math.random() * 0.5;
+
+        // Spread axes — keep randomness RELATIVE to current direction
         p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2; // ← REMOVE the +0.1 here
+
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
@@ -24478,10 +24657,62 @@ class FlameEmitter {
   setIntensity(v) {
     this.intensity = v;
   }
+
+  // Add this method to FlameEmitter class:
+
+  setDirection(direction) {
+    switch (direction) {
+      case 'up':
+        // Y+ (default)
+        this.swap0 = 0; // X
+        this.swap1 = 1; // Y (rise axis)
+        this.swap2 = 2; // Z
+        break;
+      case 'down':
+        // Y-
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        this.riseDirection = -1; // flip
+        break;
+      case 'forward':
+        // Z+
+        this.swap0 = 0; // X (spread)
+        this.swap1 = 2; // Z (rise axis)
+        this.swap2 = 1; // Y (spread)
+        break;
+      case 'back':
+        // Z-
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.riseDirection = -1;
+        break;
+      case 'right':
+        // X+
+        this.swap0 = 1; // Y (spread)
+        this.swap1 = 0; // X (rise axis)
+        this.swap2 = 2; // Z (spread)
+        break;
+      case 'left':
+        // X-
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        break;
+    }
+    this.riseDirection = this.riseDirection ?? 1; // default positive
+
+    if (this.riseDirection < 0) {
+      // Negative direction — swap min/max so reset works
+      [this.minY, this.maxY] = [this.maxY, this.minY];
+    }
+  }
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":72,"../utils":67,"wgpu-matrix":32}],40:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":74,"../utils":69,"wgpu-matrix":32}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24697,6 +24928,7 @@ class FlameEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'flame pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -24792,7 +25024,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":73,"wgpu-matrix":32}],41:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":75,"wgpu-matrix":32}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24937,6 +25169,7 @@ class GenGeoTexture {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'gen-geo-tex pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -25033,7 +25266,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":86,"../geometry-factory.js":50,"wgpu-matrix":32}],42:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":88,"../geometry-factory.js":50,"wgpu-matrix":32}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25064,7 +25297,8 @@ class GenGeoTexture2 {
       const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
       const texture = this.device.createTexture({
         size: [img.width, img.height, 1],
-        format: "rgba8unorm",
+        format: 'rgba16float',
+        // "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       this.device.queue.copyExternalImageToTexture({
@@ -25194,6 +25428,7 @@ class GenGeoTexture2 {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'geo tex 2 Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -25290,7 +25525,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":86,"../geometry-factory.js":50,"wgpu-matrix":32}],43:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":88,"../geometry-factory.js":50,"wgpu-matrix":32}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25392,6 +25627,7 @@ class GenGeo {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'geo gen Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -25480,7 +25716,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":85,"../geometry-factory.js":50,"wgpu-matrix":32}],44:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":87,"../geometry-factory.js":50,"wgpu-matrix":32}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25566,6 +25802,7 @@ class GizmoEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'gizmo Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -25938,7 +26175,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":80}],45:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":82}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26030,6 +26267,7 @@ class MANABarEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'mana Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -26101,7 +26339,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":71,"wgpu-matrix":32}],46:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":73,"wgpu-matrix":32}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26188,6 +26426,7 @@ class PointerEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'pointEffect Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -26244,7 +26483,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":87,"wgpu-matrix":32}],47:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":89,"wgpu-matrix":32}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26321,6 +26560,7 @@ class PointEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: 'Topology Pipeline',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -26425,7 +26665,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":88}],48:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":90}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26982,7 +27222,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":67,"wgpu-matrix":32}],49:[function(require,module,exports){
+},{"./utils":69,"wgpu-matrix":32}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27382,7 +27622,7 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":101,"../loader-obj":54}],50:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":103,"../loader-obj":55}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27929,7 +28169,7 @@ class MaterialsInstanced {
   }
   setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
     if (!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
-    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
     if (!roughnessFactor) roughnessFactor = 0.5;
     const pad = [0.0];
     const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, 0.5, ...pad]);
@@ -28107,7 +28347,7 @@ class MaterialsInstanced {
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if (!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+      // if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
       if (typeof textureResource === 'undefined') {
         this.updateVideoTexture();
       }
@@ -28301,7 +28541,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":75,"../../shaders/fragment.wgsl.metal":76,"../../shaders/fragment.wgsl.normalmap":77,"../../shaders/fragment.wgsl.pong":78,"../../shaders/fragment.wgsl.power":79,"../../shaders/instanced/fragment.instanced.wgsl":81,"../../shaders/water/water-c.wgls":92}],52:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":77,"../../shaders/fragment.wgsl.metal":78,"../../shaders/fragment.wgsl.normalmap":79,"../../shaders/fragment.wgsl.pong":80,"../../shaders/fragment.wgsl.power":81,"../../shaders/instanced/fragment.instanced.wgsl":83,"../../shaders/water/water-c.wgls":94}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28323,6 +28563,7 @@ var _flame = require("../effects/flame");
 var _flameEmmiter = require("../effects/flame-emmiter");
 var _genTex = require("../effects/gen-tex");
 var _genTex2 = require("../effects/gen-tex2");
+var _literals = require("../literals");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -28347,7 +28588,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
-    this.blendInstanced = false;
+    this.useScale = o.useScale || false;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -28795,10 +29036,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.instanceCount = newCount;
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
+          label: 'instanceBuffer in bvh mesh [instanced]',
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
-        let m = this.getModelMatrix(this.position);
+        let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
@@ -28815,10 +29057,20 @@ class MEMeshObjInstances extends _materialsInstanced.default {
             resource: {
               buffer: this.bonesBuffer
             }
+          }, {
+            binding: 2,
+            resource: {
+              buffer: this.vertexAnimBuffer
+            }
           }]
         });
       };
       this.updateMaxInstances = newMax => {
+        let isBigger = false;
+        this.instanceTargets = [];
+        if (this.maxInstances < newMax) {
+          isBigger = true;
+        }
         this.maxInstances = newMax;
         for (let x = 0; x < this.maxInstances; x++) {
           this.instanceTargets.push({
@@ -28831,6 +29083,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
             currentColor: [0.6, 0.8, 1.0, 0.4]
           });
         }
+        if (isBigger == false) {
+          console.log('new max values is smaller than current - auto correct updateInstances(newMax)');
+          this.updateInstances(newMax);
+        }
       };
       // end of instanced
 
@@ -28841,7 +29097,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       });
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
-        size: 176,
+        size: 192,
+        //176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
 
@@ -28856,6 +29113,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           }
         }, {
           binding: 1,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
+        }, {
+          binding: 2,
           visibility: GPUShaderStage.VERTEX,
           buffer: {
             type: 'uniform'
@@ -28876,6 +29139,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           buffer: {
             type: 'uniform'
           }
+        }, {
+          binding: 2,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
         }]
       });
 
@@ -28885,17 +29154,171 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
+      // this.bonesBuffer = device.createBuffer({
+      //   label: "bonesBuffer",
+      //   size: alignTo256(64 * MAX_BONES),
+      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      // });
+
+      // const bones = new Float32Array(this.MAX_BONES * 16);
+      // for(let i = 0;i < this.MAX_BONES;i++) {
+      //   // identity matrices
+      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      // }
+      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+      const TRAIL_INSTANCES = 10; // your total instance count
+      const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
+        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      const bones = new Float32Array(this.MAX_BONES * 16);
-      for (let i = 0; i < this.MAX_BONES; i++) {
-        // identity matrices
+
+      // identity init for all slots
+      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
+      for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+
+      //
+      // vertex Anim
+      this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
+      this.vertexAnimBuffer = this.device.createBuffer({
+        label: "Vertex Animation Params",
+        size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
+        // 256, //this.vertexAnimParams.byteLength, // 128 bytes
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.vertexAnim = {
+        enableWave: () => {
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WAVE;
+          this.updateVertexAnimBuffer();
+        },
+        disableWave: () => {
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.WAVE;
+          this.updateVertexAnimBuffer();
+        },
+        enableWind: () => {
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WIND;
+          this.updateVertexAnimBuffer();
+        },
+        disableWind: () => {
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.WIND;
+          this.updateVertexAnimBuffer();
+        },
+        enablePulse: () => {
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.PULSE;
+          this.updateVertexAnimBuffer();
+        },
+        disablePulse: () => {
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.PULSE;
+          this.updateVertexAnimBuffer();
+        },
+        enableTwist: () => {
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.TWIST;
+          this.updateVertexAnimBuffer();
+        },
+        disableTwist: () => {
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.TWIST;
+          this.updateVertexAnimBuffer();
+        },
+        enableNoise: () => {
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.NOISE;
+          this.updateVertexAnimBuffer();
+        },
+        disableNoise: () => {
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.NOISE;
+          this.updateVertexAnimBuffer();
+        },
+        enableOcean: () => {
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.OCEAN;
+          this.updateVertexAnimBuffer();
+        },
+        disableOcean: () => {
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.OCEAN;
+          this.updateVertexAnimBuffer();
+        },
+        enable: (...effects) => {
+          effects.forEach(effect => {
+            this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+          });
+          this.updateVertexAnimBuffer();
+        },
+        disable: (...effects) => {
+          effects.forEach(effect => {
+            this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+          });
+          this.updateVertexAnimBuffer();
+        },
+        disableAll: () => {
+          this.vertexAnimParams[1] = 0;
+          this.updateVertexAnimBuffer();
+        },
+        isEnabled: effect => {
+          return (this.vertexAnimParams[1] & _literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
+        },
+        setWaveParams: (speed, amplitude, frequency) => {
+          this.vertexAnimParams[4] = speed;
+          this.vertexAnimParams[5] = amplitude;
+          this.vertexAnimParams[6] = frequency;
+          this.updateVertexAnimBuffer();
+        },
+        setWindParams: (speed, strength, heightInfluence, turbulence) => {
+          this.vertexAnimParams[8] = speed;
+          this.vertexAnimParams[9] = strength;
+          this.vertexAnimParams[10] = heightInfluence;
+          this.vertexAnimParams[11] = turbulence;
+          this.updateVertexAnimBuffer();
+        },
+        setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
+          this.vertexAnimParams[12] = speed;
+          this.vertexAnimParams[13] = amount;
+          this.vertexAnimParams[14] = centerX;
+          this.vertexAnimParams[15] = centerY;
+          this.updateVertexAnimBuffer();
+        },
+        setTwistParams: (speed, amount) => {
+          this.vertexAnimParams[16] = speed;
+          this.vertexAnimParams[17] = amount;
+          this.updateVertexAnimBuffer();
+        },
+        setNoiseParams: (scale, strength, speed) => {
+          this.vertexAnimParams[20] = scale;
+          this.vertexAnimParams[21] = strength;
+          this.vertexAnimParams[22] = speed;
+          this.updateVertexAnimBuffer();
+        },
+        setOceanParams: (scale, height, speed) => {
+          this.vertexAnimParams[24] = scale;
+          this.vertexAnimParams[25] = height;
+          this.vertexAnimParams[26] = speed;
+          this.updateVertexAnimBuffer();
+        },
+        setIntensity: value => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+          this.updateVertexAnimBuffer();
+        },
+        getIntensity: () => {
+          return this.vertexAnimParams[2];
+        }
+      };
+      this.updateVertexAnimBuffer = () => {
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+      };
+
+      // globalIntensity
+      this.vertexAnimParams[2] = 1.0;
+      this.updateVertexAnimBuffer();
+      this.updateTime = time => {
+        this.time += time * this.deltaTimeAdapter;
+        this.vertexAnimParams[0] = time;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+        // const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
+        // Pass explicit alpha — 0.5 = semi transparent
+        // this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
+      };
+      //
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
@@ -28931,6 +29354,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           resource: {
             buffer: this.bonesBuffer
           }
+        }, {
+          binding: 2,
+          resource: {
+            buffer: this.vertexAnimBuffer
+          }
         }]
       });
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
@@ -28953,6 +29381,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       // console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
+        pf = 'rgba16float';
         if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
           this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
         }
@@ -29014,47 +29443,57 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if ((this.glb || this.objAnim) && useScale == true) {
-          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
       this.done = true;
       try {
         this.setupPipeline();
       } catch (err) {
-        console.log('err in create pipeline in init ', err);
+        console.log(`Err in create pipeline ${err}`, _utils.LOG_WARN);
       }
     }).then(() => {
       if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('after all updateMeshListBuffers...');
+        console.log('updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     });
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
-    const baseDesc = {
-      label: 'Mesh Pipeline Base',
-      layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout Mesh',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, this.selectedBindGroupLayout]
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: _vertexInstanced.vertexWGSLInstanced
-        }),
-        buffers: this.vertexBuffers
-      },
+    const pipelineLayout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Mesh',
+      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, this.selectedBindGroupLayout]
+    });
+    const vertexModule = this.device.createShaderModule({
+      label: 'VertexShader Mesh',
+      code: _vertexInstanced.vertexWGSLInstanced
+    });
+    const fragmentModule = this.device.createShaderModule({
+      label: 'FragmentShader Mesh',
+      code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
+    });
+    const vertexState = {
+      entryPoint: 'main',
+      module: vertexModule,
+      buffers: this.vertexBuffers
+    };
+    const fragmentConstants = {
+      shadowDepthTextureSize: this.shadowDepthTextureSize
+    };
+
+    // ── Opaque pipeline ───────────────────────────────────────────────────────
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'Pipeline Opaque ✅',
+      layout: pipelineLayout,
+      vertex: vertexState,
       fragment: {
         entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
-        }),
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
-        }
+        module: fragmentModule,
+        constants: fragmentConstants,
+        targets: [{
+          format: 'rgba16float'
+        }]
       },
       depthStencil: {
         depthWriteEnabled: true,
@@ -29062,29 +29501,19 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       },
       primitive: this.primitive
-    };
-
-    // --- Normal (no blending)
-    this.pipeline = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: 'Mesh Pipeline Opaque ✅',
-      fragment: {
-        ...baseDesc.fragment,
-        targets: [{
-          format: this.presentationFormat,
-          blend: undefined
-        }]
-      }
     });
 
-    // --- Blended (alpha)
-    this.pipelineBlended = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: 'Mesh Pipeline Blended ✅',
+    // ── Transparent pipeline ──────────────────────────────────────────────────
+    this.pipelineTransparent = this.device.createRenderPipeline({
+      label: 'Pipeline Transparent ✅',
+      layout: pipelineLayout,
+      vertex: vertexState,
       fragment: {
-        ...baseDesc.fragment,
+        entryPoint: 'main',
+        module: fragmentModule,
+        constants: fragmentConstants,
         targets: [{
-          format: this.presentationFormat,
+          format: 'rgba16float',
           blend: {
             color: {
               srcFactor: 'src-alpha',
@@ -29101,15 +29530,27 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        // <<< disable depth write for transparency
+        // transparent never writes depth
         depthCompare: 'less',
         format: 'depth24plus'
-      }
+      },
+      primitive: this.primitive
     });
-
-    // console.log('✅Pipelines done');
   };
-  updateModelUniformBuffer = () => {};
+  updateModelUniformBuffer = () => {
+
+    // // JUST TEST ORI EMPTY s
+    //     if(this.done == false) return;
+    // // Per-object model matrix only
+    // const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    // this.device.queue.writeBuffer(
+    //   this.modelUniformBuffer,
+    //   0,
+    //   modelMatrix.buffer,
+    //   modelMatrix.byteOffset,
+    //   modelMatrix.byteLength
+    // );
+  };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid array passed to createGPUBuffer');
@@ -29204,14 +29645,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     if (this.mesh.tangentsBuffer) {
       pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
+    if (this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent);else pass.setPipeline(this.pipeline);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
-    pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
-
-    // pipelineBlended
-    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);else pass.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
-      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+      if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   };
   drawElementsAnim = (renderPass, lightContainer) => {
@@ -29281,7 +29718,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":74,"../../shaders/instanced/vertex.instanced.wgsl":82,"../effects/energy-bar":38,"../effects/flame":40,"../effects/flame-emmiter":39,"../effects/gen":43,"../effects/gen-tex":41,"../effects/gen-tex2":42,"../effects/mana-bar":45,"../effects/pointerEffect":46,"../loaders/bvh-instaced":55,"../matrix-class":59,"../utils":67,"./materials-instanced":51,"wgpu-matrix":32}],53:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":76,"../../shaders/instanced/vertex.instanced.wgsl":84,"../effects/energy-bar":38,"../effects/flame":40,"../effects/flame-emmiter":39,"../effects/gen":43,"../effects/gen-tex":41,"../effects/gen-tex2":42,"../effects/mana-bar":45,"../effects/pointerEffect":46,"../literals":54,"../loaders/bvh-instaced":56,"../matrix-class":60,"../utils":69,"./materials-instanced":51,"wgpu-matrix":32}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29555,6 +29992,42 @@ class SpotLight {
             offset: 0,
             format: "float32x3"
           }]
+        },
+        // ✅ ADD @location(1) - normal
+        {
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x3"
+          }]
+        },
+        // ✅ ADD @location(2) - uv
+        {
+          arrayStride: 8,
+          attributes: [{
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32x2"
+          }]
+        },
+        // ✅ ADD @location(3) - joints
+        {
+          arrayStride: 16,
+          attributes: [{
+            shaderLocation: 3,
+            offset: 0,
+            format: "uint32x4"
+          }]
+        },
+        // ✅ ADD @location(4) - weights
+        {
+          arrayStride: 16,
+          attributes: [{
+            shaderLocation: 4,
+            offset: 0,
+            format: "float32x4"
+          }]
         }]
       },
       depthStencil: {
@@ -29651,7 +30124,31 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":83,"../shaders/vertexShadow.wgsl":91,"./behavior":34,"wgpu-matrix":32}],54:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":85,"../shaders/vertexShadow.wgsl":93,"./behavior":34,"wgpu-matrix":32}],54:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.VERTEX_ANIM_FLAGS = void 0;
+const VERTEX_ANIM_FLAGS = exports.VERTEX_ANIM_FLAGS = {
+  NONE: 0,
+  WAVE: 1 << 0,
+  // 1
+  WIND: 1 << 1,
+  // 2
+  PULSE: 1 << 2,
+  // 4
+  TWIST: 1 << 3,
+  // 8
+  NOISE: 1 << 4,
+  // 16
+  OCEAN: 1 << 5,
+  // 32
+  DISPLACEMENT: 1 << 6 // 64
+};
+
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30119,7 +30616,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30129,6 +30626,7 @@ exports.BVHPlayerInstances = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 var _meshObjInstances = _interopRequireDefault(require("../instanced/mesh-obj-instances.js"));
+var _utils = require("../utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import MEBvh from "bvh-loader";
 
@@ -30171,6 +30669,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this.trailAnimation = {
+      enabled: false,
+      delay: 100
+    };
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
@@ -30290,6 +30792,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         // if(this.name.indexOf('_') != -1) {
         //   n = this.name.split('_')[0];
         // }
+        // hardcode must be sync
+        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
@@ -30297,10 +30801,25 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         }));
       }, inTime * 1000);
     }
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+      if (this.trailAnimation.enabled == true) {
+        for (let i = 0; i < this.instanceCount; i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
+          const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes,
+          // ← same nodes, no clone
+          currentTime,
+          // ← only this changes per instance
+          boneMatrices, i // ← writes to correct buffer slot
+          );
+        }
+      } else {
+        const currentTime = performance.now() / this.animationSpeed - this.startTime;
+        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 1);
+      }
     }
   }
   getAccessorArray(glb, accessorIndex) {
@@ -30560,7 +31079,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       out[i] = s0 * q0[i] + s1 * q1[i];
     }
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
@@ -30636,14 +31155,16 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
       boneMatrices.set(finalMat, j * 16);
     }
+    const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
+    // console.log(this.name, 'instanceIndex:', instanceIndex, 'byteOffset:', byteOffset, 'bufferSize:', this.bonesBuffer.size);
     // --- Upload to GPU
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":52,"./webgpu-gltf.js":57,"wgpu-matrix":32}],56:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":52,"../utils.js":69,"./webgpu-gltf.js":58,"wgpu-matrix":32}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31165,7 +31686,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":60,"./webgpu-gltf.js":57,"bvh-loader":18,"wgpu-matrix":32}],57:[function(require,module,exports){
+},{"../mesh-obj":61,"./webgpu-gltf.js":58,"bvh-loader":18,"wgpu-matrix":32}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31746,7 +32267,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":21}],58:[function(require,module,exports){
+},{"gl-matrix":21}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32010,7 +32531,7 @@ class Materials {
   }
   setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0) {
     if (!metallicFactor) metallicFactor = 0.5;
-    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
     if (!roughnessFactor) roughnessFactor = 0.5;
     const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
@@ -32424,7 +32945,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":75,"../shaders/fragment.wgsl.metal":76,"../shaders/fragment.wgsl.normalmap":77,"../shaders/fragment.wgsl.pong":78,"../shaders/fragment.wgsl.power":79,"../shaders/mixed/fragmentMix1.wgsl":84,"../shaders/water/water-c.wgls":92,"./utils":67}],59:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":77,"../shaders/fragment.wgsl.metal":78,"../shaders/fragment.wgsl.normalmap":79,"../shaders/fragment.wgsl.pong":80,"../shaders/fragment.wgsl.power":81,"../shaders/mixed/fragmentMix1.wgsl":86,"../shaders/water/water-c.wgls":94,"./utils":69}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32809,7 +33330,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":67}],60:[function(require,module,exports){
+},{"./utils":69}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32828,6 +33349,7 @@ var _gizmo = require("./effects/gizmo");
 var _destruction = require("./effects/destruction");
 var _flame = require("./effects/flame");
 var _flameEmmiter = require("./effects/flame-emmiter");
+var _literals = require("./literals");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {PointerEffect} from './effects/pointerEffect';
 
@@ -33329,22 +33851,6 @@ class MEMeshObj extends _materials.default {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const VERTEX_ANIM_FLAGS = {
-        NONE: 0,
-        WAVE: 1 << 0,
-        // 1
-        WIND: 1 << 1,
-        // 2
-        PULSE: 1 << 2,
-        // 4
-        TWIST: 1 << 3,
-        // 8
-        NOISE: 1 << 4,
-        // 16
-        OCEAN: 1 << 5,
-        // 32
-        DISPLACEMENT: 1 << 6 // 64
-      };
 
       // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
@@ -33356,62 +33862,62 @@ class MEMeshObj extends _materials.default {
       });
       this.vertexAnim = {
         enableWave: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
         disableWave: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
         enableWind: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
         disableWind: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
         enablePulse: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
         disablePulse: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
         enableTwist: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
         disableTwist: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
         enableNoise: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
         disableNoise: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
         enableOcean: () => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
         disableOcean: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
         enable: (...effects) => {
           effects.forEach(effect => {
-            this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+            this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()];
           });
           this.updateVertexAnimBuffer();
         },
         disable: (...effects) => {
           effects.forEach(effect => {
-            this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+            this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()];
           });
           this.updateVertexAnimBuffer();
         },
@@ -33420,7 +33926,7 @@ class MEMeshObj extends _materials.default {
           this.updateVertexAnimBuffer();
         },
         isEnabled: effect => {
-          return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
+          return (this.vertexAnimParams[1] & _literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
         },
         setWaveParams: (speed, amplitude, frequency) => {
           this.vertexAnimParams[4] = speed;
@@ -33478,8 +33984,8 @@ class MEMeshObj extends _materials.default {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = this.time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        this.setupMaterialPBR(false, false, false, effectMix, 1.0);
+        // const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
+        // this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
@@ -33566,12 +34072,7 @@ class MEMeshObj extends _materials.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // if(this.glb || this.objAnim) {
-        //   // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        // }
-        if (useScale == true) {
-          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
@@ -33891,7 +34392,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":74,"../shaders/vertex.wgsl":89,"../shaders/vertex.wgsl.normalmap":90,"./effects/destruction":37,"./effects/flame":40,"./effects/flame-emmiter":39,"./effects/gizmo":44,"./effects/topology-point":47,"./materials":58,"./matrix-class":59,"./utils":67,"wgpu-matrix":32}],61:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":76,"../shaders/vertex.wgsl":91,"../shaders/vertex.wgsl.normalmap":92,"./effects/destruction":37,"./effects/flame":40,"./effects/flame-emmiter":39,"./effects/gizmo":44,"./effects/topology-point":47,"./literals":54,"./materials":59,"./matrix-class":60,"./utils":69,"wgpu-matrix":32}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34382,7 +34883,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34591,7 +35092,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":67,"./matrix-stream":61}],63:[function(require,module,exports){
+},{"../utils":69,"./matrix-stream":62}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34633,7 +35134,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34761,6 +35262,7 @@ class BloomPass {
       entries: bindGroupLayoutEntries
     });
     return this.device.createRenderPipeline({
+      label: 'bloom pipeline',
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [bindGroupLayout]
       }),
@@ -35015,7 +35517,7 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35224,7 +35726,7 @@ class VolumetricPass {
       }]
     });
     return this.device.createRenderPipeline({
-      label: 'VolumetricPass.marchPipeline',
+      label: 'Volumetric Pipeline',
       layout: this.device.createPipelineLayout({
         label: 'VolumetricPass.marchPipelineLayout',
         bindGroupLayouts: [bgl]
@@ -35281,7 +35783,7 @@ class VolumetricPass {
       }]
     });
     return this.device.createRenderPipeline({
-      label: 'VolumetricPass.compositePipeline',
+      label: 'VolumetricCompose Pipeline',
       layout: this.device.createPipelineLayout({
         label: 'VolumetricPass.compositePipelineLayout',
         bindGroupLayouts: [bgl]
@@ -35524,7 +36026,137 @@ function compositeFragWGSL() {
   `;
 }
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.FireballSystem = void 0;
+var _webgpuGltf = require("../loaders/webgpu-gltf");
+class FireballSystem {
+  static CONFIG = {
+    speed: 2.3,
+    homingStrength: 0.08,
+    hitRadius: 1.5,
+    damage: 50,
+    lifetime: 4000,
+    maxActive: 2
+  };
+  loadBallAnim = async p => {
+    var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      scale: [12, 12, 12],
+      position: {
+        x: this.parent.position.x,
+        y: this.parent.position.y,
+        z: this.parent.position.z
+      },
+      name: "FIRE",
+      // this.parent.name + "-fireball",
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {
+        enabled: true,
+        radius: 1.5
+      },
+      pointerEffect: {
+        enabled: true,
+        pointer: true,
+        flameEffect: false,
+        flameEmitter: true,
+        circlePlane: false,
+        circlePlaneTex: true,
+        circlePlaneTexPath: './res/textures/star1.png'
+      }
+    }, null, glbFile01);
+    setTimeout(() => this.fireballMesh = app.getSceneObjectByName('FIRE_Circle'), 300);
+  };
+  constructor(parent, core) {
+    this.core = core;
+    this.parent = parent;
+    this.loadBallAnim('./res/meshes/glb/ring1.glb');
+    this.projectiles = [];
+  }
+
+  // Spawn a new fireball scene object
+  async spawn(fromPosition, target) {
+    if (this.projectiles.length >= FireballSystem.CONFIG.maxActive) return;
+    // Create new MeshObjInstanced for this fireball
+    // position: new Position(fromPosition.x, fromPosition.y, fromPosition.z),
+    // let fireballMesh = app.getSceneObjectByName('FIRE_Circle');
+    this.fireballMesh.position.x = fromPosition.x;
+    this.fireballMesh.position.y = fromPosition.y;
+    this.fireballMesh.position.z = fromPosition.z;
+    this.fireballMesh.position.setSpeed(FireballSystem.CONFIG.speed);
+    this.projectiles.push({
+      mesh: this.fireballMesh,
+      target: target,
+      spawnTime: performance.now(),
+      alive: true
+    });
+
+    // Add to scene
+    // app.mainRenderBundle.push(fireballMesh);
+  }
+  update(deltaTime) {
+    const cfg = FireballSystem.CONFIG;
+    const toRemove = [];
+    for (let i = 0; i < this.projectiles.length; i++) {
+      const p = this.projectiles[i];
+      if (!p.alive) {
+        toRemove.push(i);
+        continue;
+      }
+      // Expire / target dead checks
+      if (performance.now() - p.spawnTime > cfg.lifetime || !p.target || p.target.hp <= 0) {
+        this._kill(p);
+        toRemove.push(i);
+        continue;
+      }
+      // Homing
+      p.mesh.position.translateByXZ(p.target.heroe_bodies[0].position.x, p.target.heroe_bodies[0].position.z);
+      p.mesh.position.translateByY(p.target.heroe_bodies[0].position.y);
+      // Hit check
+      const dx = p.mesh.position.x - p.target.heroe_bodies[0].position.x;
+      const dy = p.mesh.position.y - p.target.heroe_bodies[0].position.y;
+      const dz = p.mesh.position.z - p.target.heroe_bodies[0].position.z;
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) < cfg.hitRadius) {
+        this._onHit(p);
+        toRemove.push(i);
+      }
+    }
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+      this.projectiles.splice(toRemove[i], 1);
+    }
+  }
+  _onHit(p) {
+    p.target.hp -= FireballSystem.CONFIG.damage;
+    dispatchEvent(new CustomEvent('fireball-hit', {
+      detail: {
+        target: p.target,
+        damage: FireballSystem.CONFIG.damage
+      }
+    }));
+    this._kill(p);
+  }
+  _kill(p) {
+    p.mesh.position.setPosition(this.parent.position.x, this.parent.position.y, this.parent.position.z);
+    // p.alive = false;
+    // // Remove from scene
+    // const idx = app.mainRenderBundle.indexOf(p.mesh);
+    // if(idx !== -1) app.mainRenderBundle.splice(idx, 1);
+
+    // // Cleanup GPU resources if needed
+    // p.mesh.destroy?.();
+  }
+}
+exports.FireballSystem = FireballSystem;
+
+},{"../loaders/webgpu-gltf":58}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35766,7 +36398,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":32}],67:[function(require,module,exports){
+},{"wgpu-matrix":32}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35778,6 +36410,7 @@ exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
 exports.SS = void 0;
 exports.SWITCHER = SWITCHER;
+exports.alignTo256 = alignTo256;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
@@ -36889,8 +37522,11 @@ class FullscreenManager {
   }
 }
 exports.FullscreenManager = FullscreenManager;
+function alignTo256(n) {
+  return Math.ceil(n / 256) * 256;
+}
 
-},{}],68:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36932,7 +37568,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":33,"../engine/utils":67}],69:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":33,"../engine/utils":69}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37218,7 +37854,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":67}],70:[function(require,module,exports){
+},{"../engine/utils":69}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37388,7 +38024,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],71:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37434,7 +38070,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37560,7 +38196,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],73:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37720,7 +38356,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],74:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37808,7 +38444,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],75:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38051,7 +38687,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],76:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38236,7 +38872,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],77:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38484,7 +39120,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],78:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38707,7 +39343,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],79:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38878,7 +39514,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],80:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38947,7 +39583,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(input.color, 1.0);
 }`;
 
-},{}],81:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39193,12 +39829,12 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // let alpha = input.colorMult.a; // use alpha for blending
     // return vec4f(finalColor, alpha);
 
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
-    // ✅ Return color with alpha from material
+    let alpha = materialData.alpha;
     return vec4f(finalColor, alpha);
+    // return vec4f(1.0, 0.0, 0.0, 0.1);
 }`;
 
-},{}],82:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39206,6 +39842,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexWGSLInstanced = void 0;
 let vertexWGSLInstanced = exports.vertexWGSLInstanced = `const MAX_BONES = 100u;
+const MAX_INSTANCES = 10u; 
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -39213,13 +39850,12 @@ struct Scene {
   lightPos: vec3f,
 }
 
-// not in use
 struct Model {
   modelMatrix: mat4x4f,
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
+  boneMatrices : array<mat4x4f, 1000u>
 }
 
 struct SkinResult {
@@ -39232,9 +39868,52 @@ struct InstanceData {
     colorMult : vec4<f32>,
 };
 
+struct VertexAnimParams {
+  time: f32,
+  flags: f32,
+  globalIntensity: f32,
+  _pad0: f32,
+  waveSpeed: f32,
+  waveAmplitude: f32,
+  waveFrequency: f32,
+  _pad1: f32,
+  windSpeed: f32,
+  windStrength: f32,
+  windHeightInfluence: f32,
+  windTurbulence: f32,
+  pulseSpeed: f32,
+  pulseAmount: f32,
+  pulseCenterX: f32,
+  pulseCenterY: f32,
+  twistSpeed: f32,
+  twistAmount: f32,
+  _pad2: f32,
+  _pad3: f32,
+  noiseScale: f32,
+  noiseStrength: f32,
+  noiseSpeed: f32,
+  _pad4: f32,
+  oceanWaveScale: f32,
+  oceanWaveHeight: f32,
+  oceanWaveSpeed: f32,
+  _pad5: f32,
+  displacementStrength: f32,
+  displacementSpeed: f32,
+  _pad6: f32,
+  _pad7: f32,
+}
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+
+const ANIM_WAVE: u32  = 1u;
+const ANIM_WIND: u32  = 2u;
+const ANIM_PULSE: u32 = 4u;
+const ANIM_TWIST: u32 = 8u;
+const ANIM_NOISE: u32 = 16u;
+const ANIM_OCEAN: u32 = 32u;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -39245,101 +39924,371 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
-    var skinnedPos = vec4f(0.0);
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+//     var skinnedPos  = vec4f(0.0);
+//     var skinnedNorm = vec3f(0.0);
+//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+//         let jointIndex = joints[i];
+//         let w = weights[i];
+//         if (w > 0.0) {
+//           let boneMat  = bones.boneMatrices[jointIndex];
+//           skinnedPos  += (boneMat * pos) * w;
+//           let boneMat3 = mat3x3f(
+//             boneMat[0].xyz,
+//             boneMat[1].xyz,
+//             boneMat[2].xyz
+//           );
+//           skinnedNorm += (boneMat3 * nrm) * w;
+//         }
+//     }
+//     return SkinResult(skinnedPos, skinnedNorm);
+// }
+
+// 2. skinVertex gets instId passed in
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+    var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
         let jointIndex = joints[i];
         let w = weights[i];
         if (w > 0.0) {
-          let boneMat = bones.boneMatrices[jointIndex];
-          skinnedPos  += (boneMat * pos) * w;
-          let boneMat3 = mat3x3f(
-            boneMat[0].xyz,
-            boneMat[1].xyz,
-            boneMat[2].xyz
-          );
-          skinnedNorm += (boneMat3 * nrm) * w;
+            let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
+            skinnedPos  += (boneMat * pos) * w;
+            let boneMat3 = mat3x3f(
+                boneMat[0].xyz,
+                boneMat[1].xyz,
+                boneMat[2].xyz
+            );
+            skinnedNorm += (boneMat3 * nrm) * w;
         }
     }
     return SkinResult(skinnedPos, skinnedNorm);
 }
 
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+fn applyWave(pos: vec3f) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) *
+             cos(pos.z * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn applyWind(pos: vec3f, normal: vec3f) -> vec3f {
+  let heightFactor = max(0.0, pos.y) * vertexAnim.windHeightInfluence;
+  let windDir = vec2f(
+    sin(vertexAnim.time * vertexAnim.windSpeed),
+    cos(vertexAnim.time * vertexAnim.windSpeed * 0.7)
+  ) * vertexAnim.windStrength;
+  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3)
+                   * vertexAnim.windTurbulence;
+  return vec3f(
+    pos.x + windDir.x * heightFactor * (1.0 + turbulence),
+    pos.y,
+    pos.z + windDir.y * heightFactor * (1.0 + turbulence)
+  );
+}
+
+fn applyPulse(pos: vec3f) -> vec3f {
+  let pulse = sin(vertexAnim.time * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+  let scale  = 1.0 + pulse;
+  let center = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+  return center + (pos - center) * scale;
+}
+
+fn applyTwist(pos: vec3f) -> vec3f {
+  let angle = pos.y * vertexAnim.twistAmount * sin(vertexAnim.time * vertexAnim.twistSpeed);
+  let cosA  = cos(angle);
+  let sinA  = sin(angle);
+  return vec3f(
+    pos.x * cosA - pos.z * sinA,
+    pos.y,
+    pos.x * sinA + pos.z * cosA
+  );
+}
+
+fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
+  let noiseVal    = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale
+                         + vertexAnim.time * vertexAnim.noiseSpeed);
+  let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
+  return vec3f(pos.x, pos.y + displacement, pos.z);
+}
+
+fn applyOcean(pos: vec3f) -> vec3f {
+  let t     = vertexAnim.time * vertexAnim.oceanWaveSpeed;
+  let scale = vertexAnim.oceanWaveScale;
+  let wave1 = sin(dot(pos.xz, vec2f(1.0, 0.0)) * scale + t)             * vertexAnim.oceanWaveHeight;
+  let wave2 = sin(dot(pos.xz, vec2f(0.7, 0.7)) * scale * 1.2 + t * 1.3) * vertexAnim.oceanWaveHeight * 0.7;
+  let wave3 = sin(dot(pos.xz, vec2f(0.0, 1.0)) * scale * 0.8 + t * 0.9) * vertexAnim.oceanWaveHeight * 0.5;
+  return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+  var animatedPos  = pos;
+  var animatedNorm = normal;
+  let flags = u32(vertexAnim.flags);
+
+  if ((flags & ANIM_WAVE)  != 0u) { animatedPos = applyWave(animatedPos); }
+  if ((flags & ANIM_WIND)  != 0u) { animatedPos = applyWind(animatedPos, animatedNorm); }
+  if ((flags & ANIM_NOISE) != 0u) { animatedPos = applyNoiseDisplacement(animatedPos); }
+  if ((flags & ANIM_OCEAN) != 0u) { animatedPos = applyOcean(animatedPos); }
+  if ((flags & ANIM_PULSE) != 0u) { animatedPos = applyPulse(animatedPos); }
+  if ((flags & ANIM_TWIST) != 0u) { animatedPos = applyTwist(animatedPos); }
+
+  animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
+
+  if (flags != 0u) {
+    let offset  = 0.01;
+    let posX    = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0)));
+    let posZ    = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset)));
+    let tangentX = normalize(posX - animatedPos);
+    let tangentZ = normalize(posZ - animatedPos);
+    animatedNorm = normalize(cross(tangentZ, tangentX));
+  }
+
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
+}
+
 @vertex
 fn main(
-  @location(0) position: vec3f,
-  @location(1) normal: vec3f,
-  @location(2) uv: vec2f,
-  @location(3) joints: vec4<u32>,
-  @location(4) weights: vec4<f32>,
+  @location(0) position : vec3f,
+  @location(1) normal   : vec3f,
+  @location(2) uv       : vec2f,
+  @location(3) joints   : vec4<u32>,
+  @location(4) weights  : vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> VertexOutput {
 
   let inst = instances[instId];
 
   var output : VertexOutput;
-  var pos = vec4(position, 1.0);
-  var nrm = normal;
-  let skinned = skinVertex(pos, nrm, joints, weights);
+  let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
+  let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
 
+  let worldPos = inst.model * animated.position;
 
-  // let worldPos = model.modelMatrix * skinned.position;
-  let worldPos = inst.model * skinned.position;
-
-  // build normal matrix from instance transform
   let normalMatrix = mat3x3f(
     inst.model[0].xyz,
     inst.model[1].xyz,
     inst.model[2].xyz
   );
 
-  output.Position = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos = worldPos.xyz;
+  output.Position  = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm = normalize(normalMatrix * skinned.normal);
-  output.uv = uv;
+  output.fragNorm  = normalize(normalMatrix * animated.normal);
+  output.uv        = uv;
   output.colorMult = inst.colorMult;
   return output;
 }`;
 
-},{}],83:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexShadowWGSLInstanced = void 0;
-let vertexShadowWGSLInstanced = exports.vertexShadowWGSLInstanced = `struct Scene {
-  lightViewProjMatrix: mat4x4f,
-  cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
-}
+let vertexShadowWGSLInstanced = exports.vertexShadowWGSLInstanced = `
+const MAX_BONES = 100u;
 
-// keep it for switch on end
-struct Model {
-  modelMatrix: mat4x4f,
+struct Scene {
+  lightViewProjMatrix:  mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  lightPos:             vec3f,
 }
 
 struct InstanceData {
-  model : mat4x4<f32>,
+  model: mat4x4<f32>,
 };
 
-@group(0) @binding(0) var<uniform> scene : Scene;
-// @group(1) @binding(0) var<uniform> model : Model;
-@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
+struct Bones {
+  boneMatrices: array<mat4x4f, MAX_BONES>
+}
+
+struct VertexAnimParams {
+  time:                f32,
+  flags:               f32,
+  globalIntensity:     f32,
+  _pad0:               f32,
+  waveSpeed:           f32,
+  waveAmplitude:       f32,
+  waveFrequency:       f32,
+  _pad1:               f32,
+  windSpeed:           f32,
+  windStrength:        f32,
+  windHeightInfluence: f32,
+  windTurbulence:      f32,
+  pulseSpeed:          f32,
+  pulseAmount:         f32,
+  pulseCenterX:        f32,
+  pulseCenterY:        f32,
+  twistSpeed:          f32,
+  twistAmount:         f32,
+  _pad2:               f32,
+  _pad3:               f32,
+  noiseScale:          f32,
+  noiseStrength:       f32,
+  noiseSpeed:          f32,
+  _pad4:               f32,
+  oceanWaveScale:      f32,
+  oceanWaveHeight:     f32,
+  oceanWaveSpeed:      f32,
+  _pad5:               f32,
+  displacementStrength: f32,
+  displacementSpeed:   f32,
+  _pad6:               f32,
+  _pad7:               f32,
+}
+
+@group(0) @binding(0) var<uniform>      scene      : Scene;
+@group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
+@group(1) @binding(1) var<uniform>      bones      : Bones;
+@group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
+
+const ANIM_WAVE:  u32 = 1u;
+const ANIM_WIND:  u32 = 2u;
+const ANIM_PULSE: u32 = 4u;
+const ANIM_TWIST: u32 = 8u;
+const ANIM_NOISE: u32 = 16u;
+const ANIM_OCEAN: u32 = 32u;
+
+struct SkinResult {
+  position: vec4f,
+  normal:   vec3f,
+};
+
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2f(0.0,0.0)), hash(i + vec2f(1.0,0.0)), u.x),
+    mix(hash(i + vec2f(0.0,1.0)), hash(i + vec2f(1.0,1.0)), u.x),
+    u.y
+  );
+}
+
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+  var skinnedPos  = vec4f(0.0);
+  var skinnedNorm = vec3f(0.0);
+  for (var i: u32 = 0u; i < 4u; i++) {
+    let w = weights[i];
+    if (w > 0.0) {
+      let boneMat  = bones.boneMatrices[joints[i]];
+      skinnedPos  += (boneMat * pos) * w;
+      skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+    }
+  }
+  return SkinResult(skinnedPos, skinnedNorm);
+}
+
+fn applyWave(pos: vec3f) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) *
+             cos(pos.z * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn applyWind(pos: vec3f, normal: vec3f) -> vec3f {
+  let heightFactor = max(0.0, pos.y) * vertexAnim.windHeightInfluence;
+  let windDir = vec2f(
+    sin(vertexAnim.time * vertexAnim.windSpeed),
+    cos(vertexAnim.time * vertexAnim.windSpeed * 0.7)
+  ) * vertexAnim.windStrength;
+  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3) * vertexAnim.windTurbulence;
+  return vec3f(
+    pos.x + windDir.x * heightFactor * (1.0 + turbulence),
+    pos.y,
+    pos.z + windDir.y * heightFactor * (1.0 + turbulence)
+  );
+}
+
+fn applyPulse(pos: vec3f) -> vec3f {
+  let pulse = sin(vertexAnim.time * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+  let center = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+  return center + (pos - center) * (1.0 + pulse);
+}
+
+fn applyTwist(pos: vec3f) -> vec3f {
+  let angle = pos.y * vertexAnim.twistAmount * sin(vertexAnim.time * vertexAnim.twistSpeed);
+  let cosA = cos(angle); let sinA = sin(angle);
+  return vec3f(pos.x * cosA - pos.z * sinA, pos.y, pos.x * sinA + pos.z * cosA);
+}
+
+fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + vertexAnim.time * vertexAnim.noiseSpeed);
+  return vec3f(pos.x, pos.y + (noiseVal - 0.5) * vertexAnim.noiseStrength, pos.z);
+}
+
+fn applyOcean(pos: vec3f) -> vec3f {
+  let t = vertexAnim.time * vertexAnim.oceanWaveSpeed;
+  let s = vertexAnim.oceanWaveScale;
+  let w1 = sin(dot(pos.xz, vec2f(1.0, 0.0)) * s + t)           * vertexAnim.oceanWaveHeight;
+  let w2 = sin(dot(pos.xz, vec2f(0.7, 0.7)) * s * 1.2 + t*1.3) * vertexAnim.oceanWaveHeight * 0.7;
+  let w3 = sin(dot(pos.xz, vec2f(0.0, 1.0)) * s * 0.8 + t*0.9) * vertexAnim.oceanWaveHeight * 0.5;
+  return vec3f(pos.x, pos.y + w1 + w2 + w3, pos.z);
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+  var p = pos;
+  let flags = u32(vertexAnim.flags);
+  if ((flags & ANIM_WAVE)  != 0u) { p = applyWave(p); }
+  if ((flags & ANIM_WIND)  != 0u) { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  p = mix(pos, p, vertexAnim.globalIntensity);
+  return SkinResult(vec4f(p, 1.0), normal);
+}
 
 @vertex
 fn main(
   @location(0) position: vec3f,
+  @location(1) normal:   vec3f,
+  @location(2) uv:       vec2f,
+  @location(3) joints:   vec4<u32>,
+  @location(4) weights:  vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> @builtin(position) vec4f {
-   let worldPos = instances[instId].model * vec4(position, 1.0);
+
+  // Skinning
+  let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  var finalPos = skinned.position.xyz;
+
+  // Vertex animation
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+    let animated = applyVertexAnimation(finalPos, skinned.normal);
+    finalPos = animated.position.xyz;
+  }
+
+  // Per-instance model matrix from storage buffer
+  let worldPos = instances[instId].model * vec4f(finalPos, 1.0);
   return scene.lightViewProjMatrix * worldPos;
-  // return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
 `;
 
-},{}],84:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39559,7 +40508,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],85:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39617,7 +40566,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],86:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39704,7 +40653,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],87:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39762,7 +40711,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],88:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39853,7 +40802,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],89:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40100,37 +41049,37 @@ fn main(
   @location(4) weights: vec4<f32>
 ) -> VertexOutput {
   var output : VertexOutput;
-  var pos = vec4(position, 1.0);
-  var nrm = normal;
-  // Apply skinning first
-  let skinned = skinVertex(pos, nrm, joints, weights);
-  let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-  // var finalPos = skinned.position.xyz;
-  // var finalNorm = skinned.normal;
-  var finalPos = animated.position.xyz;
-  var finalNorm = animated.normal;
-  // Only apply animation if enabled > 0.5 (simple check)
-  // Check if any animation flags are set
+
+  // 1. Skin first
+  let skinned = skinVertex(vec4(position, 1.0), normal, joints, weights);
+
+  // 2. Animate once, conditionally
+  var finalPos  = skinned.position.xyz;
+  var finalNorm = skinned.normal;
+
   if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
-    finalPos = animated.position.xyz;
+    finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
+
+  // 3. World-space transform
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
-  output.Position = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos = worldPos.xyz;
+
+  output.Position  = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm = normalize(normalMatrix * finalNorm);
-  output.uv = uv;
+  output.fragNorm  = normalize(normalMatrix * finalNorm);
+  output.uv        = uv;
   return output;
 }`;
 
-},{}],90:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40241,7 +41190,7 @@ fn main(
   return output;
 }`;
 
-},{}],91:[function(require,module,exports){
+},{}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40508,7 +41457,7 @@ fn main(
 }
 `;
 
-},{}],92:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40724,8 +41673,20 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
     
     // Enhanced foam on wave peaks
-    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+    // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+
+    // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
+    let isFireMode = f32(waterParams.waveSpeed > 1.5);
+
+    // Water foam — white peaks
+    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
     let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+
+    // Fire embers — bright yellow-white tips
+    let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
+    let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
+
     
     // Add some caustics-like effect based on waves
     let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
@@ -40733,7 +41694,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let causticsColor = waterColor * caustics;
     
     // Final color with enhanced effects
-    let finalColor = ambient + diffuse + specular + foam + causticsColor;
+    let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
     
     // MUCH more transparent - alpha between 0.2 and 0.5
     let alpha = mix(0.2, 0.5, fresnel);
@@ -40744,7 +41705,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(vibrantColor, alpha);
 }`;
 
-},{}],93:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40831,7 +41792,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],94:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40901,7 +41862,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],95:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41238,7 +42199,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":67}],96:[function(require,module,exports){
+},{"../../engine/utils":69}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42005,7 +42966,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":67}],97:[function(require,module,exports){
+},{"../../engine/utils":69}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42086,6 +43047,7 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
@@ -42178,7 +43140,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":63,"../../engine/utils":67,"./client":95,"./editor.provider":98,"./flexCodexShader":99,"./fluxCodexVertex":101,"./hud":103,"./methodsManager":104}],98:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":64,"../../engine/utils":69,"./client":97,"./editor.provider":100,"./flexCodexShader":101,"./fluxCodexVertex":103,"./hud":105,"./methodsManager":106}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42406,7 +43368,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":54,"../../engine/loaders/webgpu-gltf":57}],99:[function(require,module,exports){
+},{"../../engine/loader-obj":55,"../../engine/loaders/webgpu-gltf":58}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44600,7 +45562,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":67,"./flexCodexShaderAdapter.js":100}],100:[function(require,module,exports){
+},{"../../engine/utils.js":69,"./flexCodexShaderAdapter.js":102}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44814,7 +45776,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{}],101:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48086,6 +49048,34 @@ class FluxCodexVertex {
           type: "action"
         }]
       }),
+      setBlend: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Blend",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "alpha",
+          type: "number"
+        }, {
+          name: "sceneObjectName",
+          semantic: "string"
+        }],
+        fields: [{
+          key: "sceneObjectName",
+          value: "FLOOR"
+        }, {
+          key: "alpha",
+          value: 0.5
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
       setProductionMode: (id, x, y) => ({
         id,
         x,
@@ -48836,7 +49826,14 @@ class FluxCodexVertex {
     let spec = null;
     if (type === 'dynamicFunction') {
       // Exception for dynamic access
-      let AO = prompt(`Add global access object !`);
+      let AO = prompt(`
+Add global access object and explore all method inside!
+(in theory can be any object)
+LIST OF INTEREST OBJECT:
+ - app            (from main objects yuo can access func like 'activateBloomEffect' of 'activateVolumetricEffect')
+ - app.bloomPass  (After activateBloomEffect now you can access bloom params)
+ - app.cameras.WASD (Access camera methods)
+        `);
       if (AO) {
         console.warn("Adding AO ", eval(AO));
         options.accessObject = eval(AO);
@@ -50336,6 +51333,15 @@ class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Blend") {
+      const a = parseFloat(this.getValue(nodeId, "alpha"));
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if (sceneObjectName) {
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.setBlend(a);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if (n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
@@ -50910,7 +51916,7 @@ class FluxCodexVertex {
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/utils":67,"./curve-editor":96,"./generateAISchema.js":102}],102:[function(require,module,exports){
+},{"../../engine/utils":69,"./curve-editor":98,"./generateAISchema.js":104}],104:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51037,7 +52043,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],103:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51072,9 +52078,6 @@ class EditorHud {
     this.createEditorSceneContainer();
     this.createScenePropertyBox();
     this.currentProperties = [];
-    setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
-      detail: {}
-    })), 1000);
     document.addEventListener('editor-not-running', () => {
       this.noEditorConn();
     });
@@ -51083,8 +52086,9 @@ class EditorHud {
       let getPATH = e.detail.details.path.split("public")[1];
       const ext = getPATH.split('.').pop();
       if (ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
-        let name = prompt("📦 GLB file : ", getPATH);
-        let objName = prompt("📦 Enter uniq name: ");
+        // let name = prompt("📦 GLB file : ", getPATH);
+        // instanced is standard - top level sceneobj CLASS ...
+        let objName = prompt(`Path: ${getPATH} \n 📦 Enter Uniq Name: `);
         if (confirm("⚛ Enable physics (Ammo)?")) {
           // infly
           let o = {
@@ -51985,6 +52989,11 @@ class EditorHud {
     });
     // Add editor events system
     this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentSO.name);
+    } else {
+      document.execCommand("copy", true, currentSO.name);
+    }
   };
   updateSceneObjPropertiesFromGizmo = name => {
     this.currentProperties = [];
@@ -52246,13 +53255,13 @@ class SceneObjectProperty {
            ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> 
            </div>`;
       } else if (Array.isArray(subobj[prop]) && prop == "nodes") {
-        console.log("init prop: " + rootKey);
+        // console.log("init prop: " + rootKey)
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length}
          </div>`;
       } else if (Array.isArray(subobj[prop]) && prop == "skins") {
-        console.log("init prop: " + rootKey);
+        // console.log("init prop: " + rootKey)
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].map(item => {
@@ -52391,7 +53400,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":67,"./flexCodexShader.js":99}],104:[function(require,module,exports){
+},{"../../engine/utils.js":69,"./flexCodexShader.js":101}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52708,7 +53717,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],105:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52735,6 +53744,11 @@ var _coreCache = require("./engine/core-cache.js");
 var _audioAsset = require("./sounds/audioAsset.js");
 var _flexCodexShaderAdapter = require("./tools/editor/flexCodexShaderAdapter.js");
 var _volumetric = require("./engine/postprocessing/volumetric.js");
+var _flameEmmiter = require("./engine/effects/flame-emmiter.js");
+var _energyBar = require("./engine/effects/energy-bar.js");
+var _manaBar = require("./engine/effects/mana-bar.js");
+var _pointerEffect = require("./engine/effects/pointerEffect.js");
+var _flame = require("./engine/effects/flame.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -52753,7 +53767,14 @@ class MatrixEngineWGPU {
     BVHPlayer: _bvh.BVHPlayer,
     downloadMeshes: _loaderObj.downloadMeshes,
     addRaycastsListener: _raycast.addRaycastsListener,
-    graphAdapter: _flexCodexShaderAdapter.graphAdapter
+    graphAdapter: _flexCodexShaderAdapter.graphAdapter,
+    effectsClassRef: {
+      FlameEffect: _flame.FlameEffect,
+      FlameEmitter: _flameEmmiter.FlameEmitter,
+      PointerEffect: _pointerEffect.PointerEffect,
+      HPBarEffect: _energyBar.HPBarEffect,
+      MANABarEffect: _manaBar.MANABarEffect
+    }
   };
   mainRenderBundle = [];
   lightContainer = [];
@@ -52766,6 +53787,7 @@ class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   };
+  autoUpdate = [];
   matrixSounds = new _sounds.MatrixSounds();
   audioManager = new _audioAsset.AudioAssetManager();
   constructor(options, callback) {
@@ -52814,7 +53836,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
-    this.logLoopError = true;
+    this.logLoopError = false;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -52958,6 +53980,11 @@ class MatrixEngineWGPU {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
     this.shadersPack = {};
+    if ('OffscreenCanvas' in window) {
+      console.log(`OffscreenCanvas is supported`, _utils.LOG_FUNNY_ARCADE);
+    } else {
+      console.log(`%cOffscreenCanvas is NOT supported.`, _utils.LOG_FUNNY_ARCADE);
+    }
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
@@ -53224,7 +54251,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.useScale === 'undefined') {
-      o.useScale = false;
+      o.useScale = true;
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -53398,6 +54425,7 @@ class MatrixEngineWGPU {
       }, 100);
       return;
     }
+    this.autoUpdate.forEach(_ => _.update());
     let now;
     const currentTime = performance.now() / 1000;
     const bufferUpdates = [];
@@ -53427,12 +54455,13 @@ class MatrixEngineWGPU {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-
-      // update meshes
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();
-        if (mesh.update) mesh.update();
+        if (mesh.update) mesh.update(mesh.time);
+        if (mesh.updateTime) {
+          mesh.updateTime(currentTime);
+        }
         this.lightContainer.forEach(light => {
           light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
@@ -53461,7 +54490,7 @@ class MatrixEngineWGPU {
         now = performance.now() / 1000;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position));
+            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
@@ -53545,7 +54574,7 @@ class MatrixEngineWGPU {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if (effect == null || effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position);
+          let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
           if (effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix);
         });
@@ -53556,11 +54585,8 @@ class MatrixEngineWGPU {
 
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
-        // You need invViewProj — compute it from your existing matrices:
-        // cam.invViewProjectionMatrix should be mat4.invert(viewProjMatrix)
         // If you don't store it yet, compute once per frame:
         const invViewProj = _wgpuMatrix.mat4.invert(_wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity()));
-
         // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
         this.volumetricPass.render(commandEncoder, this.sceneTextureView,
@@ -53577,9 +54603,6 @@ class MatrixEngineWGPU {
           direction: light.direction // [x, y, z]
         });
       }
-
-      //
-
       const canvasView = this.context.getCurrentTexture().createView();
       // Bloom
       if (this.bloomPass.enabled == true) {
@@ -53665,7 +54688,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.useScale === 'undefined') {
-      o.useScale = false;
+      o.useScale = true;
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -53725,13 +54748,12 @@ class MatrixEngineWGPU {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
+        this.mainRenderBundle.push(bvhPlayer);
         setTimeout(() => {
-          this.mainRenderBundle.push(bvhPlayer);
-          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+          document.dispatchEvent(new CustomEvent('updateSceneContainer', {
             detail: {}
-          })), 100);
-        }, 500);
-        // this.mainRenderBundle.push(bvhPlayer)
+          }));
+        }, 50);
         c++;
       }
     }
@@ -53792,13 +54814,13 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.useScale === 'undefined') {
-      o.useScale = false;
+      o.useScale = true;
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if (typeof o.physics === 'undefined') {
       o.physics = {
-        scale: [1, 1, 1],
+        scale: o.scale,
         enabled: true,
         geometry: "Sphere",
         //                   must be fixed<<
@@ -53859,6 +54881,11 @@ class MatrixEngineWGPU {
         // make it soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
+          setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+              detail: {}
+            }));
+          }, 50);
         }, 200);
         c++;
       }
@@ -53889,4 +54916,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/core-cache.js":36,"./engine/engine.js":48,"./engine/generators/generator.js":49,"./engine/instanced/mesh-obj-instances.js":52,"./engine/lights.js":53,"./engine/loader-obj.js":54,"./engine/loaders/bvh-instaced.js":55,"./engine/loaders/bvh.js":56,"./engine/mesh-obj.js":60,"./engine/postprocessing/bloom.js":64,"./engine/postprocessing/volumetric.js":65,"./engine/raycast.js":66,"./engine/utils.js":67,"./multilang/lang.js":68,"./physics/matrix-ammo.js":69,"./sounds/audioAsset.js":93,"./sounds/sounds.js":94,"./tools/editor/editor.js":97,"./tools/editor/flexCodexShaderAdapter.js":100,"wgpu-matrix":32}]},{},[6]);
+},{"./engine/core-cache.js":36,"./engine/effects/energy-bar.js":38,"./engine/effects/flame-emmiter.js":39,"./engine/effects/flame.js":40,"./engine/effects/mana-bar.js":45,"./engine/effects/pointerEffect.js":46,"./engine/engine.js":48,"./engine/generators/generator.js":49,"./engine/instanced/mesh-obj-instances.js":52,"./engine/lights.js":53,"./engine/loader-obj.js":55,"./engine/loaders/bvh-instaced.js":56,"./engine/loaders/bvh.js":57,"./engine/mesh-obj.js":61,"./engine/postprocessing/bloom.js":65,"./engine/postprocessing/volumetric.js":66,"./engine/raycast.js":68,"./engine/utils.js":69,"./multilang/lang.js":70,"./physics/matrix-ammo.js":71,"./sounds/audioAsset.js":95,"./sounds/sounds.js":96,"./tools/editor/editor.js":99,"./tools/editor/flexCodexShaderAdapter.js":102,"wgpu-matrix":32}]},{},[6]);
