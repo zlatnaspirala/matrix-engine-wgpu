@@ -51,7 +51,7 @@ export var loadObjFile = function() {
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
-        material: { type: 'standard'},
+        material: {type: 'standard'},
         position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -62,11 +62,13 @@ export var loadObjFile = function() {
           enabled: false,
           geometry: "Cube",
         },
+
+
         // raycast: { enabled: true , radius: 2 }
       })
 
       loadObjFile.addMeshObj({
-        material: { type: 'standard'},
+        material: {type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 111, z: 0},
@@ -76,6 +78,11 @@ export var loadObjFile = function() {
         physics: {
           enabled: false,
           geometry: "Sphere"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEffect: false,
+          flameEmitter: true,
         }
       })
 
@@ -83,7 +90,7 @@ export var loadObjFile = function() {
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
       loadObjFile.addLight();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.1)
+      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()

@@ -188,14 +188,16 @@ export class Character extends Hero {
           if(id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-            console.log("on player cast (wherever your ability input is)");
+
+            subMesh.updateMaxInstances(5);
+            subMesh.updateInstances(5);
+            subMesh.trailAnimation.enabled = true;
+            console.log("on player cast ***************************************");
+            subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
             this.core.autoUpdate.push(subMesh.fireballSystem);
-            subMesh.fireballSystem = new FireballSystem(subMesh);
-            subMesh.fireballSystem.spawn(
-              subMesh.position,
-              this.heroFocusAttackOn
-            );
+ 
           }
+          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         if(app.localHero.heroe_bodies[0].effects) {
@@ -307,7 +309,7 @@ export class Character extends Hero {
   }
 
   navigateCreep(creep, index) {
-    if(creep.creepFocusAttackOn != null) {
+    if(creep.creepFocusAttackOn != null || !creep.heroe_bodies) {
       // console.log('test attacher nuuu return ');
       return;
     }
@@ -392,13 +394,10 @@ export class Character extends Hero {
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
     // test fireball
-    //
     this.heroe_bodies[0].fireballSystem.spawn(
       this.heroe_bodies[0].position,
       this.heroFocusAttackOn
     );
-
-
   }
 
   setWalkCreep(creepIndex) {

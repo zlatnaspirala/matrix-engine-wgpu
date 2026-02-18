@@ -155,6 +155,17 @@ export class HeroProps {
       hpRegen: 1,
       mpRegen: 1
     };
+
+    this.abilityCooldowns = [
+      {baseCooldown: 10, manaCost: 80},  // Spell 1
+      {baseCooldown: 14, manaCost: 120},  // Spell 2
+      {baseCooldown: 18, manaCost: 150},  // Spell 3
+      {baseCooldown: 90, manaCost: 200},  // Ultimate
+    ];
+
+    // runtime state — tracks when each spell was last cast
+    this.abilityLastCast = [0, 0, 0, 0];
+
     this.updateStats();
   }
 
@@ -217,7 +228,7 @@ export class HeroProps {
     this.gold += goldReward;
 
     // for creep any way - rule if they kill hero
-    // maybe some smlall reward... checkLevelUp
+    // maybe some small reward... checkLevelUp
     console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
     this.checkLevelUp();
   }
@@ -231,25 +242,15 @@ export class HeroProps {
         console.log(`${this.name} leveled up! Now level ${this.currentLevel}`);
         this.updateStats();
         this.currentXP -= nextLevelXP;
+        dispatchEvent(new CustomEvent('hero-levelup', {
+          detail: {
+            level: this.currentLevel,
+            abilityPoints: this.abilityPoints,
+            abilities: this.abilities
+          }
+        }));
       } else break;
     }
-
-    // emit for hud
-    // dispatchEvent(new CustomEvent('stats-localhero', {
-    //   detail: {
-    //     gold: this.gold,
-    //     currentLevel: this.currentLevel,
-    //     xp: this.currentXP,
-    //     hp: this.hp,
-    //     mana: this.mana,
-    //     attack: this.attack,
-    //     armor: this.armor,
-    //     moveSpeed: this.moveSpeed,
-    //     attackSpeed: this.attackSpeed,
-    //     hpRegen: this.hpRegen,
-    //     mpRegen: this.mpRegen,
-    //   }
-    // }))
   }
 
   // --- Upgrade abilities
@@ -352,12 +353,90 @@ export class HeroProps {
       }))
     return {damage, crit: crit > 1.0};
   }
+
+  // Add these methods to HeroProps:
+
+  // Returns effective cooldown in ms after attackSpeed + spell level reduction
+  getEffectiveCooldown(spellIndex) {
+    const cd = this.abilityCooldowns[spellIndex];
+    const spell = this.abilities[spellIndex];
+    if(!cd || !spell) return Infinity;
+
+    // each spell level reduces cooldown by 8%
+    const levelReduction = 1 - (spell.level * 0.08);
+    // attackSpeed stat reduces cooldown (1.0 = no reduction, 2.0 = 50% reduction)
+    const speedReduction = 1 / this.attackSpeed;
+
+    return cd.baseCooldown * 1000 * levelReduction * speedReduction; // in ms
+  }
+
+  // Returns remaining cooldown in ms (0 = ready)
+  getCooldownRemaining(spellIndex) {
+    const elapsed = performance.now() - this.abilityLastCast[spellIndex];
+    const effective = this.getEffectiveCooldown(spellIndex);
+    return Math.max(0, effective - elapsed);
+  }
+
+  // Returns 0.0 → 1.0 progress for HUD fill animation
+  getCooldownProgress(spellIndex) {
+    const remaining = this.getCooldownRemaining(spellIndex);
+    const effective = this.getEffectiveCooldown(spellIndex);
+    if(effective === 0) return 1;
+    return 1 - (remaining / effective);
+  }
+
+  // Main gate — call this before any cast
+  trySpell(spellIndex) {
+    const spell = this.abilities[spellIndex];
+    const cd = this.abilityCooldowns[spellIndex];
+
+    // ── Not unlocked
+    if(!spell || spell.level === 0) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {spellIndex, reason: 'locked'}
+      }));
+      return false;
+    }
+
+    // ── On cooldown
+    const remaining = this.getCooldownRemaining(spellIndex);
+    if(remaining > 0) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {spellIndex, reason: 'cooldown', remaining}
+      }));
+      return false;
+    }
+
+    // ── Not enough mana
+    if(this.mana < cd.manaCost) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {spellIndex, reason: 'mana', have: this.mana, need: cd.manaCost}
+      }));
+      return false;
+    }
+
+    // ── All checks pass — consume mana, stamp cooldown
+    this.mana -= cd.manaCost;
+    this.abilityLastCast[spellIndex] = performance.now();
+
+    dispatchEvent(new CustomEvent('spell-cast', {
+      detail: {
+        spellIndex,
+        spellName: spell.name,
+        manaCost: cd.manaCost,
+        cooldownMs: this.getEffectiveCooldown(spellIndex),
+        manaLeft: this.mana,
+      }
+    }));
+
+    return true; // ← cast is allowed
+  }
 }
 
 export class Hero extends HeroProps {
   constructor(name, archetypes = ["Warrior"]) {
     super(name);
-     // limit to 2 mix
+    // limit to 2 mix
     this.archetypes = archetypes.slice(0, 2);
     this.applyArchetypeStats();
   }

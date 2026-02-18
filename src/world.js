@@ -43,7 +43,7 @@ export default class MatrixEngineWGPU {
     downloadMeshes,
     addRaycastsListener,
     graphAdapter,
-    effectsClassRef : {
+    effectsClassRef: {
       FlameEffect,
       FlameEmitter,
       PointerEffect,
@@ -65,7 +65,7 @@ export default class MatrixEngineWGPU {
   }
 
   autoUpdate = [];
-  
+
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
 
@@ -106,7 +106,7 @@ export default class MatrixEngineWGPU {
     }
     this.editorAddOBJ = addOBJ.bind(this);
 
-    this.logLoopError = true;
+    this.logLoopError = false;
     // context select options
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -242,6 +242,11 @@ export default class MatrixEngineWGPU {
     this.createGlobalStuff();
     this.shadersPack = {};
 
+    if('OffscreenCanvas' in window) {
+      console.log(`OffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+    } else {
+      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+    }
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
@@ -651,6 +656,8 @@ export default class MatrixEngineWGPU {
       setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
       return;
     }
+
+    this.autoUpdate.forEach((_) => _.update())
     let now;
     const currentTime = performance.now() / 1000;
     const bufferUpdates = [];
@@ -680,8 +687,6 @@ export default class MatrixEngineWGPU {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-
-      // update meshes
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();

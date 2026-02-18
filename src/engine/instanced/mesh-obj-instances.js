@@ -499,6 +499,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         this.instanceCount = newCount;
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
+          label: 'instanceBuffer in bvh mesh [instanced]',
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
@@ -517,6 +518,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       };
 
       this.updateMaxInstances = (newMax) => {
+        let isBigger = false;
+        this.instanceTargets = [];
+        if (this.maxInstances < newMax) {
+          isBigger = true;
+        }
         this.maxInstances = newMax;
         for(let x = 0;x < this.maxInstances;x++) {
           this.instanceTargets.push({
@@ -528,6 +534,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             color: [0.6, 0.8, 1.0, 0.4],
             currentColor: [0.6, 0.8, 1.0, 0.4],
           });
+        }
+        if (isBigger == false) {
+          console.log('new max values is smaller than current - auto correct updateInstances(newMax)')
+          this.updateInstances(newMax);
         }
       }
       // end of instanced
@@ -766,7 +776,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.effects = {};
-      console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
+      // console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
@@ -1056,9 +1066,14 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
     else pass.setPipeline(this.pipeline);
+
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    for(var ins = 0;ins < this.instanceCount;ins++) {
-      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+
+    
+
+    for(var ins = 1;ins < this.instanceCount;ins++) {
+      if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
+      else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   }
 

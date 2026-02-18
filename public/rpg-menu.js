@@ -281,6 +281,29 @@ class HeroProps {
       hpRegen: 1,
       mpRegen: 1
     };
+    this.abilityCooldowns = [{
+      baseCooldown: 10,
+      manaCost: 80
+    },
+    // Spell 1
+    {
+      baseCooldown: 14,
+      manaCost: 120
+    },
+    // Spell 2
+    {
+      baseCooldown: 18,
+      manaCost: 150
+    },
+    // Spell 3
+    {
+      baseCooldown: 90,
+      manaCost: 200
+    } // Ultimate
+    ];
+
+    // runtime state — tracks when each spell was last cast
+    this.abilityLastCast = [0, 0, 0, 0];
     this.updateStats();
   }
   updateStats() {
@@ -339,7 +362,7 @@ class HeroProps {
     this.gold += goldReward;
 
     // for creep any way - rule if they kill hero
-    // maybe some smlall reward... checkLevelUp
+    // maybe some small reward... checkLevelUp
     console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
     this.checkLevelUp();
   }
@@ -353,25 +376,15 @@ class HeroProps {
         console.log(`${this.name} leveled up! Now level ${this.currentLevel}`);
         this.updateStats();
         this.currentXP -= nextLevelXP;
+        dispatchEvent(new CustomEvent('hero-levelup', {
+          detail: {
+            level: this.currentLevel,
+            abilityPoints: this.abilityPoints,
+            abilities: this.abilities
+          }
+        }));
       } else break;
     }
-
-    // emit for hud
-    // dispatchEvent(new CustomEvent('stats-localhero', {
-    //   detail: {
-    //     gold: this.gold,
-    //     currentLevel: this.currentLevel,
-    //     xp: this.currentXP,
-    //     hp: this.hp,
-    //     mana: this.mana,
-    //     attack: this.attack,
-    //     armor: this.armor,
-    //     moveSpeed: this.moveSpeed,
-    //     attackSpeed: this.attackSpeed,
-    //     hpRegen: this.hpRegen,
-    //     mpRegen: this.mpRegen,
-    //   }
-    // }))
   }
 
   // --- Upgrade abilities
@@ -473,6 +486,93 @@ class HeroProps {
       damage,
       crit: crit > 1.0
     };
+  }
+
+  // Add these methods to HeroProps:
+
+  // Returns effective cooldown in ms after attackSpeed + spell level reduction
+  getEffectiveCooldown(spellIndex) {
+    const cd = this.abilityCooldowns[spellIndex];
+    const spell = this.abilities[spellIndex];
+    if (!cd || !spell) return Infinity;
+
+    // each spell level reduces cooldown by 8%
+    const levelReduction = 1 - spell.level * 0.08;
+    // attackSpeed stat reduces cooldown (1.0 = no reduction, 2.0 = 50% reduction)
+    const speedReduction = 1 / this.attackSpeed;
+    return cd.baseCooldown * 1000 * levelReduction * speedReduction; // in ms
+  }
+
+  // Returns remaining cooldown in ms (0 = ready)
+  getCooldownRemaining(spellIndex) {
+    const elapsed = performance.now() - this.abilityLastCast[spellIndex];
+    const effective = this.getEffectiveCooldown(spellIndex);
+    return Math.max(0, effective - elapsed);
+  }
+
+  // Returns 0.0 → 1.0 progress for HUD fill animation
+  getCooldownProgress(spellIndex) {
+    const remaining = this.getCooldownRemaining(spellIndex);
+    const effective = this.getEffectiveCooldown(spellIndex);
+    if (effective === 0) return 1;
+    return 1 - remaining / effective;
+  }
+
+  // Main gate — call this before any cast
+  trySpell(spellIndex) {
+    const spell = this.abilities[spellIndex];
+    const cd = this.abilityCooldowns[spellIndex];
+
+    // ── Not unlocked
+    if (!spell || spell.level === 0) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {
+          spellIndex,
+          reason: 'locked'
+        }
+      }));
+      return false;
+    }
+
+    // ── On cooldown
+    const remaining = this.getCooldownRemaining(spellIndex);
+    if (remaining > 0) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {
+          spellIndex,
+          reason: 'cooldown',
+          remaining
+        }
+      }));
+      return false;
+    }
+
+    // ── Not enough mana
+    if (this.mana < cd.manaCost) {
+      dispatchEvent(new CustomEvent('spell-fail', {
+        detail: {
+          spellIndex,
+          reason: 'mana',
+          have: this.mana,
+          need: cd.manaCost
+        }
+      }));
+      return false;
+    }
+
+    // ── All checks pass — consume mana, stamp cooldown
+    this.mana -= cd.manaCost;
+    this.abilityLastCast[spellIndex] = performance.now();
+    dispatchEvent(new CustomEvent('spell-cast', {
+      detail: {
+        spellIndex,
+        spellName: spell.name,
+        manaCost: cd.manaCost,
+        cooldownMs: this.getEffectiveCooldown(spellIndex),
+        manaLeft: this.mana
+      }
+    }));
+    return true; // ← cast is allowed
   }
 }
 exports.HeroProps = HeroProps;
@@ -20885,7 +20985,7 @@ class FlameEmitter {
     this.device = device;
     this.format = format;
     this.time = 0;
-    this.intensity = 3.0;
+    this.intensity = 1.0;
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
@@ -20897,6 +20997,7 @@ class FlameEmitter {
     this.swap0 = 0;
     this.swap1 = 1;
     this.swap2 = 2;
+    this.riseDirection = 1;
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -20921,7 +21022,7 @@ class FlameEmitter {
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
   }
   _initPipeline() {
-    const S = 5;
+    const S = 50;
     const vertexData = new Float32Array([-0.2 * S, -0.5 * S, 0.0 * S, 0.2 * S, -0.5 * S, 0.0 * S, -0.4 * S, 0.5 * S, 0.0 * S, 0.4 * S, 0.5 * S, 0.0 * S]);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
@@ -21056,8 +21157,8 @@ class FlameEmitter {
       const offset = i * this.floatsPerInstance;
       this.instanceData.set(finalMat, offset); // 0..15
       this.instanceData.set([t.time, 0, 0, 0], offset + 16); // 16..19
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20); // 20..23
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1.0], offset + 24); // 24..27
+      this.instanceData.set([t.intensity & this.intensity, 0, 0, 0], offset + 20); // 20..23
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 0.5], offset + 24); // 24..27
     }
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
   };
@@ -21065,12 +21166,17 @@ class FlameEmitter {
     // update global time
     this.time += dt;
     for (const p of this.instanceTargets) {
-      p.position[this.swap1] += dt * p.riseSpeed;
+      p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
       // Reset if too high
-      if (p.position[this.swap1] > this.maxY) {
-        p.position[this.swap1] = this.minY + Math.random() * 0.5;
+      const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxY : p.position[this.swap1] < this.minY;
+      if (resetCondition) {
+        // Reset along the rise axis
+        p.position[this.swap1] = this.riseDirection > 0 ? this.minY + Math.random() * 0.5 : this.maxY - Math.random() * 0.5;
+
+        // Spread axes — keep randomness RELATIVE to current direction
         p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2; // ← REMOVE the +0.1 here
+
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
@@ -21086,6 +21192,58 @@ class FlameEmitter {
   }
   setIntensity(v) {
     this.intensity = v;
+  }
+
+  // Add this method to FlameEmitter class:
+
+  setDirection(direction) {
+    switch (direction) {
+      case 'up':
+        // Y+ (default)
+        this.swap0 = 0; // X
+        this.swap1 = 1; // Y (rise axis)
+        this.swap2 = 2; // Z
+        break;
+      case 'down':
+        // Y-
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        this.riseDirection = -1; // flip
+        break;
+      case 'forward':
+        // Z+
+        this.swap0 = 0; // X (spread)
+        this.swap1 = 2; // Z (rise axis)
+        this.swap2 = 1; // Y (spread)
+        break;
+      case 'back':
+        // Z-
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.riseDirection = -1;
+        break;
+      case 'right':
+        // X+
+        this.swap0 = 1; // Y (spread)
+        this.swap1 = 0; // X (rise axis)
+        this.swap2 = 2; // Z (spread)
+        break;
+      case 'left':
+        // X-
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        break;
+    }
+    this.riseDirection = this.riseDirection ?? 1; // default positive
+
+    if (this.riseDirection < 0) {
+      // Negative direction — swap min/max so reset works
+      [this.minY, this.maxY] = [this.maxY, this.minY];
+    }
   }
 }
 exports.FlameEmitter = FlameEmitter;
@@ -24725,7 +24883,7 @@ class MaterialsInstanced {
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if (!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+      // if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
       if (typeof textureResource === 'undefined') {
         this.updateVideoTexture();
       }
@@ -25414,6 +25572,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.instanceCount = newCount;
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
+          label: 'instanceBuffer in bvh mesh [instanced]',
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
@@ -25443,6 +25602,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
       };
       this.updateMaxInstances = newMax => {
+        let isBigger = false;
+        this.instanceTargets = [];
+        if (this.maxInstances < newMax) {
+          isBigger = true;
+        }
         this.maxInstances = newMax;
         for (let x = 0; x < this.maxInstances; x++) {
           this.instanceTargets.push({
@@ -25454,6 +25618,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
             color: [0.6, 0.8, 1.0, 0.4],
             currentColor: [0.6, 0.8, 1.0, 0.4]
           });
+        }
+        if (isBigger == false) {
+          console.log('new max values is smaller than current - auto correct updateInstances(newMax)');
+          this.updateInstances(newMax);
         }
       };
       // end of instanced
@@ -25746,7 +25914,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }]
       });
       this.effects = {};
-      console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>');
+      // console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
@@ -26015,8 +26183,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
     if (this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent);else pass.setPipeline(this.pipeline);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    for (var ins = 0; ins < this.instanceCount; ins++) {
-      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    for (var ins = 1; ins < this.instanceCount; ins++) {
+      if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   };
   drawElementsAnim = (renderPass, lightContainer) => {
@@ -27160,6 +27328,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         // if(this.name.indexOf('_') != -1) {
         //   n = this.name.split('_')[0];
         // }
+        // hardcode must be sync
+        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
@@ -27169,7 +27339,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.trailAnimation.enabled == true) {
-        for (let i = 0; i < this.maxInstances; i++) {
+        for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
           const boneMatrices = new Float32Array(this.MAX_BONES * 16);
@@ -27522,7 +27692,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       boneMatrices.set(finalMat, j * 16);
     }
     const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
-
+    // console.log(this.name, 'instanceIndex:', instanceIndex, 'byteOffset:', byteOffset, 'bufferSize:', this.bonesBuffer.size);
     // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
@@ -50126,7 +50296,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
-    this.logLoopError = true;
+    this.logLoopError = false;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -50270,6 +50440,11 @@ class MatrixEngineWGPU {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
     this.shadersPack = {};
+    if ('OffscreenCanvas' in window) {
+      console.log(`OffscreenCanvas is supported`, _utils.LOG_FUNNY_ARCADE);
+    } else {
+      console.log(`%cOffscreenCanvas is NOT supported.`, _utils.LOG_FUNNY_ARCADE);
+    }
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
@@ -50710,6 +50885,7 @@ class MatrixEngineWGPU {
       }, 100);
       return;
     }
+    this.autoUpdate.forEach(_ => _.update());
     let now;
     const currentTime = performance.now() / 1000;
     const bufferUpdates = [];
@@ -50739,8 +50915,6 @@ class MatrixEngineWGPU {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-
-      // update meshes
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();

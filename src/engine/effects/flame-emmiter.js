@@ -7,19 +7,21 @@ export class FlameEmitter {
     this.device = device;
     this.format = format;
     this.time = 0;
-    this.intensity = 3.0;
+    this.intensity = 1.0;
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
     this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.smoothFlickeringScale = 0.1;
-    this.maxY = 1.9;
-    this.minY = 0;
+    this.minBound = 0;
+    this.maxBound = 1.9;
     this.swap0 = 0;
     this.swap1 = 1;
     this.swap2 = 2;
-    for(let i = 0;i < maxParticles;i++) {
+    this.riseDirection = 1;
+
+    for(let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
@@ -57,7 +59,7 @@ export class FlameEmitter {
   }
 
   _initPipeline() {
-    const S = 5;
+    const S = 2;
     const vertexData = new Float32Array([
       -0.2 * S, -0.5 * S, 0.0 * S,
       0.2 * S, -0.5 * S, 0.0 * S,
@@ -86,7 +88,6 @@ export class FlameEmitter {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    // --- Uniforms
     this.cameraBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.modelBuffer = this.device.createBuffer({
       size: this.maxParticles * this.floatsPerInstance * 4,
@@ -130,44 +131,35 @@ export class FlameEmitter {
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},
       blend: {
-        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-        color: {
-          srcFactor: 'src-alpha',
-          dstFactor: 'one-minus-src-alpha',
-          operation: 'add',
-        },
-        alpha: {
-          srcFactor: 'one',
-          dstFactor: 'one-minus-src-alpha',
-          operation: 'add',
-        },
+        color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+        alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
       }
     });
   }
 
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    for(let i = 0;i < count;i++) {
+    for(let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
-      // Smooth interpolation
-      for(let j = 0;j < 3;j++) {
+
+      for(let j = 0; j < 3; j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
       }
-      // Build local matrix: translate → rotate → scale
+
       const local = mat4.identity();
       mat4.translate(local, t.currentPosition, local);
       mat4.rotateY(local, t.rotation, local);
       mat4.scale(local, t.currentScale, local);
+
       const finalMat = mat4.identity();
       mat4.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
 
-      this.instanceData.set(finalMat, offset);               // 0..15
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16); // 16..19
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20); // 20..23
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1.0], offset + 24); // 24..27
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
+      this.instanceData.set([t.intensity * this.intensity, 0, 0, 0], offset + 20);
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 0.5], offset + 24);
     }
 
     this.device.queue.writeBuffer(
@@ -178,20 +170,29 @@ export class FlameEmitter {
   }
 
   render(pass, mesh, viewProjMatrix, dt = 0.1) {
-    // update global time
     this.time += dt;
+    
     for(const p of this.instanceTargets) {
-      p.position[this.swap1] += dt * p.riseSpeed;
-      // Reset if too high
-      if(p.position[this.swap1] > this.maxY) {
-        p.position[this.swap1] = this.minY + Math.random() * 0.5;
+      p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
+      
+      // Reset check
+      const resetCondition = this.riseDirection > 0
+        ? p.position[this.swap1] > this.maxBound
+        : p.position[this.swap1] < this.minBound;
+
+      if(resetCondition) {
+        p.position[this.swap1] = this.riseDirection > 0 
+          ? this.minBound + Math.random() * 0.5 
+          : this.maxBound - Math.random() * 0.5;
         p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2;
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
+      
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
       p.rotation += dt * randomIntFromTo(3, 15);
     }
+    
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
@@ -201,5 +202,53 @@ export class FlameEmitter {
     pass.drawIndexed(this.indexCount, this.instanceTargets.length);
   }
 
-  setIntensity(v) {this.intensity = v;}
+  setIntensity(v) {
+    this.intensity = v;
+  }
+
+  setDirection(direction) {
+    // Reset to default positive first
+    this.riseDirection = 1;
+    
+    switch(direction) {
+      case 'up':
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        break;
+
+      case 'down':
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        break;
+
+      case 'forward':
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        break;
+
+      case 'back':
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.riseDirection = -1;
+        break;
+
+      case 'right':
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        break;
+
+      case 'left':
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        break;
+    }
+  }
 }

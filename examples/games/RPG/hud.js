@@ -1,10 +1,64 @@
 import {byId, typeText} from "../../../src/engine/utils.js";
 
+function startCooldownOverlay(slot, spellIndex) {
+  const cdMs = app.localHero.heroProps.getEffectiveCooldown(spellIndex);
+
+  // add overlay div if not present
+  let overlay = slot.querySelector('.cd-overlay');
+  if(!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'cd-overlay';
+    slot.appendChild(overlay);
+  }
+
+  // CSS transition sweeps the overlay away over cdMs
+  overlay.style.transition = 'none';
+  overlay.style.height = '100%';
+  requestAnimationFrame(() => {
+    overlay.style.transition = `height ${cdMs}ms linear`;
+    overlay.style.height = '0%';
+  });
+}
+
 export class HUD {
   constructor(localHero) {
     this.localHero = localHero;
     this.construct();
     this.setCursor();
+
+    document.addEventListener('hero-levelup', (e) => {
+      const {abilities} = e.detail;
+      console.log('LEVEL UP')
+      abilities.forEach((spell, i) => {
+        const slot = document.getElementById(`magic-slot-${i}`);
+        if(!slot) return;
+        if(spell.level > 0) {
+          // unlocked — remove locked state
+          slot.innerText = '';
+          slot.style.opacity = '1';
+          slot.style.cursor = 'pointer';
+          // slot.classList.add('unlocked');
+        } else if(e.detail.abilityPoints > 0) {
+          // available to unlock — show pulsing hint
+          slot.innerText = '!';
+          slot.style.border = '2px solid gold';
+        }
+      });
+    });
+
+    document.addEventListener('spell-fail', (e) => {
+      const slot = document.getElementById(`magic-slot-${e.detail.spellIndex}`);
+      if(!slot) return;
+
+      if(e.detail.reason === 'cooldown') {
+        slot.style.animation = 'shake 0.3s ease';
+        setTimeout(() => slot.style.animation = '', 300);
+      }
+      if(e.detail.reason === 'mana') {
+        slot.style.boxShadow = '0 0 12px 4px #4af inset';
+        setTimeout(() => slot.style.boxShadow = '', 500);
+      }
+    });
   }
 
   construct() {
