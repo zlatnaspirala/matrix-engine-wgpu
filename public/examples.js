@@ -449,15 +449,22 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1.png'],
         name: 'cube1',
         mesh: m.cube,
         physics: {
           enabled: false,
           geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEffect: false,
+          flameEmitter: true
+        },
+        raycast: {
+          enabled: true,
+          radius: 2
         }
-
-        // raycast: { enabled: true , radius: 2 }
       });
       loadObjFile.addMeshObj({
         material: {
@@ -478,20 +485,14 @@ var loadObjFile = function () {
           y: 111,
           z: 0
         },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/spiral-1.png'],
         name: 'ball1',
         mesh: m.ball,
         physics: {
           enabled: false,
           geometry: "Sphere"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEffect: false,
-          flameEmitter: true
         }
       });
-      var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
       loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
@@ -500,6 +501,7 @@ var loadObjFile = function () {
         light.position[0] = light.behavior.setPath0();
       });
       loadObjFile.lightContainer[0].position[1] = 9;
+      var TEST = loadObjFile.getSceneObjectByName('cube2');
     }
   });
   // just for dev
@@ -19624,6 +19626,10 @@ exports.FlameEmitter = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _flameInstanced = require("../../shaders/flame-effect/flame-instanced");
 var _utils = require("../utils");
+/**
+ * @description
+ * FlameEmitter
+ */
 class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
     this.device = device;
@@ -19642,6 +19648,8 @@ class FlameEmitter {
     this.swap1 = 1;
     this.swap2 = 2;
     this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0];
+    this.scaleCoeficient = 0.12;
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -19663,11 +19671,19 @@ class FlameEmitter {
   }
   recreateVertexDataRND(S) {
     const vertexData = new Float32Array([-(0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, -(0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+
+  // not tested
+  recreateVertexDataCrazzy(S) {
+    const vertexData = new Float32Array([-(0, _utils.randomFloatFromTo)(0.1, 0.1 + S), (0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0, (0, _utils.randomFloatFromTo)(0.1, 0.1 + S), (0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0, -(0, _utils.randomFloatFromTo)(0.1, 0.1 + S), -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0, (0, _utils.randomFloatFromTo)(0.1, 0.1 + S), -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0]);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
   }
   _initPipeline() {
     const S = 2;
-    const vertexData = new Float32Array([-0.2 * S, -0.5 * S, 0.0 * S, 0.2 * S, -0.5 * S, 0.0 * S, -0.4 * S, 0.5 * S, 0.0 * S, 0.4 * S, 0.5 * S, 0.0 * S]);
+    const vertexData = this.recreateVertexDataRND(1);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.vertexBuffer = this.device.createBuffer({
@@ -19691,10 +19707,12 @@ class FlameEmitter {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.modelBuffer = this.device.createBuffer({
+      label: 'flame-emmiter modeBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'flame-emmiter bindGroupLayout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -19708,6 +19726,7 @@ class FlameEmitter {
       }]
     });
     this.bindGroup = this.device.createBindGroup({
+      label: 'flame-emmiter bindGroup',
       layout: bindGroupLayout,
       entries: [{
         binding: 0,
@@ -19753,7 +19772,19 @@ class FlameEmitter {
         module: shaderModule,
         entryPoint: "fsMain",
         targets: [{
-          format: this.format
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
         }]
       },
       primitive: {
@@ -19763,28 +19794,16 @@ class FlameEmitter {
         depthWriteEnabled: false,
         depthCompare: "less",
         format: "depth24plus"
-      },
-      blend: {
-        color: {
-          srcFactor: 'src-alpha',
-          dstFactor: 'one-minus-src-alpha',
-          operation: 'add'
-        },
-        alpha: {
-          srcFactor: 'one',
-          dstFactor: 'one-minus-src-alpha',
-          operation: 'add'
-        }
       }
     });
   }
   updateInstanceData = baseModelMatrix => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
+    const floatsPerInstance = 28; // 112 bytes / 4
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
       const local = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
@@ -19792,19 +19811,18 @@ class FlameEmitter {
       _wgpuMatrix.mat4.scale(local, t.currentScale, local);
       const finalMat = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
+      const offset = i * floatsPerInstance;
       this.instanceData.set(finalMat, offset);
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-      this.instanceData.set([t.intensity * this.intensity, 0, 0, 0], offset + 20);
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 0.5], offset + 24);
+      this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
+      this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
     }
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
   };
   render(pass, mesh, viewProjMatrix, dt = 0.1) {
     this.time += dt;
     for (const p of this.instanceTargets) {
       p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
-
       // Reset check
       const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxBound : p.position[this.swap1] < this.minBound;
       if (resetCondition) {
@@ -19828,8 +19846,8 @@ class FlameEmitter {
     this.intensity = v;
   }
   setDirection(direction) {
-    // Reset to default positive first
     this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0]; // Reset
     switch (direction) {
       case 'up':
         this.swap0 = 0;
@@ -19846,23 +19864,27 @@ class FlameEmitter {
         this.swap0 = 0;
         this.swap1 = 2;
         this.swap2 = 1;
+        this.baseRotation = [Math.PI / 2, 0, 0];
         break;
       case 'back':
         this.swap0 = 0;
         this.swap1 = 2;
         this.swap2 = 1;
         this.riseDirection = -1;
+        this.baseRotation = [-Math.PI / 2, 0, 0]; // Tilt -90 on X
         break;
       case 'right':
         this.swap0 = 1;
         this.swap1 = 0;
         this.swap2 = 2;
+        this.baseRotation = [0, 0, -Math.PI / 2]; // Tilt -90 on Z
         break;
       case 'left':
         this.swap0 = 1;
         this.swap1 = 0;
         this.swap2 = 2;
         this.riseDirection = -1;
+        this.baseRotation = [0, 0, Math.PI / 2]; // Tilt 90 on Z
         break;
     }
   }
@@ -31853,6 +31875,61 @@ function alignTo256(n) {
   return Math.ceil(n / 256) * 256;
 }
 
+// export let ADDITIVE_BLEND_CONFIGURATIONS = {
+//   color: {
+//                 srcFactor: 'src-alpha', // This makes intensity scale correctly
+//                 dstFactor: 'one',       // This is the "Additive" part
+//                 operation: 'add',
+//               },
+//               alpha: {
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//                 operation: 'add',
+//               },
+//               color: {
+//                 // Result = (ShaderColor * ShaderAlpha) + (DestColor * 1)
+//                 operation: 'add',
+//                 srcFactor: 'src-alpha',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 // Keeps the background alpha as is
+//                 operation: 'add',
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//               }
+//               color: {
+//                 operation: 'add',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one-minus-src-alpha',
+//               },
+//               alpha: {
+//                 operation: 'add',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one-minus-src-alpha',
+//               }
+//               color: {
+//                 operation: 'add',
+//                 srcFactor: 'one-minus-dst-color',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 operation: 'add',
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//               }
+//               color: {
+//                 operation: 'max', // Take whichever is brighter
+//                 srcFactor: 'one',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 operation: 'max',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one',
+//               }
+// }
+
 },{}],56:[function(require,module,exports){
 "use strict";
 
@@ -32404,122 +32481,130 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.flameEffectInstance = void 0;
-const flameEffectInstance = exports.flameEffectInstance = `struct Camera {
-  viewProj : mat4x4<f32>
+const flameEffectInstance = exports.flameEffectInstance = `
+struct Camera {
+    viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// Array of particle instances
+// Exact same layout as the working shader, but in a storage array
 struct ModelData {
-  model : mat4x4<f32>,
-  time : vec4<f32>,       // x = time
-  intensity : vec4<f32>,  // x = intensity
-  color : vec4<f32>,      // rgba color
+    model     : mat4x4<f32>,
+    timeSpeed : vec4<f32>,
+    params    : vec4<f32>,
+    tint      : vec4<f32>,
 };
 @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
 
 struct VSIn {
-  @location(0) position : vec3<f32>,
-  @location(1) uv : vec2<f32>,
-  @builtin(instance_index) instanceIdx : u32,
+    @location(0) position : vec3<f32>,
+    @location(1) uv : vec2<f32>,
+    @builtin(instance_index) instanceIdx : u32,
 };
 
 struct VSOut {
-  @builtin(position) position : vec4<f32>,
-  @location(0) uv : vec2<f32>,
-  @location(1) time : f32,
-  @location(2) intensity : f32,
-  @location(3) @interpolate(flat) instanceIdx : u32,
+    @builtin(position) position : vec4<f32>,
+    @location(0) uv : vec2<f32>,
+    @location(1) p0 : vec4<f32>,
+    @location(2) p1 : vec4<f32>,
+    @location(3) tintColor : vec3<f32>,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
-  var output : VSOut;
-  let modelData = modelDataArray[input.instanceIdx];
-  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
-  output.position = camera.viewProj * worldPos;
-  output.uv = input.uv;
-  output.time = modelData.time.x;
-  output.intensity = modelData.intensity.x;
-  output.instanceIdx = input.instanceIdx;
-  return output;
+    var output : VSOut;
+    let modelData = modelDataArray[input.instanceIdx];
+
+    let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+    output.position = camera.viewProj * worldPos;
+    output.uv = input.uv;
+
+    // Pass data to fragment exactly like the working shader
+    output.p0 = vec4<f32>(
+        modelData.timeSpeed.x, // time
+        modelData.timeSpeed.y, // speed
+        modelData.params.x,    // intensity
+        modelData.params.y     // turbulence
+    );
+    output.p1 = vec4<f32>(
+        modelData.params.z,    // stretch
+        modelData.tint.w,      // tintStrength
+        0.0, 0.0
+    );
+    output.tintColor = modelData.tint.xyz;
+
+    return output;
 }
 
-// Simple procedural flame noise (value in 0..1)
-fn hash(n : vec2<f32>) -> f32 {
-  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn hash2(n : vec2<f32>) -> f32 {
+    return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
 fn noise(p : vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
-    mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), u.x),
-    u.y
-  );
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+    );
 }
 
-// Flame color gradient: black -> red -> orange -> yellow -> white
-fn flameColor(n: f32) -> vec3<f32> {
-  if (n < 0.3) {
-    return vec3<f32>(n * 3.0, 0.0, 0.0);               // dark red
-  } else if (n < 0.6) {
-    return vec3<f32>(1.0, (n - 0.3) * 3.33, 0.0);      // red -> orange
-  } else {
-    return vec3<f32>(1.0, 1.0, (n - 0.6) * 2.5);       // orange -> yellow -> white
-  }
+fn fbm(p : vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pos = p;
+    for (var i = 0; i < 2; i = i + 1) {
+        v += a * noise(pos);
+        pos = pos * 2.1 + vec2<f32>(1.7, 9.2);
+        a *= 0.5;
+    }
+    return v;
 }
 
 @fragment
-fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
-  // Read per-instance data
-  let modelData = modelDataArray[in.instanceIdx];
-  let baseColor = modelData.color.xyz;
-  let instanceAlpha = modelData.color.w;
-  let instIntensity = max(0.0, modelData.intensity.x);
+fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+    let time       = input.p0.x;
+    let speed      = input.p0.y;
+    let intensity  = input.p0.z;
+    let turbulence = input.p0.w;
+    let stretch    = input.p1.x;
+    let tintStr    = input.p1.y;
+    let tintColor  = input.tintColor;
 
-  // time with small instance offset
-  let t = in.time * 2.0 + f32(in.instanceIdx) * 0.13;
+    let t = time * speed * 2.0;
+    var uv = input.uv;
+    uv.y = uv.y / max(stretch, 0.01);
 
-  var uv = in.uv;
-  uv.y += t * 0.2;
+    let warpAmt = turbulence * 0.18;
+    let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
+    let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
+    var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
 
-  // procedural noise
-  var n = noise(uv * 5.0 + vec2<f32>(0.0, t * 0.5));
-  // keep some brightness: milder sharpening than pow(n,3)
-  n = pow(n, 1.5);
+    warpedUV.y += t * 0.4;
+    warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
 
-  // base flame color from gradient
-  let grad = flameColor(n);
+    var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
+    n = pow(n, 3.0 - turbulence * 1.2);
 
-  let userColor = modelData.color.xyz;
+    let hotColor  = vec3<f32>(1.0, 0.92, 0.35);
+    let midColor  = vec3<f32>(1.0, 0.38, 0.04);
+    let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
 
-  // mix ratio (0.0 = pure red, 1.0 = user color)
-  let mixFactor = 0.5;
-  let mixedColor = mix(grad, userColor, mixFactor);
+    let g1 = smoothstep(0.0, 0.5, n);
+    let g2 = smoothstep(0.5, 1.0, n);
+    var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
 
-  // flicker multipliers (shifted into positive range)
-  let flickR = 0.7 + 0.3 * sin(t * 3.0); // 0.4 .. 1.0
-  let flickG = 0.6 + 0.4 * cos(t * 2.0); // 0.2 .. 1.0
-  let flickB = 0.8 + 0.2 * sin(t * 1.5); // 0.6 .. 1.0
+    let tintMask = smoothstep(0.0, 0.5, n);
+    baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
 
-  // combine gradient with per-instance baseColor and flicker
-  // var color = grad * baseColor * vec3<f32>(flickR, flickG, flickB);
-  var color = mixedColor * vec3<f32>(flickR, flickG, flickB);
+    let finalColor = baseColor * n * intensity;
+    let edgeMask = smoothstep(0.0, 0.15, input.uv.x) * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
+    let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
+    let topFade = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
 
-  // apply instance/global intensity
-  color = color * instIntensity;
+    // let alpha = smoothstep(0.25, 0.9, n) * edgeMask * topFade;
+    let alpha = smoothstep(0.01, 0.4, n) * edgeMask * topFade;
 
-  // soft alpha based on noise and instance alpha
-  var alpha = smoothstep(0.0, 0.6, n) * instanceAlpha * instIntensity;
-
-  // final clamp to avoid negative or NaN values
-  color = clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)); // allow HDR-like values for additive blending
-  alpha = clamp(alpha, 0.0, 1.0);
-
-  return vec4<f32>(color, alpha);
+    return vec4<f32>(finalColor * alpha, alpha);
 }
 `;
 
@@ -48886,7 +48971,13 @@ class MatrixEngineWGPU {
         colorAttachments: [{
           view: this.sceneTextureView,
           loadOp: 'load',
-          storeOp: 'store'
+          storeOp: 'store',
+          clearValue: {
+            r: 0,
+            g: 1,
+            b: 0,
+            a: 1
+          }
         }],
         depthStencilAttachment: {
           view: this.mainDepthView,
@@ -48907,9 +48998,7 @@ class MatrixEngineWGPU {
         });
       }
       transPass.end();
-
       // volumetric
-
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
         // If you don't store it yet, compute once per frame:

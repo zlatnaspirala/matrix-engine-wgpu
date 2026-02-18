@@ -792,7 +792,12 @@ export default class MatrixEngineWGPU {
 
       if(this.collisionSystem) this.collisionSystem.update();
       const transPassDesc = {
-        colorAttachments: [{view: this.sceneTextureView, loadOp: 'load', storeOp: 'store'}],
+        colorAttachments: [{
+          view: this.sceneTextureView,
+          loadOp: 'load',
+          storeOp: 'store',
+          clearValue: {r: 0, g: 1, b: 0, a: 1},
+        }],
         depthStencilAttachment: {
           view: this.mainDepthView,
           depthLoadOp: 'load',
@@ -813,9 +818,7 @@ export default class MatrixEngineWGPU {
         });
       }
       transPass.end();
-
       // volumetric
-
       if(this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
         // If you don't store it yet, compute once per frame:
