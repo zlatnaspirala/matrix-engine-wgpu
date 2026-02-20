@@ -654,7 +654,8 @@ export default class MEMeshObj extends Materials {
           this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float');
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = FlameEffect.fromPreset(device, pf, "rgba16float", "torch");
+          this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch');
+
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");

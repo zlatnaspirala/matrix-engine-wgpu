@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
+import {LOG_MATRIX} from "../src/engine/utils.js";
 // import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadObjFile = function() {
@@ -26,12 +26,6 @@ export var loadObjFile = function() {
     })
 
     function onGround(m) {
-      setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
-      }, 600)
       loadObjFile.addMeshObj({
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -43,8 +37,7 @@ export var loadObjFile = function() {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
-        // raycast: { enabled: true , radius: 2 }
+        }
       })
     }
 
@@ -64,8 +57,8 @@ export var loadObjFile = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEffect: false,
-          flameEmitter: true,
+          flameEffect: true, // <<<<<<<<<<<
+          flameEmitter: true, // <<<<<<<<<<<
         },
         raycast: {enabled: true, radius: 2}
       })
@@ -84,7 +77,6 @@ export var loadObjFile = function() {
         }
       })
 
-
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
       loadObjFile.addLight();
@@ -94,12 +86,15 @@ export var loadObjFile = function() {
         light.position[0] = light.behavior.setPath0()
       })
       loadObjFile.lightContainer[0].position[1] = 9;
-
       var TEST = loadObjFile.getSceneObjectByName('cube2');
 
-
+      setTimeout(() => {
+        app.cameras.WASD.yaw = -0.03;
+        app.cameras.WASD.pitch = -0.49;
+        app.cameras.WASD.position[2] = 0;
+        app.cameras.WASD.position[1] = 3.76;
+      }, 800);
     }
   })
-  // just for dev
   window.app = loadObjFile;
 }

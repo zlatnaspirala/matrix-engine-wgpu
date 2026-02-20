@@ -395,12 +395,6 @@ var loadObjFile = function () {
       });
     });
     function onGround(m) {
-      setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
-      }, 600);
       loadObjFile.addMeshObj({
         position: {
           x: 0,
@@ -425,7 +419,6 @@ var loadObjFile = function () {
           mass: 0,
           geometry: "Cube"
         }
-        // raycast: { enabled: true , radius: 2 }
       });
     }
     function onLoadObj(m) {
@@ -458,8 +451,9 @@ var loadObjFile = function () {
         },
         pointerEffect: {
           enabled: true,
-          flameEffect: false,
-          flameEmitter: true
+          flameEffect: true,
+          // <<<<<<<<<<<
+          flameEmitter: true // <<<<<<<<<<<
         },
         raycast: {
           enabled: true,
@@ -502,9 +496,14 @@ var loadObjFile = function () {
       });
       loadObjFile.lightContainer[0].position[1] = 9;
       var TEST = loadObjFile.getSceneObjectByName('cube2');
+      setTimeout(() => {
+        app.cameras.WASD.yaw = -0.03;
+        app.cameras.WASD.pitch = -0.49;
+        app.cameras.WASD.position[2] = 0;
+        app.cameras.WASD.position[1] = 3.76;
+      }, 800);
     }
   });
-  // just for dev
   window.app = loadObjFile;
 };
 exports.loadObjFile = loadObjFile;
@@ -19900,9 +19899,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.FlamePresets = exports.FlameEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _flameEffect = require("../../shaders/flame-effect/flameEffect");
-// ---------------------------------------------------------------------------
-// Ready-made presets — pass to FlameEffect.fromPreset() or use as defaults
-// ---------------------------------------------------------------------------
+var _geometryFactory = require("../geometry-factory");
 const FlamePresets = exports.FlamePresets = {
   // Natural campfire / torch
   natural: {
@@ -19911,8 +19908,11 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.5,
     stretch: 1.0,
     tint: [1.0, 1.0, 1.0],
-    // neutral → pure fire palette
-    tintStrength: 0.0
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Tall torch / pillar of fire
   torch: {
@@ -19920,9 +19920,12 @@ const FlamePresets = exports.FlamePresets = {
     speed: 1.2,
     turbulence: 0.35,
     stretch: 2.0,
-    // double height
     tint: [1.0, 1.0, 1.0],
-    tintStrength: 0.0
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Wide, low bonfire
   bonfire: {
@@ -19930,9 +19933,12 @@ const FlamePresets = exports.FlamePresets = {
     speed: 0.8,
     turbulence: 0.9,
     stretch: 0.5,
-    // short & wide
     tint: [1.0, 1.0, 1.0],
-    tintStrength: 0.0
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Magical blue flame
   magic: {
@@ -19941,8 +19947,11 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.6,
     stretch: 1.3,
     tint: [0.1, 0.4, 1.0],
-    // blue
-    tintStrength: 0.85
+    tintStrength: 0.85,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Hellfire — dark purple/red
   hell: {
@@ -19951,8 +19960,11 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.8,
     stretch: 1.6,
     tint: [0.6, 0.0, 0.8],
-    // purple
-    tintStrength: 0.7
+    tintStrength: 0.7,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Poison green
   poison: {
@@ -19961,112 +19973,62 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.7,
     stretch: 1.1,
     tint: [0.1, 1.0, 0.15],
-    // green
-    tintStrength: 0.9
+    tintStrength: 0.9,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   }
 };
 
-// ---------------------------------------------------------------------------
 // FlameEffect
-// ---------------------------------------------------------------------------
 class FlameEffect {
-  /**
-   * @param {GPUDevice}  device
-   * @param {string}     format       - swap-chain / canvas format (e.g. "bgra8unorm")
-   * @param {string}     colorFormat  - render-pass color attachment format (e.g. "rgba16float")
-   * @param {object}     params       - initial flame parameters (see defaults below)
-   */
   constructor(device, format, colorFormat, params = {}) {
     this.device = device;
     this.format = format;
     this.colorFormat = colorFormat ?? format;
-
-    // --- All tuneable params with defaults ---
+    const config = typeof params === 'string' ? FlamePresets[params] : params;
     const defaults = FlamePresets.natural;
-    this.intensity = params.intensity ?? defaults.intensity;
-    this.speed = params.speed ?? defaults.speed;
-    this.turbulence = params.turbulence ?? defaults.turbulence; // 0 = calm, 1 = chaotic
-    this.stretch = params.stretch ?? defaults.stretch; // >1 = tall, <1 = wide
-    this.tint = params.tint ?? defaults.tint; // [r, g, b]  0..1 each
-    this.tintStrength = params.tintStrength ?? defaults.tintStrength; // 0 = natural, 1 = full tint
-
+    this.intensity = config.intensity ?? defaults.intensity;
+    this.speed = config.speed ?? defaults.speed;
+    this.turbulence = config.turbulence ?? defaults.turbulence;
+    this.stretch = config.stretch ?? defaults.stretch;
+    this.tint = config.tint ?? defaults.tint;
+    this.tintStrength = config.tintStrength ?? defaults.tintStrength;
+    this.scale = config.scale ?? defaults.scale;
     this.time = 0;
     this.enabled = true;
+    this.localOffset = config.localOffset ?? defaults.localOffset;
+    this.localRotation = config.localRotation ?? defaults.localRotation;
+    this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
+    this.setGeometry("quad", this.scale);
   }
-
-  /** Convenience factory: new FlameEffect.fromPreset(device, fmt, hdrFmt, 'magic') */
-  static fromPreset(device, format, colorFormat, presetName) {
-    const preset = FlamePresets[presetName];
-    if (!preset) throw new Error(`Unknown FlamePreset: "${presetName}". Available: ${Object.keys(FlamePresets).join(", ")}`);
-    return new FlameEffect(device, format, colorFormat, preset);
-  }
-
-  // -------------------------------------------------------------------------
-  // Public setters  (call any time — written to GPU on next updateInstanceData)
-  // -------------------------------------------------------------------------
-  setIntensity(v) {
-    this.intensity = v;
-  }
-  setSpeed(v) {
-    this.speed = v;
-  }
-  setTurbulence(v) {
-    this.turbulence = Math.max(0, Math.min(1, v));
-  }
-  setStretch(v) {
-    this.stretch = Math.max(0.05, v);
-  }
-  /** @param {[number,number,number]} rgb  e.g. [0.1, 0.4, 1.0] for blue */
-  setTint(rgb) {
-    this.tint = rgb;
-  }
-  /** @param {number} v  0 = natural fire colours, 1 = fully tinted */
-  setTintStrength(v) {
-    this.tintStrength = Math.max(0, Math.min(1, v));
-  }
-
-  /** Apply a named preset instantly */
-  applyPreset(name) {
-    const p = FlamePresets[name];
-    if (!p) throw new Error(`Unknown FlamePreset: "${name}"`);
-    Object.assign(this, {
-      intensity: p.intensity,
-      speed: p.speed,
-      turbulence: p.turbulence,
-      stretch: p.stretch,
-      tint: p.tint,
-      tintStrength: p.tintStrength
-    });
-  }
-
-  // -------------------------------------------------------------------------
-  _initPipeline() {
-    const S = 40;
-    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0, 0.5 * S, 0.5 * S, 0, -0.5 * S, -0.5 * S, 0, 0.5 * S, -0.5 * S, 0]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this._uploadVertex(vertexData);
-    this.uvBuffer = this._uploadVertex(uvData);
+  setGeometry(type, size = 1, segments = 32) {
+    const geo = _geometryFactory.GeometryFactory.create(type, size, segments);
+    this.vertexBuffer = this._uploadVertex(geo.positions);
+    this.uvBuffer = this._uploadVertex(geo.uvs);
+    const byteLen = geo.indices.byteLength;
+    const paddedByteLen = Math.ceil(byteLen / 4) * 4;
     this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
+      size: paddedByteLen,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-
-    // Camera uniform: mat4 = 64 bytes
+    if (byteLen % 4 !== 0) {
+      const paddedData = new Uint8Array(paddedByteLen);
+      paddedData.set(new Uint8Array(geo.indices.buffer, geo.indices.byteOffset, byteLen));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedData);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, geo.indices);
+    }
+    this.indexCount = geo.indices.length;
+    this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
+  }
+  _initPipeline() {
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // ModelData uniform layout:
-    //   offset   0 : model        64 bytes  (mat4)
-    //   offset  64 : timeSpeed    16 bytes  (vec4)
-    //   offset  80 : params       16 bytes  (vec4)
-    //   offset  96 : tint         16 bytes  (vec4)
-    //   total = 112 bytes
     this.modelBuffer = this.device.createBuffer({
       size: 112,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -20103,24 +20065,22 @@ class FlameEffect {
     const shaderModule = this.device.createShaderModule({
       code: _flameEffect.flameEffect
     });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
     this.pipeline = this.device.createRenderPipeline({
-      label: 'flame pipeline',
-      layout: pipelineLayout,
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [bindGroupLayout]
+      }),
       vertex: {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: "float32x3"
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -20152,10 +20112,25 @@ class FlameEffect {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        depthCompare: "always",
+        depthCompare: "less",
         format: "depth24plus"
       }
     });
+  }
+  async morphTo(type, size = 40, duration = 200) {
+    const originalIntensity = this.intensity;
+    const steps = 10;
+    const stepTime = duration / (steps * 2);
+    for (let i = 0; i < steps; i++) {
+      this.intensity *= 0.5;
+      await new Promise(r => setTimeout(r, stepTime));
+    }
+    this.setGeometry(type, size);
+    for (let i = 0; i < steps; i++) {
+      this.intensity = originalIntensity * (i / steps);
+      await new Promise(r => setTimeout(r, stepTime));
+    }
+    this.intensity = originalIntensity;
   }
   _uploadVertex(data) {
     const buf = this.device.createBuffer({
@@ -20165,21 +20140,25 @@ class FlameEffect {
     this.device.queue.writeBuffer(buf, 0, data);
     return buf;
   }
-
-  // -------------------------------------------------------------------------
   updateInstanceData(baseModelMatrix) {
     const local = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(local, [0, 20, 0], local);
+    _wgpuMatrix.mat4.translate(local, this.localOffset, local);
+    _wgpuMatrix.mat4.rotateX(local, this.localRotation[0], local);
+    _wgpuMatrix.mat4.rotateY(local, this.localRotation[1], local);
+    _wgpuMatrix.mat4.rotateZ(local, this.localRotation[2], local);
+    if (this.activeRotate[0] !== 0) {
+      _wgpuMatrix.mat4.rotateX(local, this.activeRotate[0] * this.time, local);
+    }
+    if (this.activeRotate[1] !== 0) {
+      _wgpuMatrix.mat4.rotateY(local, this.activeRotate[1] * this.time, local);
+    }
+    if (this.activeRotate[2] !== 0) {
+      _wgpuMatrix.mat4.rotateZ(local, this.activeRotate[2] * this.time, local);
+    }
     const finalMat = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-
-    // timeSpeed: [time, speed, 0, 0]
     const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
-
-    // params: [intensity, turbulence, stretch, 0]
     const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
-
-    // tint: [r, g, b, tintStrength]
     const tint = new Float32Array([...this.tint, this.tintStrength]);
     this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
     this.device.queue.writeBuffer(this.modelBuffer, 64, timeSpeed);
@@ -20192,18 +20171,18 @@ class FlameEffect {
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
     pass.drawIndexed(this.indexCount);
   }
-  render(pass, mesh, viewProjMatrix, dt = 0.01) {
-    if (!this.enabled) return;
-    this.time += dt;
+  // Interface for effect -> (pass, mesh, viewProj)
+  render(pass, mesh, viewProjMatrix) {
+    this.time += 0.016;
     this.draw(pass, viewProjMatrix);
   }
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":61,"wgpu-matrix":22}],30:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":61,"../geometry-factory":39,"wgpu-matrix":22}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22808,6 +22787,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.GeometryFactory = void 0;
+/**
+ * @description
+ * GeometryFactory - can be reused for any level of pipeline integration.
+ * It is already integrated with level of 'me effects'.
+ */
 class GeometryFactory {
   static create(type, size = 1, segments = 16, options = {}) {
     switch (type) {
@@ -22855,20 +22839,45 @@ class GeometryFactory {
       indices
     };
   }
+
+  // static cube(S = 1) {
+  //   const p = S / 2;
+  //   const positions = new Float32Array([
+  //     -p, -p, p, p, -p, p, p, p, p, -p, p, p,
+  //     -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p,
+  //     -p, p, -p, -p, p, p, p, p, p, p, p, -p,
+  //     -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p,
+  //     p, -p, -p, p, p, -p, p, p, p, p, -p, p,
+  //     -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p
+  //   ]);
+  //   const uvs = new Float32Array(6 * 8).fill(0);
+  //   const indices = [];
+  //   for(let i = 0;i < 6;i++) {
+  //     const o = i * 4; indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
+  //   }
+  //   let i = new Uint16Array(i);
+  //   return {positions, uvs, i};
+  // }
   static cube(S = 1) {
     const p = S / 2;
-    const positions = new Float32Array([-p, -p, p, p, -p, p, p, p, p, -p, p, p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p, -p, p, -p, -p, p, p, p, p, p, p, p, -p, -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p, p, -p, -p, p, p, -p, p, p, p, p, -p, p, -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p]);
-    const uvs = new Float32Array(6 * 8).fill(0);
-    const indices = [];
-    for (let i = 0; i < 6; i++) {
-      const o = i * 4;
-      indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
-    }
-    let i = new Uint16Array(i);
+    const positions = new Float32Array([-p, -p, p, p, -p, p, p, p, p, -p, p, p,
+    // Front
+    -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p,
+    // Back
+    -p, p, -p, -p, p, p, p, p, p, p, p, -p,
+    // Top
+    -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p,
+    // Bottom
+    p, -p, -p, p, p, -p, p, p, p, p, -p, p,
+    // Right
+    -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p // Left
+    ]);
+    const uvs = new Float32Array(6 * 8).fill(0); // Add real UVs if needed
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23]);
     return {
       positions,
       uvs,
-      i
+      indices
     };
   }
   static sphere(R = 0.1, seg = 16) {
@@ -22977,9 +22986,31 @@ class GeometryFactory {
   static diamond(S = 1) {
     const h = S,
       p = S / 2;
-    const pos = new Float32Array([0, h, 0, -p, 0, -p, p, 0, -p, p, 0, p, -p, 0, p, 0, -h, 0]);
-    const uv = new Float32Array(6 * 2).fill(0);
-    const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1, 5, 2, 1, 5, 3, 2, 5, 4, 3, 5, 1, 4]);
+    // 6 Vertices
+    const pos = new Float32Array([0, h, 0,
+    // 0: Top
+    -p, 0, -p,
+    // 1: Mid Left-Back
+    p, 0, -p,
+    // 2: Mid Right-Back
+    p, 0, p,
+    // 3: Mid Right-Front
+    -p, 0, p,
+    // 4: Mid Left-Front
+    0, -h, 0 // 5: Bottom
+    ]);
+
+    // Added simple UVs so the texture actually shows up
+    const uv = new Float32Array([0.5, 1,
+    // Top
+    0, 0.5,
+    // Sides...
+    1, 0.5, 0, 0.5, 1, 0.5, 0.5, 0 // Bottom
+    ]);
+    const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1,
+    // Top pyramid
+    5, 2, 1, 5, 3, 2, 5, 4, 3, 5, 1, 4 // Bottom pyramid
+    ]);
     return {
       positions: pos,
       uvs: uv,
@@ -29212,7 +29243,7 @@ class MEMeshObj extends _materials.default {
           this.effects.gizmoEffect = new _gizmo.GizmoEffect(device, 'rgba16float');
         }
         if (typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = _flame.FlameEffect.fromPreset(device, pf, "rgba16float", "torch");
+          this.effects.flameEffect = new _flame.FlameEffect(device, pf, "rgba16float", 'torch');
         }
         if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, "rgba16float");
@@ -48392,11 +48423,12 @@ class MatrixEngineWGPU {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
     this.shadersPack = {};
-    if ('OffscreenCanvas' in window) {
-      console.log(`OffscreenCanvas is supported`, _utils.LOG_FUNNY_ARCADE);
-    } else {
-      console.log(`%cOffscreenCanvas is NOT supported.`, _utils.LOG_FUNNY_ARCADE);
-    }
+
+    // if('OffscreenCanvas' in window) {
+    //   console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+    // } else {
+    //   console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+    // }
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);

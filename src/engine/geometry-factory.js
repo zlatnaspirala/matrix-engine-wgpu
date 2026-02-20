@@ -1,4 +1,9 @@
 
+/**
+ * @description
+ * GeometryFactory - can be reused for any level of pipeline integration.
+ * It is already integrated with level of 'me effects'.
+ */
 export class GeometryFactory {
   static create(type, size = 1, segments = 16, options = {}) {
     switch(type) {
@@ -30,23 +35,40 @@ export class GeometryFactory {
     return {positions, uvs, indices};
   }
 
+  // static cube(S = 1) {
+  //   const p = S / 2;
+  //   const positions = new Float32Array([
+  //     -p, -p, p, p, -p, p, p, p, p, -p, p, p,
+  //     -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p,
+  //     -p, p, -p, -p, p, p, p, p, p, p, p, -p,
+  //     -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p,
+  //     p, -p, -p, p, p, -p, p, p, p, p, -p, p,
+  //     -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p
+  //   ]);
+  //   const uvs = new Float32Array(6 * 8).fill(0);
+  //   const indices = [];
+  //   for(let i = 0;i < 6;i++) {
+  //     const o = i * 4; indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
+  //   }
+  //   let i = new Uint16Array(i);
+  //   return {positions, uvs, i};
+  // }
   static cube(S = 1) {
     const p = S / 2;
     const positions = new Float32Array([
-      -p, -p, p, p, -p, p, p, p, p, -p, p, p,
-      -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p,
-      -p, p, -p, -p, p, p, p, p, p, p, p, -p,
-      -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p,
-      p, -p, -p, p, p, -p, p, p, p, p, -p, p,
-      -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p
+      -p, -p, p, p, -p, p, p, p, p, -p, p, p, // Front
+      -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p, // Back
+      -p, p, -p, -p, p, p, p, p, p, p, p, -p, // Top
+      -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p, // Bottom
+      p, -p, -p, p, p, -p, p, p, p, p, -p, p, // Right
+      -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p  // Left
     ]);
-    const uvs = new Float32Array(6 * 8).fill(0);
-    const indices = [];
-    for(let i = 0;i < 6;i++) {
-      const o = i * 4; indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
-    }
-    let i = new Uint16Array(i);
-    return {positions, uvs, i};
+    const uvs = new Float32Array(6 * 8).fill(0); // Add real UVs if needed
+    const indices = new Uint16Array([
+      0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11,
+      12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23
+    ]);
+    return {positions, uvs, indices};
   }
 
   static sphere(R = 0.1, seg = 16) {
@@ -136,16 +158,31 @@ export class GeometryFactory {
 
   static diamond(S = 1) {
     const h = S, p = S / 2;
+    // 6 Vertices
     const pos = new Float32Array([
-      0, h, 0,
-      -p, 0, -p, p, 0, -p, p, 0, p, -p, 0, p,
-      0, -h, 0
+      0, h, 0,    // 0: Top
+      -p, 0, -p,   // 1: Mid Left-Back
+      p, 0, -p,   // 2: Mid Right-Back
+      p, 0, p,   // 3: Mid Right-Front
+      -p, 0, p,   // 4: Mid Left-Front
+      0, -h, 0     // 5: Bottom
     ]);
-    const uv = new Float32Array(6 * 2).fill(0);
+
+    // Added simple UVs so the texture actually shows up
+    const uv = new Float32Array([
+      0.5, 1,   // Top
+      0, 0.5,   // Sides...
+      1, 0.5,
+      0, 0.5,
+      1, 0.5,
+      0.5, 0    // Bottom
+    ]);
+
     const idx = new Uint16Array([
-      0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1,
-      5, 2, 1, 5, 3, 2, 5, 4, 3, 5, 1, 4
+      0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1, // Top pyramid
+      5, 2, 1, 5, 3, 2, 5, 4, 3, 5, 1, 4  // Bottom pyramid
     ]);
+
     return {positions: pos, uvs: uv, indices: idx};
   }
 

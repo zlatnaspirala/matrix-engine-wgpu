@@ -242,11 +242,11 @@ export default class MatrixEngineWGPU {
     this.createGlobalStuff();
     this.shadersPack = {};
 
-    if('OffscreenCanvas' in window) {
-      console.log(`OffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
-    } else {
-      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
-    }
+    // if('OffscreenCanvas' in window) {
+    //   console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+    // } else {
+    //   console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+    // }
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
