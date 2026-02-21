@@ -44,31 +44,54 @@ export var loadObjFile = function() {
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png'],
+        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.jpg'],
         name: 'cube1',
         mesh: m.cube,
+        envMapParams: {
+          baseColorMix: 0.05, // normal mix
+          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          reflectivity: 0.95,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.4,          // Gentle rim
+          illuminatePulse: 0.5,             // No pulse (static)
+          fresnelPower: 2.0,                // Medium-sharp edge
+          envLodBias: 2.5,
+          usePlanarReflection: false,  // ✅ Env map mode
+        },
         physics: {
           enabled: false,
           geometry: "Cube",
         },
         pointerEffect: {
           enabled: true,
-          flameEffect: true, // <<<<<<<<<<<
-          flameEmitter: true, // <<<<<<<<<<<
+          // flameEffect: true,
+          // flameEmitter: true,
         },
         raycast: {enabled: true, radius: 2}
       })
 
       loadObjFile.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 111, z: 0},
-        texturesPaths: ['./res/textures/spiral-1.png'],
+        scale: [100, 100, 100],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.jpg'],
+        envMapParams: {
+          baseColorMix: 0.0, // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          reflectivity: 0.25,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.01,             // No pulse (static)
+          fresnelPower: 2.0,                // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,  // ✅ Env map mode
+        },
         name: 'ball1',
         mesh: m.ball,
         physics: {

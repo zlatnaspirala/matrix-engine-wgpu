@@ -106,7 +106,7 @@ export default class MatrixEngineWGPU {
     }
     this.editorAddOBJ = addOBJ.bind(this);
 
-    this.logLoopError = false;
+    this.logLoopError = true;
     // context select options
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -501,6 +501,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
     if(typeof o.useScale === 'undefined') {o.useScale = true;}
+    if(typeof o.envMapParams === 'undefined') {o.envMapParams = null;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

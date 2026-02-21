@@ -177,6 +177,96 @@ export default class MaterialsInstanced {
     }
   }
 
+  createMirrorIlluminateBindGroup(pipeline, mirrorBindGroupLayout, opts) {
+    const defaults = {
+      mirrorTint: [1.0, 1.0, 1.0],
+      reflectivity: 0.9,
+      illuminateColor: [0.4, 0.8, 1.0],
+      illuminateStrength: 2.0,
+      illuminatePulse: 0.2,
+      fresnelPower: 2.0,
+      envLodBias: 0.1,
+      // envTexture omitted → 1×1 white dummy created below
+    };
+    const cfg = {...defaults, ...opts};
+    // ── Params uniform buffer (48 bytes, 16-byte aligned) ────────────────────
+    //   Layout must mirror MirrorIlluminateParams struct exactly:
+    //   offset  0  →  mirrorTint        vec3f  (12 bytes)
+    //   offset 12  →  reflectivity      f32    (4 bytes)
+    //   offset 16  →  illuminateColor   vec3f  (12 bytes)
+    //   offset 28  →  illuminateStrength f32   (4 bytes)
+    //   offset 32  →  illuminatePulse   f32    (4 bytes)
+    //   offset 36  →  fresnelPower      f32    (4 bytes)
+    //   offset 40  →  envLodBias        f32    (4 bytes)
+    //   offset 44  →  _pad              f32    (4 bytes)  ← always 0
+    const PARAMS_SIZE = 48;
+    const paramsBuffer = this.device.createBuffer({
+      label: 'MirrorIlluminateParams',
+      size: PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.writeParamsMirror = (o) => {
+      const data = new Float32Array(12); // 12 floats × 4 bytes = 48
+      const t = o.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t[0];
+      data[1] = t[1];
+      data[2] = t[2];
+      data[3] = o.reflectivity ?? cfg.reflectivity;
+      const ic = o.illuminateColor ?? cfg.illuminateColor;
+      data[4] = ic[0];
+      data[5] = ic[1];
+      data[6] = ic[2];
+      data[7] = o.illuminateStrength ?? cfg.illuminateStrength;
+      data[8] = o.illuminatePulse ?? cfg.illuminatePulse;
+      data[9] = o.fresnelPower ?? cfg.fresnelPower;
+      data[10] = o.envLodBias ?? cfg.envLodBias;
+      data[11] = 0; // _pad
+      this.device.queue.writeBuffer(paramsBuffer, 0, data);
+    }
+    this.writeParamsMirror(cfg); // initial write
+    // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
+    const envTexture = cfg.envTexture ?? (() => {
+      const tex = this.device.createTexture({
+        label: 'MirrorEnvDummy',
+        size: [1, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+      });
+      // Write a single white pixel (255,255,255,255)
+      this.device.queue.writeTexture(
+        {texture: tex},
+        new Uint8Array([255, 255, 255, 255]),
+        {bytesPerRow: 4},
+        [1, 1],
+      );
+      return tex;
+    })();
+    const envSampler = this.device.createSampler({
+      label: 'MirrorEnvSampler',
+      addressModeU: 'repeat',
+      addressModeV: 'clamp-to-edge',
+      magFilter: 'linear',
+      minFilter: 'linear',
+      mipmapFilter: 'linear',
+    });
+    const bindGroup = this.device.createBindGroup({
+      label: 'MirrorIlluminate BindGroup',
+      layout: mirrorBindGroupLayout,
+      entries: [
+        {binding: 0, resource: {buffer: paramsBuffer}},
+        {binding: 1, resource: envTexture.createView()},
+        {binding: 2, resource: envSampler},
+      ],
+    });
+    return {
+      bindGroup,
+      paramsBuffer,
+      /** Call this at runtime to hot-update mirror params without rebuilding. */
+      updateParams: (o) => this.writeParamsMirror(o),
+    };
+  }
+
   changeTexture(newTexture) {
     // Accept GPUTexture OR GPUTextureView
     if(newTexture instanceof GPUTexture) {
