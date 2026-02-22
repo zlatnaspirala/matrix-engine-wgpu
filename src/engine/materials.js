@@ -234,7 +234,7 @@ export default class Materials {
     this.setupMaterialPBR([1, 1, 1, alpha]);
   }
 
-  createMirrorIlluminateBindGroup(pipeline, mirrorBindGroupLayout, opts) {
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
     const defaults = {
       mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
       reflectivity: 0.25,               // 25% reflection blend
@@ -243,7 +243,6 @@ export default class Materials {
       illuminatePulse: 0.0,             // No pulse (static)
       fresnelPower: 4.0,                // Medium-sharp edge
       envLodBias: 1.5,                  // Slightly blurred env
-      // envTexture omitted → 1×1 white dummy created below
     };
     const cfg = {...defaults, ...opts};
     const PARAMS_SIZE = 80;
@@ -252,55 +251,61 @@ export default class Materials {
       size: PARAMS_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
     this.writeParamsMirror = (o) => {
-    const data = new Float32Array(16); // Was 12, now 16
-    const t    = o.mirrorTint ?? cfg.mirrorTint;
-    data[ 0] = t[0];
-    data[ 1] = t[1];
-    data[ 2] = t[2];
-    data[ 3] = o.reflectivity       ?? cfg.reflectivity;
-    const ic = o.illuminateColor    ?? cfg.illuminateColor;
-    data[ 4] = ic[0];
-    data[ 5] = ic[1];
-    data[ 6] = ic[2];
-    data[ 7] = o.illuminateStrength ?? cfg.illuminateStrength;
-    data[ 8] = o.illuminatePulse    ?? cfg.illuminatePulse;
-    data[ 9] = o.fresnelPower       ?? cfg.fresnelPower;
-    data[10] = o.envLodBias         ?? cfg.envLodBias;
-    data[11] = o.usePlanarReflection ? 1.0 : 0.0;
-    data[12] = o.baseColorMix       ?? cfg.baseColorMix;
-    data[13] = 0; // padding
-    data[14] = 0; // padding
-    data[15] = 0; // padding
-    this.device.queue.writeBuffer(paramsBuffer, 0, data);
+      const data = new Float32Array(16); // Was 12, now 16
+      const t = o.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t[0];
+      data[1] = t[1];
+      data[2] = t[2];
+      data[3] = o.reflectivity ?? cfg.reflectivity;
+      const ic = o.illuminateColor ?? cfg.illuminateColor;
+      data[4] = ic[0];
+      data[5] = ic[1];
+      data[6] = ic[2];
+      data[7] = o.illuminateStrength ?? cfg.illuminateStrength;
+      data[8] = o.illuminatePulse ?? cfg.illuminatePulse;
+      data[9] = o.fresnelPower ?? cfg.fresnelPower;
+      data[10] = o.envLodBias ?? cfg.envLodBias;
+      data[11] = o.usePlanarReflection ? 1.0 : 0.0;
+      data[12] = o.baseColorMix ?? cfg.baseColorMix;
+      data[13] = 0; // padding
+      data[14] = 0; // padding
+      data[15] = 0; // padding
+      this.device.queue.writeBuffer(paramsBuffer, 0, data);
     }
-    this.writeParamsMirror(cfg); // initial write
+    this.writeParamsMirror(cfg);
+    const samplerDummy = this.device.createSampler({
+      label: 'EnvMap Sampler',
+      magFilter: 'linear',
+      minFilter: 'linear',
+      addressModeU: 'repeat',
+      addressModeV: 'clamp-to-edge',
+    });
     // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
-    const envTexture = cfg.envTexture.texture ?? (() => {
-      console.warn('⚠️ No envTexture provided, using white dummy!');
-      const tex = this.device.createTexture({
-        label: 'MirrorEnvDummy',
-        size: [1, 1],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-      });
-      // Write a single white pixel (255,255,255,255)
-      this.device.queue.writeTexture(
-        {texture: tex},
-        new Uint8Array([255, 0, 0, 255]),
-        {bytesPerRow: 4},
-        [1, 1],
-      );
-      return tex;
-    })();
+    const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture :
+      cfg.envTexture.texture ?? (() => {
+        console.warn('⚠️ No envTexture provided, using white dummy!');
+        const tex = this.device.createTexture({
+          label: 'MirrorEnvDummy',
+          size: [1, 1],
+          format: 'rgba8unorm',
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        this.device.queue.writeTexture(
+          {texture: tex},
+          new Uint8Array([255, 0, 0, 255]),
+          {bytesPerRow: 4},
+          [1, 1],
+        );
+        return tex;
+      })();
     const bindGroup = this.device.createBindGroup({
       label: 'MirrorIlluminate BindGroup',
       layout: mirrorBindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: paramsBuffer}},
         {binding: 1, resource: envTexture.createView()},
-        {binding: 2, resource: cfg.envTexture.sampler},
+        {binding: 2, resource: cfg.envTexture.sampler ?? samplerDummy},
       ],
     });
     return {
@@ -329,7 +334,7 @@ export default class Materials {
       // console.warn('Unknown material ???????????????:', this.material?.type);
       return this.material.fromGraph;
     } else if(this.material.type == 'mix1') {
-      return fragmentWGSLMix1; // ??????????
+      return fragmentWGSLMix1; // ?
     } else if(this.material.type === "mirror") {
       return mirrorIlluminateFragmentWGSL;
     }

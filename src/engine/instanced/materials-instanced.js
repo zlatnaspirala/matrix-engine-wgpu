@@ -1,3 +1,4 @@
+import {mirrorIlluminateFragmentWGSL} from "../../shaders/fragment.mirror.wgsl";
 import {fragmentWGSL} from "../../shaders/fragment.wgsl";
 import {fragmentWGSLMetal} from "../../shaders/fragment.wgsl.metal";
 import {fragmentWGSLNormalMap} from "../../shaders/fragment.wgsl.normalmap";
@@ -177,37 +178,25 @@ export default class MaterialsInstanced {
     }
   }
 
-  createMirrorIlluminateBindGroup(pipeline, mirrorBindGroupLayout, opts) {
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
     const defaults = {
-      mirrorTint: [1.0, 1.0, 1.0],
-      reflectivity: 0.9,
-      illuminateColor: [0.4, 0.8, 1.0],
-      illuminateStrength: 2.0,
-      illuminatePulse: 0.2,
-      fresnelPower: 2.0,
-      envLodBias: 0.1,
-      // envTexture omitted → 1×1 white dummy created below
+      mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+      reflectivity: 0.25,               // 25% reflection blend
+      illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      illuminateStrength: 0.4,          // Gentle rim
+      illuminatePulse: 0.0,             // No pulse (static)
+      fresnelPower: 4.0,                // Medium-sharp edge
+      envLodBias: 1.5,                  // Slightly blurred env
     };
     const cfg = {...defaults, ...opts};
-    // ── Params uniform buffer (48 bytes, 16-byte aligned) ────────────────────
-    //   Layout must mirror MirrorIlluminateParams struct exactly:
-    //   offset  0  →  mirrorTint        vec3f  (12 bytes)
-    //   offset 12  →  reflectivity      f32    (4 bytes)
-    //   offset 16  →  illuminateColor   vec3f  (12 bytes)
-    //   offset 28  →  illuminateStrength f32   (4 bytes)
-    //   offset 32  →  illuminatePulse   f32    (4 bytes)
-    //   offset 36  →  fresnelPower      f32    (4 bytes)
-    //   offset 40  →  envLodBias        f32    (4 bytes)
-    //   offset 44  →  _pad              f32    (4 bytes)  ← always 0
-    const PARAMS_SIZE = 48;
+    const PARAMS_SIZE = 80;
     const paramsBuffer = this.device.createBuffer({
       label: 'MirrorIlluminateParams',
       size: PARAMS_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
     this.writeParamsMirror = (o) => {
-      const data = new Float32Array(12); // 12 floats × 4 bytes = 48
+      const data = new Float32Array(16); // Was 12, now 16
       const t = o.mirrorTint ?? cfg.mirrorTint;
       data[0] = t[0];
       data[1] = t[1];
@@ -221,42 +210,46 @@ export default class MaterialsInstanced {
       data[8] = o.illuminatePulse ?? cfg.illuminatePulse;
       data[9] = o.fresnelPower ?? cfg.fresnelPower;
       data[10] = o.envLodBias ?? cfg.envLodBias;
-      data[11] = 0; // _pad
+      data[11] = o.usePlanarReflection ? 1.0 : 0.0;
+      data[12] = o.baseColorMix ?? cfg.baseColorMix;
+      data[13] = 0; // padding
+      data[14] = 0; // padding
+      data[15] = 0; // padding
       this.device.queue.writeBuffer(paramsBuffer, 0, data);
     }
-    this.writeParamsMirror(cfg); // initial write
-    // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
-    const envTexture = cfg.envTexture ?? (() => {
-      const tex = this.device.createTexture({
-        label: 'MirrorEnvDummy',
-        size: [1, 1],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-      });
-      // Write a single white pixel (255,255,255,255)
-      this.device.queue.writeTexture(
-        {texture: tex},
-        new Uint8Array([255, 255, 255, 255]),
-        {bytesPerRow: 4},
-        [1, 1],
-      );
-      return tex;
-    })();
-    const envSampler = this.device.createSampler({
-      label: 'MirrorEnvSampler',
-      addressModeU: 'repeat',
-      addressModeV: 'clamp-to-edge',
+    this.writeParamsMirror(cfg);
+    const samplerDummy = this.device.createSampler({
+      label: 'EnvMap Sampler',
       magFilter: 'linear',
       minFilter: 'linear',
-      mipmapFilter: 'linear',
+      addressModeU: 'repeat',
+      addressModeV: 'clamp-to-edge',
     });
+    // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
+    const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture :
+      cfg.envTexture.texture ?? (() => {
+        console.warn('⚠️ No envTexture provided, using white dummy!');
+        const tex = this.device.createTexture({
+          label: 'MirrorEnvDummy',
+          size: [1, 1],
+          format: 'rgba8unorm',
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        this.device.queue.writeTexture(
+          {texture: tex},
+          new Uint8Array([255, 0, 0, 255]),
+          {bytesPerRow: 4},
+          [1, 1],
+        );
+        return tex;
+      })();
     const bindGroup = this.device.createBindGroup({
       label: 'MirrorIlluminate BindGroup',
       layout: mirrorBindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: paramsBuffer}},
         {binding: 1, resource: envTexture.createView()},
-        {binding: 2, resource: envSampler},
+        {binding: 2, resource: cfg.envTexture.sampler ?? samplerDummy},
       ],
     });
     return {
@@ -306,6 +299,8 @@ export default class MaterialsInstanced {
       return fragmentWaterWGSL;
     } else if(this.material.type == 'graph') {
       return this.material.fromGraph;
+    } else if(this.material.type === "mirror") {
+      return mirrorIlluminateFragmentWGSL;
     }
     //  else if(this.material.type == 'mix1') {
     //   return fragmentWGSLMix1;
@@ -367,6 +362,14 @@ export default class MaterialsInstanced {
       );
       resolve()
     })
+  }
+
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path = texturesPaths[1] || texturesPaths[0];
+    const {texture, sampler} = await this.textureCache.get(path, this.getFormat(), isEnvMap);
+    return {
+      texture, sampler
+    }
   }
 
   async loadVideoTexture(arg) {

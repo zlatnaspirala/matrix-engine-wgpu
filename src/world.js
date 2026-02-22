@@ -975,6 +975,7 @@ export default class MatrixEngineWGPU {
       };
     }
     if(typeof o.useScale === 'undefined') {o.useScale = true;}
+    if(typeof o.envMapParams === 'undefined') {o.envMapParams = null;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

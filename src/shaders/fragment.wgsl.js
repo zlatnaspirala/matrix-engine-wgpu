@@ -63,8 +63,6 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
-// RPG or any other usage [selected obj effect]
-// @group(2) @binding(0) var<uniform> uSelected : f32;
 // @group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
 // @group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
 // @group(2) @binding(2) var          mirrorEnvSampler: sampler;

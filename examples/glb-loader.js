@@ -64,7 +64,7 @@ export function loadGLBLoader() {
 
       // woman
       var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
+      TEST_ANIM.addGlbObjInctance({
         material: {type: 'normalmap', useTextureFromGlb: true},
         useScale: true,
         scale: [20, 20, 20],
@@ -136,7 +136,12 @@ export function loadGLBLoader() {
         },
       });
       app.lightContainer[0].position[1] = 35;
-      app.lightContainer[0].intensity = 20;
+      app.lightContainer[0].intensity = 6;
+
+      app.activateBloomEffect();
+      app.activateVolumetricEffect();
+      app.bloomPass.setIntensity(0.25);
+
     }
   })
   // just for dev

@@ -73,7 +73,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
 @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
 @group(0) @binding(8) var<uniform> material               : MaterialPBR;
-// @group(2) @binding(0) var<uniform> uSelected : f32;
+
 @group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
 @group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
 @group(2) @binding(2) var          mirrorEnvSampler: sampler;
@@ -174,18 +174,18 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 
 // ─── NEW: Mirror Illuminate helpers ──────────────────────────────────────────
 fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
-    // let dir = normalize(R);
-    // let phi = atan2(dir.x, dir.z);     // Horizontal angle
-    // let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
-    // let u = phi / (2.0 * PI) + 0.5;
-    // let v = theta / PI;
-    // return vec2f(u, v);
     let dir = normalize(R);
-    let phi = atan2(-dir.z, dir.x);  // Note the negative
-    let theta = acos(clamp(dir.y, -1.0, 1.0));
+    let phi = atan2(dir.x, dir.z);     // Horizontal angle
+    let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
     let u = phi / (2.0 * PI) + 0.5;
     let v = theta / PI;
-    return vec2f(u, 1.0 - v);  // Try flipping V
+    return vec2f(u, v);
+    // let dir = normalize(R);
+    // let phi = atan2(-dir.z, dir.x);  // Note the negative
+    // let theta = acos(clamp(dir.y, -1.0, 1.0));
+    // let u = phi / (2.0 * PI) + 0.5;
+    // let v = theta / PI;
+    // return vec2f(u, 1.0 - v);  // Try flipping V
 }
 
 // Planar mirror UV (screen-space)
@@ -256,6 +256,7 @@ fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
 // ─── Main ────────────────────────────────────────────────────────────────────
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
+
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
 
@@ -284,11 +285,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // ── Env reflection ───────────────────────────────────────────────────
     let R = reflect(-V, N);
     var envColor: vec3f;
-    if (mirrorParams.baseColorMix < 0.5) {
+    if (mirrorParams.baseColorMix < 0.01) {
         // Sky/background objects: use mesh UV (requires proper UV unwrap)
         envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
     } else {
         // Reflective objects: use reflection vector
+        //  let worldUV = worldPosToEquirectUV(normalize(input.fragPos));
+        //  envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, worldUV).rgb * mirrorParams.mirrorTint;
+
         envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
     }
     let envFresn = fresnelSchlick(max(dot(N, V), 0.0), 

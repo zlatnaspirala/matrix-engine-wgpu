@@ -12,6 +12,7 @@ import {DestructionEffect} from './effects/destruction';
 import {FlameEffect} from './effects/flame';
 import {FlameEmitter} from './effects/flame-emmiter';
 import {VERTEX_ANIM_FLAGS} from './literals';
+import {createGroundTexture} from './procedures/procedural-textures';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -729,9 +730,15 @@ export default class MEMeshObj extends Materials {
         modelData.byteLength
       );
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch(err) {console.log('Err[create pipeline]:', err)}
+      if(this.texturesPaths.length > 1) {
+        this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
+          this.envMapParams.envTexture = envTexture;
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+        });
+      } else {
+        try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+      }
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
         console.log('After all updateMeshListBuffers...');
@@ -833,16 +840,6 @@ export default class MEMeshObj extends Materials {
       },
       primitive: this.primitive,
     });
-    // console.log('✅Set Pipelines done extra setup - avoid loading if not used...');
-    // test ENV MAP
-    // const envTexture = this.createSkyGradient();
-    
-    if(this.texturesPaths.length > 1) this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
-      this.envMapParams.envTexture = envTexture;
-      console.log(' ????????????????? ', this.envMapParams)
-      this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.pipeline, this.mirrorBindGroupLayout,
-        this.envMapParams).bindGroup;
-    });
   }
 
   getMainPipeline = () => {
@@ -934,22 +931,15 @@ export default class MEMeshObj extends Materials {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {
-      // let bindIndex = 2;
-      // for(const light of lightContainer) {
-      //   pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-      // }
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
       } else if(this.isVideo == false) {
-        // Bind lights for non-mirror objects
         let bindIndex = 2;
         for(const light of lightContainer) {
           pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
         }
       }
     }
-    // if(this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
-
     pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -957,12 +947,12 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if(this.joints) {
       if(this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
         // dummy
-        pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
-        pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+        pass.setVertexBuffer(3, this.joints.buffer);
+        pass.setVertexBuffer(4, this.weights.buffer);
       }
     }
 
@@ -983,13 +973,15 @@ export default class MEMeshObj extends Materials {
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
 
     if(this.isVideo == false) {
-      let bindIndex = 2;
-      for(const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if(this.material.type === "mirror" && this.mirrorBindGroup) {
+        renderPass.setBindGroup(2, this.mirrorBindGroup);
+      } else if(this.isVideo == false) {
+        let bindIndex = 2;
+        for(const light of lightContainer) {
+          renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-    if(this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
-    // if(this.selectedBindGroup) renderPass.setBindGroup(2, this.selectedBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
 
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
@@ -1009,10 +1001,8 @@ export default class MEMeshObj extends Materials {
     if(this.mesh.tangentsBuffer) {
       renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
-
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
-
     if(this.objAnim.playing == true) {
       if(this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
         this.objAnim.currentAni++;

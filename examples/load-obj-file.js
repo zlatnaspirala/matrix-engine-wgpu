@@ -27,10 +27,22 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
+        material: {type: 'mirror'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.jpg'],
+        envMapParams: {
+          baseColorMix: 0.95,
+          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          reflectivity: 0.25,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.001,             // No pulse (static)
+          fresnelPower: 5.0,                // Medium-sharp edge
+          envLodBias: 2.5,
+          usePlanarReflection: false,  // ✅ Env map mode
+        },
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -52,13 +64,13 @@ export var loadObjFile = function() {
         name: 'cube1',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.05, // normal mix
+          baseColorMix: 0.2, // normal mix
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
           reflectivity: 0.95,               // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
           illuminateStrength: 0.4,          // Gentle rim
-          illuminatePulse: 0.5,             // No pulse (static)
-          fresnelPower: 2.0,                // Medium-sharp edge
+          illuminatePulse: 0.001,             // No pulse (static)
+          fresnelPower: 5.0,                // Medium-sharp edge
           envLodBias: 2.5,
           usePlanarReflection: false,  // ✅ Env map mode
         },
@@ -67,7 +79,7 @@ export var loadObjFile = function() {
           geometry: "Cube",
         },
         pointerEffect: {
-          enabled: true,
+          // enabled: true,
           // flameEffect: true,
           // flameEmitter: true,
         },
@@ -110,8 +122,11 @@ export var loadObjFile = function() {
       })
       loadObjFile.lightContainer[0].position[1] = 9;
       var TEST = loadObjFile.getSceneObjectByName('cube2');
-
       setTimeout(() => {
+        app.activateBloomEffect();
+        let cube1 = app.getSceneObjectByName('cube1')
+        // cube1.effects.flameEffect.intensity = 100;
+        // cube1.effects.flameEffect.morphTo("pyramid", 8)
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;

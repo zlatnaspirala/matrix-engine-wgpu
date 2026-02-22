@@ -45,6 +45,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       o.material.useBlend = false;
     }
 
+    if(o.envMapParams !== null) {
+      this.envMapParams = o.envMapParams;
+    }
+
     this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
@@ -398,7 +402,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         frontFace: 'ccw'
       }
 
-      this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.pipeline, this.mirrorBindGroupLayout, {
+      this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, {
         reflectivity: 0.85,
         illuminateColor: [0.3, 0.9, 1.0],
         illuminatePulse: 1.5,
@@ -864,9 +868,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       };
 
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch(err) {console.log(`Err in create pipeline ${err}`, LOG_WARN)}
+
+      if(this.texturesPaths.length > 1) {
+        this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
+          this.envMapParams.envTexture = envTexture;
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+        });
+      } else {
+        try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+      }
+
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
         console.log('updateMeshListBuffers...');
@@ -882,7 +894,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       bindGroupLayouts: [
         this.bglForRender,
         this.uniformBufferBindGroupLayoutInstanced,
-        this.mirrorBindGroupLayout,
+        (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
       ],
     });
 
@@ -961,21 +973,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     });
   };
 
-  updateModelUniformBuffer = () => {
-
-    // // JUST TEST ORI EMPTY s
-    //     if(this.done == false) return;
-    // // Per-object model matrix only
-    // const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    // this.device.queue.writeBuffer(
-    //   this.modelUniformBuffer,
-    //   0,
-    //   modelMatrix.buffer,
-    //   modelMatrix.byteOffset,
-    //   modelMatrix.byteLength
-    // );
-
-  }
+  updateModelUniformBuffer = () => {}
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}
@@ -1042,17 +1040,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     // Bind each light’s shadow texture & sampler
     if(this.isVideo == false) {
-      let bindIndex = 2;
-      for(const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if(this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if(this.isVideo == false) {
+        let bindIndex = 2;
+        for(const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-
-    if(this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
-    // if(this.selectedBindGroup) {
-    //   pass.setBindGroup(2, this.selectedBindGroup);
-    // }
-
     pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -1094,13 +1090,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
 
     if(this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
-      for(const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if(this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if(this.isVideo == false) {
+        let bindIndex = 2;
+        for(const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-
-    if(this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
 
     pass.setBindGroup(3, this.waterBindGroup);
 
