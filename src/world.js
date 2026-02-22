@@ -752,7 +752,11 @@ export default class MatrixEngineWGPU {
       // opaque
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend === true) continue;
-        pass.setPipeline(mesh.pipeline);
+        if (mesh.pipeline) { 
+          pass.setPipeline(mesh.pipeline);
+        } else {
+          pass.setPipeline(this.mainRenderBundle[0].pipeline);
+        }
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
             if(m.isVideo == true) {
@@ -976,6 +980,7 @@ export default class MatrixEngineWGPU {
     }
     if(typeof o.useScale === 'undefined') {o.useScale = true;}
     if(typeof o.envMapParams === 'undefined') {o.envMapParams = null;}
+    o.textureCache = this.textureCache;
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

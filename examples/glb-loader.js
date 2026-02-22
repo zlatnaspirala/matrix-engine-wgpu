@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
-import {loadBVH} from "../src/engine/loaders/bvh.js";
+// import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
+// import {loadBVH} from "../src/engine/loaders/bvh.js";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 /**
  * @Note
@@ -26,7 +26,7 @@ export function loadGLBLoader() {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 23;
+        app.cameras.WASD.position[1] = 35;
       }, 2000)
 
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
@@ -65,12 +65,23 @@ export function loadGLBLoader() {
       // woman
       var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObjInctance({
-        material: {type: 'normalmap', useTextureFromGlb: true},
+        material: {type: 'mirror', useTextureFromGlb: true},
+        envMapParams: {
+          baseColorMix: 0.05,
+          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          reflectivity: 0.95,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.001,             // No pulse (static)
+          fresnelPower: 5.0,                // Medium-sharp edge
+          envLodBias: 2.5,
+          usePlanarReflection: false,  // ✅ Env map mode
+        },
         useScale: true,
         scale: [20, 20, 20],
         position: {x: 0, y: -4, z: -20},
         name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.jpg'],
       }, null, glbFile11);
 
       var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
@@ -123,10 +134,22 @@ export function loadGLBLoader() {
     function onGround(m) {
       TEST_ANIM.addLight();
       TEST_ANIM.addMeshObj({
+        material: {type: 'mirror'},
+        envMapParams: {
+          baseColorMix: 0.55,
+          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          reflectivity: 0.95,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.001,             // No pulse (static)
+          fresnelPower: 5.0,                // Medium-sharp edge
+          envLodBias: 2.5,
+          usePlanarReflection: false,  // ✅ Env map mode
+        },
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.jpg'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -139,7 +162,7 @@ export function loadGLBLoader() {
       app.lightContainer[0].intensity = 6;
 
       app.activateBloomEffect();
-      app.activateVolumetricEffect();
+      // app.activateVolumetricEffect();
       app.bloomPass.setIntensity(0.25);
 
     }

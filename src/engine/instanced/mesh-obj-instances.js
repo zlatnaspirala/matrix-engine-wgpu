@@ -17,7 +17,7 @@ import {VERTEX_ANIM_FLAGS} from '../literals';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile);
+    super(device, o.material, _glbFile, o.textureCache);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {this.raycast = {enabled: false, radius: 2}} else {
       this.raycast = o.raycast;
@@ -402,35 +402,14 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         frontFace: 'ccw'
       }
 
-      this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, {
-        reflectivity: 0.85,
-        illuminateColor: [0.3, 0.9, 1.0],
-        illuminatePulse: 1.5,
-        fresnelPower: 5.0,
-        // envTexture: yourHDRITexture, // optional
-      }).bindGroup;
-      // Selected effect
-      // this.selectedBuffer = device.createBuffer({
-      //   size: 4, // just one float
-      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      // });
-
-      // this.selectedBindGroupLayout = device.createBindGroupLayout({
-      //   entries: [
-      //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
-      //   ],
-      // });
-
-      // this.selectedBindGroup = device.createBindGroup({
-      //   layout: this.selectedBindGroupLayout,
-      //   entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
-      // });
-
-      // this.setSelectedEffect = (selected = false) => {
-      //   this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
-      // };
-      // // 0 default
-      // this.setSelectedEffect();
+      this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mirrorBindGroupLayout',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform', minBindingSize: 80}},
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float', viewDimension: '2d', multisampled: false}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}}
+        ]
+      });
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
@@ -869,7 +848,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
       this.done = true;
 
-      if(this.texturesPaths.length > 1) {
+      if(this.texturesPaths.length > 1 && this.material.type == "mirror") {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
           this.envMapParams.envTexture = envTexture;
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;

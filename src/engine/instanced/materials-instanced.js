@@ -5,6 +5,7 @@ import {fragmentWGSLNormalMap} from "../../shaders/fragment.wgsl.normalmap";
 import {fragmentWGSLPong} from "../../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../../shaders/fragment.wgsl.power";
 import {fragmentWGSLInstanced} from "../../shaders/instanced/fragment.instanced.wgsl";
+import {fragmentMirrorWGSLInstanced} from "../../shaders/instanced/fragment.mirror.instanced.wgsl";
 import {fragmentWaterWGSL} from "../../shaders/water/water-c.wgls";
 
 /**
@@ -16,10 +17,11 @@ import {fragmentWaterWGSL} from "../../shaders/water/water-c.wgls";
  * @email zlatnaspirala@gmail.com
  */
 export default class MaterialsInstanced {
-  constructor(device, material, glb) {
+  constructor(device, material, glb, textureCache) {
     this.device = device;
     this.glb = glb;
     this.material = material;
+    this.textureCache = textureCache;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
     this.compareSampler = this.device.createSampler({
@@ -300,7 +302,7 @@ export default class MaterialsInstanced {
     } else if(this.material.type == 'graph') {
       return this.material.fromGraph;
     } else if(this.material.type === "mirror") {
-      return mirrorIlluminateFragmentWGSL;
+      return fragmentMirrorWGSLInstanced;
     }
     //  else if(this.material.type == 'mix1') {
     //   return fragmentWGSLMix1;
