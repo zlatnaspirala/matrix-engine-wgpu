@@ -1,9 +1,9 @@
 import {LOG_FUNNY, LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
 
 export default class MatrixAmmo {
-  constructor() {
+  constructor(options = {roundDimension: 100, gravity: 10}) {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-    
+    this.options = options;
     // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
     scriptManager.LOAD("ammojs/ammo.js", "ammojs",
       undefined, undefined, this.init,
@@ -40,7 +40,7 @@ export default class MatrixAmmo {
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
 
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(70, 1, 70)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(this.options.roundDimension, 1, this.options.roundDimension)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
     groundTransform.setOrigin(new Ammo.btVector3(0, -4.45, 0));

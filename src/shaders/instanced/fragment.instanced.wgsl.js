@@ -61,7 +61,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
 // RPG or any other usage [selected obj effect]
-@group(2) @binding(0) var<uniform> uSelected : f32;
+// @group(2) @binding(0) var<uniform> uSelected : f32;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -229,10 +229,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    if (uSelected > 0.5) {
-        let glowColor = vec3f(0.2, 0.8, 1.0);
-        finalColor += glowColor * fresnel * 0.1;
-    }
+    // if (uSelected > 0.5) {
+    //     let glowColor = vec3f(0.2, 0.8, 1.0);
+    //     finalColor += glowColor * fresnel * 0.1;
+    // }
 
     // let alpha = input.colorMult.a; // use alpha for blending
     // return vec4f(finalColor, alpha);

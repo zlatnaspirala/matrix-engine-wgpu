@@ -168,12 +168,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        // specific rule for naming (some from blender source)
-        // let n = this.name;
-        // if(this.name.indexOf('_') != -1) {
-        //   n = this.name.split('_')[0];
-        // }
-        // hardcode must be sync
         if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {

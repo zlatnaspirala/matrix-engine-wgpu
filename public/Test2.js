@@ -5124,6 +5124,296 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(vibrantColor, alpha);
 }`;
 
+// ../../../shaders/fragment.mirror.wgsl.js
+var mirrorIlluminateFragmentWGSL = `
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+    alpha     : f32,
+};
+
+// \u2500\u2500\u2500 NEW: Mirror Illuminate params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+struct MirrorIlluminateParams {
+    // --- Reflectivity ---
+    mirrorTint        : vec3f,   // tint applied to the specular/env reflection  (default: 1,1,1)
+    reflectivity      : f32,     // 0 = no mirror effect, 1 = full mirror        (default: 0.9)
+
+    // --- Illuminate pulse ---
+    illuminateColor   : vec3f,   // colour of the rim/illuminate glow             (default: 0.4, 0.8, 1.0)
+    illuminateStrength: f32,     // 0..1 master intensity of illuminate           (default: 1.0)
+    // --- Control ---
+    illuminatePulse   : f32,     // pulse speed (Hz). 0 = static                  (default: 1.2)
+    fresnelPower      : f32,     // Fresnel exponent for rim sharpness            (default: 4.0)
+    envLodBias        : f32,     // mip bias for env sample (blur \u2248 roughness)    (default: 0.0)
+    _pad              : f32,     // padding to reach 48 bytes
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene                  : Scene;
+@group(0) @binding(1) var          shadowMapArray         : texture_depth_2d_array;
+@group(0) @binding(2) var          shadowSampler          : sampler_comparison;
+@group(0) @binding(3) var          meshTexture            : texture_2d<f32>;
+@group(0) @binding(4) var          meshSampler            : sampler;
+@group(0) @binding(5) var<uniform> spotlights             : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
+@group(0) @binding(7) var          metallicRoughnessSampler : sampler;
+@group(0) @binding(8) var<uniform> material               : MaterialPBR;
+// @group(2) @binding(0) var<uniform> uSelected : f32;
+@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+// \u2500\u2500\u2500 Existing helpers (unchanged) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor  = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic  = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha     = material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a      = roughness * roughness;
+    let a2     = a * a;
+    let NdotH  = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L     = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
+    let L    = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+
+    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+    let H     = normalize(L + V);
+    let alpha  = mat.roughness * mat.roughness;
+    let alpha2 = alpha * alpha;
+    let NdotH  = max(dot(N, H), 0.0);
+    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D      = alpha2 / (PI * denom * denom + 1e-5);
+    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV  = max(dot(N, V), 0.0);
+    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
+    let G      = Gv * Gl;
+    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias      = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for (var i: u32 = 0u; i < 9u; i++) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+
+// \u2500\u2500\u2500 NEW: Mirror Illuminate helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+// Cheap spherical env UV from reflection vector (equirectangular approximation)
+fn reflectToEnvUV(R: vec3f) -> vec2f {
+    let u = atan2(R.z, R.x) / (2.0 * PI) + 0.5;   // 0..1
+    let v = asin(clamp(R.y, -1.0, 1.0)) / PI + 0.5; // 0..1
+    return vec2f(u, v);
+}
+
+// Sample env map with roughness-driven mip bias
+fn sampleMirrorEnv(R: vec3f, roughness: f32) -> vec3f {
+    let uv = reflectToEnvUV(R);
+    // lodBias from params; roughness adds extra blurring for non-perfect mirrors
+    let lod  = mirrorParams.envLodBias + roughness * 4.0;
+    return textureSampleLevel(mirrorEnvTex, mirrorEnvSampler, uv, lod).rgb;
+}
+
+// Animated illuminate rim \u2014 pulsing Fresnel edge glow
+fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
+    // Fresnel rim
+    let NdotV = max(dot(N, V), 0.0);
+    let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+
+    // Pulse: smoothly oscillate between [0.3, 1.0] so it never fully dies
+    let pulse = mix(0.3, 1.0,
+        (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+    );
+
+    // Spatial shimmer along Y: gives a "light sweep" feel on the surface
+    let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+
+    return mirrorParams.illuminateColor
+        * mirrorParams.illuminateStrength
+        * rim * pulse * shimmer;
+}
+
+// Mirror specular: sharp GGX lobe biased toward near-zero roughness
+fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f) -> vec3f {
+    let H       = normalize(lightDir + V);
+    // clamp roughness to a low value so mirrors stay crisp
+    let mirrorR = max(0.02, material.roughnessFactor * 0.15);
+    let D       = distributionGGX(N, H, mirrorR);
+    let G       = geometrySmith(N, V, lightDir, mirrorR);
+    let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
+    let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    let NdotL   = max(dot(N, lightDir), 0.0);
+    let NdotV   = max(dot(N, V),        0.0);
+    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    return spec * lightColor * NdotL * mirrorParams.reflectivity;
+}
+
+// \u2500\u2500\u2500 Main \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+
+    let materialData = getPBRMaterial(input.uv);
+    if (materialData.alpha < 0.01) { discard; }
+
+    // \u2500\u2500 Shadow + existing spotlight loop (unchanged logic) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    var lightContribution = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p        = sc.xyz / sc.w;
+        let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
+        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+        lightContribution += contrib * vis;
+
+        // \u2500\u2500 Mirror: sharp specular from each spotlight \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+        lightContribution += mirrorSpec * coneFactor * vis;
+    }
+
+    // \u2500\u2500 Env reflection (perfect mirror lobe) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    let R        = reflect(-V, N);
+    let envColor = sampleMirrorEnv(R, materialData.roughness) * mirrorParams.mirrorTint;
+    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+
+    // \u2500\u2500 Compose base colour \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+
+    let envContribution = envFresn * mirrorParams.reflectivity;
+    finalColor = mix(finalColor, envColor, min(envContribution, vec3f(0.5)));
+
+
+    // Blend env reflection on top (attenuated by reflectivity & Fresnel)
+    // finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+
+    // \u2500\u2500 Illuminate rim \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+    finalColor += illuminate;
+
+    // \u2500\u2500 Existing selection glow (unchanged) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    // let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+    // if (uSelected > 0.5) {
+    //     let glowColor = vec3f(0.2, 0.8, 1.0);
+    //     finalColor += glowColor * fresnel * 0.1;
+    // }
+
+    let alpha = mix(materialData.alpha, 1.0, 0.5);
+    return vec4f(finalColor, alpha);
+}
+`;
+
 // ../../../engine/materials.js
 var Materials = class {
   constructor(device2, material, glb, textureCache) {
@@ -5340,6 +5630,89 @@ var Materials = class {
     this.material.useBlend = true;
     this.setupMaterialPBR([1, 1, 1, alpha]);
   };
+  createMirrorIlluminateBindGroup(pipeline, mirrorBindGroupLayout, opts) {
+    const defaults = {
+      mirrorTint: [0.9, 0.95, 1],
+      // Slight cool tint
+      reflectivity: 0.25,
+      // 25% reflection blend
+      illuminateColor: [0.3, 0.7, 1],
+      // Soft cyan
+      illuminateStrength: 0.4,
+      // Gentle rim
+      illuminatePulse: 0,
+      // No pulse (static)
+      fresnelPower: 4,
+      // Medium-sharp edge
+      envLodBias: 1.5
+      // Slightly blurred env
+      // envTexture omitted → 1×1 white dummy created below
+    };
+    const cfg = { ...defaults, ...opts };
+    const PARAMS_SIZE = 48;
+    const paramsBuffer = this.device.createBuffer({
+      label: "MirrorIlluminateParams",
+      size: PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.writeParamsMirror = (o2) => {
+      const data = new Float32Array(12);
+      const t = o2.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t[0];
+      data[1] = t[1];
+      data[2] = t[2];
+      data[3] = o2.reflectivity ?? cfg.reflectivity;
+      const ic = o2.illuminateColor ?? cfg.illuminateColor;
+      data[4] = ic[0];
+      data[5] = ic[1];
+      data[6] = ic[2];
+      data[7] = o2.illuminateStrength ?? cfg.illuminateStrength;
+      data[8] = o2.illuminatePulse ?? cfg.illuminatePulse;
+      data[9] = o2.fresnelPower ?? cfg.fresnelPower;
+      data[10] = o2.envLodBias ?? cfg.envLodBias;
+      data[11] = 0;
+      this.device.queue.writeBuffer(paramsBuffer, 0, data);
+    };
+    this.writeParamsMirror(cfg);
+    const envTexture = cfg.envTexture ?? (() => {
+      const tex = this.device.createTexture({
+        label: "MirrorEnvDummy",
+        size: [1, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      this.device.queue.writeTexture(
+        { texture: tex },
+        new Uint8Array([255, 0, 0, 255]),
+        { bytesPerRow: 4 },
+        [1, 1]
+      );
+      return tex;
+    })();
+    const envSampler = this.device.createSampler({
+      label: "MirrorEnvSampler",
+      addressModeU: "repeat",
+      addressModeV: "clamp-to-edge",
+      magFilter: "linear",
+      minFilter: "linear",
+      mipmapFilter: "linear"
+    });
+    const bindGroup = this.device.createBindGroup({
+      label: "MirrorIlluminate BindGroup",
+      layout: mirrorBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: paramsBuffer } },
+        { binding: 1, resource: envTexture.createView() },
+        { binding: 2, resource: envSampler }
+      ]
+    });
+    return {
+      bindGroup,
+      paramsBuffer,
+      /** Call this at runtime to hot-update mirror params without rebuilding. */
+      updateParams: (o2) => this.writeParamsMirror(o2)
+    };
+  }
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSL;
@@ -5357,6 +5730,8 @@ var Materials = class {
       return this.material.fromGraph;
     } else if (this.material.type == "mix1") {
       return fragmentWGSLMix1;
+    } else if (this.material.type === "mirror") {
+      return mirrorIlluminateFragmentWGSL;
     }
     console.warn("Unknown material type:", this.material?.type);
     return fragmentWGSL;
@@ -6035,6 +6410,7 @@ var PointEffect2 = class {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: "Topology Pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -6235,6 +6611,7 @@ var GizmoEffect = class {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
+      label: "gizmo Pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -6997,6 +7374,7 @@ var DestructionEffect = class {
     const shaderModule = this.device.createShaderModule({ code: dustShader });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "destruction Pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -7366,6 +7744,471 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 `
 );
 
+// ../../../engine/geometry-factory.js
+var GeometryFactory = class _GeometryFactory {
+  static create(type2, size2 = 1, segments = 16, options2 = {}) {
+    switch (type2) {
+      case "quad":
+        return _GeometryFactory.quad(size2);
+      case "cube":
+        return _GeometryFactory.cube(size2);
+      case "sphere":
+        return _GeometryFactory.sphere(size2, segments);
+      case "pyramid":
+        return _GeometryFactory.pyramid(size2);
+      case "star":
+        return _GeometryFactory.star(size2);
+      case "circle":
+        return _GeometryFactory.circle(size2, segments);
+      case "circle2":
+        return _GeometryFactory.circle2(size2, segments);
+      case "diamond":
+        return _GeometryFactory.diamond(size2);
+      case "rock":
+        return _GeometryFactory.rock(size2, options2.detail || 3);
+      case "meteor":
+        return _GeometryFactory.meteor(size2, options2.detail || 6);
+      case "thunder":
+        return _GeometryFactory.thunder(size2);
+      case "shard":
+        return _GeometryFactory.shard(size2);
+      case "circlePlane":
+        return _GeometryFactory.circlePlane(size2, segments);
+      case "ring":
+        return _GeometryFactory.ring(size2, options2.innerRatio || 0.7, segments, options2.height || 0.05);
+      default:
+        throw new Error(`Unknown geometry: ${type2}`);
+    }
+  }
+  // --- BASIC SHAPES ---------------------------------------------------------
+  static quad(S = 1) {
+    const positions = new Float32Array([
+      -S,
+      S,
+      0,
+      S,
+      S,
+      0,
+      -S,
+      -S,
+      0,
+      S,
+      -S,
+      0
+    ]);
+    const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+    const indices = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    return { positions, uvs, indices };
+  }
+  // static cube(S = 1) {
+  //   const p = S / 2;
+  //   const positions = new Float32Array([
+  //     -p, -p, p, p, -p, p, p, p, p, -p, p, p,
+  //     -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p,
+  //     -p, p, -p, -p, p, p, p, p, p, p, p, -p,
+  //     -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p,
+  //     p, -p, -p, p, p, -p, p, p, p, p, -p, p,
+  //     -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p
+  //   ]);
+  //   const uvs = new Float32Array(6 * 8).fill(0);
+  //   const indices = [];
+  //   for(let i = 0;i < 6;i++) {
+  //     const o = i * 4; indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
+  //   }
+  //   let i = new Uint16Array(i);
+  //   return {positions, uvs, i};
+  // }
+  static cube(S = 1) {
+    const p = S / 2;
+    const positions = new Float32Array([
+      -p,
+      -p,
+      p,
+      p,
+      -p,
+      p,
+      p,
+      p,
+      p,
+      -p,
+      p,
+      p,
+      // Front
+      -p,
+      -p,
+      -p,
+      -p,
+      p,
+      -p,
+      p,
+      p,
+      -p,
+      p,
+      -p,
+      -p,
+      // Back
+      -p,
+      p,
+      -p,
+      -p,
+      p,
+      p,
+      p,
+      p,
+      p,
+      p,
+      p,
+      -p,
+      // Top
+      -p,
+      -p,
+      -p,
+      p,
+      -p,
+      -p,
+      p,
+      -p,
+      p,
+      -p,
+      -p,
+      p,
+      // Bottom
+      p,
+      -p,
+      -p,
+      p,
+      p,
+      -p,
+      p,
+      p,
+      p,
+      p,
+      -p,
+      p,
+      // Right
+      -p,
+      -p,
+      -p,
+      -p,
+      -p,
+      p,
+      -p,
+      p,
+      p,
+      -p,
+      p,
+      -p
+      // Left
+    ]);
+    const uvs = new Float32Array(6 * 8).fill(0);
+    const indices = new Uint16Array([
+      0,
+      1,
+      2,
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      4,
+      6,
+      7,
+      8,
+      9,
+      10,
+      8,
+      10,
+      11,
+      12,
+      13,
+      14,
+      12,
+      14,
+      15,
+      16,
+      17,
+      18,
+      16,
+      18,
+      19,
+      20,
+      21,
+      22,
+      20,
+      22,
+      23
+    ]);
+    return { positions, uvs, indices };
+  }
+  static sphere(R = 0.1, seg = 16) {
+    const p = [], uv = [], ind = [];
+    for (let y2 = 0; y2 <= seg; y2++) {
+      const v = y2 / seg, \u03B8 = v * Math.PI;
+      for (let x2 = 0; x2 <= seg; x2++) {
+        const u = x2 / seg, \u03C6 = u * Math.PI * 2;
+        p.push(R * Math.sin(\u03B8) * Math.cos(\u03C6), R * Math.cos(\u03B8), R * Math.sin(\u03B8) * Math.sin(\u03C6));
+        uv.push(u, v);
+      }
+    }
+    for (let y2 = 0; y2 < seg; y2++) {
+      for (let x2 = 0; x2 < seg; x2++) {
+        const i = y2 * (seg + 1) + x2;
+        ind.push(i, i + seg + 1, i + 1, i + 1, i + seg + 1, i + seg + 2);
+      }
+    }
+    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+  }
+  static pyramid(S = 1) {
+    const h = S, p = S / 2;
+    const pos2 = new Float32Array([
+      -p,
+      0,
+      -p,
+      p,
+      0,
+      -p,
+      p,
+      0,
+      p,
+      -p,
+      0,
+      p,
+      0,
+      h,
+      0
+    ]);
+    const uv = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0]);
+    const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]);
+    return { positions: pos2, uvs: uv, indices: idx };
+  }
+  static star(S = 1) {
+    const R = S, r2 = S * 0.4, v = [], uv = [], ind = [];
+    for (let i = 0; i < 10; i++) {
+      const a = i / 10 * Math.PI * 2;
+      const rr = i % 2 ? r2 : R;
+      v.push(Math.cos(a) * rr, Math.sin(a) * rr, 0);
+      uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
+    }
+    for (let i = 1; i < 9; i++) ind.push(0, i, i + 1);
+    ind.push(0, 9, 1);
+    return { positions: new Float32Array(v), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+  }
+  static circle(R = 1, seg = 32) {
+    const p = [0, 0, 0], uv = [0.5, 0.5], ind = [];
+    for (let i = 0; i <= seg; i++) {
+      const a = i / seg * Math.PI * 2;
+      p.push(Math.cos(a) * R, Math.sin(a) * R, 0);
+      uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
+      if (i > 1) ind.push(0, i - 1, i);
+    }
+    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+  }
+  static circle2(radius = 1, segments = 64) {
+    const positions = [0, 0, 0];
+    const uvs = [0.5, 0.5];
+    const indices = [];
+    for (let i = 0; i <= segments; i++) {
+      const angle2 = i / segments * Math.PI * 2;
+      const x2 = Math.cos(angle2) * radius;
+      const y2 = Math.sin(angle2) * radius;
+      positions.push(x2, y2, 0);
+      uvs.push((x2 / radius + 1) / 2, (y2 / radius + 1) / 2);
+      if (i > 0) {
+        indices.push(0, i, i + 1);
+      }
+    }
+    indices.push(0, segments + 1, 1);
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
+    };
+  }
+  static diamond(S = 1) {
+    const h = S, p = S / 2;
+    const pos2 = new Float32Array([
+      0,
+      h,
+      0,
+      // 0: Top
+      -p,
+      0,
+      -p,
+      // 1: Mid Left-Back
+      p,
+      0,
+      -p,
+      // 2: Mid Right-Back
+      p,
+      0,
+      p,
+      // 3: Mid Right-Front
+      -p,
+      0,
+      p,
+      // 4: Mid Left-Front
+      0,
+      -h,
+      0
+      // 5: Bottom
+    ]);
+    const uv = new Float32Array([
+      0.5,
+      1,
+      // Top
+      0,
+      0.5,
+      // Sides...
+      1,
+      0.5,
+      0,
+      0.5,
+      1,
+      0.5,
+      0.5,
+      0
+      // Bottom
+    ]);
+    const idx = new Uint16Array([
+      0,
+      1,
+      2,
+      0,
+      2,
+      3,
+      0,
+      3,
+      4,
+      0,
+      4,
+      1,
+      // Top pyramid
+      5,
+      2,
+      1,
+      5,
+      3,
+      2,
+      5,
+      4,
+      3,
+      5,
+      1,
+      4
+      // Bottom pyramid
+    ]);
+    return { positions: pos2, uvs: uv, indices: idx };
+  }
+  // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
+  static thunder(S = 1) {
+    const pts = [0, 0, 0];
+    for (let i = 1; i < 8; i++) {
+      const x2 = (Math.random() - 0.5) * 0.2 * S;
+      const y2 = i * (S / 7);
+      const z = (Math.random() - 0.5) * 0.1 * S;
+      pts.push(x2, y2, z);
+    }
+    const p = [], uv = [], ind = [];
+    for (let i = 0; i < pts.length / 3 - 1; i++) {
+      const x1 = pts[i * 3], y1 = pts[i * 3 + 1], z1 = pts[i * 3 + 2];
+      const x2 = pts[(i + 1) * 3], y2 = pts[(i + 1) * 3 + 1], z2 = pts[(i + 1) * 3 + 2];
+      const w = 0.03 * S;
+      p.push(x1 - w, y1, z1, x1 + w, y1, z1, x2 - w, y2, z2, x2 + w, y2, z2);
+      uv.push(0, 0, 1, 0, 0, 1, 1, 1);
+      const o2 = i * 4;
+      ind.push(o2, o2 + 1, o2 + 2, o2 + 1, o2 + 3, o2 + 2);
+    }
+    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+  }
+  static rock(S = 1, detail = 4) {
+    const base = _GeometryFactory.sphere(S, detail);
+    const p = base.positions;
+    for (let i = 0; i < p.length; i += 3) {
+      const n2 = Math.random() * 0.3 + 0.85;
+      p[i] *= n2;
+      p[i + 1] *= n2;
+      p[i + 2] *= n2;
+    }
+    return base;
+  }
+  static meteor(S = 1, detail = 6) {
+    const base = _GeometryFactory.rock(S, detail);
+    const p = base.positions;
+    for (let i = 0; i < p.length; i += 3) {
+      p[i + 1] *= 1.4 + Math.random() * 0.5;
+      p[i] *= 0.8 + Math.random() * 0.3;
+    }
+    return base;
+  }
+  static shard(S = 1) {
+    const positions = new Float32Array([
+      0,
+      0,
+      0,
+      S * 0.3,
+      0,
+      S * 0.2,
+      -S * 0.2,
+      0,
+      S * 0.3,
+      0,
+      S * 1.2,
+      0
+    ]);
+    const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+    const indices = new Uint16Array([0, 1, 2, 1, 2, 3, 0, 2, 3, 0, 1, 3]);
+    return { positions, uvs, indices };
+  }
+  static circlePlane(radius = 1, segments = 32) {
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    positions.push(0, 0, 0);
+    uvs.push(0.5, 0.5);
+    for (let i = 0; i <= segments; i++) {
+      const angle2 = i / segments * Math.PI * 2;
+      const x2 = Math.cos(angle2) * radius;
+      const y2 = 0;
+      const z = Math.sin(angle2) * radius;
+      positions.push(x2, y2, z);
+      uvs.push((x2 / radius + 1) / 2, (z / radius + 1) / 2);
+    }
+    for (let i = 1; i <= segments; i++) {
+      indices.push(0, i, i + 1);
+    }
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
+    };
+  }
+  static ring(outerRadius = 4, innerRadiusRatio = 0.7, segments = 48, height = 0.05) {
+    const innerRadius = outerRadius * innerRadiusRatio;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let i = 0; i <= segments; i++) {
+      const angle2 = i / segments * Math.PI * 2;
+      const cos = Math.cos(angle2);
+      const sin = Math.sin(angle2);
+      positions.push(cos * outerRadius, 0, sin * outerRadius);
+      uvs.push((cos + 1) / 2, (sin + 1) / 2);
+      positions.push(cos * innerRadius, height, sin * innerRadius);
+      uvs.push((cos * innerRadius / outerRadius + 1) / 2, (sin * innerRadius / outerRadius + 1) / 2);
+    }
+    for (let i = 0; i < segments * 2; i += 2) {
+      indices.push(i, i + 1, i + 2);
+      indices.push(i + 1, i + 3, i + 2);
+    }
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
+    };
+  }
+};
+
 // ../../../engine/effects/flame.js
 var FlamePresets = {
   // Natural campfire / torch
@@ -7375,8 +8218,11 @@ var FlamePresets = {
     turbulence: 0.5,
     stretch: 1,
     tint: [1, 1, 1],
-    // neutral → pure fire palette
-    tintStrength: 0
+    tintStrength: 0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Tall torch / pillar of fire
   torch: {
@@ -7384,9 +8230,12 @@ var FlamePresets = {
     speed: 1.2,
     turbulence: 0.35,
     stretch: 2,
-    // double height
     tint: [1, 1, 1],
-    tintStrength: 0
+    tintStrength: 0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Wide, low bonfire
   bonfire: {
@@ -7394,9 +8243,12 @@ var FlamePresets = {
     speed: 0.8,
     turbulence: 0.9,
     stretch: 0.5,
-    // short & wide
     tint: [1, 1, 1],
-    tintStrength: 0
+    tintStrength: 0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Magical blue flame
   magic: {
@@ -7405,8 +8257,11 @@ var FlamePresets = {
     turbulence: 0.6,
     stretch: 1.3,
     tint: [0.1, 0.4, 1],
-    // blue
-    tintStrength: 0.85
+    tintStrength: 0.85,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Hellfire — dark purple/red
   hell: {
@@ -7415,8 +8270,11 @@ var FlamePresets = {
     turbulence: 0.8,
     stretch: 1.6,
     tint: [0.6, 0, 0.8],
-    // purple
-    tintStrength: 0.7
+    tintStrength: 0.7,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Poison green
   poison: {
@@ -7425,109 +8283,55 @@ var FlamePresets = {
     turbulence: 0.7,
     stretch: 1.1,
     tint: [0.1, 1, 0.15],
-    // green
-    tintStrength: 0.9
+    tintStrength: 0.9,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   }
 };
-var FlameEffect = class _FlameEffect {
-  /**
-   * @param {GPUDevice}  device
-   * @param {string}     format       - swap-chain / canvas format (e.g. "bgra8unorm")
-   * @param {string}     colorFormat  - render-pass color attachment format (e.g. "rgba16float")
-   * @param {object}     params       - initial flame parameters (see defaults below)
-   */
+var FlameEffect = class {
   constructor(device2, format, colorFormat, params = {}) {
     this.device = device2;
     this.format = format;
     this.colorFormat = colorFormat ?? format;
+    const config = typeof params === "string" ? FlamePresets[params] : params;
     const defaults = FlamePresets.natural;
-    this.intensity = params.intensity ?? defaults.intensity;
-    this.speed = params.speed ?? defaults.speed;
-    this.turbulence = params.turbulence ?? defaults.turbulence;
-    this.stretch = params.stretch ?? defaults.stretch;
-    this.tint = params.tint ?? defaults.tint;
-    this.tintStrength = params.tintStrength ?? defaults.tintStrength;
+    this.intensity = config.intensity ?? defaults.intensity;
+    this.speed = config.speed ?? defaults.speed;
+    this.turbulence = config.turbulence ?? defaults.turbulence;
+    this.stretch = config.stretch ?? defaults.stretch;
+    this.tint = config.tint ?? defaults.tint;
+    this.tintStrength = config.tintStrength ?? defaults.tintStrength;
+    this.scale = config.scale ?? defaults.scale;
     this.time = 0;
     this.enabled = true;
+    this.localOffset = config.localOffset ?? defaults.localOffset;
+    this.localRotation = config.localRotation ?? defaults.localRotation;
+    this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
+    this.setGeometry("quad", this.scale);
   }
-  /** Convenience factory: new FlameEffect.fromPreset(device, fmt, hdrFmt, 'magic') */
-  static fromPreset(device2, format, colorFormat, presetName) {
-    const preset = FlamePresets[presetName];
-    if (!preset) throw new Error(`Unknown FlamePreset: "${presetName}". Available: ${Object.keys(FlamePresets).join(", ")}`);
-    return new _FlameEffect(device2, format, colorFormat, preset);
+  setGeometry(type2, size2 = 1, segments = 32) {
+    const geo2 = GeometryFactory.create(type2, size2, segments);
+    this.vertexBuffer = this._uploadVertex(geo2.positions);
+    this.uvBuffer = this._uploadVertex(geo2.uvs);
+    const byteLen = geo2.indices.byteLength;
+    const paddedByteLen = Math.ceil(byteLen / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({ size: paddedByteLen, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
+    if (byteLen % 4 !== 0) {
+      const paddedData = new Uint8Array(paddedByteLen);
+      paddedData.set(new Uint8Array(geo2.indices.buffer, geo2.indices.byteOffset, byteLen));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedData);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, geo2.indices);
+    }
+    this.indexCount = geo2.indices.length;
+    this.indexFormat = geo2.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
-  // -------------------------------------------------------------------------
-  // Public setters  (call any time — written to GPU on next updateInstanceData)
-  // -------------------------------------------------------------------------
-  setIntensity(v) {
-    this.intensity = v;
-  }
-  setSpeed(v) {
-    this.speed = v;
-  }
-  setTurbulence(v) {
-    this.turbulence = Math.max(0, Math.min(1, v));
-  }
-  setStretch(v) {
-    this.stretch = Math.max(0.05, v);
-  }
-  /** @param {[number,number,number]} rgb  e.g. [0.1, 0.4, 1.0] for blue */
-  setTint(rgb) {
-    this.tint = rgb;
-  }
-  /** @param {number} v  0 = natural fire colours, 1 = fully tinted */
-  setTintStrength(v) {
-    this.tintStrength = Math.max(0, Math.min(1, v));
-  }
-  /** Apply a named preset instantly */
-  applyPreset(name2) {
-    const p = FlamePresets[name2];
-    if (!p) throw new Error(`Unknown FlamePreset: "${name2}"`);
-    Object.assign(this, {
-      intensity: p.intensity,
-      speed: p.speed,
-      turbulence: p.turbulence,
-      stretch: p.stretch,
-      tint: p.tint,
-      tintStrength: p.tintStrength
-    });
-  }
-  // -------------------------------------------------------------------------
   _initPipeline() {
-    const S = 40;
-    const vertexData = new Float32Array([
-      -0.5 * S,
-      0.5 * S,
-      0,
-      0.5 * S,
-      0.5 * S,
-      0,
-      -0.5 * S,
-      -0.5 * S,
-      0,
-      0.5 * S,
-      -0.5 * S,
-      0
-    ]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this._uploadVertex(vertexData);
-    this.uvBuffer = this._uploadVertex(uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 112,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.modelBuffer = this.device.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
@@ -7542,15 +8346,14 @@ var FlameEffect = class _FlameEffect {
       ]
     });
     const shaderModule = this.device.createShaderModule({ code: flameEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
       vertex: {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
@@ -7565,8 +8368,23 @@ var FlameEffect = class _FlameEffect {
         }]
       },
       primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
+      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
     });
+  }
+  async morphTo(type2, size2 = 40, duration = 200) {
+    const originalIntensity = this.intensity;
+    const steps = 10;
+    const stepTime = duration / (steps * 2);
+    for (let i = 0; i < steps; i++) {
+      this.intensity *= 0.5;
+      await new Promise((r2) => setTimeout(r2, stepTime));
+    }
+    this.setGeometry(type2, size2);
+    for (let i = 0; i < steps; i++) {
+      this.intensity = originalIntensity * (i / steps);
+      await new Promise((r2) => setTimeout(r2, stepTime));
+    }
+    this.intensity = originalIntensity;
   }
   _uploadVertex(data) {
     const buf = this.device.createBuffer({
@@ -7576,10 +8394,21 @@ var FlameEffect = class _FlameEffect {
     this.device.queue.writeBuffer(buf, 0, data);
     return buf;
   }
-  // -------------------------------------------------------------------------
   updateInstanceData(baseModelMatrix) {
     const local = mat4Impl.identity();
-    mat4Impl.translate(local, [0, 20, 0], local);
+    mat4Impl.translate(local, this.localOffset, local);
+    mat4Impl.rotateX(local, this.localRotation[0], local);
+    mat4Impl.rotateY(local, this.localRotation[1], local);
+    mat4Impl.rotateZ(local, this.localRotation[2], local);
+    if (this.activeRotate[0] !== 0) {
+      mat4Impl.rotateX(local, this.activeRotate[0] * this.time, local);
+    }
+    if (this.activeRotate[1] !== 0) {
+      mat4Impl.rotateY(local, this.activeRotate[1] * this.time, local);
+    }
+    if (this.activeRotate[2] !== 0) {
+      mat4Impl.rotateZ(local, this.activeRotate[2] * this.time, local);
+    }
     const finalMat = mat4Impl.identity();
     mat4Impl.multiply(baseModelMatrix, local, finalMat);
     const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
@@ -7596,133 +8425,141 @@ var FlameEffect = class _FlameEffect {
     pass2.setBindGroup(0, this.bindGroup);
     pass2.setVertexBuffer(0, this.vertexBuffer);
     pass2.setVertexBuffer(1, this.uvBuffer);
-    pass2.setIndexBuffer(this.indexBuffer, "uint16");
+    pass2.setIndexBuffer(this.indexBuffer, this.indexFormat);
     pass2.drawIndexed(this.indexCount);
   }
-  render(pass2, mesh, viewProjMatrix, dt = 0.01) {
-    if (!this.enabled) return;
-    this.time += dt;
+  // Interface for effect -> (pass, mesh, viewProj)
+  render(pass2, mesh, viewProjMatrix) {
+    this.time += 0.016;
     this.draw(pass2, viewProjMatrix);
   }
 };
 
 // ../../../shaders/flame-effect/flame-instanced.js
-var flameEffectInstance = `struct Camera {
-  viewProj : mat4x4<f32>
+var flameEffectInstance = `
+struct Camera {
+    viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// Array of particle instances
+// Exact same layout as the working shader, but in a storage array
 struct ModelData {
-  model : mat4x4<f32>,
-  time : vec4<f32>,       // x = time
-  intensity : vec4<f32>,  // x = intensity
-  color : vec4<f32>,      // rgba color
+    model     : mat4x4<f32>,
+    timeSpeed : vec4<f32>,
+    params    : vec4<f32>,
+    tint      : vec4<f32>,
 };
 @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
 
 struct VSIn {
-  @location(0) position : vec3<f32>,
-  @location(1) uv : vec2<f32>,
-  @builtin(instance_index) instanceIdx : u32,
+    @location(0) position : vec3<f32>,
+    @location(1) uv : vec2<f32>,
+    @builtin(instance_index) instanceIdx : u32,
 };
 
 struct VSOut {
-  @builtin(position) position : vec4<f32>,
-  @location(0) uv : vec2<f32>,
-  @location(1) time : f32,
-  @location(2) intensity : f32,
-  @location(3) @interpolate(flat) instanceIdx : u32,
+    @builtin(position) position : vec4<f32>,
+    @location(0) uv : vec2<f32>,
+    @location(1) p0 : vec4<f32>,
+    @location(2) p1 : vec4<f32>,
+    @location(3) tintColor : vec3<f32>,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
-  var output : VSOut;
-  let modelData = modelDataArray[input.instanceIdx];
-  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
-  output.position = camera.viewProj * worldPos;
-  output.uv = input.uv;
-  output.time = modelData.time.x;
-  output.intensity = modelData.intensity.x;
-  output.instanceIdx = input.instanceIdx;
-  return output;
+    var output : VSOut;
+    let modelData = modelDataArray[input.instanceIdx];
+
+    let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+    output.position = camera.viewProj * worldPos;
+    output.uv = input.uv;
+
+    // Pass data to fragment exactly like the working shader
+    output.p0 = vec4<f32>(
+        modelData.timeSpeed.x, // time
+        modelData.timeSpeed.y, // speed
+        modelData.params.x,    // intensity
+        modelData.params.y     // turbulence
+    );
+    output.p1 = vec4<f32>(
+        modelData.params.z,    // stretch
+        modelData.tint.w,      // tintStrength
+        0.0, 0.0
+    );
+    output.tintColor = modelData.tint.xyz;
+
+    return output;
 }
 
-// Simple procedural flame noise (value in 0..1)
-fn hash(n : vec2<f32>) -> f32 {
-  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn hash2(n : vec2<f32>) -> f32 {
+    return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
 fn noise(p : vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
-    mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), u.x),
-    u.y
-  );
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+    );
 }
 
-// Flame color gradient: black -> red -> orange -> yellow -> white
-fn flameColor(n: f32) -> vec3<f32> {
-  if (n < 0.3) {
-    return vec3<f32>(n * 3.0, 0.0, 0.0);               // dark red
-  } else if (n < 0.6) {
-    return vec3<f32>(1.0, (n - 0.3) * 3.33, 0.0);      // red -> orange
-  } else {
-    return vec3<f32>(1.0, 1.0, (n - 0.6) * 2.5);       // orange -> yellow -> white
-  }
+fn fbm(p : vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pos = p;
+    for (var i = 0; i < 2; i = i + 1) {
+        v += a * noise(pos);
+        pos = pos * 2.1 + vec2<f32>(1.7, 9.2);
+        a *= 0.5;
+    }
+    return v;
 }
 
 @fragment
-fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
-  // Read per-instance data
-  let modelData = modelDataArray[in.instanceIdx];
-  let baseColor = modelData.color.xyz;
-  let instanceAlpha = modelData.color.w;
-  let instIntensity = max(0.0, modelData.intensity.x);
+fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+    let time       = input.p0.x;
+    let speed      = input.p0.y;
+    let intensity  = input.p0.z;
+    let turbulence = input.p0.w;
+    let stretch    = input.p1.x;
+    let tintStr    = input.p1.y;
+    let tintColor  = input.tintColor;
 
-  // time with small instance offset
-  let t = in.time * 2.0 + f32(in.instanceIdx) * 0.13;
+    let t = time * speed * 2.0;
+    var uv = input.uv;
+    uv.y = uv.y / max(stretch, 0.01);
 
-  var uv = in.uv;
-  uv.y += t * 0.2;
+    let warpAmt = turbulence * 0.18;
+    let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
+    let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
+    var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
 
-  // procedural noise
-  var n = noise(uv * 5.0 + vec2<f32>(0.0, t * 0.5));
-  // keep some brightness: milder sharpening than pow(n,3)
-  n = pow(n, 1.5);
+    warpedUV.y += t * 0.4;
+    warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
 
-  // base flame color from gradient
-  let grad = flameColor(n);
+    var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
+    n = pow(n, 3.0 - turbulence * 1.2);
 
-  let userColor = modelData.color.xyz;
+    let hotColor  = vec3<f32>(1.0, 0.92, 0.35);
+    let midColor  = vec3<f32>(1.0, 0.38, 0.04);
+    let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
 
-  // mix ratio (0.0 = pure red, 1.0 = user color)
-  let mixFactor = 0.5;
-  let mixedColor = mix(grad, userColor, mixFactor);
+    let g1 = smoothstep(0.0, 0.5, n);
+    let g2 = smoothstep(0.5, 1.0, n);
+    var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
 
-  // flicker multipliers (shifted into positive range)
-  let flickR = 0.7 + 0.3 * sin(t * 3.0); // 0.4 .. 1.0
-  let flickG = 0.6 + 0.4 * cos(t * 2.0); // 0.2 .. 1.0
-  let flickB = 0.8 + 0.2 * sin(t * 1.5); // 0.6 .. 1.0
+    let tintMask = smoothstep(0.0, 0.5, n);
+    baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
 
-  // combine gradient with per-instance baseColor and flicker
-  // var color = grad * baseColor * vec3<f32>(flickR, flickG, flickB);
-  var color = mixedColor * vec3<f32>(flickR, flickG, flickB);
+    let finalColor = baseColor * n * intensity;
+    let edgeMask = smoothstep(0.0, 0.15, input.uv.x) * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
+    let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
+    let topFade = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
 
-  // apply instance/global intensity
-  color = color * instIntensity;
+    // let alpha = smoothstep(0.25, 0.9, n) * edgeMask * topFade;
+    let alpha = smoothstep(0.01, 0.4, n) * edgeMask * topFade;
 
-  // soft alpha based on noise and instance alpha
-  var alpha = smoothstep(0.0, 0.6, n) * instanceAlpha * instIntensity;
-
-  // final clamp to avoid negative or NaN values
-  color = clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)); // allow HDR-like values for additive blending
-  alpha = clamp(alpha, 0.0, 1.0);
-
-  return vec4<f32>(color, alpha);
+    return vec4<f32>(finalColor * alpha, alpha);
 }
 `;
 
@@ -7732,18 +8569,21 @@ var FlameEmitter = class {
     this.device = device2;
     this.format = format;
     this.time = 0;
-    this.intensity = 3;
+    this.intensity = 1;
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
     this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.smoothFlickeringScale = 0.1;
-    this.maxY = 1.9;
-    this.minY = 0;
+    this.minBound = 0;
+    this.maxBound = 1.9;
     this.swap0 = 0;
     this.swap1 = 1;
     this.swap2 = 2;
+    this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0];
+    this.scaleCoeficient = 0.12;
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -7791,54 +8631,51 @@ var FlameEmitter = class {
       -randomFloatFromTo(0.4, 0.6) * S,
       0 * S
     ]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+  // not tested
+  recreateVertexDataCrazzy(S) {
+    const vertexData = new Float32Array([
+      -randomFloatFromTo(0.1, 0.1 + S),
+      randomFloatFromTo(0.4, 0.4 + S),
+      0,
+      randomFloatFromTo(0.1, 0.1 + S),
+      randomFloatFromTo(0.4, 0.4 + S),
+      0,
+      -randomFloatFromTo(0.1, 0.1 + S),
+      -randomFloatFromTo(0.4, 0.4 + S),
+      0,
+      randomFloatFromTo(0.1, 0.1 + S),
+      -randomFloatFromTo(0.4, 0.4 + S),
+      0
+    ]);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
   }
   _initPipeline() {
-    const S = 5;
-    const vertexData = new Float32Array([
-      -0.2 * S,
-      -0.5 * S,
-      0 * S,
-      0.2 * S,
-      -0.5 * S,
-      0 * S,
-      -0.4 * S,
-      0.5 * S,
-      0 * S,
-      0.4 * S,
-      0.5 * S,
-      0 * S
-    ]);
+    const S = 2;
+    const vertexData = this.recreateVertexDataRND(1);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
+    this.vertexBuffer = this.device.createBuffer({ size: vertexData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
+    this.uvBuffer = this.device.createBuffer({ size: uvData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
+    this.indexBuffer = this.device.createBuffer({ size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
     this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.modelBuffer = this.device.createBuffer({
-      size: this.maxParticles * this.floatsPerInstance * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
+    this.modelBuffer = this.device.createBuffer({ label: "flame-emmiter modeBuffer", size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
     const bindGroupLayout = this.device.createBindGroupLayout({
+      label: "flame-emmiter bindGroupLayout",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
         { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
       ]
     });
     this.bindGroup = this.device.createBindGroup({
+      label: "flame-emmiter bindGroup",
       layout: bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
@@ -7848,6 +8685,7 @@ var FlameEmitter = class {
     const shaderModule = this.device.createShaderModule({ code: flameEffectInstance });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "flame-emmiter pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -7860,33 +8698,33 @@ var FlameEmitter = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }]
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        }]
       },
       primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" },
-      blend: {
-        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-        color: {
-          srcFactor: "src-alpha",
-          dstFactor: "one-minus-src-alpha",
-          operation: "add"
-        },
-        alpha: {
-          srcFactor: "one",
-          dstFactor: "one-minus-src-alpha",
-          operation: "add"
-        }
-      }
+      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
     });
   }
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
+    const floatsPerInstance = 28;
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
       const local = mat4Impl.identity();
       mat4Impl.translate(local, t.currentPosition, local);
@@ -7894,30 +8732,27 @@ var FlameEmitter = class {
       mat4Impl.scale(local, t.currentScale, local);
       const finalMat = mat4Impl.identity();
       mat4Impl.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
+      const offset = i * floatsPerInstance;
       this.instanceData.set(finalMat, offset);
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1], offset + 24);
+      this.instanceData.set([t.time, t.speed ?? 1, 0, 0], offset + 16);
+      this.instanceData.set([(t.intensity ?? 1) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1, 0], offset + 20);
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0], offset + 24);
     }
-    this.device.queue.writeBuffer(
-      this.modelBuffer,
-      0,
-      this.instanceData.subarray(0, count * this.floatsPerInstance)
-    );
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
   };
   render(pass2, mesh, viewProjMatrix, dt = 0.1) {
     this.time += dt;
     for (const p of this.instanceTargets) {
-      p.position[this.swap1] += dt * p.riseSpeed;
-      if (p.position[this.swap1] > this.maxY) {
-        p.position[this.swap1] = this.minY + Math.random() * 0.5;
+      p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
+      const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxBound : p.position[this.swap1] < this.minBound;
+      if (resetCondition) {
+        p.position[this.swap1] = this.riseDirection > 0 ? this.minBound + Math.random() * 0.5 : this.maxBound - Math.random() * 0.5;
         p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2;
         p.riseSpeed = 0.2 + Math.random() * 1;
       }
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * randomIntFromTo(3, 15);
+      p.rotation += dt * randomIntFromTo(1, 4);
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass2.setPipeline(this.pipeline);
@@ -7929,6 +8764,49 @@ var FlameEmitter = class {
   }
   setIntensity(v) {
     this.intensity = v;
+  }
+  setDirection(direction) {
+    this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0];
+    switch (direction) {
+      case "up":
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        break;
+      case "down":
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        break;
+      case "forward":
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.baseRotation = [Math.PI / 2, 0, 0];
+        break;
+      case "back":
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.riseDirection = -1;
+        this.baseRotation = [-Math.PI / 2, 0, 0];
+        break;
+      case "right":
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.baseRotation = [0, 0, -Math.PI / 2];
+        break;
+      case "left":
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        this.baseRotation = [0, 0, Math.PI / 2];
+        break;
+    }
   }
 };
 
@@ -7987,6 +8865,7 @@ var MEMeshObj = class extends Materials {
     this.deltaTimeAdapter = 10;
     addEventListener("update-pipeine", () => {
       this.setupPipeline();
+      console.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P");
     });
     this.mesh = o2.mesh;
     if (_glbFile != null) {
@@ -8311,22 +9190,14 @@ var MEMeshObj = class extends Materials {
         cullMode: "none",
         frontFace: "ccw"
       };
-      this.selectedBuffer = device2.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-      this.selectedBindGroupLayout = device2.createBindGroupLayout({
-        label: "selectedBindGroupLayout mesh",
+      this.mirrorBindGroupLayout = device2.createBindGroupLayout({
+        label: "mirrorBindGroupLayout",
         entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
+          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: 48 } },
+          { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float", viewDimension: "2d", multisampled: false } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
       });
-      this.selectedBindGroup = device2.createBindGroup({
-        label: "selectedBindGroup mesh",
-        layout: this.selectedBindGroupLayout,
-        entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
-      });
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1 : 0]));
-      };
-      this.setSelectedEffect();
       this.createLayoutForRender();
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
@@ -8551,7 +9422,7 @@ var MEMeshObj = class extends Materials {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float");
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = FlameEffect.fromPreset(device2, pf, "rgba16float", "torch");
+          this.effects.flameEffect = new FlameEffect(device2, pf, "rgba16float", "torch");
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float");
@@ -8629,7 +9500,7 @@ var MEMeshObj = class extends Materials {
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.selectedBindGroupLayout,
+          this.mirrorBindGroupLayout,
           this.waterBindGroupLayout
         ]
       }),
@@ -8669,7 +9540,7 @@ var MEMeshObj = class extends Materials {
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.selectedBindGroupLayout,
+          this.mirrorBindGroupLayout,
           this.waterBindGroupLayout
         ]
       }),
@@ -8713,6 +9584,49 @@ var MEMeshObj = class extends Materials {
       },
       primitive: this.primitive
     });
+    this.createSkyGradient = () => {
+      const size2 = [256, 128];
+      const data = new Uint8Array(size2[0] * size2[1] * 4);
+      for (let y2 = 0; y2 < size2[1]; y2++) {
+        for (let x2 = 0; x2 < size2[0]; x2++) {
+          const i = (y2 * size2[0] + x2) * 4;
+          const t = y2 / size2[1];
+          data[i + 0] = Math.floor(135 + 50 * t);
+          data[i + 1] = Math.floor(206 - 100 * t);
+          data[i + 2] = Math.floor(250 - 150 * t);
+          data[i + 3] = 255;
+        }
+      }
+      const tex = this.device.createTexture({
+        size: size2,
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      this.device.queue.writeTexture(
+        { texture: tex },
+        data,
+        { bytesPerRow: size2[0] * 4 },
+        size2
+      );
+      return tex;
+    };
+    const envTexture = this.createSkyGradient();
+    this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.pipeline, this.mirrorBindGroupLayout, {
+      mirrorTint: [0.9, 0.95, 1],
+      // Slight cool tint
+      reflectivity: 0.25,
+      // 25% reflection blend
+      illuminateColor: [0.3, 0.7, 1],
+      // Soft cyan
+      illuminateStrength: 0.4,
+      // Gentle rim
+      illuminatePulse: 0,
+      // No pulse (static)
+      fresnelPower: 4,
+      // Medium-sharp edge
+      envLodBias: 1.5,
+      envTexture
+    }).bindGroup;
   };
   getMainPipeline = () => {
     return this.pipeline;
@@ -8794,9 +9708,7 @@ var MEMeshObj = class extends Materials {
         pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-    if (this.selectedBindGroup) {
-      pass2.setBindGroup(2, this.selectedBindGroup);
-    }
+    if (this.mirrorBindGroup) pass2.setBindGroup(2, this.mirrorBindGroup);
     pass2.setBindGroup(3, this.waterBindGroup);
     pass2.setVertexBuffer(0, this.vertexBuffer);
     pass2.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -8834,9 +9746,7 @@ var MEMeshObj = class extends Materials {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-    if (this.selectedBindGroup) {
-      renderPass.setBindGroup(2, this.selectedBindGroup);
-    }
+    if (this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
@@ -14276,6 +15186,7 @@ var PointerEffect = class {
     const shaderModule = this.device.createShaderModule({ code: pointerEffect });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "pointEffect Pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -14723,6 +15634,82 @@ var MaterialsInstanced = class {
       device.queue.writeBuffer(waterParamsBuffer, 0, data);
     };
   };
+  createMirrorIlluminateBindGroup(pipeline, mirrorBindGroupLayout, opts) {
+    const defaults = {
+      mirrorTint: [1, 1, 1],
+      reflectivity: 0.9,
+      illuminateColor: [0.4, 0.8, 1],
+      illuminateStrength: 1,
+      illuminatePulse: 1.2,
+      fresnelPower: 4,
+      envLodBias: 0
+      // envTexture omitted → 1×1 white dummy created below
+    };
+    const cfg = { ...defaults, ...opts };
+    const PARAMS_SIZE = 48;
+    const paramsBuffer = this.device.createBuffer({
+      label: "MirrorIlluminateParams",
+      size: PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.writeParamsMirror = (o2) => {
+      const data = new Float32Array(12);
+      const t = o2.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t[0];
+      data[1] = t[1];
+      data[2] = t[2];
+      data[3] = o2.reflectivity ?? cfg.reflectivity;
+      const ic = o2.illuminateColor ?? cfg.illuminateColor;
+      data[4] = ic[0];
+      data[5] = ic[1];
+      data[6] = ic[2];
+      data[7] = o2.illuminateStrength ?? cfg.illuminateStrength;
+      data[8] = o2.illuminatePulse ?? cfg.illuminatePulse;
+      data[9] = o2.fresnelPower ?? cfg.fresnelPower;
+      data[10] = o2.envLodBias ?? cfg.envLodBias;
+      data[11] = 0;
+      this.device.queue.writeBuffer(paramsBuffer, 0, data);
+    };
+    this.writeParamsMirror(cfg);
+    const envTexture = cfg.envTexture ?? (() => {
+      const tex = this.device.createTexture({
+        label: "MirrorEnvDummy",
+        size: [1, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      this.device.queue.writeTexture(
+        { texture: tex },
+        new Uint8Array([255, 255, 255, 255]),
+        { bytesPerRow: 4 },
+        [1, 1]
+      );
+      return tex;
+    })();
+    const envSampler = this.device.createSampler({
+      label: "MirrorEnvSampler",
+      addressModeU: "repeat",
+      addressModeV: "clamp-to-edge",
+      magFilter: "linear",
+      minFilter: "linear",
+      mipmapFilter: "linear"
+    });
+    const bindGroup = this.device.createBindGroup({
+      label: "MirrorIlluminate BindGroup",
+      layout: mirrorBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: paramsBuffer } },
+        { binding: 1, resource: envTexture.createView() },
+        { binding: 2, resource: envSampler }
+      ]
+    });
+    return {
+      bindGroup,
+      paramsBuffer,
+      /** Call this at runtime to hot-update mirror params without rebuilding. */
+      updateParams: (o2) => this.writeParamsMirror(o2)
+    };
+  }
   changeTexture(newTexture) {
     if (newTexture instanceof GPUTexture) {
       this.texture0 = newTexture;
@@ -14938,7 +15925,6 @@ var MaterialsInstanced = class {
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       if (!textureResource) console.warn("\u2757Missing res texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("\u2757Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if (!this.shadowDepthTextureView) console.warn("\u2757Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
       if (typeof textureResource === "undefined") {
         this.updateVideoTexture();
       }
@@ -15336,391 +16322,6 @@ fn main(
   return output;
 }`;
 
-// ../../../engine/geometry-factory.js
-var GeometryFactory = class _GeometryFactory {
-  static create(type2, size2 = 1, segments = 16, options2 = {}) {
-    switch (type2) {
-      case "quad":
-        return _GeometryFactory.quad(size2);
-      case "cube":
-        return _GeometryFactory.cube(size2);
-      case "sphere":
-        return _GeometryFactory.sphere(size2, segments);
-      case "pyramid":
-        return _GeometryFactory.pyramid(size2);
-      case "star":
-        return _GeometryFactory.star(size2);
-      case "circle":
-        return _GeometryFactory.circle(size2, segments);
-      case "circle2":
-        return _GeometryFactory.circle2(size2, segments);
-      case "diamond":
-        return _GeometryFactory.diamond(size2);
-      case "rock":
-        return _GeometryFactory.rock(size2, options2.detail || 3);
-      case "meteor":
-        return _GeometryFactory.meteor(size2, options2.detail || 6);
-      case "thunder":
-        return _GeometryFactory.thunder(size2);
-      case "shard":
-        return _GeometryFactory.shard(size2);
-      case "circlePlane":
-        return _GeometryFactory.circlePlane(size2, segments);
-      case "ring":
-        return _GeometryFactory.ring(size2, options2.innerRatio || 0.7, segments, options2.height || 0.05);
-      default:
-        throw new Error(`Unknown geometry: ${type2}`);
-    }
-  }
-  // --- BASIC SHAPES ---------------------------------------------------------
-  static quad(S = 1) {
-    const positions = new Float32Array([
-      -S,
-      S,
-      0,
-      S,
-      S,
-      0,
-      -S,
-      -S,
-      0,
-      S,
-      -S,
-      0
-    ]);
-    const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
-    const indices = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    return { positions, uvs, indices };
-  }
-  static cube(S = 1) {
-    const p = S / 2;
-    const positions = new Float32Array([
-      -p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      p,
-      p,
-      p,
-      -p,
-      p,
-      p,
-      -p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      -p,
-      p,
-      p,
-      p,
-      p,
-      p,
-      p,
-      p,
-      -p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      -p,
-      p,
-      -p,
-      p,
-      -p,
-      -p,
-      p,
-      p,
-      -p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      p,
-      p,
-      p,
-      -p,
-      p,
-      -p,
-      -p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      -p
-    ]);
-    const uvs = new Float32Array(6 * 8).fill(0);
-    const indices = [];
-    for (let i2 = 0; i2 < 6; i2++) {
-      const o2 = i2 * 4;
-      indices.push(o2, o2 + 1, o2 + 2, o2, o2 + 2, o2 + 3);
-    }
-    let i = new Uint16Array(i);
-    return { positions, uvs, i };
-  }
-  static sphere(R = 0.1, seg = 16) {
-    const p = [], uv = [], ind = [];
-    for (let y2 = 0; y2 <= seg; y2++) {
-      const v = y2 / seg, \u03B8 = v * Math.PI;
-      for (let x2 = 0; x2 <= seg; x2++) {
-        const u = x2 / seg, \u03C6 = u * Math.PI * 2;
-        p.push(R * Math.sin(\u03B8) * Math.cos(\u03C6), R * Math.cos(\u03B8), R * Math.sin(\u03B8) * Math.sin(\u03C6));
-        uv.push(u, v);
-      }
-    }
-    for (let y2 = 0; y2 < seg; y2++) {
-      for (let x2 = 0; x2 < seg; x2++) {
-        const i = y2 * (seg + 1) + x2;
-        ind.push(i, i + seg + 1, i + 1, i + 1, i + seg + 1, i + seg + 2);
-      }
-    }
-    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static pyramid(S = 1) {
-    const h = S, p = S / 2;
-    const pos2 = new Float32Array([
-      -p,
-      0,
-      -p,
-      p,
-      0,
-      -p,
-      p,
-      0,
-      p,
-      -p,
-      0,
-      p,
-      0,
-      h,
-      0
-    ]);
-    const uv = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0]);
-    const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]);
-    return { positions: pos2, uvs: uv, indices: idx };
-  }
-  static star(S = 1) {
-    const R = S, r2 = S * 0.4, v = [], uv = [], ind = [];
-    for (let i = 0; i < 10; i++) {
-      const a = i / 10 * Math.PI * 2;
-      const rr = i % 2 ? r2 : R;
-      v.push(Math.cos(a) * rr, Math.sin(a) * rr, 0);
-      uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
-    }
-    for (let i = 1; i < 9; i++) ind.push(0, i, i + 1);
-    ind.push(0, 9, 1);
-    return { positions: new Float32Array(v), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static circle(R = 1, seg = 32) {
-    const p = [0, 0, 0], uv = [0.5, 0.5], ind = [];
-    for (let i = 0; i <= seg; i++) {
-      const a = i / seg * Math.PI * 2;
-      p.push(Math.cos(a) * R, Math.sin(a) * R, 0);
-      uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
-      if (i > 1) ind.push(0, i - 1, i);
-    }
-    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static circle2(radius = 1, segments = 64) {
-    const positions = [0, 0, 0];
-    const uvs = [0.5, 0.5];
-    const indices = [];
-    for (let i = 0; i <= segments; i++) {
-      const angle2 = i / segments * Math.PI * 2;
-      const x2 = Math.cos(angle2) * radius;
-      const y2 = Math.sin(angle2) * radius;
-      positions.push(x2, y2, 0);
-      uvs.push((x2 / radius + 1) / 2, (y2 / radius + 1) / 2);
-      if (i > 0) {
-        indices.push(0, i, i + 1);
-      }
-    }
-    indices.push(0, segments + 1, 1);
-    return {
-      positions: new Float32Array(positions),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices)
-    };
-  }
-  static diamond(S = 1) {
-    const h = S, p = S / 2;
-    const pos2 = new Float32Array([
-      0,
-      h,
-      0,
-      -p,
-      0,
-      -p,
-      p,
-      0,
-      -p,
-      p,
-      0,
-      p,
-      -p,
-      0,
-      p,
-      0,
-      -h,
-      0
-    ]);
-    const uv = new Float32Array(6 * 2).fill(0);
-    const idx = new Uint16Array([
-      0,
-      1,
-      2,
-      0,
-      2,
-      3,
-      0,
-      3,
-      4,
-      0,
-      4,
-      1,
-      5,
-      2,
-      1,
-      5,
-      3,
-      2,
-      5,
-      4,
-      3,
-      5,
-      1,
-      4
-    ]);
-    return { positions: pos2, uvs: uv, indices: idx };
-  }
-  // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
-  static thunder(S = 1) {
-    const pts = [0, 0, 0];
-    for (let i = 1; i < 8; i++) {
-      const x2 = (Math.random() - 0.5) * 0.2 * S;
-      const y2 = i * (S / 7);
-      const z = (Math.random() - 0.5) * 0.1 * S;
-      pts.push(x2, y2, z);
-    }
-    const p = [], uv = [], ind = [];
-    for (let i = 0; i < pts.length / 3 - 1; i++) {
-      const x1 = pts[i * 3], y1 = pts[i * 3 + 1], z1 = pts[i * 3 + 2];
-      const x2 = pts[(i + 1) * 3], y2 = pts[(i + 1) * 3 + 1], z2 = pts[(i + 1) * 3 + 2];
-      const w = 0.03 * S;
-      p.push(x1 - w, y1, z1, x1 + w, y1, z1, x2 - w, y2, z2, x2 + w, y2, z2);
-      uv.push(0, 0, 1, 0, 0, 1, 1, 1);
-      const o2 = i * 4;
-      ind.push(o2, o2 + 1, o2 + 2, o2 + 1, o2 + 3, o2 + 2);
-    }
-    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static rock(S = 1, detail = 4) {
-    const base = _GeometryFactory.sphere(S, detail);
-    const p = base.positions;
-    for (let i = 0; i < p.length; i += 3) {
-      const n2 = Math.random() * 0.3 + 0.85;
-      p[i] *= n2;
-      p[i + 1] *= n2;
-      p[i + 2] *= n2;
-    }
-    return base;
-  }
-  static meteor(S = 1, detail = 6) {
-    const base = _GeometryFactory.rock(S, detail);
-    const p = base.positions;
-    for (let i = 0; i < p.length; i += 3) {
-      p[i + 1] *= 1.4 + Math.random() * 0.5;
-      p[i] *= 0.8 + Math.random() * 0.3;
-    }
-    return base;
-  }
-  static shard(S = 1) {
-    const positions = new Float32Array([
-      0,
-      0,
-      0,
-      S * 0.3,
-      0,
-      S * 0.2,
-      -S * 0.2,
-      0,
-      S * 0.3,
-      0,
-      S * 1.2,
-      0
-    ]);
-    const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
-    const indices = new Uint16Array([0, 1, 2, 1, 2, 3, 0, 2, 3, 0, 1, 3]);
-    return { positions, uvs, indices };
-  }
-  static circlePlane(radius = 1, segments = 32) {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    positions.push(0, 0, 0);
-    uvs.push(0.5, 0.5);
-    for (let i = 0; i <= segments; i++) {
-      const angle2 = i / segments * Math.PI * 2;
-      const x2 = Math.cos(angle2) * radius;
-      const y2 = 0;
-      const z = Math.sin(angle2) * radius;
-      positions.push(x2, y2, z);
-      uvs.push((x2 / radius + 1) / 2, (z / radius + 1) / 2);
-    }
-    for (let i = 1; i <= segments; i++) {
-      indices.push(0, i, i + 1);
-    }
-    return {
-      positions: new Float32Array(positions),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices)
-    };
-  }
-  static ring(outerRadius = 4, innerRadiusRatio = 0.7, segments = 48, height = 0.05) {
-    const innerRadius = outerRadius * innerRadiusRatio;
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    for (let i = 0; i <= segments; i++) {
-      const angle2 = i / segments * Math.PI * 2;
-      const cos = Math.cos(angle2);
-      const sin = Math.sin(angle2);
-      positions.push(cos * outerRadius, 0, sin * outerRadius);
-      uvs.push((cos + 1) / 2, (sin + 1) / 2);
-      positions.push(cos * innerRadius, height, sin * innerRadius);
-      uvs.push((cos * innerRadius / outerRadius + 1) / 2, (sin * innerRadius / outerRadius + 1) / 2);
-    }
-    for (let i = 0; i < segments * 2; i += 2) {
-      indices.push(i, i + 1, i + 2);
-      indices.push(i + 1, i + 3, i + 2);
-    }
-    return {
-      positions: new Float32Array(positions),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices)
-    };
-  }
-};
-
 // ../../../shaders/standalone/geo.instanced.js
 var geoInstancedEffect = `struct Camera {
   viewProjMatrix : mat4x4<f32>,
@@ -15843,6 +16444,7 @@ var GenGeo = class {
     const shaderModule = this.device.createShaderModule({ code: geoInstancedEffect });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "geo gen Pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -16014,12 +16616,14 @@ var HPBarEffect = class {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
+      label: "energy-bar bindGroupLayout",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
         { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
       ]
     });
     this.bindGroup = this.device.createBindGroup({
+      label: "energy-bar bindGroup",
       layout: bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
@@ -16029,6 +16633,7 @@ var HPBarEffect = class {
     const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "energy-bar pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -16157,6 +16762,7 @@ var MANABarEffect = class {
     const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "mana Pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -16390,6 +16996,7 @@ var GenGeoTexture = class {
     const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "gen-geo-tex pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -16488,7 +17095,8 @@ var GenGeoTexture2 = class {
       const img = await fetch(url).then((r2) => r2.blob()).then(createImageBitmap);
       const texture = this.device.createTexture({
         size: [img.width, img.height, 1],
-        format: "rgba8unorm",
+        format: "rgba16float",
+        // "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       this.device.queue.copyExternalImageToTexture(
@@ -16576,6 +17184,7 @@ var GenGeoTexture2 = class {
     const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
+      label: "geo tex 2 Pipeline",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -17004,24 +17613,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         // typical for shadow passes
         frontFace: "ccw"
       };
-      this.selectedBuffer = device2.createBuffer({
-        size: 4,
-        // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.selectedBindGroupLayout = device2.createBindGroupLayout({
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
-        ]
-      });
-      this.selectedBindGroup = device2.createBindGroup({
-        layout: this.selectedBindGroupLayout,
-        entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
-      });
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1 : 0]));
-      };
-      this.setSelectedEffect();
+      this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.pipeline, this.mirrorBindGroupLayout, {
+        reflectivity: 0.85,
+        illuminateColor: [0.3, 0.9, 1],
+        illuminatePulse: 1.5,
+        fresnelPower: 5
+        // envTexture: yourHDRITexture, // optional
+      }).bindGroup;
       this.createLayoutForRender();
       this.instanceTargets = [];
       this.lerpSpeed = 0.05;
@@ -17079,6 +17677,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         this.instanceCount = newCount;
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device2.createBuffer({
+          label: "instanceBuffer in bvh mesh [instanced]",
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
@@ -17096,6 +17695,11 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         });
       };
       this.updateMaxInstances = (newMax) => {
+        let isBigger = false;
+        this.instanceTargets = [];
+        if (this.maxInstances < newMax) {
+          isBigger = true;
+        }
         this.maxInstances = newMax;
         for (let x2 = 0; x2 < this.maxInstances; x2++) {
           this.instanceTargets.push({
@@ -17107,6 +17711,10 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
             color: [0.6, 0.8, 1, 0.4],
             currentColor: [0.6, 0.8, 1, 0.4]
           });
+        }
+        if (isBigger == false) {
+          console.log("new max values is smaller than current - auto correct updateInstances(newMax)");
+          this.updateInstances(newMax);
         }
       };
       this.modelUniformBuffer = this.device.createBuffer({
@@ -17343,7 +17951,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         ]
       });
       this.effects = {};
-      console.log(">>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>");
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = "rgba16float";
@@ -17436,7 +18043,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       bindGroupLayouts: [
         this.bglForRender,
         this.uniformBufferBindGroupLayoutInstanced,
-        this.selectedBindGroupLayout
+        this.mirrorBindGroupLayout
       ]
     });
     const vertexModule = this.device.createShaderModule({
@@ -17575,9 +18182,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-    if (this.selectedBindGroup) {
-      pass2.setBindGroup(2, this.selectedBindGroup);
-    }
+    if (this.mirrorBindGroup) pass2.setBindGroup(2, this.mirrorBindGroup);
     pass2.setBindGroup(3, this.waterBindGroup);
     pass2.setVertexBuffer(0, this.vertexBuffer);
     pass2.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -17597,8 +18202,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     if (this.material.useBlend == true) pass2.setPipeline(this.pipelineTransparent);
     else pass2.setPipeline(this.pipeline);
     pass2.setIndexBuffer(this.indexBuffer, "uint16");
-    for (var ins = 0; ins < this.instanceCount; ins++) {
-      pass2.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    for (var ins = 1; ins < this.instanceCount; ins++) {
+      if (ins == 0) pass2.drawIndexed(this.indexCount, 0, 0, 0, ins);
+      else pass2.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   };
   drawElementsAnim = (renderPass, lightContainer) => {
@@ -17619,6 +18225,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
+    if (this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
     pass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
@@ -17795,6 +18402,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
+        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
@@ -17804,7 +18412,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.trailAnimation.enabled == true) {
-        for (let i = 0; i < this.maxInstances; i++) {
+        for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
           const boneMatrices = new Float32Array(this.MAX_BONES * 16);
@@ -27700,6 +28308,7 @@ var BloomPass = class {
       entries: bindGroupLayoutEntries
     });
     return this.device.createRenderPipeline({
+      label: "bloom pipeline",
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [bindGroupLayout]
       }),
@@ -28541,7 +29150,7 @@ var VolumetricPass = class {
       ]
     });
     return this.device.createRenderPipeline({
-      label: "VolumetricPass.marchPipeline",
+      label: "Volumetric Pipeline",
       layout: this.device.createPipelineLayout({
         label: "VolumetricPass.marchPipelineLayout",
         bindGroupLayouts: [bgl]
@@ -28569,7 +29178,7 @@ var VolumetricPass = class {
       ]
     });
     return this.device.createRenderPipeline({
-      label: "VolumetricPass.compositePipeline",
+      label: "VolumetricCompose Pipeline",
       layout: this.device.createPipelineLayout({
         label: "VolumetricPass.compositePipelineLayout",
         bindGroupLayouts: [bgl]
@@ -28795,6 +29404,7 @@ var MatrixEngineWGPU = class {
     depthLoadOp: "clear",
     depthStoreOp: "store"
   };
+  autoUpdate = [];
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
   constructor(options2, callback) {
@@ -29198,7 +29808,7 @@ var MatrixEngineWGPU = class {
       o2.raycast = { enabled: false, radius: 2 };
     }
     if (typeof o2.useScale === "undefined") {
-      o2.useScale = false;
+      o2.useScale = true;
     }
     o2.entityArgPass = this.entityArgPass;
     o2.cameras = this.cameras;
@@ -29348,6 +29958,7 @@ var MatrixEngineWGPU = class {
       }, 100);
       return;
     }
+    this.autoUpdate.forEach((_) => _.update());
     let now;
     const currentTime = performance.now() / 1e3;
     const bufferUpdates = [];
@@ -29470,7 +30081,12 @@ var MatrixEngineWGPU = class {
       pass2.end();
       if (this.collisionSystem) this.collisionSystem.update();
       const transPassDesc = {
-        colorAttachments: [{ view: this.sceneTextureView, loadOp: "load", storeOp: "store" }],
+        colorAttachments: [{
+          view: this.sceneTextureView,
+          loadOp: "load",
+          storeOp: "store",
+          clearValue: { r: 0, g: 1, b: 0, a: 1 }
+        }],
         depthStencilAttachment: {
           view: this.mainDepthView,
           depthLoadOp: "load",
@@ -29576,7 +30192,7 @@ var MatrixEngineWGPU = class {
       o2.pointerEffect = { enabled: false };
     }
     if (typeof o2.useScale === "undefined") {
-      o2.useScale = false;
+      o2.useScale = true;
     }
     o2.entityArgPass = this.entityArgPass;
     o2.cameras = this.cameras;
@@ -29686,7 +30302,7 @@ var MatrixEngineWGPU = class {
       };
     }
     if (typeof o2.useScale === "undefined") {
-      o2.useScale = false;
+      o2.useScale = true;
     }
     o2.entityArgPass = this.entityArgPass;
     o2.cameras = this.cameras;

@@ -234,7 +234,8 @@ export class Controller {
       if(screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
         if(this.ignoreList.some(str => object.name.includes(str))) continue;
         if(this.selected.includes(object)) continue;
-        object.setSelectedEffect(true);
+        // deplaced
+        // object.setSelectedEffect(true);
         this.selected.push(object);
         byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name}))
       } else {
@@ -242,7 +243,8 @@ export class Controller {
           this.selected.splice(this.selected.indexOf(object), 1)
           // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
         }
-        object.setSelectedEffect(false);
+        // deplaced
+        // object.setSelectedEffect(false);
       }
     }
     console.log("Selected:", this.selected.map(o => o.name));
