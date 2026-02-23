@@ -510,7 +510,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           enabled: true,
           pointer: true,
           flameEffect: false,
-          flameEmitter: false,
+          flameEmitter: true,
           circlePlane: true,
           circlePlaneTex: true,
           circlePlaneTexPath: './res/textures/star1.png',

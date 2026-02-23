@@ -188,14 +188,12 @@ export class Character extends Hero {
           if(id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-
             subMesh.updateMaxInstances(5);
             subMesh.updateInstances(5);
             subMesh.trailAnimation.enabled = true;
-            console.log("on player cast ***************************************");
+            console.log("on player cast *********");
             subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
             this.core.autoUpdate.push(subMesh.fireballSystem);
- 
           }
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
