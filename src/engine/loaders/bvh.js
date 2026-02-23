@@ -38,12 +38,14 @@ export let loadBVH = (path) => {
 export class BVHPlayer extends MEMeshObj {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
     super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
-    // bvh arg not actula at the moment
     this.bvh = {};
     this.glb = glb;
+    this.glb.animationIndex = 0;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
@@ -61,6 +63,9 @@ export class BVHPlayer extends MEMeshObj {
     this.skeleton = []; // array of joint node indices
     this.animationSpeed = 1000;
     this.inverseBindMatrices = []; // Float32Array for each joint
+
+    this._numFrames = 0;
+    this.initAnimationCache();
     this.initInverseBindMatrices();
     this.makeSkeletal();
   }
@@ -100,7 +105,7 @@ export class BVHPlayer extends MEMeshObj {
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
     // friendly blender
-    this.glb.animationIndex = 0;
+    // this.glb.animationIndex = 0;
     for(let j = 0;j < this.glb.glbJsonData.animations.length;j++) {
       if(this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
         this.glb.animationIndex = j;
@@ -121,6 +126,7 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   playAnimationByIndex = (animationIndex) => {
+    this.initAnimationCache();
     this.glb.animationIndex = animationIndex;
   }
 
@@ -133,53 +139,53 @@ export class BVHPlayer extends MEMeshObj {
       console.warn(`Animation '${animationName}' not found`);
       return;
     }
+    this.initAnimationCache();
     this.glb.animationIndex = index;
   };
 
-  getNumberOfFramesCurAni() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
-    const sampler = anim.samplers[0];
-    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
-    const numFrames = inputAccessor.count;
-    return numFrames;
+  // getNumberOfFramesCurAni() {
+  //   let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
+  //   const sampler = anim.samplers[0];
+  //   const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+  //   const numFrames = inputAccessor.count;
+  //   return numFrames;
+  // }
+
+  initAnimationCache() {
+    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const inputAccessor = this.glb.glbJsonData.accessors[anim.samplers[0].input];
+    this._numFrames = inputAccessor.count;
   }
 
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
     while(this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
       this.sharedState.timeAccumulator -= frameTime;
     }
-    // const frame = this.sharedState.currentFrame;
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices)
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices)
     }
   }
 
   getAccessorArray(glb, accessorIndex) {
+    if(this._accessorCache.has(accessorIndex)) return this._accessorCache.get(accessorIndex);
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength =
-      accessor.count *
-      this.getNumComponents(accessor.type) *
-      (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-    const bufferDef = glb.glbBinaryBuffer;
-    // ✅ now just slice:
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+    let result;
     switch(accessor.componentType) {
-      case 5126: // FLOAT
-        return new Float32Array(slice);
-      case 5123: // UNSIGNED_SHORT
-        return new Uint16Array(slice);
-      case 5121: // UNSIGNED_BYTE
-        return new Uint8Array(slice);
-      default:
-        throw new Error("Unsupported componentType: " + accessor.componentType);
+      case 5126: result = new Float32Array(slice); break;
+      case 5123: result = new Uint16Array(slice); break;
+      case 5121: result = new Uint8Array(slice); break;
+      default: throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+    this._accessorCache.set(accessorIndex, result);
+    return result;
   }
 
   getAccessorTypeForChannel(path) {

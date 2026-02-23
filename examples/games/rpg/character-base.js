@@ -122,7 +122,7 @@ export class Character extends Hero {
           pointer: true,
           energyBar: true,
           flameEffect: false,
-          flameEmitter: true,
+          flameEmitter: false,
           circlePlane: false,
           circlePlaneTex: true,
           circlePlaneTexPath: './res/textures/star1.png',
@@ -201,7 +201,7 @@ export class Character extends Hero {
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         if(app.localHero.heroe_bodies[0].effects) {
-          app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+          if (app.localHero.heroe_bodies[0].effects.flameEmitter) app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         } else {
           console.log(`warn: ${app.localHero.heroe_bodies[0]} `);
         }

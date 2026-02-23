@@ -510,7 +510,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           enabled: true,
           pointer: true,
           flameEffect: false,
-          flameEmitter: true,
+          flameEmitter: false,
           circlePlane: true,
           circlePlaneTex: true,
           circlePlaneTexPath: './res/textures/star1.png',
@@ -535,7 +535,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         if(x == 0) {
           hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
         }
-        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+         if(hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 1, 0, 0.7];
         })
 
@@ -547,7 +547,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         if(x == 3 || x == 5) {
           hero0.forEach((p, i, array) => {
             array[i].globalAmbient = [10, 10, 10];
-            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+             if(hero0.effects && hero0.effects.flameEmitter) array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
           })
         }
         if(x == 6) {

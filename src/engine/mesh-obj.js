@@ -24,6 +24,7 @@ export default class MEMeshObj extends Materials {
       this.raycast = o.raycast;
     }
 
+    this._accessorCache = new Map();
     if(typeof o.pointerEffect === 'undefined') {this.pointerEffect = {enabled: false};}
     this.pointerEffect = o.pointerEffect;
 
