@@ -44,15 +44,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.glb.animationIndex = 0;
     this.currentFrame = 0;
     this.fps = 30;
+    this.frameTime = 1 / this.fps;
+    this._maxDelta = this.frameTime * 4;
     this.timeAccumulator = 0;
     this.trailAnimation = {
       enabled: false,
       delay: 100
     };
-
     // cache
     this._scaleVec = new Float32Array([this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest]);
-
     // Update only when scale changes
     this._animationLength = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
@@ -224,15 +224,11 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    const maxDelta = frameTime * 4;
-    const clampedDelta = Math.min(deltaTime, maxDelta);
-    this.sharedState.timeAccumulator += clampedDelta;
-    while(this.sharedState.timeAccumulator >= frameTime) {
+    this.sharedState.timeAccumulator += Math.min(deltaTime, this._maxDelta);
+    while(this.sharedState.timeAccumulator >= this.frameTime) {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
-      this.sharedState.timeAccumulator -= frameTime;
+      this.sharedState.timeAccumulator -= this.frameTime;
     }
-    var inTime = this._animationLength;
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
@@ -243,21 +239,17 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
           }
         }))
-      }, inTime * 1000)
+      }, this._animationLength * 1000)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if(this.trailAnimation.enabled == true) {
         for(let i = 0;i < this.instanceCount;i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
-          this.updateSingleBoneCubeAnimation(
-            this.glb.glbJsonData.animations[this.glb.animationIndex],
-            this.glb.nodes, currentTime, this._boneMatrices, i
-          );
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, i);
         }
       } else {
         const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        // const boneMatrices = new Float32Array(this.MAX_BONES * 16);
         this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 0)
         this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 1)
       }
@@ -499,32 +491,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
-    const computeWorld = (nodes) => {
-      
-      const stack = [];
-      for(let i = 0;i < nodes.length;i++) {
-        if(nodes[i].parent === null || nodes[i].parent === undefined) {
-          stack.push(i);
-        }
-      }
-      while(stack.length > 0) {
-        const nodeIndex = stack.pop();
-        const node = nodes[nodeIndex];
-        const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
-        if(parentWorld) {
-          mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-        } else {
-          mat4.copy(node.transform, node.worldMatrix);
-        }
-        mat4.scale(node.worldMatrix, this._scaleVec, node.worldMatrix);
-        if(node.children) {
-          for(const childIndex of node.children) stack.push(childIndex);
-        }
-      }
-    };
 
-    computeWorld(nodes);
-
+    this.computeWorld(nodes);
     for(let j = 0;j < this.skeleton.length;j++) {
       const jointNode = nodes[this.skeleton[j]];
       const offset = j * 16;
@@ -538,5 +506,28 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, this.finalMat);
     return this.finalMat;
+  }
+
+  computeWorld = (nodes) => {
+    const stack = [];
+    for(let i = 0;i < nodes.length;i++) {
+      if(nodes[i].parent === null || nodes[i].parent === undefined) {
+        stack.push(i);
+      }
+    }
+    while(stack.length > 0) {
+      const nodeIndex = stack.pop();
+      const node = nodes[nodeIndex];
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
+      if(parentWorld) {
+        mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+      } else {
+        mat4.copy(node.transform, node.worldMatrix);
+      }
+      mat4.scale(node.worldMatrix, this._scaleVec, node.worldMatrix);
+      if(node.children) {
+        for(const childIndex of node.children) stack.push(childIndex);
+      }
+    }
   }
 }

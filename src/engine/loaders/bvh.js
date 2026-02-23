@@ -43,13 +43,15 @@ export class BVHPlayer extends MEMeshObj {
     this.glb.animationIndex = 0;
     this.currentFrame = 0;
     this.fps = 30;
+    this.frameTime = 1 / this.fps;
+    this._maxDelta = this.frameTime * 4;
     this.MAX_BONES = 100;
     this.timeAccumulator = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this.finalMat = new Float32Array(this.MAX_BONES * 16);
     this.nodeChannels = new Map();
     this._composeMat = new Float32Array(16);
-this._rotMat = new Float32Array(16);
+    this._rotMat = new Float32Array(16);
 
     // debug
     this.scaleBoneTest = 1;
@@ -192,16 +194,13 @@ this._rotMat = new Float32Array(16);
   }
 
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while(this.sharedState.timeAccumulator >= frameTime) {
+    this.sharedState.timeAccumulator += Math.min(deltaTime, this._maxDelta);
+    while(this.sharedState.timeAccumulator >= this.frameTime) {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
-      this.sharedState.timeAccumulator -= frameTime;
+      this.sharedState.timeAccumulator -= this.frameTime;
     }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices)
-    }
+    this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices)
   }
 
   getAccessorArray(glb, accessorIndex) {
