@@ -500,20 +500,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
     const computeWorld = (nodes) => {
-      // const node = nodes[nodeIndex];
-      // if(!node.worldMatrix) node.worldMatrix = mat4.create();
-      // let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-      // if(parentWorld) {
-      //   // multiply parent * local
-      //   mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-      // } else {
-      //   mat4.copy(node.transform, node.worldMatrix);
-      // }
-      // mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      // if(node.children) {
-      //   for(const childIndex of node.children) computeWorld(childIndex);
-      // }
-      // Stack-based DFS — no recursion overhead
+      
       const stack = [];
       for(let i = 0;i < nodes.length;i++) {
         if(nodes[i].parent === null || nodes[i].parent === undefined) {

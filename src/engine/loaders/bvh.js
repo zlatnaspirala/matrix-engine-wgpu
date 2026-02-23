@@ -43,11 +43,17 @@ export class BVHPlayer extends MEMeshObj {
     this.glb.animationIndex = 0;
     this.currentFrame = 0;
     this.fps = 30;
+    this.MAX_BONES = 100;
     this.timeAccumulator = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this.finalMat = new Float32Array(this.MAX_BONES * 16);
+    this.nodeChannels = new Map();
+    this._composeMat = new Float32Array(16);
+this._rotMat = new Float32Array(16);
 
     // debug
     this.scaleBoneTest = 1;
+    this._scaleVec = new Float32Array([this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest]);
     this.primitiveIndex = primitiveIndex;
     if(!this.bvh.sharedState) {this.bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};}
     this.sharedState = this.bvh.sharedState;
@@ -59,7 +65,6 @@ export class BVHPlayer extends MEMeshObj {
       () => mat4.identity()
     );
     this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.MAX_BONES = 100; // predefined
     this.skeleton = []; // array of joint node indices
     this.animationSpeed = 1000;
     this.inverseBindMatrices = []; // Float32Array for each joint
@@ -68,6 +73,34 @@ export class BVHPlayer extends MEMeshObj {
     this.initAnimationCache();
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this.initNodes(this.glb.nodes);
+  }
+
+  scaleBone(val) {
+    this._scaleBoneTest = val;
+    this._scaleVec[0] = this._scaleVec[1] = this._scaleVec[2] = val;
+  }
+
+  initNodeChannelMap(glbAnimation) {
+    this.nodeChannels = new Map();
+    for(const channel of glbAnimation.channels) {
+      if(!this.nodeChannels.has(channel.target.node))
+        this.nodeChannels.set(channel.target.node, []);
+      this.nodeChannels.get(channel.target.node).push(channel);
+    }
+  }
+
+  initNodes(nodes) {
+    for(const node of nodes) {
+      if(!node.translation) node.translation = new Float32Array([0, 0, 0]);
+      if(!node.rotation) node.rotation = quat.create();
+      if(!node.scale) node.scale = new Float32Array([1, 1, 1]);
+      // snapshot originals once
+      node.originalTranslation = node.translation.slice();
+      node.originalRotation = node.rotation.slice();
+      node.originalScale = node.scale.slice();
+      node.worldMatrix = mat4.create();
+    }
   }
 
   makeSkeletal() {
@@ -153,6 +186,7 @@ export class BVHPlayer extends MEMeshObj {
 
   initAnimationCache() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    this.initNodeChannelMap(anim);
     const inputAccessor = this.glb.glbJsonData.accessors[anim.samplers[0].input];
     this._numFrames = inputAccessor.count;
   }
@@ -293,20 +327,6 @@ export class BVHPlayer extends MEMeshObj {
     mat4.multiply(m, rot, m);
     mat4.scale(m, scale, m);
     return m;
-
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-
-    // return m;
-
   }
 
   decomposeMatrix(m) {
@@ -412,31 +432,35 @@ export class BVHPlayer extends MEMeshObj {
     }
   }
 
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
-    const samplers = glbAnimation.samplers;
-    // --- Map channels per node for faster lookup
-    const nodeChannels = new Map();
-    for(const channel of channels) {
-      if(!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
+  computeWorld = (nodes) => {
+    const stack = [];
+    for(let i = 0;i < nodes.length;i++) {
+      if(nodes[i].parent === null || nodes[i].parent === undefined) {
+        stack.push(i);
+      }
     }
+    while(stack.length > 0) {
+      const nodeIndex = stack.pop();
+      const node = nodes[nodeIndex];
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
+      if(parentWorld) {
+        mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+      } else {
+        mat4.copy(node.transform, node.worldMatrix);
+      }
+      mat4.scale(node.worldMatrix, this._scaleVec, node.worldMatrix);
+      if(node.children) {
+        for(const childIndex of node.children) stack.push(childIndex);
+      }
+    }
+  }
+
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+    const samplers = glbAnimation.samplers;
     for(let j = 0;j < this.skeleton.length;j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-
-      // --- Initialize node TRS if needed
-      if(!node.translation) node.translation = new Float32Array([0, 0, 0]);
-      if(!node.rotation) node.rotation = quat.create();
-      if(!node.scale) node.scale = new Float32Array([1, 1, 1]);
-
-      // --- Keep original TRS for additive animation
-      if(!node.originalTranslation) node.originalTranslation = node.translation.slice();
-      if(!node.originalRotation) node.originalRotation = node.rotation.slice();
-      if(!node.originalScale) node.originalScale = node.scale.slice();
-
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
-
+      const channelsForNode = this.nodeChannels.get(nodeIndex) || [];
       for(const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
         const sampler = samplers[channel.sampler];
@@ -471,37 +495,18 @@ export class BVHPlayer extends MEMeshObj {
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
-    const computeWorld = (nodeIndex) => {
-      const node = nodes[nodeIndex];
-      if(!node.worldMatrix) node.worldMatrix = mat4.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-      if(parentWorld) {
-        // multiply parent * local
-        mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-      } else {
-        mat4.copy(node.transform, node.worldMatrix);
-      }
 
-      // maybe no need to exist...
-      mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-
-      if(node.children) {
-        for(const childIndex of node.children) computeWorld(childIndex);
-      }
-    };
-    for(let i = 0;i < nodes.length;i++) {
-      if(nodes[i].parent === null || nodes[i].parent === undefined) {
-        computeWorld(i);
-      }
-    }
+    this.computeWorld(nodes);
     for(let j = 0;j < this.skeleton.length;j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = mat4.create();
-      mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      const offset = j * 16;
+      mat4.multiply(
+        jointNode.worldMatrix,
+        jointNode.inverseBindMatrix,
+        this.finalMat.subarray(offset, offset + 16)
+      );
     }
-    // --- Upload to GPU
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
-    return boneMatrices;
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, this.finalMat);
+    return this.finalMat;
   }
 }
