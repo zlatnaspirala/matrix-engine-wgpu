@@ -12,22 +12,18 @@ export var loadObjsSequence = function() {
       responseCoef: 1000
     }
   }, () => {
-
     addEventListener('AmmoReady', () => {
-
-      // requied now
+      // Requied now
       loadObjFile.addLight();
-
-      // adapt
+      // Light
       app.lightContainer[0].position[2] = -20;
       app.lightContainer[0].position[1] = 25;
-      app.lightContainer[0].intensity = 10;
+      app.lightContainer[0].intensity = 3;
 
-      downloadMeshes({
-        cube: "./res/meshes/blender/cube.obj",
-      }, onGround,
-        {scale: [20, 1, 20]})
+      app.activateBloomEffect();
+      app.bloomPass.setIntensity(0.25);
 
+      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]});
 
       downloadMeshes(
         makeObjSeqArg({
@@ -76,7 +72,6 @@ export var loadObjsSequence = function() {
         },
         objAnim: objAnim
       })
-  
 
       setTimeout(() => {
         app.cameras.WASD.pitch = -0.2605728267949113;
@@ -84,18 +79,10 @@ export var loadObjsSequence = function() {
         app.cameras.WASD.position[1] = 15
         app.cameras.WASD.position[2] = 11;
         app.getSceneObjectByName('swat').objAnim.play('walk')
-      }, 200)
+      }, 200);
     }
 
     function onGround(m) {
-
-      setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
-      }, 500)
-
       loadObjFile.addMeshObj({
         position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -107,12 +94,10 @@ export var loadObjsSequence = function() {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
-        // raycast: { enabled: true , radius: 2 }
+        }
       })
-
     }
   })
-  // Just for dev - easy console access
+
   window.app = loadObjFile;
 }

@@ -17,7 +17,7 @@ import {VERTEX_ANIM_FLAGS} from '../literals';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile);
+    super(device, o.material, _glbFile, o.textureCache);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {this.raycast = {enabled: false, radius: 2}} else {
       this.raycast = o.raycast;
@@ -45,7 +45,14 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       o.material.useBlend = false;
     }
 
+    if(o.envMapParams !== null) {
+      this.envMapParams = o.envMapParams;
+    }
+
     this.material = o.material;
+
+    this.time = 0;
+    this.deltaTimeAdapter = 10;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -398,28 +405,14 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         frontFace: 'ccw'
       }
 
-      // Selected effect
-      this.selectedBuffer = device.createBuffer({
-        size: 4, // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
+      this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mirrorBindGroupLayout',
         entries: [
-          {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
-        ],
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform', minBindingSize: 80}},
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float', viewDimension: '2d', multisampled: false}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}}
+        ]
       });
-
-      this.selectedBindGroup = device.createBindGroup({
-        layout: this.selectedBindGroupLayout,
-        entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
-      });
-
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
-      };
-      // 0 default
-      this.setSelectedEffect();
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
@@ -520,7 +513,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.updateMaxInstances = (newMax) => {
         let isBigger = false;
         this.instanceTargets = [];
-        if (this.maxInstances < newMax) {
+        if(this.maxInstances < newMax) {
           isBigger = true;
         }
         this.maxInstances = newMax;
@@ -535,7 +528,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             currentColor: [0.6, 0.8, 1.0, 0.4],
           });
         }
-        if (isBigger == false) {
+        if(isBigger == false) {
           console.log('new max values is smaller than current - auto correct updateInstances(newMax)')
           this.updateInstances(newMax);
         }
@@ -824,7 +817,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         // Camera VP
         sceneData.set(camVP, 16);
         // Camera position + padding
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
+        sceneData.set([camera.position[0], camera.position[1], camera.position[2], 0.0], 32);
         // Light position + padding
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
@@ -857,9 +850,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       };
 
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch(err) {console.log(`Err in create pipeline ${err}`, LOG_WARN)}
+
+      if(this.texturesPaths.length > 1 && this.material.type == "mirror") {
+        this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
+          this.envMapParams.envTexture = envTexture;
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+        });
+      } else {
+        try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+      }
+
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
         console.log('updateMeshListBuffers...');
@@ -875,7 +876,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       bindGroupLayouts: [
         this.bglForRender,
         this.uniformBufferBindGroupLayoutInstanced,
-        this.selectedBindGroupLayout
+        (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
       ],
     });
 
@@ -954,21 +955,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     });
   };
 
-  updateModelUniformBuffer = () => {
-
-    // // JUST TEST ORI EMPTY s
-    //     if(this.done == false) return;
-    // // Per-object model matrix only
-    // const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    // this.device.queue.writeBuffer(
-    //   this.modelUniformBuffer,
-    //   0,
-    //   modelMatrix.buffer,
-    //   modelMatrix.byteOffset,
-    //   modelMatrix.byteLength
-    // );
-
-  }
+  updateModelUniformBuffer = () => {}
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}
@@ -1035,16 +1022,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     // Bind each light’s shadow texture & sampler
     if(this.isVideo == false) {
-      let bindIndex = 2;
-      for(const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if(this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if(this.isVideo == false) {
+        let bindIndex = 2;
+        for(const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-
-    if(this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
-    }
-
     pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -1069,10 +1055,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
 
-    
+
 
     for(var ins = 1;ins < this.instanceCount;ins++) {
-      if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
+      if(ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
       else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
   }
@@ -1086,9 +1072,13 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
 
     if(this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
-      for(const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if(this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if(this.isVideo == false) {
+        let bindIndex = 2;
+        for(const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
 

@@ -12,6 +12,7 @@ import {DestructionEffect} from './effects/destruction';
 import {FlameEffect} from './effects/flame';
 import {FlameEmitter} from './effects/flame-emmiter';
 import {VERTEX_ANIM_FLAGS} from './literals';
+import {createGroundTexture} from './procedures/procedural-textures';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -45,6 +46,9 @@ export default class MEMeshObj extends Materials {
       typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
+    if(o.envMapParams !== null) {
+      this.envMapParams = o.envMapParams;
+    }
 
     this.useScale = o.useScale || false;
     this.material = o.material;
@@ -52,7 +56,10 @@ export default class MEMeshObj extends Materials {
     this.time = 0;
     this.deltaTimeAdapter = 10;
 
-    addEventListener('update-pipeine', () => {this.setupPipeline()})
+    addEventListener('update-pipeine', () => {
+      this.setupPipeline();
+      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
+    })
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -427,26 +434,33 @@ export default class MEMeshObj extends Materials {
         frontFace: 'ccw'
       }
 
-      // Selected effect
-      this.selectedBuffer = device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
-        label: 'selectedBindGroupLayout mesh',
+      this.mirrorBindGroupLayout = device.createBindGroupLayout({
+        label: 'mirrorBindGroupLayout',
         entries: [
-          {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
-        ],
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform', minBindingSize: 80}},
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float', viewDimension: '2d', multisampled: false}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}}
+        ]
       });
 
-      this.selectedBindGroup = device.createBindGroup({
-        label: 'selectedBindGroup mesh',
-        layout: this.selectedBindGroupLayout,
-        entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
-      });
-
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
-      };
-      // 0 default
-      this.setSelectedEffect();
+      // Selected effect
+      // this.selectedBuffer = device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
+      // this.selectedBindGroupLayout = device.createBindGroupLayout({
+      //   label: 'selectedBindGroupLayout mesh',
+      //   entries: [
+      //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
+      //   ],
+      // });
+      // this.selectedBindGroup = device.createBindGroup({
+      //   label: 'selectedBindGroup mesh',
+      //   layout: this.selectedBindGroupLayout,
+      //   entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
+      // });
+      // this.setSelectedEffect = (selected = false) => {
+      //   this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
+      // };
+      // // 0 default
+      // this.setSelectedEffect();
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
@@ -680,7 +694,7 @@ export default class MEMeshObj extends Materials {
         const sceneData = new Float32Array(48);
         sceneData.set(spotLight.viewProjMatrix, 0);
         sceneData.set(camVP, 16);
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
+        sceneData.set([camera.position[0], camera.position[1], camera.position[2], 0.0], 32);
         sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
         sceneData.set([this.time, dt, 0, 0], 44);
@@ -716,9 +730,18 @@ export default class MEMeshObj extends Materials {
         modelData.byteLength
       );
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch(err) {console.log('Err[create pipeline]:', err)}
+      if(this.texturesPaths.length > 1) {
+        this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
+          try {this.envMapParams.envTexture = envTexture;} catch(err) {
+            console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE);
+            return;
+          }
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+        });
+      } else {
+        try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+      }
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
         console.log('After all updateMeshListBuffers...');
@@ -736,7 +759,7 @@ export default class MEMeshObj extends Materials {
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.selectedBindGroupLayout,
+          (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
           this.waterBindGroupLayout,
         ],
       }),
@@ -769,7 +792,6 @@ export default class MEMeshObj extends Materials {
       },
       primitive: this.primitive,
     });
-    // TRANSPARENT
     this.pipelineTransparent = this.device.createRenderPipeline({
       label: 'Main [Mesh] Pipeline ✅[Transparent]',
       layout: this.device.createPipelineLayout({
@@ -777,7 +799,7 @@ export default class MEMeshObj extends Materials {
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.selectedBindGroupLayout,
+          (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
           this.waterBindGroupLayout,
         ],
       }),
@@ -821,7 +843,6 @@ export default class MEMeshObj extends Materials {
       },
       primitive: this.primitive,
     });
-    // console.log('✅Set Pipelines done');
   }
 
   getMainPipeline = () => {
@@ -913,12 +934,15 @@ export default class MEMeshObj extends Materials {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {
-      let bindIndex = 2;
-      for(const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if(this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if(this.isVideo == false) {
+        let bindIndex = 2;
+        for(const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-    if(this.selectedBindGroup) {pass.setBindGroup(2, this.selectedBindGroup)}
     pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -926,12 +950,12 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if(this.joints) {
       if(this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
         // dummy
-        pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
-        pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+        pass.setVertexBuffer(3, this.joints.buffer);
+        pass.setVertexBuffer(4, this.weights.buffer);
       }
     }
 
@@ -952,16 +976,15 @@ export default class MEMeshObj extends Materials {
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
 
     if(this.isVideo == false) {
-      let bindIndex = 2;
-      for(const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if(this.material.type === "mirror" && this.mirrorBindGroup) {
+        renderPass.setBindGroup(2, this.mirrorBindGroup);
+      } else if(this.isVideo == false) {
+        let bindIndex = 2;
+        for(const light of lightContainer) {
+          renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-
-    if(this.selectedBindGroup) {
-      renderPass.setBindGroup(2, this.selectedBindGroup);
-    }
-
     renderPass.setBindGroup(3, this.waterBindGroup);
 
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
@@ -981,10 +1004,8 @@ export default class MEMeshObj extends Materials {
     if(this.mesh.tangentsBuffer) {
       renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
-
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
-
     if(this.objAnim.playing == true) {
       if(this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
         this.objAnim.currentAni++;

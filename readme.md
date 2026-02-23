@@ -114,7 +114,7 @@ The backend is built using **Node.js** 🟢
 
 ---
 
-## ⚠️ Important Notes
+### ⚠️ Important Notes
 
 Visual Scripting is only available when running the engine **from source**  
 (not from `npm i matrix-engine-wgpu`).
@@ -123,7 +123,7 @@ You must clone or download the engine source from the **GitHub repository**.
 
 ---
 
-## Instructions 📌
+### Instructions 📌
 
 Editor use esbuild compiler but still present browserify, both works perfect.
 
@@ -337,11 +337,13 @@ material: {type: 'pong'}
 material: {type: 'power'}
 material: {type: 'water'}
 material: {type: 'metal'}
+material: {type: 'mirror'}
 ```
 
 - Standard is fully supported with lights shadow cast down (not for anims yet)
 - Pong
 - Power - no shadows cast
+- Mirror is env map. If you use mirror you must pass arg
 
 ```js
 // Also for addMeshObj
@@ -349,16 +351,52 @@ TEST_ANIM.addGlbObj({
   material: {type: 'power'},
 ...
 }, null, glbFile);
+
+
+// Mirror example
+TEST_ANIM.addGlbObj({
+  material: {type: 'mirror'},
+  envMapParams: {
+    baseColorMix: 0.55,
+    mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+    reflectivity: 0.95,               // 25% reflection blend
+    illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+    illuminateStrength: 0.1,          // Gentle rim
+    illuminatePulse: 0.001,           // No pulse (static)
+    fresnelPower: 5.0,                // Medium-sharp edge
+    envLodBias: 2.5,
+    usePlanarReflection: false,       // ✅ FOr now only false - Env map mode
+  },
+...
+}, null, glbFile);
 ```
 
-Change only textures (no recreation of pipeline)
+- Mirror mat update params In runtime:
+```js
+// Access some object with mirror mat
+app.mainRenderBundle[5].writeParamsMirror(
+  {
+    baseColorMix: 0.9,
+    mirrorTint: [0.9, 0.95, 1.0],
+    reflectivity: 0.25,
+    illuminateColor: [1.3, 0.7, 1.0],
+    illuminateStrength: 11.4,
+    illuminatePulse: 1.1,
+    fresnelPower: 2.50,
+    envLodBias: 2.5,
+    usePlanarReflection: false,
+  }
+)
+```
+
+- Change only textures (no recreation of pipeline)
 
 ```js
 await app.mainRenderBundle[0].loadTex0(["res/icons/editor/chatgpt-gen-bg.png"]);
 app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
 ```
 
-Setup Blend (For water mat use blend!)
+- Setup Blend (For water mat use blend!)
 ```js
 app.mainRenderBundle[0].setBlend(0.5);
 ```
@@ -384,6 +422,24 @@ app.mainRenderBundle[0].updateWaterParams(
   2.5,                   // Fresnel: moderate reflection
   100.0                  // Specular: sharp sparkles
 );
+```
+
+### Effect (Standalone pipeline draw subsystem)
+Activation for prebuild(buildin) effects
+```js
+
+TEST_ANIM.addGlbObj({
+...
+pointerEffect: {
+  enabled: true,
+  flameEffect: true,
+  flameEmitter: true,
+},
+...
+}, null, glbFile);
+
+// Access in runtime :
+// app.mainRenderBundle[0].effects
 ```
 
 ### Bloom post processing
