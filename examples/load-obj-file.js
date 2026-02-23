@@ -18,7 +18,7 @@ export var loadObjFile = function() {
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj,
-        {scale: [1, 1, 1]})
+        {scale: [2, 2, 2]})
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
@@ -31,7 +31,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.jpg'],
+        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.95,
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
@@ -57,10 +57,10 @@ export var loadObjFile = function() {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
-        position: {x: 0, y: 2, z: -20},
+        position: {x: 0, y: 3, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.jpg'],
+        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
         name: 'cube1',
         mesh: m.cube,
         envMapParams: {
@@ -78,11 +78,11 @@ export var loadObjFile = function() {
           enabled: false,
           geometry: "Cube",
         },
-        pointerEffect: {
-          // enabled: true,
-          // flameEffect: true,
-          // flameEmitter: true,
-        },
+        // pointerEffect: {
+        //   // enabled: true,
+        //   // flameEffect: true,
+        //   // flameEmitter: true,
+        // },
         raycast: {enabled: true, radius: 2}
       })
 
@@ -92,7 +92,7 @@ export var loadObjFile = function() {
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.jpg'],
+        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.0, // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
@@ -120,10 +120,10 @@ export var loadObjFile = function() {
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
       })
-      loadObjFile.lightContainer[0].position[1] = 9;
+      loadObjFile.lightContainer[0].position[1] = 11;
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
-        app.activateBloomEffect();
+        // app.activateBloomEffect();
         let cube1 = app.getSceneObjectByName('cube1')
         // cube1.effects.flameEffect.intensity = 100;
         // cube1.effects.flameEffect.morphTo("pyramid", 8)

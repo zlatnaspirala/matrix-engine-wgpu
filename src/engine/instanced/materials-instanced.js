@@ -228,6 +228,7 @@ export default class MaterialsInstanced {
       addressModeV: 'clamp-to-edge',
     });
     // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
+    console.warn('⚠️ envTexture provided, using white dummy!');
     const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture :
       cfg.envTexture.texture ?? (() => {
         console.warn('⚠️ No envTexture provided, using white dummy!');

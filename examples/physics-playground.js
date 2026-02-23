@@ -64,18 +64,26 @@ export var physicsPlayground = function() {
       //   2
       // );
 
-      physicsPlayground.physicsBodiesGeneratorDeepPyramid(
-        "standard",
-        {x: 0, y: 1, z: -20},
+      // 
+      app.physicsBodiesGeneratorWall(
+        "mirror",
+        {x: -4.5, y: 0, z: -10},
         {x: 0, y: 0, z: 0},
-        "./res/meshes/blender/cube.png",
-        "deepPyr",
-        5,
-        true,
-        [2, 2, 2],
-        2,
-        200
-      );
+        ["./res/textures/rust.jpg", "./res/textures/env-maps/sky1.webp"],
+        'my_set_walls', "5x5", true, [1, 1, 1], 2, 70);
+
+      let strength = 10;
+      app.canvas.addEventListener("ray.hit.event", (e) => {
+        console.log('ray.hit.event detected');
+        let b = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
+        const i = new Ammo.btVector3(
+          e.detail.rayDirection[0] * strength,
+          e.detail.rayDirection[1] * strength,
+          e.detail.rayDirection[2] * strength
+        );
+        b.applyCentralImpulse(i);
+      });
+
       // physicsPlayground.physicsBodiesGeneratorTower(
       //   "standard",
       //   {x: 0, y: 0, z: -20},
@@ -113,12 +121,12 @@ export var physicsPlayground = function() {
       });
 
       physicsPlayground.addLight();
-      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.1)
+      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
       })
-      physicsPlayground.lightContainer[0].position[1] = 9;
+      physicsPlayground.lightContainer[0].position[1] = 14;
     }
 
     function onLoadObj(m) {
@@ -171,10 +179,6 @@ export var physicsPlayground = function() {
       var TEST = physicsPlayground.getSceneObjectByName('cube1');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
-
-
-
-
       let mybodycube = app.matrixAmmo.getBodyByName('cube1');
       let mybodycube2 = app.matrixAmmo.getBodyByName('cube2');
 
@@ -199,7 +203,6 @@ export var physicsPlayground = function() {
       //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
       //      randomFloatFromTo(3, 12), 9, 9
       // ))
-
 
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected', e.detail);

@@ -732,7 +732,10 @@ export default class MEMeshObj extends Materials {
       this.done = true;
       if(this.texturesPaths.length > 1) {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
-          this.envMapParams.envTexture = envTexture;
+          try {this.envMapParams.envTexture = envTexture;} catch(err) {
+            console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE);
+            return;
+          }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
           try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
         });

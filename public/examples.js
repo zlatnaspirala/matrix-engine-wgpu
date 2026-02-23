@@ -15,47 +15,46 @@ var _utils = require("./src/engine/utils.js");
 
 // import {loadJamb} from "./examples/load-jamb.js";
 
-function destroyJambDoms() {
-  if ((0, _utils.byId)('hud')) (0, _utils.byId)('hud').remove();
-  if ((0, _utils.byId)('jambTable')) (0, _utils.byId)('jambTable').remove();
-  if ((0, _utils.byId)('topTitleDOM')) (0, _utils.byId)('topTitleDOM').remove();
-}
-(0, _utils.byId)('loadObjFile').addEventListener("click", () => {
-  if (typeof app !== "undefined") app.destroyProgram();
-  destroyJambDoms();
+window.urlQ = _utils.urlQuery;
+
+// A helper function to change the demo without breaking the URL
+const switchDemo = id => {
+  const url = new URL(window.location.href);
+  url.searchParams.set('demo', id);
+  window.location.href = url.toString();
+  // Setting href automatically triggers the reload with the new param
+};
+
+// Demo 1
+(0, _utils.byId)('loadObjFile').addEventListener("click", () => switchDemo('1'));
+
+// Demo 2
+(0, _utils.byId)('physicsPlayground').addEventListener("click", () => switchDemo('2'));
+
+// Demo 3
+(0, _utils.byId)('camera-texture').addEventListener("click", () => switchDemo('3'));
+
+// Demo 4
+(0, _utils.byId)('video-texture').addEventListener("click", () => switchDemo('4'));
+
+// Demo 5 - Fixed ID
+(0, _utils.byId)('objs-anim').addEventListener("click", () => switchDemo('5'));
+
+// Demo 6 - Fixed ID
+(0, _utils.byId)('glb-loader').addEventListener("click", () => switchDemo('6'));
+if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
-});
-(0, _utils.byId)('physicsPlayground').addEventListener("click", () => {
-  if (typeof app !== "undefined") {
-    // still not perfect
-    app.destroyProgram();
-    app = undefined;
-  }
-  destroyJambDoms();
+} else if (urlQ['demo'] === '2') {
   (0, _physicsPlayground.physicsPlayground)();
-});
-(0, _utils.byId)('camera-texture').addEventListener("click", () => {
-  if (typeof app !== "undefined") app.destroyProgram();
-  destroyJambDoms();
+} else if (urlQ['demo'] === '3') {
   (0, _cameraTexture.loadCameraTexture)();
-});
-(0, _utils.byId)('video-texture').addEventListener("click", () => {
-  if (typeof app !== "undefined") app.destroyProgram();
-  destroyJambDoms();
+} else if (urlQ['demo'] === '4') {
   (0, _videoTexture.loadVideoTexture)();
-});
-(0, _utils.byId)('glb-loader').addEventListener("click", () => {
-  if (typeof app !== "undefined") app.destroyProgram();
-  (0, _glbLoader.loadGLBLoader)();
-});
-(0, _utils.byId)('jamb').addEventListener("click", () => {
-  open("https://maximumroulette.com/apps/fohb");
-});
-(0, _utils.byId)('objs-anim').addEventListener("click", () => {
-  if (typeof app !== "undefined") app.destroyProgram();
-  destroyJambDoms();
+} else if (urlQ['demo'] === '5') {
   (0, _loadObjsSequence.loadObjsSequence)();
-});
+} else if (urlQ['demo'] === '6') {
+  (0, _glbLoader.loadGLBLoader)();
+}
 
 },{"./examples/camera-texture.js":2,"./examples/glb-loader.js":3,"./examples/load-obj-file.js":4,"./examples/load-objs-sequence.js":5,"./examples/physics-playground.js":6,"./examples/video-texture.js":7,"./src/engine/utils.js":56}],2:[function(require,module,exports){
 "use strict";
@@ -244,10 +243,10 @@ function loadGLBLoader() {
           useTextureFromGlb: true
         },
         envMapParams: {
-          baseColorMix: 0.05,
-          mirrorTint: [0.9, 0.95, 1.0],
+          baseColorMix: 0.75,
+          mirrorTint: [0.9, 0.5, 1.0],
           // Slight cool tint
-          reflectivity: 0.95,
+          reflectivity: 0.5,
           // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0],
           // Soft cyan
@@ -268,7 +267,7 @@ function loadGLBLoader() {
           z: -20
         },
         name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.jpg']
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp']
       }, null, glbFile11);
       var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
@@ -372,7 +371,7 @@ function loadGLBLoader() {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.jpg'],
+        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -427,7 +426,7 @@ var loadObjFile = function () {
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj"
       }, onLoadObj, {
-        scale: [1, 1, 1]
+        scale: [2, 2, 2]
       });
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
@@ -455,7 +454,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.jpg'],
+        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.95,
           mirrorTint: [0.9, 0.95, 1.0],
@@ -490,7 +489,7 @@ var loadObjFile = function () {
         },
         position: {
           x: 0,
-          y: 2,
+          y: 3,
           z: -20
         },
         rotation: {
@@ -503,7 +502,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.jpg'],
+        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
         name: 'cube1',
         mesh: m.cube,
         envMapParams: {
@@ -528,11 +527,11 @@ var loadObjFile = function () {
           enabled: false,
           geometry: "Cube"
         },
-        pointerEffect: {
-          // enabled: true,
-          // flameEffect: true,
-          // flameEmitter: true,
-        },
+        // pointerEffect: {
+        //   // enabled: true,
+        //   // flameEffect: true,
+        //   // flameEmitter: true,
+        // },
         raycast: {
           enabled: true,
           radius: 2
@@ -558,7 +557,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.jpg'],
+        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.0,
           // CLEAR SKY
@@ -591,10 +590,10 @@ var loadObjFile = function () {
       loadObjFile.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
       });
-      loadObjFile.lightContainer[0].position[1] = 9;
+      loadObjFile.lightContainer[0].position[1] = 11;
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
-        app.activateBloomEffect();
+        // app.activateBloomEffect();
         let cube1 = app.getSceneObjectByName('cube1');
         // cube1.effects.flameEffect.intensity = 100;
         // cube1.effects.flameEffect.morphTo("pyramid", 8)
@@ -816,15 +815,24 @@ var physicsPlayground = function () {
       //   2
       // );
 
-      physicsPlayground.physicsBodiesGeneratorDeepPyramid("standard", {
-        x: 0,
-        y: 1,
-        z: -20
+      // 
+      app.physicsBodiesGeneratorWall("mirror", {
+        x: -4.5,
+        y: 0,
+        z: -10
       }, {
         x: 0,
         y: 0,
         z: 0
-      }, "./res/meshes/blender/cube.png", "deepPyr", 5, true, [2, 2, 2], 2, 200);
+      }, ["./res/textures/rust.jpg", "./res/textures/env-maps/sky1.webp"], 'my_set_walls', "5x5", true, [1, 1, 1], 2, 70);
+      let strength = 10;
+      app.canvas.addEventListener("ray.hit.event", e => {
+        console.log('ray.hit.event detected');
+        let b = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
+        const i = new Ammo.btVector3(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength);
+        b.applyCentralImpulse(i);
+      });
+
       // physicsPlayground.physicsBodiesGeneratorTower(
       //   "standard",
       //   {x: 0, y: 0, z: -20},
@@ -871,12 +879,12 @@ var physicsPlayground = function () {
         // raycast: { enabled: true , radius: 2 }
       });
       physicsPlayground.addLight();
-      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.1);
+      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
       });
-      physicsPlayground.lightContainer[0].position[1] = 9;
+      physicsPlayground.lightContainer[0].position[1] = 14;
     }
     function onLoadObj(m) {
       physicsPlayground.myLoadedMeshes = m;
@@ -22625,16 +22633,16 @@ function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, na
  * @param {Array} scale
  * @param {number} spacing    distance between cubes
  */
-function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
+function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
   const inputCube = {
-    mesh: "./res/meshes/blender/cube.obj"
+    mesh: useMeshPath
   };
   function handler(m) {
     let index = 0;
     const RAY = {
-      enabled: !!raycast,
+      enabled: raycast,
       radius: 1
     };
     for (let y = 0; y < height; y++) {
@@ -22645,6 +22653,24 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
             material: {
               type: material
             },
+            envMapParams: material == 'mirror' ? {
+              baseColorMix: 0.5,
+              // normal mix
+              mirrorTint: [0.9, 0.95, 1.0],
+              // Slight cool tint
+              reflectivity: 0.95,
+              // 25% reflection blend
+              illuminateColor: [0.3, 0.7, 1.0],
+              // Soft cyan
+              illuminateStrength: 0.4,
+              // Gentle rim
+              illuminatePulse: 0.01,
+              // No pulse (static)
+              fresnelPower: 2.0,
+              // Medium-sharp edge
+              envLodBias: 2.5,
+              usePlanarReflection: false // ✅ Env map mode
+            } : null,
             position: {
               x: pos.x + x * spacing,
               y: pos.y + y * spacing - 2.8,
@@ -22656,7 +22682,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
               y: 0,
               z: 0
             },
-            texturesPaths: [texturePath],
+            texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
             name: cubeName,
             mesh: m.mesh,
             physics: {
@@ -22666,9 +22692,6 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
             },
             raycast: RAY
           });
-          // const b = app.matrixAmmo.getBodyByName(cubeName);
-          // stabilizeTowerBody(b);
-          // cache
           const o = app.getSceneObjectByName(cubeName);
           _fluxCodexVertex.runtimeCacheObjs.push(o);
         }, index * delay);
@@ -23533,6 +23556,7 @@ class MaterialsInstanced {
       addressModeV: 'clamp-to-edge'
     });
     // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
+    console.warn('⚠️ envTexture provided, using white dummy!');
     const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture : cfg.envTexture.texture ?? (() => {
       console.warn('⚠️ No envTexture provided, using white dummy!');
       const tex = this.device.createTexture({
@@ -24070,6 +24094,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.envMapParams = o.envMapParams;
     }
     this.material = o.material;
+    this.time = 0;
+    this.deltaTimeAdapter = 10;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -29681,7 +29707,12 @@ class MEMeshObj extends _materials.default {
       this.done = true;
       if (this.texturesPaths.length > 1) {
         this.loadEnvMap(this.texturesPaths, true).then(envTexture => {
-          this.envMapParams.envTexture = envTexture;
+          try {
+            this.envMapParams.envTexture = envTexture;
+          } catch (err) {
+            console.warn(`%cYou forgot to put envMapParams in args...`, _utils.LOG_FUNNY_ARCADE);
+            return;
+          }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
           try {
             this.setupPipeline();
@@ -35051,7 +35082,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentMirrorWGSLInstanced = void 0;
-let fragmentMirrorWGSLInstanced = exports.fragmentMirrorWGSLInstanced = `
+const fragmentMirrorWGSLInstanced = exports.fragmentMirrorWGSLInstanced = `
 override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
@@ -35102,37 +35133,42 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-// ── Illuminate params (subset of MirrorIlluminateParams) ──────────────────────
-struct IlluminateParams {
+struct MirrorIlluminateParams {
+    mirrorTint         : vec3f,
+    reflectivity       : f32,
     illuminateColor    : vec3f,
     illuminateStrength : f32,
     illuminatePulse    : f32,
     fresnelPower       : f32,
-    // _pad1              : vec2f,
-    time               : f32,   // ← pass time here instead
-    _pad1              : f32,
+    envLodBias         : f32,
+    usePlanarReflection: f32,
+    baseColorMix       : f32,
+    _pad2              : vec3f,
 };
 
 const MAX_SPOTLIGHTS = 20u;
 
-@group(0) @binding(0) var<uniform> scene      : Scene;
-@group(0) @binding(1) var shadowMapArray      : texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler       : sampler_comparison;
-@group(0) @binding(3) var meshTexture         : texture_2d<f32>;
-@group(0) @binding(4) var meshSampler         : sampler;
-@group(0) @binding(5) var<uniform> spotlights : array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex      : texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler  : sampler;
-@group(0) @binding(8) var<uniform> material         : MaterialPBR;
+@group(0) @binding(0) var<uniform> scene                   : Scene;
+@group(0) @binding(1) var          shadowMapArray          : texture_depth_2d_array;
+@group(0) @binding(2) var          shadowSampler           : sampler_comparison;
+@group(0) @binding(3) var          meshTexture             : texture_2d<f32>;
+@group(0) @binding(4) var          meshSampler             : sampler;
+@group(0) @binding(5) var<uniform> spotlights              : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var          metallicRoughnessTex    : texture_2d<f32>;
+@group(0) @binding(7) var          metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material                : MaterialPBR;
 
-@group(2) @binding(0) var<uniform> illuminateParams : IlluminateParams;
+@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(2) @binding(2) var          mirrorEnvSampler: sampler;
 
+// ── INSTANCED: adds colorMult at location(4) ──────────────────────────────
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
     @location(3) uv        : vec2f,
-    @location(4) colorMult : vec4f,
+    @location(4) colorMult : vec4f,  // ← instanced only
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
@@ -35145,6 +35181,38 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a      = roughness * roughness;
+    let a2     = a * a;
+    let NdotH  = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L     = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+}
+
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
     let L     = normalize(light.position - fragPos);
     let NdotL = max(dot(N, L), 0.0);
@@ -35152,7 +35220,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: P
     let eps   = light.innerCutoff - light.outerCutoff;
     var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
     if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
-
     let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
     let H     = normalize(L + V);
     let alpha  = mat.roughness * mat.roughness;
@@ -35167,6 +35234,19 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: P
     let G      = Gv * Gl;
     let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
     return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f) -> vec3f {
+    let H       = normalize(lightDir + V);
+    let mirrorR = max(0.02, material.roughnessFactor * 0.15);
+    let D       = distributionGGX(N, H, mirrorR);
+    let G       = geometrySmith(N, V, lightDir, mirrorR);
+    let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
+    let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    let NdotL   = max(dot(N, lightDir), 0.0);
+    let NdotV   = max(dot(N, V), 0.0);
+    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    return spec * lightColor * NdotL * mirrorParams.reflectivity;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -35190,26 +35270,53 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
-// ── Animate illuminate rim — identical logic to mirror shader ─────────────────
-fn computeIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-    let NdotV = max(dot(N, V), 0.0);
-    let rim   = pow(1.0 - NdotV, illuminateParams.fresnelPower);
+fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
+    let dir   = normalize(R);
+    let phi   = atan2(dir.x, dir.z);
+    let theta = acos(clamp(dir.y, -1.0, 1.0));
+    let u     = phi / (2.0 * PI) + 0.5;
+    let v     = theta / PI;
+    return vec2f(u, v);
+}
 
-    // Pulse: smoothly oscillate between [0.3, 1.0]
-    let pulse = mix(0.3, 1.0,
-        (sin(illuminateParams.time * illuminateParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
-    );
+fn reflectToPlanarUV(fragPos: vec3f, N: vec3f, V: vec3f) -> vec2f {
+    let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
+    let ndc     = clipPos.xy / clipPos.w;
+    return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+}
 
-    // Spatial shimmer along Y
-    let shimmer = sin(fragPos.y * 3.0 +illuminateParams.time * 2.0) * 0.15 + 0.85;
+fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32) -> vec3f {
+    var uv: vec2f;
+    if (mirrorParams.usePlanarReflection > 0.5) {
+        uv = reflectToPlanarUV(fragPos, N, V);
+    } else {
+        uv = reflectToEnvUV(R, fragPos);
+    }
+    return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
+}
 
-    return illuminateParams.illuminateColor
-         * illuminateParams.illuminateStrength
-         * rim * pulse * shimmer;
+fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
+    // let NdotV = max(dot(N, V), 0.0);
+    // let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+    // let pulse = mix(0.3, 1.0,
+    //     (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+    // );
+    // let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+    // return mirrorParams.illuminateColor
+    //      * mirrorParams.illuminateStrength
+    //      * rim * pulse * shimmer;
+
+     let NdotV = max(dot(N, V), 0.0);
+    let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+    // NO scene.time — static version
+    return mirrorParams.illuminateColor
+         * mirrorParams.illuminateStrength
+         * rim;
 }
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
+
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
 
@@ -35227,19 +35334,34 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
         let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
         lightContribution += contrib * vis;
+        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+        lightContribution += mirrorSpec * coneFactor * vis;
     }
 
+    let R = reflect(-V, N);
+    var envColor: vec3f;
+    if (mirrorParams.baseColorMix < 0.01) {
+        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
+    } else {
+        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+    }
+
+    let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
+                     mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
     let texColor   = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
-    // Per-instance tint
+    finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
+    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+
     finalColor *= input.colorMult.rgb;
 
-    // ── Illuminate rim glow ───────────────────────────────────────────────────
-    let illuminate = computeIlluminate(N, V, input.fragPos);
+    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
     finalColor += illuminate;
 
-    return vec4f(finalColor, materialData.alpha);
+    let alpha = mix(materialData.alpha, 1.0, 0.5);
+    return vec4f(finalColor, alpha);
 }
 `;
 

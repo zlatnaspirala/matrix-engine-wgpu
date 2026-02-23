@@ -51,6 +51,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     this.material = o.material;
 
+    this.time = 0;
+    this.deltaTimeAdapter = 10;
+
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {

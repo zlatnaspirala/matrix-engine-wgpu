@@ -85,25 +85,35 @@ export function physicsBodiesGeneratorWall(
   raycast = false,
   scale = [1, 1, 1],
   spacing = 2,
-  delay = 200) {
+  delay = 200,
+  useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
-
   const [width, height] = size
     .toLowerCase()
     .split("x")
     .map(n => parseInt(n, 10));
-
-  const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
+  const inputCube = {mesh: useMeshPath};
 
   function handler(m) {
     let index = 0;
-    const RAY = {enabled: !!raycast, radius: 1};
+    const RAY = {enabled: raycast, radius: 1};
     for(let y = 0;y < height;y++) {
       for(let x = 0;x < width;x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
           engine.addMeshObj({
             material: {type: material},
+            envMapParams: (material == 'mirror' ? {
+              baseColorMix: 0.5, // normal mix
+              mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+              reflectivity: 0.95,               // 25% reflection blend
+              illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+              illuminateStrength: 0.4,          // Gentle rim
+              illuminatePulse: 0.01,             // No pulse (static)
+              fresnelPower: 2.0,                // Medium-sharp edge
+              envLodBias: 2.5,
+              usePlanarReflection: false,  // ✅ Env map mode
+            } : null),
             position: {
               x: pos.x + x * spacing,
               y: pos.y + y * spacing - 2.8,
@@ -111,7 +121,7 @@ export function physicsBodiesGeneratorWall(
             },
             rotation: rot,
             rotationSpeed: {x: 0, y: 0, z: 0},
-            texturesPaths: [texturePath],
+            texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
             name: cubeName,
             mesh: m.mesh,
             physics: {
@@ -121,9 +131,6 @@ export function physicsBodiesGeneratorWall(
             },
             raycast: RAY
           });
-          // const b = app.matrixAmmo.getBodyByName(cubeName);
-          // stabilizeTowerBody(b);
-          // cache
           const o = app.getSceneObjectByName(cubeName);
           runtimeCacheObjs.push(o);
         }, index * delay)
@@ -131,7 +138,6 @@ export function physicsBodiesGeneratorWall(
       }
     }
   }
-
   downloadMeshes(inputCube, handler, {scale});
 }
 
