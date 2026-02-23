@@ -27439,11 +27439,18 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     };
 
     // cache
+    this._scaleVec = new Float32Array([this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest]);
+
+    // Update only when scale changes
     this._animationLength = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._numFrames = null;
     this.initAnimationCache();
+    // this.finalMat = Array.from({length: this.MAX_BONES}, () => new Float32Array(16));
+    this.finalMat = new Float32Array(this.MAX_BONES * 16);
     this.nodeChannels = new Map();
+    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    this.initNodeChannelMap(anim);
 
     // debug
     this.scaleBoneTest = 1;
@@ -27464,12 +27471,36 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.nodeWorldMatrices = Array.from({
       length: this.glb.nodes.length
     }, () => _wgpuMatrix.mat4.identity());
-    this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.skeleton = []; // array of joint node indices
+    this.startTime = performance.now() / 1000;
+    this.skeleton = [];
     this.animationSpeed = 1000;
-    this.inverseBindMatrices = []; // Float32Array for each joint
+    this.inverseBindMatrices = [];
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this.initNodes(this.glb.nodes);
+  }
+  set scaleBoneTest(val) {
+    this._scaleBoneTest = val;
+    this._scaleVec[0] = this._scaleVec[1] = this._scaleVec[2] = val;
+  }
+  initNodes(nodes) {
+    for (const node of nodes) {
+      if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
+      if (!node.rotation) node.rotation = _wgpuMatrix.quat.create();
+      if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
+      // snapshot originals once
+      node.originalTranslation = node.translation.slice();
+      node.originalRotation = node.rotation.slice();
+      node.originalScale = node.scale.slice();
+      node.worldMatrix = _wgpuMatrix.mat4.create(); // ← add this
+    }
+  }
+  initNodeChannelMap(glbAnimation) {
+    this.nodeChannels = new Map();
+    for (const channel of glbAnimation.channels) {
+      if (!this.nodeChannels.has(channel.target.node)) this.nodeChannels.set(channel.target.node, []);
+      this.nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -27524,6 +27555,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
   initAnimationCache() {
     this.initAnimationLenghtCache();
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    this.initNodeChannelMap(anim);
     if (typeof anim == 'undefined') return 1;
     let maxFrames = 0;
     for (const sampler of anim.samplers) {
@@ -27562,19 +27594,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
   }
   update(deltaTime) {
     const frameTime = 1 / this.fps;
-    const maxDelta = frameTime * 4; // max 4 frames catchup
+    const maxDelta = frameTime * 4;
     const clampedDelta = Math.min(deltaTime, maxDelta);
     this.sharedState.timeAccumulator += clampedDelta;
     while (this.sharedState.timeAccumulator >= frameTime) {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
       this.sharedState.timeAccumulator -= frameTime;
     }
-    // this.sharedState.timeAccumulator += deltaTime;
-    // while(this.sharedState.timeAccumulator >= frameTime) {
-    //   this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
-    //   this.sharedState.timeAccumulator -= frameTime;
-    // }
-
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
@@ -27720,8 +27746,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       wz = w * z;
     return new Float32Array([1 - 2 * (yy + zz), 2 * (xy + wz), 2 * (xz - wy), 0, 2 * (xy - wz), 1 - 2 * (xx + zz), 2 * (yz + wx), 0, 2 * (xz + wy), 2 * (yz - wx), 1 - 2 * (xx + yy), 0, 0, 0, 0, 1]);
   }
-
-  // Compose TRS to a 4×4
   composeMatrix(translation, rotationQuat, scale) {
     const m = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.translate(m, translation, m);
@@ -27729,25 +27753,9 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     _wgpuMatrix.mat4.multiply(m, rot, m);
     _wgpuMatrix.mat4.scale(m, scale, m);
     return m;
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-    // return m;
   }
   decomposeMatrix(m) {
-    // m is column-major: indices:
-    // [ m0 m4 m8  m12
-    //   m1 m5 m9  m13
-    //   m2 m6 m10 m14
-    //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
-    // Extract the 3 column vectors (upper-left 3x3)
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
@@ -27775,21 +27783,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     if (det3 < 0) {
       // flip Z
       sz = -sz;
-      // flip third column sign
-      // multiply cz by -1 => r02,r12,r22 *= -1
-      // recompute normalized r* accordingly:
-      // since we only need a valid rotation matrix for quaternion conversion,
-      // just invert the third column
-      // (alternatively flip sx or sy—this is a convention choice)
-      // Here we flip the third column:
-      // r02 = -r02; r12 = -r12; r22 = -r22;
     }
-    // Build quaternion from rotation matrix (r00..r22)
-    // Using standard conversion (column-major rotation)
     const trace = r00 + r11 + r22;
     let qx, qy, qz, qw;
     if (trace > 0.00001) {
-      const s = Math.sqrt(trace + 1.0) * 2; // s=4*qw
+      const s = Math.sqrt(trace + 1.0) * 2;
       qw = 0.25 * s;
       qx = (r21 - r12) / s;
       qy = (r02 - r20) / s;
@@ -27844,26 +27842,21 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       out[i] = flip ? s0 * q0[i] - s1 * q1[i] : s0 * q0[i] + s1 * q1[i];
     }
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
-    const channels = glbAnimation.channels;
-    const samplers = glbAnimation.samplers;
-    // --- Map channels per node for faster lookup
-
-    for (const channel of channels) {
-      if (!this.nodeChannels.has(channel.target.node)) this.nodeChannels.set(channel.target.node, []);
-      this.nodeChannels.get(channel.target.node).push(channel);
+  findKeyframe(inputTimes, animTime) {
+    let lo = 0;
+    let hi = inputTimes.length - 2;
+    while (lo < hi) {
+      const mid = lo + hi + 1 >> 1;
+      if (inputTimes[mid] <= animTime) lo = mid;else hi = mid - 1;
     }
+    return lo;
+  }
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
+    // const channels = glbAnimation.channels;
+    const samplers = glbAnimation.samplers;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-      // --- Initialize node TRS if needed
-      if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
-      if (!node.rotation) node.rotation = _wgpuMatrix.quat.create();
-      if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
-      // --- Keep original TRS for additive animation
-      if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
-      if (!node.originalRotation) node.originalRotation = node.rotation.slice();
-      if (!node.originalScale) node.originalScale = node.scale.slice();
       const channelsForNode = this.nodeChannels.get(nodeIndex) || [];
       for (const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
@@ -27874,8 +27867,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         const numComponents = path === "rotation" ? 4 : 3;
         // --- Find keyframe interval
         const animTime = time % inputTimes[inputTimes.length - 1];
-        let i = 0;
-        while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+        const i = this.findKeyframe(inputTimes, animTime);
         const t0 = inputTimes[i];
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
@@ -27894,37 +27886,51 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
-    const computeWorld = nodeIndex => {
-      const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-      if (parentWorld) {
-        // multiply parent * local
-        _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-      } else {
-        _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
+    const computeWorld = nodes => {
+      // const node = nodes[nodeIndex];
+      // if(!node.worldMatrix) node.worldMatrix = mat4.create();
+      // let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      // if(parentWorld) {
+      //   // multiply parent * local
+      //   mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+      // } else {
+      //   mat4.copy(node.transform, node.worldMatrix);
+      // }
+      // mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
+      // if(node.children) {
+      //   for(const childIndex of node.children) computeWorld(childIndex);
+      // }
+      // Stack-based DFS — no recursion overhead
+      const stack = [];
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].parent === null || nodes[i].parent === undefined) {
+          stack.push(i);
+        }
       }
-      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
+      while (stack.length > 0) {
+        const nodeIndex = stack.pop();
+        const node = nodes[nodeIndex];
+        const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
+        if (parentWorld) {
+          _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+        } else {
+          _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
+        }
+        _wgpuMatrix.mat4.scale(node.worldMatrix, this._scaleVec, node.worldMatrix);
+        if (node.children) {
+          for (const childIndex of node.children) stack.push(childIndex);
+        }
       }
     };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === undefined) {
-        computeWorld(i);
-      }
-    }
+    computeWorld(nodes);
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      const offset = j * 16;
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this.finalMat.subarray(offset, offset + 16));
     }
     const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
-    // console.log(this.name, 'instanceIndex:', instanceIndex, 'byteOffset:', byteOffset, 'bufferSize:', this.bonesBuffer.size);
-    // --- Upload to GPU
-    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
-    return boneMatrices;
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, this.finalMat);
+    return this.finalMat;
   }
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
