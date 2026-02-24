@@ -537,7 +537,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.webp']}
     if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
@@ -875,7 +875,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.webp']}
     if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
@@ -954,7 +954,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.webp']}
     if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}

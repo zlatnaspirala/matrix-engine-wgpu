@@ -31,7 +31,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.95,
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
@@ -60,7 +60,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: 3, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1.webp'],
         name: 'cube1',
         mesh: m.cube,
         envMapParams: {
@@ -92,7 +92,7 @@ export var loadObjFile = function() {
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.0, // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint

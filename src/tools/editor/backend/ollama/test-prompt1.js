@@ -1718,7 +1718,7 @@ GRAPH ExampleGeneratorWall
         },
         {
           "key": "texturePath",
-          "value": "res/textures/default.png"
+          "value": "res/textures/default.webp"
         },
         {
           "key": "name",
@@ -5797,7 +5797,7 @@ GRAPH ExampleComplex1
         },
         {
           "key": "texturePath",
-          "value": "res/textures/cube-g1.png"
+          "value": "res/textures/cube-g1.webp"
         },
         {
           "key": "name",
@@ -9056,9 +9056,9 @@ GRAPH ExampleComplex1
     },
     "string": {
       "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.png",
-      "REEL_TEX": "res/textures/slot/reel1.png",
+      "REEL_TEX": "res/textures/slot/reel1.webp",
       "START_SPIN": "start-spin",
-      "CUBE_TEX": "res/textures/cube-g1.png"
+      "CUBE_TEX": "res/textures/cube-g1.webp"
     },
     "object": {
       "SPIN_STATUS": {

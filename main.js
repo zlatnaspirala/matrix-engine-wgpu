@@ -211,7 +211,7 @@ export let application = new MatrixEngineWGPU({
     //     position: {x: 3, y: 0, z: -10},
     //     rotation: {x: 0, y: 0, z: 0},
     //     rotationSpeed: {x: 10, y: 0, z: 0},
-    //     texturesPaths: ['./res/textures/default.png']
+    //     texturesPaths: ['./res/textures/default.webp']
     //   };
     // }, {scale: [11, 11, 11], swap: [null]})
 

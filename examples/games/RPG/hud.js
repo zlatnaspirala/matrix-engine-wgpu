@@ -263,7 +263,7 @@ export class HUD {
         justifyContent: "center",
         color: "#ccc",
         fontSize: "14px",
-        cursor: "url('./res/icons/default.png') 0 0, auto",
+        cursor: "url('./res/icons/default.webp') 0 0, auto",
         backgroundRepeat: "round"
       });
 
@@ -448,7 +448,7 @@ export class HUD {
       justifyContent: "center",
       color: "#ccc",
       fontSize: "12px",
-      cursor: "url('./res/icons/default.png') 0 0, auto",
+      cursor: "url('./res/icons/default.webp') 0 0, auto",
       transition: "all 0.2s ease-in-out",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
@@ -508,7 +508,7 @@ export class HUD {
         justifyContent: "center",
         color: "#ccc",
         fontSize: "12px",
-        cursor: "url('./res/icons/default.png') 0 0, auto",
+        cursor: "url('./res/icons/default.webp') 0 0, auto",
         transition: "all 0.2s ease-in-out",
         backgroundSize: "contain",
         backgroundRepeat: "no-repeat",
@@ -579,7 +579,7 @@ export class HUD {
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.webp) 0 0, auto',
       pointerEvents: 'auto'
     });
     loader.innerHTML = `
@@ -658,7 +658,7 @@ export class HUD {
 
   setCursor() {
     // AnimatedCursor
-    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    document.body.style.cursor = "url('./res/icons/default.webp') 0 0, auto";
   }
 
 }

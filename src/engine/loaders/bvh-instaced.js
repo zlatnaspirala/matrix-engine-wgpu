@@ -83,14 +83,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       };
     }
     this.sharedState = this.bvh.sharedState;
-    // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
-    this.nodeWorldMatrices = Array.from(
-      {length: this.glb.nodes.length},
-      () => mat4.identity()
-    );
-
+    this.nodeWorldMatrices = Array.from({length: this.glb.nodes.length}, () => mat4.identity());
     this.startTime = performance.now() / 1000;
     this.skeleton = [];
     this.animationSpeed = 1000;
@@ -237,18 +231,9 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
-        this.sharedState.animationStarted = false;
-        // if(this.glb.animationIndex == null) this.glb.animationIndex = 0;
         const animName = this.glb.glbJsonData.animations[this.glb.animationIndex].name;
-        // if(!this._animationEndDispatched[animName]) {
-        //   this._animationEndDispatched[animName] = true;
         this.dispatchEvent(this._animationEvents[animName]);
-        // }
-        // dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
-        //   detail: {
-        //     animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
-        //   }
-        // }))
+        this.sharedState.animationStarted = false;
       }, this._animationLength * 1000)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {

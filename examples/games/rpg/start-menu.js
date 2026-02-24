@@ -576,7 +576,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     })
 
     forestOfHollowBloodStartSceen.animatedCursor.start();
-    // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    // document.body.style.cursor = "url('./res/icons/default.webp') 0 0, auto";
 
     document.addEventListener("contextmenu", event => event.preventDefault());
     byId('canvas1').style.pointerEvents = 'none';
@@ -756,7 +756,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto'
+      cursor: 'url(./res/icons/default.webp) 0 0, auto'
     });
     startBtn.classList.add('buttonMatrix');
 
@@ -833,7 +833,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.webp) 0 0, auto',
       pointerEvents: 'auto'
     });
     aboutBtn.classList.add('buttonMatrix');
@@ -862,7 +862,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.webp) 0 0, auto',
       pointerEvents: 'auto'
     });
     // LBBtn.classList.add('buttonMatrix');
@@ -903,7 +903,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       color: 'black',
       // background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.webp) 0 0, auto',
       pointerEvents: 'auto'
     });
     hud.appendChild(sendMsgInput);
@@ -922,7 +922,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.webp) 0 0, auto',
       pointerEvents: 'auto'
     });
     // sendMsgBtn.classList.add('buttonMatrix');
@@ -963,7 +963,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.webp) 0 0, auto',
       pointerEvents: 'auto',
       filter: 'grayscale(1)'
     });

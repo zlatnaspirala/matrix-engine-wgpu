@@ -145,7 +145,7 @@ export function loadGLBLoader() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {

@@ -136,7 +136,7 @@ export class Character extends Hero {
         scale: [20, 20, 20],
         position: {x: 0, y: -24, z: -220},
         name: 'mouseTarget',
-        texturesPaths: ['./res/textures/default.png'],
+        texturesPaths: ['./res/textures/default.webp'],
         raycast: {enabled: false, radius: 1.5},
         pointerEffect: {
           enabled: true,

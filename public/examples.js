@@ -361,7 +361,7 @@ function loadGLBLoader() {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -444,7 +444,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.95,
           mirrorTint: [0.9, 0.95, 1.0],
@@ -492,7 +492,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1.webp'],
         name: 'cube1',
         mesh: m.cube,
         envMapParams: {
@@ -547,7 +547,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.0,
           // CLEAR SKY
@@ -26224,9 +26224,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       };
     }
     this.sharedState = this.bvh.sharedState;
-    // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
     this.nodeWorldMatrices = Array.from({
       length: this.glb.nodes.length
     }, () => _wgpuMatrix.mat4.identity());
@@ -26360,18 +26358,9 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
-        this.sharedState.animationStarted = false;
-        // if(this.glb.animationIndex == null) this.glb.animationIndex = 0;
         const animName = this.glb.glbJsonData.animations[this.glb.animationIndex].name;
-        // if(!this._animationEndDispatched[animName]) {
-        //   this._animationEndDispatched[animName] = true;
         this.dispatchEvent(this._animationEvents[animName]);
-        // }
-        // dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
-        //   detail: {
-        //     animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
-        //   }
-        // }))
+        this.sharedState.animationStarted = false;
       }, this._animationLength * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
@@ -49983,7 +49972,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
+      o.texturesPaths = ['./res/textures/default.webp'];
     }
     if (typeof o.material === 'undefined') {
       o.material = {
@@ -50366,7 +50355,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
+      o.texturesPaths = ['./res/textures/default.webp'];
     }
     if (typeof o.material === 'undefined') {
       o.material = {
@@ -50490,7 +50479,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
+      o.texturesPaths = ['./res/textures/default.webp'];
     }
     if (typeof o.material === 'undefined') {
       o.material = {
