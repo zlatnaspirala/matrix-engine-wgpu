@@ -26363,10 +26363,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         this.sharedState.animationStarted = false;
         // if(this.glb.animationIndex == null) this.glb.animationIndex = 0;
         const animName = this.glb.glbJsonData.animations[this.glb.animationIndex].name;
-        if (!this._animationEndDispatched[animName]) {
-          this._animationEndDispatched[animName] = true;
-          this.dispatchEvent(this._animationEvents[animName]);
-        }
+        // if(!this._animationEndDispatched[animName]) {
+        //   this._animationEndDispatched[animName] = true;
+        this.dispatchEvent(this._animationEvents[animName]);
+        // }
         // dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
         //   detail: {
         //     animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
