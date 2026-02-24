@@ -53,17 +53,22 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     };
     // cache
     this._scaleVec = new Float32Array([this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest]);
-    // Update only when scale changes
     this._animationLength = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._numFrames = null;
     this.initAnimationCache();
-    // this.finalMat = Array.from({length: this.MAX_BONES}, () => new Float32Array(16));
     this.finalMat = new Float32Array(this.MAX_BONES * 16);
     this.nodeChannels = new Map();
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     this.initNodeChannelMap(anim);
-
+    this._animationEvents = {};
+    this._animationEndDispatched = {};
+    this.glb.glbJsonData.animations.forEach(anim => {
+      this._animationEvents[anim.name] = new CustomEvent(`animationEnd-${this.name}`, {
+        detail: {animationName: anim.name}
+      });
+      this._animationEndDispatched[anim.name] = false;
+    });
 
     // debug
     this.scaleBoneTest = 1;
@@ -233,12 +238,17 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if(this.glb.animationIndex == null) this.glb.animationIndex = 0;
-        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
-          detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
-          }
-        }))
+        // if(this.glb.animationIndex == null) this.glb.animationIndex = 0;
+        const animName = this.glb.glbJsonData.animations[this.glb.animationIndex].name;
+        if(!this._animationEndDispatched[animName]) {
+          this._animationEndDispatched[animName] = true;
+          this.dispatchEvent(this._animationEvents[animName]);
+        }
+        // dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
+        //   detail: {
+        //     animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+        //   }
+        // }))
       }, this._animationLength * 1000)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {

@@ -514,7 +514,7 @@ var loadObjFile = function () {
           usePlanarReflection: false // ✅ Env map mode
         },
         physics: {
-          enabled: false,
+          enabled: true,
           geometry: "Cube"
         },
         // pointerEffect: {
@@ -570,7 +570,7 @@ var loadObjFile = function () {
         mesh: m.ball,
         physics: {
           enabled: false,
-          geometry: "Sphere"
+          geometry: "Cube"
         }
       });
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
@@ -24640,42 +24640,23 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      let MAX_BONES = 100;
-      this.MAX_BONES = MAX_BONES;
-      // this.bonesBuffer = device.createBuffer({
-      //   label: "bonesBuffer",
-      //   size: alignTo256(64 * MAX_BONES),
-      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      // });
-
-      // const bones = new Float32Array(this.MAX_BONES * 16);
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   // identity matrices
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
-      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const TRAIL_INSTANCES = 10; // your total instance count
+      this.MAX_BONES = 100;
+      const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
         size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-
-      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
-      //
-      // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
-        label: "Vertex Animation Params",
+        label: "VerAnimationPar",
         size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
-        // 256, //this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -24928,18 +24909,27 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
+      this.mm = _wgpuMatrix.mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        _wgpuMatrix.mat4.identity(this.mm);
+        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
         } else {
-          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        return modelMatrix;
+        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
       this.done = true;
       if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
@@ -25044,7 +25034,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       primitive: this.primitive
     });
   };
-  updateModelUniformBuffer = () => {};
+  updateModelUniformBuffer = () => {
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm.buffer, this.mm.byteOffset, this.mm.byteLength);
+  };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid array passed to createGPUBuffer');
@@ -26199,16 +26192,24 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     };
     // cache
     this._scaleVec = new Float32Array([this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest]);
-    // Update only when scale changes
     this._animationLength = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._numFrames = null;
     this.initAnimationCache();
-    // this.finalMat = Array.from({length: this.MAX_BONES}, () => new Float32Array(16));
     this.finalMat = new Float32Array(this.MAX_BONES * 16);
     this.nodeChannels = new Map();
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     this.initNodeChannelMap(anim);
+    this._animationEvents = {};
+    this._animationEndDispatched = {};
+    this.glb.glbJsonData.animations.forEach(anim => {
+      this._animationEvents[anim.name] = new CustomEvent(`animationEnd-${this.name}`, {
+        detail: {
+          animationName: anim.name
+        }
+      });
+      this._animationEndDispatched[anim.name] = false;
+    });
 
     // debug
     this.scaleBoneTest = 1;
@@ -26360,12 +26361,17 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
-        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
-          detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
-          }
-        }));
+        // if(this.glb.animationIndex == null) this.glb.animationIndex = 0;
+        const animName = this.glb.glbJsonData.animations[this.glb.animationIndex].name;
+        if (!this._animationEndDispatched[animName]) {
+          this._animationEndDispatched[animName] = true;
+          this.dispatchEvent(this._animationEvents[animName]);
+        }
+        // dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
+        //   detail: {
+        //     animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+        //   }
+        // }))
       }, this._animationLength * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
@@ -29132,7 +29138,6 @@ class MEMeshObj extends _materials.default {
     this.deltaTimeAdapter = 10;
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
-      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
     });
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
@@ -29962,10 +29967,8 @@ class MEMeshObj extends _materials.default {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
-    if (this.done == false) return;
-    // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm);
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -30028,7 +30031,6 @@ class MEMeshObj extends _materials.default {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
-    // Bind per-mesh uniforms
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
@@ -32677,6 +32679,13 @@ class MatrixAmmo {
     this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
     this.detectCollision();
+
+    // cache for loop call opti
+    this._trans = new Ammo.btTransform();
+    this._transform = new Ammo.btTransform();
+    this._btVec3 = new Ammo.btVector3(0, 0, 0);
+    this._btVec3Axis = new Ammo.btVector3(0, 0, 0);
+    this._btQuat = new Ammo.btQuaternion(0, 0, 0, 1);
   }
   addPhysics(MEObject, pOptions) {
     if (pOptions.geometry == "Sphere") {
@@ -32861,46 +32870,42 @@ class MatrixAmmo {
   }
   updatePhysics() {
     if (typeof Ammo === 'undefined') return;
-    const trans = new Ammo.btTransform();
-    const transform = new Ammo.btTransform();
-    this.rigidBodies.forEach(function (body) {
+    this.rigidBodies.forEach(body => {
       if (body.isKinematic) {
-        transform.setIdentity();
-        transform.setOrigin(new Ammo.btVector3(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z));
-        const quat = new Ammo.btQuaternion();
-        quat.setRotation(new Ammo.btVector3(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z), (0, _utils.degToRad)(body.MEObject.rotation.angle));
-        transform.setRotation(quat);
-        body.setWorldTransform(transform);
+        this._transform.setIdentity();
+        this._btVec3.setValue(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z);
+        this._transform.setOrigin(this._btVec3);
+        this._btVec3Axis.setValue(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z);
+        this._btQuat.setRotation(this._btVec3Axis, (0, _utils.degToRad)(body.MEObject.rotation.angle));
+        this._transform.setRotation(this._btQuat);
+        body.setWorldTransform(this._transform);
         const ms = body.getMotionState();
-        if (ms) ms.setWorldTransform(transform);
+        if (ms) ms.setWorldTransform(this._transform);
       }
     });
-    Ammo.destroy(transform);
-
-    // Step simulation AFTER setting kinematic transforms
     const timeStep = 1 / 60;
     const maxSubSteps = 10;
     for (let i = 0; i < this.speedUpSimulation; i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }
-    this.rigidBodies.forEach(function (body) {
+    this.rigidBodies.forEach(body => {
       if (!body.isKinematic && body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        const _x = +trans.getOrigin().x().toFixed(2);
-        const _y = +trans.getOrigin().y().toFixed(2);
-        const _z = +trans.getOrigin().z().toFixed(2);
+        body.getMotionState().getWorldTransform(this._trans);
+        const _x = Math.round(this._trans.getOrigin().x() * 100) / 100;
+        const _y = Math.round(this._trans.getOrigin().y() * 100) / 100;
+        const _z = Math.round(this._trans.getOrigin().z() * 100) / 100;
         body.MEObject.position.setPosition(_x, _y, _z);
-        const rot = trans.getRotation();
+        const rot = this._trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
         body.MEObject.rotation.axis.x = rotAxis.x();
         body.MEObject.rotation.axis.y = rotAxis.y();
         body.MEObject.rotation.axis.z = rotAxis.z();
         body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(rot);
-        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(rot.getAngle());
       }
     });
-    Ammo.destroy(trans);
+    // NO Ammo.destroy needed — reused objects stay alive
     this.detectCollision();
   }
 }
@@ -49514,6 +49519,9 @@ class MatrixEngineWGPU {
     this.logLoopError = true;
     this.MAX_SPOTLIGHTS = 20;
     //cache
+    this._bufferUpdates = [];
+    this._viewProjMatrix = new Float32Array(16);
+    this._invViewProj = new Float32Array(16);
     this._lightData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
 
     // context select options
@@ -49805,6 +49813,27 @@ class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.depthTextureViewTrail = depthTexture.createView();
+    this._transPassDesc = {
+      colorAttachments: [{
+        view: this.sceneTextureView,
+        // stable ref ✅
+        loadOp: 'load',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 1,
+          b: 0,
+          a: 1
+        }
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        // stable ref ✅
+        depthLoadOp: 'load',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0
+      }
+    };
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -49881,6 +49910,7 @@ class MatrixEngineWGPU {
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
+    this.initShadowViews();
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -50086,6 +50116,15 @@ class MatrixEngineWGPU {
     this.adapter = null;
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
+  initShadowViews() {
+    this._shadowViews = this.lightContainer.map((light, i) => this.shadowTextureArray.createView({
+      dimension: '2d',
+      baseArrayLayer: i,
+      arrayLayerCount: 1,
+      baseMipLevel: 0,
+      mipLevelCount: 1
+    }));
+  }
   updateLights() {
     const floatsPerLight = 36;
     const data = this._lightData;
@@ -50106,12 +50145,12 @@ class MatrixEngineWGPU {
     }
     this.autoUpdate.forEach(_ => _.update());
     const currentTime = performance.now() / 1000;
-    const bufferUpdates = [];
+    this._bufferUpdates.length = 0;
     this.mainRenderBundle.forEach((m, index) => {
       if (m.vertexAnimBuffer && m.vertexAnimParams) {
         m.time = currentTime * m.deltaTimeAdapter;
         m.vertexAnimParams[0] = m.time;
-        bufferUpdates.push({
+        this._bufferUpdates.push({
           buffer: m.vertexAnimBuffer,
           data: m.vertexAnimParams
         });
@@ -50121,12 +50160,12 @@ class MatrixEngineWGPU {
           m.createBindGroupForRender();
           setTimeout(() => {
             requestAnimationFrame(this.frame);
-          }, 300);
+          }, 100);
           return;
         }
       }
     });
-    for (const update of bufferUpdates) {
+    for (const update of this._bufferUpdates) {
       this.device.queue.writeBuffer(update.buffer, 0, update.data);
     }
     try {
@@ -50147,11 +50186,10 @@ class MatrixEngineWGPU {
       });
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+        let vpl = this.shadowTextureArray.createView({
           dimension: '2d',
           baseArrayLayer: i,
           arrayLayerCount: 1,
-          // must be > 0
           baseMipLevel: 0,
           mipLevelCount: 1
         });
@@ -50159,7 +50197,7 @@ class MatrixEngineWGPU {
           label: "shadowPass",
           colorAttachments: [],
           depthStencilAttachment: {
-            view: ViewPerLightRenderShadowPass,
+            view: vpl,
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
             depthClearValue: 1.0
@@ -50167,7 +50205,6 @@ class MatrixEngineWGPU {
         });
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
-            mesh.mm = mesh.getModelMatrix(mesh.position, mesh.useScale);
             mesh.updateInstanceData(mesh.mm);
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
@@ -50185,10 +50222,6 @@ class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-
-      // with no postprocessing
-      // const currentTextureView = this.context.getCurrentTexture().createView();
-      // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // opaque
@@ -50203,7 +50236,6 @@ class MatrixEngineWGPU {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -50238,32 +50270,30 @@ class MatrixEngineWGPU {
       }
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: 'load',
-          storeOp: 'store',
-          clearValue: {
-            r: 0,
-            g: 1,
-            b: 0,
-            a: 1
-          }
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: 'load',
-          depthStoreOp: 'store',
-          depthClearValue: 1.0
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+      // const transPassDesc = {
+      //   colorAttachments: [{
+      //     view: this.sceneTextureView,
+      //     loadOp: 'load',
+      //     storeOp: 'store',
+      //     clearValue: {r: 0, g: 1, b: 0, a: 1},
+      //   }],
+      //   depthStencilAttachment: {
+      //     view: this.mainDepthView,
+      //     depthLoadOp: 'load',
+      //     depthStoreOp: 'store',
+      //     depthClearValue: 1.0,
+      //   }
+      // };
+      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
+      // const cam = this.cameras[this.mainCameraParams.type];
+      // mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+      // mat4.invert(this._viewProjMatrix, this._invViewProj);
+
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if (effect == null || effect.enabled == false) return;
-          // let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.md);
           effect.render(transPass, mesh, viewProjMatrix);
         });

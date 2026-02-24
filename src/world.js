@@ -109,7 +109,11 @@ export default class MatrixEngineWGPU {
 
     this.MAX_SPOTLIGHTS = 20;
     //cache
+    this._bufferUpdates = [];
+    this._viewProjMatrix = new Float32Array(16);
+    this._invViewProj = new Float32Array(16);
     this._lightData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
+
 
     // context select options
     if(typeof options.alphaMode == 'undefined') {
@@ -408,6 +412,22 @@ export default class MatrixEngineWGPU {
     });
 
     this.depthTextureViewTrail = depthTexture.createView();
+
+
+    this._transPassDesc = {
+      colorAttachments: [{
+        view: this.sceneTextureView, // stable ref ✅
+        loadOp: 'load',
+        storeOp: 'store',
+        clearValue: {r: 0, g: 1, b: 0, a: 1},
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,    // stable ref ✅
+        depthLoadOp: 'load',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0,
+      }
+    };
   }
 
   createTexArrayForShadows() {
@@ -489,6 +509,7 @@ export default class MatrixEngineWGPU {
     let newLight = new SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
+    this.initShadowViews();
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
 
@@ -640,6 +661,18 @@ export default class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
 
+  initShadowViews() {
+    this._shadowViews = this.lightContainer.map((light, i) =>
+      this.shadowTextureArray.createView({
+        dimension: '2d',
+        baseArrayLayer: i,
+        arrayLayerCount: 1,
+        baseMipLevel: 0,
+        mipLevelCount: 1,
+      })
+    );
+  }
+
   updateLights() {
     const floatsPerLight = 36;
     const data = this._lightData;
@@ -660,29 +693,24 @@ export default class MatrixEngineWGPU {
 
     this.autoUpdate.forEach((_) => _.update())
     const currentTime = performance.now() / 1000;
-    const bufferUpdates = [];
+    this._bufferUpdates.length = 0;
     this.mainRenderBundle.forEach((m, index) => {
       if(m.vertexAnimBuffer && m.vertexAnimParams) {
         m.time = currentTime * m.deltaTimeAdapter;
         m.vertexAnimParams[0] = m.time;
-        bufferUpdates.push({
-          buffer: m.vertexAnimBuffer,
-          data: m.vertexAnimParams
-        });
+        this._bufferUpdates.push({buffer: m.vertexAnimBuffer, data: m.vertexAnimParams});
       }
       if(m.isVideo == true) {
         if(!m.externalTexture) {
           m.createBindGroupForRender();
           setTimeout(() => {
             requestAnimationFrame(this.frame)
-          }, 300)
+          }, 100)
           return;
         }
       }
     })
-    for(const update of bufferUpdates) {
-      this.device.queue.writeBuffer(update.buffer, 0, update.data);
-    }
+    for(const update of this._bufferUpdates) {this.device.queue.writeBuffer(update.buffer, 0, update.data)}
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -692,7 +720,6 @@ export default class MatrixEngineWGPU {
         mesh.updateModelUniformBuffer();
         if(mesh.update) mesh.update(mesh.time);
         if(mesh.updateTime) {mesh.updateTime(currentTime);}
-
         this.lightContainer.forEach((light) => {
           light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
@@ -701,10 +728,10 @@ export default class MatrixEngineWGPU {
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+        let vpl = this.shadowTextureArray.createView({
           dimension: '2d',
           baseArrayLayer: i,
-          arrayLayerCount: 1, // must be > 0
+          arrayLayerCount: 1,
           baseMipLevel: 0,
           mipLevelCount: 1,
         });
@@ -713,7 +740,7 @@ export default class MatrixEngineWGPU {
           label: "shadowPass",
           colorAttachments: [],
           depthStencilAttachment: {
-            view: ViewPerLightRenderShadowPass,
+            view: vpl,
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
             depthClearValue: 1.0,
@@ -722,7 +749,6 @@ export default class MatrixEngineWGPU {
 
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
-            mesh.mm = mesh.getModelMatrix(mesh.position, mesh.useScale);
             mesh.updateInstanceData(mesh.mm)
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
@@ -742,11 +768,7 @@ export default class MatrixEngineWGPU {
         shadowPass.end();
       }
 
-      // with no postprocessing
-      // const currentTextureView = this.context.getCurrentTexture().createView();
-      // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // opaque
       for(const mesh of this.mainRenderBundle) {
@@ -760,7 +782,6 @@ export default class MatrixEngineWGPU {
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
             if(m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -796,28 +817,32 @@ export default class MatrixEngineWGPU {
       pass.end();
 
       if(this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: 'load',
-          storeOp: 'store',
-          clearValue: {r: 0, g: 1, b: 0, a: 1},
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: 'load',
-          depthStoreOp: 'store',
-          depthClearValue: 1.0,
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+      // const transPassDesc = {
+      //   colorAttachments: [{
+      //     view: this.sceneTextureView,
+      //     loadOp: 'load',
+      //     storeOp: 'store',
+      //     clearValue: {r: 0, g: 1, b: 0, a: 1},
+      //   }],
+      //   depthStencilAttachment: {
+      //     view: this.mainDepthView,
+      //     depthLoadOp: 'load',
+      //     depthStoreOp: 'store',
+      //     depthClearValue: 1.0,
+      //   }
+      // };
+      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
+
       const viewProjMatrix = mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix,
         this.cameras[this.mainCameraParams.type].view, mat4.identity());
+      // const cam = this.cameras[this.mainCameraParams.type];
+      // mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+      // mat4.invert(this._viewProjMatrix, this._invViewProj);
+
       for(const mesh of this.mainRenderBundle) {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if(effect == null || effect.enabled == false) return;
-          // let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.md);
           effect.render(transPass, mesh, viewProjMatrix)
         });

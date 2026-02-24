@@ -75,7 +75,7 @@ export var loadObjFile = function() {
           usePlanarReflection: false,  // ✅ Env map mode
         },
         physics: {
-          enabled: false,
+          enabled: true,
           geometry: "Cube",
         },
         // pointerEffect: {
@@ -108,7 +108,7 @@ export var loadObjFile = function() {
         mesh: m.ball,
         physics: {
           enabled: false,
-          geometry: "Sphere"
+          geometry: "Cube"
         }
       })
 

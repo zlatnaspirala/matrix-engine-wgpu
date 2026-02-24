@@ -57,10 +57,7 @@ export default class MEMeshObj extends Materials {
     this.time = 0;
     this.deltaTimeAdapter = 10;
 
-    addEventListener('update-pipeine', () => {
-      this.setupPipeline();
-      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
-    })
+    addEventListener('update-pipeine', () => {this.setupPipeline()})
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -864,16 +861,8 @@ export default class MEMeshObj extends Materials {
   }
 
   updateModelUniformBuffer = () => {
-    if(this.done == false) return;
-    // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(
-      this.modelUniformBuffer,
-      0,
-      modelMatrix.buffer,
-      modelMatrix.byteOffset,
-      modelMatrix.byteLength
-    );
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm);
   }
 
   createGPUBuffer(dataArray, usage) {
@@ -944,7 +933,6 @@ export default class MEMeshObj extends Materials {
     if(this.isVideo) {
       this.updateVideoTexture();
     }
-    // Bind per-mesh uniforms
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {

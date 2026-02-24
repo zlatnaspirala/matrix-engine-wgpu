@@ -572,21 +572,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         return Math.ceil(n / 256) * 256;
       }
 
-      let MAX_BONES = 100;
-      this.MAX_BONES = MAX_BONES;
-      // this.bonesBuffer = device.createBuffer({
-      //   label: "bonesBuffer",
-      //   size: alignTo256(64 * MAX_BONES),
-      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      // });
-
-      // const bones = new Float32Array(this.MAX_BONES * 16);
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   // identity matrices
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
-      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const TRAIL_INSTANCES = 10; // your total instance count
+      this.MAX_BONES = 100;
+      const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
@@ -594,23 +581,19 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for(let i = 0;i < this.MAX_BONES * TRAIL_INSTANCES;i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
-
-      //
-      // vertex Anim
       this.vertexAnimParams = new Float32Array([
         0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
       ]);
 
       this.vertexAnimBuffer = this.device.createBuffer({
-        label: "Vertex Animation Params",
-        size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256, // 256, //this.vertexAnimParams.byteLength, // 128 bytes
+        label: "VerAnimationPar",
+        size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -835,22 +818,28 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
 
+      this.mm = mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
+
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = mat4.identity();
-        mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        mat4.identity(this.mm);
+        mat4.translate(this.mm, this._posVec, this.mm);
         if(this.itIsPhysicsBody) {
-          mat4.rotate(modelMatrix,
-            [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-            degToRad(this.rotation.angle),
-            modelMatrix
-          );
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          mat4.rotate(this.mm, this._rotAxisVec, degToRad(this.rotation.angle), this.mm);
         } else {
-          mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        return modelMatrix;
+        if(useScale) mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
 
       this.done = true;
@@ -959,7 +948,16 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     });
   };
 
-  updateModelUniformBuffer = () => {}
+  updateModelUniformBuffer = () => {
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(
+      this.modelUniformBuffer,
+      0,
+      this.mm.buffer,
+      this.mm.byteOffset,
+      this.mm.byteLength
+    );
+  }
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}
