@@ -31,7 +31,7 @@ export function loadGLBLoader() {
 
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
-      // // Monster1
+      // Monster1
       var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'standard', useTextureFromGlb: true},
@@ -42,7 +42,6 @@ export function loadGLBLoader() {
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       }, null, glbFile01);
 
-      var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'power', useTextureFromGlb: true},
         useScale: true,
@@ -50,9 +49,8 @@ export function loadGLBLoader() {
         position: {x: -40, y: -4, z: -70},
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      }, null, glbFile02);
+      }, null, glbFile01);
 
-      var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'pong', useTextureFromGlb: true},
         useScale: true,
@@ -60,7 +58,7 @@ export function loadGLBLoader() {
         position: {x: 40, y: -4, z: -70},
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      }, null, glbFile03);
+      }, null, glbFile01);
 
       // woman
       var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
@@ -84,7 +82,6 @@ export function loadGLBLoader() {
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp'],
       }, null, glbFile11);
 
-      var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'power', useTextureFromGlb: true},
         useScale: true,
@@ -92,9 +89,8 @@ export function loadGLBLoader() {
         position: {x: -40, y: -4, z: -20},
         name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      }, null, glbFile02);
+      }, null, glbFile11);
 
-      var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {type: 'pong', useTextureFromGlb: true},
         useScale: true,
@@ -102,18 +98,18 @@ export function loadGLBLoader() {
         position: {x: 40, y: -4, z: -20},
         name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      }, null, glbFile03);
+      }, null, glbFile11);
 
 
-      var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {type: 'pong', useTextureFromGlb: true},
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {x: 40, y: -4, z: -20},
-        name: 'glbFileWhouse',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      }, null, glbFileWhouse);
+      // var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'pong', useTextureFromGlb: true},
+      //   useScale: true,
+      //   scale: [20, 20, 20],
+      //   position: {x: 40, y: -4, z: -20},
+      //   name: 'glbFileWhouse',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFileWhouse);
 
       // this is future load and replace skeletal anim.
       // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
