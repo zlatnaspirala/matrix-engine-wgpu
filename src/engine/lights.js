@@ -301,7 +301,7 @@ export class SpotLight {
               },
             ],
           },
-           // ✅ ADD @location(1) - normal
+          // ✅ ADD @location(1) - normal
           {
             arrayStride: 12,
             attributes: [
@@ -381,6 +381,8 @@ export class SpotLight {
       return this.mainPassBindGroupContainer[index];
     }
 
+    this.lightDataBuffer = new Float32Array(48);
+
     // Only osc values +-
     this.behavior = new Behavior();
 
@@ -397,34 +399,36 @@ export class SpotLight {
   }
 
   getLightDataBuffer() {
-    const m = this.viewProjMatrix;
-    return new Float32Array([
-      ...this.position, 0.0,
-      ...this.direction, 0.0,
-      this.innerCutoff,
-      this.outerCutoff,
-      this.intensity,
-      0.0,
-      ...this.color,
-      0.0,
-      this.range,
-      this.ambientFactor,
-      this.shadowBias,
-      0.0,
-      ...m
-    ]);
+    const d = this.lightDataBuffer;
+    // Block 1: Position (vec3 + 1 float padding)
+    d.set(this.position, 0);
+    d[3] = 0.0; // padding
+    // Block 2: Direction (vec3 + 1 float padding)
+    d.set(this.direction, 4);
+    d[7] = 0.0; // padding
+    // Block 3: Parameters
+    d[8] = this.innerCutoff;
+    d[9] = this.outerCutoff;
+    d[10] = this.intensity;
+    d[11] = 0.0; // padding to finish the 16-byte block
+    // Block 4: Color (vec3 + 1 float padding)
+    d.set(this.color, 12);
+    d[15] = 0.0; // padding
+    // Block 5: Range/Bias
+    d[16] = this.range;
+    d[17] = this.ambientFactor;
+    d[18] = this.shadowBias;
+    d[19] = 0.0; // padding (Crucial: Matrix MUST start on a 16-byte boundary)
+    // Block 6-9: Matrix (16 floats)
+    // Starts at index 20 (20 * 4 bytes = 80 bytes, which is divisible by 16)
+    d.set(this.viewProjMatrix, 20);
+    return d;
   }
 
-  // Setters
-  setPosX = (x) => {
-    this.position[0] = x;
-  }
-  setPosY = (y) => {
-    this.position[1] = y;
-  }
-  setPosZ = (z) => {
-    this.position[2] = z;
-  }
+  setPosX = (x) => {this.position[0] = x;}
+  setPosY = (y) => {this.position[1] = y;}
+  setPosZ = (z) => {this.position[2] = z;}
+
   setInnerCutoff = (innerCutoff) => {
     this.innerCutoff = innerCutoff;
   }

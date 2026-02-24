@@ -65,7 +65,6 @@ export default class MatrixEngineWGPU {
   }
 
   autoUpdate = [];
-
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
 
@@ -107,6 +106,11 @@ export default class MatrixEngineWGPU {
     this.editorAddOBJ = addOBJ.bind(this);
 
     this.logLoopError = true;
+
+    this.MAX_SPOTLIGHTS = 20;
+    //cache
+    this._lightData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
+
     // context select options
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -237,7 +241,6 @@ export default class MatrixEngineWGPU {
     this.frame = this.frameSinglePass;
 
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
-    this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
     this.shadersPack = {};
@@ -420,7 +423,6 @@ export default class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          // console.info('Create now test...')
           this.createMe();
         }, 800);
         return;
@@ -639,27 +641,24 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
-    const floatsPerLight = 36; // not 20 anymore
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
-    for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      if(i < this.lightContainer.length) {
-        const buf = this.lightContainer[i].getLightDataBuffer();
-        data.set(buf, i * floatsPerLight);
-      } else {
-        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-      }
+    const floatsPerLight = 36;
+    const data = this._lightData;
+    data.fill(0);
+    const count = Math.min(this.lightContainer.length, this.MAX_SPOTLIGHTS);
+    for(let i = 0;i < count;i++) {
+      const buf = this.lightContainer[i].getLightDataBuffer();
+      data.set(buf, i * floatsPerLight);
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data);
   }
 
   frameSinglePass = () => {
-    if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
-      setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
+    if(this.mainRenderBundle.length == 0) {
+      setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
       return;
     }
 
     this.autoUpdate.forEach((_) => _.update())
-    let now;
     const currentTime = performance.now() / 1000;
     const bufferUpdates = [];
     this.mainRenderBundle.forEach((m, index) => {
@@ -721,10 +720,10 @@ export default class MatrixEngineWGPU {
           }
         });
 
-        now = performance.now() / 1000;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
+            mesh.mm = mesh.getModelMatrix(mesh.position, mesh.useScale);
+            mesh.updateInstanceData(mesh.mm)
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
@@ -752,10 +751,11 @@ export default class MatrixEngineWGPU {
       // opaque
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend === true) continue;
-        if (mesh.pipeline) { 
+        if(mesh.pipeline) {
           pass.setPipeline(mesh.pipeline);
         } else {
-          pass.setPipeline(this.mainRenderBundle[0].pipeline);
+          requestAnimationFrame(this.frame)
+          return;
         }
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
@@ -817,8 +817,8 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if(effect == null || effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
-          if(effect.updateInstanceData) effect.updateInstanceData(md);
+          // let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
+          if(effect.updateInstanceData) effect.updateInstanceData(mesh.md);
           effect.render(transPass, mesh, viewProjMatrix)
         });
       }
@@ -871,7 +871,7 @@ export default class MatrixEngineWGPU {
       pass.draw(6);
       pass.end();
 
-      this.graphUpdate(now);
+      this.graphUpdate(currentTime);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {

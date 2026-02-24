@@ -257,7 +257,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   getAccessorArray(glb, accessorIndex) {
-    if(this._accessorCache.has(accessorIndex)) return this._accessorCache.get(accessorIndex);
+    const cached = this._accessorCache.get(accessorIndex);
+    if(cached !== undefined) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
@@ -472,20 +473,29 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
         // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(
-          Math.min(i + 1, inputTimes.length - 1) * numComponents,
-          Math.min(i + 2, inputTimes.length) * numComponents
-        );
+        // const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+        // const v1 = outputArray.subarray(
+        //   Math.min(i + 1, inputTimes.length - 1) * numComponents,
+        //   Math.min(i + 2, inputTimes.length) * numComponents
+        // );
+        const lastIndex = inputTimes.length - 1;
+        const nextIndex = i < lastIndex ? i + 1 : i;
+        const inv = 1 - factor;
+        const base0 = i * numComponents;
+        const base1 = nextIndex * numComponents;
         // --- Apply animation
         if(path === "translation") {
-          for(let k = 0;k < 3;k++)
-            node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          // for(let k = 0;k < 3;k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          node.translation[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+          node.translation[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+          node.translation[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
         } else if(path === "scale") {
-          for(let k = 0;k < 3;k++)
-            node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          node.scale[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+          node.scale[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+          node.scale[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
         } else if(path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          // this.slerp(v0, v1, factor, node.rotation);
+          this.slerpFromArray(outputArray, base0, base1, factor, node.rotation);
         }
       }
       // --- Recompose local transform
@@ -529,5 +539,60 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         for(const childIndex of node.children) stack.push(childIndex);
       }
     }
+  }
+
+  slerpFromArray(array, base0, base1, t, out) {
+    let x0 = array[base0];
+    let y0 = array[base0 + 1];
+    let z0 = array[base0 + 2];
+    let w0 = array[base0 + 3];
+
+    let x1 = array[base1];
+    let y1 = array[base1 + 1];
+    let z1 = array[base1 + 2];
+    let w1 = array[base1 + 3];
+
+    let dot = x0 * x1 + y0 * y1 + z0 * z1 + w0 * w1;
+
+    if(dot < 0) {
+      dot = -dot;
+      x1 = -x1; y1 = -y1; z1 = -z1; w1 = -w1;
+    }
+
+    if(dot > 0.9995) {
+      const inv = 1 - t;
+      out[0] = x0 * inv + x1 * t;
+      out[1] = y0 * inv + y1 * t;
+      out[2] = z0 * inv + z1 * t;
+      out[3] = w0 * inv + w1 * t;
+
+      // fast normalize
+      const len = Math.sqrt(
+        out[0] * out[0] +
+        out[1] * out[1] +
+        out[2] * out[2] +
+        out[3] * out[3]
+      );
+      const invLen = 1 / len;
+
+      out[0] *= invLen;
+      out[1] *= invLen;
+      out[2] *= invLen;
+      out[3] *= invLen;
+      return;
+    }
+
+    const theta0 = Math.acos(dot);
+    const theta = theta0 * t;
+    const sinTheta = Math.sin(theta);
+    const sinTheta0 = Math.sin(theta0);
+
+    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s1 = sinTheta / sinTheta0;
+
+    out[0] = s0 * x0 + s1 * x1;
+    out[1] = s0 * y0 + s1 * y1;
+    out[2] = s0 * z0 + s1 * z1;
+    out[3] = s0 * w0 + s1 * w1;
   }
 }
