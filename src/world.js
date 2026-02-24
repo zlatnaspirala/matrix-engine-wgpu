@@ -122,7 +122,18 @@ export default class MatrixEngineWGPU {
         clearValue: {r: 0, g: 0, b: 0, a: 1}
       }]
     };
-
+    this._shadowPassDesc = {
+      label: "shadowPass",
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: null,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0,
+      }
+    };
+    this._volumetricLightData = {viewProjectionMatrix: null, direction: null};
+    this._bufferUpdatePool = Array.from({length: 16}, () => ({buffer: null, data: null}));
 
     // context select options
     if(typeof options.alphaMode == 'undefined') {
@@ -689,14 +700,20 @@ export default class MatrixEngineWGPU {
       return;
     }
 
+    let poolIndex = 0;
+    this._bufferUpdates.length = 0;
+
     this.autoUpdate.forEach((_) => _.update())
     const currentTime = performance.now() / 1000;
-    this._bufferUpdates.length = 0;
     this.mainRenderBundle.forEach((m, index) => {
       if(m.vertexAnimBuffer && m.vertexAnimParams) {
         m.time = currentTime * m.deltaTimeAdapter;
         m.vertexAnimParams[0] = m.time;
-        this._bufferUpdates.push({buffer: m.vertexAnimBuffer, data: m.vertexAnimParams});
+        // this._bufferUpdates.push({buffer: m.vertexAnimBuffer, data: m.vertexAnimParams});
+        const slot = this._bufferUpdatePool[poolIndex++];
+        slot.buffer = m.vertexAnimBuffer;
+        slot.data = m.vertexAnimParams;
+        this._bufferUpdates.push(slot);
       }
       if(m.isVideo == true) {
         if(!m.externalTexture) {
@@ -734,16 +751,8 @@ export default class MatrixEngineWGPU {
           mipLevelCount: 1,
         });
 
-        const shadowPass = commandEncoder.beginRenderPass({
-          label: "shadowPass",
-          colorAttachments: [],
-          depthStencilAttachment: {
-            view: vpl,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store',
-            depthClearValue: 1.0,
-          }
-        });
+        this._shadowPassDesc.depthStencilAttachment.view = vpl;
+        const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDesc);
 
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
@@ -799,7 +808,6 @@ export default class MatrixEngineWGPU {
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
             if(m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -821,58 +829,36 @@ export default class MatrixEngineWGPU {
       mat4.invert(this._viewProjMatrix, this._invViewProj);
 
       for(const mesh of this.mainRenderBundle) {
-        if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
+        for(const effect_ in mesh.effects) {
           const effect = mesh.effects[effect_];
           if(effect == null || effect.enabled == false) return;
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.md);
           effect.render(transPass, mesh, this._viewProjMatrix)
-        });
+        }
       }
       transPass.end();
       // volumetric
       if(this.volumetricPass.enabled === true) {
         const light = this.lightContainer[0];
-
         this._volumetricCamData.invViewProjectionMatrix = this._invViewProj;
-
+        this._volumetricLightData.viewProjectionMatrix = light.viewProjMatrix;
+        this._volumetricLightData.direction = light.direction;
         this.volumetricPass.render(
-          commandEncoder,
-          this.sceneTextureView,        // ← your existing scene color
-          this.mainDepthView,           // ← your existing depth
-          this.shadowArrayView,         // ← your existing shadow array
-          this._volumetricCamData,
-          {
-            viewProjectionMatrix: light.viewProjMatrix, // Float32Array 16
-            direction: light.direction,                       // [x, y, z]
-          }
-        );
+          commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricCamData, this._volumetricLightData);
       }
 
       const canvasView = this.context.getCurrentTexture().createView();
       // Bloom
       if(this.bloomPass.enabled == true) {
-        const bloomInput = this.volumetricPass.enabled
-          ? this.volumetricPass.compositeOutputTex.createView()
-          : this.sceneTextureView;
+        const bloomInput = this.volumetricPass.enabled ? this._volumetricOutputView : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
       }
-
-      // this._presentPassDesc.colorAttachments[0].view = canvasView;
-      pass = commandEncoder.beginRenderPass({
-        colorAttachments: [{
-          view: canvasView,
-          loadOp: 'clear',
-          storeOp: 'store',
-          clearValue: {r: 0, g: 0, b: 0, a: 1}
-        }]
-      });
-
+      this._presentPassDesc.colorAttachments[0].view = canvasView;
+      pass = commandEncoder.beginRenderPass(this._presentPassDesc);
       pass.setPipeline(this.presentPipeline);
       pass.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
-
       pass.draw(6);
       pass.end();
-
       this.graphUpdate(currentTime);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
@@ -1076,6 +1062,7 @@ export default class MatrixEngineWGPU {
           lightColor: [1.0, 0.88, 0.65],  // warm sunlight
         }
       ).init();
+      this._volumetricOutputView = this.volumetricPass.compositeOutputTex.createView();
       this.volumetricPass.enabled = true;
     }
   }
