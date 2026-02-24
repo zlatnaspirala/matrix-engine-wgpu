@@ -712,22 +712,28 @@ export default class MEMeshObj extends Materials {
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
 
+      this.mm = mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
+
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = mat4.identity();
-        mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        mat4.identity(this.mm);
+        mat4.translate(this.mm, this._posVec, this.mm);
         if(this.itIsPhysicsBody) {
-          mat4.rotate(modelMatrix,
-            [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-            degToRad(this.rotation.angle),
-            modelMatrix
-          );
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          mat4.rotate(this.mm, this._rotAxisVec, degToRad(this.rotation.angle), this.mm);
         } else {
-          mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
-        return modelMatrix;
+        if(useScale) mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
 
       // looks like affect on transformations for now const 0

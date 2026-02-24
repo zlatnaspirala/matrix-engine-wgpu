@@ -29835,18 +29835,27 @@ class MEMeshObj extends _materials.default {
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
+      this.mm = _wgpuMatrix.mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        _wgpuMatrix.mat4.identity(this.mm);
+        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
         } else {
-          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        return modelMatrix;
+        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
 
       // looks like affect on transformations for now const 0
@@ -49523,6 +49532,22 @@ class MatrixEngineWGPU {
     this._viewProjMatrix = new Float32Array(16);
     this._invViewProj = new Float32Array(16);
     this._lightData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
+    this._volumetricCamData = {
+      invViewProjectionMatrix: null
+    };
+    this._presentPassDesc = {
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 0,
+          b: 0,
+          a: 1
+        }
+      }]
+    };
 
     // context select options
     if (typeof options.alphaMode == 'undefined') {
@@ -49910,7 +49935,6 @@ class MatrixEngineWGPU {
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
-    this.initShadowViews();
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -50116,15 +50140,6 @@ class MatrixEngineWGPU {
     this.adapter = null;
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
-  initShadowViews() {
-    this._shadowViews = this.lightContainer.map((light, i) => this.shadowTextureArray.createView({
-      dimension: '2d',
-      baseArrayLayer: i,
-      arrayLayerCount: 1,
-      baseMipLevel: 0,
-      mipLevelCount: 1
-    }));
-  }
   updateLights() {
     const floatsPerLight = 36;
     const data = this._lightData;
@@ -50270,51 +50285,30 @@ class MatrixEngineWGPU {
       }
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
-      // const transPassDesc = {
-      //   colorAttachments: [{
-      //     view: this.sceneTextureView,
-      //     loadOp: 'load',
-      //     storeOp: 'store',
-      //     clearValue: {r: 0, g: 1, b: 0, a: 1},
-      //   }],
-      //   depthStencilAttachment: {
-      //     view: this.mainDepthView,
-      //     depthLoadOp: 'load',
-      //     depthStoreOp: 'store',
-      //     depthClearValue: 1.0,
-      //   }
-      // };
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
-      // const cam = this.cameras[this.mainCameraParams.type];
-      // mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
-      // mat4.invert(this._viewProjMatrix, this._invViewProj);
-
+      const cam = this.cameras[this.mainCameraParams.type];
+      _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+      _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if (effect == null || effect.enabled == false) return;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.md);
-          effect.render(transPass, mesh, viewProjMatrix);
+          effect.render(transPass, mesh, this._viewProjMatrix);
         });
       }
       transPass.end();
       // volumetric
       if (this.volumetricPass.enabled === true) {
-        const cam = this.cameras[this.mainCameraParams.type];
-        // If you don't store it yet, compute once per frame:
-        const invViewProj = _wgpuMatrix.mat4.invert(_wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity()));
-        // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
+        this._volumetricCamData.invViewProjectionMatrix = this._invViewProj;
         this.volumetricPass.render(commandEncoder, this.sceneTextureView,
         // ← your existing scene color
         this.mainDepthView,
         // ← your existing depth
         this.shadowArrayView,
         // ← your existing shadow array
-        {
-          invViewProjectionMatrix: invViewProj
-        }, {
+        this._volumetricCamData, {
           viewProjectionMatrix: light.viewProjMatrix,
           // Float32Array 16
           direction: light.direction // [x, y, z]
@@ -50325,9 +50319,9 @@ class MatrixEngineWGPU {
       if (this.bloomPass.enabled == true) {
         const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTex.createView() : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        // ori
-        // this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
+
+      // this._presentPassDesc.colorAttachments[0].view = canvasView;
       pass = commandEncoder.beginRenderPass({
         colorAttachments: [{
           view: canvasView,

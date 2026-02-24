@@ -113,6 +113,15 @@ export default class MatrixEngineWGPU {
     this._viewProjMatrix = new Float32Array(16);
     this._invViewProj = new Float32Array(16);
     this._lightData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
+    this._volumetricCamData = {invViewProjectionMatrix: null};
+    this._presentPassDesc = {
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: {r: 0, g: 0, b: 0, a: 1}
+      }]
+    };
 
 
     // context select options
@@ -509,7 +518,6 @@ export default class MatrixEngineWGPU {
     let newLight = new SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
-    this.initShadowViews();
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
 
@@ -661,17 +669,7 @@ export default class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
 
-  initShadowViews() {
-    this._shadowViews = this.lightContainer.map((light, i) =>
-      this.shadowTextureArray.createView({
-        dimension: '2d',
-        baseArrayLayer: i,
-        arrayLayerCount: 1,
-        baseMipLevel: 0,
-        mipLevelCount: 1,
-      })
-    );
-  }
+
 
   updateLights() {
     const floatsPerLight = 36;
@@ -817,52 +815,32 @@ export default class MatrixEngineWGPU {
       pass.end();
 
       if(this.collisionSystem) this.collisionSystem.update();
-      // const transPassDesc = {
-      //   colorAttachments: [{
-      //     view: this.sceneTextureView,
-      //     loadOp: 'load',
-      //     storeOp: 'store',
-      //     clearValue: {r: 0, g: 1, b: 0, a: 1},
-      //   }],
-      //   depthStencilAttachment: {
-      //     view: this.mainDepthView,
-      //     depthLoadOp: 'load',
-      //     depthStoreOp: 'store',
-      //     depthClearValue: 1.0,
-      //   }
-      // };
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-
-      const viewProjMatrix = mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix,
-        this.cameras[this.mainCameraParams.type].view, mat4.identity());
-      // const cam = this.cameras[this.mainCameraParams.type];
-      // mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
-      // mat4.invert(this._viewProjMatrix, this._invViewProj);
+      const cam = this.cameras[this.mainCameraParams.type];
+      mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+      mat4.invert(this._viewProjMatrix, this._invViewProj);
 
       for(const mesh of this.mainRenderBundle) {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if(effect == null || effect.enabled == false) return;
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.md);
-          effect.render(transPass, mesh, viewProjMatrix)
+          effect.render(transPass, mesh, this._viewProjMatrix)
         });
       }
       transPass.end();
       // volumetric
       if(this.volumetricPass.enabled === true) {
-        const cam = this.cameras[this.mainCameraParams.type];
-        // If you don't store it yet, compute once per frame:
-        const invViewProj = mat4.invert(
-          mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
-        );
-        // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
+
+        this._volumetricCamData.invViewProjectionMatrix = this._invViewProj;
+
         this.volumetricPass.render(
           commandEncoder,
           this.sceneTextureView,        // ← your existing scene color
           this.mainDepthView,           // ← your existing depth
           this.shadowArrayView,         // ← your existing shadow array
-          {invViewProjectionMatrix: invViewProj},
+          this._volumetricCamData,
           {
             viewProjectionMatrix: light.viewProjMatrix, // Float32Array 16
             direction: light.direction,                       // [x, y, z]
@@ -877,10 +855,9 @@ export default class MatrixEngineWGPU {
           ? this.volumetricPass.compositeOutputTex.createView()
           : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        // ori
-        // this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
 
+      // this._presentPassDesc.colorAttachments[0].view = canvasView;
       pass = commandEncoder.beginRenderPass({
         colorAttachments: [{
           view: canvasView,
