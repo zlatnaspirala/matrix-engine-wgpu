@@ -31,7 +31,7 @@ export class FriendlyHero extends Hero {
         scale: [20, 20, 20],
         position: o.position,
         name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {enabled: true, radius: 1.1},
         pointerEffect: {
           enabled: true,

@@ -115,7 +115,7 @@ export class Character extends Hero {
           z: startUpPositions[this.core.player.data.team][2]
         },
         name: this.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {enabled: true, radius: 1.5},
         pointerEffect: {
           enabled: true,

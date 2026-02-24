@@ -1667,7 +1667,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         },
         name: heros[x].name,
         useScale: true,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {
           enabled: true,
           radius: 1
@@ -40887,7 +40887,7 @@ class EditorProvider {
           z: -20
         },
         name: this.getNameFromPath(e.detail.path),
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
       }, null, glbFile01);
     });
     document.addEventListener('web.editor.addObj', e => {

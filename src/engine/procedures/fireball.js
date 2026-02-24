@@ -22,7 +22,7 @@ export class FireballSystem {
         z: this.parent.position.z
       },
       name: "FIRE", // this.parent.name + "-fireball",
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {enabled: true, radius: 1.5},
       pointerEffect: {
         enabled: true,

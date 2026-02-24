@@ -1,0 +1,35 @@
+{
+  "name": "Matrix Engine webGPU",
+  "short_name": "matrix-engine-wgpu",
+  "start_url": "build.html",
+  "orientation": "any",
+  "theme_color": "lime",
+  "background_color": "black",
+  "description": "PWA fully solution with static, dynamic cache, add to home page. The benefits of this project is offering an overview of the entire application logic, easy native implementations (hybrid app), object structural.",
+  "display": "standalone",
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "res/icons/512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "res/icons/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "res/icons/apple-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "author": {
+      "name": "Nikola Lukic",
+      "website": "https://maximumroulette.com",
+      "github": "https://github.com/zlatnaspirala",
+      "source-repo": "https://github.com/zlatnaspirala/matrix-engine-wgpu"
+  }
+}

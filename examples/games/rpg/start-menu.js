@@ -504,7 +504,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         position: {x: 0 + x * 50, y: 0, z: -10},
         name: heros[x].name,
         useScale: true,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {enabled: true, radius: 1},
         pointerEffect: {
           enabled: true,

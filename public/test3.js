@@ -17810,7 +17810,7 @@ var EditorProvider = class {
         scale: [2, 2, 2],
         position: { x: 0, y: 0, z: -20 },
         name: this.getNameFromPath(e.detail.path),
-        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.png"]
+        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
       }, null, glbFile01);
     });
     document.addEventListener("web.editor.addObj", (e) => {

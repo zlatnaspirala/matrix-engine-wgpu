@@ -32161,7 +32161,7 @@ class EditorProvider {
           z: -20
         },
         name: this.getNameFromPath(e.detail.path),
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
       }, null, glbFile01);
     });
     document.addEventListener('web.editor.addObj', e => {
@@ -38105,7 +38105,7 @@ let app = new _world.default({
     //   scale: [20, 20, 20],
     //   position: {x: 0, y: -4, z: -70},
     //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     // }, null, glbFile01);
   });
 });

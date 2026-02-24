@@ -685,7 +685,7 @@ this.core.addGlbObjInctance(
     scale: [20, 20, 20],
     position: {x: 0, y: -4, z: -220},
     name: this.name,
-    texturesPaths: ["./res/meshes/glb/textures/mutant_origin.png"],
+    texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"],
     raycast: {enabled: true, radius: 1.5},
     pointerEffect: {enabled: true},
   },

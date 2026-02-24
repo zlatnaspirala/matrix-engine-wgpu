@@ -125,7 +125,7 @@ class Character extends _hero.Hero {
           z: _static.startUpPositions[this.core.player.data.team][2]
         },
         name: this.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {
           enabled: true,
           radius: 1.5
@@ -1064,7 +1064,7 @@ class Creep extends _hero.Hero {
         scale: [20, 20, 20],
         position: o.position,
         name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {
           enabled: true,
           radius: 1.1
@@ -1417,7 +1417,7 @@ class Enemie extends _hero.Hero {
         scale: [20, 20, 20],
         position: o.position,
         name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {
           enabled: true,
           radius: 1.1
@@ -2006,7 +2006,7 @@ class FriendlyHero extends _hero.Hero {
         scale: [20, 20, 20],
         position: o.position,
         name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {
           enabled: true,
           radius: 1.1
@@ -3636,7 +3636,7 @@ class MEMapLoader {
         z: 950
       },
       name: 'rocks1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {
         enabled: false,
         radius: 1.5
@@ -3665,7 +3665,7 @@ class MEMapLoader {
         z: 850
       },
       name: 'rocks2',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {
         enabled: false,
         radius: 1.5
@@ -3701,7 +3701,7 @@ class MEMapLoader {
         z: _static.creepPoints[app.player.data.team].finalPoint[2]
       },
       name: 'enemytron',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {
         enabled: false,
         radius: 1.5
@@ -36456,7 +36456,7 @@ class FireballSystem {
       },
       name: "FIRE",
       // this.parent.name + "-fireball",
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {
         enabled: true,
         radius: 1.5
@@ -44429,7 +44429,7 @@ class EditorProvider {
           z: -20
         },
         name: this.getNameFromPath(e.detail.path),
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
       }, null, glbFile01);
     });
     document.addEventListener('web.editor.addObj', e => {
