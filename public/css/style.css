@@ -903,7 +903,7 @@ option {
   width: 100%;
   height: 100vh;
   display: flex;
-  background-image: url('../res/textures/rpg/logo.png');
+  background-image: url('../res/textures/rpg/logo.webp');
   vertical-align: middle;
   flex-flow: column-reverse;
   text-align: center;
