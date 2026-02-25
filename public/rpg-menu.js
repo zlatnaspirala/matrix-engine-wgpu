@@ -1739,7 +1739,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
     // document.body.style.cursor = "url('./res/icons/default.ong') 0 0, auto";
 
     document.addEventListener("contextmenu", event => event.preventDefault());
-    (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
+    // byId('canvas1').style.pointerEvents = 'none';
+
     const hud = document.createElement("div");
     hud.id = "hud-menu";
     Object.assign(hud.style, {
@@ -51702,9 +51703,10 @@ class MatrixEngineWGPU {
         alphaMode: 'premultiplied'
       });
     }
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
+
+    // const devicePixelRatio = window.devicePixelRatio;
+    // canvas.width = canvas.clientWidth * devicePixelRatio;
+    // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,

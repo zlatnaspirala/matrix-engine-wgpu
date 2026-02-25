@@ -251,9 +251,9 @@ export default class MatrixEngineWGPU {
       this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
     }
 
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
+    // const devicePixelRatio = window.devicePixelRatio;
+    // canvas.width = canvas.clientWidth * devicePixelRatio;
+    // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
     this.context.configure({

@@ -579,7 +579,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     // document.body.style.cursor = "url('./res/icons/default.ong') 0 0, auto";
 
     document.addEventListener("contextmenu", event => event.preventDefault());
-    byId('canvas1').style.pointerEvents = 'none';
+    // byId('canvas1').style.pointerEvents = 'none';
 
     const hud = document.createElement("div");
     hud.id = "hud-menu";
