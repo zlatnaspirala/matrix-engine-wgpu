@@ -1676,7 +1676,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
           enabled: true,
           pointer: true,
           flameEffect: false,
-          flameEmitter: false,
+          flameEmitter: true,
           circlePlane: true,
           circlePlaneTex: true,
           circlePlaneTexPath: './res/textures/star1.png'
@@ -1720,7 +1720,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }
       app.lightContainer[0].position[2] = 10;
       app.lightContainer[0].position[1] = 50;
-      app.lightContainer[0].intensity = 1.4;
+      app.lightContainer[0].intensity = 5.4;
     }, 4000);
   }
   loadHeros();
@@ -1728,14 +1728,15 @@ let forestOfHollowBloodStartSceen = new _world.default({
   // })
   forestOfHollowBloodStartSceen.addLight();
   function createHUDMenu() {
-    forestOfHollowBloodStartSceen.animatedCursor = new _animatedCursor.AnimatedCursor({
-      path: "./res/icons/seq1/",
-      frameCount: 7,
-      speed: 80,
-      loop: true
-    });
-    forestOfHollowBloodStartSceen.animatedCursor.start();
-    // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
+    //   path: "./res/icons/seq1/",
+    //   frameCount: 7,
+    //   speed: 80,
+    //   loop: true
+    // })
+
+    // forestOfHollowBloodStartSceen.animatedCursor.start();
+    // document.body.style.cursor = "url('./res/icons/default.ong') 0 0, auto";
 
     document.addEventListener("contextmenu", event => event.preventDefault());
     (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
@@ -1878,7 +1879,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       for (let key in C) {
         (0, _utils.byId)('desc').innerHTML += ` 
          <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
-           <span style="color:#00e2ff"> ${key} </span> : <span style="color:#02e2ff">${C[key]} </span>
+           <span style="width:50%;color:#00e2ff"> ${key} </span> : <span style="width:50%;color:#02e2ff">${C[key]} </span>
           </div>
         `;
       }
@@ -1897,7 +1898,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto'
+      cursor: 'url(./res/icons/default.ong) 0 0, auto'
     });
     startBtn.classList.add('buttonMatrix');
     startBtn.innerHTML = `
@@ -1967,7 +1968,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.ong) 0 0, auto',
       pointerEvents: 'auto'
     });
     aboutBtn.classList.add('buttonMatrix');
@@ -1994,7 +1995,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.ong) 0 0, auto',
       pointerEvents: 'auto'
     });
     // LBBtn.classList.add('buttonMatrix');
@@ -2034,7 +2035,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       color: 'black',
       // background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.ong) 0 0, auto',
       pointerEvents: 'auto'
     });
     hud.appendChild(sendMsgInput);
@@ -2052,7 +2053,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.ong) 0 0, auto',
       pointerEvents: 'auto'
     });
     // sendMsgBtn.classList.add('buttonMatrix');
@@ -2093,7 +2094,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      cursor: 'url(./res/icons/default.ong) 0 0, auto',
       pointerEvents: 'auto',
       filter: 'grayscale(1)'
     });
@@ -25791,8 +25792,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
-        let m = this.getModelMatrix(this.position, this.useScale);
-        this.updateInstanceData(m);
+        this.updateInstanceData(this.mm);
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
@@ -25903,42 +25903,23 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      let MAX_BONES = 100;
-      this.MAX_BONES = MAX_BONES;
-      // this.bonesBuffer = device.createBuffer({
-      //   label: "bonesBuffer",
-      //   size: alignTo256(64 * MAX_BONES),
-      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      // });
-
-      // const bones = new Float32Array(this.MAX_BONES * 16);
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   // identity matrices
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
-      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const TRAIL_INSTANCES = 10; // your total instance count
+      this.MAX_BONES = 100;
+      const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
         size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-
-      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
-      //
-      // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
-        label: "Vertex Animation Params",
+        label: "VerAnimationPar",
         size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
-        // 256, //this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -26191,18 +26172,27 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
+      this.mm = _wgpuMatrix.mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        _wgpuMatrix.mat4.identity(this.mm);
+        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
         } else {
-          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        return modelMatrix;
+        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
       this.done = true;
       if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
@@ -26307,7 +26297,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       primitive: this.primitive
     });
   };
-  updateModelUniformBuffer = () => {};
+  updateModelUniformBuffer = () => {
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm.buffer, this.mm.byteOffset, this.mm.byteLength);
+  };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid array passed to createGPUBuffer');
@@ -26822,6 +26815,7 @@ class SpotLight {
       });
       return this.mainPassBindGroupContainer[index];
     };
+    this.lightDataBuffer = new Float32Array(48);
 
     // Only osc values +-
     this.behavior = new _behavior.default();
@@ -26839,11 +26833,31 @@ class SpotLight {
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
   getLightDataBuffer() {
-    const m = this.viewProjMatrix;
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias, 0.0, ...m]);
+    const d = this.lightDataBuffer;
+    // Block 1: Position (vec3 + 1 float padding)
+    d.set(this.position, 0);
+    d[3] = 0.0; // padding
+    // Block 2: Direction (vec3 + 1 float padding)
+    d.set(this.direction, 4);
+    d[7] = 0.0; // padding
+    // Block 3: Parameters
+    d[8] = this.innerCutoff;
+    d[9] = this.outerCutoff;
+    d[10] = this.intensity;
+    d[11] = 0.0; // padding to finish the 16-byte block
+    // Block 4: Color (vec3 + 1 float padding)
+    d.set(this.color, 12);
+    d[15] = 0.0; // padding
+    // Block 5: Range/Bias
+    d[16] = this.range;
+    d[17] = this.ambientFactor;
+    d[18] = this.shadowBias;
+    d[19] = 0.0; // padding (Crucial: Matrix MUST start on a 16-byte boundary)
+    // Block 6-9: Matrix (16 floats)
+    // Starts at index 20 (20 * 4 bytes = 80 bytes, which is divisible by 16)
+    d.set(this.viewProjMatrix, 20);
+    return d;
   }
-
-  // Setters
   setPosX = x => {
     this.position[0] = x;
   };
@@ -27432,25 +27446,33 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.glb.animationIndex = 0;
     this.currentFrame = 0;
     this.fps = 30;
+    this.frameTime = 1 / this.fps;
+    this._maxDelta = this.frameTime * 4;
     this.timeAccumulator = 0;
     this.trailAnimation = {
       enabled: false,
       delay: 100
     };
-
     // cache
     this._scaleVec = new Float32Array([this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest]);
-
-    // Update only when scale changes
     this._animationLength = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._numFrames = null;
     this.initAnimationCache();
-    // this.finalMat = Array.from({length: this.MAX_BONES}, () => new Float32Array(16));
     this.finalMat = new Float32Array(this.MAX_BONES * 16);
     this.nodeChannels = new Map();
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     this.initNodeChannelMap(anim);
+    this._animationEvents = {};
+    this._animationEndDispatched = {};
+    this.glb.glbJsonData.animations.forEach(anim => {
+      this._animationEvents[anim.name] = new CustomEvent(`animationEnd-${this.name}`, {
+        detail: {
+          animationName: anim.name
+        }
+      });
+      this._animationEndDispatched[anim.name] = false;
+    });
 
     // debug
     this.scaleBoneTest = 1;
@@ -27465,9 +27487,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       };
     }
     this.sharedState = this.bvh.sharedState;
-    // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
     this.nodeWorldMatrices = Array.from({
       length: this.glb.nodes.length
     }, () => _wgpuMatrix.mat4.identity());
@@ -27593,26 +27613,18 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this._animationLength = this._getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex]);
   }
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    const maxDelta = frameTime * 4;
-    const clampedDelta = Math.min(deltaTime, maxDelta);
-    this.sharedState.timeAccumulator += clampedDelta;
-    while (this.sharedState.timeAccumulator >= frameTime) {
+    this.sharedState.timeAccumulator += Math.min(deltaTime, this._maxDelta);
+    while (this.sharedState.timeAccumulator >= this.frameTime) {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
-      this.sharedState.timeAccumulator -= frameTime;
+      this.sharedState.timeAccumulator -= this.frameTime;
     }
-    var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
+        const animName = this.glb.glbJsonData.animations[this.glb.animationIndex].name;
+        this.dispatchEvent(this._animationEvents[animName]);
         this.sharedState.animationStarted = false;
-        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
-        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
-          detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
-          }
-        }));
-      }, inTime * 1000);
+      }, this._animationLength * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.trailAnimation.enabled == true) {
@@ -27623,14 +27635,14 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         }
       } else {
         const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        // const boneMatrices = new Float32Array(this.MAX_BONES * 16);
         this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 0);
         this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 1);
       }
     }
   }
   getAccessorArray(glb, accessorIndex) {
-    if (this._accessorCache.has(accessorIndex)) return this._accessorCache.get(accessorIndex);
+    const cached = this._accessorCache.get(accessorIndex);
+    if (cached !== undefined) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
@@ -27872,57 +27884,35 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
         // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
+        // const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+        // const v1 = outputArray.subarray(
+        //   Math.min(i + 1, inputTimes.length - 1) * numComponents,
+        //   Math.min(i + 2, inputTimes.length) * numComponents
+        // );
+        const lastIndex = inputTimes.length - 1;
+        const nextIndex = i < lastIndex ? i + 1 : i;
+        const inv = 1 - factor;
+        const base0 = i * numComponents;
+        const base1 = nextIndex * numComponents;
         // --- Apply animation
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          // for(let k = 0;k < 3;k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          node.translation[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+          node.translation[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+          node.translation[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          node.scale[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+          node.scale[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+          node.scale[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
         } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          // this.slerp(v0, v1, factor, node.rotation);
+          this.slerpFromArray(outputArray, base0, base1, factor, node.rotation);
         }
       }
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
-    const computeWorld = nodes => {
-      // const node = nodes[nodeIndex];
-      // if(!node.worldMatrix) node.worldMatrix = mat4.create();
-      // let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-      // if(parentWorld) {
-      //   // multiply parent * local
-      //   mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-      // } else {
-      //   mat4.copy(node.transform, node.worldMatrix);
-      // }
-      // mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      // if(node.children) {
-      //   for(const childIndex of node.children) computeWorld(childIndex);
-      // }
-      // Stack-based DFS — no recursion overhead
-      const stack = [];
-      for (let i = 0; i < nodes.length; i++) {
-        if (nodes[i].parent === null || nodes[i].parent === undefined) {
-          stack.push(i);
-        }
-      }
-      while (stack.length > 0) {
-        const nodeIndex = stack.pop();
-        const node = nodes[nodeIndex];
-        const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
-        if (parentWorld) {
-          _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-        } else {
-          _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
-        }
-        _wgpuMatrix.mat4.scale(node.worldMatrix, this._scaleVec, node.worldMatrix);
-        if (node.children) {
-          for (const childIndex of node.children) stack.push(childIndex);
-        }
-      }
-    };
-    computeWorld(nodes);
+    this.computeWorld(nodes);
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
       const offset = j * 16;
@@ -27931,6 +27921,72 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, this.finalMat);
     return this.finalMat;
+  }
+  computeWorld = nodes => {
+    const stack = [];
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].parent === null || nodes[i].parent === undefined) {
+        stack.push(i);
+      }
+    }
+    while (stack.length > 0) {
+      const nodeIndex = stack.pop();
+      const node = nodes[nodeIndex];
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
+      if (parentWorld) {
+        _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+      } else {
+        _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
+      }
+      _wgpuMatrix.mat4.scale(node.worldMatrix, this._scaleVec, node.worldMatrix);
+      if (node.children) {
+        for (const childIndex of node.children) stack.push(childIndex);
+      }
+    }
+  };
+  slerpFromArray(array, base0, base1, t, out) {
+    let x0 = array[base0];
+    let y0 = array[base0 + 1];
+    let z0 = array[base0 + 2];
+    let w0 = array[base0 + 3];
+    let x1 = array[base1];
+    let y1 = array[base1 + 1];
+    let z1 = array[base1 + 2];
+    let w1 = array[base1 + 3];
+    let dot = x0 * x1 + y0 * y1 + z0 * z1 + w0 * w1;
+    if (dot < 0) {
+      dot = -dot;
+      x1 = -x1;
+      y1 = -y1;
+      z1 = -z1;
+      w1 = -w1;
+    }
+    if (dot > 0.9995) {
+      const inv = 1 - t;
+      out[0] = x0 * inv + x1 * t;
+      out[1] = y0 * inv + y1 * t;
+      out[2] = z0 * inv + z1 * t;
+      out[3] = w0 * inv + w1 * t;
+
+      // fast normalize
+      const len = Math.sqrt(out[0] * out[0] + out[1] * out[1] + out[2] * out[2] + out[3] * out[3]);
+      const invLen = 1 / len;
+      out[0] *= invLen;
+      out[1] *= invLen;
+      out[2] *= invLen;
+      out[3] *= invLen;
+      return;
+    }
+    const theta0 = Math.acos(dot);
+    const theta = theta0 * t;
+    const sinTheta = Math.sin(theta);
+    const sinTheta0 = Math.sin(theta0);
+    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s1 = sinTheta / sinTheta0;
+    out[0] = s0 * x0 + s1 * x1;
+    out[1] = s0 * y0 + s1 * y1;
+    out[2] = s0 * z0 + s1 * z1;
+    out[3] = s0 * w0 + s1 * w1;
   }
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
@@ -27990,11 +28046,19 @@ class BVHPlayer extends _meshObj.default {
     this.glb.animationIndex = 0;
     this.currentFrame = 0;
     this.fps = 30;
+    this.frameTime = 1 / this.fps;
+    this._maxDelta = this.frameTime * 4;
+    this.MAX_BONES = 100;
     this.timeAccumulator = 0;
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this.finalMat = new Float32Array(this.MAX_BONES * 16);
+    this.nodeChannels = new Map();
+    this._composeMat = new Float32Array(16);
+    this._rotMat = new Float32Array(16);
 
     // debug
     this.scaleBoneTest = 1;
+    this._scaleVec = new Float32Array([this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest]);
     this.primitiveIndex = primitiveIndex;
     if (!this.bvh.sharedState) {
       this.bvh.sharedState = {
@@ -28010,7 +28074,6 @@ class BVHPlayer extends _meshObj.default {
       length: this.glb.nodes.length
     }, () => _wgpuMatrix.mat4.identity());
     this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.MAX_BONES = 100; // predefined
     this.skeleton = []; // array of joint node indices
     this.animationSpeed = 1000;
     this.inverseBindMatrices = []; // Float32Array for each joint
@@ -28019,6 +28082,30 @@ class BVHPlayer extends _meshObj.default {
     this.initAnimationCache();
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this.initNodes(this.glb.nodes);
+  }
+  scaleBone(val) {
+    this._scaleBoneTest = val;
+    this._scaleVec[0] = this._scaleVec[1] = this._scaleVec[2] = val;
+  }
+  initNodeChannelMap(glbAnimation) {
+    this.nodeChannels = new Map();
+    for (const channel of glbAnimation.channels) {
+      if (!this.nodeChannels.has(channel.target.node)) this.nodeChannels.set(channel.target.node, []);
+      this.nodeChannels.get(channel.target.node).push(channel);
+    }
+  }
+  initNodes(nodes) {
+    for (const node of nodes) {
+      if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
+      if (!node.rotation) node.rotation = _wgpuMatrix.quat.create();
+      if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
+      // snapshot originals once
+      node.originalTranslation = node.translation.slice();
+      node.originalRotation = node.rotation.slice();
+      node.originalScale = node.scale.slice();
+      node.worldMatrix = _wgpuMatrix.mat4.create();
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -28086,34 +28173,24 @@ class BVHPlayer extends _meshObj.default {
     this.initAnimationCache();
     this.glb.animationIndex = index;
   };
-
-  // getNumberOfFramesCurAni() {
-  //   let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
-  //   const sampler = anim.samplers[0];
-  //   const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
-  //   const numFrames = inputAccessor.count;
-  //   return numFrames;
-  // }
-
   initAnimationCache() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    this.initNodeChannelMap(anim);
     const inputAccessor = this.glb.glbJsonData.accessors[anim.samplers[0].input];
     this._numFrames = inputAccessor.count;
   }
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while (this.sharedState.timeAccumulator >= frameTime) {
+    this.sharedState.timeAccumulator += Math.min(deltaTime, this._maxDelta);
+    while (this.sharedState.timeAccumulator >= this.frameTime) {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
-      this.sharedState.timeAccumulator -= frameTime;
+      this.sharedState.timeAccumulator -= this.frameTime;
     }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices);
-    }
+    this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices);
   }
   getAccessorArray(glb, accessorIndex) {
-    if (this._accessorCache.has(accessorIndex)) return this._accessorCache.get(accessorIndex);
+    const cached = this._accessorCache.get(accessorIndex);
+    if (cached !== undefined) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
@@ -28259,19 +28336,6 @@ class BVHPlayer extends _meshObj.default {
     _wgpuMatrix.mat4.multiply(m, rot, m);
     _wgpuMatrix.mat4.scale(m, scale, m);
     return m;
-
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-
-    // return m;
   }
   decomposeMatrix(m) {
     // m is column-major: indices:
@@ -28362,15 +28426,14 @@ class BVHPlayer extends _meshObj.default {
   }
   slerp(q0, q1, t, out) {
     let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
+    let flip = false;
     if (dot < 0) {
       dot = -dot;
-      q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
+      flip = true;
     }
     if (dot > 0.9995) {
-      // linear
       for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      // normalize
-      const len = Math.hypot(...out);
+      const len = Math.sqrt(out[0] * out[0] + out[1] * out[1] + out[2] * out[2] + out[3] * out[3]);
       for (let i = 0; i < 4; i++) out[i] /= len;
       return;
     }
@@ -28381,32 +28444,37 @@ class BVHPlayer extends _meshObj.default {
     const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
     for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
+      out[i] = flip ? s0 * q0[i] - s1 * q1[i] : s0 * q0[i] + s1 * q1[i];
     }
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
-    const samplers = glbAnimation.samplers;
-    // --- Map channels per node for faster lookup
-    const nodeChannels = new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
+  computeWorld = nodes => {
+    const stack = [];
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].parent === null || nodes[i].parent === undefined) {
+        stack.push(i);
+      }
     }
+    while (stack.length > 0) {
+      const nodeIndex = stack.pop();
+      const node = nodes[nodeIndex];
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
+      if (parentWorld) {
+        _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+      } else {
+        _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
+      }
+      _wgpuMatrix.mat4.scale(node.worldMatrix, this._scaleVec, node.worldMatrix);
+      if (node.children) {
+        for (const childIndex of node.children) stack.push(childIndex);
+      }
+    }
+  };
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+    const samplers = glbAnimation.samplers;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-
-      // --- Initialize node TRS if needed
-      if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
-      if (!node.rotation) node.rotation = _wgpuMatrix.quat.create();
-      if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
-
-      // --- Keep original TRS for additive animation
-      if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
-      if (!node.originalRotation) node.originalRotation = node.rotation.slice();
-      if (!node.originalScale) node.originalScale = node.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
+      const channelsForNode = this.nodeChannels.get(nodeIndex) || [];
       for (const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
         const sampler = samplers[channel.sampler];
@@ -28422,51 +28490,81 @@ class BVHPlayer extends _meshObj.default {
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
         // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
+        const lastIndex = inputTimes.length - 1;
+        const nextIndex = i < lastIndex ? i + 1 : i;
+        const inv = 1 - factor;
+        const base0 = i * numComponents;
+        const base1 = nextIndex * numComponents;
         // --- Apply animation
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          // for(let k = 0;k < 3;k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          node.translation[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+          node.translation[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+          node.translation[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          node.scale[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+          node.scale[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+          node.scale[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
         } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          // this.slerp(v0, v1, factor, node.rotation);
+          this.slerpFromArray(outputArray, base0, base1, factor, node.rotation);
         }
       }
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
-    const computeWorld = nodeIndex => {
-      const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-      if (parentWorld) {
-        // multiply parent * local
-        _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-      } else {
-        _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
-      }
-
-      // maybe no need to exist...
-      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
-      }
-    };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === undefined) {
-        computeWorld(i);
-      }
-    }
+    this.computeWorld(nodes);
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      const offset = j * 16;
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this.finalMat.subarray(offset, offset + 16));
     }
-    // --- Upload to GPU
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
-    return boneMatrices;
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, this.finalMat);
+    return this.finalMat;
+  }
+  slerpFromArray(array, base0, base1, t, out) {
+    let x0 = array[base0];
+    let y0 = array[base0 + 1];
+    let z0 = array[base0 + 2];
+    let w0 = array[base0 + 3];
+    let x1 = array[base1];
+    let y1 = array[base1 + 1];
+    let z1 = array[base1 + 2];
+    let w1 = array[base1 + 3];
+    let dot = x0 * x1 + y0 * y1 + z0 * z1 + w0 * w1;
+    if (dot < 0) {
+      dot = -dot;
+      x1 = -x1;
+      y1 = -y1;
+      z1 = -z1;
+      w1 = -w1;
+    }
+    if (dot > 0.9995) {
+      const inv = 1 - t;
+      out[0] = x0 * inv + x1 * t;
+      out[1] = y0 * inv + y1 * t;
+      out[2] = z0 * inv + z1 * t;
+      out[3] = w0 * inv + w1 * t;
+
+      // fast normalize
+      const len = Math.sqrt(out[0] * out[0] + out[1] * out[1] + out[2] * out[2] + out[3] * out[3]);
+      const invLen = 1 / len;
+      out[0] *= invLen;
+      out[1] *= invLen;
+      out[2] *= invLen;
+      out[3] *= invLen;
+      return;
+    }
+    const theta0 = Math.acos(dot);
+    const theta = theta0 * t;
+    const sinTheta = Math.sin(theta);
+    const sinTheta0 = Math.sin(theta0);
+    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s1 = sinTheta / sinTheta0;
+    out[0] = s0 * x0 + s1 * x1;
+    out[1] = s0 * y0 + s1 * y1;
+    out[2] = s0 * z0 + s1 * z1;
+    out[3] = s0 * w0 + s1 * w1;
   }
 }
 exports.BVHPlayer = BVHPlayer;
@@ -30292,7 +30390,6 @@ class MEMeshObj extends _materials.default {
     this.deltaTimeAdapter = 10;
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
-      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
     });
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
@@ -30961,6 +31058,7 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
+      this._sceneData = new Float32Array(48);
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -30968,27 +31066,48 @@ class MEMeshObj extends _materials.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(48);
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        sceneData.set(camVP, 16);
-        sceneData.set([camera.position[0], camera.position[1], camera.position[2], 0.0], 32);
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-        sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+        // REUSE — no allocation
+        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        this._sceneData.set(camVP, 16);
+        this._sceneData[32] = camera.position[0];
+        this._sceneData[33] = camera.position[1];
+        this._sceneData[34] = camera.position[2];
+        this._sceneData[35] = 0.0;
+        this._sceneData[36] = spotLight.position[0];
+        this._sceneData[37] = spotLight.position[1];
+        this._sceneData[38] = spotLight.position[2];
+        this._sceneData[39] = 0.0;
+        this._sceneData[40] = this.globalAmbient[0];
+        this._sceneData[41] = this.globalAmbient[1];
+        this._sceneData[42] = this.globalAmbient[2];
+        this._sceneData[43] = 0.0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        this._sceneData[46] = 0;
+        this._sceneData[47] = 0;
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
+      this.mm = _wgpuMatrix.mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        _wgpuMatrix.mat4.identity(this.mm);
+        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
         } else {
-          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        return modelMatrix;
+        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
 
       // looks like affect on transformations for now const 0
@@ -31109,10 +31228,8 @@ class MEMeshObj extends _materials.default {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
-    if (this.done == false) return;
-    // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm);
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -31175,7 +31292,6 @@ class MEMeshObj extends _materials.default {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
-    // Bind per-mesh uniforms
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
@@ -34578,6 +34694,13 @@ class MatrixAmmo {
     this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
     this.detectCollision();
+
+    // cache for loop call opti
+    this._trans = new Ammo.btTransform();
+    this._transform = new Ammo.btTransform();
+    this._btVec3 = new Ammo.btVector3(0, 0, 0);
+    this._btVec3Axis = new Ammo.btVector3(0, 0, 0);
+    this._btQuat = new Ammo.btQuaternion(0, 0, 0, 1);
   }
   addPhysics(MEObject, pOptions) {
     if (pOptions.geometry == "Sphere") {
@@ -34762,46 +34885,42 @@ class MatrixAmmo {
   }
   updatePhysics() {
     if (typeof Ammo === 'undefined') return;
-    const trans = new Ammo.btTransform();
-    const transform = new Ammo.btTransform();
-    this.rigidBodies.forEach(function (body) {
+    this.rigidBodies.forEach(body => {
       if (body.isKinematic) {
-        transform.setIdentity();
-        transform.setOrigin(new Ammo.btVector3(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z));
-        const quat = new Ammo.btQuaternion();
-        quat.setRotation(new Ammo.btVector3(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z), (0, _utils.degToRad)(body.MEObject.rotation.angle));
-        transform.setRotation(quat);
-        body.setWorldTransform(transform);
+        this._transform.setIdentity();
+        this._btVec3.setValue(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z);
+        this._transform.setOrigin(this._btVec3);
+        this._btVec3Axis.setValue(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z);
+        this._btQuat.setRotation(this._btVec3Axis, (0, _utils.degToRad)(body.MEObject.rotation.angle));
+        this._transform.setRotation(this._btQuat);
+        body.setWorldTransform(this._transform);
         const ms = body.getMotionState();
-        if (ms) ms.setWorldTransform(transform);
+        if (ms) ms.setWorldTransform(this._transform);
       }
     });
-    Ammo.destroy(transform);
-
-    // Step simulation AFTER setting kinematic transforms
     const timeStep = 1 / 60;
     const maxSubSteps = 10;
     for (let i = 0; i < this.speedUpSimulation; i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }
-    this.rigidBodies.forEach(function (body) {
+    this.rigidBodies.forEach(body => {
       if (!body.isKinematic && body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        const _x = +trans.getOrigin().x().toFixed(2);
-        const _y = +trans.getOrigin().y().toFixed(2);
-        const _z = +trans.getOrigin().z().toFixed(2);
+        body.getMotionState().getWorldTransform(this._trans);
+        const _x = Math.round(this._trans.getOrigin().x() * 100) / 100;
+        const _y = Math.round(this._trans.getOrigin().y() * 100) / 100;
+        const _z = Math.round(this._trans.getOrigin().z() * 100) / 100;
         body.MEObject.position.setPosition(_x, _y, _z);
-        const rot = trans.getRotation();
+        const rot = this._trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
         body.MEObject.rotation.axis.x = rotAxis.x();
         body.MEObject.rotation.axis.y = rotAxis.y();
         body.MEObject.rotation.axis.z = rotAxis.z();
         body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(rot);
-        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(rot.getAngle());
       }
     });
-    Ammo.destroy(trans);
+    // NO Ammo.destroy needed — reused objects stay alive
     this.detectCollision();
   }
 }
@@ -51413,6 +51532,49 @@ class MatrixEngineWGPU {
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
     this.logLoopError = true;
+    this.MAX_SPOTLIGHTS = 20;
+    //cache
+    this._bufferUpdates = [];
+    this._viewProjMatrix = new Float32Array(16);
+    this._invViewProj = new Float32Array(16);
+    this._lightData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
+    this._volumetricCamData = {
+      invViewProjectionMatrix: null
+    };
+    this._presentPassDesc = {
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 0,
+          b: 0,
+          a: 1
+        }
+      }]
+    };
+    this._shadowPassDesc = {
+      label: "shadowPass",
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: null,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0
+      }
+    };
+    this._volumetricLightData = {
+      viewProjectionMatrix: null,
+      direction: null
+    };
+    this._bufferUpdatePool = Array.from({
+      length: 16
+    }, () => ({
+      buffer: null,
+      data: null
+    }));
+
     // context select options
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -51469,6 +51631,7 @@ class MatrixEngineWGPU {
     var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
     if (this.options.canvasSize == 'fullscreen') {
+      console.log("TEST WWWWWWWWWWWWWWWW", window.innerWidth);
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     } else {
@@ -51552,7 +51715,6 @@ class MatrixEngineWGPU {
     // if(this.options.useSingleRenderPass == true) {
     this.frame = this.frameSinglePass;
     this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
-    this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
     this.shadersPack = {};
@@ -51703,6 +51865,27 @@ class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.depthTextureViewTrail = depthTexture.createView();
+    this._transPassDesc = {
+      colorAttachments: [{
+        view: this.sceneTextureView,
+        // stable ref ✅
+        loadOp: 'load',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 1,
+          b: 0,
+          a: 1
+        }
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        // stable ref ✅
+        depthLoadOp: 'load',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0
+      }
+    };
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -51716,7 +51899,6 @@ class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if (this.lightContainer.length == 0) {
         setTimeout(() => {
-          // console.info('Create now test...')
           this.createMe();
         }, 800);
         return;
@@ -51808,7 +51990,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
+      o.texturesPaths = ['./res/textures/default.webp'];
     }
     if (typeof o.material === 'undefined') {
       o.material = {
@@ -51986,49 +52168,48 @@ class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
   updateLights() {
-    const floatsPerLight = 36; // not 20 anymore
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
-    for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
-      if (i < this.lightContainer.length) {
-        const buf = this.lightContainer[i].getLightDataBuffer();
-        data.set(buf, i * floatsPerLight);
-      } else {
-        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-      }
+    const floatsPerLight = 36;
+    const data = this._lightData;
+    data.fill(0);
+    const count = Math.min(this.lightContainer.length, this.MAX_SPOTLIGHTS);
+    for (let i = 0; i < count; i++) {
+      const buf = this.lightContainer[i].getLightDataBuffer();
+      data.set(buf, i * floatsPerLight);
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data);
   }
   frameSinglePass = () => {
-    if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
+    if (this.mainRenderBundle.length == 0) {
       setTimeout(() => {
         requestAnimationFrame(this.frame);
-      }, 100);
+      }, 200);
       return;
     }
+    let poolIndex = 0;
+    this._bufferUpdates.length = 0;
     this.autoUpdate.forEach(_ => _.update());
-    let now;
     const currentTime = performance.now() / 1000;
-    const bufferUpdates = [];
     this.mainRenderBundle.forEach((m, index) => {
       if (m.vertexAnimBuffer && m.vertexAnimParams) {
         m.time = currentTime * m.deltaTimeAdapter;
         m.vertexAnimParams[0] = m.time;
-        bufferUpdates.push({
-          buffer: m.vertexAnimBuffer,
-          data: m.vertexAnimParams
-        });
+        // this._bufferUpdates.push({buffer: m.vertexAnimBuffer, data: m.vertexAnimParams});
+        const slot = this._bufferUpdatePool[poolIndex++];
+        slot.buffer = m.vertexAnimBuffer;
+        slot.data = m.vertexAnimParams;
+        this._bufferUpdates.push(slot);
       }
       if (m.isVideo == true) {
         if (!m.externalTexture) {
           m.createBindGroupForRender();
           setTimeout(() => {
             requestAnimationFrame(this.frame);
-          }, 300);
+          }, 100);
           return;
         }
       }
     });
-    for (const update of bufferUpdates) {
+    for (const update of this._bufferUpdates) {
       this.device.queue.writeBuffer(update.buffer, 0, update.data);
     }
     try {
@@ -52049,28 +52230,18 @@ class MatrixEngineWGPU {
       });
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+        let vpl = this.shadowTextureArray.createView({
           dimension: '2d',
           baseArrayLayer: i,
           arrayLayerCount: 1,
-          // must be > 0
           baseMipLevel: 0,
           mipLevelCount: 1
         });
-        const shadowPass = commandEncoder.beginRenderPass({
-          label: "shadowPass",
-          colorAttachments: [],
-          depthStencilAttachment: {
-            view: ViewPerLightRenderShadowPass,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store',
-            depthClearValue: 1.0
-          }
-        });
-        now = performance.now() / 1000;
+        this._shadowPassDesc.depthStencilAttachment.view = vpl;
+        const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDesc);
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
+            mesh.updateInstanceData(mesh.mm);
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
@@ -52087,10 +52258,6 @@ class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-
-      // with no postprocessing
-      // const currentTextureView = this.context.getCurrentTexture().createView();
-      // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // opaque
@@ -52099,12 +52266,12 @@ class MatrixEngineWGPU {
         if (mesh.pipeline) {
           pass.setPipeline(mesh.pipeline);
         } else {
-          pass.setPipeline(this.mainRenderBundle[0].pipeline);
+          requestAnimationFrame(this.frame);
+          return;
         }
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -52124,7 +52291,6 @@ class MatrixEngineWGPU {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
@@ -52139,84 +52305,40 @@ class MatrixEngineWGPU {
       }
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: 'load',
-          storeOp: 'store',
-          clearValue: {
-            r: 0,
-            g: 1,
-            b: 0,
-            a: 1
-          }
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: 'load',
-          depthStoreOp: 'store',
-          depthClearValue: 1.0
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
-      const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
+      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
+      const cam = this.cameras[this.mainCameraParams.type];
+      _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+      _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
       for (const mesh of this.mainRenderBundle) {
-        if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
+        for (const effect_ in mesh.effects) {
           const effect = mesh.effects[effect_];
           if (effect == null || effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
-          if (effect.updateInstanceData) effect.updateInstanceData(md);
-          effect.render(transPass, mesh, viewProjMatrix);
-        });
+          if (effect.updateInstanceData) effect.updateInstanceData(mesh.mm);
+          effect.render(transPass, mesh, this._viewProjMatrix);
+        }
       }
       transPass.end();
       // volumetric
       if (this.volumetricPass.enabled === true) {
-        const cam = this.cameras[this.mainCameraParams.type];
-        // If you don't store it yet, compute once per frame:
-        const invViewProj = _wgpuMatrix.mat4.invert(_wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity()));
-        // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
-        this.volumetricPass.render(commandEncoder, this.sceneTextureView,
-        // ← your existing scene color
-        this.mainDepthView,
-        // ← your existing depth
-        this.shadowArrayView,
-        // ← your existing shadow array
-        {
-          invViewProjectionMatrix: invViewProj
-        }, {
-          viewProjectionMatrix: light.viewProjMatrix,
-          // Float32Array 16
-          direction: light.direction // [x, y, z]
-        });
+        this._volumetricCamData.invViewProjectionMatrix = this._invViewProj;
+        this._volumetricLightData.viewProjectionMatrix = light.viewProjMatrix;
+        this._volumetricLightData.direction = light.direction;
+        this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricCamData, this._volumetricLightData);
       }
       const canvasView = this.context.getCurrentTexture().createView();
       // Bloom
       if (this.bloomPass.enabled == true) {
-        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTex.createView() : this.sceneTextureView;
+        const bloomInput = this.volumetricPass.enabled ? this._volumetricOutputView : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        // ori
-        // this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
-      pass = commandEncoder.beginRenderPass({
-        colorAttachments: [{
-          view: canvasView,
-          loadOp: 'clear',
-          storeOp: 'store',
-          clearValue: {
-            r: 0,
-            g: 0,
-            b: 0,
-            a: 1
-          }
-        }]
-      });
+      this._presentPassDesc.colorAttachments[0].view = canvasView;
+      pass = commandEncoder.beginRenderPass(this._presentPassDesc);
       pass.setPipeline(this.presentPipeline);
       pass.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
       pass.draw(6);
       pass.end();
-      this.graphUpdate(now);
+      this.graphUpdate(currentTime);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
@@ -52251,7 +52373,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
+      o.texturesPaths = ['./res/textures/default.webp'];
     }
     if (typeof o.material === 'undefined') {
       o.material = {
@@ -52375,7 +52497,7 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
+      o.texturesPaths = ['./res/textures/default.webp'];
     }
     if (typeof o.material === 'undefined') {
       o.material = {
@@ -52502,6 +52624,7 @@ class MatrixEngineWGPU {
         heightFalloff: 0.08,
         lightColor: [1.0, 0.88, 0.65] // warm sunlight
       }).init();
+      this._volumetricOutputView = this.volumetricPass.compositeOutputTex.createView();
       this.volumetricPass.enabled = true;
     }
   };

@@ -197,6 +197,7 @@ export default class MatrixEngineWGPU {
     var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
     if(this.options.canvasSize == 'fullscreen') {
+      console.log("TEST WWWWWWWWWWWWWWWW", window.innerWidth)
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     } else {
@@ -832,7 +833,7 @@ export default class MatrixEngineWGPU {
         for(const effect_ in mesh.effects) {
           const effect = mesh.effects[effect_];
           if(effect == null || effect.enabled == false) return;
-          if(effect.updateInstanceData) effect.updateInstanceData(mesh.md);
+          if(effect.updateInstanceData) effect.updateInstanceData(mesh.mm);
           effect.render(transPass, mesh, this._viewProjMatrix)
         }
       }

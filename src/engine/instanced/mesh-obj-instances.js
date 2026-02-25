@@ -498,9 +498,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        let m = this.getModelMatrix(this.position, this.useScale);
-        this.updateInstanceData(m);
-
+        this.updateInstanceData(this.mm);
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
