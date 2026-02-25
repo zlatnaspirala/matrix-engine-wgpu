@@ -33,6 +33,7 @@ Browser support list:
 
 ## Done list []
 
+- ✔️ No memory leak from 1.9.2 (95% optimised)
 - ✔️ Support for 3D objects and scene transformations
 - ✔️ Ammo.js physics integration
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend

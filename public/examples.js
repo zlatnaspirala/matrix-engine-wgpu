@@ -24528,8 +24528,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
-        let m = this.getModelMatrix(this.position, this.useScale);
-        this.updateInstanceData(m);
+        this.updateInstanceData(this.mm);
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
@@ -49614,6 +49613,7 @@ class MatrixEngineWGPU {
     var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
     if (this.options.canvasSize == 'fullscreen') {
+      console.log("TEST WWWWWWWWWWWWWWWW", window.innerWidth);
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     } else {
@@ -49684,9 +49684,10 @@ class MatrixEngineWGPU {
         alphaMode: 'premultiplied'
       });
     }
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
+
+    // const devicePixelRatio = window.devicePixelRatio;
+    // canvas.width = canvas.clientWidth * devicePixelRatio;
+    // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,
@@ -50295,7 +50296,7 @@ class MatrixEngineWGPU {
         for (const effect_ in mesh.effects) {
           const effect = mesh.effects[effect_];
           if (effect == null || effect.enabled == false) return;
-          if (effect.updateInstanceData) effect.updateInstanceData(mesh.md);
+          if (effect.updateInstanceData) effect.updateInstanceData(mesh.mm);
           effect.render(transPass, mesh, this._viewProjMatrix);
         }
       }
