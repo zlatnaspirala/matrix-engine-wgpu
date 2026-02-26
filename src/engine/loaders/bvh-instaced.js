@@ -63,17 +63,19 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.MAX_BONES = 100; // predefined
     //cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
-
     this._nodeChannels = new Map();
-
     this.sharedState = this.bvh.sharedState;
+    this.animationIndex= this.glb.animationIndex;
+    this.nodes = this.glb.nodes.map(n => ({
+      ...n,
+      translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n.rotation ? n.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n.scale ? n.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n.transform ? n.transform.slice() : mat4.identity(),
+      worldMatrix: mat4.create()
+    }));
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
-    this.nodeWorldMatrices = Array.from(
-      {length: this.glb.nodes.length},
-      () => mat4.identity()
-    );
     this.startTime = performance.now() / 1000; // seconds - anim speed control
     this.skeleton = []; // array of joint node indices
     this.animationSpeed = 1000;
@@ -98,7 +100,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     // 3. Assign inverseBindMatrix to each joint node correctly
     for(let i = 0;i < skin.joints.length;i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       // assign only to bone nodes
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       // decompose node’s transform once (if not already)
@@ -120,10 +122,10 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
     // friendly blender
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for(let j = 0;j < this.glb.glbJsonData.animations.length;j++) {
       if(this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -140,7 +142,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   getNumberOfFramesCurAni() {
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
     let maxFrames = 0;
     if(typeof anim == 'undefined') {
       console.log('[anim undefined]', this.name)
@@ -165,7 +167,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   playAnimationByIndex = (animationIndex) => {
-    this.glb.animationIndex = animationIndex;
+    this.animationIndex = animationIndex;
   }
 
   playAnimationByName = (animationName) => {
@@ -177,7 +179,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       console.warn(`Animation '${animationName}' not found`);
       return;
     }
-    this.glb.animationIndex = index;
+    this.animationIndex = index;
   };
 
   update(deltaTime) {
@@ -188,15 +190,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const test = this.getNumberOfFramesCurAni();
-    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex])
+    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex])
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if(this.glb.animationIndex == null) this.glb.animationIndex = 0;
+        if(this.animationIndex == null) this.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+            animationName: this.glb.glbJsonData.animations[this.animationIndex].name
           }
         }))
       }, inTime * 1000)
@@ -207,8 +209,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
           this.updateSingleBoneCubeAnimation(
-            this.glb.glbJsonData.animations[this.glb.animationIndex],
-            this.glb.nodes,   // ← same nodes, no clone
+            this.glb.glbJsonData.animations[this.animationIndex],
+            this.nodes,   // ← same nodes, no clone
             currentTime,      // ← only this changes per instance
             this._boneMatrices,
             i                 // ← writes to correct buffer slot
@@ -216,8 +218,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         }
       } else {
         const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 0)
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 1)
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0)
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 1)
       }
     }
   }
@@ -457,7 +459,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
     this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
     for(const channel of anim.channels) {
       if(!this._nodeChannels.has(channel.target.node))
         this._nodeChannels.set(channel.target.node, []);

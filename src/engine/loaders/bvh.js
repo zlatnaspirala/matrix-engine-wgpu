@@ -1,7 +1,6 @@
 import MEBvh from "bvh-loader";
 import MEMeshObj from "../mesh-obj";
-import {mat4, vec3, quat} from "wgpu-matrix";
-// import {degToRad} from "../utils.js";
+import {mat4, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 
 export var animBVH = new MEBvh();
@@ -33,7 +32,8 @@ export let loadBVH = (path) => {
  * @param {GLBModel} glb - Your loaded GLB
  * @param {Object} bvhBones - Mapping of boneName → BVH bone data
  * @param {GPUDevice} device - WebGPU device
- * @credits Chatgpt assist here.
+ * @credits Claude&Chatgpt assist here.
+ * @author Nikola Lukic
  */
 export class BVHPlayer extends MEMeshObj {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
@@ -44,28 +44,29 @@ export class BVHPlayer extends MEMeshObj {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
-    // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     if(!this.bvh.sharedState) {this.bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};}
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
+    this.animationIndex= this.glb.animationIndex;
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
-    this.nodeWorldMatrices = Array.from(
-      {length: this.glb.nodes.length},
-      () => mat4.identity()
-    );
-    this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.MAX_BONES = 100; // predefined
-    this.skeleton = []; // array of joint node indices
+    this.nodes = this.glb.nodes.map(n => ({
+      ...n,
+      translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n.rotation ? n.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n.scale ? n.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n.transform ? n.transform.slice() : mat4.identity(),
+      worldMatrix: mat4.create()
+    }));
+    this.startTime = performance.now() / 1000;
+    this.MAX_BONES = 100;
+    this.skeleton = [];
     this.animationSpeed = 1000;
-    this.inverseBindMatrices = []; // Float32Array for each joint
+    this.inverseBindMatrices = [];
     this.initInverseBindMatrices();
     this.makeSkeletal();
-
     this._nodeChannels = new Map();
-
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = mat4.create();
   }
@@ -83,7 +84,7 @@ export class BVHPlayer extends MEMeshObj {
     // 3. Assign inverseBindMatrix to each joint node correctly
     for(let i = 0;i < skin.joints.length;i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       // assign only to bone nodes
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       // decompose node’s transform once (if not already)
@@ -105,10 +106,10 @@ export class BVHPlayer extends MEMeshObj {
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
     // friendly blender
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for(let j = 0;j < this.glb.glbJsonData.animations.length;j++) {
       if(this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -126,7 +127,7 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   playAnimationByIndex = (animationIndex) => {
-    this.glb.animationIndex = animationIndex;
+    this.animationIndex = animationIndex;
   }
 
   playAnimationByName = (animationName) => {
@@ -138,11 +139,11 @@ export class BVHPlayer extends MEMeshObj {
       console.warn(`Animation '${animationName}' not found`);
       return;
     }
-    this.glb.animationIndex = index;
+    this.animationIndex = index;
   };
 
   getNumberOfFramesCurAni() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
+    let anim = this.glb.glbJsonData.animations[this.animationIndex]
     const sampler = anim.samplers[0];
     const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
     const numFrames = inputAccessor.count;
@@ -156,11 +157,10 @@ export class BVHPlayer extends MEMeshObj {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
       this.sharedState.timeAccumulator -= frameTime;
     }
-    // const frame = this.sharedState.currentFrame;
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices)
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, boneMatrices)
     }
   }
 
@@ -417,7 +417,7 @@ export class BVHPlayer extends MEMeshObj {
     // --- Map channels per node for faster lookup
 
     this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
     for(const channel of anim.channels) {
       if(!this._nodeChannels.has(channel.target.node))
         this._nodeChannels.set(channel.target.node, []);
