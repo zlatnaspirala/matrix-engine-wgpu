@@ -86,7 +86,21 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = mat4.create();
+    this.buildNodeChannelMap();
   }
+
+  buildNodeChannelMap() {
+  this._nodeChannels.clear();
+
+  const anim = this.glb.glbJsonData.animations[this.animationIndex];
+
+  for (const channel of anim.channels) {
+    if (!this._nodeChannels.has(channel.target.node)) {
+      this._nodeChannels.set(channel.target.node, []);
+    }
+    this._nodeChannels.get(channel.target.node).push(channel);
+  }
+}
 
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -169,6 +183,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
 
   playAnimationByIndex = (animationIndex) => {
     this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   }
 
   playAnimationByName = (animationName) => {
@@ -181,6 +196,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       return;
     }
     this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
 
   update(deltaTime) {
@@ -449,13 +465,13 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-    this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    for(const channel of anim.channels) {
-      if(!this._nodeChannels.has(channel.target.node))
-        this._nodeChannels.set(channel.target.node, []);
-      this._nodeChannels.get(channel.target.node).push(channel);
-    }
+    // this._nodeChannels.clear();
+    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    // for(const channel of anim.channels) {
+    //   if(!this._nodeChannels.has(channel.target.node))
+    //     this._nodeChannels.set(channel.target.node, []);
+    //   this._nodeChannels.get(channel.target.node).push(channel);
+    // }
     const nodeChannels = this._nodeChannels;
     for(let j = 0;j < this.skeleton.length;j++) {
       const nodeIndex = this.skeleton[j];

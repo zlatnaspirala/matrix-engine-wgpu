@@ -49,7 +49,7 @@ export class BVHPlayer extends MEMeshObj {
     if(!this.bvh.sharedState) {this.bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};}
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
-    this.animationIndex= this.glb.animationIndex;
+    this.animationIndex = this.glb.animationIndex;
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     this.nodes = this.glb.nodes.map(n => ({
       ...n,
@@ -70,6 +70,20 @@ export class BVHPlayer extends MEMeshObj {
     this._nodeChannels = new Map();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = mat4.create();
+    this.buildNodeChannelMap();
+  }
+
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+
+    for(const channel of anim.channels) {
+      if(!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
 
   makeSkeletal() {
@@ -129,6 +143,7 @@ export class BVHPlayer extends MEMeshObj {
 
   playAnimationByIndex = (animationIndex) => {
     this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   }
 
   playAnimationByName = (animationName) => {
@@ -141,6 +156,7 @@ export class BVHPlayer extends MEMeshObj {
       return;
     }
     this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
 
   getNumberOfFramesCurAni() {
@@ -417,13 +433,13 @@ export class BVHPlayer extends MEMeshObj {
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
 
-    this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    for(const channel of anim.channels) {
-      if(!this._nodeChannels.has(channel.target.node))
-        this._nodeChannels.set(channel.target.node, []);
-      this._nodeChannels.get(channel.target.node).push(channel);
-    }
+    // this._nodeChannels.clear();
+    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    // for(const channel of anim.channels) {
+    //   if(!this._nodeChannels.has(channel.target.node))
+    //     this._nodeChannels.set(channel.target.node, []);
+    //   this._nodeChannels.get(channel.target.node).push(channel);
+    // }
     const nodeChannels = this._nodeChannels;
 
     for(let j = 0;j < this.skeleton.length;j++) {

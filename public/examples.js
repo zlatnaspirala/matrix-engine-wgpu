@@ -26218,6 +26218,17 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
+    this.buildNodeChannelMap();
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -26295,6 +26306,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
   }
   playAnimationByIndex = animationIndex => {
     this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   };
   playAnimationByName = animationName => {
     const animations = this.glb.glbJsonData.animations;
@@ -26304,6 +26316,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       return;
     }
     this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
   update(deltaTime) {
     const frameTime = 1 / this.fps;
@@ -26601,12 +26614,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-    this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    for (const channel of anim.channels) {
-      if (!this._nodeChannels.has(channel.target.node)) this._nodeChannels.set(channel.target.node, []);
-      this._nodeChannels.get(channel.target.node).push(channel);
-    }
+    // this._nodeChannels.clear();
+    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    // for(const channel of anim.channels) {
+    //   if(!this._nodeChannels.has(channel.target.node))
+    //     this._nodeChannels.set(channel.target.node, []);
+    //   this._nodeChannels.get(channel.target.node).push(channel);
+    // }
     const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
@@ -26767,6 +26781,17 @@ class BVHPlayer extends _meshObj.default {
     this._nodeChannels = new Map();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
+    this.buildNodeChannelMap();
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -26822,6 +26847,7 @@ class BVHPlayer extends _meshObj.default {
   }
   playAnimationByIndex = animationIndex => {
     this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   };
   playAnimationByName = animationName => {
     const animations = this.glb.glbJsonData.animations;
@@ -26831,6 +26857,7 @@ class BVHPlayer extends _meshObj.default {
       return;
     }
     this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
   getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.animationIndex];
@@ -27131,12 +27158,13 @@ class BVHPlayer extends _meshObj.default {
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
 
-    this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    for (const channel of anim.channels) {
-      if (!this._nodeChannels.has(channel.target.node)) this._nodeChannels.set(channel.target.node, []);
-      this._nodeChannels.get(channel.target.node).push(channel);
-    }
+    // this._nodeChannels.clear();
+    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    // for(const channel of anim.channels) {
+    //   if(!this._nodeChannels.has(channel.target.node))
+    //     this._nodeChannels.set(channel.target.node, []);
+    //   this._nodeChannels.get(channel.target.node).push(channel);
+    // }
     const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
