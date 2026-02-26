@@ -19783,8 +19783,7 @@ var _flameInstanced = require("../../shaders/flame-effect/flame-instanced");
 var _utils = require("../utils");
 /**
  * @description
- * SubPipeline effects
- * @name FlameEmitter
+ * FlameEmitter
  */
 class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
@@ -19816,8 +19815,7 @@ class FlameEmitter {
         color: [1, 0.3, 0, 0.1],
         time: 1,
         intensity: 1,
-        riseSpeed: 1,
-        tintStrength: 1
+        riseSpeed: 1
       });
     }
     this._initPipeline();
@@ -19956,7 +19954,7 @@ class FlameEmitter {
   }
   updateInstanceData = baseModelMatrix => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    const floatsPerInstance = 28;
+    const floatsPerInstance = 28; // 112 bytes / 4
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
@@ -24072,7 +24070,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
-    this._accessorCache = new Map();
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -24539,7 +24536,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
-        this.updateInstanceData(this.mm);
+        let m = this.getModelMatrix(this.position, this.useScale);
+        this.updateInstanceData(m);
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
@@ -24650,23 +24648,42 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      this.MAX_BONES = 100;
-      const TRAIL_INSTANCES = 10;
+      let MAX_BONES = 100;
+      this.MAX_BONES = MAX_BONES;
+      // this.bonesBuffer = device.createBuffer({
+      //   label: "bonesBuffer",
+      //   size: alignTo256(64 * MAX_BONES),
+      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      // });
+
+      // const bones = new Float32Array(this.MAX_BONES * 16);
+      // for(let i = 0;i < this.MAX_BONES;i++) {
+      //   // identity matrices
+      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      // }
+      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+      const TRAIL_INSTANCES = 10; // your total instance count
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
         size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+
+      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+
+      //
+      // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
-        label: "VerAnimationPar",
+        label: "Vertex Animation Params",
         size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
+        // 256, //this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -24890,7 +24907,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-      this._sceneData = new Float32Array(48);
+
+      // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -24918,27 +24936,18 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
-      this.mm = _wgpuMatrix.mat4.create();
-      this._posVec = new Float32Array(3);
-      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        this._posVec[0] = pos.x;
-        this._posVec[1] = pos.y;
-        this._posVec[2] = pos.z;
-        _wgpuMatrix.mat4.identity(this.mm);
-        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
+        let modelMatrix = _wgpuMatrix.mat4.identity();
+        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
-          this._rotAxisVec[0] = this.rotation.axis.x;
-          this._rotAxisVec[1] = this.rotation.axis.y;
-          this._rotAxisVec[2] = this.rotation.axis.z;
-          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
+          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
-          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
-          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
-          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
+          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
-        return this.mm;
+        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        return modelMatrix;
       };
       this.done = true;
       if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
@@ -25043,10 +25052,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       primitive: this.primitive
     });
   };
-  updateModelUniformBuffer = () => {
-    this.mm = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm.buffer, this.mm.byteOffset, this.mm.byteLength);
-  };
+  updateModelUniformBuffer = () => {};
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid array passed to createGPUBuffer');
@@ -25561,7 +25567,6 @@ class SpotLight {
       });
       return this.mainPassBindGroupContainer[index];
     };
-    this.lightDataBuffer = new Float32Array(48);
 
     // Only osc values +-
     this.behavior = new _behavior.default();
@@ -25579,31 +25584,11 @@ class SpotLight {
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
   getLightDataBuffer() {
-    const d = this.lightDataBuffer;
-    // Block 1: Position (vec3 + 1 float padding)
-    d.set(this.position, 0);
-    d[3] = 0.0; // padding
-    // Block 2: Direction (vec3 + 1 float padding)
-    d.set(this.direction, 4);
-    d[7] = 0.0; // padding
-    // Block 3: Parameters
-    d[8] = this.innerCutoff;
-    d[9] = this.outerCutoff;
-    d[10] = this.intensity;
-    d[11] = 0.0; // padding to finish the 16-byte block
-    // Block 4: Color (vec3 + 1 float padding)
-    d.set(this.color, 12);
-    d[15] = 0.0; // padding
-    // Block 5: Range/Bias
-    d[16] = this.range;
-    d[17] = this.ambientFactor;
-    d[18] = this.shadowBias;
-    d[19] = 0.0; // padding (Crucial: Matrix MUST start on a 16-byte boundary)
-    // Block 6-9: Matrix (16 floats)
-    // Starts at index 20 (20 * 4 bytes = 80 bytes, which is divisible by 16)
-    d.set(this.viewProjMatrix, 20);
-    return d;
+    const m = this.viewProjMatrix;
+    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias, 0.0, ...m]);
   }
+
+  // Setters
   setPosX = x => {
     this.position[0] = x;
   };
@@ -26212,20 +26197,53 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
     this.sharedState = this.bvh.sharedState;
+    this.animationIndex = this.glb.animationIndex;
+    this.nodes = this.glb.nodes.map(n => ({
+      ...n,
+      translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n.rotation ? n.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n.scale ? n.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n.transform ? n.transform.slice() : _wgpuMatrix.mat4.identity(),
+      worldMatrix: _wgpuMatrix.mat4.create()
+    }));
+    this._composeMat = _wgpuMatrix.mat4.create();
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
-    this.nodeWorldMatrices = Array.from({
-      length: this.glb.nodes.length
-    }, () => _wgpuMatrix.mat4.identity());
     this.startTime = performance.now() / 1000; // seconds - anim speed control
     this.skeleton = []; // array of joint node indices
     this.animationSpeed = 1000;
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
+    this.buildNodeChannelMap();
+    this.buildSortedNodes();
+  }
+  buildSortedNodes() {
+    const sorted = [];
+    const queue = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].parent == null) queue.push(i);
+    }
+    while (queue.length) {
+      const idx = queue.shift();
+      sorted.push(idx);
+      const children = this.nodes[idx].children;
+      if (children) for (const c of children) queue.push(c);
+    }
+    this._sortedNodes = sorted;
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -26240,7 +26258,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // 3. Assign inverseBindMatrix to each joint node correctly
     for (let i = 0; i < skin.joints.length; i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       // assign only to bone nodes
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       // decompose node’s transform once (if not already)
@@ -26261,10 +26279,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
     // friendly blender
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -26279,7 +26297,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.inverseBindMatrices = invBindArray;
   }
   getNumberOfFramesCurAni() {
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
     let maxFrames = 0;
     if (typeof anim == 'undefined') {
       console.log('[anim undefined]', this.name);
@@ -26302,7 +26320,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     return maxTime;
   }
   playAnimationByIndex = animationIndex => {
-    this.glb.animationIndex = animationIndex;
+    this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   };
   playAnimationByName = animationName => {
     const animations = this.glb.glbJsonData.animations;
@@ -26311,25 +26330,59 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       console.warn(`Animation '${animationName}' not found`);
       return;
     }
-    this.glb.animationIndex = index;
+    this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
+  composeTRS(t, q, s, out) {
+    const x = q[0],
+      y = q[1],
+      z = q[2],
+      w = q[3];
+    const x2 = x + x,
+      y2 = y + y,
+      z2 = z + z;
+    const xx = x * x2,
+      xy = x * y2,
+      xz = x * z2;
+    const yy = y * y2,
+      yz = y * z2,
+      zz = z * z2;
+    const wx = w * x2,
+      wy = w * y2,
+      wz = w * z2;
+    out[0] = (1 - (yy + zz)) * s[0];
+    out[1] = (xy + wz) * s[0];
+    out[2] = (xz - wy) * s[0];
+    out[3] = 0;
+    out[4] = (xy - wz) * s[1];
+    out[5] = (1 - (xx + zz)) * s[1];
+    out[6] = (yz + wx) * s[1];
+    out[7] = 0;
+    out[8] = (xz + wy) * s[2];
+    out[9] = (yz - wx) * s[2];
+    out[10] = (1 - (xx + yy)) * s[2];
+    out[11] = 0;
+    out[12] = t[0];
+    out[13] = t[1];
+    out[14] = t[2];
+    out[15] = 1;
+  }
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
-    }
-    // const test = this.getNumberOfFramesCurAni();
-    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex]);
+    // const frameTime = 1 / this.fps;
+    // this.sharedState.timeAccumulator += deltaTime;
+    // while(this.sharedState.timeAccumulator >= frameTime) {
+    //   // this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
+    //   this.sharedState.timeAccumulator -= frameTime;
+    // }
+    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex]);
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
+        if (this.animationIndex == null) this.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+            animationName: this.glb.glbJsonData.animations[this.animationIndex].name
           }
         }));
       }, inTime * 1000);
@@ -26339,7 +26392,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
-          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes,
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes,
           // ← same nodes, no clone
           currentTime,
           // ← only this changes per instance
@@ -26348,8 +26401,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         }
       } else {
         const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 0);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 1);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 1);
       }
     }
   }
@@ -26499,16 +26552,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     _wgpuMatrix.mat4.multiply(m, rot, m);
     _wgpuMatrix.mat4.scale(m, scale, m);
     return m;
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-    // return m;
   }
   decomposeMatrix(m) {
     // m is column-major: indices:
@@ -26598,11 +26641,15 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
     if (dot > 0.9995) {
-      // linear
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      // normalize
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
+      const x = q0[0] + t * (q1[0] - q0[0]);
+      const y = q0[1] + t * (q1[1] - q0[1]);
+      const z = q0[2] + t * (q1[2] - q0[2]);
+      const w = q0[3] + t * (q1[3] - q0[3]);
+      const invLen = 1 / Math.sqrt(x * x + y * y + z * z + w * w);
+      out[0] = x * invLen;
+      out[1] = y * invLen;
+      out[2] = z * invLen;
+      out[3] = w * invLen;
       return;
     }
     const theta0 = Math.acos(dot);
@@ -26611,20 +26658,22 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
+    out[0] = s0 * q0[0] + s1 * q1[0];
+    out[1] = s0 * q0[1] + s1 * q1[1];
+    out[2] = s0 * q0[2] + s1 * q1[2];
+    out[3] = s0 * q0[3] + s1 * q1[3];
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-    this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
-    for (const channel of anim.channels) {
-      if (!this._nodeChannels.has(channel.target.node)) this._nodeChannels.set(channel.target.node, []);
-      this._nodeChannels.get(channel.target.node).push(channel);
-    }
+    // this._nodeChannels.clear();
+    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    // for(const channel of anim.channels) {
+    //   if(!this._nodeChannels.has(channel.target.node))
+    //     this._nodeChannels.set(channel.target.node, []);
+    //   this._nodeChannels.get(channel.target.node).push(channel);
+    // }
     const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
@@ -26653,38 +26702,48 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
         // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
+        const base0 = i * numComponents;
+        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
         // --- Apply animation
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.translation[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
         }
       }
       // --- Recompose local transform
-      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+      // node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
     }
-    const computeWorld = nodeIndex => {
+    // const computeWorld = (nodeIndex) => {
+    //   const node = nodes[nodeIndex];
+    //   if(!node.worldMatrix) node.worldMatrix = mat4.create();
+    //   let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+    //   if(parentWorld) {
+    //     // multiply parent * local
+    //     mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+    //   } else {
+    //     mat4.copy(node.transform, node.worldMatrix);
+    //   }
+
+    //   mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
+    //   if(node.children) {
+    //     for(const childIndex of node.children) computeWorld(childIndex);
+    //   }
+    // };
+    for (const nodeIndex of this._sortedNodes) {
       const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
       if (parentWorld) {
-        // multiply parent * local
         _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
       } else {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
-      }
-      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
-      }
-    };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === undefined) {
-        computeWorld(i);
       }
     }
     for (let j = 0; j < this.skeleton.length; j++) {
@@ -26711,8 +26770,6 @@ var _meshObj = _interopRequireDefault(require("../mesh-obj"));
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {degToRad} from "../utils.js";
-
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
   return new Promise((resolve, reject) => {
@@ -26743,7 +26800,8 @@ let loadBVH = path => {
  * @param {GLBModel} glb - Your loaded GLB
  * @param {Object} bvhBones - Mapping of boneName → BVH bone data
  * @param {GPUDevice} device - WebGPU device
- * @credits Chatgpt assist here.
+ * @credits Claude&Chatgpt assist here.
+ * @author Nikola Lukic
  */
 exports.loadBVH = loadBVH;
 class BVHPlayer extends _meshObj.default {
@@ -26755,7 +26813,6 @@ class BVHPlayer extends _meshObj.default {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
-    // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     if (!this.bvh.sharedState) {
@@ -26766,21 +26823,53 @@ class BVHPlayer extends _meshObj.default {
     }
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
+    this.animationIndex = this.glb.animationIndex;
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
-    this.nodeWorldMatrices = Array.from({
-      length: this.glb.nodes.length
-    }, () => _wgpuMatrix.mat4.identity());
-    this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.MAX_BONES = 100; // predefined
-    this.skeleton = []; // array of joint node indices
+    this.nodes = this.glb.nodes.map(n => ({
+      ...n,
+      translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n.rotation ? n.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n.scale ? n.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n.transform ? n.transform.slice() : _wgpuMatrix.mat4.identity(),
+      worldMatrix: _wgpuMatrix.mat4.create()
+    }));
+    this.startTime = performance.now() / 1000;
+    this.MAX_BONES = 100;
+    this.skeleton = [];
     this.animationSpeed = 1000;
-    this.inverseBindMatrices = []; // Float32Array for each joint
+    this.inverseBindMatrices = [];
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._numFrames = this.getNumberOfFramesCurAni();
     this._nodeChannels = new Map();
-    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
+    this.buildNodeChannelMap();
+    this.buildSortedNodes();
+  }
+  buildSortedNodes() {
+    const sorted = [];
+    const queue = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].parent == null) queue.push(i);
+    }
+    while (queue.length) {
+      const idx = queue.shift();
+      sorted.push(idx);
+      const children = this.nodes[idx].children;
+      if (children) for (const c of children) queue.push(c);
+    }
+    this._sortedNodes = sorted;
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -26795,7 +26884,7 @@ class BVHPlayer extends _meshObj.default {
     // 3. Assign inverseBindMatrix to each joint node correctly
     for (let i = 0; i < skin.joints.length; i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       // assign only to bone nodes
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       // decompose node’s transform once (if not already)
@@ -26816,10 +26905,10 @@ class BVHPlayer extends _meshObj.default {
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
     // friendly blender
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -26835,7 +26924,8 @@ class BVHPlayer extends _meshObj.default {
     this.inverseBindMatrices = invBindArray;
   }
   playAnimationByIndex = animationIndex => {
-    this.glb.animationIndex = animationIndex;
+    this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   };
   playAnimationByName = animationName => {
     const animations = this.glb.glbJsonData.animations;
@@ -26844,27 +26934,61 @@ class BVHPlayer extends _meshObj.default {
       console.warn(`Animation '${animationName}' not found`);
       return;
     }
-    this.glb.animationIndex = index;
+    this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
   getNumberOfFramesCurAni() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    let anim = this.glb.glbJsonData.animations[this.animationIndex];
     const sampler = anim.samplers[0];
     const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
     const numFrames = inputAccessor.count;
     return numFrames;
   }
+  composeTRS(t, q, s, out) {
+    const x = q[0],
+      y = q[1],
+      z = q[2],
+      w = q[3];
+    const x2 = x + x,
+      y2 = y + y,
+      z2 = z + z;
+    const xx = x * x2,
+      xy = x * y2,
+      xz = x * z2;
+    const yy = y * y2,
+      yz = y * z2,
+      zz = z * z2;
+    const wx = w * x2,
+      wy = w * y2,
+      wz = w * z2;
+    out[0] = (1 - (yy + zz)) * s[0];
+    out[1] = (xy + wz) * s[0];
+    out[2] = (xz - wy) * s[0];
+    out[3] = 0;
+    out[4] = (xy - wz) * s[1];
+    out[5] = (1 - (xx + zz)) * s[1];
+    out[6] = (yz + wx) * s[1];
+    out[7] = 0;
+    out[8] = (xz + wy) * s[2];
+    out[9] = (yz - wx) * s[2];
+    out[10] = (1 - (xx + yy)) * s[2];
+    out[11] = 0;
+    out[12] = t[0];
+    out[13] = t[1];
+    out[14] = t[2];
+    out[15] = 1;
+  }
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
-    }
-    // const frame = this.sharedState.currentFrame;
+    // const frameTime = 1 / this.fps;
+    // this.sharedState.timeAccumulator += deltaTime;
+    // while(this.sharedState.timeAccumulator >= frameTime) {
+    //   // this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
+    //   // this.sharedState.timeAccumulator -= frameTime;
+    // }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    // const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices);
     }
   }
   getAccessorArray(glb, accessorIndex) {
@@ -27124,11 +27248,15 @@ class BVHPlayer extends _meshObj.default {
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
     if (dot > 0.9995) {
-      // linear
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      // normalize
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
+      const x = q0[0] + t * (q1[0] - q0[0]);
+      const y = q0[1] + t * (q1[1] - q0[1]);
+      const z = q0[2] + t * (q1[2] - q0[2]);
+      const w = q0[3] + t * (q1[3] - q0[3]);
+      const invLen = 1 / Math.sqrt(x * x + y * y + z * z + w * w);
+      out[0] = x * invLen;
+      out[1] = y * invLen;
+      out[2] = z * invLen;
+      out[3] = w * invLen;
       return;
     }
     const theta0 = Math.acos(dot);
@@ -27137,21 +27265,23 @@ class BVHPlayer extends _meshObj.default {
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
+    out[0] = s0 * q0[0] + s1 * q1[0];
+    out[1] = s0 * q0[1] + s1 * q1[1];
+    out[2] = s0 * q0[2] + s1 * q1[2];
+    out[3] = s0 * q0[3] + s1 * q1[3];
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
     // const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
 
-    this._nodeChannels.clear();
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
-    for (const channel of anim.channels) {
-      if (!this._nodeChannels.has(channel.target.node)) this._nodeChannels.set(channel.target.node, []);
-      this._nodeChannels.get(channel.target.node).push(channel);
-    }
+    // this._nodeChannels.clear();
+    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    // for(const channel of anim.channels) {
+    //   if(!this._nodeChannels.has(channel.target.node))
+    //     this._nodeChannels.set(channel.target.node, []);
+    //   this._nodeChannels.get(channel.target.node).push(channel);
+    // }
     const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
@@ -27182,40 +27312,44 @@ class BVHPlayer extends _meshObj.default {
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
         // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
+        // const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+        // const v1 = outputArray.subarray(
+        //   Math.min(i + 1, inputTimes.length - 1) * numComponents,
+        //   Math.min(i + 2, inputTimes.length) * numComponents
+        // );
+
+        const base0 = i * numComponents;
+        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
         // --- Apply animation
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.translation[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          if (factor < 0.001) {
+            node.rotation.set(outputArray.subarray(base0, base0 + 4));
+          } else if (factor > 0.999) {
+            node.rotation.set(outputArray.subarray(base1, base1 + 4));
+          } else {
+            this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
+          }
         }
       }
       // --- Recompose local transform
-      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+      // node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
     }
-    const computeWorld = nodeIndex => {
+    for (const nodeIndex of this._sortedNodes) {
       const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
       if (parentWorld) {
-        // multiply parent * local
         _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
       } else {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
-      }
-
-      // maybe no need to exist...
-      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
-      }
-    };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === undefined) {
-        computeWorld(i);
       }
     }
     for (let j = 0; j < this.skeleton.length; j++) {
@@ -29018,7 +29152,6 @@ class MEMeshObj extends _materials.default {
     } else {
       this.raycast = o.raycast;
     }
-    this._accessorCache = new Map();
     if (typeof o.pointerEffect === 'undefined') {
       this.pointerEffect = {
         enabled: false
@@ -29050,6 +29183,7 @@ class MEMeshObj extends _materials.default {
     this.deltaTimeAdapter = 10;
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
+      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
     });
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
@@ -29719,7 +29853,6 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
-      this._sceneData = new Float32Array(48);
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -29747,27 +29880,18 @@ class MEMeshObj extends _materials.default {
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
-      this.mm = _wgpuMatrix.mat4.create();
-      this._posVec = new Float32Array(3);
-      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        this._posVec[0] = pos.x;
-        this._posVec[1] = pos.y;
-        this._posVec[2] = pos.z;
-        _wgpuMatrix.mat4.identity(this.mm);
-        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
+        let modelMatrix = _wgpuMatrix.mat4.identity();
+        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
-          this._rotAxisVec[0] = this.rotation.axis.x;
-          this._rotAxisVec[1] = this.rotation.axis.y;
-          this._rotAxisVec[2] = this.rotation.axis.z;
-          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
+          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
-          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
-          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
-          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
+          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
-        return this.mm;
+        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        return modelMatrix;
       };
 
       // looks like affect on transformations for now const 0
@@ -29888,8 +30012,10 @@ class MEMeshObj extends _materials.default {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
-    this.mm = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm);
+    if (this.done == false) return;
+    // Per-object model matrix only
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -29952,6 +30078,7 @@ class MEMeshObj extends _materials.default {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
+    // Bind per-mesh uniforms
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
@@ -38909,7 +39036,7 @@ class EditorProvider {
           z: -20
         },
         name: this.getNameFromPath(e.detail.path),
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
       }, null, glbFile01);
     });
     document.addEventListener('web.editor.addObj', e => {
@@ -49447,6 +49574,10 @@ class MatrixEngineWGPU {
       // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
       // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
     }
+
+    // cache
+    this._viewProjMatrix = _wgpuMatrix.mat4.create();
+    this._invViewProj = _wgpuMatrix.mat4.create();
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
@@ -49725,6 +49856,25 @@ class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.depthTextureViewTrail = depthTexture.createView();
+    this._transPassDesc = {
+      colorAttachments: [{
+        view: this.sceneTextureView,
+        loadOp: 'load',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 1,
+          b: 0,
+          a: 1
+        }
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        depthLoadOp: 'load',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0
+      }
+    };
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -50161,26 +50311,7 @@ class MatrixEngineWGPU {
       }
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: 'load',
-          storeOp: 'store',
-          clearValue: {
-            r: 0,
-            g: 1,
-            b: 0,
-            a: 1
-          }
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: 'load',
-          depthStoreOp: 'store',
-          depthClearValue: 1.0
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
@@ -50196,7 +50327,11 @@ class MatrixEngineWGPU {
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
         // If you don't store it yet, compute once per frame:
-        const invViewProj = _wgpuMatrix.mat4.invert(_wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity()));
+        // const invViewProj = mat4.invert(
+        //   mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
+        // );
+        _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+        _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
         this.volumetricPass.render(commandEncoder, this.sceneTextureView,
