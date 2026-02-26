@@ -815,20 +815,6 @@ export default class MatrixEngineWGPU {
       pass.end();
 
       if(this.collisionSystem) this.collisionSystem.update();
-      // const transPassDesc = {
-      //   colorAttachments: [{
-      //     view: this.sceneTextureView,
-      //     loadOp: 'load',
-      //     storeOp: 'store',
-      //     clearValue: {r: 0, g: 1, b: 0, a: 1},
-      //   }],
-      //   depthStencilAttachment: {
-      //     view: this.mainDepthView,
-      //     depthLoadOp: 'load',
-      //     depthStoreOp: 'store',
-      //     depthClearValue: 1.0,
-      //   }
-      // };
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix,
         this.cameras[this.mainCameraParams.type].view, mat4.identity());
