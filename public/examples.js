@@ -19783,7 +19783,8 @@ var _flameInstanced = require("../../shaders/flame-effect/flame-instanced");
 var _utils = require("../utils");
 /**
  * @description
- * FlameEmitter
+ * SubPipeline effects
+ * @name FlameEmitter
  */
 class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
@@ -19815,7 +19816,8 @@ class FlameEmitter {
         color: [1, 0.3, 0, 0.1],
         time: 1,
         intensity: 1,
-        riseSpeed: 1
+        riseSpeed: 1,
+        tintStrength: 1
       });
     }
     this._initPipeline();
@@ -19954,7 +19956,7 @@ class FlameEmitter {
   }
   updateInstanceData = baseModelMatrix => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    const floatsPerInstance = 28; // 112 bytes / 4
+    const floatsPerInstance = 28;
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
@@ -24070,6 +24072,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
+    this._accessorCache = new Map();
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -24536,8 +24539,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
-        let m = this.getModelMatrix(this.position, this.useScale);
-        this.updateInstanceData(m);
+        this.updateInstanceData(this.mm);
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
@@ -24648,42 +24650,23 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      let MAX_BONES = 100;
-      this.MAX_BONES = MAX_BONES;
-      // this.bonesBuffer = device.createBuffer({
-      //   label: "bonesBuffer",
-      //   size: alignTo256(64 * MAX_BONES),
-      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      // });
-
-      // const bones = new Float32Array(this.MAX_BONES * 16);
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   // identity matrices
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
-      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const TRAIL_INSTANCES = 10; // your total instance count
+      this.MAX_BONES = 100;
+      const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
         size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-
-      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
-      //
-      // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
-        label: "Vertex Animation Params",
+        label: "VerAnimationPar",
         size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
-        // 256, //this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -24907,8 +24890,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-
-      // Rotates the camera around the origin based on time.
+      this._sceneData = new Float32Array(48);
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -24936,18 +24918,27 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
+      this.mm = _wgpuMatrix.mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        _wgpuMatrix.mat4.identity(this.mm);
+        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
         } else {
-          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        return modelMatrix;
+        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
       this.done = true;
       if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
@@ -25052,7 +25043,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       primitive: this.primitive
     });
   };
-  updateModelUniformBuffer = () => {};
+  updateModelUniformBuffer = () => {
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm.buffer, this.mm.byteOffset, this.mm.byteLength);
+  };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid array passed to createGPUBuffer');
@@ -25567,6 +25561,7 @@ class SpotLight {
       });
       return this.mainPassBindGroupContainer[index];
     };
+    this.lightDataBuffer = new Float32Array(48);
 
     // Only osc values +-
     this.behavior = new _behavior.default();
@@ -25584,11 +25579,31 @@ class SpotLight {
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
   getLightDataBuffer() {
-    const m = this.viewProjMatrix;
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias, 0.0, ...m]);
+    const d = this.lightDataBuffer;
+    // Block 1: Position (vec3 + 1 float padding)
+    d.set(this.position, 0);
+    d[3] = 0.0; // padding
+    // Block 2: Direction (vec3 + 1 float padding)
+    d.set(this.direction, 4);
+    d[7] = 0.0; // padding
+    // Block 3: Parameters
+    d[8] = this.innerCutoff;
+    d[9] = this.outerCutoff;
+    d[10] = this.intensity;
+    d[11] = 0.0; // padding to finish the 16-byte block
+    // Block 4: Color (vec3 + 1 float padding)
+    d.set(this.color, 12);
+    d[15] = 0.0; // padding
+    // Block 5: Range/Bias
+    d[16] = this.range;
+    d[17] = this.ambientFactor;
+    d[18] = this.shadowBias;
+    d[19] = 0.0; // padding (Crucial: Matrix MUST start on a 16-byte boundary)
+    // Block 6-9: Matrix (16 floats)
+    // Starts at index 20 (20 * 4 bytes = 80 bytes, which is divisible by 16)
+    d.set(this.viewProjMatrix, 20);
+    return d;
   }
-
-  // Setters
   setPosX = x => {
     this.position[0] = x;
   };
@@ -29003,6 +29018,7 @@ class MEMeshObj extends _materials.default {
     } else {
       this.raycast = o.raycast;
     }
+    this._accessorCache = new Map();
     if (typeof o.pointerEffect === 'undefined') {
       this.pointerEffect = {
         enabled: false
@@ -29034,7 +29050,6 @@ class MEMeshObj extends _materials.default {
     this.deltaTimeAdapter = 10;
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
-      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
     });
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
@@ -29704,6 +29719,7 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
+      this._sceneData = new Float32Array(48);
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -29731,18 +29747,27 @@ class MEMeshObj extends _materials.default {
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
+      this.mm = _wgpuMatrix.mat4.create();
+      this._posVec = new Float32Array(3);
+      this._rotAxisVec = new Float32Array(3);
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posVec[0] = pos.x;
+        this._posVec[1] = pos.y;
+        this._posVec[2] = pos.z;
+        _wgpuMatrix.mat4.identity(this.mm);
+        _wgpuMatrix.mat4.translate(this.mm, this._posVec, this.mm);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(this.mm, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), this.mm);
         } else {
-          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          _wgpuMatrix.mat4.rotateX(this.mm, this.rotation.getRotX(), this.mm);
+          _wgpuMatrix.mat4.rotateY(this.mm, this.rotation.getRotY(), this.mm);
+          _wgpuMatrix.mat4.rotateZ(this.mm, this.rotation.getRotZ(), this.mm);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        return modelMatrix;
+        if (useScale) _wgpuMatrix.mat4.scale(this.mm, this.scale, this.mm);
+        return this.mm;
       };
 
       // looks like affect on transformations for now const 0
@@ -29863,10 +29888,8 @@ class MEMeshObj extends _materials.default {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
-    if (this.done == false) return;
-    // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+    this.mm = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, this.mm);
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -29929,7 +29952,6 @@ class MEMeshObj extends _materials.default {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
-    // Bind per-mesh uniforms
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
@@ -38887,7 +38909,7 @@ class EditorProvider {
           z: -20
         },
         name: this.getNameFromPath(e.detail.path),
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
       }, null, glbFile01);
     });
     document.addEventListener('web.editor.addObj', e => {
