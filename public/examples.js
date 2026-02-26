@@ -202,7 +202,8 @@ function loadGLBLoader() {
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
       }, null, glbFile01);
-      var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+
+      // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {
           type: 'power',
@@ -217,8 +218,9 @@ function loadGLBLoader() {
         },
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile02);
-      var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+      }, null, glbFile01);
+
+      // var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {
           type: 'pong',
@@ -233,7 +235,7 @@ function loadGLBLoader() {
         },
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile03);
+      }, null, glbFile01);
 
       // woman
       var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
@@ -269,7 +271,8 @@ function loadGLBLoader() {
         name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp']
       }, null, glbFile11);
-      var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+
+      // var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {
           type: 'power',
@@ -284,8 +287,9 @@ function loadGLBLoader() {
         },
         name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile02);
-      var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+      }, null, glbFile11);
+
+      // var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {
           type: 'pong',
@@ -300,23 +304,17 @@ function loadGLBLoader() {
         },
         name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile03);
-      var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {
-          type: 'pong',
-          useTextureFromGlb: true
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {
-          x: 40,
-          y: -4,
-          z: -20
-        },
-        name: 'glbFileWhouse',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFileWhouse);
+      }, null, glbFile11);
+
+      // var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'pong', useTextureFromGlb: true},
+      //   useScale: true,
+      //   scale: [20, 20, 20],
+      //   position: {x: 40, y: -4, z: -20},
+      //   name: 'glbFileWhouse',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFileWhouse);
 
       // this is future load and replace skeletal anim.
       // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
@@ -24096,6 +24094,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
+    this._sceneData = new Float32Array(48);
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -24917,18 +24916,25 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(48);
-        // Light VP
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        // Camera VP
-        sceneData.set(camVP, 16);
-        // Camera position + padding
-        sceneData.set([camera.position[0], camera.position[1], camera.position[2], 0.0], 32);
-        // Light position + padding
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-        sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        this._sceneData.set(camVP, 16);
+        this._sceneData[32] = camera.position[0];
+        this._sceneData[33] = camera.position[1];
+        this._sceneData[34] = camera.position[2];
+        this._sceneData[35] = 0.0;
+        this._sceneData[36] = spotLight.position[0];
+        this._sceneData[37] = spotLight.position[1];
+        this._sceneData[38] = spotLight.position[2];
+        this._sceneData[39] = 0.0;
+        this._sceneData[40] = this.globalAmbient[0];
+        this._sceneData[41] = this.globalAmbient[1];
+        this._sceneData[42] = this.globalAmbient[2];
+        this._sceneData[43] = 0.0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        this._sceneData[46] = 0;
+        this._sceneData[47] = 0;
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -26186,6 +26192,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         animationFinished: false
       };
     }
+    this.MAX_BONES = 100; // predefined
+    //cache
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this._nodeChannels = new Map();
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
@@ -26194,12 +26204,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       length: this.glb.nodes.length
     }, () => _wgpuMatrix.mat4.identity());
     this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.MAX_BONES = 100; // predefined
     this.skeleton = []; // array of joint node indices
     this.animationSpeed = 1000;
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._tempMat = _wgpuMatrix.mat4.create();
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -26275,6 +26286,18 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     return maxTime;
   }
+  playAnimationByIndex = animationIndex => {
+    this.glb.animationIndex = animationIndex;
+  };
+  playAnimationByName = animationName => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(anim => anim.name === animationName);
+    if (index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
+    }
+    this.glb.animationIndex = index;
+  };
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
@@ -26301,42 +26324,45 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
-          const boneMatrices = new Float32Array(this.MAX_BONES * 16);
           this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes,
           // ← same nodes, no clone
           currentTime,
           // ← only this changes per instance
-          boneMatrices, i // ← writes to correct buffer slot
+          this._boneMatrices, i // ← writes to correct buffer slot
           );
         }
       } else {
         const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 0);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 1);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, this._boneMatrices, 1);
       }
     }
   }
   getAccessorArray(glb, accessorIndex) {
+    if (!glb._accessorCache) glb._accessorCache = new Map();
+    const cached = glb._accessorCache.get(accessorIndex);
+    if (cached) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
-    const bufferDef = glb.glbBinaryBuffer;
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+    let result;
     switch (accessor.componentType) {
       case 5126:
-        // FLOAT
-        return new Float32Array(slice);
+        result = new Float32Array(slice);
+        break;
       case 5123:
-        // UNSIGNED_SHORT
-        return new Uint16Array(slice);
+        result = new Uint16Array(slice);
+        break;
       case 5121:
-        // UNSIGNED_BYTE
-        return new Uint8Array(slice);
+        result = new Uint8Array(slice);
+        break;
       default:
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+    glb._accessorCache.set(accessorIndex, result); // ← AFTER result is created
+    return result;
   }
   getAccessorTypeForChannel(path) {
     switch (path) {
@@ -26578,11 +26604,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-    const nodeChannels = new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) this._nodeChannels.set(channel.target.node, []);
+      this._nodeChannels.get(channel.target.node).push(channel);
     }
+    const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
@@ -26646,13 +26674,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      boneMatrices.set(this._tempMat, j * 16);
     }
     const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
-    // console.log(this.name, 'instanceIndex:', instanceIndex, 'byteOffset:', byteOffset, 'bufferSize:', this.bonesBuffer.size);
-    // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
@@ -26738,6 +26763,9 @@ class BVHPlayer extends _meshObj.default {
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._nodeChannels = new Map();
+    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._tempMat = _wgpuMatrix.mat4.create();
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -26825,26 +26853,30 @@ class BVHPlayer extends _meshObj.default {
     }
   }
   getAccessorArray(glb, accessorIndex) {
+    if (!glb._accessorCache) glb._accessorCache = new Map();
+    const cached = glb._accessorCache.get(accessorIndex);
+    if (cached) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-    const bufferDef = glb.glbBinaryBuffer;
-    // ✅ now just slice:
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+    let result;
     switch (accessor.componentType) {
       case 5126:
-        // FLOAT
-        return new Float32Array(slice);
+        result = new Float32Array(slice);
+        break;
       case 5123:
-        // UNSIGNED_SHORT
-        return new Uint16Array(slice);
+        result = new Uint16Array(slice);
+        break;
       case 5121:
-        // UNSIGNED_BYTE
-        return new Uint8Array(slice);
+        result = new Uint8Array(slice);
+        break;
       default:
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+    glb._accessorCache.set(accessorIndex, result); // ← AFTER result is created
+    return result;
   }
   getAccessorTypeForChannel(path) {
     switch (path) {
@@ -27095,14 +27127,17 @@ class BVHPlayer extends _meshObj.default {
     }
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
+    // const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-    const nodeChannels = new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
+
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) this._nodeChannels.set(channel.target.node, []);
+      this._nodeChannels.get(channel.target.node).push(channel);
     }
+    const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
@@ -27170,11 +27205,9 @@ class BVHPlayer extends _meshObj.default {
     }
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      boneMatrices.set(this._tempMat, j * 16);
     }
-    // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
     return boneMatrices;
   }
@@ -29647,6 +29680,7 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
+      this._sceneData = new Float32Array(48);
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -29677,14 +29711,25 @@ class MEMeshObj extends _materials.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(48);
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        sceneData.set(camVP, 16);
-        sceneData.set([camera.position[0], camera.position[1], camera.position[2], 0.0], 32);
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-        sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        this._sceneData.set(camVP, 16);
+        this._sceneData[32] = camera.position[0];
+        this._sceneData[33] = camera.position[1];
+        this._sceneData[34] = camera.position[2];
+        this._sceneData[35] = 0.0;
+        this._sceneData[36] = spotLight.position[0];
+        this._sceneData[37] = spotLight.position[1];
+        this._sceneData[38] = spotLight.position[2];
+        this._sceneData[39] = 0.0;
+        this._sceneData[40] = this.globalAmbient[0];
+        this._sceneData[41] = this.globalAmbient[1];
+        this._sceneData[42] = this.globalAmbient[2];
+        this._sceneData[43] = 0.0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        this._sceneData[46] = 0;
+        this._sceneData[47] = 0;
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();

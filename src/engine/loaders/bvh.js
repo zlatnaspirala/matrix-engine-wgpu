@@ -63,6 +63,11 @@ export class BVHPlayer extends MEMeshObj {
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+
+    this._nodeChannels = new Map();
+
+    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._tempMat = mat4.create();
   }
 
   makeSkeletal() {
@@ -160,26 +165,26 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   getAccessorArray(glb, accessorIndex) {
+    if(!glb._accessorCache) glb._accessorCache = new Map();
+    const cached = glb._accessorCache.get(accessorIndex);
+    if(cached) return cached;
+
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength =
-      accessor.count *
-      this.getNumComponents(accessor.type) *
-      (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-    const bufferDef = glb.glbBinaryBuffer;
-    // ✅ now just slice:
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+
+    let result;
     switch(accessor.componentType) {
-      case 5126: // FLOAT
-        return new Float32Array(slice);
-      case 5123: // UNSIGNED_SHORT
-        return new Uint16Array(slice);
-      case 5121: // UNSIGNED_BYTE
-        return new Uint8Array(slice);
-      default:
-        throw new Error("Unsupported componentType: " + accessor.componentType);
+      case 5126: result = new Float32Array(slice); break;
+      case 5123: result = new Uint16Array(slice); break;
+      case 5121: result = new Uint8Array(slice); break;
+      default: throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+
+    glb._accessorCache.set(accessorIndex, result);  // ← AFTER result is created
+    return result;
   }
 
   getAccessorTypeForChannel(path) {
@@ -407,14 +412,19 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
+    // const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-    const nodeChannels = new Map();
-    for(const channel of channels) {
-      if(!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
+
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    for(const channel of anim.channels) {
+      if(!this._nodeChannels.has(channel.target.node))
+        this._nodeChannels.set(channel.target.node, []);
+      this._nodeChannels.get(channel.target.node).push(channel);
     }
+    const nodeChannels = this._nodeChannels;
+
     for(let j = 0;j < this.skeleton.length;j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
@@ -490,11 +500,9 @@ export class BVHPlayer extends MEMeshObj {
     }
     for(let j = 0;j < this.skeleton.length;j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = mat4.create();
-      mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      boneMatrices.set(this._tempMat, j * 16);
     }
-    // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
     return boneMatrices;
   }
