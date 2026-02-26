@@ -60,7 +60,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       };
     }
 
-    this.MAX_BONES = 100; // predefined
+    this._emptyChannels = [];
+    this.MAX_BONES = 100;
     //cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
@@ -78,9 +79,9 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.skeleton = []; // array of joint node indices
+    this.skeleton = [];                        // array of joint node indices
     this.animationSpeed = 1000;
-    this.inverseBindMatrices = []; // Float32Array for each joint
+    this.inverseBindMatrices = [];             // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
     this._numFrames = this.getNumberOfFramesCurAni();
@@ -90,7 +91,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.buildSortedNodes();
   }
 
-  
+
   buildSortedNodes() {
     const sorted = [];
     const queue = [];
@@ -229,12 +230,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   update(deltaTime) {
-    // const frameTime = 1 / this.fps;
-    // this.sharedState.timeAccumulator += deltaTime;
-    // while(this.sharedState.timeAccumulator >= frameTime) {
-    //   // this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
-    //   this.sharedState.timeAccumulator -= frameTime;
-    // }
     var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex])
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
@@ -353,10 +348,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     throw new Error("No binary data found in GLB buffer[0]");
   }
 
-  // --- helpers
-  lerpVec(a, b, t) {
-    return a.map((v, i) => v * (1 - t) + b[i] * t);
-  }
+  lerpVec(a, b, t) {return a.map((v, i) => v * (1 - t) + b[i] * t)}
 
   // Example quaternion slerp (a,b = [x,y,z,w])
   quatSlerp(a, b, t) {
@@ -467,47 +459,38 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     return {translation: t, rotation: rot, scale: scale};
   }
 
-slerp(q0, q1, t, out) {
-  let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
-  if (dot < 0) {
-    dot = -dot;
-    q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
+  slerp(q0, q1, t, out) {
+    let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
+    if(dot < 0) {
+      dot = -dot;
+      q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
+    }
+    if(dot > 0.9995) {
+      const x = q0[0] + t * (q1[0] - q0[0]);
+      const y = q0[1] + t * (q1[1] - q0[1]);
+      const z = q0[2] + t * (q1[2] - q0[2]);
+      const w = q0[3] + t * (q1[3] - q0[3]);
+      const invLen = 1 / Math.sqrt(x * x + y * y + z * z + w * w);
+      out[0] = x * invLen;
+      out[1] = y * invLen;
+      out[2] = z * invLen;
+      out[3] = w * invLen;
+      return;
+    }
+    const theta0 = Math.acos(dot);
+    const theta = theta0 * t;
+    const sinTheta = Math.sin(theta);
+    const sinTheta0 = Math.sin(theta0);
+    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s1 = sinTheta / sinTheta0;
+    out[0] = s0 * q0[0] + s1 * q1[0];
+    out[1] = s0 * q0[1] + s1 * q1[1];
+    out[2] = s0 * q0[2] + s1 * q1[2];
+    out[3] = s0 * q0[3] + s1 * q1[3];
   }
-  if (dot > 0.9995) {
-    const x = q0[0] + t * (q1[0] - q0[0]);
-    const y = q0[1] + t * (q1[1] - q0[1]);
-    const z = q0[2] + t * (q1[2] - q0[2]);
-    const w = q0[3] + t * (q1[3] - q0[3]);
-    const invLen = 1 / Math.sqrt(x*x + y*y + z*z + w*w);
-    out[0] = x * invLen;
-    out[1] = y * invLen;
-    out[2] = z * invLen;
-    out[3] = w * invLen;
-    return;
-  }
-  const theta0 = Math.acos(dot);
-  const theta = theta0 * t;
-  const sinTheta = Math.sin(theta);
-  const sinTheta0 = Math.sin(theta0);
-  const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
-  const s1 = sinTheta / sinTheta0;
-  out[0] = s0 * q0[0] + s1 * q1[0];
-  out[1] = s0 * q0[1] + s1 * q1[1];
-  out[2] = s0 * q0[2] + s1 * q1[2];
-  out[3] = s0 * q0[3] + s1 * q1[3];
-}
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
-    const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
-    // --- Map channels per node for faster lookup
-    // this._nodeChannels.clear();
-    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    // for(const channel of anim.channels) {
-    //   if(!this._nodeChannels.has(channel.target.node))
-    //     this._nodeChannels.set(channel.target.node, []);
-    //   this._nodeChannels.get(channel.target.node).push(channel);
-    // }
     const nodeChannels = this._nodeChannels;
     for(let j = 0;j < this.skeleton.length;j++) {
       const nodeIndex = this.skeleton[j];
@@ -520,7 +503,7 @@ slerp(q0, q1, t, out) {
       if(!node.originalTranslation) node.originalTranslation = node.translation.slice();
       if(!node.originalRotation) node.originalRotation = node.rotation.slice();
       if(!node.originalScale) node.originalScale = node.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
+      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for(const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
         const sampler = samplers[channel.sampler];
@@ -571,13 +554,11 @@ slerp(q0, q1, t, out) {
         mat4.copy(node.transform, node.worldMatrix);
       }
     }
-
     for(let j = 0;j < this.skeleton.length;j++) {
       const jointNode = nodes[this.skeleton[j]];
       mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
-
     const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;

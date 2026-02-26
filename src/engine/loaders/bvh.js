@@ -59,6 +59,7 @@ export class BVHPlayer extends MEMeshObj {
       transform: n.transform ? n.transform.slice() : mat4.identity(),
       worldMatrix: mat4.create()
     }));
+    this._emptyChannels = [];
     this.startTime = performance.now() / 1000;
     this.MAX_BONES = 100;
     this.skeleton = [];
@@ -197,14 +198,7 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   update(deltaTime) {
-    // const frameTime = 1 / this.fps;
-    // this.sharedState.timeAccumulator += deltaTime;
-    // while(this.sharedState.timeAccumulator >= frameTime) {
-    //   // this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
-    //   // this.sharedState.timeAccumulator -= frameTime;
-    // }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    // const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices)
     }
@@ -338,20 +332,6 @@ export class BVHPlayer extends MEMeshObj {
     mat4.multiply(m, rot, m);
     mat4.scale(m, scale, m);
     return m;
-
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-
-    // return m;
-
   }
 
   decomposeMatrix(m) {
@@ -361,26 +341,21 @@ export class BVHPlayer extends MEMeshObj {
     //   m2 m6 m10 m14
     //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
-
     // Extract the 3 column vectors (upper-left 3x3)
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-
     // Lengths = scales
     const len = v => Math.hypot(v[0], v[1], v[2]);
     let sx = len(cx), sy = len(cy), sz = len(cz);
-
     // If any scale nearly zero, avoid divide-by-zero
     if(sx === 0) sx = 1.0;
     if(sy === 0) sy = 1.0;
     if(sz === 0) sz = 1.0;
-
     // Normalize columns to produce a pure rotation matrix
     const r00 = m[0] / sx, r01 = m[4] / sy, r02 = m[8] / sz;
     const r10 = m[1] / sx, r11 = m[5] / sy, r12 = m[9] / sz;
     const r20 = m[2] / sx, r21 = m[6] / sy, r22 = m[10] / sz;
-
     // Fix negative-scale (reflection) case: if determinant < 0, flip sign of one scale and corresponding column
     const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
     if(det3 < 0) {
@@ -395,7 +370,6 @@ export class BVHPlayer extends MEMeshObj {
       // Here we flip the third column:
       // r02 = -r02; r12 = -r12; r22 = -r22;
     }
-
     // Build quaternion from rotation matrix (r00..r22)
     // Using standard conversion (column-major rotation)
     const trace = r00 + r11 + r22;
@@ -425,7 +399,6 @@ export class BVHPlayer extends MEMeshObj {
       qy = (r12 + r21) / s;
       qz = 0.25 * s;
     }
-
     const rot = new Float32Array([qx, qy, qz, qw]);
     const scale = new Float32Array([sx, sy, sz]);
     return {translation: t, rotation: rot, scale: scale};
@@ -462,37 +435,23 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    // const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-
-    // this._nodeChannels.clear();
-    // const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    // for(const channel of anim.channels) {
-    //   if(!this._nodeChannels.has(channel.target.node))
-    //     this._nodeChannels.set(channel.target.node, []);
-    //   this._nodeChannels.get(channel.target.node).push(channel);
-    // }
     const nodeChannels = this._nodeChannels;
-
     for(let j = 0;j < this.skeleton.length;j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-
       // --- Initialize node TRS if needed
       if(!node.translation) node.translation = new Float32Array([0, 0, 0]);
       if(!node.rotation) node.rotation = quat.create();
       if(!node.scale) node.scale = new Float32Array([1, 1, 1]);
-
       // --- Keep original TRS for additive animation
       if(!node.originalTranslation) node.originalTranslation = node.translation.slice();
       if(!node.originalRotation) node.originalRotation = node.rotation.slice();
       if(!node.originalScale) node.originalScale = node.scale.slice();
-
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
-
+      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for(const channel of channelsForNode) {
-        const path = channel.target.path; // "translation" | "rotation" | "scale"
+        const path = channel.target.path;
         const sampler = samplers[channel.sampler];
         // --- Get input/output arrays
         const inputTimes = this.getAccessorArray(this.glb, sampler.input);
@@ -505,16 +464,8 @@ export class BVHPlayer extends MEMeshObj {
         const t0 = inputTimes[i];
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        // --- Interpolated keyframe values
-        // const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        // const v1 = outputArray.subarray(
-        //   Math.min(i + 1, inputTimes.length - 1) * numComponents,
-        //   Math.min(i + 2, inputTimes.length) * numComponents
-        // );
-
         const base0 = i * numComponents;
         const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
-        // --- Apply animation
         if(path === "translation") {
           for(let k = 0;k < 3;k++) {
             node.translation[k] =
@@ -537,7 +488,6 @@ export class BVHPlayer extends MEMeshObj {
         }
       }
       // --- Recompose local transform
-      // node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
       this.composeTRS(node.translation, node.rotation, node.scale, node.transform)
     }
     for(const nodeIndex of this._sortedNodes) {
