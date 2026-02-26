@@ -26325,7 +26325,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
       this.sharedState.timeAccumulator -= frameTime;
     }
-    // const test = this.getNumberOfFramesCurAni();
     var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex]);
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
@@ -26779,7 +26778,7 @@ class BVHPlayer extends _meshObj.default {
     this.makeSkeletal();
     this._numFrames = this.getNumberOfFramesCurAni();
     this._nodeChannels = new Map();
-    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
     this.buildNodeChannelMap();
   }
@@ -26874,9 +26873,9 @@ class BVHPlayer extends _meshObj.default {
       this.sharedState.timeAccumulator -= frameTime;
     }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    // const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, boneMatrices);
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices);
     }
   }
   getAccessorArray(glb, accessorIndex) {

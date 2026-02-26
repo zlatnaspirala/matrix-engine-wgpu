@@ -206,7 +206,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this._numFrames;
       this.sharedState.timeAccumulator -= frameTime;
     }
-    // const test = this.getNumberOfFramesCurAni();
     var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex])
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;

@@ -68,7 +68,7 @@ export class BVHPlayer extends MEMeshObj {
     this.makeSkeletal();
     this._numFrames = this.getNumberOfFramesCurAni();
     this._nodeChannels = new Map();
-    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = mat4.create();
     this.buildNodeChannelMap();
   }
@@ -175,9 +175,9 @@ export class BVHPlayer extends MEMeshObj {
       this.sharedState.timeAccumulator -= frameTime;
     }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    // const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, boneMatrices)
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices)
     }
   }
 
