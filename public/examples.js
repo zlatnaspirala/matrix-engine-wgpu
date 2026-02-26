@@ -26648,15 +26648,19 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
         // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
+        const base0 = i * numComponents;
+        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
         // --- Apply animation
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.translation[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
         }
       }
       // --- Recompose local transform
