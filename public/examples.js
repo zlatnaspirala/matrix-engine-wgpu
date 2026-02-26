@@ -26206,6 +26206,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       transform: n.transform ? n.transform.slice() : _wgpuMatrix.mat4.identity(),
       worldMatrix: _wgpuMatrix.mat4.create()
     }));
+    this._composeMat = _wgpuMatrix.mat4.create();
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     this.startTime = performance.now() / 1000; // seconds - anim speed control
@@ -26490,16 +26491,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     _wgpuMatrix.mat4.multiply(m, rot, m);
     _wgpuMatrix.mat4.scale(m, scale, m);
     return m;
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-    // return m;
   }
   decomposeMatrix(m) {
     // m is column-major: indices:
@@ -49434,6 +49425,10 @@ class MatrixEngineWGPU {
       // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
       // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
     }
+
+    // cache
+    this._viewProjMatrix = _wgpuMatrix.mat4.create();
+    this._invViewProj = _wgpuMatrix.mat4.create();
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
@@ -49712,6 +49707,25 @@ class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.depthTextureViewTrail = depthTexture.createView();
+    this._transPassDesc = {
+      colorAttachments: [{
+        view: this.sceneTextureView,
+        loadOp: 'load',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 1,
+          b: 0,
+          a: 1
+        }
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        depthLoadOp: 'load',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0
+      }
+    };
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -50148,26 +50162,21 @@ class MatrixEngineWGPU {
       }
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: 'load',
-          storeOp: 'store',
-          clearValue: {
-            r: 0,
-            g: 1,
-            b: 0,
-            a: 1
-          }
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: 'load',
-          depthStoreOp: 'store',
-          depthClearValue: 1.0
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+      // const transPassDesc = {
+      //   colorAttachments: [{
+      //     view: this.sceneTextureView,
+      //     loadOp: 'load',
+      //     storeOp: 'store',
+      //     clearValue: {r: 0, g: 1, b: 0, a: 1},
+      //   }],
+      //   depthStencilAttachment: {
+      //     view: this.mainDepthView,
+      //     depthLoadOp: 'load',
+      //     depthStoreOp: 'store',
+      //     depthClearValue: 1.0,
+      //   }
+      // };
+      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
@@ -50183,7 +50192,11 @@ class MatrixEngineWGPU {
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
         // If you don't store it yet, compute once per frame:
-        const invViewProj = _wgpuMatrix.mat4.invert(_wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity()));
+        // const invViewProj = mat4.invert(
+        //   mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
+        // );
+        _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+        _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
         this.volumetricPass.render(commandEncoder, this.sceneTextureView,

@@ -74,6 +74,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       transform: n.transform ? n.transform.slice() : mat4.identity(),
       worldMatrix: mat4.create()
     }));
+    this._composeMat = mat4.create();
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     this.startTime = performance.now() / 1000; // seconds - anim speed control
@@ -349,16 +350,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     mat4.multiply(m, rot, m);
     mat4.scale(m, scale, m);
     return m;
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-    // return m;
   }
 
   decomposeMatrix(m) {
