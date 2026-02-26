@@ -9,12 +9,12 @@
  * for `cacheVersion`.
  * @param cacheVersion
  */
-var cacheVersion = 13;
-var cacheName = 'matrix-engine-' + cacheVersion;
+var cacheVersion = 14;
+var cacheName = 'matrix-engine-examples' + cacheVersion;
 
 try {
-  for (var j = 0;j < cacheVersion;j++) {
-    var oldCacheName = 'matrix-engine-' + j;
+  for(var j = 0;j < cacheVersion;j++) {
+    var oldCacheName = 'matrix-engine-examples' + j;
     caches.delete(oldCacheName);
   }
 }
@@ -22,10 +22,10 @@ catch(e) {}
 
 const offlineUrl = 'offline.html';
 
-self.addEventListener('install', function (event) {
+self.addEventListener('install', function(event) {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(cacheName).then(function (cache) {
+    caches.open(cacheName).then(function(cache) {
       return cache.addAll([
         offlineUrl
       ]);
@@ -33,17 +33,17 @@ self.addEventListener('install', function (event) {
   );
 });
 
-self.addEventListener('fetch', function (event) {
-  if (event.request.method === 'POST') {
+self.addEventListener('fetch', function(event) {
+  if(event.request.method === 'POST') {
     return;
   }
   event.respondWith(
-    caches.open(cacheName).then(function (cache) {
-      return cache.match(event.request).then(function (response) {
+    caches.open(cacheName).then(function(cache) {
+      return cache.match(event.request).then(function(response) {
         return (
           response ||
-          fetch(event.request).then(function (response) {
-            if (response.status == 206) {
+          fetch(event.request).then(function(response) {
+            if(response.status == 206) {
               // statusText: "Partial Content"
               return response;
             } else {
@@ -56,27 +56,6 @@ self.addEventListener('fetch', function (event) {
     })
   );
 });
-
-// self.addEventListener('fetch', (event) => {
-//   event.respondWith(
-//     caches.match(event.request).then((resp) => {
-//       return (
-//         resp ||
-//         fetch(event.request).then((response) => {
-//           return caches.open(cacheName).then((cache) => {
-//             if (response.status == 206) {
-//               // statusText: "Partial Content"
-//               return response;
-//             } else {
-//               cache.put(event.request, response.clone());
-//             }
-//             return response;
-//           });
-//         })
-//       );
-//     })
-//   );
-// });
 
 const fireAddToHomeScreenImpression = (event) => {
   fireTracking('Add to homescreen shown');
@@ -92,9 +71,9 @@ self.addEventListener('beforeinstallprompt', fireAddToHomeScreenImpression);
 //Track from where your web app has been opened/browsed
 self.addEventListener('load', () => {
   let trackText;
-  if (navigator && navigator.standalone) {
+  if(navigator && navigator.standalone) {
     trackText = 'Launched: Installed (iOS)';
-  } else if (matchMedia('(display-mode: standalone)').matches) {
+  } else if(matchMedia('(display-mode: standalone)').matches) {
     trackText = 'Launched: Installed';
   } else {
     trackText = 'Launched: Browser Tab';

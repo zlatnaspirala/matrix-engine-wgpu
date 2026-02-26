@@ -17,6 +17,9 @@ export var physicsPlayground = function() {
     addRaycastsListener();
 
     addEventListener('AmmoReady', () => {
+
+      app.matrixAmmo.speedUpSimulation = 4;
+      
       // downloadMeshes({
       //   ball: "./res/meshes/blender/sphere.obj",
       //   cube: "./res/meshes/blender/cube.obj",

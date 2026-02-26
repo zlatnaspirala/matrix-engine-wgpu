@@ -16,6 +16,11 @@ var _utils = require("./src/engine/utils.js");
 // import {loadJamb} from "./examples/load-jamb.js";
 
 window.urlQ = _utils.urlQuery;
+if ('serviceWorker' in navigator) {
+  if (location.hostname.indexOf('localhost') == -1) {
+    navigator.serviceWorker.register('cache.js');
+  }
+}
 
 // A helper function to change the demo without breaking the URL
 const switchDemo = id => {
@@ -765,6 +770,8 @@ var physicsPlayground = function () {
   }, () => {
     (0, _raycast.addRaycastsListener)();
     addEventListener('AmmoReady', () => {
+      app.matrixAmmo.speedUpSimulation = 4;
+
       // downloadMeshes({
       //   ball: "./res/meshes/blender/sphere.obj",
       //   cube: "./res/meshes/blender/cube.obj",

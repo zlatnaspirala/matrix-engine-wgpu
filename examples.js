@@ -14,6 +14,12 @@ import {byId, urlQuery} from "./src/engine/utils.js";
 
 window.urlQ = urlQuery;
 
+  if('serviceWorker' in navigator) {
+    if(location.hostname.indexOf('localhost') == -1) {
+      navigator.serviceWorker.register('cache.js');
+    }
+  }
+
 // A helper function to change the demo without breaking the URL
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
