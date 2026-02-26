@@ -43,6 +43,8 @@ Browser support list:
 - ✔️ Dynamic shadow cast (done also for skinned meshes)
 - ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect
 - ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/)
+- ✔️ Trace from V8.GC_MC_BACKGROUND_MARKING (67.9ms) to V8.GCScavenger (7.7ms).
+     GC is no longer a factor. ✅
 
 ## Roadmap
 

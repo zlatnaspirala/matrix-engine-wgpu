@@ -811,7 +811,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        if(index == 0) camera.update(dt, inputHandler());
+        // if(index == 0) camera.update(dt, inputHandler());
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
