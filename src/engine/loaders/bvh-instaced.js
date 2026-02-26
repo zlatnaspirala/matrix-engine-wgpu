@@ -559,28 +559,9 @@ slerp(q0, q1, t, out) {
             node.rotation
           );
         }
-
       }
-      // --- Recompose local transform
-      // node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
       this.composeTRS(node.translation, node.rotation, node.scale, node.transform)
     }
-    // const computeWorld = (nodeIndex) => {
-    //   const node = nodes[nodeIndex];
-    //   if(!node.worldMatrix) node.worldMatrix = mat4.create();
-    //   let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-    //   if(parentWorld) {
-    //     // multiply parent * local
-    //     mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-    //   } else {
-    //     mat4.copy(node.transform, node.worldMatrix);
-    //   }
-
-    //   mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-    //   if(node.children) {
-    //     for(const childIndex of node.children) computeWorld(childIndex);
-    //   }
-    // };
     for(const nodeIndex of this._sortedNodes) {
       const node = nodes[nodeIndex];
       const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;

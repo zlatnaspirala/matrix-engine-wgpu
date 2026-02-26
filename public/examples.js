@@ -24914,7 +24914,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        if (index == 0) camera.update(dt, inputHandler());
+        // if(index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
@@ -26717,26 +26717,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
           this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
         }
       }
-      // --- Recompose local transform
-      // node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
       this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
     }
-    // const computeWorld = (nodeIndex) => {
-    //   const node = nodes[nodeIndex];
-    //   if(!node.worldMatrix) node.worldMatrix = mat4.create();
-    //   let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-    //   if(parentWorld) {
-    //     // multiply parent * local
-    //     mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-    //   } else {
-    //     mat4.copy(node.transform, node.worldMatrix);
-    //   }
-
-    //   mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-    //   if(node.children) {
-    //     for(const childIndex of node.children) computeWorld(childIndex);
-    //   }
-    // };
     for (const nodeIndex of this._sortedNodes) {
       const node = nodes[nodeIndex];
       const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
@@ -27330,13 +27312,7 @@ class BVHPlayer extends _meshObj.default {
             node.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
           }
         } else if (path === "rotation") {
-          if (factor < 0.001) {
-            node.rotation.set(outputArray.subarray(base0, base0 + 4));
-          } else if (factor > 0.999) {
-            node.rotation.set(outputArray.subarray(base1, base1 + 4));
-          } else {
-            this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
-          }
+          this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
         }
       }
       // --- Recompose local transform

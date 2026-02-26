@@ -528,13 +528,12 @@ export class BVHPlayer extends MEMeshObj {
               outputArray[base1 + k] * factor;
           }
         } else if(path === "rotation") {
-          if(factor < 0.001) {
-            node.rotation.set(outputArray.subarray(base0, base0 + 4));
-          } else if(factor > 0.999) {
-            node.rotation.set(outputArray.subarray(base1, base1 + 4));
-          } else {
-            this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
-          }
+          this.slerp(
+            outputArray.subarray(base0, base0 + 4),
+            outputArray.subarray(base1, base1 + 4),
+            factor,
+            node.rotation
+          );
         }
       }
       // --- Recompose local transform
