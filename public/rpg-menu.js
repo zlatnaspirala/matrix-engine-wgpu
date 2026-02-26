@@ -1141,7 +1141,7 @@ var ROCK_RANK = exports.ROCK_RANK = {
   }
 };
 
-},{"../../../src/engine/utils.js":55}],3:[function(require,module,exports){
+},{"../../../src/engine/utils.js":56}],3:[function(require,module,exports){
 "use strict";
 
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
@@ -2171,7 +2171,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
 });
 window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/loaders/webgpu-gltf.js":44,"../../../src/engine/networking/matrix-stream.js":48,"../../../src/engine/networking/net.js":49,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":50,"../../../src/engine/utils.js":55,"../../../src/tools/editor/editor.js":85,"../../../src/world.js":93,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
+},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/loaders/webgpu-gltf.js":44,"../../../src/engine/networking/matrix-stream.js":48,"../../../src/engine/networking/net.js":49,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":50,"../../../src/engine/utils.js":56,"../../../src/tools/editor/editor.js":88,"../../../src/world.js":96,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20317,25 +20317,40 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":55}],22:[function(require,module,exports){
+},{"./utils":56}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.TextureCache = void 0;
-// TextureCache.js
 class TextureCache {
   constructor(device) {
     this.device = device;
     this.cache = new Map(); // path -> Promise<TextureEntry>
   }
-  async get(path, format) {
+  async get(path, format, isEnvMap = false) {
     if (this.cache.has(path)) {
       return this.cache.get(path); // reuse promise
     }
-    const promise = this.#load(path, format);
-    this.cache.set(path, promise);
+    let promise;
+    if (isEnvMap == true) {
+      promise = this.#loadEnvMap(path, format);
+      this.cache.set(path, promise);
+    } else {
+      promise = this.#load(path, format);
+      this.cache.set(path, promise);
+    }
+    return promise;
+  }
+  async loadEnvMap(path) {
+    // Use a special cache key for env maps
+    const envKey = `env:${path}`;
+    if (this.cache.has(envKey)) {
+      return this.cache.get(envKey);
+    }
+    const promise = this.#loadEnvMap(path);
+    this.cache.set(envKey, promise);
     return promise;
   }
   async #load(path, format) {
@@ -20358,6 +20373,47 @@ class TextureCache {
       addressModeU: "repeat",
       addressModeV: "repeat",
       addressModeW: "repeat"
+    });
+    return {
+      texture,
+      sampler
+    };
+  }
+  async #loadEnvMap(path) {
+    const response = await fetch(path);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+    const width = imageBitmap.width;
+    const height = imageBitmap.height;
+    // Calculate mip levels for better quality
+    // const mipLevelCount = Math.floor(Math.log2(Math.max(width, height))) + 1;
+    const mipLevelCount = 1;
+    const texture = this.device.createTexture({
+      label: `EnvMap: ${path}`,
+      size: [width, height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      mipLevelCount // ✅ Enable mipmaps for smooth sampling
+    });
+    this.device.queue.copyExternalImageToTexture({
+      source: imageBitmap
+    }, {
+      texture
+    }, [width, height]);
+
+    // TODO: Generate mipmaps here if you have a mipmap generator
+    // For now, base level (level 0) will work fine
+
+    // Sampler optimized for environment maps
+    const sampler = this.device.createSampler({
+      label: 'EnvMap Sampler',
+      magFilter: 'linear',
+      minFilter: 'linear',
+      mipmapFilter: 'linear',
+      // ✅ Smooth between mip levels
+      addressModeU: 'repeat',
+      // ✅ Wrap horizontally (360°)
+      addressModeV: 'clamp-to-edge' // ✅ Clamp at poles (top/bottom)
     });
     return {
       texture,
@@ -20804,7 +20860,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":58,"wgpu-matrix":19}],24:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":59,"wgpu-matrix":19}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20970,7 +21026,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":59,"wgpu-matrix":19}],25:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":60,"wgpu-matrix":19}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20980,6 +21036,10 @@ exports.FlameEmitter = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _flameInstanced = require("../../shaders/flame-effect/flame-instanced");
 var _utils = require("../utils");
+/**
+ * @description
+ * FlameEmitter
+ */
 class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
     this.device = device;
@@ -20992,12 +21052,14 @@ class FlameEmitter {
     this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.smoothFlickeringScale = 0.1;
-    this.maxY = 1.9;
-    this.minY = 0;
+    this.minBound = 0;
+    this.maxBound = 1.9;
     this.swap0 = 0;
     this.swap1 = 1;
     this.swap2 = 2;
     this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0];
+    this.scaleCoeficient = 0.12;
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -21019,11 +21081,19 @@ class FlameEmitter {
   }
   recreateVertexDataRND(S) {
     const vertexData = new Float32Array([-(0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, -(0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+
+  // not tested
+  recreateVertexDataCrazzy(S) {
+    const vertexData = new Float32Array([-(0, _utils.randomFloatFromTo)(0.1, 0.1 + S), (0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0, (0, _utils.randomFloatFromTo)(0.1, 0.1 + S), (0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0, -(0, _utils.randomFloatFromTo)(0.1, 0.1 + S), -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0, (0, _utils.randomFloatFromTo)(0.1, 0.1 + S), -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S), 0.0]);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
   }
   _initPipeline() {
-    const S = 50;
-    const vertexData = new Float32Array([-0.2 * S, -0.5 * S, 0.0 * S, 0.2 * S, -0.5 * S, 0.0 * S, -0.4 * S, 0.5 * S, 0.0 * S, 0.4 * S, 0.5 * S, 0.0 * S]);
+    const S = 2;
+    const vertexData = this.recreateVertexDataRND(1);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.vertexBuffer = this.device.createBuffer({
@@ -21042,17 +21112,17 @@ class FlameEmitter {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    // --- Uniforms
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.modelBuffer = this.device.createBuffer({
+      label: 'flame-emmiter modeBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'flame-emmiter bindGroupLayout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -21066,6 +21136,7 @@ class FlameEmitter {
       }]
     });
     this.bindGroup = this.device.createBindGroup({
+      label: 'flame-emmiter bindGroup',
       layout: bindGroupLayout,
       entries: [{
         binding: 0,
@@ -21111,7 +21182,19 @@ class FlameEmitter {
         module: shaderModule,
         entryPoint: "fsMain",
         targets: [{
-          format: this.format
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
         }]
       },
       primitive: {
@@ -21121,66 +21204,45 @@ class FlameEmitter {
         depthWriteEnabled: false,
         depthCompare: "less",
         format: "depth24plus"
-      },
-      blend: {
-        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-        color: {
-          srcFactor: 'src-alpha',
-          dstFactor: 'one-minus-src-alpha',
-          operation: 'add'
-        },
-        alpha: {
-          srcFactor: 'one',
-          dstFactor: 'one-minus-src-alpha',
-          operation: 'add'
-        }
       }
     });
   }
   updateInstanceData = baseModelMatrix => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
+    const floatsPerInstance = 28; // 112 bytes / 4
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
-      // Smooth interpolation
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
-      // Build local matrix: translate → rotate → scale
       const local = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
       _wgpuMatrix.mat4.rotateY(local, t.rotation, local);
       _wgpuMatrix.mat4.scale(local, t.currentScale, local);
       const finalMat = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset); // 0..15
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16); // 16..19
-      this.instanceData.set([t.intensity & this.intensity, 0, 0, 0], offset + 20); // 20..23
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 0.5], offset + 24); // 24..27
+      const offset = i * floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
+      this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
     }
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
   };
   render(pass, mesh, viewProjMatrix, dt = 0.1) {
-    // update global time
     this.time += dt;
     for (const p of this.instanceTargets) {
       p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
-      // Reset if too high
-      const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxY : p.position[this.swap1] < this.minY;
+      // Reset check
+      const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxBound : p.position[this.swap1] < this.minBound;
       if (resetCondition) {
-        // Reset along the rise axis
-        p.position[this.swap1] = this.riseDirection > 0 ? this.minY + Math.random() * 0.5 : this.maxY - Math.random() * 0.5;
-
-        // Spread axes — keep randomness RELATIVE to current direction
+        p.position[this.swap1] = this.riseDirection > 0 ? this.minBound + Math.random() * 0.5 : this.maxBound - Math.random() * 0.5;
         p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2; // ← REMOVE the +0.1 here
-
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2;
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * (0, _utils.randomIntFromTo)(3, 15);
+      p.rotation += dt * (0, _utils.randomIntFromTo)(1, 4);
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass.setPipeline(this.pipeline);
@@ -21193,62 +21255,53 @@ class FlameEmitter {
   setIntensity(v) {
     this.intensity = v;
   }
-
-  // Add this method to FlameEmitter class:
-
   setDirection(direction) {
+    this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0]; // Reset
     switch (direction) {
       case 'up':
-        // Y+ (default)
-        this.swap0 = 0; // X
-        this.swap1 = 1; // Y (rise axis)
-        this.swap2 = 2; // Z
-        break;
-      case 'down':
-        // Y-
         this.swap0 = 0;
         this.swap1 = 1;
         this.swap2 = 2;
-        this.riseDirection = -1; // flip
+        break;
+      case 'down':
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        this.riseDirection = -1;
         break;
       case 'forward':
-        // Z+
-        this.swap0 = 0; // X (spread)
-        this.swap1 = 2; // Z (rise axis)
-        this.swap2 = 1; // Y (spread)
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.baseRotation = [Math.PI / 2, 0, 0];
         break;
       case 'back':
-        // Z-
         this.swap0 = 0;
         this.swap1 = 2;
         this.swap2 = 1;
         this.riseDirection = -1;
+        this.baseRotation = [-Math.PI / 2, 0, 0]; // Tilt -90 on X
         break;
       case 'right':
-        // X+
-        this.swap0 = 1; // Y (spread)
-        this.swap1 = 0; // X (rise axis)
-        this.swap2 = 2; // Z (spread)
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.baseRotation = [0, 0, -Math.PI / 2]; // Tilt -90 on Z
         break;
       case 'left':
-        // X-
         this.swap0 = 1;
         this.swap1 = 0;
         this.swap2 = 2;
         this.riseDirection = -1;
+        this.baseRotation = [0, 0, Math.PI / 2]; // Tilt 90 on Z
         break;
-    }
-    this.riseDirection = this.riseDirection ?? 1; // default positive
-
-    if (this.riseDirection < 0) {
-      // Negative direction — swap min/max so reset works
-      [this.minY, this.maxY] = [this.maxY, this.minY];
     }
   }
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":60,"../utils":55,"wgpu-matrix":19}],26:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":61,"../utils":56,"wgpu-matrix":19}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21257,9 +21310,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.FlamePresets = exports.FlameEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _flameEffect = require("../../shaders/flame-effect/flameEffect");
-// ---------------------------------------------------------------------------
-// Ready-made presets — pass to FlameEffect.fromPreset() or use as defaults
-// ---------------------------------------------------------------------------
+var _geometryFactory = require("../geometry-factory");
 const FlamePresets = exports.FlamePresets = {
   // Natural campfire / torch
   natural: {
@@ -21268,8 +21319,11 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.5,
     stretch: 1.0,
     tint: [1.0, 1.0, 1.0],
-    // neutral → pure fire palette
-    tintStrength: 0.0
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Tall torch / pillar of fire
   torch: {
@@ -21277,9 +21331,12 @@ const FlamePresets = exports.FlamePresets = {
     speed: 1.2,
     turbulence: 0.35,
     stretch: 2.0,
-    // double height
     tint: [1.0, 1.0, 1.0],
-    tintStrength: 0.0
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Wide, low bonfire
   bonfire: {
@@ -21287,9 +21344,12 @@ const FlamePresets = exports.FlamePresets = {
     speed: 0.8,
     turbulence: 0.9,
     stretch: 0.5,
-    // short & wide
     tint: [1.0, 1.0, 1.0],
-    tintStrength: 0.0
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Magical blue flame
   magic: {
@@ -21298,8 +21358,11 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.6,
     stretch: 1.3,
     tint: [0.1, 0.4, 1.0],
-    // blue
-    tintStrength: 0.85
+    tintStrength: 0.85,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Hellfire — dark purple/red
   hell: {
@@ -21308,8 +21371,11 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.8,
     stretch: 1.6,
     tint: [0.6, 0.0, 0.8],
-    // purple
-    tintStrength: 0.7
+    tintStrength: 0.7,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   },
   // Poison green
   poison: {
@@ -21318,112 +21384,62 @@ const FlamePresets = exports.FlamePresets = {
     turbulence: 0.7,
     stretch: 1.1,
     tint: [0.1, 1.0, 0.15],
-    // green
-    tintStrength: 0.9
+    tintStrength: 0.9,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
   }
 };
 
-// ---------------------------------------------------------------------------
 // FlameEffect
-// ---------------------------------------------------------------------------
 class FlameEffect {
-  /**
-   * @param {GPUDevice}  device
-   * @param {string}     format       - swap-chain / canvas format (e.g. "bgra8unorm")
-   * @param {string}     colorFormat  - render-pass color attachment format (e.g. "rgba16float")
-   * @param {object}     params       - initial flame parameters (see defaults below)
-   */
   constructor(device, format, colorFormat, params = {}) {
     this.device = device;
     this.format = format;
     this.colorFormat = colorFormat ?? format;
-
-    // --- All tuneable params with defaults ---
+    const config = typeof params === 'string' ? FlamePresets[params] : params;
     const defaults = FlamePresets.natural;
-    this.intensity = params.intensity ?? defaults.intensity;
-    this.speed = params.speed ?? defaults.speed;
-    this.turbulence = params.turbulence ?? defaults.turbulence; // 0 = calm, 1 = chaotic
-    this.stretch = params.stretch ?? defaults.stretch; // >1 = tall, <1 = wide
-    this.tint = params.tint ?? defaults.tint; // [r, g, b]  0..1 each
-    this.tintStrength = params.tintStrength ?? defaults.tintStrength; // 0 = natural, 1 = full tint
-
+    this.intensity = config.intensity ?? defaults.intensity;
+    this.speed = config.speed ?? defaults.speed;
+    this.turbulence = config.turbulence ?? defaults.turbulence;
+    this.stretch = config.stretch ?? defaults.stretch;
+    this.tint = config.tint ?? defaults.tint;
+    this.tintStrength = config.tintStrength ?? defaults.tintStrength;
+    this.scale = config.scale ?? defaults.scale;
     this.time = 0;
     this.enabled = true;
+    this.localOffset = config.localOffset ?? defaults.localOffset;
+    this.localRotation = config.localRotation ?? defaults.localRotation;
+    this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
+    this.setGeometry("quad", this.scale);
   }
-
-  /** Convenience factory: new FlameEffect.fromPreset(device, fmt, hdrFmt, 'magic') */
-  static fromPreset(device, format, colorFormat, presetName) {
-    const preset = FlamePresets[presetName];
-    if (!preset) throw new Error(`Unknown FlamePreset: "${presetName}". Available: ${Object.keys(FlamePresets).join(", ")}`);
-    return new FlameEffect(device, format, colorFormat, preset);
-  }
-
-  // -------------------------------------------------------------------------
-  // Public setters  (call any time — written to GPU on next updateInstanceData)
-  // -------------------------------------------------------------------------
-  setIntensity(v) {
-    this.intensity = v;
-  }
-  setSpeed(v) {
-    this.speed = v;
-  }
-  setTurbulence(v) {
-    this.turbulence = Math.max(0, Math.min(1, v));
-  }
-  setStretch(v) {
-    this.stretch = Math.max(0.05, v);
-  }
-  /** @param {[number,number,number]} rgb  e.g. [0.1, 0.4, 1.0] for blue */
-  setTint(rgb) {
-    this.tint = rgb;
-  }
-  /** @param {number} v  0 = natural fire colours, 1 = fully tinted */
-  setTintStrength(v) {
-    this.tintStrength = Math.max(0, Math.min(1, v));
-  }
-
-  /** Apply a named preset instantly */
-  applyPreset(name) {
-    const p = FlamePresets[name];
-    if (!p) throw new Error(`Unknown FlamePreset: "${name}"`);
-    Object.assign(this, {
-      intensity: p.intensity,
-      speed: p.speed,
-      turbulence: p.turbulence,
-      stretch: p.stretch,
-      tint: p.tint,
-      tintStrength: p.tintStrength
-    });
-  }
-
-  // -------------------------------------------------------------------------
-  _initPipeline() {
-    const S = 40;
-    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0, 0.5 * S, 0.5 * S, 0, -0.5 * S, -0.5 * S, 0, 0.5 * S, -0.5 * S, 0]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this._uploadVertex(vertexData);
-    this.uvBuffer = this._uploadVertex(uvData);
+  setGeometry(type, size = 1, segments = 32) {
+    const geo = _geometryFactory.GeometryFactory.create(type, size, segments);
+    this.vertexBuffer = this._uploadVertex(geo.positions);
+    this.uvBuffer = this._uploadVertex(geo.uvs);
+    const byteLen = geo.indices.byteLength;
+    const paddedByteLen = Math.ceil(byteLen / 4) * 4;
     this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
+      size: paddedByteLen,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-
-    // Camera uniform: mat4 = 64 bytes
+    if (byteLen % 4 !== 0) {
+      const paddedData = new Uint8Array(paddedByteLen);
+      paddedData.set(new Uint8Array(geo.indices.buffer, geo.indices.byteOffset, byteLen));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedData);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, geo.indices);
+    }
+    this.indexCount = geo.indices.length;
+    this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
+  }
+  _initPipeline() {
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // ModelData uniform layout:
-    //   offset   0 : model        64 bytes  (mat4)
-    //   offset  64 : timeSpeed    16 bytes  (vec4)
-    //   offset  80 : params       16 bytes  (vec4)
-    //   offset  96 : tint         16 bytes  (vec4)
-    //   total = 112 bytes
     this.modelBuffer = this.device.createBuffer({
       size: 112,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -21460,24 +21476,22 @@ class FlameEffect {
     const shaderModule = this.device.createShaderModule({
       code: _flameEffect.flameEffect
     });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
     this.pipeline = this.device.createRenderPipeline({
-      label: 'flame pipeline',
-      layout: pipelineLayout,
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [bindGroupLayout]
+      }),
       vertex: {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: "float32x3"
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -21509,10 +21523,25 @@ class FlameEffect {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        depthCompare: "always",
+        depthCompare: "less",
         format: "depth24plus"
       }
     });
+  }
+  async morphTo(type, size = 40, duration = 200) {
+    const originalIntensity = this.intensity;
+    const steps = 10;
+    const stepTime = duration / (steps * 2);
+    for (let i = 0; i < steps; i++) {
+      this.intensity *= 0.5;
+      await new Promise(r => setTimeout(r, stepTime));
+    }
+    this.setGeometry(type, size);
+    for (let i = 0; i < steps; i++) {
+      this.intensity = originalIntensity * (i / steps);
+      await new Promise(r => setTimeout(r, stepTime));
+    }
+    this.intensity = originalIntensity;
   }
   _uploadVertex(data) {
     const buf = this.device.createBuffer({
@@ -21522,21 +21551,25 @@ class FlameEffect {
     this.device.queue.writeBuffer(buf, 0, data);
     return buf;
   }
-
-  // -------------------------------------------------------------------------
   updateInstanceData(baseModelMatrix) {
     const local = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(local, [0, 20, 0], local);
+    _wgpuMatrix.mat4.translate(local, this.localOffset, local);
+    _wgpuMatrix.mat4.rotateX(local, this.localRotation[0], local);
+    _wgpuMatrix.mat4.rotateY(local, this.localRotation[1], local);
+    _wgpuMatrix.mat4.rotateZ(local, this.localRotation[2], local);
+    if (this.activeRotate[0] !== 0) {
+      _wgpuMatrix.mat4.rotateX(local, this.activeRotate[0] * this.time, local);
+    }
+    if (this.activeRotate[1] !== 0) {
+      _wgpuMatrix.mat4.rotateY(local, this.activeRotate[1] * this.time, local);
+    }
+    if (this.activeRotate[2] !== 0) {
+      _wgpuMatrix.mat4.rotateZ(local, this.activeRotate[2] * this.time, local);
+    }
     const finalMat = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-
-    // timeSpeed: [time, speed, 0, 0]
     const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
-
-    // params: [intensity, turbulence, stretch, 0]
     const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
-
-    // tint: [r, g, b, tintStrength]
     const tint = new Float32Array([...this.tint, this.tintStrength]);
     this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
     this.device.queue.writeBuffer(this.modelBuffer, 64, timeSpeed);
@@ -21549,18 +21582,18 @@ class FlameEffect {
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
     pass.drawIndexed(this.indexCount);
   }
-  render(pass, mesh, viewProjMatrix, dt = 0.01) {
-    if (!this.enabled) return;
-    this.time += dt;
+  // Interface for effect -> (pass, mesh, viewProj)
+  render(pass, mesh, viewProjMatrix) {
+    this.time += 0.016;
     this.draw(pass, viewProjMatrix);
   }
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":61,"wgpu-matrix":19}],27:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":62,"../geometry-factory":36,"wgpu-matrix":19}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21802,7 +21835,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":74,"../geometry-factory.js":36,"wgpu-matrix":19}],28:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":77,"../geometry-factory.js":36,"wgpu-matrix":19}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22061,7 +22094,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":74,"../geometry-factory.js":36,"wgpu-matrix":19}],29:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":77,"../geometry-factory.js":36,"wgpu-matrix":19}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22252,7 +22285,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":73,"../geometry-factory.js":36,"wgpu-matrix":19}],30:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":76,"../geometry-factory.js":36,"wgpu-matrix":19}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22711,7 +22744,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":68}],31:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":70}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22875,7 +22908,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":59,"wgpu-matrix":19}],32:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":60,"wgpu-matrix":19}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23019,7 +23052,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":75,"wgpu-matrix":19}],33:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":78,"wgpu-matrix":19}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23201,7 +23234,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":76}],34:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":79}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23758,7 +23791,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":55,"wgpu-matrix":19}],35:[function(require,module,exports){
+},{"./utils":56,"wgpu-matrix":19}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23853,16 +23886,16 @@ function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, na
  * @param {Array} scale
  * @param {number} spacing    distance between cubes
  */
-function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
+function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
   const inputCube = {
-    mesh: "./res/meshes/blender/cube.obj"
+    mesh: useMeshPath
   };
   function handler(m) {
     let index = 0;
     const RAY = {
-      enabled: !!raycast,
+      enabled: raycast,
       radius: 1
     };
     for (let y = 0; y < height; y++) {
@@ -23873,6 +23906,24 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
             material: {
               type: material
             },
+            envMapParams: material == 'mirror' ? {
+              baseColorMix: 0.5,
+              // normal mix
+              mirrorTint: [0.9, 0.95, 1.0],
+              // Slight cool tint
+              reflectivity: 0.95,
+              // 25% reflection blend
+              illuminateColor: [0.3, 0.7, 1.0],
+              // Soft cyan
+              illuminateStrength: 0.4,
+              // Gentle rim
+              illuminatePulse: 0.01,
+              // No pulse (static)
+              fresnelPower: 2.0,
+              // Medium-sharp edge
+              envLodBias: 2.5,
+              usePlanarReflection: false // ✅ Env map mode
+            } : null,
             position: {
               x: pos.x + x * spacing,
               y: pos.y + y * spacing - 2.8,
@@ -23884,7 +23935,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
               y: 0,
               z: 0
             },
-            texturesPaths: [texturePath],
+            texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
             name: cubeName,
             mesh: m.mesh,
             physics: {
@@ -23894,9 +23945,6 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
             },
             raycast: RAY
           });
-          // const b = app.matrixAmmo.getBodyByName(cubeName);
-          // stabilizeTowerBody(b);
-          // cache
           const o = app.getSceneObjectByName(cubeName);
           _fluxCodexVertex.runtimeCacheObjs.push(o);
         }, index * delay);
@@ -24158,13 +24206,18 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":89,"../loader-obj":41}],36:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":92,"../loader-obj":41}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.GeometryFactory = void 0;
+/**
+ * @description
+ * GeometryFactory - can be reused for any level of pipeline integration.
+ * It is already integrated with level of 'me effects'.
+ */
 class GeometryFactory {
   static create(type, size = 1, segments = 16, options = {}) {
     switch (type) {
@@ -24212,20 +24265,45 @@ class GeometryFactory {
       indices
     };
   }
+
+  // static cube(S = 1) {
+  //   const p = S / 2;
+  //   const positions = new Float32Array([
+  //     -p, -p, p, p, -p, p, p, p, p, -p, p, p,
+  //     -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p,
+  //     -p, p, -p, -p, p, p, p, p, p, p, p, -p,
+  //     -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p,
+  //     p, -p, -p, p, p, -p, p, p, p, p, -p, p,
+  //     -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p
+  //   ]);
+  //   const uvs = new Float32Array(6 * 8).fill(0);
+  //   const indices = [];
+  //   for(let i = 0;i < 6;i++) {
+  //     const o = i * 4; indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
+  //   }
+  //   let i = new Uint16Array(i);
+  //   return {positions, uvs, i};
+  // }
   static cube(S = 1) {
     const p = S / 2;
-    const positions = new Float32Array([-p, -p, p, p, -p, p, p, p, p, -p, p, p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p, -p, p, -p, -p, p, p, p, p, p, p, p, -p, -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p, p, -p, -p, p, p, -p, p, p, p, p, -p, p, -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p]);
-    const uvs = new Float32Array(6 * 8).fill(0);
-    const indices = [];
-    for (let i = 0; i < 6; i++) {
-      const o = i * 4;
-      indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
-    }
-    let i = new Uint16Array(i);
+    const positions = new Float32Array([-p, -p, p, p, -p, p, p, p, p, -p, p, p,
+    // Front
+    -p, -p, -p, -p, p, -p, p, p, -p, p, -p, -p,
+    // Back
+    -p, p, -p, -p, p, p, p, p, p, p, p, -p,
+    // Top
+    -p, -p, -p, p, -p, -p, p, -p, p, -p, -p, p,
+    // Bottom
+    p, -p, -p, p, p, -p, p, p, p, p, -p, p,
+    // Right
+    -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p // Left
+    ]);
+    const uvs = new Float32Array(6 * 8).fill(0); // Add real UVs if needed
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23]);
     return {
       positions,
       uvs,
-      i
+      indices
     };
   }
   static sphere(R = 0.1, seg = 16) {
@@ -24334,9 +24412,31 @@ class GeometryFactory {
   static diamond(S = 1) {
     const h = S,
       p = S / 2;
-    const pos = new Float32Array([0, h, 0, -p, 0, -p, p, 0, -p, p, 0, p, -p, 0, p, 0, -h, 0]);
-    const uv = new Float32Array(6 * 2).fill(0);
-    const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1, 5, 2, 1, 5, 3, 2, 5, 4, 3, 5, 1, 4]);
+    // 6 Vertices
+    const pos = new Float32Array([0, h, 0,
+    // 0: Top
+    -p, 0, -p,
+    // 1: Mid Left-Back
+    p, 0, -p,
+    // 2: Mid Right-Back
+    p, 0, p,
+    // 3: Mid Right-Front
+    -p, 0, p,
+    // 4: Mid Left-Front
+    0, -h, 0 // 5: Bottom
+    ]);
+
+    // Added simple UVs so the texture actually shows up
+    const uv = new Float32Array([0.5, 1,
+    // Top
+    0, 0.5,
+    // Sides...
+    1, 0.5, 0, 0.5, 1, 0.5, 0.5, 0 // Bottom
+    ]);
+    const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1,
+    // Top pyramid
+    5, 2, 1, 5, 3, 2, 5, 4, 3, 5, 1, 4 // Bottom pyramid
+    ]);
     return {
       positions: pos,
       uvs: uv,
@@ -24477,12 +24577,14 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _fragmentMirror = require("../../shaders/fragment.mirror.wgsl");
 var _fragment = require("../../shaders/fragment.wgsl");
 var _fragmentWgsl = require("../../shaders/fragment.wgsl.metal");
 var _fragmentWgsl2 = require("../../shaders/fragment.wgsl.normalmap");
 var _fragmentWgsl3 = require("../../shaders/fragment.wgsl.pong");
 var _fragmentWgsl4 = require("../../shaders/fragment.wgsl.power");
 var _fragmentInstanced = require("../../shaders/instanced/fragment.instanced.wgsl");
+var _fragmentMirrorInstanced = require("../../shaders/instanced/fragment.mirror.instanced.wgsl");
 var _waterC = require("../../shaders/water/water-c.wgls");
 /**
  * @description
@@ -24493,10 +24595,11 @@ var _waterC = require("../../shaders/water/water-c.wgls");
  * @email zlatnaspirala@gmail.com
  */
 class MaterialsInstanced {
-  constructor(device, material, glb) {
+  constructor(device, material, glb, textureCache) {
     this.device = device;
     this.glb = glb;
     this.material = material;
+    this.textureCache = textureCache;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
     this.compareSampler = this.device.createSampler({
@@ -24649,6 +24752,102 @@ class MaterialsInstanced {
       device.queue.writeBuffer(waterParamsBuffer, 0, data);
     };
   };
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
+    const defaults = {
+      mirrorTint: [0.9, 0.95, 1.0],
+      // Slight cool tint
+      reflectivity: 0.25,
+      // 25% reflection blend
+      illuminateColor: [0.3, 0.7, 1.0],
+      // Soft cyan
+      illuminateStrength: 0.4,
+      // Gentle rim
+      illuminatePulse: 0.0,
+      // No pulse (static)
+      fresnelPower: 4.0,
+      // Medium-sharp edge
+      envLodBias: 1.5 // Slightly blurred env
+    };
+    const cfg = {
+      ...defaults,
+      ...opts
+    };
+    const PARAMS_SIZE = 80;
+    const paramsBuffer = this.device.createBuffer({
+      label: 'MirrorIlluminateParams',
+      size: PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.writeParamsMirror = o => {
+      const data = new Float32Array(16); // Was 12, now 16
+      const t = o.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t[0];
+      data[1] = t[1];
+      data[2] = t[2];
+      data[3] = o.reflectivity ?? cfg.reflectivity;
+      const ic = o.illuminateColor ?? cfg.illuminateColor;
+      data[4] = ic[0];
+      data[5] = ic[1];
+      data[6] = ic[2];
+      data[7] = o.illuminateStrength ?? cfg.illuminateStrength;
+      data[8] = o.illuminatePulse ?? cfg.illuminatePulse;
+      data[9] = o.fresnelPower ?? cfg.fresnelPower;
+      data[10] = o.envLodBias ?? cfg.envLodBias;
+      data[11] = o.usePlanarReflection ? 1.0 : 0.0;
+      data[12] = o.baseColorMix ?? cfg.baseColorMix;
+      data[13] = 0; // padding
+      data[14] = 0; // padding
+      data[15] = 0; // padding
+      this.device.queue.writeBuffer(paramsBuffer, 0, data);
+    };
+    this.writeParamsMirror(cfg);
+    const samplerDummy = this.device.createSampler({
+      label: 'EnvMap Sampler',
+      magFilter: 'linear',
+      minFilter: 'linear',
+      addressModeU: 'repeat',
+      addressModeV: 'clamp-to-edge'
+    });
+    // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
+    console.warn('⚠️ envTexture provided, using white dummy!');
+    const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture : cfg.envTexture.texture ?? (() => {
+      console.warn('⚠️ No envTexture provided, using white dummy!');
+      const tex = this.device.createTexture({
+        label: 'MirrorEnvDummy',
+        size: [1, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      this.device.queue.writeTexture({
+        texture: tex
+      }, new Uint8Array([255, 0, 0, 255]), {
+        bytesPerRow: 4
+      }, [1, 1]);
+      return tex;
+    })();
+    const bindGroup = this.device.createBindGroup({
+      label: 'MirrorIlluminate BindGroup',
+      layout: mirrorBindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: paramsBuffer
+        }
+      }, {
+        binding: 1,
+        resource: envTexture.createView()
+      }, {
+        binding: 2,
+        resource: cfg.envTexture.sampler ?? samplerDummy
+      }]
+    });
+    return {
+      bindGroup,
+      paramsBuffer,
+      /** Call this at runtime to hot-update mirror params without rebuilding. */
+      updateParams: o => this.writeParamsMirror(o)
+    };
+  }
   changeTexture(newTexture) {
     // Accept GPUTexture OR GPUTextureView
     if (newTexture instanceof GPUTexture) {
@@ -24687,6 +24886,8 @@ class MaterialsInstanced {
       return _waterC.fragmentWaterWGSL;
     } else if (this.material.type == 'graph') {
       return this.material.fromGraph;
+    } else if (this.material.type === "mirror") {
+      return _fragmentMirrorInstanced.fragmentMirrorWGSLInstanced;
     }
     //  else if(this.material.type == 'mix1') {
     //   return fragmentWGSLMix1;
@@ -24736,6 +24937,17 @@ class MaterialsInstanced {
       }, [imageBitmap.width, imageBitmap.height]);
       resolve();
     });
+  }
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path = texturesPaths[1] || texturesPaths[0];
+    const {
+      texture,
+      sampler
+    } = await this.textureCache.get(path, this.getFormat(), isEnvMap);
+    return {
+      texture,
+      sampler
+    };
   }
   async loadVideoTexture(arg) {
     this.videoIsReady = 'MAYBE';
@@ -25077,7 +25289,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":63,"../../shaders/fragment.wgsl.metal":64,"../../shaders/fragment.wgsl.normalmap":65,"../../shaders/fragment.wgsl.pong":66,"../../shaders/fragment.wgsl.power":67,"../../shaders/instanced/fragment.instanced.wgsl":69,"../../shaders/water/water-c.wgls":80}],38:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":63,"../../shaders/fragment.wgsl":65,"../../shaders/fragment.wgsl.metal":66,"../../shaders/fragment.wgsl.normalmap":67,"../../shaders/fragment.wgsl.pong":68,"../../shaders/fragment.wgsl.power":69,"../../shaders/instanced/fragment.instanced.wgsl":71,"../../shaders/instanced/fragment.mirror.instanced.wgsl":72,"../../shaders/water/water-c.wgls":83}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25103,7 +25315,7 @@ var _literals = require("../literals");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile);
+    super(device, o.material, _glbFile, o.textureCache);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
@@ -25131,7 +25343,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
+    if (o.envMapParams !== null) {
+      this.envMapParams = o.envMapParams;
+    }
     this.material = o.material;
+    this.time = 0;
+    this.deltaTimeAdapter = 10;
+    this._sceneData = new Float32Array(48);
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -25469,34 +25687,31 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         // typical for shadow passes
         frontFace: 'ccw'
       };
-
-      // Selected effect
-      this.selectedBuffer = device.createBuffer({
-        size: 4,
-        // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
+      this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mirrorBindGroupLayout',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
-          buffer: {}
-        }]
-      });
-      this.selectedBindGroup = device.createBindGroup({
-        layout: this.selectedBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.selectedBuffer
+          buffer: {
+            type: 'uniform',
+            minBindingSize: 80
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'float',
+            viewDimension: '2d',
+            multisampled: false
+          }
+        }, {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'filtering'
           }
         }]
       });
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
-      };
-      // 0 default
-      this.setSelectedEffect();
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
@@ -25954,20 +26169,27 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        if (index == 0) camera.update(dt, inputHandler());
+        // if(index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(48);
-        // Light VP
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        // Camera VP
-        sceneData.set(camVP, 16);
-        // Camera position + padding
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
-        // Light position + padding
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-        sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        this._sceneData.set(camVP, 16);
+        this._sceneData[32] = camera.position[0];
+        this._sceneData[33] = camera.position[1];
+        this._sceneData[34] = camera.position[2];
+        this._sceneData[35] = 0.0;
+        this._sceneData[36] = spotLight.position[0];
+        this._sceneData[37] = spotLight.position[1];
+        this._sceneData[38] = spotLight.position[2];
+        this._sceneData[39] = 0.0;
+        this._sceneData[40] = this.globalAmbient[0];
+        this._sceneData[41] = this.globalAmbient[1];
+        this._sceneData[42] = this.globalAmbient[2];
+        this._sceneData[43] = 0.0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        this._sceneData[46] = 0;
+        this._sceneData[47] = 0;
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -25983,10 +26205,22 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         return modelMatrix;
       };
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch (err) {
-        console.log(`Err in create pipeline ${err}`, _utils.LOG_WARN);
+      if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
+        this.loadEnvMap(this.texturesPaths, true).then(envTexture => {
+          this.envMapParams.envTexture = envTexture;
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {
+            this.setupPipeline();
+          } catch (err) {
+            console.log('Err[create pipeline]:', err);
+          }
+        });
+      } else {
+        try {
+          this.setupPipeline();
+        } catch (err) {
+          console.log('Err[create pipeline]:', err);
+        }
       }
     }).then(() => {
       if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
@@ -25999,7 +26233,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.createBindGroupForRender();
     const pipelineLayout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
-      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, this.selectedBindGroupLayout]
+      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null]
     });
     const vertexModule = this.device.createShaderModule({
       label: 'VertexShader Mesh',
@@ -26073,20 +26307,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       primitive: this.primitive
     });
   };
-  updateModelUniformBuffer = () => {
-
-    // // JUST TEST ORI EMPTY s
-    //     if(this.done == false) return;
-    // // Per-object model matrix only
-    // const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    // this.device.queue.writeBuffer(
-    //   this.modelUniformBuffer,
-    //   0,
-    //   modelMatrix.buffer,
-    //   modelMatrix.byteOffset,
-    //   modelMatrix.byteLength
-    // );
-  };
+  updateModelUniformBuffer = () => {};
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid array passed to createGPUBuffer');
@@ -26157,13 +26378,14 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 
     // Bind each light’s shadow texture & sampler
     if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
-    }
-    if (this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -26200,9 +26422,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     if (this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
-      for (const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
     pass.setBindGroup(3, this.waterBindGroup);
@@ -26254,7 +26480,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":62,"../../shaders/instanced/vertex.instanced.wgsl":70,"../effects/energy-bar":24,"../effects/flame":26,"../effects/flame-emmiter":25,"../effects/gen":29,"../effects/gen-tex":27,"../effects/gen-tex2":28,"../effects/mana-bar":31,"../effects/pointerEffect":32,"../literals":40,"../loaders/bvh-instaced":42,"../matrix-class":46,"../utils":55,"./materials-instanced":37,"wgpu-matrix":19}],39:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":64,"../../shaders/instanced/vertex.instanced.wgsl":73,"../effects/energy-bar":24,"../effects/flame":26,"../effects/flame-emmiter":25,"../effects/gen":29,"../effects/gen-tex":27,"../effects/gen-tex2":28,"../effects/mana-bar":31,"../effects/pointerEffect":32,"../literals":40,"../loaders/bvh-instaced":42,"../matrix-class":46,"../utils":56,"./materials-instanced":37,"wgpu-matrix":19}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26660,7 +26886,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":71,"../shaders/vertexShadow.wgsl":79,"./behavior":21,"wgpu-matrix":19}],40:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":74,"../shaders/vertexShadow.wgsl":82,"./behavior":21,"wgpu-matrix":19}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27221,20 +27447,59 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         animationFinished: false
       };
     }
+    this._emptyChannels = [];
+    this.MAX_BONES = 100;
+    //cache
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this._nodeChannels = new Map();
     this.sharedState = this.bvh.sharedState;
+    this.animationIndex = this.glb.animationIndex;
+    this.nodes = this.glb.nodes.map(n => ({
+      ...n,
+      translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n.rotation ? n.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n.scale ? n.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n.transform ? n.transform.slice() : _wgpuMatrix.mat4.identity(),
+      worldMatrix: _wgpuMatrix.mat4.create()
+    }));
+    this._composeMat = _wgpuMatrix.mat4.create();
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
-    this.nodeWorldMatrices = Array.from({
-      length: this.glb.nodes.length
-    }, () => _wgpuMatrix.mat4.identity());
     this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.MAX_BONES = 100; // predefined
     this.skeleton = []; // array of joint node indices
     this.animationSpeed = 1000;
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._numFrames = this.getNumberOfFramesCurAni();
+    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._tempMat = _wgpuMatrix.mat4.create();
+    this.buildNodeChannelMap();
+    this.buildSortedNodes();
+  }
+  buildSortedNodes() {
+    const sorted = [];
+    const queue = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].parent == null) queue.push(i);
+    }
+    while (queue.length) {
+      const idx = queue.shift();
+      sorted.push(idx);
+      const children = this.nodes[idx].children;
+      if (children) for (const c of children) queue.push(c);
+    }
+    this._sortedNodes = sorted;
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -27249,7 +27514,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // 3. Assign inverseBindMatrix to each joint node correctly
     for (let i = 0; i < skin.joints.length; i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       // assign only to bone nodes
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       // decompose node’s transform once (if not already)
@@ -27270,10 +27535,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
     // friendly blender
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -27288,7 +27553,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.inverseBindMatrices = invBindArray;
   }
   getNumberOfFramesCurAni() {
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
     let maxFrames = 0;
     if (typeof anim == 'undefined') {
       console.log('[anim undefined]', this.name);
@@ -27310,29 +27575,64 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     return maxTime;
   }
-  update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
+  playAnimationByIndex = animationIndex => {
+    this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
+  };
+  playAnimationByName = animationName => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(anim => anim.name === animationName);
+    if (index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
     }
-    // const test = this.getNumberOfFramesCurAni();
-    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex]);
+    this.animationIndex = index;
+    this.buildNodeChannelMap();
+  };
+  composeTRS(t, q, s, out) {
+    const x = q[0],
+      y = q[1],
+      z = q[2],
+      w = q[3];
+    const x2 = x + x,
+      y2 = y + y,
+      z2 = z + z;
+    const xx = x * x2,
+      xy = x * y2,
+      xz = x * z2;
+    const yy = y * y2,
+      yz = y * z2,
+      zz = z * z2;
+    const wx = w * x2,
+      wy = w * y2,
+      wz = w * z2;
+    out[0] = (1 - (yy + zz)) * s[0];
+    out[1] = (xy + wz) * s[0];
+    out[2] = (xz - wy) * s[0];
+    out[3] = 0;
+    out[4] = (xy - wz) * s[1];
+    out[5] = (1 - (xx + zz)) * s[1];
+    out[6] = (yz + wx) * s[1];
+    out[7] = 0;
+    out[8] = (xz + wy) * s[2];
+    out[9] = (yz - wx) * s[2];
+    out[10] = (1 - (xx + yy)) * s[2];
+    out[11] = 0;
+    out[12] = t[0];
+    out[13] = t[1];
+    out[14] = t[2];
+    out[15] = 1;
+  }
+  update(deltaTime) {
+    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex]);
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        // specific rule for naming (some from blender source)
-        // let n = this.name;
-        // if(this.name.indexOf('_') != -1) {
-        //   n = this.name.split('_')[0];
-        // }
-        // hardcode must be sync
-        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
+        if (this.animationIndex == null) this.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+            animationName: this.glb.glbJsonData.animations[this.animationIndex].name
           }
         }));
       }, inTime * 1000);
@@ -27342,42 +27642,45 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
-          const boneMatrices = new Float32Array(this.MAX_BONES * 16);
-          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes,
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes,
           // ← same nodes, no clone
           currentTime,
           // ← only this changes per instance
-          boneMatrices, i // ← writes to correct buffer slot
+          this._boneMatrices, i // ← writes to correct buffer slot
           );
         }
       } else {
         const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 0);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 1);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 1);
       }
     }
   }
   getAccessorArray(glb, accessorIndex) {
+    if (!glb._accessorCache) glb._accessorCache = new Map();
+    const cached = glb._accessorCache.get(accessorIndex);
+    if (cached) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
-    const bufferDef = glb.glbBinaryBuffer;
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+    let result;
     switch (accessor.componentType) {
       case 5126:
-        // FLOAT
-        return new Float32Array(slice);
+        result = new Float32Array(slice);
+        break;
       case 5123:
-        // UNSIGNED_SHORT
-        return new Uint16Array(slice);
+        result = new Uint16Array(slice);
+        break;
       case 5121:
-        // UNSIGNED_BYTE
-        return new Uint8Array(slice);
+        result = new Uint8Array(slice);
+        break;
       default:
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+    glb._accessorCache.set(accessorIndex, result); // ← AFTER result is created
+    return result;
   }
   getAccessorTypeForChannel(path) {
     switch (path) {
@@ -27452,8 +27755,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     throw new Error("No binary data found in GLB buffer[0]");
   }
-
-  // --- helpers
   lerpVec(a, b, t) {
     return a.map((v, i) => v * (1 - t) + b[i] * t);
   }
@@ -27499,16 +27800,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     _wgpuMatrix.mat4.multiply(m, rot, m);
     _wgpuMatrix.mat4.scale(m, scale, m);
     return m;
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-    // return m;
   }
   decomposeMatrix(m) {
     // m is column-major: indices:
@@ -27598,11 +27889,15 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
     if (dot > 0.9995) {
-      // linear
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      // normalize
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
+      const x = q0[0] + t * (q1[0] - q0[0]);
+      const y = q0[1] + t * (q1[1] - q0[1]);
+      const z = q0[2] + t * (q1[2] - q0[2]);
+      const w = q0[3] + t * (q1[3] - q0[3]);
+      const invLen = 1 / Math.sqrt(x * x + y * y + z * z + w * w);
+      out[0] = x * invLen;
+      out[1] = y * invLen;
+      out[2] = z * invLen;
+      out[3] = w * invLen;
       return;
     }
     const theta0 = Math.acos(dot);
@@ -27611,19 +27906,14 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
+    out[0] = s0 * q0[0] + s1 * q1[0];
+    out[1] = s0 * q0[1] + s1 * q1[1];
+    out[2] = s0 * q0[2] + s1 * q1[2];
+    out[3] = s0 * q0[3] + s1 * q1[3];
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
-    const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
-    // --- Map channels per node for faster lookup
-    const nodeChannels = new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
-    }
+    const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
@@ -27635,7 +27925,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
       if (!node.originalRotation) node.originalRotation = node.rotation.slice();
       if (!node.originalScale) node.originalScale = node.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
+      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for (const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
         const sampler = samplers[channel.sampler];
@@ -27651,56 +27941,45 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
         // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
+        const base0 = i * numComponents;
+        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
         // --- Apply animation
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.translation[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
         }
       }
-      // --- Recompose local transform
-      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
     }
-    const computeWorld = nodeIndex => {
+    for (const nodeIndex of this._sortedNodes) {
       const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
       if (parentWorld) {
-        // multiply parent * local
         _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
       } else {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
       }
-      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
-      }
-    };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === undefined) {
-        computeWorld(i);
-      }
     }
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      boneMatrices.set(this._tempMat, j * 16);
     }
     const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
-    // console.log(this.name, 'instanceIndex:', instanceIndex, 'byteOffset:', byteOffset, 'bufferSize:', this.bonesBuffer.size);
-    // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":38,"../utils.js":55,"./webgpu-gltf.js":44,"wgpu-matrix":19}],43:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":38,"../utils.js":56,"./webgpu-gltf.js":44,"wgpu-matrix":19}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27712,8 +27991,6 @@ var _meshObj = _interopRequireDefault(require("../mesh-obj"));
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {degToRad} from "../utils.js";
-
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
   return new Promise((resolve, reject) => {
@@ -27744,7 +28021,8 @@ let loadBVH = path => {
  * @param {GLBModel} glb - Your loaded GLB
  * @param {Object} bvhBones - Mapping of boneName → BVH bone data
  * @param {GPUDevice} device - WebGPU device
- * @credits Chatgpt assist here.
+ * @credits Claude&Chatgpt assist here.
+ * @author Nikola Lukic
  */
 exports.loadBVH = loadBVH;
 class BVHPlayer extends _meshObj.default {
@@ -27756,7 +28034,6 @@ class BVHPlayer extends _meshObj.default {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
-    // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     if (!this.bvh.sharedState) {
@@ -27767,18 +28044,54 @@ class BVHPlayer extends _meshObj.default {
     }
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
+    this.animationIndex = this.glb.animationIndex;
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    // console.log('this.skinnedNode', this.skinnedNode)
-    this.nodeWorldMatrices = Array.from({
-      length: this.glb.nodes.length
-    }, () => _wgpuMatrix.mat4.identity());
-    this.startTime = performance.now() / 1000; // seconds - anim speed control
-    this.MAX_BONES = 100; // predefined
-    this.skeleton = []; // array of joint node indices
+    this.nodes = this.glb.nodes.map(n => ({
+      ...n,
+      translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n.rotation ? n.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n.scale ? n.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n.transform ? n.transform.slice() : _wgpuMatrix.mat4.identity(),
+      worldMatrix: _wgpuMatrix.mat4.create()
+    }));
+    this._emptyChannels = [];
+    this.startTime = performance.now() / 1000;
+    this.MAX_BONES = 100;
+    this.skeleton = [];
     this.animationSpeed = 1000;
-    this.inverseBindMatrices = []; // Float32Array for each joint
+    this.inverseBindMatrices = [];
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._numFrames = this.getNumberOfFramesCurAni();
+    this._nodeChannels = new Map();
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this._tempMat = _wgpuMatrix.mat4.create();
+    this.buildNodeChannelMap();
+    this.buildSortedNodes();
+  }
+  buildSortedNodes() {
+    const sorted = [];
+    const queue = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].parent == null) queue.push(i);
+    }
+    while (queue.length) {
+      const idx = queue.shift();
+      sorted.push(idx);
+      const children = this.nodes[idx].children;
+      if (children) for (const c of children) queue.push(c);
+    }
+    this._sortedNodes = sorted;
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -27793,7 +28106,7 @@ class BVHPlayer extends _meshObj.default {
     // 3. Assign inverseBindMatrix to each joint node correctly
     for (let i = 0; i < skin.joints.length; i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       // assign only to bone nodes
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       // decompose node’s transform once (if not already)
@@ -27814,10 +28127,10 @@ class BVHPlayer extends _meshObj.default {
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
     // friendly blender
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -27833,7 +28146,8 @@ class BVHPlayer extends _meshObj.default {
     this.inverseBindMatrices = invBindArray;
   }
   playAnimationByIndex = animationIndex => {
-    this.glb.animationIndex = animationIndex;
+    this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   };
   playAnimationByName = animationName => {
     const animations = this.glb.glbJsonData.animations;
@@ -27842,50 +28156,81 @@ class BVHPlayer extends _meshObj.default {
       console.warn(`Animation '${animationName}' not found`);
       return;
     }
-    this.glb.animationIndex = index;
+    this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
   getNumberOfFramesCurAni() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    let anim = this.glb.glbJsonData.animations[this.animationIndex];
     const sampler = anim.samplers[0];
     const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
     const numFrames = inputAccessor.count;
     return numFrames;
   }
+  composeTRS(t, q, s, out) {
+    const x = q[0],
+      y = q[1],
+      z = q[2],
+      w = q[3];
+    const x2 = x + x,
+      y2 = y + y,
+      z2 = z + z;
+    const xx = x * x2,
+      xy = x * y2,
+      xz = x * z2;
+    const yy = y * y2,
+      yz = y * z2,
+      zz = z * z2;
+    const wx = w * x2,
+      wy = w * y2,
+      wz = w * z2;
+    out[0] = (1 - (yy + zz)) * s[0];
+    out[1] = (xy + wz) * s[0];
+    out[2] = (xz - wy) * s[0];
+    out[3] = 0;
+    out[4] = (xy - wz) * s[1];
+    out[5] = (1 - (xx + zz)) * s[1];
+    out[6] = (yz + wx) * s[1];
+    out[7] = 0;
+    out[8] = (xz + wy) * s[2];
+    out[9] = (yz - wx) * s[2];
+    out[10] = (1 - (xx + yy)) * s[2];
+    out[11] = 0;
+    out[12] = t[0];
+    out[13] = t[1];
+    out[14] = t[2];
+    out[15] = 1;
+  }
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
-    }
-    // const frame = this.sharedState.currentFrame;
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices);
     }
   }
   getAccessorArray(glb, accessorIndex) {
+    if (!glb._accessorCache) glb._accessorCache = new Map();
+    const cached = glb._accessorCache.get(accessorIndex);
+    if (cached) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-    const bufferDef = glb.glbBinaryBuffer;
-    // ✅ now just slice:
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+    let result;
     switch (accessor.componentType) {
       case 5126:
-        // FLOAT
-        return new Float32Array(slice);
+        result = new Float32Array(slice);
+        break;
       case 5123:
-        // UNSIGNED_SHORT
-        return new Uint16Array(slice);
+        result = new Uint16Array(slice);
+        break;
       case 5121:
-        // UNSIGNED_BYTE
-        return new Uint8Array(slice);
+        result = new Uint8Array(slice);
+        break;
       default:
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+    glb._accessorCache.set(accessorIndex, result); // ← AFTER result is created
+    return result;
   }
   getAccessorTypeForChannel(path) {
     switch (path) {
@@ -28010,19 +28355,6 @@ class BVHPlayer extends _meshObj.default {
     _wgpuMatrix.mat4.multiply(m, rot, m);
     _wgpuMatrix.mat4.scale(m, scale, m);
     return m;
-
-    // const m = mat4.identity();
-    // mat4.translate(m, translation, m);
-    // const rot = mat4.fromQuat(rotationQuat);
-    // mat4.multiply(m, rot, m);
-    // mat4.scale(m, scale, m);
-
-    // // Flip Y globally
-    // const flipY = mat4.identity();
-    // mat4.scale(flipY, [1, 1, -1], flipY);
-    // mat4.multiply(m, flipY, m);
-
-    // return m;
   }
   decomposeMatrix(m) {
     // m is column-major: indices:
@@ -28031,23 +28363,19 @@ class BVHPlayer extends _meshObj.default {
     //   m2 m6 m10 m14
     //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
-
     // Extract the 3 column vectors (upper-left 3x3)
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-
     // Lengths = scales
     const len = v => Math.hypot(v[0], v[1], v[2]);
     let sx = len(cx),
       sy = len(cy),
       sz = len(cz);
-
     // If any scale nearly zero, avoid divide-by-zero
     if (sx === 0) sx = 1.0;
     if (sy === 0) sy = 1.0;
     if (sz === 0) sz = 1.0;
-
     // Normalize columns to produce a pure rotation matrix
     const r00 = m[0] / sx,
       r01 = m[4] / sy,
@@ -28058,7 +28386,6 @@ class BVHPlayer extends _meshObj.default {
     const r20 = m[2] / sx,
       r21 = m[6] / sy,
       r22 = m[10] / sz;
-
     // Fix negative-scale (reflection) case: if determinant < 0, flip sign of one scale and corresponding column
     const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
     if (det3 < 0) {
@@ -28073,7 +28400,6 @@ class BVHPlayer extends _meshObj.default {
       // Here we flip the third column:
       // r02 = -r02; r12 = -r12; r22 = -r22;
     }
-
     // Build quaternion from rotation matrix (r00..r22)
     // Using standard conversion (column-major rotation)
     const trace = r00 + r11 + r22;
@@ -28118,11 +28444,15 @@ class BVHPlayer extends _meshObj.default {
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
     if (dot > 0.9995) {
-      // linear
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      // normalize
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
+      const x = q0[0] + t * (q1[0] - q0[0]);
+      const y = q0[1] + t * (q1[1] - q0[1]);
+      const z = q0[2] + t * (q1[2] - q0[2]);
+      const w = q0[3] + t * (q1[3] - q0[3]);
+      const invLen = 1 / Math.sqrt(x * x + y * y + z * z + w * w);
+      out[0] = x * invLen;
+      out[1] = y * invLen;
+      out[2] = z * invLen;
+      out[3] = w * invLen;
       return;
     }
     const theta0 = Math.acos(dot);
@@ -28131,35 +28461,29 @@ class BVHPlayer extends _meshObj.default {
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
+    out[0] = s0 * q0[0] + s1 * q1[0];
+    out[1] = s0 * q0[1] + s1 * q1[1];
+    out[2] = s0 * q0[2] + s1 * q1[2];
+    out[3] = s0 * q0[3] + s1 * q1[3];
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
     // --- Map channels per node for faster lookup
-    const nodeChannels = new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
-    }
+    const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-
       // --- Initialize node TRS if needed
       if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
       if (!node.rotation) node.rotation = _wgpuMatrix.quat.create();
       if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
-
       // --- Keep original TRS for additive animation
       if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
       if (!node.originalRotation) node.originalRotation = node.rotation.slice();
       if (!node.originalScale) node.originalScale = node.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
+      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for (const channel of channelsForNode) {
-        const path = channel.target.path; // "translation" | "rotation" | "scale"
+        const path = channel.target.path;
         const sampler = samplers[channel.sampler];
         // --- Get input/output arrays
         const inputTimes = this.getAccessorArray(this.glb, sampler.input);
@@ -28172,50 +28496,37 @@ class BVHPlayer extends _meshObj.default {
         const t0 = inputTimes[i];
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        // --- Interpolated keyframe values
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
-        // --- Apply animation
+        const base0 = i * numComponents;
+        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.translation[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+          this.slerp(outputArray.subarray(base0, base0 + 4), outputArray.subarray(base1, base1 + 4), factor, node.rotation);
         }
       }
       // --- Recompose local transform
-      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
     }
-    const computeWorld = nodeIndex => {
+    for (const nodeIndex of this._sortedNodes) {
       const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
       if (parentWorld) {
-        // multiply parent * local
         _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
       } else {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
       }
-
-      // maybe no need to exist...
-      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
-      }
-    };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === undefined) {
-        computeWorld(i);
-      }
     }
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      boneMatrices.set(this._tempMat, j * 16);
     }
-    // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
     return boneMatrices;
   }
@@ -28817,6 +29128,7 @@ var _fragmentWgsl3 = require("../shaders/fragment.wgsl.pong");
 var _fragmentWgsl4 = require("../shaders/fragment.wgsl.power");
 var _fragmentMix = require("../shaders/mixed/fragmentMix1.wgsl");
 var _waterC = require("../shaders/water/water-c.wgls");
+var _fragmentMirror = require("../shaders/fragment.mirror.wgsl");
 var _utils = require("./utils");
 /**
  * @description
@@ -29033,6 +29345,101 @@ class Materials {
     this.material.useBlend = true;
     this.setupMaterialPBR([1, 1, 1, alpha]);
   };
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
+    const defaults = {
+      mirrorTint: [0.9, 0.95, 1.0],
+      // Slight cool tint
+      reflectivity: 0.25,
+      // 25% reflection blend
+      illuminateColor: [0.3, 0.7, 1.0],
+      // Soft cyan
+      illuminateStrength: 0.4,
+      // Gentle rim
+      illuminatePulse: 0.0,
+      // No pulse (static)
+      fresnelPower: 4.0,
+      // Medium-sharp edge
+      envLodBias: 1.5 // Slightly blurred env
+    };
+    const cfg = {
+      ...defaults,
+      ...opts
+    };
+    const PARAMS_SIZE = 80;
+    const paramsBuffer = this.device.createBuffer({
+      label: 'MirrorIlluminateParams',
+      size: PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.writeParamsMirror = o => {
+      const data = new Float32Array(16); // Was 12, now 16
+      const t = o.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t[0];
+      data[1] = t[1];
+      data[2] = t[2];
+      data[3] = o.reflectivity ?? cfg.reflectivity;
+      const ic = o.illuminateColor ?? cfg.illuminateColor;
+      data[4] = ic[0];
+      data[5] = ic[1];
+      data[6] = ic[2];
+      data[7] = o.illuminateStrength ?? cfg.illuminateStrength;
+      data[8] = o.illuminatePulse ?? cfg.illuminatePulse;
+      data[9] = o.fresnelPower ?? cfg.fresnelPower;
+      data[10] = o.envLodBias ?? cfg.envLodBias;
+      data[11] = o.usePlanarReflection ? 1.0 : 0.0;
+      data[12] = o.baseColorMix ?? cfg.baseColorMix;
+      data[13] = 0; // padding
+      data[14] = 0; // padding
+      data[15] = 0; // padding
+      this.device.queue.writeBuffer(paramsBuffer, 0, data);
+    };
+    this.writeParamsMirror(cfg);
+    const samplerDummy = this.device.createSampler({
+      label: 'EnvMap Sampler',
+      magFilter: 'linear',
+      minFilter: 'linear',
+      addressModeU: 'repeat',
+      addressModeV: 'clamp-to-edge'
+    });
+    // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
+    const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture : cfg.envTexture.texture ?? (() => {
+      console.warn('⚠️ No envTexture provided, using white dummy!');
+      const tex = this.device.createTexture({
+        label: 'MirrorEnvDummy',
+        size: [1, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      this.device.queue.writeTexture({
+        texture: tex
+      }, new Uint8Array([255, 0, 0, 255]), {
+        bytesPerRow: 4
+      }, [1, 1]);
+      return tex;
+    })();
+    const bindGroup = this.device.createBindGroup({
+      label: 'MirrorIlluminate BindGroup',
+      layout: mirrorBindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: paramsBuffer
+        }
+      }, {
+        binding: 1,
+        resource: envTexture.createView()
+      }, {
+        binding: 2,
+        resource: cfg.envTexture.sampler ?? samplerDummy
+      }]
+    });
+    return {
+      bindGroup,
+      paramsBuffer,
+      /** Call this at runtime to hot-update mirror params without rebuilding. */
+      updateParams: o => this.writeParamsMirror(o)
+    };
+  }
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if (this.material.type == 'standard') {
@@ -29051,7 +29458,9 @@ class Materials {
       // console.warn('Unknown material ???????????????:', this.material?.type);
       return this.material.fromGraph;
     } else if (this.material.type == 'mix1') {
-      return _fragmentMix.fragmentWGSLMix1;
+      return _fragmentMix.fragmentWGSLMix1; // ?
+    } else if (this.material.type === "mirror") {
+      return _fragmentMirror.mirrorIlluminateFragmentWGSL;
     }
     console.warn('Unknown material type:', this.material?.type);
     return _fragment.fragmentWGSL;
@@ -29114,6 +29523,17 @@ class Materials {
     } = await this.textureCache.get(path, this.getFormat());
     this.texture0 = texture;
     this.sampler = sampler;
+  }
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path = texturesPaths[1] || texturesPaths[0];
+    const {
+      texture,
+      sampler
+    } = await this.textureCache.get(path, this.getFormat(), isEnvMap);
+    return {
+      texture,
+      sampler
+    };
   }
   async loadVideoTexture(arg) {
     this.videoIsReady = 'MAYBE';
@@ -29481,7 +29901,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":63,"../shaders/fragment.wgsl.metal":64,"../shaders/fragment.wgsl.normalmap":65,"../shaders/fragment.wgsl.pong":66,"../shaders/fragment.wgsl.power":67,"../shaders/mixed/fragmentMix1.wgsl":72,"../shaders/water/water-c.wgls":80,"./utils":55}],46:[function(require,module,exports){
+},{"../shaders/fragment.mirror.wgsl":63,"../shaders/fragment.wgsl":65,"../shaders/fragment.wgsl.metal":66,"../shaders/fragment.wgsl.normalmap":67,"../shaders/fragment.wgsl.pong":68,"../shaders/fragment.wgsl.power":69,"../shaders/mixed/fragmentMix1.wgsl":75,"../shaders/water/water-c.wgls":83,"./utils":56}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29866,7 +30286,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":55}],47:[function(require,module,exports){
+},{"./utils":56}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29886,6 +30306,7 @@ var _destruction = require("./effects/destruction");
 var _flame = require("./effects/flame");
 var _flameEmmiter = require("./effects/flame-emmiter");
 var _literals = require("./literals");
+var _proceduralTextures = require("./procedures/procedural-textures");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {PointerEffect} from './effects/pointerEffect';
 
@@ -29923,12 +30344,16 @@ class MEMeshObj extends _materials.default {
     if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
+    if (o.envMapParams !== null) {
+      this.envMapParams = o.envMapParams;
+    }
     this.useScale = o.useScale || false;
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
+      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
     });
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
     this.mesh = o.mesh;
@@ -30305,35 +30730,50 @@ class MEMeshObj extends _materials.default {
         cullMode: 'none',
         frontFace: 'ccw'
       };
-
-      // Selected effect
-      this.selectedBuffer = device.createBuffer({
-        size: 4,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
-        label: 'selectedBindGroupLayout mesh',
+      this.mirrorBindGroupLayout = device.createBindGroupLayout({
+        label: 'mirrorBindGroupLayout',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
-          buffer: {}
-        }]
-      });
-      this.selectedBindGroup = device.createBindGroup({
-        label: 'selectedBindGroup mesh',
-        layout: this.selectedBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.selectedBuffer
+          buffer: {
+            type: 'uniform',
+            minBindingSize: 80
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'float',
+            viewDimension: '2d',
+            multisampled: false
+          }
+        }, {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'filtering'
           }
         }]
       });
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
-      };
-      // 0 default
-      this.setSelectedEffect();
+
+      // Selected effect
+      // this.selectedBuffer = device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
+      // this.selectedBindGroupLayout = device.createBindGroupLayout({
+      //   label: 'selectedBindGroupLayout mesh',
+      //   entries: [
+      //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
+      //   ],
+      // });
+      // this.selectedBindGroup = device.createBindGroup({
+      //   label: 'selectedBindGroup mesh',
+      //   layout: this.selectedBindGroupLayout,
+      //   entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
+      // });
+      // this.setSelectedEffect = (selected = false) => {
+      //   this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
+      // };
+      // // 0 default
+      // this.setSelectedEffect();
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
@@ -30559,6 +30999,7 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
+      this._sceneData = new Float32Array(48);
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -30569,7 +31010,7 @@ class MEMeshObj extends _materials.default {
           this.effects.gizmoEffect = new _gizmo.GizmoEffect(device, 'rgba16float');
         }
         if (typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = _flame.FlameEffect.fromPreset(device, pf, "rgba16float", "torch");
+          this.effects.flameEffect = new _flame.FlameEffect(device, pf, "rgba16float", 'torch');
         }
         if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, "rgba16float");
@@ -30589,14 +31030,25 @@ class MEMeshObj extends _materials.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(48);
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        sceneData.set(camVP, 16);
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-        sceneData.set([this.time, dt, 0, 0], 44);
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        this._sceneData.set(camVP, 16);
+        this._sceneData[32] = camera.position[0];
+        this._sceneData[33] = camera.position[1];
+        this._sceneData[34] = camera.position[2];
+        this._sceneData[35] = 0.0;
+        this._sceneData[36] = spotLight.position[0];
+        this._sceneData[37] = spotLight.position[1];
+        this._sceneData[38] = spotLight.position[2];
+        this._sceneData[39] = 0.0;
+        this._sceneData[40] = this.globalAmbient[0];
+        this._sceneData[41] = this.globalAmbient[1];
+        this._sceneData[42] = this.globalAmbient[2];
+        this._sceneData[43] = 0.0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        this._sceneData[46] = 0;
+        this._sceneData[47] = 0;
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -30617,10 +31069,27 @@ class MEMeshObj extends _materials.default {
       const modelData = modelMatrix;
       this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch (err) {
-        console.log('Err[create pipeline]:', err);
+      if (this.texturesPaths.length > 1) {
+        this.loadEnvMap(this.texturesPaths, true).then(envTexture => {
+          try {
+            this.envMapParams.envTexture = envTexture;
+          } catch (err) {
+            console.warn(`%cYou forgot to put envMapParams in args...`, _utils.LOG_FUNNY_ARCADE);
+            return;
+          }
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {
+            this.setupPipeline();
+          } catch (err) {
+            console.log('Err[create pipeline]:', err);
+          }
+        });
+      } else {
+        try {
+          this.setupPipeline();
+        } catch (err) {
+          console.log('Err[create pipeline]:', err);
+        }
       }
     }).then(() => {
       if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
@@ -30635,7 +31104,7 @@ class MEMeshObj extends _materials.default {
       label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
       layout: this.device.createPipelineLayout({
         label: 'PipelineLayout Opaque',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout, this.waterBindGroupLayout]
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null, this.waterBindGroupLayout]
       }),
       vertex: {
         entryPoint: 'main',
@@ -30664,12 +31133,11 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    // TRANSPARENT
     this.pipelineTransparent = this.device.createRenderPipeline({
       label: 'Main [Mesh] Pipeline ✅[Transparent]',
       layout: this.device.createPipelineLayout({
         label: 'Main PipelineLayout Transparent',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout, this.waterBindGroupLayout]
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null, this.waterBindGroupLayout]
       }),
       vertex: {
         entryPoint: 'main',
@@ -30709,7 +31177,6 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    // console.log('✅Set Pipelines done');
   };
   getMainPipeline = () => {
     return this.pipeline;
@@ -30785,13 +31252,14 @@ class MEMeshObj extends _materials.default {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
-    }
-    if (this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -30800,11 +31268,11 @@ class MEMeshObj extends _materials.default {
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer") {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
         // dummy
-        pass.setVertexBuffer(3, this.joints.buffer); // new dummy
-        pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+        pass.setVertexBuffer(3, this.joints.buffer);
+        pass.setVertexBuffer(4, this.weights.buffer);
       }
     }
     if (this.mesh.tangentsBuffer) {
@@ -30826,13 +31294,14 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        renderPass.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
-    }
-    if (this.selectedBindGroup) {
-      renderPass.setBindGroup(2, this.selectedBindGroup);
     }
     renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
@@ -30928,7 +31397,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":62,"../shaders/vertex.wgsl":77,"../shaders/vertex.wgsl.normalmap":78,"./effects/destruction":23,"./effects/flame":26,"./effects/flame-emmiter":25,"./effects/gizmo":30,"./effects/topology-point":33,"./literals":40,"./materials":45,"./matrix-class":46,"./utils":55,"wgpu-matrix":19}],48:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":64,"../shaders/vertex.wgsl":80,"../shaders/vertex.wgsl.normalmap":81,"./effects/destruction":23,"./effects/flame":26,"./effects/flame-emmiter":25,"./effects/gizmo":30,"./effects/topology-point":33,"./literals":40,"./materials":45,"./matrix-class":46,"./procedures/procedural-textures":54,"./utils":56,"wgpu-matrix":19}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31628,7 +32097,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":55,"./matrix-stream":48}],50:[function(require,module,exports){
+},{"../utils":56,"./matrix-stream":48}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32622,6 +33091,45 @@ function compositeFragWGSL() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.createGroundTexture = createGroundTexture;
+function createGroundTexture(device, size = 512) {
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+
+      // Grid pattern
+      const gridX = x % 64 < 4;
+      const gridY = y % 64 < 4;
+      const isLine = gridX || gridY;
+
+      // Dark gray tiles with lighter grout lines
+      const val = isLine ? 100 : 60;
+      data[i] = val; // R
+      data[i + 1] = val; // G
+      data[i + 2] = val; // B
+      data[i + 3] = 255; // A
+    }
+  }
+  const texture = device.createTexture({
+    size: [size, size],
+    format: 'rgba8unorm',
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+  });
+  device.queue.writeTexture({
+    texture
+  }, data, {
+    bytesPerRow: size * 4
+  }, [size, size]);
+  return texture;
+}
+
+},{}],55:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.addRaycastsAABBListener = addRaycastsAABBListener;
 exports.addRaycastsListener = addRaycastsListener;
 exports.computeAABB = computeAABB;
@@ -32858,7 +33366,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":19}],55:[function(require,module,exports){
+},{"wgpu-matrix":19}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33986,7 +34494,62 @@ function alignTo256(n) {
   return Math.ceil(n / 256) * 256;
 }
 
-},{}],56:[function(require,module,exports){
+// export let ADDITIVE_BLEND_CONFIGURATIONS = {
+//   color: {
+//                 srcFactor: 'src-alpha', // This makes intensity scale correctly
+//                 dstFactor: 'one',       // This is the "Additive" part
+//                 operation: 'add',
+//               },
+//               alpha: {
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//                 operation: 'add',
+//               },
+//               color: {
+//                 // Result = (ShaderColor * ShaderAlpha) + (DestColor * 1)
+//                 operation: 'add',
+//                 srcFactor: 'src-alpha',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 // Keeps the background alpha as is
+//                 operation: 'add',
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//               }
+//               color: {
+//                 operation: 'add',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one-minus-src-alpha',
+//               },
+//               alpha: {
+//                 operation: 'add',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one-minus-src-alpha',
+//               }
+//               color: {
+//                 operation: 'add',
+//                 srcFactor: 'one-minus-dst-color',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 operation: 'add',
+//                 srcFactor: 'zero',
+//                 dstFactor: 'one',
+//               }
+//               color: {
+//                 operation: 'max', // Take whichever is brighter
+//                 srcFactor: 'one',
+//                 dstFactor: 'one',
+//               },
+//               alpha: {
+//                 operation: 'max',
+//                 srcFactor: 'one',
+//                 dstFactor: 'one',
+//               }
+// }
+
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34028,7 +34591,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":20,"../engine/utils":55}],57:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":20,"../engine/utils":56}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34037,9 +34600,12 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _utils = require("../engine/utils");
 class MatrixAmmo {
-  constructor() {
+  constructor(options = {
+    roundDimension: 100,
+    gravity: 10
+  }) {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-
+    this.options = options;
     // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
     _utils.scriptManager.LOAD("ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
@@ -34070,7 +34636,7 @@ class MatrixAmmo {
       solver = new Ammo.btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(70, 1, 70)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(this.options.roundDimension, 1, this.options.roundDimension)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
     groundTransform.setOrigin(new Ammo.btVector3(0, -4.45, 0));
@@ -34314,7 +34880,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":55}],58:[function(require,module,exports){
+},{"../engine/utils":56}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34484,7 +35050,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34530,133 +35096,141 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.flameEffectInstance = void 0;
-const flameEffectInstance = exports.flameEffectInstance = `struct Camera {
-  viewProj : mat4x4<f32>
+const flameEffectInstance = exports.flameEffectInstance = `
+struct Camera {
+    viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// Array of particle instances
+// Exact same layout as the working shader, but in a storage array
 struct ModelData {
-  model : mat4x4<f32>,
-  time : vec4<f32>,       // x = time
-  intensity : vec4<f32>,  // x = intensity
-  color : vec4<f32>,      // rgba color
+    model     : mat4x4<f32>,
+    timeSpeed : vec4<f32>,
+    params    : vec4<f32>,
+    tint      : vec4<f32>,
 };
 @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
 
 struct VSIn {
-  @location(0) position : vec3<f32>,
-  @location(1) uv : vec2<f32>,
-  @builtin(instance_index) instanceIdx : u32,
+    @location(0) position : vec3<f32>,
+    @location(1) uv : vec2<f32>,
+    @builtin(instance_index) instanceIdx : u32,
 };
 
 struct VSOut {
-  @builtin(position) position : vec4<f32>,
-  @location(0) uv : vec2<f32>,
-  @location(1) time : f32,
-  @location(2) intensity : f32,
-  @location(3) @interpolate(flat) instanceIdx : u32,
+    @builtin(position) position : vec4<f32>,
+    @location(0) uv : vec2<f32>,
+    @location(1) p0 : vec4<f32>,
+    @location(2) p1 : vec4<f32>,
+    @location(3) tintColor : vec3<f32>,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
-  var output : VSOut;
-  let modelData = modelDataArray[input.instanceIdx];
-  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
-  output.position = camera.viewProj * worldPos;
-  output.uv = input.uv;
-  output.time = modelData.time.x;
-  output.intensity = modelData.intensity.x;
-  output.instanceIdx = input.instanceIdx;
-  return output;
+    var output : VSOut;
+    let modelData = modelDataArray[input.instanceIdx];
+
+    let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+    output.position = camera.viewProj * worldPos;
+    output.uv = input.uv;
+
+    // Pass data to fragment exactly like the working shader
+    output.p0 = vec4<f32>(
+        modelData.timeSpeed.x, // time
+        modelData.timeSpeed.y, // speed
+        modelData.params.x,    // intensity
+        modelData.params.y     // turbulence
+    );
+    output.p1 = vec4<f32>(
+        modelData.params.z,    // stretch
+        modelData.tint.w,      // tintStrength
+        0.0, 0.0
+    );
+    output.tintColor = modelData.tint.xyz;
+
+    return output;
 }
 
-// Simple procedural flame noise (value in 0..1)
-fn hash(n : vec2<f32>) -> f32 {
-  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn hash2(n : vec2<f32>) -> f32 {
+    return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
 fn noise(p : vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
-    mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), u.x),
-    u.y
-  );
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+    );
 }
 
-// Flame color gradient: black -> red -> orange -> yellow -> white
-fn flameColor(n: f32) -> vec3<f32> {
-  if (n < 0.3) {
-    return vec3<f32>(n * 3.0, 0.0, 0.0);               // dark red
-  } else if (n < 0.6) {
-    return vec3<f32>(1.0, (n - 0.3) * 3.33, 0.0);      // red -> orange
-  } else {
-    return vec3<f32>(1.0, 1.0, (n - 0.6) * 2.5);       // orange -> yellow -> white
-  }
+fn fbm(p : vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pos = p;
+    for (var i = 0; i < 2; i = i + 1) {
+        v += a * noise(pos);
+        pos = pos * 2.1 + vec2<f32>(1.7, 9.2);
+        a *= 0.5;
+    }
+    return v;
 }
 
 @fragment
-fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
-  // Read per-instance data
-  let modelData = modelDataArray[in.instanceIdx];
-  let baseColor = modelData.color.xyz;
-  let instanceAlpha = modelData.color.w;
-  let instIntensity = max(0.0, modelData.intensity.x);
+fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+    let time       = input.p0.x;
+    let speed      = input.p0.y;
+    let intensity  = input.p0.z;
+    let turbulence = input.p0.w;
+    let stretch    = input.p1.x;
+    let tintStr    = input.p1.y;
+    let tintColor  = input.tintColor;
 
-  // time with small instance offset
-  let t = in.time * 2.0 + f32(in.instanceIdx) * 0.13;
+    let t = time * speed * 2.0;
+    var uv = input.uv;
+    uv.y = uv.y / max(stretch, 0.01);
 
-  var uv = in.uv;
-  uv.y += t * 0.2;
+    let warpAmt = turbulence * 0.18;
+    let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
+    let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
+    var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
 
-  // procedural noise
-  var n = noise(uv * 5.0 + vec2<f32>(0.0, t * 0.5));
-  // keep some brightness: milder sharpening than pow(n,3)
-  n = pow(n, 1.5);
+    warpedUV.y += t * 0.4;
+    warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
 
-  // base flame color from gradient
-  let grad = flameColor(n);
+    var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
+    n = pow(n, 3.0 - turbulence * 1.2);
 
-  let userColor = modelData.color.xyz;
+    let hotColor  = vec3<f32>(1.0, 0.92, 0.35);
+    let midColor  = vec3<f32>(1.0, 0.38, 0.04);
+    let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
 
-  // mix ratio (0.0 = pure red, 1.0 = user color)
-  let mixFactor = 0.5;
-  let mixedColor = mix(grad, userColor, mixFactor);
+    let g1 = smoothstep(0.0, 0.5, n);
+    let g2 = smoothstep(0.5, 1.0, n);
+    var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
 
-  // flicker multipliers (shifted into positive range)
-  let flickR = 0.7 + 0.3 * sin(t * 3.0); // 0.4 .. 1.0
-  let flickG = 0.6 + 0.4 * cos(t * 2.0); // 0.2 .. 1.0
-  let flickB = 0.8 + 0.2 * sin(t * 1.5); // 0.6 .. 1.0
+    let tintMask = smoothstep(0.0, 0.5, n);
+    baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
 
-  // combine gradient with per-instance baseColor and flicker
-  // var color = grad * baseColor * vec3<f32>(flickR, flickG, flickB);
-  var color = mixedColor * vec3<f32>(flickR, flickG, flickB);
+    let finalColor = baseColor * n * intensity;
+    let edgeMask = smoothstep(0.0, 0.15, input.uv.x) * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
+    let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
+    let topFade = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
 
-  // apply instance/global intensity
-  color = color * instIntensity;
+    // let alpha = smoothstep(0.25, 0.9, n) * edgeMask * topFade;
+    let alpha = smoothstep(0.01, 0.4, n) * edgeMask * topFade;
 
-  // soft alpha based on noise and instance alpha
-  var alpha = smoothstep(0.0, 0.6, n) * instanceAlpha * instIntensity;
-
-  // final clamp to avoid negative or NaN values
-  color = clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)); // allow HDR-like values for additive blending
-  alpha = clamp(alpha, 0.0, 1.0);
-
-  return vec4<f32>(color, alpha);
+    return vec4<f32>(finalColor * alpha, alpha);
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34816,7 +35390,331 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.mirrorIlluminateFragmentWGSL = void 0;
+const mirrorIlluminateFragmentWGSL = exports.mirrorIlluminateFragmentWGSL = `
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+    alpha     : f32,
+};
+
+struct MirrorIlluminateParams {
+    mirrorTint        : vec3f,   // tint applied to the specular/env reflection  (default: 1,1,1)
+    reflectivity      : f32,     // 0 = no mirror effect, 1 = full mirror        (default: 0.9)
+    illuminateColor   : vec3f,   // colour of the rim/illuminate glow             (default: 0.4, 0.8, 1.0)
+    illuminateStrength: f32,     // 0..1 master intensity of illuminate           (default: 1.0)
+    illuminatePulse   : f32,     // pulse speed (Hz). 0 = static                  (default: 1.2)
+    fresnelPower      : f32,     // Fresnel exponent for rim sharpness            (default: 4.0)
+    envLodBias        : f32,     // mip bias for env sample (blur ≈ roughness)    (default: 0.0)
+    usePlanarReflection: f32,  // ✅ NEW: 0 = env map, 1 = planar/screen-space
+    baseColorMix       : f32,  // ✅ NEW: 0=pure env, 1=normal material mix
+    _pad2              : vec3f, // ✅ Padding to maintain alignment
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene                  : Scene;
+@group(0) @binding(1) var          shadowMapArray         : texture_depth_2d_array;
+@group(0) @binding(2) var          shadowSampler          : sampler_comparison;
+@group(0) @binding(3) var          meshTexture            : texture_2d<f32>;
+@group(0) @binding(4) var          meshSampler            : sampler;
+@group(0) @binding(5) var<uniform> spotlights             : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
+@group(0) @binding(7) var          metallicRoughnessSampler : sampler;
+@group(0) @binding(8) var<uniform> material               : MaterialPBR;
+
+@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor  = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic  = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha     = material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a      = roughness * roughness;
+    let a2     = a * a;
+    let NdotH  = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L     = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
+    let L    = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+
+    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+    let H     = normalize(L + V);
+    let alpha  = mat.roughness * mat.roughness;
+    let alpha2 = alpha * alpha;
+    let NdotH  = max(dot(N, H), 0.0);
+    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D      = alpha2 / (PI * denom * denom + 1e-5);
+    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV  = max(dot(N, V), 0.0);
+    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
+    let G      = Gv * Gl;
+    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias      = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for (var i: u32 = 0u; i < 9u; i++) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+
+// ─── NEW: Mirror Illuminate helpers ──────────────────────────────────────────
+fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
+    let dir = normalize(R);
+    let phi = atan2(dir.x, dir.z);     // Horizontal angle
+    let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
+    let u = phi / (2.0 * PI) + 0.5;
+    let v = theta / PI;
+    return vec2f(u, v);
+    // let dir = normalize(R);
+    // let phi = atan2(-dir.z, dir.x);  // Note the negative
+    // let theta = acos(clamp(dir.y, -1.0, 1.0));
+    // let u = phi / (2.0 * PI) + 0.5;
+    // let v = theta / PI;
+    // return vec2f(u, 1.0 - v);  // Try flipping V
+}
+
+// Planar mirror UV (screen-space)
+fn reflectToPlanarUV(fragPos: vec3f, N: vec3f, V: vec3f) -> vec2f {
+    // Project to clip space using camera view-proj
+    let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
+    let ndc = clipPos.xy / clipPos.w;
+    // Flip Y for texture coordinates
+    return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+}
+
+// ✅ UNIFIED: Sample mirror texture (auto-detects mode)
+fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32) -> vec3f {
+    var uv: vec2f;
+    if (mirrorParams.usePlanarReflection > 0.5) {
+        uv = reflectToPlanarUV(fragPos, N, V);
+    } else {
+        uv = reflectToEnvUV(R , fragPos);
+    }
+    return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
+}
+
+// Animated illuminate rim — pulsing Fresnel edge glow
+fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
+    // Fresnel rim
+    let NdotV = max(dot(N, V), 0.0);
+    let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+
+    // Pulse: smoothly oscillate between [0.3, 1.0] so it never fully dies
+    let pulse = mix(0.3, 1.0,
+        (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+    );
+
+    // Spatial shimmer along Y: gives a "light sweep" feel on the surface
+    let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+
+    return mirrorParams.illuminateColor
+        * mirrorParams.illuminateStrength
+        * rim * pulse * shimmer;
+}
+
+// Mirror specular: sharp GGX lobe biased toward near-zero roughness
+fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f) -> vec3f {
+    let H       = normalize(lightDir + V);
+    // clamp roughness to a low value so mirrors stay crisp
+    let mirrorR = max(0.02, material.roughnessFactor * 0.15);
+    let D       = distributionGGX(N, H, mirrorR);
+    let G       = geometrySmith(N, V, lightDir, mirrorR);
+    let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
+    let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    let NdotL   = max(dot(N, lightDir), 0.0);
+    let NdotV   = max(dot(N, V),        0.0);
+    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    return spec * lightColor * NdotL * mirrorParams.reflectivity;
+}
+
+fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
+    // Normalize position relative to object center
+    let dir = normalize(worldPos);
+    
+    // Convert to spherical coordinates
+    let u = atan2(dir.z, dir.x) / (2.0 * PI) + 0.5;
+    let v = asin(clamp(dir.y, -1.0, 1.0)) / PI + 0.5;
+    
+    return vec2f(u, v);
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+
+    let materialData = getPBRMaterial(input.uv);
+    if (materialData.alpha < 0.01) { discard; }
+
+    // ── Shadow + existing spotlight loop (unchanged logic) ────────────────
+    var lightContribution = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p        = sc.xyz / sc.w;
+        let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
+        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+        lightContribution += contrib * vis;
+
+        // ── Mirror: sharp specular from each spotlight ────────────────────
+        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+        lightContribution += mirrorSpec * coneFactor * vis;
+    }
+
+    // ── Env reflection ───────────────────────────────────────────────────
+    let R = reflect(-V, N);
+    var envColor: vec3f;
+    if (mirrorParams.baseColorMix < 0.01) {
+        // Sky/background objects: use mesh UV (requires proper UV unwrap)
+        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
+    } else {
+        // Reflective objects: use reflection vector
+        //  let worldUV = worldPosToEquirectUV(normalize(input.fragPos));
+        //  envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, worldUV).rgb * mirrorParams.mirrorTint;
+
+        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+    }
+    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), 
+                   mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    finalColor = mix(
+        envColor,                    // Pure env (for sky objects)
+        finalColor,                  // Normal lit material
+        mirrorParams.baseColorMix    // 0=pure env, 1=normal material
+    );
+
+    // Add Fresnel reflection on top
+    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+    finalColor += illuminate;
+    let alpha = mix(materialData.alpha, 1.0, 0.5);
+    return vec4f(finalColor, alpha);
+}
+`;
+
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34904,7 +35802,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34976,8 +35874,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
-// RPG or any other usage [selected obj effect]
-@group(2) @binding(0) var<uniform> uSelected : f32;
+// @group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+// @group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+// @group(2) @binding(2) var          mirrorEnvSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -35137,17 +36036,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    if (uSelected > 0.5) {
-        let glowColor = vec3f(0.2, 0.8, 1.0);
-        finalColor += glowColor * fresnel * 0.1;
-    }
+    // if (uSelected > 0.5) {
+    //     let glowColor = vec3f(0.2, 0.8, 1.0);
+    //     finalColor += glowColor * fresnel * 0.1;
+    // }
 
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     // ✅ Return color with alpha from material
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],64:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35332,7 +36231,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],65:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35580,7 +36479,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35803,7 +36702,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],67:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35974,7 +36873,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],68:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36043,7 +36942,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(input.color, 1.0);
 }`;
 
-},{}],69:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36113,7 +37012,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
 // RPG or any other usage [selected obj effect]
-@group(2) @binding(0) var<uniform> uSelected : f32;
+// @group(2) @binding(0) var<uniform> uSelected : f32;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -36281,10 +37180,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    if (uSelected > 0.5) {
-        let glowColor = vec3f(0.2, 0.8, 1.0);
-        finalColor += glowColor * fresnel * 0.1;
-    }
+    // if (uSelected > 0.5) {
+    //     let glowColor = vec3f(0.2, 0.8, 1.0);
+    //     finalColor += glowColor * fresnel * 0.1;
+    // }
 
     // let alpha = input.colorMult.a; // use alpha for blending
     // return vec4f(finalColor, alpha);
@@ -36294,7 +37193,297 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // return vec4f(1.0, 0.0, 0.0, 0.1);
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentMirrorWGSLInstanced = void 0;
+const fragmentMirrorWGSLInstanced = exports.fragmentMirrorWGSLInstanced = `
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+    alpha     : f32,
+};
+
+struct MirrorIlluminateParams {
+    mirrorTint         : vec3f,
+    reflectivity       : f32,
+    illuminateColor    : vec3f,
+    illuminateStrength : f32,
+    illuminatePulse    : f32,
+    fresnelPower       : f32,
+    envLodBias         : f32,
+    usePlanarReflection: f32,
+    baseColorMix       : f32,
+    _pad2              : vec3f,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene                   : Scene;
+@group(0) @binding(1) var          shadowMapArray          : texture_depth_2d_array;
+@group(0) @binding(2) var          shadowSampler           : sampler_comparison;
+@group(0) @binding(3) var          meshTexture             : texture_2d<f32>;
+@group(0) @binding(4) var          meshSampler             : sampler;
+@group(0) @binding(5) var<uniform> spotlights              : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var          metallicRoughnessTex    : texture_2d<f32>;
+@group(0) @binding(7) var          metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material                : MaterialPBR;
+
+@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+
+// ── INSTANCED: adds colorMult at location(4) ──────────────────────────────
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+    @location(4) colorMult : vec4f,  // ← instanced only
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor  = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic  = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha     = material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a      = roughness * roughness;
+    let a2     = a * a;
+    let NdotH  = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L     = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
+    let L     = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+    let H     = normalize(L + V);
+    let alpha  = mat.roughness * mat.roughness;
+    let alpha2 = alpha * alpha;
+    let NdotH  = max(dot(N, H), 0.0);
+    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D      = alpha2 / (PI * denom * denom + 1e-5);
+    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV  = max(dot(N, V), 0.0);
+    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
+    let G      = Gv * Gl;
+    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f) -> vec3f {
+    let H       = normalize(lightDir + V);
+    let mirrorR = max(0.02, material.roughnessFactor * 0.15);
+    let D       = distributionGGX(N, H, mirrorR);
+    let G       = geometrySmith(N, V, lightDir, mirrorR);
+    let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
+    let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    let NdotL   = max(dot(N, lightDir), 0.0);
+    let NdotV   = max(dot(N, V), 0.0);
+    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    return spec * lightColor * NdotL * mirrorParams.reflectivity;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias   = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias        = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for (var i: u32 = 0u; i < 9u; i++) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+
+fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
+    let dir   = normalize(R);
+    let phi   = atan2(dir.x, dir.z);
+    let theta = acos(clamp(dir.y, -1.0, 1.0));
+    let u     = phi / (2.0 * PI) + 0.5;
+    let v     = theta / PI;
+    return vec2f(u, v);
+}
+
+fn reflectToPlanarUV(fragPos: vec3f, N: vec3f, V: vec3f) -> vec2f {
+    let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
+    let ndc     = clipPos.xy / clipPos.w;
+    return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+}
+
+fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32) -> vec3f {
+    var uv: vec2f;
+    if (mirrorParams.usePlanarReflection > 0.5) {
+        uv = reflectToPlanarUV(fragPos, N, V);
+    } else {
+        uv = reflectToEnvUV(R, fragPos);
+    }
+    return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
+}
+
+fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
+    // let NdotV = max(dot(N, V), 0.0);
+    // let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+    // let pulse = mix(0.3, 1.0,
+    //     (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+    // );
+    // let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+    // return mirrorParams.illuminateColor
+    //      * mirrorParams.illuminateStrength
+    //      * rim * pulse * shimmer;
+
+     let NdotV = max(dot(N, V), 0.0);
+    let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+    // NO scene.time — static version
+    return mirrorParams.illuminateColor
+         * mirrorParams.illuminateStrength
+         * rim;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+
+    let materialData = getPBRMaterial(input.uv);
+    if (materialData.alpha < 0.01) { discard; }
+
+    var lightContribution = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p        = sc.xyz / sc.w;
+        let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
+        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+        lightContribution += contrib * vis;
+        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+        lightContribution += mirrorSpec * coneFactor * vis;
+    }
+
+    let R = reflect(-V, N);
+    var envColor: vec3f;
+    if (mirrorParams.baseColorMix < 0.01) {
+        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
+    } else {
+        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+    }
+
+    let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
+                     mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+    let texColor   = textureSample(meshTexture, meshSampler, input.uv);
+    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+
+    finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
+    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+
+    finalColor *= input.colorMult.rgb;
+
+    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+    finalColor += illuminate;
+
+    let alpha = mix(materialData.alpha, 1.0, 0.5);
+    return vec4f(finalColor, alpha);
+}
+`;
+
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36556,7 +37745,7 @@ fn main(
   return output;
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36748,7 +37937,7 @@ fn main(
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36968,7 +38157,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],73:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37026,7 +38215,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],74:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37113,7 +38302,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],75:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37171,7 +38360,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],76:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37262,7 +38451,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],77:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37539,7 +38728,7 @@ fn main(
   return output;
 }`;
 
-},{}],78:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37650,7 +38839,7 @@ fn main(
   return output;
 }`;
 
-},{}],79:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37917,7 +39106,7 @@ fn main(
 }
 `;
 
-},{}],80:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38165,7 +39354,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(vibrantColor, alpha);
 }`;
 
-},{}],81:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38252,7 +39441,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],82:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38322,7 +39511,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],83:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38659,7 +39848,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":55}],84:[function(require,module,exports){
+},{"../../engine/utils":56}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39426,7 +40615,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":55}],85:[function(require,module,exports){
+},{"../../engine/utils":56}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39600,7 +40789,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":51,"../../engine/utils":55,"./client":83,"./editor.provider":86,"./flexCodexShader":87,"./fluxCodexVertex":89,"./hud":91,"./methodsManager":92}],86:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":51,"../../engine/utils":56,"./client":86,"./editor.provider":89,"./flexCodexShader":90,"./fluxCodexVertex":92,"./hud":94,"./methodsManager":95}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39828,7 +41017,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":41,"../../engine/loaders/webgpu-gltf":44}],87:[function(require,module,exports){
+},{"../../engine/loader-obj":41,"../../engine/loaders/webgpu-gltf":44}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42022,7 +43211,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":55,"./flexCodexShaderAdapter.js":88}],88:[function(require,module,exports){
+},{"../../engine/utils.js":56,"./flexCodexShaderAdapter.js":91}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42236,7 +43425,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{}],89:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48376,7 +49565,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/utils":55,"./curve-editor":84,"./generateAISchema.js":90}],90:[function(require,module,exports){
+},{"../../engine/utils":56,"./curve-editor":87,"./generateAISchema.js":93}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48503,7 +49692,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],91:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49860,7 +51049,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":55,"./flexCodexShader.js":87}],92:[function(require,module,exports){
+},{"../../engine/utils.js":56,"./flexCodexShader.js":90}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50177,7 +51366,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],93:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50296,7 +51485,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
-    this.logLoopError = false;
+    this.logLoopError = true;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -50309,6 +51498,10 @@ class MatrixEngineWGPU {
       // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
       // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
     }
+
+    // cache
+    this._viewProjMatrix = _wgpuMatrix.mat4.create();
+    this._invViewProj = _wgpuMatrix.mat4.create();
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
@@ -50440,11 +51633,12 @@ class MatrixEngineWGPU {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
     this.shadersPack = {};
-    if ('OffscreenCanvas' in window) {
-      console.log(`OffscreenCanvas is supported`, _utils.LOG_FUNNY_ARCADE);
-    } else {
-      console.log(`%cOffscreenCanvas is NOT supported.`, _utils.LOG_FUNNY_ARCADE);
-    }
+
+    // if('OffscreenCanvas' in window) {
+    //   console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+    // } else {
+    //   console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+    // }
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
@@ -50586,6 +51780,25 @@ class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.depthTextureViewTrail = depthTexture.createView();
+    this._transPassDesc = {
+      colorAttachments: [{
+        view: this.sceneTextureView,
+        loadOp: 'load',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 1,
+          b: 0,
+          a: 1
+        }
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        depthLoadOp: 'load',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0
+      }
+    };
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -50712,6 +51925,9 @@ class MatrixEngineWGPU {
     }
     if (typeof o.useScale === 'undefined') {
       o.useScale = true;
+    }
+    if (typeof o.envMapParams === 'undefined') {
+      o.envMapParams = null;
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -50976,7 +52192,11 @@ class MatrixEngineWGPU {
       // opaque
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend === true) continue;
-        pass.setPipeline(mesh.pipeline);
+        if (mesh.pipeline) {
+          pass.setPipeline(mesh.pipeline);
+        } else {
+          pass.setPipeline(this.mainRenderBundle[0].pipeline);
+        }
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
@@ -51015,20 +52235,7 @@ class MatrixEngineWGPU {
       }
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: 'load',
-          storeOp: 'store'
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: 'load',
-          depthStoreOp: 'store',
-          depthClearValue: 1.0
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
@@ -51040,13 +52247,15 @@ class MatrixEngineWGPU {
         });
       }
       transPass.end();
-
       // volumetric
-
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
         // If you don't store it yet, compute once per frame:
-        const invViewProj = _wgpuMatrix.mat4.invert(_wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity()));
+        // const invViewProj = mat4.invert(
+        //   mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
+        // );
+        _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+        _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
         this.volumetricPass.render(commandEncoder, this.sceneTextureView,
@@ -51276,6 +52485,10 @@ class MatrixEngineWGPU {
     if (typeof o.useScale === 'undefined') {
       o.useScale = true;
     }
+    if (typeof o.envMapParams === 'undefined') {
+      o.envMapParams = null;
+    }
+    o.textureCache = this.textureCache;
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if (typeof o.physics === 'undefined') {
@@ -51376,4 +52589,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/core-cache.js":22,"./engine/effects/energy-bar.js":24,"./engine/effects/flame-emmiter.js":25,"./engine/effects/flame.js":26,"./engine/effects/mana-bar.js":31,"./engine/effects/pointerEffect.js":32,"./engine/engine.js":34,"./engine/generators/generator.js":35,"./engine/instanced/mesh-obj-instances.js":38,"./engine/lights.js":39,"./engine/loader-obj.js":41,"./engine/loaders/bvh-instaced.js":42,"./engine/loaders/bvh.js":43,"./engine/mesh-obj.js":47,"./engine/postprocessing/bloom.js":52,"./engine/postprocessing/volumetric.js":53,"./engine/raycast.js":54,"./engine/utils.js":55,"./multilang/lang.js":56,"./physics/matrix-ammo.js":57,"./sounds/audioAsset.js":81,"./sounds/sounds.js":82,"./tools/editor/editor.js":85,"./tools/editor/flexCodexShaderAdapter.js":88,"wgpu-matrix":19}]},{},[3]);
+},{"./engine/core-cache.js":22,"./engine/effects/energy-bar.js":24,"./engine/effects/flame-emmiter.js":25,"./engine/effects/flame.js":26,"./engine/effects/mana-bar.js":31,"./engine/effects/pointerEffect.js":32,"./engine/engine.js":34,"./engine/generators/generator.js":35,"./engine/instanced/mesh-obj-instances.js":38,"./engine/lights.js":39,"./engine/loader-obj.js":41,"./engine/loaders/bvh-instaced.js":42,"./engine/loaders/bvh.js":43,"./engine/mesh-obj.js":47,"./engine/postprocessing/bloom.js":52,"./engine/postprocessing/volumetric.js":53,"./engine/raycast.js":55,"./engine/utils.js":56,"./multilang/lang.js":57,"./physics/matrix-ammo.js":58,"./sounds/audioAsset.js":84,"./sounds/sounds.js":85,"./tools/editor/editor.js":88,"./tools/editor/flexCodexShaderAdapter.js":91,"wgpu-matrix":19}]},{},[3]);
