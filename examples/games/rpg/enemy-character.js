@@ -33,7 +33,7 @@ export class Enemie extends Hero {
         position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {enabled: true, radius: 1.1},
+        raycast: {enabled: true, radius: 25},
         pointerEffect: {
           enabled: true,
           energyBar: true
@@ -46,7 +46,7 @@ export class Enemie extends Hero {
         );
         this.heroe_bodies.forEach((subMesh, idx) => {
           subMesh.position.thrust = this.moveSpeed;
-          subMesh.glb.animationIndex = 0;
+          subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
@@ -77,35 +77,35 @@ export class Enemie extends Hero {
 
   setWalk() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk)
       console.info(`%chero walk`, LOG_MATRIX)
     });
   }
 
   setSalute() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute)
       console.info(`%chero salute`, LOG_MATRIX)
     });
   }
 
   setDead() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead);
       console.info(`%chero dead`, LOG_MATRIX)
     });
   }
 
   setIdle() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle);
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
 
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
       console.info(`%chero attack`, LOG_MATRIX)
     });
 

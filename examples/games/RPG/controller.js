@@ -1,4 +1,4 @@
-import {computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
+import { addRaycastsAABBListener, computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
 import {byId, LOG_MATRIX, mb} from "../../../src/engine/utils.js";
 import {followPath} from "./nav-mesh.js";
@@ -7,12 +7,13 @@ export class Controller {
 
   ignoreList = ['ground', 'mouseTarget_Circle'];
   selected = [];
-
   nav = null;
-  // ONLY LOCAL
   heroe_bodies = null;
 
-  distanceForAction = 36;
+  // Must be same init !!!
+  // incorporate with automated 'close-distance'
+  distanceForAction     = 36;
+  distanceForLongAction = 36;
 
   constructor(core) {
     this.core = core;
@@ -47,11 +48,14 @@ export class Controller {
       }
     });
 
-    addRaycastsListener(undefined, 'click');
+    addRaycastsAABBListener(undefined, 'click');
 
     this.canvas.addEventListener("ray.hit.event", (e) => {
-      // console.log('ray.hit.event detected', e);
+
       const {hitObject, hitPoint, button, eventName} = e.detail;
+
+      console.log('ray.hit.event detected : ', hitObject.name);
+
       if(e.detail.hitObject.name == 'ground') {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
@@ -75,7 +79,7 @@ export class Controller {
       } else {
         // for now
 
-        if (app.net.virtualEmiter != null) {
+        if(app.net.virtualEmiter != null) {
           console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
           dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
         }
@@ -96,7 +100,14 @@ export class Controller {
         // after all check is it eneimy
         this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
-        // 37 LIMIT FOR ATTACH
+        // cases for magic ->>>>>>>>>>>>>>>>>>>>>
+        // distance attack
+        if(testDistance < this.distanceForLongAction) {
+          console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]")
+          this.core.localHero.setAttack(e.detail.hitObject);
+          return;
+        }
+        // close contact
         if(testDistance < this.distanceForAction) {
           console.log("this.core.localHero.setAttack [e.detail.hitObject]")
           this.core.localHero.setAttack(e.detail.hitObject);
@@ -129,19 +140,13 @@ export class Controller {
       // followPath(this.heroe_bodies[0], path, this.core);
     });
 
-    document.body.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-    });
-
-    this.canvas.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-    });
-
+    document.body.addEventListener("contextmenu", (e) => {e.preventDefault()});
+    this.canvas.addEventListener("contextmenu", (e) => {e.preventDefault()});
     this.activateVisualRect();
 
     let hiddenAt = null;
 
-    if(location.hostname.indexOf('localhost') == -1) {
+    if(location.hostname.indexOf('localhost') == 'DISABLE____') {
       console.log('Security stuff activated');
       console.log = function() {};
       // Security stuff
@@ -167,7 +172,7 @@ export class Controller {
           e.preventDefault();
           mb.error(`
             You are interest in Forest Of Hollow Blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
-            You can download for free project and test it into localhost.
+            You can download project for free and test it into localhost.
             `)
           console.log(`%c[keydown opened] ${e}`, LOG_MATRIX)
           return false;
@@ -279,7 +284,7 @@ export class Controller {
   }
 
   distance3D(a, b) {
-    if (!b) return 1000; // fix this later
+    if(!b) return 1000; // fix this later
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const dz = a.z - b.z;

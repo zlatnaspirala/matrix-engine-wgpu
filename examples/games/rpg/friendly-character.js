@@ -45,7 +45,7 @@ export class FriendlyHero extends Hero {
         );
         this.heroe_bodies.forEach((subMesh, idx, array) => {
           subMesh.position.thrust = this.moveSpeed;
-          subMesh.glb.animationIndex = 0;
+          subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
@@ -69,7 +69,7 @@ export class FriendlyHero extends Hero {
           }
         });
 
-        
+
         for(var x = 0;x < this.heroe_bodies.length;x++) {
           if(x > 0) {
             this.heroe_bodies[x].position = this.heroe_bodies[0].position;
@@ -83,35 +83,35 @@ export class FriendlyHero extends Hero {
 
   setWalk() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk)
       console.info(`%chero walk`, LOG_MATRIX)
     });
   }
 
   setSalute() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute)
       console.info(`%chero salute`, LOG_MATRIX)
     });
   }
 
   setDead() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead)
       console.info(`%chero dead`, LOG_MATRIX)
     });
   }
 
   setIdle() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle)
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
 
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack)
       console.info(`%chero attack`, LOG_MATRIX)
     });
   }

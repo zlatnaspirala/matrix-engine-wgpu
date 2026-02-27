@@ -676,7 +676,7 @@ class RCSAccount {
       localStorage.removeItem("visitor");
       this.visitor(e.detail);
     });
-
+    this.preventGetLeaderboard = false;
     // this.leaderboardBtn = document.createElement('div')
     // this.leaderboardBtn.id = 'leaderboard';
     // this.leaderboardBtn.innerHTML = `
@@ -1011,6 +1011,10 @@ class RCSAccount {
   }
   getLeaderboard = async e => {
     e.preventDefault();
+    if (this.preventGetLeaderboard == true) {
+      return;
+    }
+    this.preventGetLeaderboard = true;
     (0, _utils.byId)('netHeaderTitle').click();
     // this.leaderboardBtn.disabled = true;
     fetch(this.apiDomain + '/rocket/public-leaderboard', {
@@ -1020,6 +1024,7 @@ class RCSAccount {
     }).then(d => {
       return d.json();
     }).then(r => {
+      this.preventGetLeaderboard = false;
       _utils.mb.error(`${r.message}`);
       if (r.message == "You got leaderboard data.") {
         this.leaderboardData = r.leaderboard;
@@ -1028,6 +1033,7 @@ class RCSAccount {
       // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
     }).catch(err => {
       console.log('[Leaderboard Error]', err);
+      this.preventGetLeaderboard = false;
       _utils.mb.show("Next call try in 5 secounds...");
       // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
       return;
@@ -1652,8 +1658,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
     for (var x = 0; x < heros.length; x++) {
       var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
       forestOfHollowBloodStartSceen.addGlbObjInctance({
-        material: x == 2 ? {
-          type: 'power',
+        material: x == 2 || x == 1 ? {
+          type: 'pong',
           useTextureFromGlb: true
         } : {
           type: 'standard',
@@ -1718,23 +1724,28 @@ let forestOfHollowBloodStartSceen = new _world.default({
           });
         }
       }
-      app.lightContainer[0].position[2] = 10;
-      app.lightContainer[0].position[1] = 50;
-      app.lightContainer[0].intensity = 1.4;
     }, 4000);
   }
   loadHeros();
   createHUDMenu();
   // })
   forestOfHollowBloodStartSceen.addLight();
+  app.lightContainer[0].position[2] = 1;
+  app.lightContainer[0].position[1] = 50;
+  app.lightContainer[0].position[0] = 0;
+  app.lightContainer[0].target = [0, 0, -10];
+  app.lightContainer[0].intensity = 40;
+  app.activateBloomEffect();
+  app.bloomPass.setBlurRadius(3);
   function createHUDMenu() {
-    forestOfHollowBloodStartSceen.animatedCursor = new _animatedCursor.AnimatedCursor({
-      path: "./res/icons/seq1/",
-      frameCount: 7,
-      speed: 80,
-      loop: true
-    });
-    forestOfHollowBloodStartSceen.animatedCursor.start();
+    // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
+    //   path: "./res/icons/seq1/",
+    //   frameCount: 7,
+    //   speed: 80,
+    //   loop: true
+    // })
+
+    // forestOfHollowBloodStartSceen.animatedCursor.start();
     // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
 
     document.addEventListener("contextmenu", event => event.preventDefault());
@@ -1796,6 +1807,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
           heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50);
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
+            // app.lightContainer[0].position[0] = heroBodie.position.x;
           };
           if (heroBodie.effects.circlePlane) {
             if (indexRoot == app.selectedHero) {
@@ -1857,6 +1869,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50);
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
+            // app.lightContainer[0].position[0] = heroBodie.position.x - 20;
           };
           if (heroBodie.effects.circlePlane) {
             if (indexRoot == app.selectedHero) {
@@ -26169,7 +26182,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        // if(index == 0) camera.update(dt, inputHandler());
+        if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
@@ -51616,9 +51629,10 @@ class MatrixEngineWGPU {
         alphaMode: 'premultiplied'
       });
     }
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
+
+    // const devicePixelRatio = window.devicePixelRatio;
+    // canvas.width = canvas.clientWidth * devicePixelRatio;
+    // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,
@@ -52265,7 +52279,7 @@ class MatrixEngineWGPU {
         this.shadowArrayView,
         // ← your existing shadow array
         {
-          invViewProjectionMatrix: invViewProj
+          invViewProjectionMatrix: this._invViewProj
         }, {
           viewProjectionMatrix: light.viewProjMatrix,
           // Float32Array 16

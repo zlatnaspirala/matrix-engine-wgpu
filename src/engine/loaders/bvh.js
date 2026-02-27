@@ -49,7 +49,7 @@ export class BVHPlayer extends MEMeshObj {
     if(!this.bvh.sharedState) {this.bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};}
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
-    this.animationIndex = this.glb.animationIndex;
+    this.animationIndex = this.animationIndex;
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     this.nodes = this.glb.nodes.map(n => ({
       ...n,

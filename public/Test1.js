@@ -3700,8 +3700,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
-// RPG or any other usage [selected obj effect]
-@group(2) @binding(0) var<uniform> uSelected : f32;
+// @group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+// @group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+// @group(2) @binding(2) var          mirrorEnvSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -3861,10 +3862,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    if (uSelected > 0.5) {
-        let glowColor = vec3f(0.2, 0.8, 1.0);
-        finalColor += glowColor * fresnel * 0.1;
-    }
+    // if (uSelected > 0.5) {
+    //     let glowColor = vec3f(0.2, 0.8, 1.0);
+    //     finalColor += glowColor * fresnel * 0.1;
+    // }
 
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     // \u2705 Return color with alpha from material
@@ -5176,20 +5177,17 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-// \u2500\u2500\u2500 NEW: Mirror Illuminate params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 struct MirrorIlluminateParams {
-    // --- Reflectivity ---
     mirrorTint        : vec3f,   // tint applied to the specular/env reflection  (default: 1,1,1)
     reflectivity      : f32,     // 0 = no mirror effect, 1 = full mirror        (default: 0.9)
-
-    // --- Illuminate pulse ---
     illuminateColor   : vec3f,   // colour of the rim/illuminate glow             (default: 0.4, 0.8, 1.0)
     illuminateStrength: f32,     // 0..1 master intensity of illuminate           (default: 1.0)
-    // --- Control ---
     illuminatePulse   : f32,     // pulse speed (Hz). 0 = static                  (default: 1.2)
     fresnelPower      : f32,     // Fresnel exponent for rim sharpness            (default: 4.0)
     envLodBias        : f32,     // mip bias for env sample (blur \u2248 roughness)    (default: 0.0)
-    _pad              : f32,     // padding to reach 48 bytes
+    usePlanarReflection: f32,  // \u2705 NEW: 0 = env map, 1 = planar/screen-space
+    baseColorMix       : f32,  // \u2705 NEW: 0=pure env, 1=normal material mix
+    _pad2              : vec3f, // \u2705 Padding to maintain alignment
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -5203,7 +5201,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
 @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
 @group(0) @binding(8) var<uniform> material               : MaterialPBR;
-// @group(2) @binding(0) var<uniform> uSelected : f32;
+
 @group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
 @group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
 @group(2) @binding(2) var          mirrorEnvSampler: sampler;
@@ -5215,7 +5213,6 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
-// \u2500\u2500\u2500 Existing helpers (unchanged) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let texColor  = textureSample(meshTexture, meshSampler, uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
@@ -5304,20 +5301,39 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 }
 
 // \u2500\u2500\u2500 NEW: Mirror Illuminate helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-
-// Cheap spherical env UV from reflection vector (equirectangular approximation)
-fn reflectToEnvUV(R: vec3f) -> vec2f {
-    let u = atan2(R.z, R.x) / (2.0 * PI) + 0.5;   // 0..1
-    let v = asin(clamp(R.y, -1.0, 1.0)) / PI + 0.5; // 0..1
+fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
+    let dir = normalize(R);
+    let phi = atan2(dir.x, dir.z);     // Horizontal angle
+    let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
+    let u = phi / (2.0 * PI) + 0.5;
+    let v = theta / PI;
     return vec2f(u, v);
+    // let dir = normalize(R);
+    // let phi = atan2(-dir.z, dir.x);  // Note the negative
+    // let theta = acos(clamp(dir.y, -1.0, 1.0));
+    // let u = phi / (2.0 * PI) + 0.5;
+    // let v = theta / PI;
+    // return vec2f(u, 1.0 - v);  // Try flipping V
 }
 
-// Sample env map with roughness-driven mip bias
-fn sampleMirrorEnv(R: vec3f, roughness: f32) -> vec3f {
-    let uv = reflectToEnvUV(R);
-    // lodBias from params; roughness adds extra blurring for non-perfect mirrors
-    let lod  = mirrorParams.envLodBias + roughness * 4.0;
-    return textureSampleLevel(mirrorEnvTex, mirrorEnvSampler, uv, lod).rgb;
+// Planar mirror UV (screen-space)
+fn reflectToPlanarUV(fragPos: vec3f, N: vec3f, V: vec3f) -> vec2f {
+    // Project to clip space using camera view-proj
+    let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
+    let ndc = clipPos.xy / clipPos.w;
+    // Flip Y for texture coordinates
+    return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+}
+
+// \u2705 UNIFIED: Sample mirror texture (auto-detects mode)
+fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32) -> vec3f {
+    var uv: vec2f;
+    if (mirrorParams.usePlanarReflection > 0.5) {
+        uv = reflectToPlanarUV(fragPos, N, V);
+    } else {
+        uv = reflectToEnvUV(R , fragPos);
+    }
+    return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
 }
 
 // Animated illuminate rim \u2014 pulsing Fresnel edge glow
@@ -5354,9 +5370,21 @@ fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f)
     return spec * lightColor * NdotL * mirrorParams.reflectivity;
 }
 
+fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
+    // Normalize position relative to object center
+    let dir = normalize(worldPos);
+    
+    // Convert to spherical coordinates
+    let u = atan2(dir.z, dir.x) / (2.0 * PI) + 0.5;
+    let v = asin(clamp(dir.y, -1.0, 1.0)) / PI + 0.5;
+    
+    return vec2f(u, v);
+}
+
 // \u2500\u2500\u2500 Main \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
+
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
 
@@ -5382,33 +5410,34 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         lightContribution += mirrorSpec * coneFactor * vis;
     }
 
-    // \u2500\u2500 Env reflection (perfect mirror lobe) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-    let R        = reflect(-V, N);
-    let envColor = sampleMirrorEnv(R, materialData.roughness) * mirrorParams.mirrorTint;
-    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+    // \u2500\u2500 Env reflection \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    let R = reflect(-V, N);
+    var envColor: vec3f;
+    if (mirrorParams.baseColorMix < 0.01) {
+        // Sky/background objects: use mesh UV (requires proper UV unwrap)
+        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
+    } else {
+        // Reflective objects: use reflection vector
+        //  let worldUV = worldPosToEquirectUV(normalize(input.fragPos));
+        //  envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, worldUV).rgb * mirrorParams.mirrorTint;
 
-    // \u2500\u2500 Compose base colour \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+    }
+    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), 
+                   mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    finalColor = mix(
+        envColor,                    // Pure env (for sky objects)
+        finalColor,                  // Normal lit material
+        mirrorParams.baseColorMix    // 0=pure env, 1=normal material
+    );
 
-    let envContribution = envFresn * mirrorParams.reflectivity;
-    finalColor = mix(finalColor, envColor, min(envContribution, vec3f(0.5)));
-
-
-    // Blend env reflection on top (attenuated by reflectivity & Fresnel)
-    // finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
-
-    // \u2500\u2500 Illuminate rim \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    // Add Fresnel reflection on top
+    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
     let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
     finalColor += illuminate;
-
-    // \u2500\u2500 Existing selection glow (unchanged) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-    // let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-    // if (uSelected > 0.5) {
-    //     let glowColor = vec3f(0.2, 0.8, 1.0);
-    //     finalColor += glowColor * fresnel * 0.1;
-    // }
-
     let alpha = mix(materialData.alpha, 1.0, 0.5);
     return vec4f(finalColor, alpha);
 }
@@ -5630,7 +5659,7 @@ var Materials = class {
     this.material.useBlend = true;
     this.setupMaterialPBR([1, 1, 1, alpha]);
   };
-  createMirrorIlluminateBindGroup(pipeline, mirrorBindGroupLayout, opts) {
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
     const defaults = {
       mirrorTint: [0.9, 0.95, 1],
       // Slight cool tint
@@ -5646,17 +5675,16 @@ var Materials = class {
       // Medium-sharp edge
       envLodBias: 1.5
       // Slightly blurred env
-      // envTexture omitted → 1×1 white dummy created below
     };
     const cfg = { ...defaults, ...opts };
-    const PARAMS_SIZE = 48;
+    const PARAMS_SIZE = 80;
     const paramsBuffer = this.device.createBuffer({
       label: "MirrorIlluminateParams",
       size: PARAMS_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.writeParamsMirror = (o2) => {
-      const data = new Float32Array(12);
+      const data = new Float32Array(16);
       const t = o2.mirrorTint ?? cfg.mirrorTint;
       data[0] = t[0];
       data[1] = t[1];
@@ -5670,11 +5698,23 @@ var Materials = class {
       data[8] = o2.illuminatePulse ?? cfg.illuminatePulse;
       data[9] = o2.fresnelPower ?? cfg.fresnelPower;
       data[10] = o2.envLodBias ?? cfg.envLodBias;
-      data[11] = 0;
+      data[11] = o2.usePlanarReflection ? 1 : 0;
+      data[12] = o2.baseColorMix ?? cfg.baseColorMix;
+      data[13] = 0;
+      data[14] = 0;
+      data[15] = 0;
       this.device.queue.writeBuffer(paramsBuffer, 0, data);
     };
     this.writeParamsMirror(cfg);
-    const envTexture = cfg.envTexture ?? (() => {
+    const samplerDummy = this.device.createSampler({
+      label: "EnvMap Sampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "clamp-to-edge"
+    });
+    const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture : cfg.envTexture.texture ?? (() => {
+      console.warn("\u26A0\uFE0F No envTexture provided, using white dummy!");
       const tex = this.device.createTexture({
         label: "MirrorEnvDummy",
         size: [1, 1],
@@ -5689,21 +5729,13 @@ var Materials = class {
       );
       return tex;
     })();
-    const envSampler = this.device.createSampler({
-      label: "MirrorEnvSampler",
-      addressModeU: "repeat",
-      addressModeV: "clamp-to-edge",
-      magFilter: "linear",
-      minFilter: "linear",
-      mipmapFilter: "linear"
-    });
     const bindGroup = this.device.createBindGroup({
       label: "MirrorIlluminate BindGroup",
       layout: mirrorBindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: paramsBuffer } },
         { binding: 1, resource: envTexture.createView() },
-        { binding: 2, resource: envSampler }
+        { binding: 2, resource: cfg.envTexture.sampler ?? samplerDummy }
       ]
     });
     return {
@@ -5797,6 +5829,14 @@ var Materials = class {
     const { texture, sampler } = await this.textureCache.get(path2, this.getFormat());
     this.texture0 = texture;
     this.sampler = sampler;
+  }
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path2 = texturesPaths[1] || texturesPaths[0];
+    const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
+    return {
+      texture,
+      sampler
+    };
   }
   async loadVideoTexture(arg) {
     this.videoIsReady = "MAYBE";
@@ -8859,13 +8899,15 @@ var MEMeshObj = class extends Materials {
     if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
       o2.material.useBlend = false;
     }
+    if (o2.envMapParams !== null) {
+      this.envMapParams = o2.envMapParams;
+    }
     this.useScale = o2.useScale || false;
     this.material = o2.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     addEventListener("update-pipeine", () => {
       this.setupPipeline();
-      console.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P");
     });
     this.mesh = o2.mesh;
     if (_glbFile != null) {
@@ -9193,7 +9235,7 @@ var MEMeshObj = class extends Materials {
       this.mirrorBindGroupLayout = device2.createBindGroupLayout({
         label: "mirrorBindGroupLayout",
         entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: 48 } },
+          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: 80 } },
           { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float", viewDimension: "2d", multisampled: false } },
           { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
@@ -9412,6 +9454,7 @@ var MEMeshObj = class extends Materials {
           { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
         ]
       });
+      this._sceneData = new Float32Array(48);
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -9442,14 +9485,25 @@ var MEMeshObj = class extends Materials {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(48);
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        sceneData.set(camVP, 16);
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
-        sceneData.set([this.time, dt, 0, 0], 44);
-        device2.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        this._sceneData.set(camVP, 16);
+        this._sceneData[32] = camera.position[0];
+        this._sceneData[33] = camera.position[1];
+        this._sceneData[34] = camera.position[2];
+        this._sceneData[35] = 0;
+        this._sceneData[36] = spotLight.position[0];
+        this._sceneData[37] = spotLight.position[1];
+        this._sceneData[38] = spotLight.position[2];
+        this._sceneData[39] = 0;
+        this._sceneData[40] = this.globalAmbient[0];
+        this._sceneData[41] = this.globalAmbient[1];
+        this._sceneData[42] = this.globalAmbient[2];
+        this._sceneData[43] = 0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        this._sceneData[46] = 0;
+        this._sceneData[47] = 0;
+        device2.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos2, useScale = false) => {
         let modelMatrix2 = mat4Impl.identity();
@@ -9479,10 +9533,27 @@ var MEMeshObj = class extends Materials {
         modelData.byteLength
       );
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch (err) {
-        console.log("Err[create pipeline]:", err);
+      if (this.texturesPaths.length > 1) {
+        this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
+          try {
+            this.envMapParams.envTexture = envTexture;
+          } catch (err) {
+            console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE2);
+            return;
+          }
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {
+            this.setupPipeline();
+          } catch (err) {
+            console.log("Err[create pipeline]:", err);
+          }
+        });
+      } else {
+        try {
+          this.setupPipeline();
+        } catch (err) {
+          console.log("Err[create pipeline]:", err);
+        }
       }
     }).then(() => {
       if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
@@ -9500,7 +9571,7 @@ var MEMeshObj = class extends Materials {
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.mirrorBindGroupLayout,
+          this.material.type === "mirror" ? this.mirrorBindGroupLayout : null,
           this.waterBindGroupLayout
         ]
       }),
@@ -9540,7 +9611,7 @@ var MEMeshObj = class extends Materials {
         bindGroupLayouts: [
           this.bglForRender,
           this.uniformBufferBindGroupLayout,
-          this.mirrorBindGroupLayout,
+          this.material.type === "mirror" ? this.mirrorBindGroupLayout : null,
           this.waterBindGroupLayout
         ]
       }),
@@ -9584,49 +9655,6 @@ var MEMeshObj = class extends Materials {
       },
       primitive: this.primitive
     });
-    this.createSkyGradient = () => {
-      const size2 = [256, 128];
-      const data = new Uint8Array(size2[0] * size2[1] * 4);
-      for (let y2 = 0; y2 < size2[1]; y2++) {
-        for (let x2 = 0; x2 < size2[0]; x2++) {
-          const i = (y2 * size2[0] + x2) * 4;
-          const t = y2 / size2[1];
-          data[i + 0] = Math.floor(135 + 50 * t);
-          data[i + 1] = Math.floor(206 - 100 * t);
-          data[i + 2] = Math.floor(250 - 150 * t);
-          data[i + 3] = 255;
-        }
-      }
-      const tex = this.device.createTexture({
-        size: size2,
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-      });
-      this.device.queue.writeTexture(
-        { texture: tex },
-        data,
-        { bytesPerRow: size2[0] * 4 },
-        size2
-      );
-      return tex;
-    };
-    const envTexture = this.createSkyGradient();
-    this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.pipeline, this.mirrorBindGroupLayout, {
-      mirrorTint: [0.9, 0.95, 1],
-      // Slight cool tint
-      reflectivity: 0.25,
-      // 25% reflection blend
-      illuminateColor: [0.3, 0.7, 1],
-      // Soft cyan
-      illuminateStrength: 0.4,
-      // Gentle rim
-      illuminatePulse: 0,
-      // No pulse (static)
-      fresnelPower: 4,
-      // Medium-sharp edge
-      envLodBias: 1.5,
-      envTexture
-    }).bindGroup;
   };
   getMainPipeline = () => {
     return this.pipeline;
@@ -9703,12 +9731,15 @@ var MEMeshObj = class extends Materials {
     pass2.setBindGroup(0, this.sceneBindGroupForRender);
     pass2.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass2.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-    if (this.mirrorBindGroup) pass2.setBindGroup(2, this.mirrorBindGroup);
     pass2.setBindGroup(3, this.waterBindGroup);
     pass2.setVertexBuffer(0, this.vertexBuffer);
     pass2.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -9741,12 +9772,15 @@ var MEMeshObj = class extends Materials {
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        renderPass.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-    if (this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
@@ -9839,7 +9873,8 @@ var MEMeshObj = class extends Materials {
 
 // ../../../physics/matrix-ammo.js
 var MatrixAmmo = class {
-  constructor() {
+  constructor(options2 = { roundDimension: 100, gravity: 10 }) {
+    this.options = options2;
     scriptManager.LOAD(
       "ammojs/ammo.js",
       "ammojs",
@@ -9869,7 +9904,7 @@ var MatrixAmmo = class {
     var collisionConfiguration = new Ammo2.btDefaultCollisionConfiguration(), dispatcher = new Ammo2.btCollisionDispatcher(collisionConfiguration), overlappingPairCache = new Ammo2.btDbvtBroadphase(), solver = new Ammo2.btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new Ammo2.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
     this.dynamicsWorld.setGravity(new Ammo2.btVector3(0, -10, 0));
-    var groundShape = new Ammo2.btBoxShape(new Ammo2.btVector3(70, 1, 70)), groundTransform = new Ammo2.btTransform();
+    var groundShape = new Ammo2.btBoxShape(new Ammo2.btVector3(this.options.roundDimension, 1, this.options.roundDimension)), groundTransform = new Ammo2.btTransform();
     groundTransform.setIdentity();
     groundTransform.setOrigin(new Ammo2.btVector3(0, -4.45, 0));
     var mass = 0, isDynamic = mass !== 0, localInertia = new Ammo2.btVector3(0, 0, 0);
@@ -14655,11 +14690,17 @@ var BVHPlayer = class extends MEMeshObj {
       this.bvh.sharedState = { currentFrame: 0, timeAccumulator: 0 };
     }
     this.sharedState = this.bvh.sharedState;
+    this.animationIndex = this.glb.animationIndex;
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    this.nodeWorldMatrices = Array.from(
-      { length: this.glb.nodes.length },
-      () => mat4Impl.identity()
-    );
+    this.nodes = this.glb.nodes.map((n2) => ({
+      ...n2,
+      translation: n2.translation ? n2.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n2.rotation ? n2.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n2.scale ? n2.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n2.transform ? n2.transform.slice() : mat4Impl.identity(),
+      worldMatrix: mat4Impl.create()
+    }));
+    this._emptyChannels = [];
     this.startTime = performance.now() / 1e3;
     this.MAX_BONES = 100;
     this.skeleton = [];
@@ -14667,6 +14708,36 @@ var BVHPlayer = class extends MEMeshObj {
     this.inverseBindMatrices = [];
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._numFrames = this.getNumberOfFramesCurAni();
+    this._nodeChannels = /* @__PURE__ */ new Map();
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this._tempMat = mat4Impl.create();
+    this.buildNodeChannelMap();
+    this.buildSortedNodes();
+  }
+  buildSortedNodes() {
+    const sorted = [];
+    const queue = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].parent == null) queue.push(i);
+    }
+    while (queue.length) {
+      const idx = queue.shift();
+      sorted.push(idx);
+      const children = this.nodes[idx].children;
+      if (children) for (const c of children) queue.push(c);
+    }
+    this._sortedNodes = sorted;
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -14678,7 +14749,7 @@ var BVHPlayer = class extends MEMeshObj {
     this.skeleton = skin.joints.slice();
     for (let i = 0; i < skin.joints.length; i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       if (!jointNode.transform) {
         jointNode.transform = new Float32Array([
@@ -14707,10 +14778,10 @@ var BVHPlayer = class extends MEMeshObj {
         jointNode.scale = scale4;
       }
     }
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf("Armature") !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -14725,7 +14796,8 @@ var BVHPlayer = class extends MEMeshObj {
     this.inverseBindMatrices = invBindArray;
   }
   playAnimationByIndex = (animationIndex) => {
-    this.glb.animationIndex = animationIndex;
+    this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
   };
   playAnimationByName = (animationName) => {
     const animations = this.glb.glbJsonData.animations;
@@ -14736,45 +14808,70 @@ var BVHPlayer = class extends MEMeshObj {
       console.warn(`Animation '${animationName}' not found`);
       return;
     }
-    this.glb.animationIndex = index;
+    this.animationIndex = index;
+    this.buildNodeChannelMap();
   };
   getNumberOfFramesCurAni() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    let anim = this.glb.glbJsonData.animations[this.animationIndex];
     const sampler = anim.samplers[0];
     const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
     const numFrames = inputAccessor.count;
     return numFrames;
   }
+  composeTRS(t, q, s, out) {
+    const x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+    const x22 = x2 + x2, y22 = y2 + y2, z2 = z + z;
+    const xx = x2 * x22, xy = x2 * y22, xz = x2 * z2;
+    const yy = y2 * y22, yz = y2 * z2, zz = z * z2;
+    const wx = w * x22, wy = w * y22, wz = w * z2;
+    out[0] = (1 - (yy + zz)) * s[0];
+    out[1] = (xy + wz) * s[0];
+    out[2] = (xz - wy) * s[0];
+    out[3] = 0;
+    out[4] = (xy - wz) * s[1];
+    out[5] = (1 - (xx + zz)) * s[1];
+    out[6] = (yz + wx) * s[1];
+    out[7] = 0;
+    out[8] = (xz + wy) * s[2];
+    out[9] = (yz - wx) * s[2];
+    out[10] = (1 - (xx + yy)) * s[2];
+    out[11] = 0;
+    out[12] = t[0];
+    out[13] = t[1];
+    out[14] = t[2];
+    out[15] = 1;
+  }
   update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
-    }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices);
     }
   }
   getAccessorArray(glb, accessorIndex) {
+    if (!glb._accessorCache) glb._accessorCache = /* @__PURE__ */ new Map();
+    const cached = glb._accessorCache.get(accessorIndex);
+    if (cached) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
-    const bufferDef = glb.glbBinaryBuffer;
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+    let result2;
     switch (accessor.componentType) {
       case 5126:
-        return new Float32Array(slice);
+        result2 = new Float32Array(slice);
+        break;
       case 5123:
-        return new Uint16Array(slice);
+        result2 = new Uint16Array(slice);
+        break;
       case 5121:
-        return new Uint8Array(slice);
+        result2 = new Uint8Array(slice);
+        break;
       default:
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+    glb._accessorCache.set(accessorIndex, result2);
+    return result2;
   }
   getAccessorTypeForChannel(path2) {
     switch (path2) {
@@ -14956,9 +15053,15 @@ var BVHPlayer = class extends MEMeshObj {
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
     if (dot2 > 0.9995) {
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      const len2 = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len2;
+      const x2 = q0[0] + t * (q1[0] - q0[0]);
+      const y2 = q0[1] + t * (q1[1] - q0[1]);
+      const z = q0[2] + t * (q1[2] - q0[2]);
+      const w = q0[3] + t * (q1[3] - q0[3]);
+      const invLen = 1 / Math.sqrt(x2 * x2 + y2 * y2 + z * z + w * w);
+      out[0] = x2 * invLen;
+      out[1] = y2 * invLen;
+      out[2] = z * invLen;
+      out[3] = w * invLen;
       return;
     }
     const theta0 = Math.acos(dot2);
@@ -14967,18 +15070,14 @@ var BVHPlayer = class extends MEMeshObj {
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
+    out[0] = s0 * q0[0] + s1 * q1[0];
+    out[1] = s0 * q0[1] + s1 * q1[1];
+    out[2] = s0 * q0[2] + s1 * q1[2];
+    out[3] = s0 * q0[3] + s1 * q1[3];
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
-    const nodeChannels = /* @__PURE__ */ new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
-    }
+    const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node2 = nodes[nodeIndex];
@@ -14988,7 +15087,7 @@ var BVHPlayer = class extends MEMeshObj {
       if (!node2.originalTranslation) node2.originalTranslation = node2.translation.slice();
       if (!node2.originalRotation) node2.originalRotation = node2.rotation.slice();
       if (!node2.originalScale) node2.originalScale = node2.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
+      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for (const channel of channelsForNode) {
         const path2 = channel.target.path;
         const sampler = samplers[channel.sampler];
@@ -15001,47 +15100,40 @@ var BVHPlayer = class extends MEMeshObj {
         const t0 = inputTimes[i];
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(
-          Math.min(i + 1, inputTimes.length - 1) * numComponents,
-          Math.min(i + 2, inputTimes.length) * numComponents
-        );
+        const base0 = i * numComponents;
+        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
         if (path2 === "translation") {
-          for (let k = 0; k < 3; k++)
-            node2.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node2.translation[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path2 === "scale") {
-          for (let k = 0; k < 3; k++)
-            node2.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node2.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path2 === "rotation") {
-          this.slerp(v0, v1, factor, node2.rotation);
+          this.slerp(
+            outputArray.subarray(base0, base0 + 4),
+            outputArray.subarray(base1, base1 + 4),
+            factor,
+            node2.rotation
+          );
         }
       }
-      node2.transform = this.composeMatrix(node2.translation, node2.rotation, node2.scale);
+      this.composeTRS(node2.translation, node2.rotation, node2.scale, node2.transform);
     }
-    const computeWorld = (nodeIndex) => {
+    for (const nodeIndex of this._sortedNodes) {
       const node2 = nodes[nodeIndex];
-      if (!node2.worldMatrix) node2.worldMatrix = mat4Impl.create();
-      let parentWorld = node2.parent !== null ? nodes[node2.parent].worldMatrix : null;
+      const parentWorld = node2.parent != null ? nodes[node2.parent].worldMatrix : null;
       if (parentWorld) {
         mat4Impl.multiply(parentWorld, node2.transform, node2.worldMatrix);
       } else {
         mat4Impl.copy(node2.transform, node2.worldMatrix);
       }
-      mat4Impl.scale(node2.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node2.worldMatrix);
-      if (node2.children) {
-        for (const childIndex of node2.children) computeWorld(childIndex);
-      }
-    };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === void 0) {
-        computeWorld(i);
-      }
     }
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = mat4Impl.create();
-      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      boneMatrices.set(this._tempMat, j * 16);
     }
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
     return boneMatrices;
@@ -15287,7 +15379,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
 // RPG or any other usage [selected obj effect]
-@group(2) @binding(0) var<uniform> uSelected : f32;
+// @group(2) @binding(0) var<uniform> uSelected : f32;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -15455,10 +15547,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    if (uSelected > 0.5) {
-        let glowColor = vec3f(0.2, 0.8, 1.0);
-        finalColor += glowColor * fresnel * 0.1;
-    }
+    // if (uSelected > 0.5) {
+    //     let glowColor = vec3f(0.2, 0.8, 1.0);
+    //     finalColor += glowColor * fresnel * 0.1;
+    // }
 
     // let alpha = input.colorMult.a; // use alpha for blending
     // return vec4f(finalColor, alpha);
@@ -15468,12 +15560,297 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // return vec4f(1.0, 0.0, 0.0, 0.1);
 }`;
 
+// ../../../shaders/instanced/fragment.mirror.instanced.wgsl.js
+var fragmentMirrorWGSLInstanced = `
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+    alpha     : f32,
+};
+
+struct MirrorIlluminateParams {
+    mirrorTint         : vec3f,
+    reflectivity       : f32,
+    illuminateColor    : vec3f,
+    illuminateStrength : f32,
+    illuminatePulse    : f32,
+    fresnelPower       : f32,
+    envLodBias         : f32,
+    usePlanarReflection: f32,
+    baseColorMix       : f32,
+    _pad2              : vec3f,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene                   : Scene;
+@group(0) @binding(1) var          shadowMapArray          : texture_depth_2d_array;
+@group(0) @binding(2) var          shadowSampler           : sampler_comparison;
+@group(0) @binding(3) var          meshTexture             : texture_2d<f32>;
+@group(0) @binding(4) var          meshSampler             : sampler;
+@group(0) @binding(5) var<uniform> spotlights              : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var          metallicRoughnessTex    : texture_2d<f32>;
+@group(0) @binding(7) var          metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material                : MaterialPBR;
+
+@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+
+// \u2500\u2500 INSTANCED: adds colorMult at location(4) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+    @location(4) colorMult : vec4f,  // \u2190 instanced only
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor  = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic  = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha     = material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a      = roughness * roughness;
+    let a2     = a * a;
+    let NdotH  = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L     = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
+    let L     = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    let theta = dot(L, normalize(-light.direction));
+    let eps   = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+    let H     = normalize(L + V);
+    let alpha  = mat.roughness * mat.roughness;
+    let alpha2 = alpha * alpha;
+    let NdotH  = max(dot(N, H), 0.0);
+    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D      = alpha2 / (PI * denom * denom + 1e-5);
+    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV  = max(dot(N, V), 0.0);
+    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
+    let G      = Gv * Gl;
+    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f) -> vec3f {
+    let H       = normalize(lightDir + V);
+    let mirrorR = max(0.02, material.roughnessFactor * 0.15);
+    let D       = distributionGGX(N, H, mirrorR);
+    let G       = geometrySmith(N, V, lightDir, mirrorR);
+    let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
+    let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    let NdotL   = max(dot(N, lightDir), 0.0);
+    let NdotV   = max(dot(N, V), 0.0);
+    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    return spec * lightColor * NdotL * mirrorParams.reflectivity;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias   = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias        = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for (var i: u32 = 0u; i < 9u; i++) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+
+fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
+    let dir   = normalize(R);
+    let phi   = atan2(dir.x, dir.z);
+    let theta = acos(clamp(dir.y, -1.0, 1.0));
+    let u     = phi / (2.0 * PI) + 0.5;
+    let v     = theta / PI;
+    return vec2f(u, v);
+}
+
+fn reflectToPlanarUV(fragPos: vec3f, N: vec3f, V: vec3f) -> vec2f {
+    let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
+    let ndc     = clipPos.xy / clipPos.w;
+    return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+}
+
+fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32) -> vec3f {
+    var uv: vec2f;
+    if (mirrorParams.usePlanarReflection > 0.5) {
+        uv = reflectToPlanarUV(fragPos, N, V);
+    } else {
+        uv = reflectToEnvUV(R, fragPos);
+    }
+    return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
+}
+
+fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
+    // let NdotV = max(dot(N, V), 0.0);
+    // let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+    // let pulse = mix(0.3, 1.0,
+    //     (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+    // );
+    // let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+    // return mirrorParams.illuminateColor
+    //      * mirrorParams.illuminateStrength
+    //      * rim * pulse * shimmer;
+
+     let NdotV = max(dot(N, V), 0.0);
+    let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+    // NO scene.time \u2014 static version
+    return mirrorParams.illuminateColor
+         * mirrorParams.illuminateStrength
+         * rim;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+
+    let materialData = getPBRMaterial(input.uv);
+    if (materialData.alpha < 0.01) { discard; }
+
+    var lightContribution = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p        = sc.xyz / sc.w;
+        let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
+        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+        lightContribution += contrib * vis;
+        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+        lightContribution += mirrorSpec * coneFactor * vis;
+    }
+
+    let R = reflect(-V, N);
+    var envColor: vec3f;
+    if (mirrorParams.baseColorMix < 0.01) {
+        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
+    } else {
+        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+    }
+
+    let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
+                     mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+    let texColor   = textureSample(meshTexture, meshSampler, input.uv);
+    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+
+    finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
+    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+
+    finalColor *= input.colorMult.rgb;
+
+    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+    finalColor += illuminate;
+
+    let alpha = mix(materialData.alpha, 1.0, 0.5);
+    return vec4f(finalColor, alpha);
+}
+`;
+
 // ../../../engine/instanced/materials-instanced.js
 var MaterialsInstanced = class {
-  constructor(device2, material, glb) {
+  constructor(device2, material, glb, textureCache) {
     this.device = device2;
     this.glb = glb;
     this.material = material;
+    this.textureCache = textureCache;
     this.isVideo = false;
     this.videoIsReady = "NONE";
     this.compareSampler = this.device.createSampler({
@@ -15634,26 +16011,32 @@ var MaterialsInstanced = class {
       device.queue.writeBuffer(waterParamsBuffer, 0, data);
     };
   };
-  createMirrorIlluminateBindGroup(pipeline, mirrorBindGroupLayout, opts) {
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
     const defaults = {
-      mirrorTint: [1, 1, 1],
-      reflectivity: 0.9,
-      illuminateColor: [0.4, 0.8, 1],
-      illuminateStrength: 1,
-      illuminatePulse: 1.2,
+      mirrorTint: [0.9, 0.95, 1],
+      // Slight cool tint
+      reflectivity: 0.25,
+      // 25% reflection blend
+      illuminateColor: [0.3, 0.7, 1],
+      // Soft cyan
+      illuminateStrength: 0.4,
+      // Gentle rim
+      illuminatePulse: 0,
+      // No pulse (static)
       fresnelPower: 4,
-      envLodBias: 0
-      // envTexture omitted → 1×1 white dummy created below
+      // Medium-sharp edge
+      envLodBias: 1.5
+      // Slightly blurred env
     };
     const cfg = { ...defaults, ...opts };
-    const PARAMS_SIZE = 48;
+    const PARAMS_SIZE = 80;
     const paramsBuffer = this.device.createBuffer({
       label: "MirrorIlluminateParams",
       size: PARAMS_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.writeParamsMirror = (o2) => {
-      const data = new Float32Array(12);
+      const data = new Float32Array(16);
       const t = o2.mirrorTint ?? cfg.mirrorTint;
       data[0] = t[0];
       data[1] = t[1];
@@ -15667,11 +16050,24 @@ var MaterialsInstanced = class {
       data[8] = o2.illuminatePulse ?? cfg.illuminatePulse;
       data[9] = o2.fresnelPower ?? cfg.fresnelPower;
       data[10] = o2.envLodBias ?? cfg.envLodBias;
-      data[11] = 0;
+      data[11] = o2.usePlanarReflection ? 1 : 0;
+      data[12] = o2.baseColorMix ?? cfg.baseColorMix;
+      data[13] = 0;
+      data[14] = 0;
+      data[15] = 0;
       this.device.queue.writeBuffer(paramsBuffer, 0, data);
     };
     this.writeParamsMirror(cfg);
-    const envTexture = cfg.envTexture ?? (() => {
+    const samplerDummy = this.device.createSampler({
+      label: "EnvMap Sampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "clamp-to-edge"
+    });
+    console.warn("\u26A0\uFE0F envTexture provided, using white dummy!");
+    const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture : cfg.envTexture.texture ?? (() => {
+      console.warn("\u26A0\uFE0F No envTexture provided, using white dummy!");
       const tex = this.device.createTexture({
         label: "MirrorEnvDummy",
         size: [1, 1],
@@ -15680,27 +16076,19 @@ var MaterialsInstanced = class {
       });
       this.device.queue.writeTexture(
         { texture: tex },
-        new Uint8Array([255, 255, 255, 255]),
+        new Uint8Array([255, 0, 0, 255]),
         { bytesPerRow: 4 },
         [1, 1]
       );
       return tex;
     })();
-    const envSampler = this.device.createSampler({
-      label: "MirrorEnvSampler",
-      addressModeU: "repeat",
-      addressModeV: "clamp-to-edge",
-      magFilter: "linear",
-      minFilter: "linear",
-      mipmapFilter: "linear"
-    });
     const bindGroup = this.device.createBindGroup({
       label: "MirrorIlluminate BindGroup",
       layout: mirrorBindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: paramsBuffer } },
         { binding: 1, resource: envTexture.createView() },
-        { binding: 2, resource: envSampler }
+        { binding: 2, resource: cfg.envTexture.sampler ?? samplerDummy }
       ]
     });
     return {
@@ -15743,6 +16131,8 @@ var MaterialsInstanced = class {
       return fragmentWaterWGSL;
     } else if (this.material.type == "graph") {
       return this.material.fromGraph;
+    } else if (this.material.type === "mirror") {
+      return fragmentMirrorWGSLInstanced;
     }
     console.warn("Unknown material type use standard:", this.material?.type);
     return fragmentWGSL;
@@ -15795,6 +16185,14 @@ var MaterialsInstanced = class {
       );
       resolve();
     });
+  }
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path2 = texturesPaths[1] || texturesPaths[0];
+    const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
+    return {
+      texture,
+      sampler
+    };
   }
   async loadVideoTexture(arg) {
     this.videoIsReady = "MAYBE";
@@ -17264,7 +17662,7 @@ var GenGeoTexture2 = class {
 // ../../../engine/instanced/mesh-obj-instances.js
 var MEMeshObjInstances = class extends MaterialsInstanced {
   constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device2, o2.material, _glbFile);
+    super(device2, o2.material, _glbFile, o2.textureCache);
     if (typeof o2.name === "undefined") o2.name = genName(3);
     if (typeof o2.raycast === "undefined") {
       this.raycast = { enabled: false, radius: 2 };
@@ -17289,7 +17687,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
       o2.material.useBlend = false;
     }
+    if (o2.envMapParams !== null) {
+      this.envMapParams = o2.envMapParams;
+    }
     this.material = o2.material;
+    this.time = 0;
+    this.deltaTimeAdapter = 10;
+    this._sceneData = new Float32Array(48);
     this.mesh = o2.mesh;
     if (_glbFile != null) {
       if (typeof this.mesh == "undefined") {
@@ -17613,13 +18017,14 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         // typical for shadow passes
         frontFace: "ccw"
       };
-      this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.pipeline, this.mirrorBindGroupLayout, {
-        reflectivity: 0.85,
-        illuminateColor: [0.3, 0.9, 1],
-        illuminatePulse: 1.5,
-        fresnelPower: 5
-        // envTexture: yourHDRITexture, // optional
-      }).bindGroup;
+      this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
+        label: "mirrorBindGroupLayout",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: 80 } },
+          { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float", viewDimension: "2d", multisampled: false } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
+        ]
+      });
       this.createLayoutForRender();
       this.instanceTargets = [];
       this.lerpSpeed = 0.05;
@@ -17990,20 +18395,25 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(48);
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        sceneData.set(camVP, 16);
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
-        sceneData.set([this.time, dt, 0, 0], 44);
-        device2.queue.writeBuffer(
-          this.sceneUniformBuffer,
-          0,
-          sceneData.buffer,
-          sceneData.byteOffset,
-          sceneData.byteLength
-        );
+        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        this._sceneData.set(camVP, 16);
+        this._sceneData[32] = camera.position[0];
+        this._sceneData[33] = camera.position[1];
+        this._sceneData[34] = camera.position[2];
+        this._sceneData[35] = 0;
+        this._sceneData[36] = spotLight.position[0];
+        this._sceneData[37] = spotLight.position[1];
+        this._sceneData[38] = spotLight.position[2];
+        this._sceneData[39] = 0;
+        this._sceneData[40] = this.globalAmbient[0];
+        this._sceneData[41] = this.globalAmbient[1];
+        this._sceneData[42] = this.globalAmbient[2];
+        this._sceneData[43] = 0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        this._sceneData[46] = 0;
+        this._sceneData[47] = 0;
+        device2.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos2, useScale = false) => {
         let modelMatrix = mat4Impl.identity();
@@ -18024,10 +18434,22 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         return modelMatrix;
       };
       this.done = true;
-      try {
-        this.setupPipeline();
-      } catch (err) {
-        console.log(`Err in create pipeline ${err}`, LOG_WARN);
+      if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
+        this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
+          this.envMapParams.envTexture = envTexture;
+          this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          try {
+            this.setupPipeline();
+          } catch (err) {
+            console.log("Err[create pipeline]:", err);
+          }
+        });
+      } else {
+        try {
+          this.setupPipeline();
+        } catch (err) {
+          console.log("Err[create pipeline]:", err);
+        }
       }
     }).then(() => {
       if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
@@ -18043,7 +18465,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       bindGroupLayouts: [
         this.bglForRender,
         this.uniformBufferBindGroupLayoutInstanced,
-        this.mirrorBindGroupLayout
+        this.material.type === "mirror" ? this.mirrorBindGroupLayout : null
       ]
     });
     const vertexModule = this.device.createShaderModule({
@@ -18177,12 +18599,15 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       pass2.setBindGroup(1, this.modelBindGroup);
     }
     if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass2.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          pass2.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-    if (this.mirrorBindGroup) pass2.setBindGroup(2, this.mirrorBindGroup);
     pass2.setBindGroup(3, this.waterBindGroup);
     pass2.setVertexBuffer(0, this.vertexBuffer);
     pass2.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -18220,12 +18645,15 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      if (this.material.type === "mirror" && this.mirrorBindGroup) {
+        pass.setBindGroup(2, this.mirrorBindGroup);
+      } else if (this.isVideo == false) {
+        let bindIndex = 2;
+        for (const light of lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        }
       }
     }
-    if (this.mirrorBindGroup) pass.setBindGroup(2, this.mirrorBindGroup);
     pass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
@@ -18297,19 +18725,57 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         animationFinished: false
       };
     }
-    this.sharedState = this.bvh.sharedState;
-    this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    this.nodeWorldMatrices = Array.from(
-      { length: this.glb.nodes.length },
-      () => mat4Impl.identity()
-    );
-    this.startTime = performance.now() / 1e3;
+    this._emptyChannels = [];
     this.MAX_BONES = 100;
+    this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this._nodeChannels = /* @__PURE__ */ new Map();
+    this.sharedState = this.bvh.sharedState;
+    this.animationIndex = this.glb.animationIndex;
+    this.nodes = this.glb.nodes.map((n2) => ({
+      ...n2,
+      translation: n2.translation ? n2.translation.slice() : new Float32Array([0, 0, 0]),
+      rotation: n2.rotation ? n2.rotation.slice() : new Float32Array([0, 0, 0, 1]),
+      scale: n2.scale ? n2.scale.slice() : new Float32Array([1, 1, 1]),
+      transform: n2.transform ? n2.transform.slice() : mat4Impl.identity(),
+      worldMatrix: mat4Impl.create()
+    }));
+    this._composeMat = mat4Impl.create();
+    this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
+    this.startTime = performance.now() / 1e3;
     this.skeleton = [];
     this.animationSpeed = 1e3;
     this.inverseBindMatrices = [];
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this._numFrames = this.getNumberOfFramesCurAni();
+    this._finalMat = new Float32Array(this.MAX_BONES * 16);
+    this._tempMat = mat4Impl.create();
+    this.buildNodeChannelMap();
+    this.buildSortedNodes();
+  }
+  buildSortedNodes() {
+    const sorted = [];
+    const queue = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].parent == null) queue.push(i);
+    }
+    while (queue.length) {
+      const idx = queue.shift();
+      sorted.push(idx);
+      const children = this.nodes[idx].children;
+      if (children) for (const c of children) queue.push(c);
+    }
+    this._sortedNodes = sorted;
+  }
+  buildNodeChannelMap() {
+    this._nodeChannels.clear();
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+    for (const channel of anim.channels) {
+      if (!this._nodeChannels.has(channel.target.node)) {
+        this._nodeChannels.set(channel.target.node, []);
+      }
+      this._nodeChannels.get(channel.target.node).push(channel);
+    }
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -18321,7 +18787,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     this.skeleton = skin.joints.slice();
     for (let i = 0; i < skin.joints.length; i++) {
       const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
+      const jointNode = this.nodes[jointIndex];
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
       if (!jointNode.transform) {
         jointNode.transform = new Float32Array([
@@ -18350,10 +18816,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         jointNode.scale = scale4;
       }
     }
-    this.glb.animationIndex = 0;
+    this.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf("Armature") !== -1) {
-        this.glb.animationIndex = j;
+        this.animationIndex = j;
       }
     }
   }
@@ -18368,7 +18834,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     this.inverseBindMatrices = invBindArray;
   }
   getNumberOfFramesCurAni() {
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const anim = this.glb.glbJsonData.animations[this.animationIndex];
     let maxFrames = 0;
     if (typeof anim == "undefined") {
       console.log("[anim undefined]", this.name);
@@ -18390,22 +18856,55 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     return maxTime;
   }
-  update(deltaTime) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
+  playAnimationByIndex = (animationIndex) => {
+    this.animationIndex = animationIndex;
+    this.buildNodeChannelMap();
+  };
+  playAnimationByName = (animationName) => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(
+      (anim) => anim.name === animationName
+    );
+    if (index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
     }
-    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex]);
+    this.animationIndex = index;
+    this.buildNodeChannelMap();
+  };
+  composeTRS(t, q, s, out) {
+    const x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+    const x22 = x2 + x2, y22 = y2 + y2, z2 = z + z;
+    const xx = x2 * x22, xy = x2 * y22, xz = x2 * z2;
+    const yy = y2 * y22, yz = y2 * z2, zz = z * z2;
+    const wx = w * x22, wy = w * y22, wz = w * z2;
+    out[0] = (1 - (yy + zz)) * s[0];
+    out[1] = (xy + wz) * s[0];
+    out[2] = (xz - wy) * s[0];
+    out[3] = 0;
+    out[4] = (xy - wz) * s[1];
+    out[5] = (1 - (xx + zz)) * s[1];
+    out[6] = (yz + wx) * s[1];
+    out[7] = 0;
+    out[8] = (xz + wy) * s[2];
+    out[9] = (yz - wx) * s[2];
+    out[10] = (1 - (xx + yy)) * s[2];
+    out[11] = 0;
+    out[12] = t[0];
+    out[13] = t[1];
+    out[14] = t[2];
+    out[15] = 1;
+  }
+  update(deltaTime) {
+    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex]);
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if (this.glb.animationIndex == null) this.glb.animationIndex = 0;
+        if (this.animationIndex == null) this.animationIndex = 0;
         dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+            animationName: this.glb.glbJsonData.animations[this.animationIndex].name
           }
         }));
       }, inTime * 1e3);
@@ -18415,43 +18914,49 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
-          const boneMatrices = new Float32Array(this.MAX_BONES * 16);
           this.updateSingleBoneCubeAnimation(
-            this.glb.glbJsonData.animations[this.glb.animationIndex],
-            this.glb.nodes,
+            this.glb.glbJsonData.animations[this.animationIndex],
+            this.nodes,
             // ← same nodes, no clone
             currentTime,
             // ← only this changes per instance
-            boneMatrices,
+            this._boneMatrices,
             i
             // ← writes to correct buffer slot
           );
         }
       } else {
         const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 0);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices, 1);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 1);
       }
     }
   }
   getAccessorArray(glb, accessorIndex) {
+    if (!glb._accessorCache) glb._accessorCache = /* @__PURE__ */ new Map();
+    const cached = glb._accessorCache.get(accessorIndex);
+    if (cached) return cached;
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
-    const bufferDef = glb.glbBinaryBuffer;
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    const slice = this.getBufferSlice(glb.glbBinaryBuffer, byteOffset, byteLength);
+    let result2;
     switch (accessor.componentType) {
       case 5126:
-        return new Float32Array(slice);
+        result2 = new Float32Array(slice);
+        break;
       case 5123:
-        return new Uint16Array(slice);
+        result2 = new Uint16Array(slice);
+        break;
       case 5121:
-        return new Uint8Array(slice);
+        result2 = new Uint8Array(slice);
+        break;
       default:
         throw new Error("Unsupported componentType: " + accessor.componentType);
     }
+    glb._accessorCache.set(accessorIndex, result2);
+    return result2;
   }
   getAccessorTypeForChannel(path2) {
     switch (path2) {
@@ -18524,7 +19029,6 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     throw new Error("No binary data found in GLB buffer[0]");
   }
-  // --- helpers
   lerpVec(a, b, t) {
     return a.map((v, i) => v * (1 - t) + b[i] * t);
   }
@@ -18632,9 +19136,15 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
     if (dot2 > 0.9995) {
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      const len2 = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len2;
+      const x2 = q0[0] + t * (q1[0] - q0[0]);
+      const y2 = q0[1] + t * (q1[1] - q0[1]);
+      const z = q0[2] + t * (q1[2] - q0[2]);
+      const w = q0[3] + t * (q1[3] - q0[3]);
+      const invLen = 1 / Math.sqrt(x2 * x2 + y2 * y2 + z * z + w * w);
+      out[0] = x2 * invLen;
+      out[1] = y2 * invLen;
+      out[2] = z * invLen;
+      out[3] = w * invLen;
       return;
     }
     const theta0 = Math.acos(dot2);
@@ -18643,18 +19153,14 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
+    out[0] = s0 * q0[0] + s1 * q1[0];
+    out[1] = s0 * q0[1] + s1 * q1[1];
+    out[2] = s0 * q0[2] + s1 * q1[2];
+    out[3] = s0 * q0[3] + s1 * q1[3];
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
-    const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
-    const nodeChannels = /* @__PURE__ */ new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
-    }
+    const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node2 = nodes[nodeIndex];
@@ -18664,7 +19170,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       if (!node2.originalTranslation) node2.originalTranslation = node2.translation.slice();
       if (!node2.originalRotation) node2.originalRotation = node2.rotation.slice();
       if (!node2.originalScale) node2.originalScale = node2.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
+      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for (const channel of channelsForNode) {
         const path2 = channel.target.path;
         const sampler = samplers[channel.sampler];
@@ -18677,47 +19183,40 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         const t0 = inputTimes[i];
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(
-          Math.min(i + 1, inputTimes.length - 1) * numComponents,
-          Math.min(i + 2, inputTimes.length) * numComponents
-        );
+        const base0 = i * numComponents;
+        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
         if (path2 === "translation") {
-          for (let k = 0; k < 3; k++)
-            node2.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node2.translation[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path2 === "scale") {
-          for (let k = 0; k < 3; k++)
-            node2.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+          for (let k = 0; k < 3; k++) {
+            node2.scale[k] = outputArray[base0 + k] * (1 - factor) + outputArray[base1 + k] * factor;
+          }
         } else if (path2 === "rotation") {
-          this.slerp(v0, v1, factor, node2.rotation);
+          this.slerp(
+            outputArray.subarray(base0, base0 + 4),
+            outputArray.subarray(base1, base1 + 4),
+            factor,
+            node2.rotation
+          );
         }
       }
-      node2.transform = this.composeMatrix(node2.translation, node2.rotation, node2.scale);
+      this.composeTRS(node2.translation, node2.rotation, node2.scale, node2.transform);
     }
-    const computeWorld = (nodeIndex) => {
+    for (const nodeIndex of this._sortedNodes) {
       const node2 = nodes[nodeIndex];
-      if (!node2.worldMatrix) node2.worldMatrix = mat4Impl.create();
-      let parentWorld = node2.parent !== null ? nodes[node2.parent].worldMatrix : null;
+      const parentWorld = node2.parent != null ? nodes[node2.parent].worldMatrix : null;
       if (parentWorld) {
         mat4Impl.multiply(parentWorld, node2.transform, node2.worldMatrix);
       } else {
         mat4Impl.copy(node2.transform, node2.worldMatrix);
       }
-      mat4Impl.scale(node2.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node2.worldMatrix);
-      if (node2.children) {
-        for (const childIndex of node2.children) computeWorld(childIndex);
-      }
-    };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === void 0) {
-        computeWorld(i);
-      }
     }
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = mat4Impl.create();
-      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
+      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      boneMatrices.set(this._tempMat, j * 16);
     }
     const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
@@ -28697,19 +29196,38 @@ function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2,
     downloadMeshes(inputSphere, handler, { scale: scale4 });
   }
 }
-function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
+function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
-  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+  const inputCube = { mesh: useMeshPath };
   function handler(m) {
     let index = 0;
-    const RAY = { enabled: !!raycast2, radius: 1 };
+    const RAY = { enabled: raycast2, radius: 1 };
     for (let y2 = 0; y2 < height; y2++) {
       for (let x2 = 0; x2 < width; x2++) {
         const cubeName2 = `${name2}_${index}`;
         setTimeout(() => {
           engine.addMeshObj({
             material: { type: material },
+            envMapParams: material == "mirror" ? {
+              baseColorMix: 0.5,
+              // normal mix
+              mirrorTint: [0.9, 0.95, 1],
+              // Slight cool tint
+              reflectivity: 0.95,
+              // 25% reflection blend
+              illuminateColor: [0.3, 0.7, 1],
+              // Soft cyan
+              illuminateStrength: 0.4,
+              // Gentle rim
+              illuminatePulse: 0.01,
+              // No pulse (static)
+              fresnelPower: 2,
+              // Medium-sharp edge
+              envLodBias: 2.5,
+              usePlanarReflection: false
+              // ✅ Env map mode
+            } : null,
             position: {
               x: pos2.x + x2 * spacing2,
               y: pos2.y + y2 * spacing2 - 2.8,
@@ -28717,7 +29235,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
             },
             rotation: rot2,
             rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: [texturePath2],
+            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
             name: cubeName2,
             mesh: m.mesh,
             physics: {
@@ -28908,12 +29426,27 @@ var TextureCache = class {
     this.device = device2;
     this.cache = /* @__PURE__ */ new Map();
   }
-  async get(path2, format) {
+  async get(path2, format, isEnvMap = false) {
     if (this.cache.has(path2)) {
       return this.cache.get(path2);
     }
-    const promise = this.#load(path2, format);
-    this.cache.set(path2, promise);
+    let promise;
+    if (isEnvMap == true) {
+      promise = this.#loadEnvMap(path2, format);
+      this.cache.set(path2, promise);
+    } else {
+      promise = this.#load(path2, format);
+      this.cache.set(path2, promise);
+    }
+    return promise;
+  }
+  async loadEnvMap(path2) {
+    const envKey = `env:${path2}`;
+    if (this.cache.has(envKey)) {
+      return this.cache.get(envKey);
+    }
+    const promise = this.#loadEnvMap(path2);
+    this.cache.set(envKey, promise);
     return promise;
   }
   async #load(path2, format) {
@@ -28936,6 +29469,39 @@ var TextureCache = class {
       addressModeU: "repeat",
       addressModeV: "repeat",
       addressModeW: "repeat"
+    });
+    return { texture, sampler };
+  }
+  async #loadEnvMap(path2) {
+    const response = await fetch(path2);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+    const width = imageBitmap.width;
+    const height = imageBitmap.height;
+    const mipLevelCount = 1;
+    const texture = this.device.createTexture({
+      label: `EnvMap: ${path2}`,
+      size: [width, height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      mipLevelCount
+      // ✅ Enable mipmaps for smooth sampling
+    });
+    this.device.queue.copyExternalImageToTexture(
+      { source: imageBitmap },
+      { texture },
+      [width, height]
+    );
+    const sampler = this.device.createSampler({
+      label: "EnvMap Sampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      mipmapFilter: "linear",
+      // ✅ Smooth between mip levels
+      addressModeU: "repeat",
+      // ✅ Wrap horizontally (360°)
+      addressModeV: "clamp-to-edge"
+      // ✅ Clamp at poles (top/bottom)
     });
     return { texture, sampler };
   }
@@ -29451,6 +30017,8 @@ var MatrixEngineWGPU = class {
     if (typeof options2.useContex == "undefined") {
       options2.useContex = "webgpu";
     }
+    this._viewProjMatrix = mat4Impl.create();
+    this._invViewProj = mat4Impl.create();
     if (typeof options2.dontUsePhysics == "undefined") {
       this.matrixAmmo = new MatrixAmmo();
     }
@@ -29542,9 +30110,6 @@ var MatrixEngineWGPU = class {
     } else if (this.options.alphaMode == "opaque") {
       this.context = canvas.getContext("webgpu", { alphaMode: "premultiplied" });
     }
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,
@@ -29703,6 +30268,20 @@ var MatrixEngineWGPU = class {
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.depthTextureViewTrail = depthTexture.createView();
+    this._transPassDesc = {
+      colorAttachments: [{
+        view: this.sceneTextureView,
+        loadOp: "load",
+        storeOp: "store",
+        clearValue: { r: 0, g: 1, b: 0, a: 1 }
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        depthLoadOp: "load",
+        depthStoreOp: "store",
+        depthClearValue: 1
+      }
+    };
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -29809,6 +30388,9 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o2.useScale === "undefined") {
       o2.useScale = true;
+    }
+    if (typeof o2.envMapParams === "undefined") {
+      o2.envMapParams = null;
     }
     o2.entityArgPass = this.entityArgPass;
     o2.cameras = this.cameras;
@@ -30044,7 +30626,11 @@ var MatrixEngineWGPU = class {
       let pass2 = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend === true) continue;
-        pass2.setPipeline(mesh.pipeline);
+        if (mesh.pipeline) {
+          pass2.setPipeline(mesh.pipeline);
+        } else {
+          pass2.setPipeline(this.mainRenderBundle[0].pipeline);
+        }
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
@@ -30080,21 +30666,7 @@ var MatrixEngineWGPU = class {
       }
       pass2.end();
       if (this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: "load",
-          storeOp: "store",
-          clearValue: { r: 0, g: 1, b: 0, a: 1 }
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: "load",
-          depthStoreOp: "store",
-          depthClearValue: 1
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = mat4Impl.multiply(
         this.cameras[this.mainCameraParams.type].projectionMatrix,
         this.cameras[this.mainCameraParams.type].view,
@@ -30112,9 +30684,8 @@ var MatrixEngineWGPU = class {
       transPass.end();
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
-        const invViewProj = mat4Impl.invert(
-          mat4Impl.multiply(cam.projectionMatrix, cam.view, mat4Impl.identity())
-        );
+        mat4Impl.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+        mat4Impl.invert(this._viewProjMatrix, this._invViewProj);
         const light = this.lightContainer[0];
         this.volumetricPass.render(
           commandEncoder,
@@ -30304,6 +30875,10 @@ var MatrixEngineWGPU = class {
     if (typeof o2.useScale === "undefined") {
       o2.useScale = true;
     }
+    if (typeof o2.envMapParams === "undefined") {
+      o2.envMapParams = null;
+    }
+    o2.textureCache = this.textureCache;
     o2.entityArgPass = this.entityArgPass;
     o2.cameras = this.cameras;
     if (typeof o2.physics === "undefined") {

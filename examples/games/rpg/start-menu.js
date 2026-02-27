@@ -499,7 +499,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       var glbFile01 = await fetch(heros[x].path).then(
         res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
       forestOfHollowBloodStartSceen.addGlbObjInctance({
-        material: (x == 2 ? {type: 'power', useTextureFromGlb: true} : {type: 'standard', useTextureFromGlb: true}),
+        material: (x == 2 || x == 1 ? {type: 'pong', useTextureFromGlb: true} : {type: 'standard', useTextureFromGlb: true}),
         scale: [20, 20, 20],
         position: {x: 0 + x * 50, y: 0, z: -10},
         name: heros[x].name,
@@ -519,7 +519,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
 
     setTimeout(() => {
-
       forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
       app.cameras.WASD.pitch = -0.13;
       app.cameras.WASD.yaw = 0;
@@ -556,9 +555,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           })
         }
       }
-      app.lightContainer[0].position[2] = 10;
-      app.lightContainer[0].position[1] = 50;
-      app.lightContainer[0].intensity = 1.4;
     }, 4000);
   }
   loadHeros();
@@ -566,16 +562,25 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   // })
   forestOfHollowBloodStartSceen.addLight();
 
+  app.lightContainer[0].position[2] = 1;
+  app.lightContainer[0].position[1] = 50;
+  app.lightContainer[0].position[0] = 0;
+  app.lightContainer[0].target = [0 , 0 , -10]
+  app.lightContainer[0].intensity = 40;
+
+  app.activateBloomEffect();
+  app.bloomPass.setBlurRadius(3);
+
   function createHUDMenu() {
 
-    forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
-      path: "./res/icons/seq1/",
-      frameCount: 7,
-      speed: 80,
-      loop: true
-    })
+    // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
+    //   path: "./res/icons/seq1/",
+    //   frameCount: 7,
+    //   speed: 80,
+    //   loop: true
+    // })
 
-    forestOfHollowBloodStartSceen.animatedCursor.start();
+    // forestOfHollowBloodStartSceen.animatedCursor.start();
     // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
 
     document.addEventListener("contextmenu", event => event.preventDefault());
@@ -640,6 +645,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50)
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
+            // app.lightContainer[0].position[0] = heroBodie.position.x;
+
           }
 
           if(heroBodie.effects.circlePlane) {
@@ -710,6 +717,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50)
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
+            // app.lightContainer[0].position[0] = heroBodie.position.x - 20;
           };
 
           if(heroBodie.effects.circlePlane) {

@@ -216,7 +216,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   addEventListener('self-msg-data', (e) => {
     let d = JSON.parse(e.detail.data);
-    console.log('<data-receive self>', d);
+    // console.log('<data-receive self>', d);
     if(d.type == "damage") {
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName);
       let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
@@ -234,7 +234,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       }
     } else if(d.type == "damage-creep") {
       if(app.player.data.team == d.defenderTeam) {
-        console.log('<data-receive damage local creep but from self :', d.defenderTeam);
+        // console.log('<data-receive damage local creep but from self :', d.defenderTeam);
         // can be both team
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.localHero.friendlyLocal.creeps[getCreepByIndex]
@@ -253,7 +253,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 500)
         }
       } else {
-        console.log('<data-receive damage enemy creep but from self :', d.defenderTeam);
+        // console.log('<data-receive damage enemy creep but from self :', d.defenderTeam);
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.enemies.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
@@ -268,8 +268,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 700);
         }
       }
-    } else if (d.type == "damage-tron") {
-     if(app.player.data.team == d.defenderTeam) {
+    } else if(d.type == "damage-tron") {
+      if(app.player.data.team == d.defenderTeam) {
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
@@ -439,6 +439,11 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     app.cameras.RPG.movementSpeed = 100;
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;
+
+    // diiff heros can MAGIC CASES LEVEL
+    if(app.localHero.name == "MariaSword") {
+      app.RPG.distanceForLongAction = 150;
+    }
 
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
   });

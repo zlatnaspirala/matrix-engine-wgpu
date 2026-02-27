@@ -1,4 +1,3 @@
-import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_FUNNY, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
 import {startUpPositions} from "./static";
@@ -28,7 +27,7 @@ export class Creep extends Hero {
   loadCreep = async (o) => {
     this.o = o;
     try {
-      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+      // var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
@@ -40,9 +39,8 @@ export class Creep extends Hero {
           enabled: true,
           energyBar: true
         }
-      }, null, glbFile01);
+      }, null, o.data);
       // make small async - cooking glbs files
-
       this.asyncHelper(this.o).then(() => {
         console.log('good')
       }).catch(() => {
@@ -65,7 +63,7 @@ export class Creep extends Hero {
         }
         this.heroe_bodies.forEach((subMesh, idx) => {
           subMesh.position.thrust = this.moveSpeed;
-          subMesh.glb.animationIndex = 0;
+          subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             // console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
@@ -118,35 +116,35 @@ export class Creep extends Hero {
 
   setWalk() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk)
       console.info(`%chero walk`, LOG_MATRIX)
     });
   }
 
   setSalute() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute)
       console.info(`%chero salute`, LOG_MATRIX)
     });
   }
 
   setDead() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead)
       console.info(`%chero dead`, LOG_MATRIX)
     });
   }
 
   setIdle() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle)
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
 
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack)
       console.info(`%chero attack`, LOG_MATRIX)
     });
   }
