@@ -9,7 +9,7 @@
  * for `cacheVersion`.
  * @param cacheVersion
  */
-var cacheVersion = 24;
+var cacheVersion = 26;
 var prefix = 'matrix-engine-fohb';
 var cacheName = prefix + cacheVersion;
 

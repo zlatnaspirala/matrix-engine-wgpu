@@ -230,20 +230,15 @@ class Character extends _hero.Hero {
           if (id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-
-            // test   fot magic
+            // test fot magic
             // subMesh.updateMaxInstances(5);
             // subMesh.updateInstances(5);
             // subMesh.trailAnimation.enabled = true;
-
-            console.log("on player cast ***************************************");
-            subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
-            this.core.autoUpdate.push(subMesh.fireballSystem);
-          } else if (id == 1) {
-            // check by hero TEST
-            if (subMesh.name.includes('Maria') == true) {
-              // console.log("on player cast MARIA SWORD ", subMesh.name);
-              // subMesh.playAnimationByIndex = array[id-1].playAnimationByIndex;
+            if (app.localHero.name == "MariaSword") {
+              console.log("Cast only for long distance attackers...");
+              subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
+              subMesh.fireballSystem.fireballMesh.effects.flameEmitter.recreateVertexDataRND(10);
+              this.core.autoUpdate.push(subMesh.fireballSystem);
             }
           }
 
@@ -430,7 +425,10 @@ class Character extends _hero.Hero {
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
     // test fireball
-    this.heroe_bodies[0].fireballSystem.spawn(this.heroe_bodies[0].position, this.heroFocusAttackOn);
+    // or bind from exstern becouse can be massive in future !!!!!
+    if (this.core.RPG.distanceForAction < this.core.RPG.distanceForLongAction) {
+      this.heroe_bodies[0].fireballSystem.spawn(this.heroe_bodies[0].position, this.heroFocusAttackOn);
+    }
   }
   setWalkCreep(creepIndex) {
     console.info(`%cfriendly setWalkCreep!`, _utils.LOG_MATRIX);
@@ -733,7 +731,6 @@ class Character extends _hero.Hero {
     });
     addEventListener('onMouseTarget', e => {
       if (this.core.RPG.selected.includes(this.heroe_bodies[0])) {
-        // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
         if (e.detail.type == "attach") {
           this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [1, 0, 0, 0.9];
@@ -774,11 +771,12 @@ class Controller {
   ignoreList = ['ground', 'mouseTarget_Circle'];
   selected = [];
   nav = null;
-  // ONLY LOCAL
   heroe_bodies = null;
 
+  // Must be same init !!!
   // incorporate with automated 'close-distance'
   distanceForAction = 36;
+  distanceForLongAction = 36;
   distanceForLongAction = 36;
   constructor(core) {
     this.core = core;
@@ -818,7 +816,7 @@ class Controller {
         }, 100);
       }
     });
-    (0, _raycast.addRaycastsListener)(undefined, 'click');
+    (0, _raycast.addRaycastsAABBListener)(undefined, 'click');
     this.canvas.addEventListener("ray.hit.event", e => {
       const {
         hitObject,
@@ -873,13 +871,14 @@ class Controller {
         // after all check is it eneimy
         this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
-        // 37 LIMIT FOR ATTACH
         // cases for magic ->>>>>>>>>>>>>>>>>>>>>
-        if (this.core.localHero.name == 'MariaSword') {
+        // distance attack
+        if (testDistance < this.distanceForLongAction) {
           console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]");
           this.core.localHero.setAttack(e.detail.hitObject);
           return;
         }
+        // close contact
         if (testDistance < this.distanceForAction) {
           console.log("this.core.localHero.setAttack [e.detail.hitObject]");
           this.core.localHero.setAttack(e.detail.hitObject);
