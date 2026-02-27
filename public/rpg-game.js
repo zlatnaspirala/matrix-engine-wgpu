@@ -123,18 +123,16 @@ class Character extends _hero.Hero {
       data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
     setTimeout(() => {
-      app.localHero.setAllCreepsAtStartPos().then(() => {
-        //
-      }).catch(() => {
+      app.localHero.setAllCreepsAtStartPos().then(() => {}).catch(() => {
         setTimeout(() => {
           app.localHero.setAllCreepsAtStartPos().then(() => {
             console.log('passed in 3 creep load');
           }).catch(() => {
             console.log('FAILD setAllCreepsAtStartPos');
           });
-        }, 5000);
+        }, 2000);
       });
-    }, 5000);
+    }, 9000);
   }
   async loadLocalHero(p) {
     try {
@@ -309,26 +307,23 @@ class Character extends _hero.Hero {
     return new Promise((resolve, reject) => {
       try {
         this.friendlyLocal.creeps.forEach(subMesh_ => {
-          if (typeof subMesh_.heroe_bodies === 'undefined') {
+          if (typeof subMesh_.heroe_bodies === 'undefined' || subMesh_.heroe_bodies.length == 0) {
             reject();
             return;
           }
         });
         // console.info(`%c promise pass setAllCreepsAtStartPos...`, LOG_MATRIX)
-        this.friendlyLocal.creeps.forEach((subMesh_, id) => {
-          let subMesh = subMesh_.heroe_bodies[0];
-          subMesh.position.thrust = subMesh_.moveSpeed;
-          subMesh.animationIndex = 0;
-          // adapt manual if blender is not setup
+        this.friendlyLocal.creeps.forEach((creep, id) => {
+          let subMesh = creep.heroe_bodies[0];
+          subMesh.position.thrust = creep.moveSpeed;
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
             if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
             if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
             if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
             if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
           });
-          // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+          subMesh.sharedState.emitAnimationEvent = true;
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
@@ -337,6 +332,7 @@ class Character extends _hero.Hero {
         resolve();
       } catch (err) {
         console.info('err in: ', err);
+        reject();
       }
     });
   };
@@ -30941,21 +30937,21 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
-    if (!this.bvh.sharedState) {
-      this.bvh.sharedState = {
-        emitAnimationEvent: false,
-        animationStarted: false,
-        currentFrame: 0,
-        timeAccumulator: 0,
-        animationFinished: false
-      };
-    }
+    // if(!this.bvh.sharedState) {
+    this.sharedState = {
+      emitAnimationEvent: false,
+      animationStarted: false,
+      currentFrame: 0,
+      timeAccumulator: 0,
+      animationFinished: false
+    };
+    // }
+
     this._emptyChannels = [];
     this.MAX_BONES = 100;
     //cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
-    this.sharedState = this.bvh.sharedState;
     this.animationIndex = this.glb.animationIndex;
     this.nodes = this.glb.nodes.map(n => ({
       ...n,
