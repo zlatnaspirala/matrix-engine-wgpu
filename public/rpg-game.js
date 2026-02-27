@@ -63,7 +63,6 @@ class Character extends _hero.Hero {
           if (_e.length == 0) _e = app.enemies.creeps.filter(i => (e.data.remoteName ? e.data.remoteName : e.data.sceneName).includes(i.name) == true);
           if (_e.length > 0 && _e[0].heroe_bodies) {
             _e[0].heroe_bodies.forEach(b => {
-              console.log(`OVERRIDED play animation e.data.sceneName:${_e[0].heroe_bodies[0].name}`);
               b.playAnimationByIndex(e.data.animationIndex);
             });
           }
@@ -151,7 +150,7 @@ class Character extends _hero.Hero {
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {
           enabled: true,
-          radius: 1.5
+          radius: 5
         },
         pointerEffect: {
           enabled: true,
@@ -182,7 +181,7 @@ class Character extends _hero.Hero {
         texturesPaths: ['./res/textures/default.png'],
         raycast: {
           enabled: false,
-          radius: 1.5
+          radius: 1
         },
         pointerEffect: {
           enabled: true,
@@ -231,10 +230,12 @@ class Character extends _hero.Hero {
           if (id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-            // test 
-            subMesh.updateMaxInstances(5);
+
+            // test   fot magic
+            // subMesh.updateMaxInstances(5);
             // subMesh.updateInstances(5);
-            subMesh.trailAnimation.enabled = true;
+            // subMesh.trailAnimation.enabled = true;
+
             console.log("on player cast ***************************************");
             subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
             this.core.autoUpdate.push(subMesh.fireballSystem);
@@ -521,6 +522,7 @@ class Character extends _hero.Hero {
       this.setIdle();
     });
     addEventListener('set-attack', () => {
+      console.log('set-attack event?');
       this.setAttack();
     });
     addEventListener('set-dead', () => {
@@ -774,7 +776,10 @@ class Controller {
   nav = null;
   // ONLY LOCAL
   heroe_bodies = null;
+
+  // incorporate with automated 'close-distance'
   distanceForAction = 36;
+  distanceForLongAction = 36;
   constructor(core) {
     this.core = core;
     this.canvas = this.core.canvas;
@@ -815,13 +820,13 @@ class Controller {
     });
     (0, _raycast.addRaycastsListener)(undefined, 'click');
     this.canvas.addEventListener("ray.hit.event", e => {
-      // console.log('ray.hit.event detected', e);
       const {
         hitObject,
         hitPoint,
         button,
         eventName
       } = e.detail;
+      console.log('ray.hit.event detected : ', hitObject.name);
       if (e.detail.hitObject.name == 'ground') {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
@@ -869,6 +874,12 @@ class Controller {
         this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
         // 37 LIMIT FOR ATTACH
+        // cases for magic ->>>>>>>>>>>>>>>>>>>>>
+        if (this.core.localHero.name == 'MariaSword') {
+          console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]");
+          this.core.localHero.setAttack(e.detail.hitObject);
+          return;
+        }
         if (testDistance < this.distanceForAction) {
           console.log("this.core.localHero.setAttack [e.detail.hitObject]");
           this.core.localHero.setAttack(e.detail.hitObject);
@@ -910,7 +921,7 @@ class Controller {
     });
     this.activateVisualRect();
     let hiddenAt = null;
-    if (location.hostname.indexOf('localhost') == -1) {
+    if (location.hostname.indexOf('localhost') == 'DISABLE____') {
       console.log('Security stuff activated');
       console.log = function () {};
       // Security stuff
@@ -934,7 +945,7 @@ class Controller {
           e.preventDefault();
           _utils.mb.error(`
             You are interest in Forest Of Hollow Blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
-            You can download for free project and test it into localhost.
+            You can download project for free and test it into localhost.
             `);
           console.log(`%c[keydown opened] ${e}`, _utils.LOG_MATRIX);
           return false;
@@ -1445,7 +1456,7 @@ class Enemie extends _hero.Hero {
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {
           enabled: true,
-          radius: 1.1
+          radius: 25
         },
         pointerEffect: {
           enabled: true,
@@ -1753,7 +1764,7 @@ let forestOfHollowBlood = new _world.default({
   });
   addEventListener('self-msg-data', e => {
     let d = JSON.parse(e.detail.data);
-    console.log('<data-receive self>', d);
+    // console.log('<data-receive self>', d);
     if (d.type == "damage") {
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
       let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
@@ -1771,7 +1782,7 @@ let forestOfHollowBlood = new _world.default({
       }
     } else if (d.type == "damage-creep") {
       if (app.player.data.team == d.defenderTeam) {
-        console.log('<data-receive damage local creep but from self :', d.defenderTeam);
+        // console.log('<data-receive damage local creep but from self :', d.defenderTeam);
         // can be both team
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
@@ -1791,7 +1802,7 @@ let forestOfHollowBlood = new _world.default({
           }, 500);
         }
       } else {
-        console.log('<data-receive damage enemy creep but from self :', d.defenderTeam);
+        // console.log('<data-receive damage enemy creep but from self :', d.defenderTeam);
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
         app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
@@ -1969,7 +1980,11 @@ let forestOfHollowBlood = new _world.default({
     app.cameras.RPG.movementSpeed = 100;
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;
-    app.RPG.distanceForAction = 200;
+
+    // diiff heros can MAGIC CASES LEVEL
+    if (app.localHero.name == "MariaSword") {
+      app.RPG.distanceForLongAction = 150;
+    }
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
   });
   forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
@@ -36624,13 +36639,25 @@ class FireballSystem {
         toRemove.push(i);
         continue;
       }
-      // Homing
-      p.mesh.position.translateByXZ(p.target.heroe_bodies[0].position.x, p.target.heroe_bodies[0].position.z);
-      p.mesh.position.translateByY(p.target.heroe_bodies[0].position.y);
-      // Hit check
-      const dx = p.mesh.position.x - p.target.heroe_bodies[0].position.x;
-      const dy = p.mesh.position.y - p.target.heroe_bodies[0].position.y;
-      const dz = p.mesh.position.z - p.target.heroe_bodies[0].position.z;
+      // Homing hardcoded for MOBA !
+      let dx = 0;
+      let dy = 0;
+      let dz = 0;
+      if (p.target.heroe_bodies) {
+        p.mesh.position.translateByXZ(p.target.heroe_bodies[0].position.x, p.target.heroe_bodies[0].position.z);
+        p.mesh.position.translateByY(p.target.heroe_bodies[0].position.y);
+        // Hit check
+        dx = p.mesh.position.x - p.target.heroe_bodies[0].position.x;
+        dy = p.mesh.position.y - p.target.heroe_bodies[0].position.y;
+        dz = p.mesh.position.z - p.target.heroe_bodies[0].position.z;
+      } else {
+        p.mesh.position.translateByXZ(p.target.position.x, p.target.position.z);
+        p.mesh.position.translateByY(p.target.position.y);
+        // Hit check
+        dx = p.mesh.position.x - p.target.position.x;
+        dy = p.mesh.position.y - p.target.position.y;
+        dz = p.mesh.position.z - p.target.position.z;
+      }
       if (Math.sqrt(dx * dx + dy * dy + dz * dz) < cfg.hitRadius) {
         this._onHit(p);
         toRemove.push(i);
@@ -36814,7 +36841,7 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   };
 }
 function computeWorldVertsAndAABB(object) {
-  const modelMatrix = object.getModelMatrix(object.position);
+  const modelMatrix = object.getModelMatrix(object.position, true);
   const worldVerts = [];
   for (let i = 0; i < object.mesh.vertices.length; i += 3) {
     const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];

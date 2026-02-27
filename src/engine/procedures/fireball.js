@@ -34,11 +34,11 @@ export class FireballSystem {
         circlePlaneTexPath: './res/textures/star1.png',
       }
     }, null, glbFile01);
-    setTimeout(()=> this.fireballMesh = app.getSceneObjectByName('FIRE_Circle') , 300);
+    setTimeout(() => this.fireballMesh = app.getSceneObjectByName('FIRE_Circle'), 300);
   }
 
   constructor(parent, core) {
-    this.core = core; 
+    this.core = core;
     this.parent = parent;
     this.loadBallAnim('./res/meshes/glb/ring1.glb');
     this.projectiles = [];
@@ -79,13 +79,27 @@ export class FireballSystem {
         toRemove.push(i);
         continue;
       }
-      // Homing
-      p.mesh.position.translateByXZ(p.target.heroe_bodies[0].position.x, p.target.heroe_bodies[0].position.z);
-      p.mesh.position.translateByY(p.target.heroe_bodies[0].position.y);
-      // Hit check
-      const dx = p.mesh.position.x - p.target.heroe_bodies[0].position.x;
-      const dy = p.mesh.position.y - p.target.heroe_bodies[0].position.y;
-      const dz = p.mesh.position.z - p.target.heroe_bodies[0].position.z;
+      // Homing hardcoded for MOBA !
+      let dx = 0;
+      let dy = 0;
+      let dz = 0;
+
+      if(p.target.heroe_bodies) {
+        p.mesh.position.translateByXZ(p.target.heroe_bodies[0].position.x, p.target.heroe_bodies[0].position.z);
+        p.mesh.position.translateByY(p.target.heroe_bodies[0].position.y);
+        // Hit check
+        dx = p.mesh.position.x - p.target.heroe_bodies[0].position.x;
+        dy = p.mesh.position.y - p.target.heroe_bodies[0].position.y;
+        dz = p.mesh.position.z - p.target.heroe_bodies[0].position.z;
+      } else {
+        p.mesh.position.translateByXZ(p.target.position.x, p.target.position.z);
+        p.mesh.position.translateByY(p.target.position.y);
+        // Hit check
+        dx = p.mesh.position.x - p.target.position.x;
+        dy = p.mesh.position.y - p.target.position.y;
+        dz = p.mesh.position.z - p.target.position.z;
+      }
+
       if(Math.sqrt(dx * dx + dy * dy + dz * dz) < cfg.hitRadius) {
         this._onHit(p);
         toRemove.push(i);
@@ -106,7 +120,7 @@ export class FireballSystem {
 
   _kill(p) {
 
-    p.mesh.position.setPosition(this.parent.position.x, this.parent.position.y , this.parent.position.z)
+    p.mesh.position.setPosition(this.parent.position.x, this.parent.position.y, this.parent.position.z)
     // p.alive = false;
     // // Remove from scene
     // const idx = app.mainRenderBundle.indexOf(p.mesh);

@@ -9,19 +9,19 @@
  * for `cacheVersion`.
  * @param cacheVersion
  */
-var cacheVersion = 15;
-var cacheName = 'matrix-engine-examples' + cacheVersion;
+var cacheVersion = 24;
+var prefix = 'matrix-engine-fohb';
+var cacheName = prefix + cacheVersion;
 
 try {
   for(var j = 0;j < cacheVersion;j++) {
-    var oldCacheName = 'matrix-engine-examples' + j;
+    var oldCacheName = prefix + j;
     caches.delete(oldCacheName);
   }
 }
 catch(e) {}
 
 const offlineUrl = 'offline.html';
-
 self.addEventListener('install', function(event) {
   self.skipWaiting();
   event.waitUntil(

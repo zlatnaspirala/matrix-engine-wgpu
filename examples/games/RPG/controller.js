@@ -12,7 +12,10 @@ export class Controller {
   // ONLY LOCAL
   heroe_bodies = null;
 
+  // incorporate with automated 'close-distance'
   distanceForAction = 36;
+
+  distanceForLongAction = 36;
 
   constructor(core) {
     this.core = core;
@@ -50,8 +53,11 @@ export class Controller {
     addRaycastsListener(undefined, 'click');
 
     this.canvas.addEventListener("ray.hit.event", (e) => {
-      // console.log('ray.hit.event detected', e);
+      
       const {hitObject, hitPoint, button, eventName} = e.detail;
+
+      console.log('ray.hit.event detected : ', hitObject.name);
+
       if(e.detail.hitObject.name == 'ground') {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
@@ -97,6 +103,13 @@ export class Controller {
         this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
         // 37 LIMIT FOR ATTACH
+        // cases for magic ->>>>>>>>>>>>>>>>>>>>>
+        if (this.core.localHero.name == 'MariaSword') {
+          console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]")
+          this.core.localHero.setAttack(e.detail.hitObject);
+          return;
+        }
+
         if(testDistance < this.distanceForAction) {
           console.log("this.core.localHero.setAttack [e.detail.hitObject]")
           this.core.localHero.setAttack(e.detail.hitObject);
@@ -135,7 +148,7 @@ export class Controller {
 
     let hiddenAt = null;
 
-    if(location.hostname.indexOf('localhost') == -1) {
+    if(location.hostname.indexOf('localhost') == 'DISABLE____') {
       console.log('Security stuff activated');
       console.log = function() {};
       // Security stuff
@@ -161,7 +174,7 @@ export class Controller {
           e.preventDefault();
           mb.error(`
             You are interest in Forest Of Hollow Blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
-            You can download for free project and test it into localhost.
+            You can download project for free and test it into localhost.
             `)
           console.log(`%c[keydown opened] ${e}`, LOG_MATRIX)
           return false;

@@ -33,7 +33,7 @@ export class Enemie extends Hero {
         position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {enabled: true, radius: 1.1},
+        raycast: {enabled: true, radius: 25},
         pointerEffect: {
           enabled: true,
           energyBar: true

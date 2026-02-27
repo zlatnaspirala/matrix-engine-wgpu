@@ -64,7 +64,6 @@ export class Character extends Hero {
           if(_e.length == 0) _e = app.enemies.creeps.filter((i) => ((e.data.remoteName ? e.data.remoteName : e.data.sceneName)).includes(i.name) == true);
           if(_e.length > 0 && _e[0].heroe_bodies) {
             _e[0].heroe_bodies.forEach((b) => {
-              console.log(`OVERRIDED play animation e.data.sceneName:${_e[0].heroe_bodies[0].name}`)
               b.playAnimationByIndex(e.data.animationIndex);
             })
           }
@@ -145,7 +144,7 @@ export class Character extends Hero {
         },
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {enabled: true, radius: 1.5},
+        raycast: {enabled: true, radius: 5},
         pointerEffect: {
           enabled: true,
           pointer: true,
@@ -166,7 +165,7 @@ export class Character extends Hero {
         position: {x: 0, y: -24, z: -220},
         name: 'mouseTarget',
         texturesPaths: ['./res/textures/default.png'],
-        raycast: {enabled: false, radius: 1.5},
+        raycast: {enabled: false, radius: 1},
         pointerEffect: {
           enabled: true,
           // circlePlane: true,
@@ -217,10 +216,12 @@ export class Character extends Hero {
           if(id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-            // test 
-            subMesh.updateMaxInstances(5);
+
+            // test   fot magic
+            // subMesh.updateMaxInstances(5);
             // subMesh.updateInstances(5);
-            subMesh.trailAnimation.enabled = true;
+            // subMesh.trailAnimation.enabled = true;
+
             console.log("on player cast ***************************************");
             subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
             this.core.autoUpdate.push(subMesh.fireballSystem);
@@ -515,6 +516,7 @@ export class Character extends Hero {
       this.setIdle();
     })
     addEventListener('set-attack', () => {
+      console.log('set-attack event?')
       this.setAttack();
     })
     addEventListener('set-dead', () => {

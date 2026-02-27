@@ -94,7 +94,7 @@ export function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
 }
 
 export function computeWorldVertsAndAABB(object) {
-  const modelMatrix = object.getModelMatrix(object.position);
+  const modelMatrix = object.getModelMatrix(object.position, true);
   const worldVerts = [];
   for(let i = 0;i < object.mesh.vertices.length;i += 3) {
     const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
