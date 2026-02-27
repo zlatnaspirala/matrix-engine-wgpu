@@ -226,9 +226,9 @@ export default class MatrixEngineWGPU {
       this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
     }
 
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
+    // const devicePixelRatio = window.devicePixelRatio;
+    // canvas.width = canvas.clientWidth * devicePixelRatio;
+    // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
     this.context.configure({
@@ -844,7 +844,7 @@ export default class MatrixEngineWGPU {
           this.sceneTextureView,        // ← your existing scene color
           this.mainDepthView,           // ← your existing depth
           this.shadowArrayView,         // ← your existing shadow array
-          {invViewProjectionMatrix: invViewProj},
+          {invViewProjectionMatrix: this._invViewProj },
           {
             viewProjectionMatrix: light.viewProjMatrix, // Float32Array 16
             direction: light.direction,                       // [x, y, z]

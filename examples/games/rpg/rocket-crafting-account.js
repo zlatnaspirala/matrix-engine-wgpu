@@ -24,6 +24,8 @@ export class RCSAccount {
       this.visitor(e.detail)
     })
 
+
+    this.preventGetLeaderboard = false;
     // this.leaderboardBtn = document.createElement('div')
     // this.leaderboardBtn.id = 'leaderboard';
     // this.leaderboardBtn.innerHTML = `
@@ -383,6 +385,13 @@ export class RCSAccount {
 
   getLeaderboard = async (e) => {
     e.preventDefault();
+
+    if (this.preventGetLeaderboard == true) {
+      return;
+    }
+
+    this.preventGetLeaderboard = true;
+
     byId('netHeaderTitle').click();
     // this.leaderboardBtn.disabled = true;
     fetch(this.apiDomain + '/rocket/public-leaderboard', {
@@ -392,6 +401,7 @@ export class RCSAccount {
     }).then((d) => {
       return d.json();
     }).then((r) => {
+      this.preventGetLeaderboard = false;
       mb.error(`${r.message}`)
       if(r.message == "You got leaderboard data.") {
         this.leaderboardData = r.leaderboard;
@@ -400,6 +410,7 @@ export class RCSAccount {
       // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
     }).catch((err) => {
       console.log('[Leaderboard Error]', err)
+      this.preventGetLeaderboard = false;
       mb.show("Next call try in 5 secounds...")
       // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
       return;
