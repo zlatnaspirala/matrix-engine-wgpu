@@ -1,3 +1,4 @@
+import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {Creep} from "./creep-character";
 import {Enemie} from "./enemy-character";
 
@@ -22,27 +23,31 @@ export class EnemiesManager {
     ));
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
-  loadCreeps() {
+  async loadCreeps() {
+    var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy_creep0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 0, y: -23, z: -0}
+      position: {x: 0, y: -23, z: -0},
+      data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy_creep1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: -0}
+      position: {x: 100, y: -23, z: -0},
+      data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam))
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy_creep2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: -0}
+      position: {x: 150, y: -23, z: -0},
+      data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam))
   }
 

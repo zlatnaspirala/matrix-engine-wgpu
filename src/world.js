@@ -106,7 +106,7 @@ export default class MatrixEngineWGPU {
     }
     this.editorAddOBJ = addOBJ.bind(this);
 
-    this.logLoopError = true;
+    this.logLoopError = false;
     // context select options
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";

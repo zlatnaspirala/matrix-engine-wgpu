@@ -1,4 +1,3 @@
-import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_FUNNY, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
 import {startUpPositions} from "./static";
@@ -28,7 +27,7 @@ export class Creep extends Hero {
   loadCreep = async (o) => {
     this.o = o;
     try {
-      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+      // var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
@@ -40,9 +39,8 @@ export class Creep extends Hero {
           enabled: true,
           energyBar: true
         }
-      }, null, glbFile01);
+      }, null, o.data);
       // make small async - cooking glbs files
-
       this.asyncHelper(this.o).then(() => {
         console.log('good')
       }).catch(() => {
