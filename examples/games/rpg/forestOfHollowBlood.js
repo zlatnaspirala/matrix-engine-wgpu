@@ -440,6 +440,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;
 
+    
+    app.RPG.distanceForAction = 200;
+    
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
   });
 

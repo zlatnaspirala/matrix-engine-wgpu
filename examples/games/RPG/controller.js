@@ -75,7 +75,7 @@ export class Controller {
       } else {
         // for now
 
-        if (app.net.virtualEmiter != null) {
+        if(app.net.virtualEmiter != null) {
           console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
           dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
         }
@@ -129,14 +129,8 @@ export class Controller {
       // followPath(this.heroe_bodies[0], path, this.core);
     });
 
-    document.body.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-    });
-
-    this.canvas.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-    });
-
+    document.body.addEventListener("contextmenu", (e) => {e.preventDefault()});
+    this.canvas.addEventListener("contextmenu", (e) => {e.preventDefault()});
     this.activateVisualRect();
 
     let hiddenAt = null;
@@ -279,7 +273,7 @@ export class Controller {
   }
 
   distance3D(a, b) {
-    if (!b) return 1000; // fix this later
+    if(!b) return 1000; // fix this later
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const dz = a.z - b.z;

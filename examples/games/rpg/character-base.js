@@ -175,7 +175,7 @@ export class Character extends Hero {
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
           subMesh.position.thrust = this.moveSpeed;
-          subMesh.glb.animationIndex = 0;
+          subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
@@ -190,7 +190,7 @@ export class Character extends Hero {
             // subMesh
 
             subMesh.updateMaxInstances(5);
-            subMesh.updateInstances(5);
+            // subMesh.updateInstances(5);
             subMesh.trailAnimation.enabled = true;
             console.log("on player cast ***************************************");
             subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
@@ -268,7 +268,7 @@ export class Character extends Hero {
         this.friendlyLocal.creeps.forEach((subMesh_, id) => {
           let subMesh = subMesh_.heroe_bodies[0];
           subMesh.position.thrust = subMesh_.moveSpeed;
-          subMesh.glb.animationIndex = 0;
+          subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
@@ -340,32 +340,32 @@ export class Character extends Hero {
 
   setWalk() {
     this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk)
       // console.info(`%chero walk`, LOG_MATRIX)
       if(index == 0) app.net.send({
         sceneName: subMesh.name,
-        animationIndex: subMesh.glb.animationIndex
+        animationIndex: subMesh.animationIndex
       })
     });
   }
 
   setSalute() {
     this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute)
       // console.info(`%chero salute`, LOG_MATRIX)
       if(index == 0) app.net.send({
         sceneName: subMesh.name,
-        animationIndex: subMesh.glb.animationIndex
+        animationIndex: subMesh.animationIndex
       })
     });
   }
 
   setDead() {
     this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead)
       if(index == 0) app.net.send({
         sceneName: subMesh.name,
-        animationIndex: subMesh.glb.animationIndex
+        animationIndex: subMesh.animationIndex
       })
       console.info(`%cHero dead${subMesh.name}.`, LOG_MATRIX);
     });
@@ -373,11 +373,11 @@ export class Character extends Hero {
 
   setIdle() {
     this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle)
       // console.info(`%chero idle`, LOG_MATRIX)
       if(index == 0) app.net.send({
         sceneName: subMesh.name,
-        animationIndex: subMesh.glb.animationIndex
+        animationIndex: subMesh.animationIndex
       })
     });
   }
@@ -385,11 +385,11 @@ export class Character extends Hero {
   setAttack(on) {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      // console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.glb.animationIndex}`, LOG_MATRIX)
+      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack)
+      // console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.animationIndex}`, LOG_MATRIX)
       app.net.send({
         sceneName: subMesh.name,
-        animationIndex: subMesh.glb.animationIndex
+        animationIndex: subMesh.animationIndex
       })
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
@@ -402,9 +402,9 @@ export class Character extends Hero {
 
   setWalkCreep(creepIndex) {
     console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX)
-    // if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
-    // }
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
+    // this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
+    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.heroAnimationArrange.walk)
+
     let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
     if(this.core.net.virtualEmiter == null) {
       return;
@@ -425,9 +425,7 @@ export class Character extends Hero {
 
   setAttackCreep(creepIndex) {
     // console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
-    // if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
-    // }
+    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.friendlyCreepAnimationArrange.attack);
 
     let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
     if(this.core.net.virtualEmiter == null) {
