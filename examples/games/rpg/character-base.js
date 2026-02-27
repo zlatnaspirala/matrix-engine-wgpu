@@ -60,20 +60,17 @@ export class Character extends Hero {
         } else if(e.data.netRotZ || e.data.netRotZ == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
         } else if(e.data.animationIndex || e.data.animationIndex == 0) {
-          console.log(`OVERRIDED play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
-               e.data.animationIndex ${e.data.animationIndex}
-            `)
-          const _e = app.enemies.enemies.filter((e) => ('MariaSword_Maria').includes(e.name) !== -1)[0] || false;
-          if(!_e) _e = app.enemies.creeps.filter((e) => ('enemy_creep').includes(e.name) !== -1)[0] || null;
-
-          console.log(`OVERRIDED play animation from net , e.data.sceneName:${_e.name}       `)
-
-          if(_e) _e.heroe_bodies.forEach((b) => {
-            b.playAnimationByIndex(e.data.animationIndex);
-          })
+          let _e = app.enemies.enemies.filter((i) => ((e.data.remoteName ? e.data.remoteName : e.data.sceneName)).includes(i.name) == true);
+          if(_e.length == 0) _e = app.enemies.creeps.filter((i) => ((e.data.remoteName ? e.data.remoteName : e.data.sceneName)).includes(i.name) == true);
+          if(_e.length > 0 && _e[0].heroe_bodies) {
+            _e[0].heroe_bodies.forEach((b) => {
+              console.log(`OVERRIDED play animation e.data.sceneName:${_e[0].heroe_bodies[0].name}`)
+              b.playAnimationByIndex(e.data.animationIndex);
+            })
+          }
         }
       } catch(err) {
-        console.info('mmo-err:', err);
+        console.info('over mmo-err:', err);
       }
     };
 
@@ -440,20 +437,20 @@ export class Character extends Hero {
   }
 
   setWalkCreep(creepIndex) {
-    // console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX);
+    console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX);
     this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.friendlyCreepAnimationArrange.walk)
     let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
     if(this.core.net.virtualEmiter == null) {return;}
     if(pos.teams.length > 0) if(pos.teams[0].length > 0) app.net.send({
       toRemote: pos.teams[0],    // default null remote conns
       sceneName: pos.netObject,  // origin scene name to receive
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
     });
     if(pos.teams.length > 0) if(pos.teams[1].length > 0) app.net.send({
       toRemote: pos.teams[1],     // default null remote conns
       remoteName: pos.remoteName, // to enemy players
       sceneName: pos.netObject,   // now not important
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
     });
   }
 
@@ -465,13 +462,13 @@ export class Character extends Hero {
     if(pos.teams.length > 0) if(pos.teams[0].length > 0) app.net.send({
       toRemote: pos.teams[0],   // default null remote conns
       sceneName: pos.netObject, // origin scene name to receive
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
     });
     if(pos.teams.length > 0) if(pos.teams[1].length > 0) app.net.send({
       toRemote: pos.teams[1],     // default null remote conns
       remoteName: pos.remoteName, // to enemy players
       sceneName: pos.netObject,   // now not important
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
     });
   }
 
