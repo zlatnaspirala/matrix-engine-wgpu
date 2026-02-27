@@ -35511,12 +35511,12 @@ class MatrixStream {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
-        } else if (e.data.netRotX) {
+        } else if (e.data.netRotX || e.data.netRotX == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
-        } else if (e.data.netRotZ) {
+        } else if (e.data.netRotZ || e.data.netRotZ == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
         } else if (e.data.animationIndex || e.data.animationIndex == 0) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).playAnimationByIndex(e.data.animationIndex);
         }
       } catch (err) {
         console.info('mmo-err:', err);
@@ -50147,7 +50147,7 @@ class FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
         accessObjectLiteral: "window.app?.mainRenderBundle",
-        exposeProps: ["name", "glb.glbJsonData.animations", "glb.animationIndex", "playAnimationByName", "playAnimationByIndex"]
+        exposeProps: ["name", "glb.glbJsonData.animations", "animationIndex", "playAnimationByName", "playAnimationByIndex"]
       }),
       getPosition: (id, x, y) => ({
         id,

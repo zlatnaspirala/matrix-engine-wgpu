@@ -2536,7 +2536,7 @@ export default class FluxCodexVertex {
         exposeProps: [
           "name",
           "glb.glbJsonData.animations",
-          "glb.animationIndex",
+          "animationIndex",
           "playAnimationByName",
           "playAnimationByIndex"
         ],
