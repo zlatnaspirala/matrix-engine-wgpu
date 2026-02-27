@@ -156,6 +156,10 @@ export class MatrixStream {
         } else if(e.data.netRotZ || e.data.netRotZ == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
         } else if(e.data.animationIndex || e.data.animationIndex == 0) {
+          console.log(`play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+               e.data.animationIndex ${e.data.animationIndex}
+            
+            `)
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).playAnimationByIndex(e.data.animationIndex);
         }
       } catch(err) {

@@ -18,19 +18,19 @@ export class Character extends Hero {
   creepThrust = 0.85;
 
   heroAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
+    "dead": 1,
+    "walk": 4,
+    "salute": 3,
+    "attack": 0,
+    "idle": 2
   };
 
   friendlyCreepAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
+    "dead": 1,
+    "walk": 4,
+    "salute": 3,
+    "attack": 0,
+    "idle": 2
   };
 
   heroFocusAttackOn = null;
@@ -47,6 +47,36 @@ export class Character extends Hero {
 
     this.loadLocalHero(path);
     this.loadfriendlyCreeps();
+
+    app.net.multiPlayer.update = (e) => {
+      e.data = JSON.parse(e.data);
+      try {
+        if(e.data.netPos) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+        } else if(e.data.netRotY || e.data.netRotY == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
+        } else if(e.data.netRotX || e.data.netRotX == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
+        } else if(e.data.netRotZ || e.data.netRotZ == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
+        } else if(e.data.animationIndex || e.data.animationIndex == 0) {
+          console.log(`OVERRIDED play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+               e.data.animationIndex ${e.data.animationIndex}
+            `)
+          const _e = app.enemies.enemies.filter((e) => ('MariaSword_Maria').includes(e.name) !== -1)[0] || false;
+          if(!_e) _e = app.enemies.creeps.filter((e) => ('enemy_creep').includes(e.name) !== -1)[0] || null;
+
+          console.log(`OVERRIDED play animation from net , e.data.sceneName:${_e.name}       `)
+
+          if(_e) _e.heroe_bodies.forEach((b) => {
+            b.playAnimationByIndex(e.data.animationIndex);
+          })
+        }
+      } catch(err) {
+        console.info('mmo-err:', err);
+      }
+    };
+
     setTimeout(() => this.setupHUDForHero(name), 1100);
   }
 
@@ -61,46 +91,49 @@ export class Character extends Hero {
   }
 
   async loadfriendlyCreeps() {
+
+    var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 0, y: -23, z: 0}
+      position: {x: 0, y: -23, z: 0},
+      data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: 0}
+      position: {x: 150, y: -23, z: 0},
+      data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: 0}
+      position: {x: 100, y: -23, z: 0},
+      data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
+
 
     setTimeout(() => {
       app.localHero.setAllCreepsAtStartPos().then(() => {
+        //
       }).catch(() => {
         setTimeout(() => {
           app.localHero.setAllCreepsAtStartPos().then(() => {
-            // console.log('passed in 2')
+           console.log('passed in 3 creep load')
           }).catch(() => {
-            setTimeout(() => {
-              app.localHero.setAllCreepsAtStartPos().then(() => {
-                // console.log('passed in 3')
-              }).catch(() => {
-                console.log('FAILD setAllCreepsAtStartPos');
-              })
-            }, 7000);
+            console.log('FAILD setAllCreepsAtStartPos');
           })
-        }, 7000);
-      });
-    }, 10000);
+        }, 5000);
+      })
+    }, 5000);
+
   }
 
   async loadLocalHero(p) {
@@ -173,7 +206,7 @@ export class Character extends Hero {
           obj.name && obj.name.includes(this.name)
         );
         this.core.RPG.heroe_bodies = this.heroe_bodies;
-        this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
+        this.core.RPG.heroe_bodies.forEach((subMesh, id, array) => {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
@@ -188,15 +221,24 @@ export class Character extends Hero {
           if(id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-
+            // test 
             subMesh.updateMaxInstances(5);
             // subMesh.updateInstances(5);
             subMesh.trailAnimation.enabled = true;
             console.log("on player cast ***************************************");
             subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
             this.core.autoUpdate.push(subMesh.fireballSystem);
+          } else if(id == 1) {
+
+            // check by hero TEST
+            if(subMesh.name.includes('Maria') == true) {
+              // console.log("on player cast MARIA SWORD ", subMesh.name);
+              // subMesh.playAnimationByIndex = array[id-1].playAnimationByIndex;
+
+            }
 
           }
+
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });

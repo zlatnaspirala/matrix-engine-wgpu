@@ -21,18 +21,18 @@ class Character extends _hero.Hero {
   };
   creepThrust = 0.85;
   heroAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
+    "dead": 1,
+    "walk": 4,
+    "salute": 3,
+    "attack": 0,
+    "idle": 2
   };
   friendlyCreepAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
+    "dead": 1,
+    "walk": 4,
+    "salute": 3,
+    "attack": 0,
+    "idle": 2
   };
   heroFocusAttackOn = null;
   mouseTarget = null;
@@ -47,6 +47,32 @@ class Character extends _hero.Hero {
     this.heroe_bodies = [];
     this.loadLocalHero(path);
     this.loadfriendlyCreeps();
+    app.net.multiPlayer.update = e => {
+      e.data = JSON.parse(e.data);
+      try {
+        if (e.data.netPos) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+        } else if (e.data.netRotY || e.data.netRotY == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
+        } else if (e.data.netRotX || e.data.netRotX == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
+        } else if (e.data.netRotZ || e.data.netRotZ == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
+        } else if (e.data.animationIndex || e.data.animationIndex == 0) {
+          console.log(`OVERRIDED play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+               e.data.animationIndex ${e.data.animationIndex}
+            `);
+          const _e = app.enemies.enemies.filter(e => 'MariaSword_Maria'.includes(e.name) !== -1)[0] || false;
+          if (!_e) _e = app.enemies.creeps.filter(e => 'enemy_creep'.includes(e.name) !== -1)[0] || null;
+          console.log(`OVERRIDED play animation from net , e.data.sceneName:${_e.name}       `);
+          if (_e) _e.heroe_bodies.forEach(b => {
+            b.playAnimationByIndex(e.data.animationIndex);
+          });
+        }
+      } catch (err) {
+        console.info('mmo-err:', err);
+      }
+    };
     setTimeout(() => this.setupHUDForHero(name), 1100);
   }
   setupHUDForHero(name) {
@@ -59,6 +85,7 @@ class Character extends _hero.Hero {
     (0, _utils.byId)('hudDesriptionText').innerHTML = app.label.get[name.toLowerCase()];
   }
   async loadfriendlyCreeps() {
+    var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -68,7 +95,8 @@ class Character extends _hero.Hero {
         x: 0,
         y: -23,
         z: 0
-      }
+      },
+      data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
@@ -79,7 +107,8 @@ class Character extends _hero.Hero {
         x: 150,
         y: -23,
         z: 0
-      }
+      },
+      data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
@@ -90,25 +119,22 @@ class Character extends _hero.Hero {
         x: 100,
         y: -23,
         z: 0
-      }
+      },
+      data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
     setTimeout(() => {
-      app.localHero.setAllCreepsAtStartPos().then(() => {}).catch(() => {
+      app.localHero.setAllCreepsAtStartPos().then(() => {
+        //
+      }).catch(() => {
         setTimeout(() => {
           app.localHero.setAllCreepsAtStartPos().then(() => {
-            // console.log('passed in 2')
+            console.log('passed in 3 creep load');
           }).catch(() => {
-            setTimeout(() => {
-              app.localHero.setAllCreepsAtStartPos().then(() => {
-                // console.log('passed in 3')
-              }).catch(() => {
-                console.log('FAILD setAllCreepsAtStartPos');
-              });
-            }, 7000);
+            console.log('FAILD setAllCreepsAtStartPos');
           });
-        }, 7000);
+        }, 5000);
       });
-    }, 10000);
+    }, 5000);
   }
   async loadLocalHero(p) {
     try {
@@ -193,7 +219,7 @@ class Character extends _hero.Hero {
         app.localHero.mouseTarget.instanceTargets[1].scale = [0.4, 0.4, 0.4];
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
-        this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
+        this.core.RPG.heroe_bodies.forEach((subMesh, id, array) => {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
@@ -208,14 +234,21 @@ class Character extends _hero.Hero {
           if (id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-
+            // test 
             subMesh.updateMaxInstances(5);
             // subMesh.updateInstances(5);
             subMesh.trailAnimation.enabled = true;
             console.log("on player cast ***************************************");
             subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
             this.core.autoUpdate.push(subMesh.fireballSystem);
+          } else if (id == 1) {
+            // check by hero TEST
+            if (subMesh.name.includes('Maria') == true) {
+              // console.log("on player cast MARIA SWORD ", subMesh.name);
+              // subMesh.playAnimationByIndex = array[id-1].playAnimationByIndex;
+            }
           }
+
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
@@ -1024,7 +1057,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Creep = void 0;
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
 var _static = require("./static");
@@ -1049,7 +1081,7 @@ class Creep extends _hero.Hero {
   loadCreep = async o => {
     this.o = o;
     try {
-      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      // var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {
           type: 'standard',
@@ -1067,9 +1099,8 @@ class Creep extends _hero.Hero {
           enabled: true,
           energyBar: true
         }
-      }, null, glbFile01);
+      }, null, o.data);
       // make small async - cooking glbs files
-
       this.asyncHelper(this.o).then(() => {
         console.log('good');
       }).catch(() => {
@@ -1294,13 +1325,14 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":70,"./hero":8,"./static":15}],4:[function(require,module,exports){
+},{"../../../src/engine/utils":70,"./hero":8,"./static":15}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.EnemiesManager = void 0;
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 var _creepCharacter = require("./creep-character");
 var _enemyCharacter = require("./enemy-character");
 class EnemiesManager {
@@ -1325,7 +1357,8 @@ class EnemiesManager {
     }));
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
-  loadCreeps() {
+  async loadCreeps() {
+    var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'enemy_creep0',
@@ -1335,7 +1368,8 @@ class EnemiesManager {
         x: 0,
         y: -23,
         z: -0
-      }
+      },
+      data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
@@ -1346,7 +1380,8 @@ class EnemiesManager {
         x: 100,
         y: -23,
         z: -0
-      }
+      },
+      data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
@@ -1357,7 +1392,8 @@ class EnemiesManager {
         x: 150,
         y: -23,
         z: -0
-      }
+      },
+      data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
   }
   isEnemy(name) {
@@ -1371,7 +1407,7 @@ class EnemiesManager {
 }
 exports.EnemiesManager = EnemiesManager;
 
-},{"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":58,"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35516,6 +35552,10 @@ class MatrixStream {
         } else if (e.data.netRotZ || e.data.netRotZ == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
         } else if (e.data.animationIndex || e.data.animationIndex == 0) {
+          console.log(`play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+               e.data.animationIndex ${e.data.animationIndex}
+            
+            `);
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).playAnimationByIndex(e.data.animationIndex);
         }
       } catch (err) {
@@ -48389,16 +48429,13 @@ class FluxCodexVertex {
       select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
-
       // Populate scene objects
       if (spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
-      const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
-
+      // const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      // console.log('WORKS objects', spec.accessObject.length);
       spec.accessObject.forEach(obj => {
         const opt = document.createElement("option");
         opt.value = obj.name;
@@ -55028,7 +55065,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
-    this.logLoopError = true;
+    this.logLoopError = false;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
