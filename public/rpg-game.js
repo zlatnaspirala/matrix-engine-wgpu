@@ -404,9 +404,8 @@ class Character extends _hero.Hero {
     this.heroe_bodies[0].fireballSystem.spawn(this.heroe_bodies[0].position, this.heroFocusAttackOn);
   }
   setWalkCreep(creepIndex) {
-    console.info(`%cfriendly setWalkCreep!`, _utils.LOG_MATRIX);
-    // this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.heroAnimationArrange.walk);
+    // console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX);
+    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.friendlyCreepAnimationArrange.walk);
     let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
     if (this.core.net.virtualEmiter == null) {
       return;
@@ -427,7 +426,6 @@ class Character extends _hero.Hero {
       // now not important
       animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
     });
-    // }
   }
   setAttackCreep(creepIndex) {
     // console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)

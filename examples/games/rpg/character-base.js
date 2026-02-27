@@ -195,7 +195,7 @@ export class Character extends Hero {
             console.log("on player cast ***************************************");
             subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
             this.core.autoUpdate.push(subMesh.fireballSystem);
- 
+
           }
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
@@ -401,45 +401,37 @@ export class Character extends Hero {
   }
 
   setWalkCreep(creepIndex) {
-    console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX)
-    // this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.heroAnimationArrange.walk)
-
+    // console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX);
+    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.friendlyCreepAnimationArrange.walk)
     let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
-    if(this.core.net.virtualEmiter == null) {
-      return;
-    }
+    if(this.core.net.virtualEmiter == null) {return;}
     if(pos.teams.length > 0) if(pos.teams[0].length > 0) app.net.send({
-      toRemote: pos.teams[0], // default null remote conns
-      sceneName: pos.netObject, // origin scene name to receive
+      toRemote: pos.teams[0],    // default null remote conns
+      sceneName: pos.netObject,  // origin scene name to receive
       animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
     });
     if(pos.teams.length > 0) if(pos.teams[1].length > 0) app.net.send({
-      toRemote: pos.teams[1], // default null remote conns
+      toRemote: pos.teams[1],     // default null remote conns
       remoteName: pos.remoteName, // to enemy players
-      sceneName: pos.netObject, // now not important
+      sceneName: pos.netObject,   // now not important
       animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
     });
-    // }
   }
 
   setAttackCreep(creepIndex) {
     // console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
     this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.friendlyCreepAnimationArrange.attack);
-
     let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
-    if(this.core.net.virtualEmiter == null) {
-      return;
-    }
+    if(this.core.net.virtualEmiter == null) {return;}
     if(pos.teams.length > 0) if(pos.teams[0].length > 0) app.net.send({
-      toRemote: pos.teams[0], // default null remote conns
+      toRemote: pos.teams[0],   // default null remote conns
       sceneName: pos.netObject, // origin scene name to receive
       animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
     });
     if(pos.teams.length > 0) if(pos.teams[1].length > 0) app.net.send({
-      toRemote: pos.teams[1], // default null remote conns
+      toRemote: pos.teams[1],     // default null remote conns
       remoteName: pos.remoteName, // to enemy players
-      sceneName: pos.netObject, // now not important
+      sceneName: pos.netObject,   // now not important
       animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
     });
   }
