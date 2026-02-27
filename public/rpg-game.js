@@ -3366,10 +3366,10 @@ class HUD {
         progress += Math.random() * 4;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
-        counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        counter.textContent = app.fakeL > 150 ? "Installing" : "Prepare" + " gameplay " + Math.floor(progress) + '%';
         let grayEffect = 30 / progress;
         loader.style.filter = `grayscale(${grayEffect})`;
-        setTimeout(fakeProgress, 80 + Math.random() * 150);
+        setTimeout(fakeProgress, 80 + Math.random() * app.fakeL);
       } else {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
@@ -36619,9 +36619,6 @@ class FireballSystem {
       spawnTime: performance.now(),
       alive: true
     });
-
-    // Add to scene
-    // app.mainRenderBundle.push(fireballMesh);
   }
   update(deltaTime) {
     const cfg = FireballSystem.CONFIG;
