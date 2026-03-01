@@ -104,13 +104,30 @@ export var loadObjFile = function() {
           envLodBias: 1.5,
           usePlanarReflection: false,  // ✅ Env map mode
         },
-        name: 'ball1',
+        name: 'sky',
         mesh: m.ball,
         physics: {
           enabled: false,
           geometry: "Sphere"
         }
-      })
+      });
+
+      loadObjFile.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: -1, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [100, 100, 100],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1.png'],
+        geometryA: {type: 'cube', size: 1},
+        // geometryB: {type: 'sphere', size: 1, segments: 16},
+        name: 'myProCube',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
 
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 

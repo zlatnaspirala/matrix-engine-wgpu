@@ -24,6 +24,7 @@ import {HPBarEffect} from "./engine/effects/energy-bar.js";
 import {MANABarEffect} from "./engine/effects/mana-bar.js";
 import {PointerEffect} from "./engine/effects/pointerEffect.js";
 import {FlameEffect} from "./engine/effects/flame.js";
+import ProceduralMeshObj from "./engine/procedural-mesh.js";
 
 /**
  * @description
@@ -411,19 +412,19 @@ export default class MatrixEngineWGPU {
     this.depthTextureViewTrail = depthTexture.createView();
 
     this._transPassDesc = {
-        colorAttachments: [{
-          view: this.sceneTextureView,
-          loadOp: 'load',
-          storeOp: 'store',
-          clearValue: {r: 0, g: 1, b: 0, a: 1},
-        }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: 'load',
-          depthStoreOp: 'store',
-          depthClearValue: 1.0,
-        }
-      };
+      colorAttachments: [{
+        view: this.sceneTextureView,
+        loadOp: 'load',
+        storeOp: 'store',
+        clearValue: {r: 0, g: 1, b: 0, a: 1},
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        depthLoadOp: 'load',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0,
+      }
+    };
   }
 
   createTexArrayForShadows() {
@@ -577,6 +578,118 @@ export default class MatrixEngineWGPU {
     }
   }
 
+  addProceduralMeshObj = (o, clearColor = this.options.clearColor) => {
+    if(typeof o.name === 'undefined') {o.name = genName(9);}
+    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4};}
+    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0};}
+    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0};}
+    // GEOMETRY DEFAULTS - The key difference from addMeshObj
+    if(typeof o.geometryA === 'undefined') {
+      o.geometryA = {type: 'cube', size: 1};
+    }
+    if(typeof o.geometryB === 'undefined') {
+      // Default to same as geometryA (no morph)
+      o.geometryB = o.geometryA;
+    }
+
+    // MATERIAL & TEXTURE DEFAULTS
+    if(typeof o.texturesPaths === 'undefined') {
+      o.texturesPaths = ['./res/textures/default.png'];
+    }
+    if(typeof o.material === 'undefined') {
+      o.material = {type: 'standard'};
+    }
+    if(typeof o.envMapParams === 'undefined') {
+      o.envMapParams = null;
+    }
+
+    // CAMERA & SCALE DEFAULTS
+    if(typeof o.mainCameraParams === 'undefined') {
+      o.mainCameraParams = this.mainCameraParams;
+    }
+    if(typeof o.scale === 'undefined') {
+      o.scale = [1, 1, 1];
+    }
+    if(typeof o.useScale === 'undefined') {
+      o.useScale = true;
+    }
+    // RAYCAST DEFAULTS
+    if(typeof o.raycast === 'undefined') {
+      o.raycast = {enabled: false, radius: 2};
+    }
+
+    // ENTITY ARGS (for your engine's internal use)
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
+    o.textureCache = this.textureCache;
+
+    // PHYSICS DEFAULTS
+    if(typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: (typeof o.scale === 'number' ? o.scale : o.scale[0]),
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if(typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if(typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Cube";
+    }
+    if(typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if(typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if(typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if(typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if(typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
+    o.physics.position = o.position;
+
+    // MORPH ANIMATION DEFAULTS (new for ProceduralMeshObj)
+    if(typeof o.morphAnimation === 'undefined') {
+      o.morphAnimation = null;
+    } else {
+      // Set up auto-play morph animation if specified
+      if(typeof o.morphAnimation.autoPlay !== 'undefined' && o.morphAnimation.autoPlay === true) {
+        o.morphAnimation.enabled = true;
+      }
+    }
+
+    // CREATE PROCEDURAL MESH OBJECT
+    let AM = this.globalAmbient.slice();
+    let myMesh = new ProceduralMeshObj(
+      this.canvas,
+      this.device,
+      this.context,
+      o,
+      this.inputHandler,
+      AM
+    );
+
+    myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh.clearColor = clearColor;
+    if(o.physics.enabled === true) {
+      this.matrixAmmo.addPhysics(myMesh, o.physics);
+    }
+    this.mainRenderBundle.push(myMesh);
+    if(typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
+    return myMesh;
+  }
+
   createBloomBindGroup() {
     this.bloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
@@ -596,7 +709,7 @@ export default class MatrixEngineWGPU {
 
   async run(callback) {
     // await this.device.queue.onSubmittedWorkDone();
-    setTimeout(() => {requestAnimationFrame(this.frame)}, 1000);
+    setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
     setTimeout(() => {callback(this)}, 1)
   }
 
@@ -710,6 +823,7 @@ export default class MatrixEngineWGPU {
       this.mainRenderBundle.forEach((mesh, index) => {
         mesh.position.update();
         mesh.updateModelUniformBuffer();
+        if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(currentTime);
         if(mesh.update) mesh.update(mesh.time);
         if(mesh.updateTime) {mesh.updateTime(currentTime);}
 
@@ -786,7 +900,7 @@ export default class MatrixEngineWGPU {
               pass.setPipeline(mesh.pipeline);
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
-              m.setupPipeline();
+              if (m.setupPipeline) m.setupPipeline();
             }
           }
         }
@@ -844,7 +958,7 @@ export default class MatrixEngineWGPU {
           this.sceneTextureView,        // ← your existing scene color
           this.mainDepthView,           // ← your existing depth
           this.shadowArrayView,         // ← your existing shadow array
-          {invViewProjectionMatrix: this._invViewProj },
+          {invViewProjectionMatrix: this._invViewProj},
           {
             viewProjectionMatrix: light.viewProjMatrix, // Float32Array 16
             direction: light.direction,                       // [x, y, z]
