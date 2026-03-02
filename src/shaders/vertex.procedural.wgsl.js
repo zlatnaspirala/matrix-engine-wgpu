@@ -62,14 +62,12 @@ struct VertexAnimParams {
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, 1>
-}
+  data: array<vec4<f32>, 1600>
+};
 
-// @group(0) @binding(0) var<uniform> scene : Scene;
-// @group(1) @binding(0) var<uniform> model : Model;
 @group(0) @binding(0) var<uniform> scene: Scene;
 @group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(1) var<uniform> bones: Bones;
 @group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
 @group(1) @binding(3) var<uniform> u_morphBlend: f32;
 

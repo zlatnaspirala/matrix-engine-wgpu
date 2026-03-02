@@ -1221,6 +1221,30 @@ export class FullscreenManager {
 
 export function alignTo256(n) {return Math.ceil(n / 256) * 256;}
 
+export const geometryTypes = {
+  "quad": "quad",
+  "cube": "cube",
+  "sphere": "sphere",
+  "pyramid": "pyramid",
+  "star": "star",
+  "circle": "circle",
+  "diamond": "diamond",
+  "rock": "rock",
+  "meteor": "meteor",
+  "thunder": "thunder",
+  "shard": "shard",
+  "circlePlane": "circlePlane",
+  "ring": "ring",
+  "icosahedron": "icosahedron",
+  "dodecahedron": "dodecahedron",
+  "torusKnot": "torusKnot",
+  "mobius": "mobius",
+  "crystal": "crystal",
+  "starPrism": "starPrism",
+  "crescent": "crescent",
+  "pyramidFractal": "pyramidFractal",
+};
+
 // export let ADDITIVE_BLEND_CONFIGURATIONS = {
 //   color: {
 //                 srcFactor: 'src-alpha', // This makes intensity scale correctly

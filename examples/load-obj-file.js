@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {LOG_MATRIX} from "../src/engine/utils.js";
+import {geometryTypes, LOG_MATRIX} from "../src/engine/utils.js";
 // import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadObjFile = function() {
@@ -55,36 +55,36 @@ export var loadObjFile = function() {
 
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
-      loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
-        position: {x: 0, y: 3, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
-        name: 'cube1',
-        mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.2, // normal mix
-          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          reflectivity: 0.95,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.4,          // Gentle rim
-          illuminatePulse: 0.001,             // No pulse (static)
-          fresnelPower: 5.0,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,  // ✅ Env map mode
-        },
-        physics: {
-          enabled: false,
-          geometry: "Cube",
-        },
-        // pointerEffect: {
-        //   // enabled: true,
-        //   // flameEffect: true,
-        //   // flameEmitter: true,
-        // },
-        raycast: {enabled: true, radius: 2}
-      })
+      // loadObjFile.addMeshObj({
+      //   material: {type: 'mirror'},
+      //   position: {x: 0, y: 3, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1.webp'],
+      //   name: 'cube1',
+      //   mesh: m.cube,
+      //   envMapParams: {
+      //     baseColorMix: 0.2, // normal mix
+      //     mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+      //     reflectivity: 0.95,               // 25% reflection blend
+      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //     illuminateStrength: 0.4,          // Gentle rim
+      //     illuminatePulse: 0.001,             // No pulse (static)
+      //     fresnelPower: 5.0,                // Medium-sharp edge
+      //     envLodBias: 2.5,
+      //     usePlanarReflection: false,  // ✅ Env map mode
+      //   },
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Cube",
+      //   },
+      //   // pointerEffect: {
+      //   //   // enabled: true,
+      //   //   // flameEffect: true,
+      //   //   // flameEmitter: true,
+      //   // },
+      //   raycast: {enabled: true, radius: 2}
+      // })
 
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
@@ -92,7 +92,7 @@ export var loadObjFile = function() {
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         envMapParams: {
           baseColorMix: 0.0, // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
@@ -112,22 +112,33 @@ export var loadObjFile = function() {
         }
       });
 
-      loadObjFile.addProceduralMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png'],
-        geometryA: {type: 'cube', size: 1},
-        // geometryB: {type: 'sphere', size: 1, segments: 16},
-        name: 'myProCube',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
+
+
+      const spacing = 4; // distance between each object
+      let i = 0;
+      let j = 0;
+
+      for(const key in geometryTypes) {
+        loadObjFile.addProceduralMeshObj({
+          material: {type: 'standard'},
+          position: {x: i * spacing, y: 2, z: -20 + j * spacing}, // <-- offset X per object
+          rotation: {x: 0, y: 0, z: 0},
+          scale: [1, 1, 1],
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: ['./res/textures/cube-g1.webp'],
+          geometryA: {type: key, size: 1},
+          name: `myProCube_${key}`,
+          physics: {
+            enabled: false,
+            geometry: "Sphere"
+          }
+        });
+        i++;
+        if(i % 4 == 0) {
+          j++;
+          i = 0;
         }
-      });
+      }
 
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
