@@ -406,6 +406,7 @@ exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
@@ -563,48 +564,88 @@ var loadObjFile = function () {
           geometry: "Sphere"
         }
       });
-      const spacing = 4; // distance between each object
-      let i = 0;
-      let j = 0;
-      for (const key in _utils.geometryTypes) {
-        loadObjFile.addProceduralMeshObj({
-          material: {
-            type: 'standard'
-          },
-          position: {
-            x: i * spacing,
-            y: 2,
-            z: -20 + j * spacing
-          },
-          // <-- offset X per object
-          rotation: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          scale: [1, 1, 1],
-          rotationSpeed: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          texturesPaths: ['./res/textures/cube-g1.webp'],
-          geometryA: {
-            type: key,
-            size: 1
-          },
-          name: `myProCube_${key}`,
-          physics: {
-            enabled: false,
-            geometry: "Sphere"
-          }
-        });
-        i++;
-        if (i % 4 == 0) {
-          j++;
-          i = 0;
+      const geometryTypesTest = {
+        "cube": "cube",
+        "sphere": "sphere"
+      };
+
+      // MeshMorpher
+      const pair = _proceduralMesh.MeshMorpher.createMatchedPair(_proceduralMesh.MeshMorpher.plane(2), _proceduralMesh.MeshMorpher.sphere(1), 32, 32);
+      loadObjFile.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 4,
+          y: 2,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1.webp'],
+        meshA: pair.meshA,
+        // Pre-built matched geometry
+        meshB: pair.meshB,
+        // Same vertex count, same indices!
+        // geometryA: {type: "cube", size: 1},
+        // geometryB: {type: "icosahedron", size: 1},
+        name: `myProCube`,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
         }
-      }
+      });
+
+      // loadObjFile.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: -4, y: 2, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1.webp'],
+      //   geometryA: {type: "sphere", size: 1},
+      //   geometryB: {type: "cube", size: 1},
+      //   name: `myProCube`,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
+
+      // const spacing = 4; // distance between each object
+      // let i = 0;
+      // let j = 0;
+      // for(const key in geometryTypes) {
+      //   loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'standard'},
+      //     position: {x: i * spacing, y: 2, z: -20 + j * spacing}, // <-- offset X per object
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     scale: [1, 1, 1],
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: ['./res/textures/cube-g1.webp'],
+      //     geometryA: {type: key, size: 1},
+      //     name: `myProCube_${key}`,
+      //     physics: {
+      //       enabled: false,
+      //       geometry: "Sphere"
+      //     }
+      //   });
+      //   i++;
+      //   if(i % 4 == 0) {
+      //     j++;
+      //     i = 0;
+      //   }
+      // }
+
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
       loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
@@ -630,7 +671,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/utils.js":57,"../src/world.js":98}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/procedural-mesh.js":54,"../src/engine/utils.js":57,"../src/world.js":98}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23281,6 +23322,40 @@ class GeometryFactory {
       indices: new Uint16Array(indices)
     };
   }
+  static dodecahedronFlat(R = 1) {
+    const geo = GeometryFactory.dodecahedron(R);
+
+    // Duplicate vertices so each triangle has its own (for flat shading)
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let i = 0; i < geo.indices.length; i += 3) {
+      const i0 = geo.indices[i] * 3;
+      const i1 = geo.indices[i + 1] * 3;
+      const i2 = geo.indices[i + 2] * 3;
+
+      // Add 3 vertices for this triangle
+      positions.push(geo.positions[i0], geo.positions[i0 + 1], geo.positions[i0 + 2], geo.positions[i1], geo.positions[i1 + 1], geo.positions[i1 + 2], geo.positions[i2], geo.positions[i2 + 1], geo.positions[i2 + 2]);
+
+      // Add UVs
+      const u0 = geo.uvs[geo.indices[i] * 2];
+      const v0 = geo.uvs[geo.indices[i] * 2 + 1];
+      const u1 = geo.uvs[geo.indices[i + 1] * 2];
+      const v1 = geo.uvs[geo.indices[i + 1] * 2 + 1];
+      const u2 = geo.uvs[geo.indices[i + 2] * 2];
+      const v2 = geo.uvs[geo.indices[i + 2] * 2 + 1];
+      uvs.push(u0, v0, u1, v1, u2, v2);
+
+      // New indices (each triangle is independent)
+      const baseIdx = i / 3 * 3;
+      indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
+    }
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
+    };
+  }
   static cone(radius = 1, height = 2, segments = 32) {
     const positions = [0, height, 0]; // top
     const uvs = [0.5, 1];
@@ -31700,7 +31775,7 @@ function compositeFragWGSL() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
+exports.default = exports.MeshMorpher = void 0;
 var _vertexProcedural = require("../shaders/vertex.procedural.wgsl");
 var _utils = require("./utils");
 var _materials = _interopRequireDefault(require("./materials"));
@@ -31769,17 +31844,29 @@ class ProceduralMeshObj extends _materials.default {
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
-    if (o.geometryA) {
-      this.meshA = this._loadGeometry(o.geometryA);
-    } else {
-      throw new Error('ProceduralMeshObj requires geometryA parameter');
-    }
-    if (o.geometryB) {
-      this.meshB = this._loadGeometry(o.geometryB);
+    if (o.meshA && o.meshB) {
+      this.meshA = o.meshA;
+      this.meshB = o.meshB;
       this._validateMorphCompatibility();
-    } else {
-      this.meshB = this._loadGeometry(o.geometryA);
+    } else if (o.geometryA) {
+      // OLD: Generate from GeometryFactory (may not match!)
+      this.meshA = this._loadGeometry(o.geometryA);
+      this.meshB = o.geometryB ? this._loadGeometry(o.geometryB) : this._loadGeometry(o.geometryA);
+      this._validateMorphCompatibility();
     }
+    // if(o.geometryA) {
+    //   this.meshA = this._loadGeometry(o.geometryA);
+    // } else {
+    //   throw new Error('ProceduralMeshObj requires geometryA parameter');
+    // }
+
+    // if(o.geometryB) {
+    //   this.meshB = this._loadGeometry(o.geometryB);
+    //   this._validateMorphCompatibility();
+    // } else {
+    //   this.meshB = this._loadGeometry(o.geometryA);
+    // }
+
     console.log(`%cProceduralMesh loaded: ${this.name}`, _utils.LOG_FUNNY_ARCADE);
 
     // ============================================================================
@@ -31855,10 +31942,7 @@ class ProceduralMeshObj extends _materials.default {
     });
   }
 
-  // ============================================================================
   // GEOMETRY LOADING
-  // ============================================================================
-
   _loadGeometry(spec) {
     const {
       type,
@@ -31867,7 +31951,6 @@ class ProceduralMeshObj extends _materials.default {
       options
     } = spec;
     const geo = _geometryFactory.GeometryFactory.create(type, size, segments, options);
-    console.log('........................_loadGeometry ', geo.uvs);
     return {
       vertices: geo.positions,
       normals: this._generateNormals(geo.positions, geo.indices),
@@ -32356,18 +32439,45 @@ class ProceduralMeshObj extends _materials.default {
   // ============================================================================
 
   setMorphBlend(t) {
+    console.log('🎨 setMorphBlend called with t=', t);
     this.morphBlend = Math.max(0, Math.min(1, t));
+    console.log('🎨 After clamp, morphBlend=', this.morphBlend, 'buffer?', !!this.morphBlendBuffer);
     if (this.morphBlendBuffer) {
       this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
+      console.log('✅ GPU write complete');
+    } else {
+      console.error('❌ NO BUFFER!');
     }
   }
   morphTo(targetBlend, duration = 1000, onComplete = null) {
+    console.log('🔥 morphTo ENTRY:', {
+      targetBlend,
+      duration,
+      'this.morphAnimation': this.morphAnimation
+    });
+    const safeDuration = Math.max(duration, 100);
+    console.log('🔥 BEFORE RESET:', this.morphAnimation.elapsed);
+
+    // ✅ FORCE COMPLETE RESET
+    this.morphAnimation = {
+      active: true,
+      startBlend: this.morphBlend,
+      targetBlend: Math.max(0, Math.min(1, targetBlend)),
+      duration: Math.max(duration, 100),
+      elapsed: 0,
+      onComplete: onComplete,
+      debug: this.morphAnimation.debug
+    };
+    console.log('🔥 AFTER RESET:', this.morphAnimation.elapsed);
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = duration;
-    this.morphAnimation.elapsed = 0;
+    this.morphAnimation.duration = safeDuration;
+    this.morphAnimation.elapsed = 0; // ⚠️ CRITICAL: Reset elapsed time!
     this.morphAnimation.onComplete = onComplete;
+    if (this.morphAnimation.debug || true) {
+      console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
+    }
   }
   switchMesh(specA, specB) {
     this.meshA = this._loadGeometry(specA);
@@ -32390,11 +32500,17 @@ class ProceduralMeshObj extends _materials.default {
     const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
     this.setMorphBlend(blend);
+    console.log('⚡ UPDATE CALC:', {
+      elapsed_after: this.morphAnimation.elapsed,
+      t: t,
+      will_complete: t >= 1
+    });
     if (t >= 1) {
       this.morphAnimation.active = false;
       if (this.morphAnimation.onComplete) {
         this.morphAnimation.onComplete();
       }
+      console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
     }
   }
 
@@ -32508,7 +32624,214 @@ class ProceduralMeshObj extends _materials.default {
     console.info(`🧹 Destroyed ProceduralMesh: ${this.name}`);
   }
 }
+
+// ============================================================================
+// TRUE MESH MORPHING - Automatic Vertex Correspondence
+// ============================================================================
+
+/**
+ * Creates morphable geometry pairs that share identical topology.
+ * This enables TRUE morphing (not deformation).
+ * 
+ * STRATEGY:
+ * 1. Both meshes built from same parametric UV grid
+ * 2. Each (u,v) coordinate maps to a vertex in both shapes
+ * 3. Perfect 1:1 vertex correspondence
+ */
 exports.default = ProceduralMeshObj;
+class MeshMorpher {
+  /**
+   * Create a matched pair of morphable geometries
+   * Both will have identical vertex/index structure
+   */
+  static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
+    const morphPair = {
+      meshA: this._generateFromFunction(shapeA, resolutionU, resolutionV),
+      meshB: this._generateFromFunction(shapeB, resolutionU, resolutionV),
+      vertexCount: (resolutionU + 1) * (resolutionV + 1)
+    };
+    console.log(`✅ Created matched pair: ${morphPair.vertexCount} vertices each`);
+    return morphPair;
+  }
+
+  /**
+   * Generate mesh from parametric function: f(u, v) → [x, y, z]
+   */
+  static _generateFromFunction(shapeFunc, resU, resV) {
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const indices = [];
+
+    // Generate vertices
+    for (let v = 0; v <= resV; v++) {
+      for (let u = 0; u <= resU; u++) {
+        const uNorm = u / resU; // [0, 1]
+        const vNorm = v / resV; // [0, 1]
+
+        // Get position from shape function
+        const pos = shapeFunc(uNorm, vNorm);
+        positions.push(pos[0], pos[1], pos[2]);
+
+        // Calculate normal via finite differences
+        const eps = 0.01;
+        const posU = shapeFunc(Math.min(uNorm + eps, 1), vNorm);
+        const posV = shapeFunc(uNorm, Math.min(vNorm + eps, 1));
+        const tangentU = [posU[0] - pos[0], posU[1] - pos[1], posU[2] - pos[2]];
+        const tangentV = [posV[0] - pos[0], posV[1] - pos[1], posV[2] - pos[2]];
+
+        // Cross product for normal
+        const normal = [tangentU[1] * tangentV[2] - tangentU[2] * tangentV[1], tangentU[2] * tangentV[0] - tangentU[0] * tangentV[2], tangentU[0] * tangentV[1] - tangentU[1] * tangentV[0]];
+        const len = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
+        if (len > 0) {
+          normal[0] /= len;
+          normal[1] /= len;
+          normal[2] /= len;
+        }
+        normals.push(normal[0], normal[1], normal[2]);
+        uvs.push(uNorm, vNorm);
+      }
+    }
+
+    // Generate indices (quad grid)
+    for (let v = 0; v < resV; v++) {
+      for (let u = 0; u < resU; u++) {
+        const i0 = v * (resU + 1) + u;
+        const i1 = i0 + 1;
+        const i2 = i0 + (resU + 1);
+        const i3 = i2 + 1;
+
+        // Two triangles per quad
+        indices.push(i0, i2, i1);
+        indices.push(i1, i2, i3);
+      }
+    }
+    return {
+      vertices: new Float32Array(positions),
+      normals: new Float32Array(normals),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices),
+      vertexCount: positions.length / 3
+    };
+  }
+
+  // ==========================================================================
+  // PARAMETRIC SHAPE LIBRARY
+  // ==========================================================================
+
+  /**
+   * Sphere: Classic UV sphere
+   */
+  static sphere(radius = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2; // Longitude
+      const phi = v * Math.PI; // Latitude
+
+      return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)];
+    };
+  }
+
+  /**
+   * Cube: Mapped to UV sphere topology
+   */
+  static cube(size = 1) {
+    return (u, v) => {
+      // Map UV to cube surface (normalized sphere approach)
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI;
+      let x = Math.sin(phi) * Math.cos(theta);
+      let y = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+
+      // Project to cube surface (dominant axis)
+      const absX = Math.abs(x);
+      const absY = Math.abs(y);
+      const absZ = Math.abs(z);
+      const max = Math.max(absX, absY, absZ);
+      return [x / max * size, y / max * size, z / max * size];
+    };
+  }
+
+  /**
+   * Cylinder
+   */
+  static cylinder(radius = 1, height = 2) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = (v - 0.5) * height;
+      return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
+    };
+  }
+
+  /**
+   * Torus
+   */
+  static torus(majorRadius = 1, minorRadius = 0.3) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      const r = majorRadius + minorRadius * Math.cos(phi);
+      return [r * Math.cos(theta), minorRadius * Math.sin(phi), r * Math.sin(theta)];
+    };
+  }
+
+  /**
+   * Cone
+   */
+  static cone(baseRadius = 1, height = 2) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r = baseRadius * (1 - v); // Radius shrinks with height
+
+      return [r * Math.cos(theta), h, r * Math.sin(theta)];
+    };
+  }
+
+  /**
+   * Capsule (cylinder with hemisphere caps)
+   */
+  static capsule(radius = 0.5, height = 2) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      if (v < 0.25) {
+        // Bottom hemisphere
+        const phi = v / 0.25 * Math.PI * 0.5 + Math.PI * 0.5;
+        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) - height / 2, radius * Math.sin(phi) * Math.sin(theta)];
+      } else if (v > 0.75) {
+        // Top hemisphere
+        const phi = (v - 0.75) / 0.25 * Math.PI * 0.5;
+        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) + height / 2, radius * Math.sin(phi) * Math.sin(theta)];
+      } else {
+        // Cylinder middle
+        const h = (v - 0.25) / 0.5 * height - height / 2;
+        return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
+      }
+    };
+  }
+
+  /**
+   * Plane (flat square)
+   */
+  static plane(size = 1) {
+    return (u, v) => {
+      return [(u - 0.5) * size, 0, (v - 0.5) * size];
+    };
+  }
+
+  /**
+   * Mobius strip
+   */
+  static mobius(radius = 1, width = 0.5) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const t = (v - 0.5) * width;
+      const halfTheta = theta / 2;
+      return [(radius + t * Math.cos(halfTheta)) * Math.cos(theta), t * Math.sin(halfTheta), (radius + t * Math.cos(halfTheta)) * Math.sin(theta)];
+    };
+  }
+}
+exports.MeshMorpher = MeshMorpher;
 
 },{"../shaders/vertex.procedural.wgsl":81,"./geometry-factory":39,"./materials":48,"./matrix-class":49,"./utils":57,"wgpu-matrix":22}],55:[function(require,module,exports){
 "use strict";
@@ -33934,7 +34257,7 @@ const geometryTypes = exports.geometryTypes = {
   "circlePlane": "circlePlane",
   "ring": "ring",
   "icosahedron": "icosahedron",
-  "dodecahedron": "dodecahedron",
+  // "dodecahedron": "dodecahedron",
   "torusKnot": "torusKnot",
   "mobius": "mobius",
   "crystal": "crystal",
@@ -37974,7 +38297,7 @@ struct VertexAnimParams {
 }
 
 struct Bones {
-  data: array<vec4<f32>, 1600>
+  data: array<vec4<f32>, 1>
 };
 
 @group(0) @binding(0) var<uniform> scene: Scene;

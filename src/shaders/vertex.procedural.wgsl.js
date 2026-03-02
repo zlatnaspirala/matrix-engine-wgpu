@@ -62,7 +62,7 @@ struct VertexAnimParams {
 }
 
 struct Bones {
-  data: array<vec4<f32>, 1600>
+  data: array<vec4<f32>, 1>
 };
 
 @group(0) @binding(0) var<uniform> scene: Scene;

@@ -1,6 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {geometryTypes, LOG_MATRIX} from "../src/engine/utils.js";
+import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 // import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadObjFile = function() {
@@ -112,33 +113,77 @@ export var loadObjFile = function() {
         }
       });
 
+      const geometryTypesTest = {
+        "cube": "cube",
+        "sphere": "sphere"
+      };
 
+      // MeshMorpher
+      const pair = MeshMorpher.createMatchedPair(
+        MeshMorpher.plane(2),
+        MeshMorpher.sphere(1),
+        32, 32
+      );
 
-      const spacing = 4; // distance between each object
-      let i = 0;
-      let j = 0;
-
-      for(const key in geometryTypes) {
-        loadObjFile.addProceduralMeshObj({
-          material: {type: 'standard'},
-          position: {x: i * spacing, y: 2, z: -20 + j * spacing}, // <-- offset X per object
-          rotation: {x: 0, y: 0, z: 0},
-          scale: [1, 1, 1],
-          rotationSpeed: {x: 0, y: 0, z: 0},
-          texturesPaths: ['./res/textures/cube-g1.webp'],
-          geometryA: {type: key, size: 1},
-          name: `myProCube_${key}`,
-          physics: {
-            enabled: false,
-            geometry: "Sphere"
-          }
-        });
-        i++;
-        if(i % 4 == 0) {
-          j++;
-          i = 0;
+      loadObjFile.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: 4, y: 2, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [1, 1, 1],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1.webp'],
+        meshA: pair.meshA,  // Pre-built matched geometry
+        meshB: pair.meshB,  // Same vertex count, same indices!
+        // geometryA: {type: "cube", size: 1},
+        // geometryB: {type: "icosahedron", size: 1},
+        name: `myProCube`,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
         }
-      }
+      });
+
+      // loadObjFile.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: -4, y: 2, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1.webp'],
+      //   geometryA: {type: "sphere", size: 1},
+      //   geometryB: {type: "cube", size: 1},
+      //   name: `myProCube`,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
+
+
+      // const spacing = 4; // distance between each object
+      // let i = 0;
+      // let j = 0;
+      // for(const key in geometryTypes) {
+      //   loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'standard'},
+      //     position: {x: i * spacing, y: 2, z: -20 + j * spacing}, // <-- offset X per object
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     scale: [1, 1, 1],
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: ['./res/textures/cube-g1.webp'],
+      //     geometryA: {type: key, size: 1},
+      //     name: `myProCube_${key}`,
+      //     physics: {
+      //       enabled: false,
+      //       geometry: "Sphere"
+      //     }
+      //   });
+      //   i++;
+      //   if(i % 4 == 0) {
+      //     j++;
+      //     i = 0;
+      //   }
+      // }
 
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 

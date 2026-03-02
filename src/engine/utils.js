@@ -1236,7 +1236,7 @@ export const geometryTypes = {
   "circlePlane": "circlePlane",
   "ring": "ring",
   "icosahedron": "icosahedron",
-  "dodecahedron": "dodecahedron",
+  // "dodecahedron": "dodecahedron",
   "torusKnot": "torusKnot",
   "mobius": "mobius",
   "crystal": "crystal",

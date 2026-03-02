@@ -258,6 +258,49 @@ export class GeometryFactory {
     };
   }
 
+
+  static dodecahedronFlat(R = 1) {
+    const geo = GeometryFactory.dodecahedron(R);
+
+    // Duplicate vertices so each triangle has its own (for flat shading)
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+
+    for(let i = 0;i < geo.indices.length;i += 3) {
+      const i0 = geo.indices[i] * 3;
+      const i1 = geo.indices[i + 1] * 3;
+      const i2 = geo.indices[i + 2] * 3;
+
+      // Add 3 vertices for this triangle
+      positions.push(
+        geo.positions[i0], geo.positions[i0 + 1], geo.positions[i0 + 2],
+        geo.positions[i1], geo.positions[i1 + 1], geo.positions[i1 + 2],
+        geo.positions[i2], geo.positions[i2 + 1], geo.positions[i2 + 2]
+      );
+
+      // Add UVs
+      const u0 = geo.uvs[(geo.indices[i]) * 2];
+      const v0 = geo.uvs[(geo.indices[i]) * 2 + 1];
+      const u1 = geo.uvs[(geo.indices[i + 1]) * 2];
+      const v1 = geo.uvs[(geo.indices[i + 1]) * 2 + 1];
+      const u2 = geo.uvs[(geo.indices[i + 2]) * 2];
+      const v2 = geo.uvs[(geo.indices[i + 2]) * 2 + 1];
+
+      uvs.push(u0, v0, u1, v1, u2, v2);
+
+      // New indices (each triangle is independent)
+      const baseIdx = (i / 3) * 3;
+      indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
+    }
+
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
+    };
+  }
+
   static cone(radius = 1, height = 2, segments = 32) {
     const positions = [0, height, 0]; // top
     const uvs = [0.5, 1];
