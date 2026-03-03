@@ -2,7 +2,7 @@ import {mat4, vec3} from 'wgpu-matrix';
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import Behavior from './behavior';
 import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.instanced.wgsl';
-import {vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
+import {vertexMorphShadowWGSL, vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
 /**
  * @description
  * Spot light with shadow cast.
@@ -382,7 +382,7 @@ export class SpotLight {
       }),
       vertex: {
         module: this.device.createShaderModule({
-          code: vertexMorphWGSL, // Use the morphing shader logic
+          code: vertexMorphShadowWGSL, // Use the morphing shader logic
         }),
         // IMPORTANT: Use the 5-buffer layout defined in your ProceduralMeshObj
         buffers: [

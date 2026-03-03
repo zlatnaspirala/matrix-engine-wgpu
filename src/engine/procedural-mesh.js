@@ -49,20 +49,14 @@ export default class ProceduralMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient) {
     // Pass all required params to Materials parent class
     super(device, o.material, null, o.textureCache);
-
-    // ============================================================================
     // BASIC SETUP
-    // ============================================================================
     this.name = o.name || genName(3);
     this.done = false;
     this.canvas = canvas;
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
-
-    // ============================================================================
     // GEOMETRY LOADING
-    // ============================================================================
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
@@ -79,24 +73,8 @@ export default class ProceduralMeshObj extends Materials {
         : this._loadGeometry(o.geometryA);
       this._validateMorphCompatibility();
     }
-    // if(o.geometryA) {
-    //   this.meshA = this._loadGeometry(o.geometryA);
-    // } else {
-    //   throw new Error('ProceduralMeshObj requires geometryA parameter');
-    // }
-
-    // if(o.geometryB) {
-    //   this.meshB = this._loadGeometry(o.geometryB);
-    //   this._validateMorphCompatibility();
-    // } else {
-    //   this.meshB = this._loadGeometry(o.geometryA);
-    // }
-
     console.log(`%cProceduralMesh loaded: ${this.name}`, LOG_FUNNY_ARCADE);
-
-    // ============================================================================
     // TRANSFORM & CAMERA
-    // ============================================================================
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -120,9 +98,9 @@ export default class ProceduralMeshObj extends Materials {
     this.raycast = o.raycast || {enabled: false, radius: 2};
     this.pointerEffect = o.pointerEffect || {enabled: false};
 
-    // ============================================================================
+
     // MORPH ANIMATION STATE
-    // ============================================================================
+
     this.morphAnimation = {
       active: false,
       startBlend: 0.0,
@@ -132,9 +110,9 @@ export default class ProceduralMeshObj extends Materials {
       onComplete: null
     };
 
-    // ============================================================================
+
     // INIT
-    // ============================================================================
+
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
@@ -311,9 +289,9 @@ export default class ProceduralMeshObj extends Materials {
     this.meshTextureView = texture.createView();
   }
 
-  // ============================================================================
+
   // SHADOW DEPTH TEXTURE (required by Materials.createBindGroupForRender)
-  // ============================================================================
+
 
   _setupShadowDepthTexture() {
     this.shadowDepthTexture = this.device.createTexture({
@@ -327,9 +305,9 @@ export default class ProceduralMeshObj extends Materials {
     });
   }
 
-  // ============================================================================
+
   // BUFFER SETUP
-  // ============================================================================
+
 
   _setupBuffers() {
     this.context.configure({
@@ -452,9 +430,9 @@ export default class ProceduralMeshObj extends Materials {
     };
   }
 
-  // ============================================================================
+
   // UNIFORMS SETUP
-  // ============================================================================
+
 
   _setupUniforms() {
     // Model matrix uniform
@@ -482,6 +460,8 @@ export default class ProceduralMeshObj extends Materials {
     new Float32Array(this.bonesBuffer.getMappedRange()).set(dummyBonesData);
     this.bonesBuffer.unmap();
 
+
+
     // Vertex animation params (binding 2)
     this.vertexAnimParams = new Float32Array(32).fill(0);
     this.vertexAnimBuffer = this.device.createBuffer({
@@ -499,9 +479,9 @@ export default class ProceduralMeshObj extends Materials {
     });
     this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
 
-    // ============================================================================
+
     // MAIN RENDER BIND GROUP (4 bindings - includes morphBlend)
-    // ============================================================================
+
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout procedural',
       entries: [
@@ -530,9 +510,9 @@ export default class ProceduralMeshObj extends Materials {
         {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
       ],
     });
-    // ============================================================================
+
     // SHADOW BIND GROUP (3 bindings - NO morphBlend, for Light compatibility)
-    // ============================================================================
+
     this.shadowBindGroupLayout = this.device.createBindGroupLayout({
       label: 'shadowBindGroupLayout procedural',
       entries: [
@@ -556,9 +536,9 @@ export default class ProceduralMeshObj extends Materials {
     this._sceneData = new Float32Array(48);
   }
 
-  // ============================================================================
+
   // PIPELINE SETUP
-  // ============================================================================
+
 
   _setupPipeline() {
     // Call Materials methods to create bind group layout and bind group
@@ -634,9 +614,9 @@ export default class ProceduralMeshObj extends Materials {
     });
   }
 
-  // ============================================================================
+
   // PUBLIC MORPH API
-  // ============================================================================
+
 
   setMorphBlend(t) {
     console.log('🎨 setMorphBlend called with t=', t);
@@ -714,11 +694,7 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   updateMorphAnimation(deltaTime) {
-
-
-
     if(!this.morphAnimation.active) return;
-
     this.morphAnimation.elapsed += deltaTime;
     const t = Math.min(1, this.morphAnimation.elapsed / this.morphAnimation.duration);
 
@@ -747,9 +723,9 @@ export default class ProceduralMeshObj extends Materials {
     }
   }
 
-  // ============================================================================
+
   // TRANSFORM & UPDATE
-  // ============================================================================
+
 
   getModelMatrix(pos, useScale = false) {
     let modelMatrix = mat4.identity();
@@ -767,8 +743,7 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   updateModelUniformBuffer() {
-    if(!this.done) return;
-
+    // if(!this.done) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
@@ -783,12 +758,9 @@ export default class ProceduralMeshObj extends Materials {
     const now = Date.now();
     const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
-
     const camera = this.cameras[this.mainCameraParams.type];
     if(index === 0) camera.update(dt, this.inputHandler());
-
     const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-
     this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
     this._sceneData[32] = camera.position[0];
@@ -823,21 +795,15 @@ export default class ProceduralMeshObj extends Materials {
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
 
-  // ============================================================================
   // RENDERING
-  // ============================================================================
-
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.mainRenderBindGroup);
-
-    // Bind morph buffers
     pass.setVertexBuffer(0, this.vertexBufferA);  // posA
     pass.setVertexBuffer(1, this.normalBufferA);  // normalA
     pass.setVertexBuffer(2, this.uvBuffer);       // uv
     pass.setVertexBuffer(3, this.vertexBufferB);  // posB
     pass.setVertexBuffer(4, this.normalBufferB);  // normalB
-
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
@@ -846,7 +812,7 @@ export default class ProceduralMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBufferA);
     shadowPass.setVertexBuffer(1, this.normalBufferA);
     shadowPass.setVertexBuffer(2, this.uvBuffer);
-    shadowPass.setVertexBuffer(3, this.dummyJointsBuffer); // joints (dummy)
+    shadowPass.setVertexBuffer(3, this.dummyJointsBuffer);  // joints (dummy)
     shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
@@ -856,10 +822,7 @@ export default class ProceduralMeshObj extends Materials {
     return this.pipeline;
   }
 
-  // ============================================================================
-  // CLEANUP
-  // ============================================================================
-
+  // CLEANUP NOT WORKS PERFECT YET
   destroy() {
     if(this._destroyed) return;
     this._destroyed = true;
@@ -889,9 +852,9 @@ export default class ProceduralMeshObj extends Materials {
 
 
 
-// ============================================================================
+
 // TRUE MESH MORPHING - Automatic Vertex Correspondence
-// ============================================================================
+
 
 /**
  * Creates morphable geometry pairs that share identical topology.

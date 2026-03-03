@@ -26338,7 +26338,7 @@ class SpotLight {
       }),
       vertex: {
         module: this.device.createShaderModule({
-          code: _vertexProcedural.vertexMorphWGSL // Use the morphing shader logic
+          code: _vertexProcedural.vertexMorphShadowWGSL // Use the morphing shader logic
         }),
         // IMPORTANT: Use the 5-buffer layout defined in your ProceduralMeshObj
         buffers: [{
@@ -31981,20 +31981,14 @@ class ProceduralMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient) {
     // Pass all required params to Materials parent class
     super(device, o.material, null, o.textureCache);
-
-    // ============================================================================
     // BASIC SETUP
-    // ============================================================================
     this.name = o.name || (0, _utils.genName)(3);
     this.done = false;
     this.canvas = canvas;
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
-
-    // ============================================================================
     // GEOMETRY LOADING
-    // ============================================================================
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
@@ -32008,24 +32002,8 @@ class ProceduralMeshObj extends _materials.default {
       this.meshB = o.geometryB ? this._loadGeometry(o.geometryB) : this._loadGeometry(o.geometryA);
       this._validateMorphCompatibility();
     }
-    // if(o.geometryA) {
-    //   this.meshA = this._loadGeometry(o.geometryA);
-    // } else {
-    //   throw new Error('ProceduralMeshObj requires geometryA parameter');
-    // }
-
-    // if(o.geometryB) {
-    //   this.meshB = this._loadGeometry(o.geometryB);
-    //   this._validateMorphCompatibility();
-    // } else {
-    //   this.meshB = this._loadGeometry(o.geometryA);
-    // }
-
     console.log(`%cProceduralMesh loaded: ${this.name}`, _utils.LOG_FUNNY_ARCADE);
-
-    // ============================================================================
     // TRANSFORM & CAMERA
-    // ============================================================================
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -32051,9 +32029,8 @@ class ProceduralMeshObj extends _materials.default {
       enabled: false
     };
 
-    // ============================================================================
     // MORPH ANIMATION STATE
-    // ============================================================================
+
     this.morphAnimation = {
       active: false,
       startBlend: 0.0,
@@ -32063,9 +32040,8 @@ class ProceduralMeshObj extends _materials.default {
       onComplete: null
     };
 
-    // ============================================================================
     // INIT
-    // ============================================================================
+
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 1024;
@@ -32208,9 +32184,7 @@ class ProceduralMeshObj extends _materials.default {
     this.meshTextureView = texture.createView();
   }
 
-  // ============================================================================
   // SHADOW DEPTH TEXTURE (required by Materials.createBindGroupForRender)
-  // ============================================================================
 
   _setupShadowDepthTexture() {
     this.shadowDepthTexture = this.device.createTexture({
@@ -32224,9 +32198,7 @@ class ProceduralMeshObj extends _materials.default {
     });
   }
 
-  // ============================================================================
   // BUFFER SETUP
-  // ============================================================================
 
   _setupBuffers() {
     this.context.configure({
@@ -32359,9 +32331,7 @@ class ProceduralMeshObj extends _materials.default {
     };
   }
 
-  // ============================================================================
   // UNIFORMS SETUP
-  // ============================================================================
 
   _setupUniforms() {
     // Model matrix uniform
@@ -32406,9 +32376,8 @@ class ProceduralMeshObj extends _materials.default {
     });
     this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
 
-    // ============================================================================
     // MAIN RENDER BIND GROUP (4 bindings - includes morphBlend)
-    // ============================================================================
+
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout procedural',
       entries: [{
@@ -32485,9 +32454,9 @@ class ProceduralMeshObj extends _materials.default {
         }
       }]
     });
-    // ============================================================================
+
     // SHADOW BIND GROUP (3 bindings - NO morphBlend, for Light compatibility)
-    // ============================================================================
+
     this.shadowBindGroupLayout = this.device.createBindGroupLayout({
       label: 'shadowBindGroupLayout procedural',
       entries: [{
@@ -32539,9 +32508,7 @@ class ProceduralMeshObj extends _materials.default {
     this._sceneData = new Float32Array(48);
   }
 
-  // ============================================================================
   // PIPELINE SETUP
-  // ============================================================================
 
   _setupPipeline() {
     // Call Materials methods to create bind group layout and bind group
@@ -32627,9 +32594,7 @@ class ProceduralMeshObj extends _materials.default {
     });
   }
 
-  // ============================================================================
   // PUBLIC MORPH API
-  // ============================================================================
 
   setMorphBlend(t) {
     console.log('🎨 setMorphBlend called with t=', t);
@@ -32707,9 +32672,7 @@ class ProceduralMeshObj extends _materials.default {
     }
   }
 
-  // ============================================================================
   // TRANSFORM & UPDATE
-  // ============================================================================
 
   getModelMatrix(pos, useScale = false) {
     let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -32723,7 +32686,7 @@ class ProceduralMeshObj extends _materials.default {
     return modelMatrix;
   }
   updateModelUniformBuffer() {
-    if (!this.done) return;
+    // if(!this.done) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   }
@@ -32760,21 +32723,15 @@ class ProceduralMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
 
-  // ============================================================================
   // RENDERING
-  // ============================================================================
-
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.mainRenderBindGroup);
-
-    // Bind morph buffers
     pass.setVertexBuffer(0, this.vertexBufferA); // posA
     pass.setVertexBuffer(1, this.normalBufferA); // normalA
     pass.setVertexBuffer(2, this.uvBuffer); // uv
     pass.setVertexBuffer(3, this.vertexBufferB); // posB
     pass.setVertexBuffer(4, this.normalBufferB); // normalB
-
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
@@ -32791,10 +32748,7 @@ class ProceduralMeshObj extends _materials.default {
     return this.pipeline;
   }
 
-  // ============================================================================
-  // CLEANUP
-  // ============================================================================
-
+  // CLEANUP NOT WORKS PERFECT YET
   destroy() {
     if (this._destroyed) return;
     this._destroyed = true;
@@ -32817,9 +32771,7 @@ class ProceduralMeshObj extends _materials.default {
   }
 }
 
-// ============================================================================
 // TRUE MESH MORPHING - Automatic Vertex Correspondence
-// ============================================================================
 
 /**
  * Creates morphable geometry pairs that share identical topology.
@@ -38423,21 +38375,16 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.vertexMorphWGSL = void 0;
+exports.vertexMorphWGSL = exports.vertexMorphShadowWGSL = void 0;
 const vertexMorphWGSL = exports.vertexMorphWGSL = /* wgsl */`
 // Matches your existing vertex shader structure
 struct Scene {
-  lightViewProjMatrix: mat4x4f,
-  cameraViewProjMatrix: mat4x4f,
-  cameraPos: vec3f,
-  padding2: f32,
-  lightPos: vec3f,
-  padding: f32,
-  globalAmbient: vec3f,
-  padding3: f32,
-  time: f32,
-  deltaTime: f32,
-  padding4: vec2f,
+  lightViewProjMatrix: mat4x4f,   // [0-15]
+  cameraViewProjMatrix: mat4x4f,  // [16-31]
+  cameraPos: vec3f,               // [32-34]  ← Match the data!
+  padding0: f32,                  // [35]
+  lightPos: vec3f,                // [36-38]
+  padding1: f32,                  // [39]
 }
 
 struct Model {
@@ -38595,8 +38542,145 @@ fn main(input: VertexInput) -> VertexOutput {
   output.shadowPos = scene.lightViewProjMatrix * worldPos; 
   output.fragNorm = normalize(normalMatrix * blendedNormal);
   output.uv = input.uv;
-  
   return output;
+}
+`;
+const vertexMorphShadowWGSL = exports.vertexMorphShadowWGSL = /* wgsl */`
+struct Scene {
+  lightViewProjMatrix: mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  cameraPos: vec3f,
+  padding0: f32,
+  lightPos: vec3f,
+  padding1: f32,
+}
+
+struct Model {
+  modelMatrix: mat4x4f,
+}
+
+struct VertexAnimParams {
+  time: f32,
+  flags: f32,
+  globalIntensity: f32,
+  _pad0: f32,
+  waveSpeed: f32,
+  waveAmplitude: f32,
+  waveFrequency: f32,
+  _pad1: f32,
+  windSpeed: f32,
+  windStrength: f32,
+  windHeightInfluence: f32,
+  windTurbulence: f32,
+  pulseSpeed: f32,
+  pulseAmount: f32,
+  pulseCenterX: f32,
+  pulseCenterY: f32,
+  twistSpeed: f32,
+  twistAmount: f32,
+  _pad2: f32,
+  _pad3: f32,
+  noiseScale: f32,
+  noiseStrength: f32,
+  noiseSpeed: f32,
+  _pad4: f32,
+  oceanWaveScale: f32,
+  oceanWaveHeight: f32,
+  oceanWaveSpeed: f32,
+  _pad5: f32,
+}
+
+@group(0) @binding(0) var<uniform> scene: Scene;
+@group(1) @binding(0) var<uniform> model: Model;
+@group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(1) @binding(3) var<uniform> u_morphBlend: f32;
+
+const ANIM_WAVE: u32 = 1u;
+const ANIM_WIND: u32 = 2u;
+const ANIM_PULSE: u32 = 4u;
+const ANIM_TWIST: u32 = 8u;
+const ANIM_NOISE: u32 = 16u;
+const ANIM_OCEAN: u32 = 32u;
+
+struct VertexInput {
+  @location(0) positionA: vec3f,
+  @location(6) positionB: vec3f,
+};
+
+// Animation Helpers (Must match your main shader exactly)
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p); let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+             mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x), u.y);
+}
+
+fn applyVertexAnimation(pos: vec3f) -> vec3f {
+  var p = pos;
+  let flags = u32(vertexAnim.flags);
+  let t = vertexAnim.time;
+
+  if ((flags & ANIM_WAVE) != 0u) {
+    let w = sin(p.x * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed) * cos(p.z * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed);
+    p.y += w * vertexAnim.waveAmplitude;
+  }
+  
+  if ((flags & ANIM_WIND) != 0u) {
+    let h = max(0.0, p.y) * vertexAnim.windHeightInfluence;
+    let d = vec2f(sin(t * vertexAnim.windSpeed), cos(t * vertexAnim.windSpeed * 0.7)) * vertexAnim.windStrength;
+    let turb = noise(p.xz * 0.5 + t * 0.3) * vertexAnim.windTurbulence;
+    p.x += d.x * h * (1.0 + turb);
+    p.z += d.y * h * (1.0 + turb);
+  }
+
+  if ((flags & ANIM_PULSE) != 0u) {
+    let s = 1.0 + sin(t * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+    let c = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+    p = c + (p - c) * s;
+  }
+
+  if ((flags & ANIM_TWIST) != 0u) {
+    let angle = p.y * vertexAnim.twistAmount * sin(t * vertexAnim.twistSpeed);
+    let cosA = cos(angle); let sinA = sin(angle);
+    p = vec3f(p.x * cosA - p.z * sinA, p.y, p.x * sinA + p.z * cosA);
+  }
+
+  if ((flags & ANIM_NOISE) != 0u) {
+    p.y += (noise(p.xz * vertexAnim.noiseScale + t * vertexAnim.noiseSpeed) - 0.5) * vertexAnim.noiseStrength;
+  }
+
+  if ((flags & ANIM_OCEAN) != 0u) {
+    let s = vertexAnim.oceanWaveScale;
+    let h = vertexAnim.oceanWaveHeight;
+    p.y += sin(dot(p.xz, vec2f(1.0, 0.0)) * s + t * vertexAnim.oceanWaveSpeed) * h;
+    p.y += sin(dot(p.xz, vec2f(0.7, 0.7)) * s * 1.2 + t * vertexAnim.oceanWaveSpeed * 1.3) * h * 0.7;
+  }
+
+  return mix(pos, p, vertexAnim.globalIntensity);
+}
+
+@vertex
+fn main(input: VertexInput) -> @builtin(position) vec4f {
+  // 1. Morph positions
+  let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
+  
+  // 2. Apply the same vertex animations
+  var finalLocalPos = blendedPosition;
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+    finalLocalPos = applyVertexAnimation(finalLocalPos);
+  }
+
+  // 3. World space and Light Clip Space
+  let worldPos = model.modelMatrix * vec4f(finalLocalPos, 1.0);
+  
+  // For shadow maps, the output position IS the light's view-projection
+  return scene.lightViewProjMatrix * worldPos;
 }
 `;
 
