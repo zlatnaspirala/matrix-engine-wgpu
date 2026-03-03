@@ -564,6 +564,52 @@ var loadObjFile = function () {
           geometry: "Sphere"
         }
       });
+      loadObjFile.addMeshObj({
+        material: {
+          type: 'mirror'
+        },
+        position: {
+          x: 0,
+          y: 1,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [0.5, 0.5, 0.5],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        envMapParams: {
+          baseColorMix: 0.0,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],
+          // Slight cool tint
+          reflectivity: 0.25,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0],
+          // Soft cyan
+          illuminateStrength: 0.1,
+          // Gentle rim
+          illuminatePulse: 0.01,
+          // No pulse (static)
+          fresnelPower: 2.0,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false // ✅ Env map mode
+        },
+        name: 'ball',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
       const geometryTypesTest = {
         "cube": "cube",
         "sphere": "sphere"
@@ -571,39 +617,25 @@ var loadObjFile = function () {
 
       // MeshMorpher
       const pair = _proceduralMesh.MeshMorpher.createMatchedPair(_proceduralMesh.MeshMorpher.plane(2), _proceduralMesh.MeshMorpher.sphere(1), 32, 32);
-      loadObjFile.addProceduralMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 4,
-          y: 2,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1, 1, 1],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1.webp'],
-        meshA: pair.meshA,
-        // Pre-built matched geometry
-        meshB: pair.meshB,
-        // Same vertex count, same indices!
-        // geometryA: {type: "cube", size: 1},
-        // geometryB: {type: "icosahedron", size: 1},
-        name: `myProCube`,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      const pair2 = _proceduralMesh.MeshMorpher.createMatchedPair(_proceduralMesh.MeshMorpher.cube(2), _proceduralMesh.MeshMorpher.sphere(2), 32, 32);
+
+      // loadObjFile.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 4, y: 2, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1.webp'],
+      //   meshA: pair2.meshA,  // Pre-built matched geometry
+      //   meshB: pair2.meshB,  // Same vertex count, same indices!
+      //   // geometryA: {type: "cube", size: 1},
+      //   // geometryB: {type: "icosahedron", size: 1},
+      //   name: `myProCube`,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
       // loadObjFile.addProceduralMeshObj({
       //   material: {type: 'standard'},
@@ -621,39 +653,58 @@ var loadObjFile = function () {
       //   }
       // });
 
-      // const spacing = 4; // distance between each object
-      // let i = 0;
-      // let j = 0;
-      // for(const key in geometryTypes) {
-      //   loadObjFile.addProceduralMeshObj({
-      //     material: {type: 'standard'},
-      //     position: {x: i * spacing, y: 2, z: -20 + j * spacing}, // <-- offset X per object
-      //     rotation: {x: 0, y: 0, z: 0},
-      //     scale: [1, 1, 1],
-      //     rotationSpeed: {x: 0, y: 0, z: 0},
-      //     texturesPaths: ['./res/textures/cube-g1.webp'],
-      //     geometryA: {type: key, size: 1},
-      //     name: `myProCube_${key}`,
-      //     physics: {
-      //       enabled: false,
-      //       geometry: "Sphere"
-      //     }
-      //   });
-      //   i++;
-      //   if(i % 4 == 0) {
-      //     j++;
-      //     i = 0;
-      //   }
-      // }
-
+      const spacing = 4; // distance between each object
+      let i = 0;
+      let j = 0;
+      for (const key in _utils.geometryTypes) {
+        loadObjFile.addProceduralMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: {
+            x: i * spacing - 5,
+            y: 1,
+            z: -20 + j * spacing
+          },
+          // <-- offset X per object
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [1, 1, 1],
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: ['./res/textures/cube-g1_low.webp'],
+          geometryA: {
+            type: key,
+            size: 1
+          },
+          name: `myProCube_${key}`,
+          physics: {
+            enabled: false,
+            geometry: "Sphere"
+          }
+        });
+        i++;
+        if (i % 4 == 0) {
+          j++;
+          i = 0;
+        }
+      }
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
+      loadObjFile.lightContainer[0].intensity = 20;
       loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
       });
-      loadObjFile.lightContainer[0].position[1] = 11;
+      loadObjFile.lightContainer[0].position = [0, 6, -10];
+      loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();
@@ -25929,6 +25980,7 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _behavior = _interopRequireDefault(require("./behavior"));
 var _vertexShadowInstanced = require("../shaders/instanced/vertexShadow.instanced.wgsl");
+var _vertexProcedural = require("../shaders/vertex.procedural.wgsl");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -25964,6 +26016,7 @@ class SpotLight {
     this.aspect = 1;
     this.near = near;
     this.far = far;
+    this.lightDinamic = true;
     this.camera = camera;
     this.inputHandler = inputHandler;
     this.position = position;
@@ -26111,6 +26164,41 @@ class SpotLight {
         }
       }]
     });
+    this.modelBindGroupLayoutMorph = this.device.createBindGroupLayout({
+      label: 'modelBindGroupLayout light [morph]',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      },
+      // model
+      {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      },
+      // bones
+      {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      },
+      // vertexAnim
+      {
+        binding: 3,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      } // morphBlend
+      ]
+    });
     this.shadowPipeline = this.device.createRenderPipeline({
       label: 'shadowPipeline light',
       layout: this.device.createPipelineLayout({
@@ -26240,11 +26328,77 @@ class SpotLight {
       },
       primitive: this.primitive
     });
+
+    // 4. NEW MORPH PIPELINE - Added to handle procedural mesh shadows
+    this.shadowPipelineMorph = this.device.createRenderPipeline({
+      label: 'shadowPipeline light [MORPH]',
+      layout: this.device.createPipelineLayout({
+        label: 'pipelineLayout light [morph]',
+        bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.modelBindGroupLayoutMorph]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: _vertexProcedural.vertexMorphWGSL // Use the morphing shader logic
+        }),
+        // IMPORTANT: Use the 5-buffer layout defined in your ProceduralMeshObj
+        buffers: [{
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        },
+        // posA
+        {
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x3"
+          }]
+        },
+        // nrmA
+        {
+          arrayStride: 8,
+          attributes: [{
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32x2"
+          }]
+        },
+        // uv
+        {
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 6,
+            offset: 0,
+            format: "float32x3"
+          }]
+        },
+        // posB
+        {
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 7,
+            offset: 0,
+            format: "float32x3"
+          }]
+        } // nrmB
+        ]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float'
+      },
+      primitive: this.primitive
+    });
     this.getMainPassBindGroup = function (mesh) {
       // You can cache it per mesh to avoid recreating each frame
       if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
       const index = mesh._lightBindGroupIndex || 0;
-      if (this.mainPassBindGroupContainer[index]) {
+      if (this.mainPassBindGroupContainer[index] && this.lightDinamic == false) {
         return this.mainPassBindGroupContainer[index];
       }
       this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
@@ -26324,7 +26478,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":75,"../shaders/vertexShadow.wgsl":84,"./behavior":24,"wgpu-matrix":22}],43:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":75,"../shaders/vertex.procedural.wgsl":81,"../shaders/vertexShadow.wgsl":84,"./behavior":24,"wgpu-matrix":22}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32174,6 +32328,30 @@ class ProceduralMeshObj extends _materials.default {
         format: "float32x3"
       }] // normalB
     }];
+    const dummyJoints = new Uint32Array(this.meshA.vertexCount * 4).fill(0);
+    this.dummyJointsBuffer = this.device.createBuffer({
+      size: dummyJoints.byteLength,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true
+    });
+    new Uint32Array(this.dummyJointsBuffer.getMappedRange()).set(dummyJoints);
+    this.dummyJointsBuffer.unmap();
+
+    // Weights: [1,0,0,0] for each vertex (100% on first bone)
+    const dummyWeights = new Float32Array(this.meshA.vertexCount * 4);
+    for (let i = 0; i < this.meshA.vertexCount; i++) {
+      dummyWeights[i * 4] = 1.0; // 100% weight on bone 0
+      dummyWeights[i * 4 + 1] = 0.0;
+      dummyWeights[i * 4 + 2] = 0.0;
+      dummyWeights[i * 4 + 3] = 0.0;
+    }
+    this.dummyWeightsBuffer = this.device.createBuffer({
+      size: dummyWeights.byteLength,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true
+    });
+    new Float32Array(this.dummyWeightsBuffer.getMappedRange()).set(dummyWeights);
+    this.dummyWeightsBuffer.unmap();
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'none',
@@ -32266,7 +32444,7 @@ class ProceduralMeshObj extends _materials.default {
       } // morphBlend
       ]
     });
-    this.modelBindGroup = this.device.createBindGroup({
+    this.mainRenderBindGroup = this.device.createBindGroup({
       label: 'modelBindGroup procedural',
       layout: this.uniformBufferBindGroupLayout,
       entries: [{
@@ -32291,7 +32469,22 @@ class ProceduralMeshObj extends _materials.default {
         }
       }]
     });
-
+    this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+      label: '[mainPass]BindGroupLayout pro mesh',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'depth'
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'comparison'
+        }
+      }]
+    });
     // ============================================================================
     // SHADOW BIND GROUP (3 bindings - NO morphBlend, for Light compatibility)
     // ============================================================================
@@ -32323,7 +32516,7 @@ class ProceduralMeshObj extends _materials.default {
       // NO binding 3 - morphBlend not needed for shadows
       ]
     });
-    this.shadowBindGroup = this.device.createBindGroup({
+    this.modelBindGroup = this.device.createBindGroup({
       label: 'shadowBindGroup procedural',
       layout: this.shadowBindGroupLayout,
       entries: [{
@@ -32372,7 +32565,7 @@ class ProceduralMeshObj extends _materials.default {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.getMaterial() // From Materials
+          code: this.getMaterial()
         }),
         targets: [{
           format: 'rgba16float',
@@ -32573,7 +32766,7 @@ class ProceduralMeshObj extends _materials.default {
 
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
+    pass.setBindGroup(1, this.mainRenderBindGroup);
 
     // Bind morph buffers
     pass.setVertexBuffer(0, this.vertexBufferA); // posA
@@ -32586,12 +32779,11 @@ class ProceduralMeshObj extends _materials.default {
     pass.drawIndexed(this.indexCount);
   }
   drawShadows(shadowPass) {
-    // Use shadow bind group (3 bindings) instead of modelBindGroup (4 bindings)
-    // This matches Light's shadowPipeline expectations
-    shadowPass.setBindGroup(1, this.shadowBindGroup);
     shadowPass.setVertexBuffer(0, this.vertexBufferA);
     shadowPass.setVertexBuffer(1, this.normalBufferA);
     shadowPass.setVertexBuffer(2, this.uvBuffer);
+    shadowPass.setVertexBuffer(3, this.dummyJointsBuffer); // joints (dummy)
+    shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
@@ -35815,8 +36007,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     // ✅ Return color with alpha from material
-    return vec4f(finalColor, alpha);
-
+     return vec4f(finalColor, alpha);
 
     // return vec4<f32>(input.uv, 0.0, 1.0);
 }`;
@@ -38258,60 +38449,51 @@ struct VertexAnimParams {
   flags: f32,
   globalIntensity: f32,
   _pad0: f32,
-  
-  // Wave [4-7]
   waveSpeed: f32,
   waveAmplitude: f32,
   waveFrequency: f32,
   _pad1: f32,
-  
-  // Wind [8-11]
   windSpeed: f32,
   windStrength: f32,
   windHeightInfluence: f32,
   windTurbulence: f32,
-  
-  // Pulse [12-15]
   pulseSpeed: f32,
   pulseAmount: f32,
   pulseCenterX: f32,
   pulseCenterY: f32,
-  
-  // Twist [16-19]
   twistSpeed: f32,
   twistAmount: f32,
   _pad2: f32,
   _pad3: f32,
-  
-  // Noise [20-23]
   noiseScale: f32,
   noiseStrength: f32,
   noiseSpeed: f32,
   _pad4: f32,
-  
-  // Ocean [24-27]
   oceanWaveScale: f32,
   oceanWaveHeight: f32,
   oceanWaveSpeed: f32,
   _pad5: f32,
 }
 
-struct Bones {
-  data: array<vec4<f32>, 1>
-};
-
 @group(0) @binding(0) var<uniform> scene: Scene;
 @group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(1) var<uniform> bones: Bones;
+// Group 1 Binding 1 (Bones) is ignored as per your note
 @group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
 @group(1) @binding(3) var<uniform> u_morphBlend: f32;
 
+const ANIM_WAVE: u32 = 1u;
+const ANIM_WIND: u32 = 2u;
+const ANIM_PULSE: u32 = 4u;
+const ANIM_TWIST: u32 = 8u;
+const ANIM_NOISE: u32 = 16u;
+const ANIM_OCEAN: u32 = 32u;
+
 struct VertexInput {
-  @location(0) positionA: vec3<f32>,
-  @location(1) normalA: vec3<f32>,
-  @location(2) uv: vec2<f32>,
-  @location(6) positionB: vec3<f32>,
-  @location(7) normalB: vec3<f32>,
+  @location(0) positionA: vec3f,
+  @location(1) normalA: vec3f,
+  @location(2) uv: vec2f,
+  @location(6) positionB: vec3f,
+  @location(7) normalB: vec3f,
 };
 
 struct VertexOutput {
@@ -38322,27 +38504,95 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
+// --- Animation Helper Functions (Simplified for Morphing) ---
+
+fn hash(p: vec2f) -> f32 {
+  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
+  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn noise(p: vec2f) -> f32 {
+  let i = floor(p); let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+             mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x), u.y);
+}
+
+// Vertex Animation Logic
+fn applyVertexAnimation(pos: vec3f) -> vec3f {
+  var p = pos;
+  let flags = u32(vertexAnim.flags);
+  let t = vertexAnim.time;
+
+  if ((flags & ANIM_WAVE) != 0u) {
+    let w = sin(p.x * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed) * cos(p.z * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed);
+    p.y += w * vertexAnim.waveAmplitude;
+  }
+  
+  if ((flags & ANIM_WIND) != 0u) {
+    let h = max(0.0, p.y) * vertexAnim.windHeightInfluence;
+    let d = vec2f(sin(t * vertexAnim.windSpeed), cos(t * vertexAnim.windSpeed * 0.7)) * vertexAnim.windStrength;
+    let turb = noise(p.xz * 0.5 + t * 0.3) * vertexAnim.windTurbulence;
+    p.x += d.x * h * (1.0 + turb);
+    p.z += d.y * h * (1.0 + turb);
+  }
+
+  if ((flags & ANIM_PULSE) != 0u) {
+    let s = 1.0 + sin(t * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+    let c = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+    p = c + (p - c) * s;
+  }
+
+  if ((flags & ANIM_TWIST) != 0u) {
+    let angle = p.y * vertexAnim.twistAmount * sin(t * vertexAnim.twistSpeed);
+    let cosA = cos(angle); let sinA = sin(angle);
+    p = vec3f(p.x * cosA - p.z * sinA, p.y, p.x * sinA + p.z * cosA);
+  }
+
+  if ((flags & ANIM_NOISE) != 0u) {
+    p.y += (noise(p.xz * vertexAnim.noiseScale + t * vertexAnim.noiseSpeed) - 0.5) * vertexAnim.noiseStrength;
+  }
+
+  if ((flags & ANIM_OCEAN) != 0u) {
+    let s = vertexAnim.oceanWaveScale;
+    let h = vertexAnim.oceanWaveHeight;
+    p.y += sin(dot(p.xz, vec2f(1.0, 0.0)) * s + t * vertexAnim.oceanWaveSpeed) * h;
+    p.y += sin(dot(p.xz, vec2f(0.7, 0.7)) * s * 1.2 + t * vertexAnim.oceanWaveSpeed * 1.3) * h * 0.7;
+  }
+
+  return mix(pos, p, vertexAnim.globalIntensity);
+}
+
 @vertex
 fn main(input: VertexInput) -> VertexOutput {
   var output: VertexOutput;
   
-  // Morph blend between meshA and meshB
+  // 1. Morph blend between meshA and meshB
   let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
   let blendedNormal = normalize(mix(input.normalA, input.normalB, u_morphBlend));
   
-  // Transform to world space
-  let worldPos = model.modelMatrix * vec4<f32>(blendedPosition, 1.0);
+  // 2. Apply Vertex Animations to the morphed position
+  var finalLocalPos = blendedPosition;
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+    finalLocalPos = applyVertexAnimation(finalLocalPos);
+  }
+
+  // 3. Transform to world space
+  let worldPos = model.modelMatrix * vec4f(finalLocalPos, 1.0);
   
-  // Normal transform
+  // 4. Normal transform (using local blended normal)
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
   
+  // 5. Finalize Outputs
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
-  output.shadowPos = scene.lightViewProjMatrix * worldPos;
+  // This ensures shadow maps move exactly with the animation:
+  output.shadowPos = scene.lightViewProjMatrix * worldPos; 
   output.fragNorm = normalize(normalMatrix * blendedNormal);
   output.uv = input.uv;
   
@@ -52198,6 +52448,8 @@ class MatrixEngineWGPU {
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
             shadowPass.setPipeline(light.shadowPipelineInstanced);
+          } else if (mesh instanceof _proceduralMesh.default) {
+            shadowPass.setPipeline(light.shadowPipelineMorph);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
           }
@@ -52205,6 +52457,8 @@ class MatrixEngineWGPU {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
               shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
+            } else if (mesh instanceof _proceduralMesh.default) {
+              shadowPass.setBindGroup(1, mesh.mainRenderBindGroup);
             } else {
               shadowPass.setBindGroup(1, mesh.modelBindGroup);
             }

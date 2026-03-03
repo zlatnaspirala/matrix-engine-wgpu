@@ -113,6 +113,33 @@ export var loadObjFile = function() {
         }
       });
 
+
+      loadObjFile.addMeshObj({
+        material: {type: 'mirror'},
+        position: {x: 0, y: 1, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [0.5, 0.5, 0.5],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        envMapParams: {
+          baseColorMix: 0.0, // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          reflectivity: 0.25,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.01,             // No pulse (static)
+          fresnelPower: 2.0,                // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,  // ✅ Env map mode
+        },
+        name: 'ball',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
+
       const geometryTypesTest = {
         "cube": "cube",
         "sphere": "sphere"
@@ -125,23 +152,29 @@ export var loadObjFile = function() {
         32, 32
       );
 
-      loadObjFile.addProceduralMeshObj({
-        material: {type: 'standard'},
-        position: {x: 4, y: 2, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.webp'],
-        meshA: pair.meshA,  // Pre-built matched geometry
-        meshB: pair.meshB,  // Same vertex count, same indices!
-        // geometryA: {type: "cube", size: 1},
-        // geometryB: {type: "icosahedron", size: 1},
-        name: `myProCube`,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      const pair2 = MeshMorpher.createMatchedPair(
+        MeshMorpher.cube(2),
+        MeshMorpher.sphere(2),
+        32, 32
+      );
+
+      // loadObjFile.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 4, y: 2, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1.webp'],
+      //   meshA: pair2.meshA,  // Pre-built matched geometry
+      //   meshB: pair2.meshB,  // Same vertex count, same indices!
+      //   // geometryA: {type: "cube", size: 1},
+      //   // geometryB: {type: "icosahedron", size: 1},
+      //   name: `myProCube`,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
       // loadObjFile.addProceduralMeshObj({
       //   material: {type: 'standard'},
@@ -160,40 +193,45 @@ export var loadObjFile = function() {
       // });
 
 
-      // const spacing = 4; // distance between each object
-      // let i = 0;
-      // let j = 0;
-      // for(const key in geometryTypes) {
-      //   loadObjFile.addProceduralMeshObj({
-      //     material: {type: 'standard'},
-      //     position: {x: i * spacing, y: 2, z: -20 + j * spacing}, // <-- offset X per object
-      //     rotation: {x: 0, y: 0, z: 0},
-      //     scale: [1, 1, 1],
-      //     rotationSpeed: {x: 0, y: 0, z: 0},
-      //     texturesPaths: ['./res/textures/cube-g1.webp'],
-      //     geometryA: {type: key, size: 1},
-      //     name: `myProCube_${key}`,
-      //     physics: {
-      //       enabled: false,
-      //       geometry: "Sphere"
-      //     }
-      //   });
-      //   i++;
-      //   if(i % 4 == 0) {
-      //     j++;
-      //     i = 0;
-      //   }
-      // }
+      const spacing = 4; // distance between each object
+      let i = 0;
+      let j = 0;
+      for(const key in geometryTypes) {
+        loadObjFile.addProceduralMeshObj({
+          material: {type: 'standard'},
+          position: {x: i * spacing - 5, y: 1, z: -20 + j * spacing}, // <-- offset X per object
+          rotation: {x: 0, y: 0, z: 0},
+          scale: [1, 1, 1],
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: ['./res/textures/cube-g1_low.webp'],
+          geometryA: {type: key, size: 1},
+          name: `myProCube_${key}`,
+          physics: {
+            enabled: false,
+            geometry: "Sphere"
+          }
+        });
+        i++;
+        if(i % 4 == 0) {
+          j++;
+          i = 0;
+        }
+      }
 
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
       loadObjFile.addLight();
+      loadObjFile.lightContainer[0].intensity = 20;
+
       loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
       })
-      loadObjFile.lightContainer[0].position[1] = 11;
+
+      loadObjFile.lightContainer[0].position = [0, 6, -10];
+      loadObjFile.lightContainer[0].target = [0, 0, -10];
+
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();

@@ -232,8 +232,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     // ✅ Return color with alpha from material
-    return vec4f(finalColor, alpha);
-
+     return vec4f(finalColor, alpha);
 
     // return vec4<f32>(input.uv, 0.0, 1.0);
 }`;

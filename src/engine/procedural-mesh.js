@@ -419,6 +419,32 @@ export default class ProceduralMeshObj extends Materials {
       },
     ];
 
+
+    const dummyJoints = new Uint32Array(this.meshA.vertexCount * 4).fill(0);
+    this.dummyJointsBuffer = this.device.createBuffer({
+      size: dummyJoints.byteLength,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });
+    new Uint32Array(this.dummyJointsBuffer.getMappedRange()).set(dummyJoints);
+    this.dummyJointsBuffer.unmap();
+
+    // Weights: [1,0,0,0] for each vertex (100% on first bone)
+    const dummyWeights = new Float32Array(this.meshA.vertexCount * 4);
+    for(let i = 0;i < this.meshA.vertexCount;i++) {
+      dummyWeights[i * 4] = 1.0;  // 100% weight on bone 0
+      dummyWeights[i * 4 + 1] = 0.0;
+      dummyWeights[i * 4 + 2] = 0.0;
+      dummyWeights[i * 4 + 3] = 0.0;
+    }
+    this.dummyWeightsBuffer = this.device.createBuffer({
+      size: dummyWeights.byteLength,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });
+    new Float32Array(this.dummyWeightsBuffer.getMappedRange()).set(dummyWeights);
+    this.dummyWeightsBuffer.unmap();
+
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'none',
@@ -486,17 +512,24 @@ export default class ProceduralMeshObj extends Materials {
       ],
     });
 
-    this.modelBindGroup = this.device.createBindGroup({
+    this.mainRenderBindGroup = this.device.createBindGroup({
       label: 'modelBindGroup procedural',
       layout: this.uniformBufferBindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.modelUniformBuffer}},
         {binding: 1, resource: {buffer: this.bonesBuffer}},
         {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-        {binding: 3, resource: {buffer: this.morphBlendBuffer}},
+        {binding: 3, resource: {buffer: this.morphBlendBuffer}}
       ],
     });
 
+    this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+      label: '[mainPass]BindGroupLayout pro mesh',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth'}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
+      ],
+    });
     // ============================================================================
     // SHADOW BIND GROUP (3 bindings - NO morphBlend, for Light compatibility)
     // ============================================================================
@@ -510,7 +543,7 @@ export default class ProceduralMeshObj extends Materials {
       ],
     });
 
-    this.shadowBindGroup = this.device.createBindGroup({
+    this.modelBindGroup = this.device.createBindGroup({
       label: 'shadowBindGroup procedural',
       layout: this.shadowBindGroupLayout,
       entries: [
@@ -550,7 +583,7 @@ export default class ProceduralMeshObj extends Materials {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.getMaterial(), // From Materials
+          code: this.getMaterial(),
         }),
         targets: [{format: 'rgba16float', blend: undefined}],
         constants: {shadowDepthTextureSize: this.shadowDepthTextureSize},
@@ -796,7 +829,7 @@ export default class ProceduralMeshObj extends Materials {
 
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
+    pass.setBindGroup(1, this.mainRenderBindGroup);
 
     // Bind morph buffers
     pass.setVertexBuffer(0, this.vertexBufferA);  // posA
@@ -810,13 +843,11 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   drawShadows(shadowPass) {
-    // Use shadow bind group (3 bindings) instead of modelBindGroup (4 bindings)
-    // This matches Light's shadowPipeline expectations
-    shadowPass.setBindGroup(1, this.shadowBindGroup);
-
     shadowPass.setVertexBuffer(0, this.vertexBufferA);
     shadowPass.setVertexBuffer(1, this.normalBufferA);
     shadowPass.setVertexBuffer(2, this.uvBuffer);
+    shadowPass.setVertexBuffer(3, this.dummyJointsBuffer); // joints (dummy)
+    shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }

@@ -859,6 +859,8 @@ export default class MatrixEngineWGPU {
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
             shadowPass.setPipeline(light.shadowPipelineInstanced);
+          } else if(mesh instanceof ProceduralMeshObj) {
+            shadowPass.setPipeline(light.shadowPipelineMorph);
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
           }
@@ -867,7 +869,11 @@ export default class MatrixEngineWGPU {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             if(mesh instanceof BVHPlayerInstances) {
               shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
-            } else {
+            }
+             else if(mesh instanceof ProceduralMeshObj) {
+              shadowPass.setBindGroup(1, mesh.mainRenderBindGroup);
+            }
+             else {
               shadowPass.setBindGroup(1, mesh.modelBindGroup);
             }
             mesh.drawShadows(shadowPass, light);
@@ -900,7 +906,7 @@ export default class MatrixEngineWGPU {
               pass.setPipeline(mesh.pipeline);
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
-              if (m.setupPipeline) m.setupPipeline();
+              if(m.setupPipeline) m.setupPipeline();
             }
           }
         }
