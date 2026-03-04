@@ -35946,7 +35946,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         // let depthRef = p.z * 0.5 + 0.5;
       let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
       let p  = sc.xyz / sc.w;
-      let uv = p.xy * 0.5 + vec2<f32>(0.5);
+      // let uv = p.xy * 0.5 + vec2<f32>(0.5);
+      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
       let depthRef = p.z;
       let lightDir = normalize(spotlights[i].position - input.fragPos);
       let bias = spotlights[i].shadowBias;
