@@ -441,7 +441,7 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -566,7 +566,7 @@ var loadObjFile = function () {
       });
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -604,7 +604,7 @@ var loadObjFile = function () {
           usePlanarReflection: false // ✅ Env map mode
         },
         name: 'ball',
-        mesh: m.ball,
+        mesh: m.cube,
         physics: {
           enabled: false,
           geometry: "Sphere"
@@ -26007,7 +26007,7 @@ class SpotLight {
   outerCutoff;
   spotlightUniformBuffer;
   constructor(camera, inputHandler, device, indexx, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
-    aspect = 1; // hot fix
+    aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {
       return "light" + indexx;
@@ -26086,7 +26086,7 @@ class SpotLight {
     this.shadowBindGroupContainer = [];
     this.shadowBindGroup = [];
     this.getShadowBindGroup = (mesh, index) => {
-      if (this.shadowBindGroupContainer[index]) {
+      if (this.shadowBindGroupContainer[index] && this.lightDinamic == false) {
         return this.shadowBindGroupContainer[index];
       }
       this.shadowBindGroupContainer[index] = this.device.createBindGroup({
@@ -26425,9 +26425,15 @@ class SpotLight {
     this.updater.forEach(update => {
       update(this);
     });
-    this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(this.target, this.position));
-    const target = _wgpuMatrix.vec3.add(this.position, this.direction);
-    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
+    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
+    // // const target = vec3.add(this.position, this.direction);
+    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    const distToTarget = _wgpuMatrix.vec3.length(_wgpuMatrix.vec3.subtract(this.target, this.position));
+    this.near = distToTarget * 0.01; // near = 1% of distance
+    this.far = distToTarget * 2.0; // far = 2x distance
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
+    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
   getLightDataBuffer() {
@@ -35933,16 +35939,28 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let bias = spotlights[i].shadowBias;
-        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-        lightContribution += contrib * visibility;
+        // let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        // let p  = sc.xyz / sc.w;
+        // // let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        // let uv = p.xy * 0.5 + vec2<f32>(0.5);
+        // let depthRef = p.z * 0.5 + 0.5;
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = p.xy * 0.5 + vec2<f32>(0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let bias = spotlights[i].shadowBias;
+      // let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      // Only apply shadow if fragment is inside light frustum
+      let inFrustum = p.z >= 0.0 && p.z <= 1.0 
+             && p.x >= -1.0 && p.x <= 1.0 
+             && p.y >= -1.0 && p.y <= 1.0;
+      let shadowFactor = select(1.0, visibility, inFrustum);
+      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      lightContribution += contrib * shadowFactor;
+      // let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      // lightContribution += contrib * visibility;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);

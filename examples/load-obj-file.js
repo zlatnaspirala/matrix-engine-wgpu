@@ -28,7 +28,7 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -115,7 +115,7 @@ export var loadObjFile = function() {
 
 
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: 1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         scale: [0.5, 0.5, 0.5],
@@ -133,7 +133,7 @@ export var loadObjFile = function() {
           usePlanarReflection: false,  // ✅ Env map mode
         },
         name: 'ball',
-        mesh: m.ball,
+        mesh: m.cube,
         physics: {
           enabled: false,
           geometry: "Sphere"

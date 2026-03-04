@@ -206,16 +206,28 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let bias = spotlights[i].shadowBias;
-        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-        lightContribution += contrib * visibility;
+        // let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        // let p  = sc.xyz / sc.w;
+        // // let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        // let uv = p.xy * 0.5 + vec2<f32>(0.5);
+        // let depthRef = p.z * 0.5 + 0.5;
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = p.xy * 0.5 + vec2<f32>(0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let bias = spotlights[i].shadowBias;
+      // let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      // Only apply shadow if fragment is inside light frustum
+      let inFrustum = p.z >= 0.0 && p.z <= 1.0 
+             && p.x >= -1.0 && p.x <= 1.0 
+             && p.y >= -1.0 && p.y <= 1.0;
+      let shadowFactor = select(1.0, visibility, inFrustum);
+      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      lightContribution += contrib * shadowFactor;
+      // let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      // lightContribution += contrib * visibility;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);

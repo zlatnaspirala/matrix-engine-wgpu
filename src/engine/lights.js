@@ -42,7 +42,7 @@ export class SpotLight {
     target = vec3.create(0, 0, -20),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
 
-    aspect = 1; // hot fix
+    aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {return "light" + indexx};
     this.fov = fov;
@@ -141,11 +141,9 @@ export class SpotLight {
     this.shadowBindGroup = [];
 
     this.getShadowBindGroup = (mesh, index) => {
-
-      if(this.shadowBindGroupContainer[index]) {
+      if(this.shadowBindGroupContainer[index] && this.lightDinamic == false) {
         return this.shadowBindGroupContainer[index];
       }
-
       this.shadowBindGroupContainer[index] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
@@ -434,9 +432,20 @@ export class SpotLight {
 
   update() {
     this.updater.forEach((update) => {update(this)})
-    this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    const target = vec3.add(this.position, this.direction);
-    this.viewMatrix = mat4.lookAt(this.position, target, this.up);
+    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
+    // // const target = vec3.add(this.position, this.direction);
+    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    const distToTarget = vec3.length(vec3.subtract(this.target, this.position));
+    this.near = distToTarget * 0.01;  // near = 1% of distance
+    this.far = distToTarget * 2.0;    // far = 2x distance
+    this.projectionMatrix = mat4.perspective(
+      (this.fov * Math.PI) / 180,
+      this.aspect,
+      this.near,
+      this.far
+    );
+    this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
 
