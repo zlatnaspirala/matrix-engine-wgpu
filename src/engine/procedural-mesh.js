@@ -160,49 +160,46 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   _generateNormals(positions, indices) {
-    const normals = new Float32Array(positions.length);
+  const normals = new Float32Array(positions.length);
 
-    for(let i = 0;i < indices.length;i += 3) {
-      const i0 = indices[i] * 3;
-      const i1 = indices[i + 1] * 3;
-      const i2 = indices[i + 2] * 3;
+  for (let i = 0; i < indices.length; i += 3) {
+    const i0 = indices[i] * 3;
+    const i1 = indices[i + 1] * 3;
+    const i2 = indices[i + 2] * 3;
 
-      const v0 = [positions[i0], positions[i0 + 1], positions[i0 + 2]];
-      const v1 = [positions[i1], positions[i1 + 1], positions[i1 + 2]];
-      const v2 = [positions[i2], positions[i2 + 1], positions[i2 + 2]];
+    const v0 = [positions[i0], positions[i0 + 1], positions[i0 + 2]];
+    const v1 = [positions[i1], positions[i1 + 1], positions[i1 + 2]];
+    const v2 = [positions[i2], positions[i2 + 1], positions[i2 + 2]];
 
-      const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
-      const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
+    const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
+    const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
 
-      const normal = [
-        edge1[1] * edge2[2] - edge1[2] * edge2[1],
-        edge1[2] * edge2[0] - edge1[0] * edge2[2],
-        edge1[0] * edge2[1] - edge1[1] * edge2[0]
-      ];
-
-      for(let j = 0;j < 3;j++) {
-        const idx = indices[i + j] * 3;
-        normals[idx] += normal[0];
-        normals[idx + 1] += normal[1];
-        normals[idx + 2] += normal[2];
-      }
-    }
+    let normal = [
+      edge1[1] * edge2[2] - edge1[2] * edge2[1],
+      edge1[2] * edge2[0] - edge1[0] * edge2[2],
+      edge1[0] * edge2[1] - edge1[1] * edge2[0]
+    ];
 
     // Normalize
-    for(let i = 0;i < normals.length;i += 3) {
-      const len = Math.sqrt(
-        normals[i] * normals[i] +
-        normals[i + 1] * normals[i + 1] +
-        normals[i + 2] * normals[i + 2]
-      );
-      if(len > 0) {
-        normals[i] /= len;
-        normals[i + 1] /= len;
-        normals[i + 2] /= len;
-      }
+    const len = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
+    if (len > 0) {
+      normal = normal.map(n => n / len);
     }
 
-    return normals;
+    normals[i0] = normal[0];
+    normals[i0 + 1] = normal[1];
+    normals[i0 + 2] = normal[2];
+
+    normals[i1] = normal[0];
+    normals[i1 + 1] = normal[1];
+    normals[i1 + 2] = normal[2];
+
+    normals[i2] = normal[0];
+    normals[i2 + 1] = normal[1];
+    normals[i2 + 2] = normal[2];
+  }
+
+  return normals;
   }
 
   _validateMorphCompatibility() {
@@ -289,10 +286,7 @@ export default class ProceduralMeshObj extends Materials {
     this.meshTextureView = texture.createView();
   }
 
-
   // SHADOW DEPTH TEXTURE (required by Materials.createBindGroupForRender)
-
-
   _setupShadowDepthTexture() {
     this.shadowDepthTexture = this.device.createTexture({
       size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 20],
@@ -951,10 +945,6 @@ export class MeshMorpher {
       vertexCount: positions.length / 3
     };
   }
-
-  // ==========================================================================
-  // PARAMETRIC SHAPE LIBRARY
-  // ==========================================================================
 
   /**
    * Sphere: Classic UV sphere

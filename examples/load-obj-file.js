@@ -28,15 +28,15 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'gpt'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
-          baseColorMix: 0.95,
+          baseColorMix: 0.5,
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
+          reflectivity: 0.4,               // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
           illuminateStrength: 0.1,          // Gentle rim
           illuminatePulse: 0.001,             // No pulse (static)
@@ -56,36 +56,6 @@ export var loadObjFile = function() {
 
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
-      // loadObjFile.addMeshObj({
-      //   material: {type: 'mirror'},
-      //   position: {x: 0, y: 3, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1.webp'],
-      //   name: 'cube1',
-      //   mesh: m.cube,
-      //   envMapParams: {
-      //     baseColorMix: 0.2, // normal mix
-      //     mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-      //     reflectivity: 0.95,               // 25% reflection blend
-      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //     illuminateStrength: 0.4,          // Gentle rim
-      //     illuminatePulse: 0.001,             // No pulse (static)
-      //     fresnelPower: 5.0,                // Medium-sharp edge
-      //     envLodBias: 2.5,
-      //     usePlanarReflection: false,  // ✅ Env map mode
-      //   },
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Cube",
-      //   },
-      //   // pointerEffect: {
-      //   //   // enabled: true,
-      //   //   // flameEffect: true,
-      //   //   // flameEmitter: true,
-      //   // },
-      //   raycast: {enabled: true, radius: 2}
-      // })
 
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
@@ -205,6 +175,7 @@ export var loadObjFile = function() {
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: ['./res/textures/cube-g1_low.webp'],
           geometryA: {type: key, size: 1},
+          geometryB: {type: 'sphere', size: 1},
           name: `myProCube_${key}`,
           physics: {
             enabled: false,

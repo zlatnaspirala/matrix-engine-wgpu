@@ -253,46 +253,54 @@ fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
     return vec2f(u, v);
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
 
+   
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
 
     let materialData = getPBRMaterial(input.uv);
     if (materialData.alpha < 0.01) { discard; }
 
-    // ── Shadow + existing spotlight loop (unchanged logic) ────────────────
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
         let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
         let p        = sc.xyz / sc.w;
-        let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
+
+        // ✅ FIX 1: Y-flip to match working shader
+        // let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+        let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
+
+        // ✅ FIX 2: Use p.z directly (not * 0.5 + 0.5)
+        let depthRef = p.z;
+
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
+
+        // ✅ FIX 3: Frustum guard — only apply shadow when inside light frustum
+        let inFrustum = p.z >= 0.0 && p.z <= 1.0
+                     && p.x >= -1.0 && p.x <= 1.0
+                     && p.y >= -1.0 && p.y <= 1.0;
+
+        // ✅ FIX 4: Pass depthRef without subtracting bias here (sampleShadow handles it)
+        let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
+        let shadowFactor = select(1.0, vis, inFrustum);
+
         let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
-        lightContribution += contrib * vis;
+        lightContribution += contrib * shadowFactor;
 
         // ── Mirror: sharp specular from each spotlight ────────────────────
         let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
         let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
-        lightContribution += mirrorSpec * coneFactor * vis;
+        lightContribution += mirrorSpec * coneFactor * shadowFactor;
     }
 
-    // ── Env reflection ───────────────────────────────────────────────────
     let R = reflect(-V, N);
     var envColor: vec3f;
     if (mirrorParams.baseColorMix < 0.01) {
-        // Sky/background objects: use mesh UV (requires proper UV unwrap)
         envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
     } else {
-        // Reflective objects: use reflection vector
-        //  let worldUV = worldPosToEquirectUV(normalize(input.fragPos));
-        //  envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, worldUV).rgb * mirrorParams.mirrorTint;
-
         envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
     }
     let envFresn = fresnelSchlick(max(dot(N, V), 0.0), 
@@ -301,12 +309,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     finalColor = mix(
-        envColor,                    // Pure env (for sky objects)
-        finalColor,                  // Normal lit material
-        mirrorParams.baseColorMix    // 0=pure env, 1=normal material
+        envColor,
+        finalColor,
+        mirrorParams.baseColorMix
     );
 
-    // Add Fresnel reflection on top
     finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
     let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
     finalColor += illuminate;

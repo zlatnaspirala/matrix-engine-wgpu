@@ -35,6 +35,76 @@ export class GeometryFactory {
     }
   }
 
+    // --- Flat normals for faceted shapes ---
+  static computeFlatNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    for (let i = 0; i < indices.length; i += 3) {
+      const a = indices[i] * 3;
+      const b = indices[i + 1] * 3;
+      const c = indices[i + 2] * 3;
+
+      const ux = positions[b] - positions[a];
+      const uy = positions[b + 1] - positions[a + 1];
+      const uz = positions[b + 2] - positions[a + 2];
+
+      const vx = positions[c] - positions[a];
+      const vy = positions[c + 1] - positions[a + 1];
+      const vz = positions[c + 2] - positions[a + 2];
+
+      let nx = uy * vz - uz * vy;
+      let ny = uz * vx - ux * vz;
+      let nz = ux * vy - uy * vx;
+
+      const len = Math.hypot(nx, ny, nz) || 1;
+      nx /= len; ny /= len; nz /= len;
+
+      normals[a] = nx; normals[a + 1] = ny; normals[a + 2] = nz;
+      normals[b] = nx; normals[b + 1] = ny; normals[b + 2] = nz;
+      normals[c] = nx; normals[c + 1] = ny; normals[c + 2] = nz;
+    }
+    return normals;
+  }
+
+  // --- Smooth normals for rounded shapes ---
+  static computeSmoothNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    const counts = new Uint16Array(positions.length / 3);
+
+    for (let i = 0; i < indices.length; i += 3) {
+      const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+
+      const ax = positions[ia * 3], ay = positions[ia * 3 + 1], az = positions[ia * 3 + 2];
+      const bx = positions[ib * 3], by = positions[ib * 3 + 1], bz = positions[ib * 3 + 2];
+      const cx = positions[ic * 3], cy = positions[ic * 3 + 1], cz = positions[ic * 3 + 2];
+
+      const ux = bx - ax, uy = by - ay, uz = bz - az;
+      const vx = cx - ax, vy = cy - ay, vz = cz - az;
+
+      let nx = uy * vz - uz * vy;
+      let ny = uz * vx - ux * vz;
+      let nz = ux * vy - uy * vx;
+
+      const len = Math.hypot(nx, ny, nz) || 1;
+      nx /= len; ny /= len; nz /= len;
+
+      for (const idx of [ia, ib, ic]) {
+        normals[idx * 3] += nx;
+        normals[idx * 3 + 1] += ny;
+        normals[idx * 3 + 2] += nz;
+        counts[idx]++;
+      }
+    }
+
+    for (let i = 0; i < counts.length; i++) {
+      const len = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
+      normals[i * 3] /= len;
+      normals[i * 3 + 1] /= len;
+      normals[i * 3 + 2] /= len;
+    }
+
+    return normals;
+  }
+
   static torus(R = 1, tubeRadius = 0.3, radialSegments = 32, tubularSegments = 16) {
     const positions = [], uvs = [], indices = [];
     for(let j = 0;j <= radialSegments;j++) {
@@ -257,7 +327,6 @@ export class GeometryFactory {
       indices: new Uint16Array(indices)
     };
   }
-
 
   static dodecahedronFlat(R = 1) {
     const geo = GeometryFactory.dodecahedron(R);
@@ -569,7 +638,9 @@ export class GeometryFactory {
       20, 21, 22, 20, 22, 23
     ]);
 
-    return {positions, uvs, indices};
+    const normals = this.computeSmoothNormals(positions, indices);
+    // return { positions, indices, normals };
+    return {positions, uvs, indices, normals};
   }
 
   static sphere(R = 0.1, seg = 16) {

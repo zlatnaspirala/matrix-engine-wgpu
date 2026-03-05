@@ -1,4 +1,5 @@
-export let fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = 1024.0;
+export let fragmentWGSLGPT = `
+override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -45,7 +46,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
-    alpha     : f32,  // ✅ Added alpha
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -69,14 +70,14 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+// ---------------- PBR Helpers ----------------
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let texColor = textureSample(meshTexture, meshSampler, uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = material.metallicFactor;
-    let roughness = material.roughnessFactor;
-    // ✅ Get alpha from texture and material factor
-    let alpha = texColor.a * material.baseColorFactor.a;
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha = material.baseColorFactor.a;
     return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
@@ -105,14 +106,32 @@ fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
     return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
-fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+// ---------------- Spotlight ----------------
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) { return vec3f(0.0); }
+
     let theta = dot(L, normalize(-light.direction));
     let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+    if (coneAtten <= 0.0) { return vec3f(0.0); }
+
+    let H = normalize(L + V);
+    let F0 = mix(vec3f(0.04), material.baseColor, material.metallic);
+    let F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    let D = distributionGGX(N, H, material.roughness);
+    let G = geometrySmith(N, V, L, material.roughness);
+    let spec = (D * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 1e-5);
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor / PI;
+
+    let radiance = light.color * light.intensity;
+    return (diffuse + spec) * radiance * NdotL * coneAtten;
 }
 
-// PCF shadow sampling
+// ---------------- PCF Shadow ----------------
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
     var visibility: f32 = 0.0;
     let biasConstant: f32 = 0.001;
@@ -125,79 +144,50 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
         vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
     );
     for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
     }
     return visibility / 9.0;
 }
 
+// ---------------- Fragment ----------------
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
     let materialData = getPBRMaterial(input.uv);
-    
-    // ✅ Early discard for fully transparent pixels
+
     if (materialData.alpha < 0.01) {
         discard;
     }
-    
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    var Lo = vec3f(0.0);
-    
-for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 
-    let L = normalize(spotlights[i].position - input.fragPos);
-    let H = normalize(V + L);
+    var lightContribution = vec3f(0.0);
 
-    // let NdotL = max(dot(N, L), 0.0);
-let NdotL = max(dot(N, L), 0.0);
-let validLight = select(0.0, 1.0, NdotL > 0.0);
+    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p = sc.xyz / sc.w;
+        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+        let depthRef = p.z;
 
-    // ---- SHADOW SPACE ----
-    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-    let p  = sc.xyz / sc.w;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
 
-    let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-    let depthRef = p.z;
+        // Only apply shadow if fragment is inside light frustum
+        let inFrustum = p.z >= 0.0 && p.z <= 1.0 &&
+                        p.x >= -1.0 && p.x <= 1.0 &&
+                        p.y >= -1.0 && p.y <= 1.0;
+        let shadowFactor = select(1.0, visibility, inFrustum);
 
-    let visibility = sampleShadow(
-        uv,
-        i32(i),
-        depthRef,
-        N,
-        L
-    );
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        lightContribution += contrib * shadowFactor;
+    }
 
-    let inFrustum =
-        p.z >= 0.0 && p.z <= 1.0 &&
-        p.x >= -1.0 && p.x <= 1.0 &&
-        p.y >= -1.0 && p.y <= 1.0;
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
-    let shadowFactor = select(1.0, visibility, inFrustum);
-
-    // ---- PBR ----
-    let NDF = distributionGGX(N, H, materialData.roughness);
-    let G   = geometrySmith(N, V, L, materialData.roughness);
-
-    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-
-    let diffuse  = kD * materialData.baseColor / PI;
-    let specular = (NDF * G * F) /
-                   (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-
-    let radiance = spotlights[i].color * spotlights[i].intensity;
-
-    // Lo += (diffuse + specular) * radiance * NdotL * shadowFactor;
-    Lo += (diffuse + specular) * radiance * NdotL * shadowFactor * validLight;
-}
-
-    let ambient = scene.globalAmbient * materialData.baseColor;
-    var color = ambient + Lo;
-    
-    // ✅ Return color with alpha from material
-    return vec4f(color, materialData.alpha);
+    return vec4f(finalColor, materialData.alpha);
 }
 `;

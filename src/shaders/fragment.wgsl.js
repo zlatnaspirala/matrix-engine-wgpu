@@ -63,10 +63,6 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
-// @group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
-// @group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
-// @group(2) @binding(2) var          mirrorEnvSampler: sampler;
-
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
     @location(1) fragPos   : vec3f,
@@ -80,11 +76,7 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = mrTex.b * material.metallicFactor;
     let roughness = mrTex.g * material.roughnessFactor;
-    
-    // ✅ Get alpha from texture and material factor
-    // let alpha = texColor.a * material.baseColorFactor.a;
     let alpha = material.baseColorFactor.a;
-    
     return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
@@ -195,30 +187,19 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    // ✅ Get material with alpha
     let materialData = getPBRMaterial(input.uv);
-    
-    // ✅ Early discard for fully transparent pixels (alpha cutoff)
     if (materialData.alpha < 0.01) {
         discard;
     }
 
     var lightContribution = vec3f(0.0);
-
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        // let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        // let p  = sc.xyz / sc.w;
-        // // let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        // let uv = p.xy * 0.5 + vec2<f32>(0.5);
-        // let depthRef = p.z * 0.5 + 0.5;
       let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
       let p  = sc.xyz / sc.w;
-      // let uv = p.xy * 0.5 + vec2<f32>(0.5);
       let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
       let depthRef = p.z;
       let lightDir = normalize(spotlights[i].position - input.fragPos);
       let bias = spotlights[i].shadowBias;
-      // let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
       let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
       // Only apply shadow if fragment is inside light frustum
       let inFrustum = p.z >= 0.0 && p.z <= 1.0 
@@ -227,8 +208,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
       let shadowFactor = select(1.0, visibility, inFrustum);
       let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
       lightContribution += contrib * shadowFactor;
-      // let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-      // lightContribution += contrib * visibility;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
@@ -238,14 +217,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    // if (uSelected > 0.5) {
-    //     let glowColor = vec3f(0.2, 0.8, 1.0);
-    //     finalColor += glowColor * fresnel * 0.1;
-    // }
-
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
-    // ✅ Return color with alpha from material
-     return vec4f(finalColor, alpha);
-
-    // return vec4<f32>(input.uv, 0.0, 1.0);
+    return vec4f(finalColor, alpha);
 }`;

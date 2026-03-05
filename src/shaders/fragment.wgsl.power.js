@@ -155,10 +155,3 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(color, 1.0);
 }
 `;
-
-
-// let N = normalize(input.fragNorm);
-// let L = normalize(spotlights[0].position - input.fragPos);
-// let NdotL = max(dot(N,L),0.0);
-// let radiance = spotlights[0].color * 10.0; // test high intensity
-// Lo += materialData.baseColor * radiance * NdotL;

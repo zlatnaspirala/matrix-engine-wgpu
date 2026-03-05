@@ -422,31 +422,20 @@ export class SpotLight {
       });
       return this.mainPassBindGroupContainer[index];
     }
-
     // Only osc values +-
     this.behavior = new Behavior();
-
     // put here only func
     this.updater = [];
   }
 
   update() {
     this.updater.forEach((update) => {update(this)})
-    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    // // const target = vec3.add(this.position, this.direction);
-    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-    const distToTarget = vec3.length(vec3.subtract(this.target, this.position));
-    this.near = distToTarget * 0.01;  // near = 1% of distance
-    this.far = distToTarget * 2.0;    // far = 2x distance
-    this.projectionMatrix = mat4.perspective(
-      (this.fov * Math.PI) / 180,
-      this.aspect,
-      this.near,
-      this.far
-    );
+    this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
     this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-    this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    this.viewProjMatrix = mat4.multiply(this.viewMatrix, this.projectionMatrix);
+
   }
 
   getLightDataBuffer() {
