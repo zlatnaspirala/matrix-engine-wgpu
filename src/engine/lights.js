@@ -432,10 +432,7 @@ export class SpotLight {
     this.updater.forEach((update) => {update(this)})
     this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
     this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-    this.viewProjMatrix = mat4.multiply(this.viewMatrix, this.projectionMatrix);
-
+    this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
 
   getLightDataBuffer() {

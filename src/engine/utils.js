@@ -1245,57 +1245,21 @@ export const geometryTypes = {
   "pyramidFractal": "pyramidFractal",
 };
 
-// export let ADDITIVE_BLEND_CONFIGURATIONS = {
-//   color: {
-//                 srcFactor: 'src-alpha', // This makes intensity scale correctly
-//                 dstFactor: 'one',       // This is the "Additive" part
-//                 operation: 'add',
-//               },
-//               alpha: {
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//                 operation: 'add',
-//               },
-//               color: {
-//                 // Result = (ShaderColor * ShaderAlpha) + (DestColor * 1)
-//                 operation: 'add',
-//                 srcFactor: 'src-alpha',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 // Keeps the background alpha as is
-//                 operation: 'add',
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//               }
-//               color: {
-//                 operation: 'add',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one-minus-src-alpha',
-//               },
-//               alpha: {
-//                 operation: 'add',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one-minus-src-alpha',
-//               }
-//               color: {
-//                 operation: 'add',
-//                 srcFactor: 'one-minus-dst-color',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 operation: 'add',
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//               }
-//               color: {
-//                 operation: 'max', // Take whichever is brighter
-//                 srcFactor: 'one',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 operation: 'max',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one',
-//               }
-// }
+export const geoTypesForMorph = {
+  cube: "cube",
+  sphere: "sphere",
+  mobius: "mobius",
+  plane: "plane",
+  capsule: "capsule",
+  cone: "cone",
+  torus: "torus",
+  cylinder: "cylinder",
+  wavePlane: "wavePlane",
+  supershape: "supershape",
+  pyramid: "pyramid",
+  diamond: "diamond",
+  icosahedron: "icosahedron",
+  circlePlane: "circlePlane",
+  rock: "rock",
+  star: "star",
+};

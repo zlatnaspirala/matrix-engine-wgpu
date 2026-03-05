@@ -533,109 +533,75 @@ var loadObjFile = function () {
           geometry: "Sphere"
         }
       });
-      loadObjFile.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 1,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [0.5, 0.5, 0.5],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.25,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 2.0,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
-        name: 'ball',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
-      const geometryTypesTest = {
-        "cube": "cube",
-        "sphere": "sphere"
-      };
 
-      // MeshMorpher
-      const pair = _proceduralMesh.MeshMorpher.createMatchedPair(_proceduralMesh.MeshMorpher.plane(2), _proceduralMesh.MeshMorpher.sphere(1), 32, 32);
-      const pair2 = _proceduralMesh.MeshMorpher.createMatchedPair(_proceduralMesh.MeshMorpher.cube(2), _proceduralMesh.MeshMorpher.sphere(2), 32, 32);
-
-      // loadObjFile.addProceduralMeshObj({
+      // loadObjFile.addMeshObj({
       //   material: {type: 'standard'},
-      //   position: {x: 4, y: 2, z: -20},
+      //   position: {x: 0, y: 1, z: -10},
       //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
+      //   scale: [0.5, 0.5, 0.5],
       //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1.webp'],
-      //   meshA: pair2.meshA,  // Pre-built matched geometry
-      //   meshB: pair2.meshB,  // Same vertex count, same indices!
-      //   // geometryA: {type: "cube", size: 1},
-      //   // geometryB: {type: "icosahedron", size: 1},
-      //   name: `myProCube`,
+      //   texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+      //   envMapParams: {
+      //     baseColorMix: 0.0, // CLEAR SKY
+      //     mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+      //     reflectivity: 0.25,               // 25% reflection blend
+      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //     illuminateStrength: 0.1,          // Gentle rim
+      //     illuminatePulse: 0.01,             // No pulse (static)
+      //     fresnelPower: 2.0,                // Medium-sharp edge
+      //     envLodBias: 1.5,
+      //     usePlanarReflection: false,  // ✅ Env map mode
+      //   },
+      //   name: 'ball',
+      //   mesh: m.cube,
       //   physics: {
       //     enabled: false,
       //     geometry: "Sphere"
       //   }
       // });
 
-      // loadObjFile.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: -4, y: 2, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1.webp'],
-      //   geometryA: {type: "sphere", size: 1},
-      //   geometryB: {type: "cube", size: 1},
-      //   name: `myProCube`,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
+      // const spacing = 4;
+      // let i = 0;
+      // let j = 0;
+      // for(const key in geoTypesForMorph) {
+      //   loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'standard'},
+      //     position: {x: i * spacing - 5, y: 1, z: -20 + j * spacing},
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     scale: [1, 1, 1],
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //     meshA: MeshMorpher[key](1),
+      //     meshB: MeshMorpher[key](1),
+      //     name: `myProCube_${key}`,
+      //     physics: {
+      //       enabled: false,
+      //       geometry: "Sphere"
+      //     }
+      //   });
+      //   i++;
+      //   if(i % 4 == 0) {
+      //     j++;
+      //     i = 0;
       //   }
-      // });
+      // }
 
-      const spacing = 4; // distance between each object
-      let i = 0;
-      let j = 0;
-      for (const key in _utils.geometryTypes) {
+      const spacing = 4;
+      const keys = Object.keys(_utils.geoTypesForMorph);
+      let col = 0;
+      let row = 0;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const typeA = keys[i];
+        const typeB = keys[i + 1];
         loadObjFile.addProceduralMeshObj({
           material: {
             type: 'standard'
           },
           position: {
-            x: i * spacing - 5,
+            x: col * spacing - 5,
             y: 1,
-            z: -20 + j * spacing
+            z: -10 + row * spacing
           },
-          // <-- offset X per object
           rotation: {
             x: 0,
             y: 0,
@@ -648,24 +614,18 @@ var loadObjFile = function () {
             z: 0
           },
           texturesPaths: ['./res/textures/cube-g1_low.webp'],
-          geometryA: {
-            type: key,
-            size: 1
-          },
-          geometryB: {
-            type: 'sphere',
-            size: 1
-          },
-          name: `myProCube_${key}`,
+          meshA: _proceduralMesh.MeshMorpher[typeA](1),
+          meshB: _proceduralMesh.MeshMorpher[typeB](1),
+          name: `morph_${typeA}_to_${typeB}`,
           physics: {
             enabled: false,
             geometry: "Sphere"
           }
         });
-        i++;
-        if (i % 4 == 0) {
-          j++;
-          i = 0;
+        col++;
+        if (col % 4 === 0) {
+          row++;
+          col = 0;
         }
       }
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
@@ -26480,9 +26440,7 @@ class SpotLight {
     });
     this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(this.target, this.position));
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up);
-
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-    this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.viewMatrix, this.projectionMatrix);
+    this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
@@ -32050,8 +32008,11 @@ class ProceduralMeshObj extends _materials.default {
     this.meshB = null;
     this.morphBlend = 0.0;
     if (o.meshA && o.meshB) {
-      this.meshA = o.meshA;
-      this.meshB = o.meshB;
+      // Use your existing mesh objects directly
+      const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
+      this.meshA = pair.meshA;
+      this.meshB = pair.meshB;
+      this.vertexCount = pair.vertexCount;
       this._validateMorphCompatibility();
     } else if (o.geometryA) {
       // OLD: Generate from GeometryFactory (may not match!)
@@ -32059,6 +32020,15 @@ class ProceduralMeshObj extends _materials.default {
       this.meshB = o.geometryB ? this._loadGeometry(o.geometryB) : this._loadGeometry(o.geometryA);
       this._validateMorphCompatibility();
     }
+    this.morphBlend = o.morphBlend ?? 0.0; // default to 0
+    this.morphAnimation = {
+      active: false,
+      startBlend: this.morphBlend,
+      targetBlend: 1.0,
+      duration: 1000,
+      elapsed: 0,
+      onComplete: null
+    };
     console.log(`%cProceduralMesh loaded: ${this.name}`, _utils.LOG_FUNNY_ARCADE);
     // TRANSFORM & CAMERA
     this.inputHandler = inputHandler;
@@ -32252,189 +32222,114 @@ class ProceduralMeshObj extends _materials.default {
       arrayLayerCount: 20
     });
   }
-
-  // BUFFER SETUP
-
   _setupBuffers() {
     this.context.configure({
       device: this.device,
       format: this.presentationFormat,
       alphaMode: 'premultiplied'
     });
-
-    // Vertex buffer A (positions)
-    this.vertexBufferA = this.device.createBuffer({
-      size: this.meshA.vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.vertexBufferA.getMappedRange()).set(this.meshA.vertices);
-    this.vertexBufferA.unmap();
-
-    // Vertex buffer B (positions)
-    this.vertexBufferB = this.device.createBuffer({
-      size: this.meshB.vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.vertexBufferB.getMappedRange()).set(this.meshB.vertices);
-    this.vertexBufferB.unmap();
-
-    // Normal buffer A
-    this.normalBufferA = this.device.createBuffer({
-      size: this.meshA.normals.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.normalBufferA.getMappedRange()).set(this.meshA.normals);
-    this.normalBufferA.unmap();
-
-    // Normal buffer B
-    this.normalBufferB = this.device.createBuffer({
-      size: this.meshB.normals.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.normalBufferB.getMappedRange()).set(this.meshB.normals);
-    this.normalBufferB.unmap();
-
-    // UV buffer (shared)
-    this.uvBuffer = this.device.createBuffer({
-      size: this.meshA.uvs.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.uvBuffer.getMappedRange()).set(this.meshA.uvs);
-    this.uvBuffer.unmap();
-
-    // Index buffer (shared)
+    const createBuffer = (data, usage = GPUBufferUsage.VERTEX) => {
+      const buf = this.device.createBuffer({
+        size: data.byteLength,
+        usage,
+        mappedAtCreation: true
+      });
+      new data.constructor(buf.getMappedRange()).set(data);
+      buf.unmap();
+      return buf;
+    };
+    this.vertexBufferA = createBuffer(this.meshA.vertices);
+    this.vertexBufferB = createBuffer(this.meshB.vertices);
+    this.normalBufferA = createBuffer(this.meshA.normals);
+    this.normalBufferB = createBuffer(this.meshB.normals);
+    this.uvBuffer = createBuffer(this.meshA.uvs);
     this.indexCount = this.meshA.indices.length;
-    const indexSize = Math.ceil(this.indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
-      size: indexSize,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Uint16Array(this.indexBuffer.getMappedRange()).set(this.meshA.indices);
-    this.indexBuffer.unmap();
+    this.indexBuffer = createBuffer(this.meshA.indices, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST);
 
-    // Vertex buffer layout for morph shader
+    // Dummy joints & weights for shader
+    const dummyJoints = new Uint32Array(this.vertexCount * 4).fill(0);
+    this.dummyJointsBuffer = createBuffer(dummyJoints);
+    const dummyWeights = new Float32Array(this.vertexCount * 4);
+    for (let i = 0; i < this.vertexCount; i++) dummyWeights.set([1, 0, 0, 0], i * 4);
+    this.dummyWeightsBuffer = createBuffer(dummyWeights);
     this.vertexBuffers = [{
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+      arrayStride: 3 * 4,
       attributes: [{
         shaderLocation: 0,
         offset: 0,
-        format: "float32x3"
-      }] // posA
-    }, {
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        format: 'float32x3'
+      }]
+    },
+    // posA
+    {
+      arrayStride: 3 * 4,
       attributes: [{
         shaderLocation: 1,
         offset: 0,
-        format: "float32x3"
-      }] // normalA
-    }, {
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+        format: 'float32x3'
+      }]
+    },
+    // normalA
+    {
+      arrayStride: 2 * 4,
       attributes: [{
         shaderLocation: 2,
         offset: 0,
-        format: "float32x2"
-      }] // uv
-    }, {
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        format: 'float32x2'
+      }]
+    },
+    // uv
+    {
+      arrayStride: 3 * 4,
       attributes: [{
         shaderLocation: 6,
         offset: 0,
-        format: "float32x3"
-      }] // posB
-    }, {
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        format: 'float32x3'
+      }]
+    },
+    // posB
+    {
+      arrayStride: 3 * 4,
       attributes: [{
         shaderLocation: 7,
         offset: 0,
-        format: "float32x3"
-      }] // normalB
-    }];
-    const dummyJoints = new Uint32Array(this.meshA.vertexCount * 4).fill(0);
-    this.dummyJointsBuffer = this.device.createBuffer({
-      size: dummyJoints.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Uint32Array(this.dummyJointsBuffer.getMappedRange()).set(dummyJoints);
-    this.dummyJointsBuffer.unmap();
-
-    // Weights: [1,0,0,0] for each vertex (100% on first bone)
-    const dummyWeights = new Float32Array(this.meshA.vertexCount * 4);
-    for (let i = 0; i < this.meshA.vertexCount; i++) {
-      dummyWeights[i * 4] = 1.0; // 100% weight on bone 0
-      dummyWeights[i * 4 + 1] = 0.0;
-      dummyWeights[i * 4 + 2] = 0.0;
-      dummyWeights[i * 4 + 3] = 0.0;
-    }
-    this.dummyWeightsBuffer = this.device.createBuffer({
-      size: dummyWeights.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.dummyWeightsBuffer.getMappedRange()).set(dummyWeights);
-    this.dummyWeightsBuffer.unmap();
+        format: 'float32x3'
+      }]
+    } // normalB
+    ];
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'none',
       frontFace: 'ccw'
     };
   }
-
-  // UNIFORMS SETUP
-
   _setupUniforms() {
-    // Model matrix uniform
     this.modelUniformBuffer = this.device.createBuffer({
-      size: 4 * 16,
+      size: 16 * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // Scene uniform (camera + lights)
     this.sceneUniformBuffer = this.device.createBuffer({
-      label: 'sceneUniformBuffer procedural',
       size: 192,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // Dummy bones buffer (binding 1 - required by shader even if not used)
-    const dummyBonesData = new Float32Array(6400).fill(0);
-    // dummyBonesData.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this.bonesBuffer = this.device.createBuffer({
-      label: 'bonesBuffer dummy',
-      size: dummyBonesData.byteLength,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      size: 6400 * 4,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    new Float32Array(this.bonesBuffer.getMappedRange()).set(dummyBonesData);
-    this.bonesBuffer.unmap();
-
-    // Vertex animation params (binding 2)
     this.vertexAnimParams = new Float32Array(32).fill(0);
     this.vertexAnimBuffer = this.device.createBuffer({
-      label: "Vertex Animation Params",
       size: this.vertexAnimParams.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-
-    // Morph blend uniform (binding 3)
     this.morphBlendBuffer = this.device.createBuffer({
-      label: 'morphBlendBuffer',
       size: 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
 
-    // MAIN RENDER BIND GROUP (4 bindings - includes morphBlend)
-
+    // Bind group layout for model + morph
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'uniformBufferBindGroupLayout procedural',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -32469,7 +32364,6 @@ class ProceduralMeshObj extends _materials.default {
       ]
     });
     this.mainRenderBindGroup = this.device.createBindGroup({
-      label: 'modelBindGroup procedural',
       layout: this.uniformBufferBindGroupLayout,
       entries: [{
         binding: 0,
@@ -32493,27 +32387,9 @@ class ProceduralMeshObj extends _materials.default {
         }
       }]
     });
-    this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
-      label: '[mainPass]BindGroupLayout pro mesh',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: 'depth'
-        }
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'comparison'
-        }
-      }]
-    });
 
-    // SHADOW BIND GROUP (3 bindings - NO morphBlend, for Light compatibility)
-
+    // Shadow bind group now includes morphBlend for correct lighting
     this.shadowBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'shadowBindGroupLayout procedural',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -32536,12 +32412,18 @@ class ProceduralMeshObj extends _materials.default {
         buffer: {
           type: 'uniform'
         }
-      } // vertexAnim
-      // NO binding 3 - morphBlend not needed for shadows
+      },
+      // vertexAnim
+      {
+        binding: 3,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      } // morphBlend
       ]
     });
     this.modelBindGroup = this.device.createBindGroup({
-      label: 'shadowBindGroup procedural',
       layout: this.shadowBindGroupLayout,
       entries: [{
         binding: 0,
@@ -32558,15 +32440,16 @@ class ProceduralMeshObj extends _materials.default {
         resource: {
           buffer: this.vertexAnimBuffer
         }
+      }, {
+        binding: 3,
+        resource: {
+          buffer: this.morphBlendBuffer
+        }
       }]
     });
     this._sceneData = new Float32Array(48);
   }
-
-  // PIPELINE SETUP
-
   _setupPipeline() {
-    // Call Materials methods to create bind group layout and bind group
     this.createLayoutForRender();
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
@@ -32648,30 +32531,21 @@ class ProceduralMeshObj extends _materials.default {
       primitive: this.primitive
     });
   }
-
-  // PUBLIC MORPH API
-
   setMorphBlend(t) {
-    console.log('🎨 setMorphBlend called with t=', t);
     this.morphBlend = Math.max(0, Math.min(1, t));
-    console.log('🎨 After clamp, morphBlend=', this.morphBlend, 'buffer?', !!this.morphBlendBuffer);
     if (this.morphBlendBuffer) {
       this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
-      console.log('✅ GPU write complete');
     } else {
       console.error('❌ NO BUFFER!');
     }
   }
   morphTo(targetBlend, duration = 1000, onComplete = null) {
-    console.log('🔥 morphTo ENTRY:', {
-      targetBlend,
-      duration,
-      'this.morphAnimation': this.morphAnimation
-    });
+    // console.log('🔥 morphTo ENTRY:', {
+    //   targetBlend,
+    //   duration,
+    //   'this.morphAnimation': this.morphAnimation
+    // });
     const safeDuration = Math.max(duration, 100);
-    console.log('🔥 BEFORE RESET:', this.morphAnimation.elapsed);
-
-    // ✅ FORCE COMPLETE RESET
     this.morphAnimation = {
       active: true,
       startBlend: this.morphBlend,
@@ -32681,7 +32555,6 @@ class ProceduralMeshObj extends _materials.default {
       onComplete: onComplete,
       debug: this.morphAnimation.debug
     };
-    console.log('🔥 AFTER RESET:', this.morphAnimation.elapsed);
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
@@ -32704,7 +32577,7 @@ class ProceduralMeshObj extends _materials.default {
     this.indexBuffer?.destroy();
     this._setupBuffers();
     this.setMorphBlend(0.0);
-    console.log(`%cMesh switched: ${this.name}`, _utils.LOG_FUNNY_SMALL);
+    // console.log(`%cMesh switched: ${this.name}`, LOG_FUNNY_SMALL);
   }
   updateMorphAnimation(deltaTime) {
     if (!this.morphAnimation.active) return;
@@ -32713,22 +32586,19 @@ class ProceduralMeshObj extends _materials.default {
     const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
     this.setMorphBlend(blend);
-    console.log('⚡ UPDATE CALC:', {
-      elapsed_after: this.morphAnimation.elapsed,
-      t: t,
-      will_complete: t >= 1
-    });
+    // console.log('⚡ UPDATE CALC:', {
+    //   elapsed_after: this.morphAnimation.elapsed,
+    //   t: t,
+    //   will_complete: t >= 1
+    // });
     if (t >= 1) {
       this.morphAnimation.active = false;
       if (this.morphAnimation.onComplete) {
         this.morphAnimation.onComplete();
       }
-      console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
+      // console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
     }
   }
-
-  // TRANSFORM & UPDATE
-
   getModelMatrix(pos, useScale = false) {
     let modelMatrix = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
@@ -32741,7 +32611,6 @@ class ProceduralMeshObj extends _materials.default {
     return modelMatrix;
   }
   updateModelUniformBuffer() {
-    // if(!this.done) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   }
@@ -32839,10 +32708,6 @@ class ProceduralMeshObj extends _materials.default {
  */
 exports.default = ProceduralMeshObj;
 class MeshMorpher {
-  /**
-   * Create a matched pair of morphable geometries
-   * Both will have identical vertex/index structure
-   */
   static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
     const morphPair = {
       meshA: this._generateFromFunction(shapeA, resolutionU, resolutionV),
@@ -32852,10 +32717,6 @@ class MeshMorpher {
     console.log(`✅ Created matched pair: ${morphPair.vertexCount} vertices each`);
     return morphPair;
   }
-
-  /**
-   * Generate mesh from parametric function: f(u, v) → [x, y, z]
-   */
   static _generateFromFunction(shapeFunc, resU, resV) {
     const positions = [];
     const normals = [];
@@ -32913,10 +32774,6 @@ class MeshMorpher {
       vertexCount: positions.length / 3
     };
   }
-
-  /**
-   * Sphere: Classic UV sphere
-   */
   static sphere(radius = 1) {
     return (u, v) => {
       const theta = u * Math.PI * 2; // Longitude
@@ -32925,10 +32782,6 @@ class MeshMorpher {
       return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)];
     };
   }
-
-  /**
-   * Cube: Mapped to UV sphere topology
-   */
   static cube(size = 1) {
     return (u, v) => {
       // Map UV to cube surface (normalized sphere approach)
@@ -32946,10 +32799,6 @@ class MeshMorpher {
       return [x / max * size, y / max * size, z / max * size];
     };
   }
-
-  /**
-   * Cylinder
-   */
   static cylinder(radius = 1, height = 2) {
     return (u, v) => {
       const theta = u * Math.PI * 2;
@@ -32957,10 +32806,6 @@ class MeshMorpher {
       return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
     };
   }
-
-  /**
-   * Torus
-   */
   static torus(majorRadius = 1, minorRadius = 0.3) {
     return (u, v) => {
       const theta = u * Math.PI * 2;
@@ -32969,10 +32814,6 @@ class MeshMorpher {
       return [r * Math.cos(theta), minorRadius * Math.sin(phi), r * Math.sin(theta)];
     };
   }
-
-  /**
-   * Cone
-   */
   static cone(baseRadius = 1, height = 2) {
     return (u, v) => {
       const theta = u * Math.PI * 2;
@@ -32982,10 +32823,6 @@ class MeshMorpher {
       return [r * Math.cos(theta), h, r * Math.sin(theta)];
     };
   }
-
-  /**
-   * Capsule (cylinder with hemisphere caps)
-   */
   static capsule(radius = 0.5, height = 2) {
     return (u, v) => {
       const theta = u * Math.PI * 2;
@@ -33004,25 +32841,100 @@ class MeshMorpher {
       }
     };
   }
-
-  /**
-   * Plane (flat square)
-   */
   static plane(size = 1) {
     return (u, v) => {
       return [(u - 0.5) * size, 0, (v - 0.5) * size];
     };
   }
-
-  /**
-   * Mobius strip
-   */
   static mobius(radius = 1, width = 0.5) {
     return (u, v) => {
       const theta = u * Math.PI * 2;
       const t = (v - 0.5) * width;
       const halfTheta = theta / 2;
       return [(radius + t * Math.cos(halfTheta)) * Math.cos(theta), t * Math.sin(halfTheta), (radius + t * Math.cos(halfTheta)) * Math.sin(theta)];
+    };
+  }
+  static pyramid(size = 1) {
+    return (u, v) => {
+      const angle = u * Math.PI * 2;
+      const r = (1 - v) * size;
+      const x = r * Math.cos(angle);
+      const z = r * Math.sin(angle);
+      const y = v * size;
+      return [x, y, z];
+    };
+  }
+  static supershape(size = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = size * (0.5 + 0.5 * Math.sin(5 * theta) * Math.sin(3 * phi));
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.cos(phi);
+      const z = r * Math.sin(phi) * Math.sin(theta);
+      return [x, y, z];
+    };
+  }
+  static wavePlane(size = 2) {
+    return (u, v) => {
+      const x = (u - 0.5) * size;
+      const z = (v - 0.5) * size;
+      const y = Math.sin(x * 3) * Math.cos(z * 3) * 0.3;
+      return [x, y, z];
+    };
+  }
+  static circlePlane(radius = 1) {
+    return (u, v) => {
+      const angle = u * Math.PI * 2;
+      const r = v * radius;
+      const x = r * Math.cos(angle);
+      const z = r * Math.sin(angle);
+      return [x, 0, z];
+    };
+  }
+  static icosahedron(radius = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI;
+      let x = Math.sin(phi) * Math.cos(theta);
+      let y = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+
+      // create icosahedral distortion
+      const f = Math.abs(x) + Math.abs(y) + Math.abs(z);
+      x /= f;
+      y /= f;
+      z /= f;
+      return [x * radius, y * radius, z * radius];
+    };
+  }
+  static diamond(size = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const y = (v - 0.5) * 2 * size;
+      const r = size * (1 - Math.abs(v - 0.5) * 2);
+      return [r * Math.cos(theta), y, r * Math.sin(theta)];
+    };
+  }
+  static rock(radius = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI;
+      let x = Math.sin(phi) * Math.cos(theta);
+      let y = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const noise = 0.2 * Math.sin(theta * 7) * Math.cos(phi * 5);
+      const r = radius + noise;
+      return [x * r, y * r, z * r];
+    };
+  }
+  static star(radius = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI;
+      const spike = 1 + 0.3 * Math.sin(theta * 5);
+      const r = radius * spike;
+      return [r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta)];
     };
   }
 }
@@ -33326,7 +33238,7 @@ exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
 exports.genName = genName;
-exports.geometryTypes = void 0;
+exports.geometryTypes = exports.geoTypesForMorph = void 0;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
@@ -34460,61 +34372,24 @@ const geometryTypes = exports.geometryTypes = {
   "crescent": "crescent",
   "pyramidFractal": "pyramidFractal"
 };
-
-// export let ADDITIVE_BLEND_CONFIGURATIONS = {
-//   color: {
-//                 srcFactor: 'src-alpha', // This makes intensity scale correctly
-//                 dstFactor: 'one',       // This is the "Additive" part
-//                 operation: 'add',
-//               },
-//               alpha: {
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//                 operation: 'add',
-//               },
-//               color: {
-//                 // Result = (ShaderColor * ShaderAlpha) + (DestColor * 1)
-//                 operation: 'add',
-//                 srcFactor: 'src-alpha',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 // Keeps the background alpha as is
-//                 operation: 'add',
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//               }
-//               color: {
-//                 operation: 'add',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one-minus-src-alpha',
-//               },
-//               alpha: {
-//                 operation: 'add',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one-minus-src-alpha',
-//               }
-//               color: {
-//                 operation: 'add',
-//                 srcFactor: 'one-minus-dst-color',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 operation: 'add',
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//               }
-//               color: {
-//                 operation: 'max', // Take whichever is brighter
-//                 srcFactor: 'one',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 operation: 'max',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one',
-//               }
-// }
+const geoTypesForMorph = exports.geoTypesForMorph = {
+  cube: "cube",
+  sphere: "sphere",
+  mobius: "mobius",
+  plane: "plane",
+  capsule: "capsule",
+  cone: "cone",
+  torus: "torus",
+  cylinder: "cylinder",
+  wavePlane: "wavePlane",
+  supershape: "supershape",
+  pyramid: "pyramid",
+  diamond: "diamond",
+  icosahedron: "icosahedron",
+  circlePlane: "circlePlane",
+  rock: "rock",
+  star: "star"
+};
 
 },{}],58:[function(require,module,exports){
 "use strict";
