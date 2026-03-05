@@ -340,7 +340,7 @@ function loadGLBLoader() {
       TEST_ANIM.addLight();
       TEST_ANIM.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         envMapParams: {
           baseColorMix: 0.55,
@@ -441,7 +441,7 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'gpt'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -626,7 +626,7 @@ var loadObjFile = function () {
 
       loadObjFile.addProceduralMeshObj({
         material: {
-          type: 'standard'
+          type: 'power'
         },
         position: {
           x: 0,
@@ -36063,8 +36063,7 @@ fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mater
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
-    // let NdotL = max(dot(N, L), 0.0);
-    let NdotL = max(dot(-N, L), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
 
     let theta = dot(L, normalize(-light.direction));
     let epsilon = light.innerCutoff - light.outerCutoff;

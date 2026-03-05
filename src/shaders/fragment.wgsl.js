@@ -123,8 +123,7 @@ fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mater
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
-    // let NdotL = max(dot(N, L), 0.0);
-    let NdotL = max(dot(-N, L), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
 
     let theta = dot(L, normalize(-light.direction));
     let epsilon = light.innerCutoff - light.outerCutoff;

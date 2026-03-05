@@ -28,7 +28,7 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'gpt'},
+        material: {type: 'standard'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -177,7 +177,7 @@ export var loadObjFile = function() {
           // const normals = this.computeSmoothNormals(positions, indices);
 
         loadObjFile.addProceduralMeshObj({
-          material: {type: 'standard'},
+          material: {type: 'power'},
           position: {x: 0, y: 1, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           scale: [-1, -1, -1],
