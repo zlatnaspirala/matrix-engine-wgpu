@@ -347,7 +347,7 @@ export default class ProceduralMeshObj extends Materials {
       {arrayStride: 3 * 4, attributes: [{shaderLocation: 7, offset: 0, format: 'float32x3'}]}, // normalB
     ];
 
-    this.primitive = {topology: 'triangle-list', cullMode: 'none', frontFace: 'ccw'};
+    this.primitive = {topology: 'triangle-list', cullMode: 'back', frontFace: 'ccw'}; //ccw
   }
 
   _setupUniforms() {
@@ -556,12 +556,18 @@ export default class ProceduralMeshObj extends Materials {
   getModelMatrix(pos, useScale = false) {
     let modelMatrix = mat4.identity();
     mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
-    mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-    mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-    mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-    if(useScale) {
-      mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+    if(this.itIsPhysicsBody) {
+      mat4.rotate(modelMatrix,
+        [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
+        degToRad(this.rotation.angle),
+        modelMatrix
+      );
+    } else {
+      mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+      mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+      mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
     }
+    if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
     return modelMatrix;
   }
 
@@ -672,12 +678,6 @@ export default class ProceduralMeshObj extends Materials {
   }
 }
 
-
-
-
-// TRUE MESH MORPHING - Automatic Vertex Correspondence
-
-
 /**
  * Creates morphable geometry pairs that share identical topology.
  * This enables TRUE morphing (not deformation).
@@ -687,7 +687,6 @@ export default class ProceduralMeshObj extends Materials {
  * 2. Each (u,v) coordinate maps to a vertex in both shapes
  * 3. Perfect 1:1 vertex correspondence
  */
-
 export class MeshMorpher {
   static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
     const morphPair = {
@@ -696,8 +695,50 @@ export class MeshMorpher {
       vertexCount: (resolutionU + 1) * (resolutionV + 1)
     };
 
-    console.log(`✅ Created matched pair: ${morphPair.vertexCount} vertices each`);
+    morphPair.meshA.normals = this.computeSmoothNormals(morphPair.meshA.vertices, morphPair.meshA.indices);
+    morphPair.meshB.normals = this.computeSmoothNormals(morphPair.meshB.vertices, morphPair.meshB.indices);
+
+    console.log(`✅ Created matched pair: ${morphPair.meshA.normals } vertices each`);
     return morphPair;
+  }
+
+  static computeSmoothNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    const counts = new Uint16Array(positions.length / 3);
+
+    for(let i = 0;i < indices.length;i += 3) {
+      const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+
+      const ax = positions[ia * 3], ay = positions[ia * 3 + 1], az = positions[ia * 3 + 2];
+      const bx = positions[ib * 3], by = positions[ib * 3 + 1], bz = positions[ib * 3 + 2];
+      const cx = positions[ic * 3], cy = positions[ic * 3 + 1], cz = positions[ic * 3 + 2];
+
+      const ux = bx - ax, uy = by - ay, uz = bz - az;
+      const vx = cx - ax, vy = cy - ay, vz = cz - az;
+
+      let nx = uy * vz - uz * vy;
+      let ny = uz * vx - ux * vz;
+      let nz = ux * vy - uy * vx;
+
+      const len = Math.hypot(nx, ny, nz) || 1;
+      nx /= len; ny /= len; nz /= len;
+
+      for(const idx of [ia, ib, ic]) {
+        normals[idx * 3] += nx;
+        normals[idx * 3 + 1] += ny;
+        normals[idx * 3 + 2] += nz;
+        counts[idx]++;
+      }
+    }
+
+    for(let i = 0;i < counts.length;i++) {
+      const len = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
+      normals[i * 3] /= len;
+      normals[i * 3 + 1] /= len;
+      normals[i * 3 + 2] /= len;
+    }
+
+    return normals;
   }
 
   static _generateFromFunction(shapeFunc, resU, resV) {

@@ -95,7 +95,7 @@ export class SpotLight {
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
-      cullMode: 'back', // for front interest border drawen shadows !
+      cullMode: 'back', // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     }
 
@@ -284,6 +284,9 @@ export class SpotLight {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
+        depthBias: 2,
+        depthBiasSlopeScale: 2,
+        depthBiasClamp: 0
       },
       primitive: this.primitive,
     });
@@ -364,6 +367,7 @@ export class SpotLight {
         depthBias: 2,              // Constant bias (try 1-4)
         depthBiasSlopeScale: 2.0,
         format: 'depth32float',
+        depthBiasClamp: 0
       },
       primitive: this.primitive,
     });
@@ -395,6 +399,9 @@ export class SpotLight {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
+        depthBias: 10,
+        depthBiasSlopeScale: 5.0,
+        depthBiasClamp: 0.05
       },
       primitive: this.primitive,
     });

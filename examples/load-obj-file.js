@@ -23,7 +23,7 @@ export var loadObjFile = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
-        {scale: [20, 1, 20]})
+        {scale: [10, 1, 10]})
     })
 
     function onGround(m) {
@@ -44,7 +44,7 @@ export var loadObjFile = function() {
           envLodBias: 2.5,
           usePlanarReflection: false,  // ✅ Env map mode
         },
-        name: 'ground',
+        name: 'floor',
         mesh: m.cube,
         physics: {
           enabled: false,
@@ -102,13 +102,15 @@ export var loadObjFile = function() {
       //     envLodBias: 1.5,
       //     usePlanarReflection: false,  // ✅ Env map mode
       //   },
-      //   name: 'ball',
+      //   name: 'CUBE',
       //   mesh: m.cube,
       //   physics: {
       //     enabled: false,
       //     geometry: "Sphere"
       //   }
       // });
+
+ 
 
       // const spacing = 4;
       // let i = 0;
@@ -136,54 +138,74 @@ export var loadObjFile = function() {
       //   }
       // }
 
-      const spacing = 4;
-      const keys = Object.keys(geoTypesForMorph);
+      // const spacing = 4;
+      // const keys = Object.keys(geoTypesForMorph);
 
-      let col = 0;
-      let row = 0;
+      // let col = 0;
+      // let row = 0;
 
-      for(let i = 0;i < keys.length - 1;i++) {
-        const typeA = keys[i];
-        const typeB = keys[i + 1];
+      // for(let i = 0;i < keys.length - 1;i++) {
+      //   const typeA = keys[i];
+      //   const typeB = keys[i + 1];
+      //   loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'standard'},
+      //     position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     scale: [1, 1, 1],
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
+
+      //     meshA: MeshMorpher[typeA](1),
+      //     meshB: MeshMorpher[typeB](1),
+
+      //     name: `morph_${typeA}_to_${typeB}`,
+
+      //     physics: {
+      //       enabled: false,
+      //       geometry: "Sphere"
+      //     }
+      //   });
+
+      //   col++;
+
+      //   if(col % 4 === 0) {
+      //     row++;
+      //     col = 0;
+      //   }
+      // }
+
+          // const normals = this.computeSmoothNormals(positions, indices);
+
         loadObjFile.addProceduralMeshObj({
           material: {type: 'standard'},
-          position: {x: col * spacing - 5, y: 1, z: -10 + row * spacing},
+          position: {x: 0, y: 1, z: -10},
           rotation: {x: 0, y: 0, z: 0},
-          scale: [1, 1, 1],
+          scale: [-1, -1, -1],
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: ['./res/textures/cube-g1_low.webp'],
-
-          meshA: MeshMorpher[typeA](1),
-          meshB: MeshMorpher[typeB](1),
-
-          name: `morph_${typeA}_to_${typeB}`,
-
+          meshA: MeshMorpher['sphere'](1),
+          meshB: MeshMorpher['sphere'](1),
+          name: `morph`,
           physics: {
             enabled: false,
             geometry: "Sphere"
           }
         });
 
-        col++;
-
-        if(col % 4 === 0) {
-          row++;
-          col = 0;
-        }
-      }
 
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
       loadObjFile.addLight();
       loadObjFile.lightContainer[0].intensity = 20;
 
-      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
+      loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.001)
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
+        light.target[0] = light.behavior.setPath0()
       })
 
-      loadObjFile.lightContainer[0].position = [0, 6, -10];
+      loadObjFile.lightContainer[0].position = [0, 16, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');

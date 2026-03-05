@@ -435,7 +435,7 @@ var loadObjFile = function () {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
-        scale: [20, 1, 20]
+        scale: [10, 1, 10]
       });
     });
     function onGround(m) {
@@ -476,7 +476,7 @@ var loadObjFile = function () {
           envLodBias: 2.5,
           usePlanarReflection: false // ✅ Env map mode
         },
-        name: 'ground',
+        name: 'floor',
         mesh: m.cube,
         physics: {
           enabled: false,
@@ -552,7 +552,7 @@ var loadObjFile = function () {
       //     envLodBias: 1.5,
       //     usePlanarReflection: false,  // ✅ Env map mode
       //   },
-      //   name: 'ball',
+      //   name: 'CUBE',
       //   mesh: m.cube,
       //   physics: {
       //     enabled: false,
@@ -586,57 +586,83 @@ var loadObjFile = function () {
       //   }
       // }
 
-      const spacing = 4;
-      const keys = Object.keys(_utils.geoTypesForMorph);
-      let col = 0;
-      let row = 0;
-      for (let i = 0; i < keys.length - 1; i++) {
-        const typeA = keys[i];
-        const typeB = keys[i + 1];
-        loadObjFile.addProceduralMeshObj({
-          material: {
-            type: 'standard'
-          },
-          position: {
-            x: col * spacing - 5,
-            y: 1,
-            z: -10 + row * spacing
-          },
-          rotation: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          scale: [1, 1, 1],
-          rotationSpeed: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          texturesPaths: ['./res/textures/cube-g1_low.webp'],
-          meshA: _proceduralMesh.MeshMorpher[typeA](1),
-          meshB: _proceduralMesh.MeshMorpher[typeB](1),
-          name: `morph_${typeA}_to_${typeB}`,
-          physics: {
-            enabled: false,
-            geometry: "Sphere"
-          }
-        });
-        col++;
-        if (col % 4 === 0) {
-          row++;
-          col = 0;
+      // const spacing = 4;
+      // const keys = Object.keys(geoTypesForMorph);
+
+      // let col = 0;
+      // let row = 0;
+
+      // for(let i = 0;i < keys.length - 1;i++) {
+      //   const typeA = keys[i];
+      //   const typeB = keys[i + 1];
+      //   loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'standard'},
+      //     position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     scale: [1, 1, 1],
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
+
+      //     meshA: MeshMorpher[typeA](1),
+      //     meshB: MeshMorpher[typeB](1),
+
+      //     name: `morph_${typeA}_to_${typeB}`,
+
+      //     physics: {
+      //       enabled: false,
+      //       geometry: "Sphere"
+      //     }
+      //   });
+
+      //   col++;
+
+      //   if(col % 4 === 0) {
+      //     row++;
+      //     col = 0;
+      //   }
+      // }
+
+      // const normals = this.computeSmoothNormals(positions, indices);
+
+      loadObjFile.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 1,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [-1, -1, -1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: _proceduralMesh.MeshMorpher['sphere'](1),
+        meshB: _proceduralMesh.MeshMorpher['sphere'](1),
+        name: `morph`,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
         }
-      }
+      });
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
       loadObjFile.lightContainer[0].intensity = 20;
-      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
+      loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.001);
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
+        light.target[0] = light.behavior.setPath0();
       });
-      loadObjFile.lightContainer[0].position = [0, 6, -10];
+      loadObjFile.lightContainer[0].position = [0, 16, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
@@ -26063,7 +26089,7 @@ class SpotLight {
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'back',
-      // for front interest border drawen shadows !
+      // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     };
     this.shadowTexture = this.device.createTexture({
@@ -26272,7 +26298,10 @@ class SpotLight {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
-        format: 'depth32float'
+        format: 'depth32float',
+        depthBias: 2,
+        depthBiasSlopeScale: 2,
+        depthBiasClamp: 0
       },
       primitive: this.primitive
     });
@@ -26339,7 +26368,8 @@ class SpotLight {
         depthBias: 2,
         // Constant bias (try 1-4)
         depthBiasSlopeScale: 2.0,
-        format: 'depth32float'
+        format: 'depth32float',
+        depthBiasClamp: 0
       },
       primitive: this.primitive
     });
@@ -26405,7 +26435,10 @@ class SpotLight {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
-        format: 'depth32float'
+        format: 'depth32float',
+        depthBias: 10,
+        depthBiasSlopeScale: 5.0,
+        depthBiasClamp: 0.05
       },
       primitive: this.primitive
     });
@@ -32299,9 +32332,9 @@ class ProceduralMeshObj extends _materials.default {
     ];
     this.primitive = {
       topology: 'triangle-list',
-      cullMode: 'none',
+      cullMode: 'back',
       frontFace: 'ccw'
-    };
+    }; //ccw
   }
   _setupUniforms() {
     this.modelUniformBuffer = this.device.createBuffer({
@@ -32602,12 +32635,14 @@ class ProceduralMeshObj extends _materials.default {
   getModelMatrix(pos, useScale = false) {
     let modelMatrix = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
-    _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-    _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-    _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-    if (useScale) {
-      _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+    if (this.itIsPhysicsBody) {
+      _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+    } else {
+      _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+      _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+      _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
     }
+    if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
     return modelMatrix;
   }
   updateModelUniformBuffer() {
@@ -32695,8 +32730,6 @@ class ProceduralMeshObj extends _materials.default {
   }
 }
 
-// TRUE MESH MORPHING - Automatic Vertex Correspondence
-
 /**
  * Creates morphable geometry pairs that share identical topology.
  * This enables TRUE morphing (not deformation).
@@ -32714,8 +32747,54 @@ class MeshMorpher {
       meshB: this._generateFromFunction(shapeB, resolutionU, resolutionV),
       vertexCount: (resolutionU + 1) * (resolutionV + 1)
     };
-    console.log(`✅ Created matched pair: ${morphPair.vertexCount} vertices each`);
+    morphPair.meshA.normals = this.computeSmoothNormals(morphPair.meshA.vertices, morphPair.meshA.indices);
+    morphPair.meshB.normals = this.computeSmoothNormals(morphPair.meshB.vertices, morphPair.meshB.indices);
+    console.log(`✅ Created matched pair: ${morphPair.meshA.normals} vertices each`);
     return morphPair;
+  }
+  static computeSmoothNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    const counts = new Uint16Array(positions.length / 3);
+    for (let i = 0; i < indices.length; i += 3) {
+      const ia = indices[i],
+        ib = indices[i + 1],
+        ic = indices[i + 2];
+      const ax = positions[ia * 3],
+        ay = positions[ia * 3 + 1],
+        az = positions[ia * 3 + 2];
+      const bx = positions[ib * 3],
+        by = positions[ib * 3 + 1],
+        bz = positions[ib * 3 + 2];
+      const cx = positions[ic * 3],
+        cy = positions[ic * 3 + 1],
+        cz = positions[ic * 3 + 2];
+      const ux = bx - ax,
+        uy = by - ay,
+        uz = bz - az;
+      const vx = cx - ax,
+        vy = cy - ay,
+        vz = cz - az;
+      let nx = uy * vz - uz * vy;
+      let ny = uz * vx - ux * vz;
+      let nz = ux * vy - uy * vx;
+      const len = Math.hypot(nx, ny, nz) || 1;
+      nx /= len;
+      ny /= len;
+      nz /= len;
+      for (const idx of [ia, ib, ic]) {
+        normals[idx * 3] += nx;
+        normals[idx * 3 + 1] += ny;
+        normals[idx * 3 + 2] += nz;
+        counts[idx]++;
+      }
+    }
+    for (let i = 0; i < counts.length; i++) {
+      const len = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
+      normals[i * 3] /= len;
+      normals[i * 3 + 1] /= len;
+      normals[i * 3 + 2] /= len;
+    }
+    return normals;
   }
   static _generateFromFunction(shapeFunc, resU, resV) {
     const positions = [];
@@ -35984,7 +36063,8 @@ fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mater
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
+    // let NdotL = max(dot(N, L), 0.0);
+    let NdotL = max(dot(-N, L), 0.0);
 
     let theta = dot(L, normalize(-light.direction));
     let epsilon = light.innerCutoff - light.outerCutoff;
@@ -38515,14 +38595,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexMorphWGSL = exports.vertexMorphShadowWGSL = void 0;
 const vertexMorphWGSL = exports.vertexMorphWGSL = /* wgsl */`
-// Matches your existing vertex shader structure
 struct Scene {
-  lightViewProjMatrix: mat4x4f,   // [0-15]
-  cameraViewProjMatrix: mat4x4f,  // [16-31]
-  cameraPos: vec3f,               // [32-34]  ← Match the data!
-  padding0: f32,                  // [35]
-  lightPos: vec3f,                // [36-38]
-  padding1: f32,                  // [39]
+  lightViewProjMatrix: mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  cameraPos: vec3f,
+  padding0: f32,
+  lightPos: vec3f,
+  padding1: f32,
 }
 
 struct Model {
@@ -38534,26 +38613,32 @@ struct VertexAnimParams {
   flags: f32,
   globalIntensity: f32,
   _pad0: f32,
+  
   waveSpeed: f32,
   waveAmplitude: f32,
   waveFrequency: f32,
   _pad1: f32,
+  
   windSpeed: f32,
   windStrength: f32,
   windHeightInfluence: f32,
   windTurbulence: f32,
+  
   pulseSpeed: f32,
   pulseAmount: f32,
   pulseCenterX: f32,
   pulseCenterY: f32,
+  
   twistSpeed: f32,
   twistAmount: f32,
   _pad2: f32,
   _pad3: f32,
+  
   noiseScale: f32,
   noiseStrength: f32,
   noiseSpeed: f32,
   _pad4: f32,
+  
   oceanWaveScale: f32,
   oceanWaveHeight: f32,
   oceanWaveSpeed: f32,
@@ -38562,9 +38647,7 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform> scene: Scene;
 @group(1) @binding(0) var<uniform> model: Model;
-// Group 1 Binding 1 (Bones) is ignored as per your note
 @group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(1) @binding(3) var<uniform> u_morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -38574,11 +38657,9 @@ const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
 struct VertexInput {
-  @location(0) positionA: vec3f,
-  @location(1) normalA: vec3f,
+  @location(0) position: vec3f,
+  @location(1) normal: vec3f,
   @location(2) uv: vec2f,
-  @location(6) positionB: vec3f,
-  @location(7) normalB: vec3f,
 };
 
 struct VertexOutput {
@@ -38589,8 +38670,6 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// --- Animation Helper Functions (Simplified for Morphing) ---
-
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -38600,18 +38679,22 @@ fn hash(p: vec2f) -> f32 {
 fn noise(p: vec2f) -> f32 {
   let i = floor(p); let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
-             mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x), u.y);
+  return mix(
+    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
+    u.y
+  );
 }
 
-// Vertex Animation Logic
+// Vertex animation (position only, normals ignored)
 fn applyVertexAnimation(pos: vec3f) -> vec3f {
   var p = pos;
   let flags = u32(vertexAnim.flags);
   let t = vertexAnim.time;
 
   if ((flags & ANIM_WAVE) != 0u) {
-    let w = sin(p.x * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed) * cos(p.z * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed);
+    let w = sin(p.x * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed) * 
+            cos(p.z * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed);
     p.y += w * vertexAnim.waveAmplitude;
   }
   
@@ -38632,7 +38715,7 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
   if ((flags & ANIM_TWIST) != 0u) {
     let angle = p.y * vertexAnim.twistAmount * sin(t * vertexAnim.twistSpeed);
     let cosA = cos(angle); let sinA = sin(angle);
-    p = vec3f(p.x * cosA - p.z * sinA, p.y, p.x * sinA + p.z * cosA);
+    p = vec3f(p.x * cosA - p.z * sinA, p.y, p.x * sinA + p.z);
   }
 
   if ((flags & ANIM_NOISE) != 0u) {
@@ -38652,45 +38735,42 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 @vertex
 fn main(input: VertexInput) -> VertexOutput {
   var output: VertexOutput;
-  
-  // 1. Morph blend between meshA and meshB
-  let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
-  let blendedNormal = normalize(mix(input.normalA, input.normalB, u_morphBlend));
-  
-  // 2. Apply Vertex Animations to the morphed position
-  var finalLocalPos = blendedPosition;
-  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
-    finalLocalPos = applyVertexAnimation(finalLocalPos);
-  }
 
-  // 3. Transform to world space
-  let worldPos = model.modelMatrix * vec4f(finalLocalPos, 1.0);
-  
-  // 4. Normal transform (using local blended normal)
-  let normalMatrix = mat3x3f(
-    model.modelMatrix[0].xyz,
-    model.modelMatrix[1].xyz,
-    model.modelMatrix[2].xyz
-  );
-  
-  // 5. Finalize Outputs
-  output.Position = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos = worldPos.xyz;
-  // This ensures shadow maps move exactly with the animation:
-  output.shadowPos = scene.lightViewProjMatrix * worldPos; 
-  output.fragNorm = normalize(normalMatrix * blendedNormal);
-  output.uv = input.uv;
-  return output;
+    // 1. Take meshA position
+    var pos = input.position;
+
+    // 2. Apply vertex animation if needed
+    if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+        pos = applyVertexAnimation(pos);
+    }
+
+    // 3. Transform to world space
+    let worldPos = model.modelMatrix * vec4f(pos, 1.0);
+
+    // 4. Transform normal
+    let normalMatrix = mat3x3f(
+        model.modelMatrix[0].xyz,
+        model.modelMatrix[1].xyz,
+        model.modelMatrix[2].xyz
+    );
+
+    //  let worldNormal = (model.modelMatrix * vec4f(-input.normal, 0.0)).xyz;
+    //  output.fragNorm = normalize(worldNormal);
+
+    // 5. Fill all outputs exactly like your working shader
+    output.Position  = scene.cameraViewProjMatrix * worldPos;
+    output.fragPos   = worldPos.xyz;
+    output.shadowPos = scene.lightViewProjMatrix * worldPos;
+    output.fragNorm  = normalize(normalMatrix * -input.normal); // correct input
+    output.uv        = input.uv;
+
+    return output;
 }
 `;
 const vertexMorphShadowWGSL = exports.vertexMorphShadowWGSL = /* wgsl */`
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  cameraPos: vec3f,
-  padding0: f32,
-  lightPos: vec3f,
-  padding1: f32,
 }
 
 struct Model {
@@ -38702,26 +38782,38 @@ struct VertexAnimParams {
   flags: f32,
   globalIntensity: f32,
   _pad0: f32,
+  
+  // Wave [4-7]
   waveSpeed: f32,
   waveAmplitude: f32,
   waveFrequency: f32,
   _pad1: f32,
+  
+  // Wind [8-11]
   windSpeed: f32,
   windStrength: f32,
   windHeightInfluence: f32,
   windTurbulence: f32,
+  
+  // Pulse [12-15]
   pulseSpeed: f32,
   pulseAmount: f32,
   pulseCenterX: f32,
   pulseCenterY: f32,
+  
+  // Twist [16-19]
   twistSpeed: f32,
   twistAmount: f32,
   _pad2: f32,
   _pad3: f32,
+  
+  // Noise [20-23]
   noiseScale: f32,
   noiseStrength: f32,
   noiseSpeed: f32,
   _pad4: f32,
+  
+  // Ocean [24-27]
   oceanWaveScale: f32,
   oceanWaveHeight: f32,
   oceanWaveSpeed: f32,
@@ -38745,7 +38837,6 @@ struct VertexInput {
   @location(6) positionB: vec3f,
 };
 
-// Animation Helpers (Must match your main shader exactly)
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -38753,52 +38844,79 @@ fn hash(p: vec2f) -> f32 {
 }
 
 fn noise(p: vec2f) -> f32 {
-  let i = floor(p); let f = fract(p);
+  let i = floor(p);
+  let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
-             mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x), u.y);
+  return mix(
+    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
+    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+fn applyWave(pos: vec3f) -> vec3f {
+  let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) *
+             cos(pos.z * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed);
+  return vec3f(pos.x, pos.y + wave * vertexAnim.waveAmplitude, pos.z);
+}
+
+fn applyWind(pos: vec3f) -> vec3f {
+  let heightFactor = max(0.0, pos.y) * vertexAnim.windHeightInfluence;
+  let windDir = vec2f(
+    sin(vertexAnim.time * vertexAnim.windSpeed),
+    cos(vertexAnim.time * vertexAnim.windSpeed * 0.7)
+  ) * vertexAnim.windStrength;
+  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3) * vertexAnim.windTurbulence;
+  return vec3f(
+    pos.x + windDir.x * heightFactor * (1.0 + turbulence),
+    pos.y,
+    pos.z + windDir.y * heightFactor * (1.0 + turbulence)
+  );
+}
+
+fn applyPulse(pos: vec3f) -> vec3f {
+  let pulse = sin(vertexAnim.time * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
+  let scale = 1.0 + pulse;
+  let center = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
+  return center + (pos - center) * scale;
+}
+
+fn applyTwist(pos: vec3f) -> vec3f {
+  let angle = pos.y * vertexAnim.twistAmount * sin(vertexAnim.time * vertexAnim.twistSpeed);
+  let cosA = cos(angle);
+  let sinA = sin(angle);
+  return vec3f(
+    pos.x * cosA - pos.z * sinA,
+    pos.y,
+    pos.x * sinA + pos.z * cosA
+  );
+}
+
+fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + vertexAnim.time * vertexAnim.noiseSpeed);
+  let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
+  return vec3f(pos.x, pos.y + displacement, pos.z);
+}
+
+fn applyOcean(pos: vec3f) -> vec3f {
+  let t = vertexAnim.time * vertexAnim.oceanWaveSpeed;
+  let scale = vertexAnim.oceanWaveScale;
+  let wave1 = sin(dot(pos.xz, vec2f(1.0, 0.0)) * scale + t) * vertexAnim.oceanWaveHeight;
+  let wave2 = sin(dot(pos.xz, vec2f(0.7, 0.7)) * scale * 1.2 + t * 1.3) * vertexAnim.oceanWaveHeight * 0.7;
+  let wave3 = sin(dot(pos.xz, vec2f(0.0, 1.0)) * scale * 0.8 + t * 0.9) * vertexAnim.oceanWaveHeight * 0.5;
+  return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
 fn applyVertexAnimation(pos: vec3f) -> vec3f {
   var p = pos;
   let flags = u32(vertexAnim.flags);
-  let t = vertexAnim.time;
-
-  if ((flags & ANIM_WAVE) != 0u) {
-    let w = sin(p.x * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed) * cos(p.z * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed);
-    p.y += w * vertexAnim.waveAmplitude;
-  }
   
-  if ((flags & ANIM_WIND) != 0u) {
-    let h = max(0.0, p.y) * vertexAnim.windHeightInfluence;
-    let d = vec2f(sin(t * vertexAnim.windSpeed), cos(t * vertexAnim.windSpeed * 0.7)) * vertexAnim.windStrength;
-    let turb = noise(p.xz * 0.5 + t * 0.3) * vertexAnim.windTurbulence;
-    p.x += d.x * h * (1.0 + turb);
-    p.z += d.y * h * (1.0 + turb);
-  }
-
-  if ((flags & ANIM_PULSE) != 0u) {
-    let s = 1.0 + sin(t * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
-    let c = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
-    p = c + (p - c) * s;
-  }
-
-  if ((flags & ANIM_TWIST) != 0u) {
-    let angle = p.y * vertexAnim.twistAmount * sin(t * vertexAnim.twistSpeed);
-    let cosA = cos(angle); let sinA = sin(angle);
-    p = vec3f(p.x * cosA - p.z * sinA, p.y, p.x * sinA + p.z * cosA);
-  }
-
-  if ((flags & ANIM_NOISE) != 0u) {
-    p.y += (noise(p.xz * vertexAnim.noiseScale + t * vertexAnim.noiseSpeed) - 0.5) * vertexAnim.noiseStrength;
-  }
-
-  if ((flags & ANIM_OCEAN) != 0u) {
-    let s = vertexAnim.oceanWaveScale;
-    let h = vertexAnim.oceanWaveHeight;
-    p.y += sin(dot(p.xz, vec2f(1.0, 0.0)) * s + t * vertexAnim.oceanWaveSpeed) * h;
-    p.y += sin(dot(p.xz, vec2f(0.7, 0.7)) * s * 1.2 + t * vertexAnim.oceanWaveSpeed * 1.3) * h * 0.7;
-  }
+  if ((flags & ANIM_WAVE) != 0u) { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u) { p = applyWind(p); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
 
   return mix(pos, p, vertexAnim.globalIntensity);
 }
@@ -38806,18 +38924,17 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 @vertex
 fn main(input: VertexInput) -> @builtin(position) vec4f {
   // 1. Morph positions
-  let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
+  // let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
+  let blendedPosition = input.positionA;
   
   // 2. Apply the same vertex animations
-  var finalLocalPos = blendedPosition;
+  var finalPos = blendedPosition;
   if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
-    finalLocalPos = applyVertexAnimation(finalLocalPos);
+    finalPos = applyVertexAnimation(finalPos);
   }
 
-  // 3. World space and Light Clip Space
-  let worldPos = model.modelMatrix * vec4f(finalLocalPos, 1.0);
-  
-  // For shadow maps, the output position IS the light's view-projection
+  // 3. Transform to world space and light clip space
+  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   return scene.lightViewProjMatrix * worldPos;
 }
 `;
@@ -38834,7 +38951,6 @@ let vertexWGSL = exports.vertexWGSL = `const MAX_BONES = 100u;
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
 }
 
 struct Model {
@@ -39223,7 +39339,6 @@ const MAX_BONES = 100u;
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
 }
 
 struct Model {
@@ -52667,6 +52782,7 @@ class MatrixEngineWGPU {
         });
         now = performance.now() / 1000;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          if (mesh.name == "floor") continue;
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
             shadowPass.setPipeline(light.shadowPipelineInstanced);
