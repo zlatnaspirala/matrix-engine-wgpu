@@ -406,9 +406,9 @@ exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
+var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     useSingleRenderPass: true,
@@ -425,6 +425,7 @@ var loadObjFile = function () {
     }
   }, () => {
     addEventListener('AmmoReady', () => {
+      (0, _raycast.addRaycastsAABBListener)();
       (0, _loaderObj.downloadMeshes)({
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj"
@@ -434,13 +435,13 @@ var loadObjFile = function () {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
-        scale: [20, 1, 20]
+        scale: [30, 0.5, 30]
       });
     });
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -459,10 +460,10 @@ var loadObjFile = function () {
         },
         texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
-          baseColorMix: 0.95,
+          baseColorMix: 0.5,
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
-          reflectivity: 0.25,
+          reflectivity: 0.4,
           // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0],
           // Soft cyan
@@ -475,7 +476,7 @@ var loadObjFile = function () {
           envLodBias: 2.5,
           usePlanarReflection: false // ✅ Env map mode
         },
-        name: 'ground',
+        name: 'floor',
         mesh: m.cube,
         physics: {
           enabled: false,
@@ -486,60 +487,6 @@ var loadObjFile = function () {
     }
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
-      loadObjFile.addMeshObj({
-        material: {
-          type: 'mirror'
-        },
-        position: {
-          x: 0,
-          y: 3,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
-        name: 'cube1',
-        mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.2,
-          // normal mix
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.95,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.4,
-          // Gentle rim
-          illuminatePulse: 0.001,
-          // No pulse (static)
-          fresnelPower: 5.0,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
-        physics: {
-          enabled: false,
-          geometry: "Cube"
-        },
-        // pointerEffect: {
-        //   // enabled: true,
-        //   // flameEffect: true,
-        //   // flameEmitter: true,
-        // },
-        raycast: {
-          enabled: true,
-          radius: 2
-        }
-      });
       loadObjFile.addMeshObj({
         material: {
           type: 'mirror'
@@ -560,7 +507,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         envMapParams: {
           baseColorMix: 0.0,
           // CLEAR SKY
@@ -579,21 +526,99 @@ var loadObjFile = function () {
           envLodBias: 1.5,
           usePlanarReflection: false // ✅ Env map mode
         },
-        name: 'ball1',
+        name: 'sky',
         mesh: m.ball,
         physics: {
           enabled: false,
           geometry: "Sphere"
         }
       });
-      console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
+      // let test = MeshMorpher.compose(
+      //   {shape: MeshMorpher.cube(1), offset: [-2, 0, 0]},
+      //   {shape: MeshMorpher.cube(1), offset: [2, 0, 0]},
+      // );
+
+      // loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'power'},
+      //     position: {x: 0 , y: 5, z: -15},
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     scale: [1, 1, 1],
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //     meshA: test,
+      //     meshB: test,
+      //     name: `morph_1`,
+      //     physics: {
+      //       enabled: false,
+      //       geometry: "Sphere"
+      //     }
+      //   });
+      const meshObjects = [];
+      const spacing = 3;
+      const keys = Object.keys(_utils.geoTypesForMorph);
+      let col = 0;
+      let row = 0;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const typeA = keys[i];
+        const typeB = keys[i + 1];
+        const obj = loadObjFile.addProceduralMeshObj({
+          material: {
+            type: 'free'
+          },
+          position: {
+            x: col * spacing - 5,
+            y: 1,
+            z: -15 + row * spacing
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [1, 1, 1],
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: ['./res/textures/cube-g1_low.webp'],
+          meshA: _proceduralMesh.MeshMorpher[typeA](1),
+          meshB: _proceduralMesh.MeshMorpher[typeB](1),
+          name: `morph_${typeA}_to_${typeB}`,
+          physics: {
+            enabled: false,
+            geometry: "Sphere"
+          },
+          raycast: {
+            enabled: true,
+            radius: 1.5
+          }
+        });
+        meshObjects.push(obj);
+        col++;
+        if (col % 4 === 0) {
+          row++;
+          col = 0;
+        }
+      }
+      const runChain = index => {
+        if (index >= meshObjects.length) return;
+        meshObjects[index].morphTo(1.0, 600, () => {
+          runChain(index + 1);
+        });
+      };
+      runChain(0);
       loadObjFile.addLight();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
+      loadObjFile.lightContainer[0].intensity = 10;
+      loadObjFile.activateBloomEffect();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
+        light.target[0] = light.behavior.setPath0();
       });
-      loadObjFile.lightContainer[0].position[1] = 11;
+      loadObjFile.lightContainer[0].position = [0, 17, -10];
+      loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();
@@ -603,15 +628,19 @@ var loadObjFile = function () {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
+        app.cameras.WASD.position[1] = 5;
       }, 800);
     }
+    loadObjFile.canvas.addEventListener("ray.hit.event", e => {
+      console.log('ray.hit.event detected');
+      if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
+    });
   });
   window.app = loadObjFile;
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/utils.js":57,"../src/world.js":100}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/procedural-mesh.js":54,"../src/engine/raycast.js":56,"../src/engine/utils.js":57,"../src/world.js":100}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31865,9 +31894,8 @@ var _materials = _interopRequireDefault(require("./materials"));
 var _geometryFactory = require("./geometry-factory");
 var _wgpuMatrix = require("wgpu-matrix");
 var _matrixClass = require("./matrix-class");
+var _literals = require("./literals");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {VERTEX_ANIM_FLAGS} from './literals';
-
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
  * 
@@ -32315,6 +32343,136 @@ class ProceduralMeshObj extends _materials.default {
       }]
     });
     this._sceneData = new Float32Array(48);
+
+    //
+    // vertex Anim
+    this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
+    this.vertexAnimBuffer = this.device.createBuffer({
+      label: "Vertex Animation Params",
+      size: this.vertexAnimParams.byteLength,
+      // 128 bytes
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.vertexAnim = {
+      enableWave: () => {
+        this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      disableWave: () => {
+        this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      enableWind: () => {
+        this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      disableWind: () => {
+        this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      enablePulse: () => {
+        this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      disablePulse: () => {
+        this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      enableTwist: () => {
+        this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      disableTwist: () => {
+        this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      enableNoise: () => {
+        this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      disableNoise: () => {
+        this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      enableOcean: () => {
+        this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      disableOcean: () => {
+        this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      enable: (...effects) => {
+        effects.forEach(effect => {
+          this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disable: (...effects) => {
+        effects.forEach(effect => {
+          this.vertexAnimParams[1] &= ~_literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disableAll: () => {
+        this.vertexAnimParams[1] = 0;
+        this.updateVertexAnimBuffer();
+      },
+      isEnabled: effect => {
+        return (this.vertexAnimParams[1] & _literals.VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
+      },
+      setWaveParams: (speed, amplitude, frequency) => {
+        this.vertexAnimParams[4] = speed;
+        this.vertexAnimParams[5] = amplitude;
+        this.vertexAnimParams[6] = frequency;
+        this.updateVertexAnimBuffer();
+      },
+      setWindParams: (speed, strength, heightInfluence, turbulence) => {
+        this.vertexAnimParams[8] = speed;
+        this.vertexAnimParams[9] = strength;
+        this.vertexAnimParams[10] = heightInfluence;
+        this.vertexAnimParams[11] = turbulence;
+        this.updateVertexAnimBuffer();
+      },
+      setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
+        this.vertexAnimParams[12] = speed;
+        this.vertexAnimParams[13] = amount;
+        this.vertexAnimParams[14] = centerX;
+        this.vertexAnimParams[15] = centerY;
+        this.updateVertexAnimBuffer();
+      },
+      setTwistParams: (speed, amount) => {
+        this.vertexAnimParams[16] = speed;
+        this.vertexAnimParams[17] = amount;
+        this.updateVertexAnimBuffer();
+      },
+      setNoiseParams: (scale, strength, speed) => {
+        this.vertexAnimParams[20] = scale;
+        this.vertexAnimParams[21] = strength;
+        this.vertexAnimParams[22] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setOceanParams: (scale, height, speed) => {
+        this.vertexAnimParams[24] = scale;
+        this.vertexAnimParams[25] = height;
+        this.vertexAnimParams[26] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setIntensity: value => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        this.updateVertexAnimBuffer();
+      },
+      getIntensity: () => {
+        return this.vertexAnimParams[2];
+      }
+    };
+    this.updateVertexAnimBuffer = () => {
+      this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+    };
+
+    // globalIntensity
+    this.vertexAnimParams[2] = 1.0;
+    this.updateVertexAnimBuffer();
   }
   _setupPipeline() {
     this.createLayoutForRender();
@@ -33085,7 +33243,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/vertex.procedural.wgsl":83,"./geometry-factory":39,"./materials":48,"./matrix-class":49,"./utils":57,"wgpu-matrix":22}],55:[function(require,module,exports){
+},{"../shaders/vertex.procedural.wgsl":83,"./geometry-factory":39,"./literals":43,"./materials":48,"./matrix-class":49,"./utils":57,"wgpu-matrix":22}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33238,10 +33396,18 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
 function computeWorldVertsAndAABB(object) {
   const modelMatrix = object.getModelMatrix(object.position, true);
   const worldVerts = [];
-  for (let i = 0; i < object.mesh.vertices.length; i += 3) {
-    const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
-    const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix);
-    worldVerts.push(...world);
+  if (object.meshA) {
+    for (let i = 0; i < object.meshA.vertices.length; i += 3) {
+      const local = [object.meshA.vertices[i], object.meshA.vertices[i + 1], object.meshA.vertices[i + 2]];
+      const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix);
+      worldVerts.push(...world);
+    }
+  } else {
+    for (let i = 0; i < object.mesh.vertices.length; i += 3) {
+      const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
+      const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix);
+      worldVerts.push(...world);
+    }
   }
   const [boxMin, boxMax] = computeAABB(worldVerts);
   return {
@@ -36220,7 +36386,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
       let inFrustum = p.z >= 0.0 && p.z <= 1.0 
              && p.x >= -1.0 && p.x <= 1.0 
              && p.y >= -1.0 && p.y <= 1.0;
-      let shadowFactor = select(1.0, visibility, inFrustum);
+      // let shadowFactor = select(1.0, visibility, inFrustum);
+      let shadowFactor = visibility;
       let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
       lightContribution += contrib * shadowFactor;
     }

@@ -4,7 +4,7 @@ import Materials from './materials';
 import {GeometryFactory} from './geometry-factory';
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
-// import {VERTEX_ANIM_FLAGS} from './literals';
+import {VERTEX_ANIM_FLAGS} from './literals';
 
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -348,6 +348,137 @@ export default class ProceduralMeshObj extends Materials {
     });
 
     this._sceneData = new Float32Array(48);
+
+    //
+    // vertex Anim
+    this.vertexAnimParams = new Float32Array([
+      0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
+    ]);
+
+    this.vertexAnimBuffer = this.device.createBuffer({
+      label: "Vertex Animation Params",
+      size: this.vertexAnimParams.byteLength, // 128 bytes
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.vertexAnim = {
+      enableWave: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      disableWave: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      enableWind: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      disableWind: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      enablePulse: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      disablePulse: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      enableTwist: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      disableTwist: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      enableNoise: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      disableNoise: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      enableOcean: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      disableOcean: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      enable: (...effects) => {
+        effects.forEach(effect => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disable: (...effects) => {
+        effects.forEach(effect => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disableAll: () => {
+        this.vertexAnimParams[1] = 0;
+        this.updateVertexAnimBuffer();
+      },
+      isEnabled: (effect) => {return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;},
+      setWaveParams: (speed, amplitude, frequency) => {
+        this.vertexAnimParams[4] = speed;
+        this.vertexAnimParams[5] = amplitude;
+        this.vertexAnimParams[6] = frequency;
+        this.updateVertexAnimBuffer();
+      },
+      setWindParams: (speed, strength, heightInfluence, turbulence) => {
+        this.vertexAnimParams[8] = speed;
+        this.vertexAnimParams[9] = strength;
+        this.vertexAnimParams[10] = heightInfluence;
+        this.vertexAnimParams[11] = turbulence;
+        this.updateVertexAnimBuffer();
+      },
+      setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
+        this.vertexAnimParams[12] = speed;
+        this.vertexAnimParams[13] = amount;
+        this.vertexAnimParams[14] = centerX;
+        this.vertexAnimParams[15] = centerY;
+        this.updateVertexAnimBuffer();
+      },
+      setTwistParams: (speed, amount) => {
+        this.vertexAnimParams[16] = speed;
+        this.vertexAnimParams[17] = amount;
+        this.updateVertexAnimBuffer();
+      },
+      setNoiseParams: (scale, strength, speed) => {
+        this.vertexAnimParams[20] = scale;
+        this.vertexAnimParams[21] = strength;
+        this.vertexAnimParams[22] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setOceanParams: (scale, height, speed) => {
+        this.vertexAnimParams[24] = scale;
+        this.vertexAnimParams[25] = height;
+        this.vertexAnimParams[26] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setIntensity: (value) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        this.updateVertexAnimBuffer();
+      },
+      getIntensity: () => {return this.vertexAnimParams[2]}
+    };
+
+    this.updateVertexAnimBuffer = () => {
+      this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+    };
+
+    // globalIntensity
+    this.vertexAnimParams[2] = 1.0;
+    this.updateVertexAnimBuffer();
+
   }
 
   _setupPipeline() {
@@ -552,9 +683,9 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   updateTime(time) {
-    this.time += time * this.deltaTimeAdapter;
-    this.vertexAnimParams[0] = this.time;
-    this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+         this.time += time * this.deltaTimeAdapter;
+        this.vertexAnimParams[0] = this.time;
+        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
 
   drawElements(pass, lightContainer) {

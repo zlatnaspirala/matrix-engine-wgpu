@@ -96,10 +96,18 @@ export function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
 export function computeWorldVertsAndAABB(object) {
   const modelMatrix = object.getModelMatrix(object.position, true);
   const worldVerts = [];
-  for(let i = 0;i < object.mesh.vertices.length;i += 3) {
-    const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
-    const world = vec3.transformMat4(local, modelMatrix);
-    worldVerts.push(...world);
+  if(object.meshA) {
+    for(let i = 0;i < object.meshA.vertices.length;i += 3) {
+      const local = [object.meshA.vertices[i], object.meshA.vertices[i + 1], object.meshA.vertices[i + 2]];
+      const world = vec3.transformMat4(local, modelMatrix);
+      worldVerts.push(...world);
+    }
+  } else {
+    for(let i = 0;i < object.mesh.vertices.length;i += 3) {
+      const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
+      const world = vec3.transformMat4(local, modelMatrix);
+      worldVerts.push(...world);
+    }
   }
   const [boxMin, boxMax] = computeAABB(worldVerts);
   return {modelMatrix, worldVerts, boxMin, boxMax};

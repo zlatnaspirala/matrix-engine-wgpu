@@ -205,7 +205,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
       let inFrustum = p.z >= 0.0 && p.z <= 1.0 
              && p.x >= -1.0 && p.x <= 1.0 
              && p.y >= -1.0 && p.y <= 1.0;
-      let shadowFactor = select(1.0, visibility, inFrustum);
+      // let shadowFactor = select(1.0, visibility, inFrustum);
+      let shadowFactor = visibility;
       let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
       lightContribution += contrib * shadowFactor;
     }

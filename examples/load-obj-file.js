@@ -2,6 +2,7 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
+import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
@@ -14,6 +15,7 @@ export var loadObjFile = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
     addEventListener('AmmoReady', () => {
+      addRaycastsAABBListener();
       downloadMeshes({
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj",
@@ -118,15 +120,16 @@ export var loadObjFile = function() {
           meshA: MeshMorpher[typeA](1),
           meshB: MeshMorpher[typeB](1),
           name: `morph_${typeA}_to_${typeB}`,
-          physics: {enabled: false, geometry: "Sphere"}
+          physics: {enabled: false, geometry: "Sphere"},
+          raycast: { enabled: true , radius: 1.5 }
         });
         meshObjects.push(obj);
         col++;
         if(col % 4 === 0) {row++; col = 0;}
       }
       const runChain = (index) => {
-        if(index >= meshObjects.length) return; // all done
-        meshObjects[index].morphTo(1.0, 2000, () => {
+        if(index >= meshObjects.length) return;
+        meshObjects[index].morphTo(1.0, 600, () => {
           runChain(index + 1);
         });
       };
@@ -136,14 +139,14 @@ export var loadObjFile = function() {
       loadObjFile.lightContainer[0].intensity = 10;
 
       loadObjFile.activateBloomEffect();
-      // loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.1)
-      // loadObjFile.lightContainer[0].behavior.value_ = -1;
-      // loadObjFile.lightContainer[0].updater.push((light) => {
-      //   light.position[0] = light.behavior.setPath0()
-      //   light.target[0] = light.behavior.setPath0()
-      // })
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push((light) => {
+        light.position[0] = light.behavior.setPath0()
+        light.target[0] = light.behavior.setPath0()
+      })
 
-      loadObjFile.lightContainer[0].position = [0, 18, -10];
+      loadObjFile.lightContainer[0].position = [0, 17, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
@@ -155,9 +158,16 @@ export var loadObjFile = function() {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
+        app.cameras.WASD.position[1] = 5;
       }, 800);
     }
+
+    loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
+      console.log('ray.hit.event detected');
+      if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
+ 
+    });
+
   })
   window.app = loadObjFile;
 }
