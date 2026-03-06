@@ -796,8 +796,8 @@ export class MeshMorpher {
 
   static sphere(radius = 1) {
     return (u, v) => {
-      const theta = u * Math.PI * 2;  // Longitude
-      const phi = v * Math.PI;         // Latitude
+      const theta = -u * Math.PI * 2;  // Longitude
+      const phi = -v * Math.PI;         // Latitude
 
       return [
         radius * Math.sin(phi) * Math.cos(theta),
@@ -877,6 +877,7 @@ export class MeshMorpher {
     return (u, v) => {
       const theta = u * Math.PI * 2;
 
+      // v = v;
       if(v < 0.25) {
         // Bottom hemisphere
         const phi = (v / 0.25) * Math.PI * 0.5 + Math.PI * 0.5;
@@ -972,8 +973,8 @@ export class MeshMorpher {
   static circlePlane(radius = 1) {
     return (u, v) => {
 
-      const angle = u * Math.PI * 2;
-      const r = v * radius;
+      const angle = -u * Math.PI * 2;
+      const r = -v * radius;
 
       const x = r * Math.cos(angle);
       const z = r * Math.sin(angle);
@@ -985,8 +986,8 @@ export class MeshMorpher {
   static icosahedron(radius = 1) {
     return (u, v) => {
 
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI;
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
 
       let x = Math.sin(phi) * Math.cos(theta);
       let y = Math.cos(phi);
@@ -1027,8 +1028,8 @@ export class MeshMorpher {
   static rock(radius = 1) {
     return (u, v) => {
 
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI;
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
 
       let x = Math.sin(phi) * Math.cos(theta);
       let y = Math.cos(phi);

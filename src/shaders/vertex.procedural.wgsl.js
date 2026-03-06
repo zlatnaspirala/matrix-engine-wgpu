@@ -52,6 +52,7 @@ struct VertexAnimParams {
 @group(0) @binding(0) var<uniform> scene: Scene;
 @group(1) @binding(0) var<uniform> model: Model;
 @group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(1) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -60,17 +61,33 @@ const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
+// struct VertexInput {
+//   @location(0) position: vec3f,
+//   @location(1) normal: vec3f,
+//   @location(2) uv: vec2f,
+// };
+
+// struct VertexOutput {
+//   @location(0) shadowPos: vec4f,
+//   @location(1) fragPos: vec3f,
+//   @location(2) fragNorm: vec3f,
+//   @location(3) uv: vec2f,
+//   @builtin(position) Position: vec4f,
+// }
+
 struct VertexInput {
-  @location(0) position: vec3f,
-  @location(1) normal: vec3f,
-  @location(2) uv: vec2f,
+  @location(0) position:  vec3f,   // posA
+  @location(1) normal:    vec3f,   // normalA
+  @location(2) uv:        vec2f,
+  @location(6) positionB: vec3f,   // posB
+  @location(7) normalB:   vec3f,   // normalB
 };
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
-  @location(1) fragPos: vec3f,
-  @location(2) fragNorm: vec3f,
-  @location(3) uv: vec2f,
+  @location(1) fragPos:   vec3f,
+  @location(2) fragNorm:  vec3f,
+  @location(3) uv:        vec2f,
   @builtin(position) Position: vec4f,
 }
 
@@ -140,35 +157,30 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 fn main(input: VertexInput) -> VertexOutput {
   var output: VertexOutput;
 
-    // 1. Take meshA position
-    var pos = input.position;
+  let blendedPosition = mix(input.position, input.positionB, morphBlend);
+  let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
 
-    // 2. Apply vertex animation if needed
-    if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
-        pos = applyVertexAnimation(pos);
-    }
+  var pos = blendedPosition;
 
-    // 3. Transform to world space
-    let worldPos = model.modelMatrix * vec4f(pos, 1.0);
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+      pos = applyVertexAnimation(pos);
+  }
 
-    // 4. Transform normal
-    let normalMatrix = mat3x3f(
-        model.modelMatrix[0].xyz,
-        model.modelMatrix[1].xyz,
-        model.modelMatrix[2].xyz
-    );
+  let worldPos = model.modelMatrix * vec4f(pos, 1.0);
 
-    //  let worldNormal = (model.modelMatrix * vec4f(-input.normal, 0.0)).xyz;
-    //  output.fragNorm = normalize(worldNormal);
+  let normalMatrix = mat3x3f(
+      model.modelMatrix[0].xyz,
+      model.modelMatrix[1].xyz,
+      model.modelMatrix[2].xyz
+  );
 
-    // 5. Fill all outputs exactly like your working shader
-    output.Position  = scene.cameraViewProjMatrix * worldPos;
-    output.fragPos   = worldPos.xyz;
-    output.shadowPos = scene.lightViewProjMatrix * worldPos;
-    output.fragNorm  = normalize(normalMatrix * input.normal); // correct input
-    output.uv        = input.uv;
+  output.Position  = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos   = worldPos.xyz;
+  output.shadowPos = scene.lightViewProjMatrix * worldPos;
+  output.fragNorm  = normalize(normalMatrix * blendedNormal);  // no minus!
+  output.uv        = input.uv;
 
-    return output;
+  return output;
 }
 `;
 

@@ -586,73 +586,79 @@ var loadObjFile = function () {
       //   }
       // }
 
-      // const spacing = 4;
-      // const keys = Object.keys(geoTypesForMorph);
+      const spacing = 3;
+      const keys = Object.keys(_utils.geoTypesForMorph);
+      let col = 0;
+      let row = 0;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const typeA = keys[i];
+        const typeB = keys[i + 1];
+        loadObjFile.addProceduralMeshObj({
+          material: {
+            type: 'power'
+          },
+          position: {
+            x: col * spacing - 5,
+            y: 1,
+            z: -15 + row * spacing
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [1, 1, 1],
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: ['./res/textures/cube-g1_low.webp'],
+          meshA: _proceduralMesh.MeshMorpher[typeA](1),
+          meshB: _proceduralMesh.MeshMorpher[typeB](1),
+          name: `morph_${typeA}_to_${typeB}`,
+          physics: {
+            enabled: false,
+            geometry: "Sphere"
+          }
 
-      // let col = 0;
-      // let row = 0;
-
-      // for(let i = 0;i < keys.length - 1;i++) {
-      //   const typeA = keys[i];
-      //   const typeB = keys[i + 1];
-      //   loadObjFile.addProceduralMeshObj({
-      //     material: {type: 'standard'},
-      //     position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
-      //     rotation: {x: 0, y: 0, z: 0},
-      //     scale: [1, 1, 1],
-      //     rotationSpeed: {x: 0, y: 0, z: 0},
-      //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
-
-      //     meshA: MeshMorpher[typeA](1),
-      //     meshB: MeshMorpher[typeB](1),
-
-      //     name: `morph_${typeA}_to_${typeB}`,
-
-      //     physics: {
-      //       enabled: false,
-      //       geometry: "Sphere"
-      //     }
-      //   });
-
-      //   col++;
-
-      //   if(col % 4 === 0) {
-      //     row++;
-      //     col = 0;
-      //   }
-      // }
+          // envMapParams: {
+          //   baseColorMix: 0.0, // CLEAR SKY
+          //   mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          //   reflectivity: 0.25,               // 25% reflection blend
+          //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          //   illuminateStrength: 0.1,          // Gentle rim
+          //   illuminatePulse: 0.01,             // No pulse (static)
+          //   fresnelPower: 2.0,                // Medium-sharp edge
+          //   envLodBias: 1.5,
+          //   usePlanarReflection: false,  // ✅ Env map mode
+          // },
+        });
+        col++;
+        if (col % 4 === 0) {
+          row++;
+          col = 0;
+        }
+      }
 
       // const normals = this.computeSmoothNormals(positions, indices);
 
-      loadObjFile.addProceduralMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 1,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1, 1, 1],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher['plane'](1),
-        meshB: _proceduralMesh.MeshMorpher['sphere'](1),
-        name: `morph`,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      // loadObjFile.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 1, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher['plane'](1),
+      //   meshB: MeshMorpher['sphere'](1),
+      //   name: `morph`,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
+
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
       loadObjFile.lightContainer[0].intensity = 20;
@@ -32845,8 +32851,8 @@ class MeshMorpher {
   }
   static sphere(radius = 1) {
     return (u, v) => {
-      const theta = u * Math.PI * 2; // Longitude
-      const phi = v * Math.PI; // Latitude
+      const theta = -u * Math.PI * 2; // Longitude
+      const phi = -v * Math.PI; // Latitude
 
       return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)];
     };
@@ -32895,6 +32901,8 @@ class MeshMorpher {
   static capsule(radius = 0.5, height = 2) {
     return (u, v) => {
       const theta = u * Math.PI * 2;
+
+      // v = v;
       if (v < 0.25) {
         // Bottom hemisphere
         const phi = v / 0.25 * Math.PI * 0.5 + Math.PI * 0.5;
@@ -32954,8 +32962,8 @@ class MeshMorpher {
   }
   static circlePlane(radius = 1) {
     return (u, v) => {
-      const angle = u * Math.PI * 2;
-      const r = v * radius;
+      const angle = -u * Math.PI * 2;
+      const r = -v * radius;
       const x = r * Math.cos(angle);
       const z = r * Math.sin(angle);
       return [x, 0, z];
@@ -32963,8 +32971,8 @@ class MeshMorpher {
   }
   static icosahedron(radius = 1) {
     return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI;
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
       let x = Math.sin(phi) * Math.cos(theta);
       let y = Math.cos(phi);
       let z = Math.sin(phi) * Math.sin(theta);
@@ -32987,8 +32995,8 @@ class MeshMorpher {
   }
   static rock(radius = 1) {
     return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI;
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
       let x = Math.sin(phi) * Math.cos(theta);
       let y = Math.cos(phi);
       let z = Math.sin(phi) * Math.sin(theta);
@@ -38636,6 +38644,7 @@ struct VertexAnimParams {
 @group(0) @binding(0) var<uniform> scene: Scene;
 @group(1) @binding(0) var<uniform> model: Model;
 @group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(1) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -38644,17 +38653,33 @@ const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
+// struct VertexInput {
+//   @location(0) position: vec3f,
+//   @location(1) normal: vec3f,
+//   @location(2) uv: vec2f,
+// };
+
+// struct VertexOutput {
+//   @location(0) shadowPos: vec4f,
+//   @location(1) fragPos: vec3f,
+//   @location(2) fragNorm: vec3f,
+//   @location(3) uv: vec2f,
+//   @builtin(position) Position: vec4f,
+// }
+
 struct VertexInput {
-  @location(0) position: vec3f,
-  @location(1) normal: vec3f,
-  @location(2) uv: vec2f,
+  @location(0) position:  vec3f,   // posA
+  @location(1) normal:    vec3f,   // normalA
+  @location(2) uv:        vec2f,
+  @location(6) positionB: vec3f,   // posB
+  @location(7) normalB:   vec3f,   // normalB
 };
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
-  @location(1) fragPos: vec3f,
-  @location(2) fragNorm: vec3f,
-  @location(3) uv: vec2f,
+  @location(1) fragPos:   vec3f,
+  @location(2) fragNorm:  vec3f,
+  @location(3) uv:        vec2f,
   @builtin(position) Position: vec4f,
 }
 
@@ -38724,35 +38749,30 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 fn main(input: VertexInput) -> VertexOutput {
   var output: VertexOutput;
 
-    // 1. Take meshA position
-    var pos = input.position;
+  let blendedPosition = mix(input.position, input.positionB, morphBlend);
+  let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
 
-    // 2. Apply vertex animation if needed
-    if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
-        pos = applyVertexAnimation(pos);
-    }
+  var pos = blendedPosition;
 
-    // 3. Transform to world space
-    let worldPos = model.modelMatrix * vec4f(pos, 1.0);
+  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+      pos = applyVertexAnimation(pos);
+  }
 
-    // 4. Transform normal
-    let normalMatrix = mat3x3f(
-        model.modelMatrix[0].xyz,
-        model.modelMatrix[1].xyz,
-        model.modelMatrix[2].xyz
-    );
+  let worldPos = model.modelMatrix * vec4f(pos, 1.0);
 
-    //  let worldNormal = (model.modelMatrix * vec4f(-input.normal, 0.0)).xyz;
-    //  output.fragNorm = normalize(worldNormal);
+  let normalMatrix = mat3x3f(
+      model.modelMatrix[0].xyz,
+      model.modelMatrix[1].xyz,
+      model.modelMatrix[2].xyz
+  );
 
-    // 5. Fill all outputs exactly like your working shader
-    output.Position  = scene.cameraViewProjMatrix * worldPos;
-    output.fragPos   = worldPos.xyz;
-    output.shadowPos = scene.lightViewProjMatrix * worldPos;
-    output.fragNorm  = normalize(normalMatrix * input.normal); // correct input
-    output.uv        = input.uv;
+  output.Position  = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos   = worldPos.xyz;
+  output.shadowPos = scene.lightViewProjMatrix * worldPos;
+  output.fragNorm  = normalize(normalMatrix * blendedNormal);  // no minus!
+  output.uv        = input.uv;
 
-    return output;
+  return output;
 }
 `;
 const vertexMorphShadowWGSL = exports.vertexMorphShadowWGSL = /* wgsl */`

@@ -110,7 +110,7 @@ export var loadObjFile = function() {
       //   }
       // });
 
- 
+
 
       // const spacing = 4;
       // let i = 0;
@@ -138,60 +138,72 @@ export var loadObjFile = function() {
       //   }
       // }
 
-      // const spacing = 4;
-      // const keys = Object.keys(geoTypesForMorph);
+      const spacing = 3;
+      const keys = Object.keys(geoTypesForMorph);
 
-      // let col = 0;
-      // let row = 0;
+      let col = 0;
+      let row = 0;
 
-      // for(let i = 0;i < keys.length - 1;i++) {
-      //   const typeA = keys[i];
-      //   const typeB = keys[i + 1];
-      //   loadObjFile.addProceduralMeshObj({
-      //     material: {type: 'standard'},
-      //     position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
-      //     rotation: {x: 0, y: 0, z: 0},
-      //     scale: [1, 1, 1],
-      //     rotationSpeed: {x: 0, y: 0, z: 0},
-      //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
-
-      //     meshA: MeshMorpher[typeA](1),
-      //     meshB: MeshMorpher[typeB](1),
-
-      //     name: `morph_${typeA}_to_${typeB}`,
-
-      //     physics: {
-      //       enabled: false,
-      //       geometry: "Sphere"
-      //     }
-      //   });
-
-      //   col++;
-
-      //   if(col % 4 === 0) {
-      //     row++;
-      //     col = 0;
-      //   }
-      // }
-
-          // const normals = this.computeSmoothNormals(positions, indices);
-
-
+      for(let i = 0;i < keys.length - 1;i++) {
+        const typeA = keys[i];
+        const typeB = keys[i + 1];
         loadObjFile.addProceduralMeshObj({
-          material: {type: 'standard'},
-          position: {x: 0, y: 1, z: -10},
+          material: {type: 'power'},
+          position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
           rotation: {x: 0, y: 0, z: 0},
           scale: [1, 1, 1],
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: ['./res/textures/cube-g1_low.webp'],
-          meshA: MeshMorpher['plane'](1),
-          meshB: MeshMorpher['sphere'](1),
-          name: `morph`,
+
+          meshA: MeshMorpher[typeA](1),
+          meshB: MeshMorpher[typeB](1),
+
+          name: `morph_${typeA}_to_${typeB}`,
+
           physics: {
             enabled: false,
             geometry: "Sphere"
-          }
+          },
+
+          // envMapParams: {
+          //   baseColorMix: 0.0, // CLEAR SKY
+          //   mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          //   reflectivity: 0.25,               // 25% reflection blend
+          //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          //   illuminateStrength: 0.1,          // Gentle rim
+          //   illuminatePulse: 0.01,             // No pulse (static)
+          //   fresnelPower: 2.0,                // Medium-sharp edge
+          //   envLodBias: 1.5,
+          //   usePlanarReflection: false,  // ✅ Env map mode
+          // },
         });
+
+        col++;
+
+        if(col % 4 === 0) {
+          row++;
+          col = 0;
+        }
+      }
+
+      // const normals = this.computeSmoothNormals(positions, indices);
+
+
+      // loadObjFile.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 1, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher['plane'](1),
+      //   meshB: MeshMorpher['sphere'](1),
+      //   name: `morph`,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
 
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
