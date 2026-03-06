@@ -626,7 +626,7 @@ var loadObjFile = function () {
 
       loadObjFile.addProceduralMeshObj({
         material: {
-          type: 'power'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -638,14 +638,14 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        scale: [-1, -1, -1],
+        scale: [1, 1, 1],
         rotationSpeed: {
           x: 0,
           y: 0,
           z: 0
         },
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher['sphere'](1),
+        meshA: _proceduralMesh.MeshMorpher['plane'](1),
         meshB: _proceduralMesh.MeshMorpher['sphere'](1),
         name: `morph`,
         physics: {
@@ -656,12 +656,14 @@ var loadObjFile = function () {
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
       loadObjFile.lightContainer[0].intensity = 20;
-      loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.001);
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push(light => {
-        light.position[0] = light.behavior.setPath0();
-        light.target[0] = light.behavior.setPath0();
-      });
+
+      // loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.1)
+      // loadObjFile.lightContainer[0].behavior.value_ = -1;
+      // loadObjFile.lightContainer[0].updater.push((light) => {
+      //   light.position[0] = light.behavior.setPath0()
+      //   light.target[0] = light.behavior.setPath0()
+      // })
+
       loadObjFile.lightContainer[0].position = [0, 16, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
@@ -32088,20 +32090,6 @@ class ProceduralMeshObj extends _materials.default {
     this.pointerEffect = o.pointerEffect || {
       enabled: false
     };
-
-    // MORPH ANIMATION STATE
-
-    this.morphAnimation = {
-      active: false,
-      startBlend: 0.0,
-      targetBlend: 1.0,
-      duration: 1000,
-      elapsed: 0,
-      onComplete: null
-    };
-
-    // INIT
-
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 1024;
@@ -32242,8 +32230,6 @@ class ProceduralMeshObj extends _materials.default {
     this.meshTexture = texture;
     this.meshTextureView = texture.createView();
   }
-
-  // SHADOW DEPTH TEXTURE (required by Materials.createBindGroupForRender)
   _setupShadowDepthTexture() {
     this.shadowDepthTexture = this.device.createTexture({
       size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 20],
@@ -32332,7 +32318,7 @@ class ProceduralMeshObj extends _materials.default {
     ];
     this.primitive = {
       topology: 'triangle-list',
-      cullMode: 'back',
+      cullMode: 'none',
       frontFace: 'ccw'
     }; //ccw
   }
@@ -32572,7 +32558,7 @@ class ProceduralMeshObj extends _materials.default {
       console.error('❌ NO BUFFER!');
     }
   }
-  morphTo(targetBlend, duration = 1000, onComplete = null) {
+  morphTo(targetBlend, duration = 1000, onComplete = () => {}) {
     // console.log('🔥 morphTo ENTRY:', {
     //   targetBlend,
     //   duration,
@@ -32629,7 +32615,7 @@ class ProceduralMeshObj extends _materials.default {
       if (this.morphAnimation.onComplete) {
         this.morphAnimation.onComplete();
       }
-      // console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
+      console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
     }
   }
   getModelMatrix(pos, useScale = false) {
@@ -32698,8 +32684,11 @@ class ProceduralMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBufferA);
     shadowPass.setVertexBuffer(1, this.normalBufferA);
     shadowPass.setVertexBuffer(2, this.uvBuffer);
-    shadowPass.setVertexBuffer(3, this.dummyJointsBuffer); // joints (dummy)
-    shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
+    shadowPass.setVertexBuffer(3, this.vertexBufferB); // posB - same as render
+    shadowPass.setVertexBuffer(4, this.normalBufferB); // normalB - same as render
+    // shadowPass.setVertexBuffer(3, this.dummyJointsBuffer);  // joints (dummy)
+    // shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
+
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
@@ -32749,7 +32738,8 @@ class MeshMorpher {
     };
     morphPair.meshA.normals = this.computeSmoothNormals(morphPair.meshA.vertices, morphPair.meshA.indices);
     morphPair.meshB.normals = this.computeSmoothNormals(morphPair.meshB.vertices, morphPair.meshB.indices);
-    console.log(`✅ Created matched pair: ${morphPair.meshA.normals} vertices each`);
+
+    // console.log(`✅ Created matched pair: ${morphPair.meshA.normals } vertices each`);
     return morphPair;
   }
   static computeSmoothNormals(positions, indices) {
@@ -36153,10 +36143,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-
+    // let N = normalize(input.fragNorm);
+    // let V = normalize(scene.cameraPos - input.fragPos);
+    // let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;
@@ -38760,7 +38749,7 @@ fn main(input: VertexInput) -> VertexOutput {
     output.Position  = scene.cameraViewProjMatrix * worldPos;
     output.fragPos   = worldPos.xyz;
     output.shadowPos = scene.lightViewProjMatrix * worldPos;
-    output.fragNorm  = normalize(normalMatrix * -input.normal); // correct input
+    output.fragNorm  = normalize(normalMatrix * input.normal); // correct input
     output.uv        = input.uv;
 
     return output;
@@ -52781,7 +52770,7 @@ class MatrixEngineWGPU {
         });
         now = performance.now() / 1000;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
-          if (mesh.name == "floor") continue;
+          // if (mesh.name == "floor") continue; 
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
             shadowPass.setPipeline(light.shadowPipelineInstanced);

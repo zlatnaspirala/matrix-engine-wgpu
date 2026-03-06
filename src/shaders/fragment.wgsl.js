@@ -213,10 +213,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-
+    // let N = normalize(input.fragNorm);
+    // let V = normalize(scene.cameraPos - input.fragPos);
+    // let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;

@@ -113,21 +113,6 @@ export default class ProceduralMeshObj extends Materials {
     this.raycast = o.raycast || {enabled: false, radius: 2};
     this.pointerEffect = o.pointerEffect || {enabled: false};
 
-
-    // MORPH ANIMATION STATE
-
-    this.morphAnimation = {
-      active: false,
-      startBlend: 0.0,
-      targetBlend: 1.0,
-      duration: 1000,
-      elapsed: 0,
-      onComplete: null
-    };
-
-
-    // INIT
-
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
@@ -156,7 +141,6 @@ export default class ProceduralMeshObj extends Materials {
       this._setupUniforms();
       this._setupPipeline();
       this.done = true;
-
       console.log(`%cProceduralMesh ready: ${this.name}`, LOG_FUNNY_SMALL);
     });
   }
@@ -301,7 +285,6 @@ export default class ProceduralMeshObj extends Materials {
     this.meshTextureView = texture.createView();
   }
 
-  // SHADOW DEPTH TEXTURE (required by Materials.createBindGroupForRender)
   _setupShadowDepthTexture() {
     this.shadowDepthTexture = this.device.createTexture({
       size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 20],
@@ -347,7 +330,7 @@ export default class ProceduralMeshObj extends Materials {
       {arrayStride: 3 * 4, attributes: [{shaderLocation: 7, offset: 0, format: 'float32x3'}]}, // normalB
     ];
 
-    this.primitive = {topology: 'triangle-list', cullMode: 'back', frontFace: 'ccw'}; //ccw
+    this.primitive = {topology: 'triangle-list', cullMode: 'none', frontFace: 'ccw'}; //ccw
   }
 
   _setupUniforms() {
@@ -487,7 +470,7 @@ export default class ProceduralMeshObj extends Materials {
     }
   }
 
-  morphTo(targetBlend, duration = 1000, onComplete = null) {
+  morphTo(targetBlend, duration = 1000, onComplete = ()=>{}) {
     // console.log('🔥 morphTo ENTRY:', {
     //   targetBlend,
     //   duration,
@@ -549,7 +532,7 @@ export default class ProceduralMeshObj extends Materials {
       if(this.morphAnimation.onComplete) {
         this.morphAnimation.onComplete();
       }
-      // console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
+      console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
     }
   }
 
@@ -640,8 +623,12 @@ export default class ProceduralMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBufferA);
     shadowPass.setVertexBuffer(1, this.normalBufferA);
     shadowPass.setVertexBuffer(2, this.uvBuffer);
-    shadowPass.setVertexBuffer(3, this.dummyJointsBuffer);  // joints (dummy)
-    shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
+
+    shadowPass.setVertexBuffer(3, this.vertexBufferB);  // posB - same as render
+    shadowPass.setVertexBuffer(4, this.normalBufferB);  // normalB - same as render
+    // shadowPass.setVertexBuffer(3, this.dummyJointsBuffer);  // joints (dummy)
+    // shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
+
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
@@ -698,7 +685,7 @@ export class MeshMorpher {
     morphPair.meshA.normals = this.computeSmoothNormals(morphPair.meshA.vertices, morphPair.meshA.indices);
     morphPair.meshB.normals = this.computeSmoothNormals(morphPair.meshB.vertices, morphPair.meshB.indices);
 
-    console.log(`✅ Created matched pair: ${morphPair.meshA.normals } vertices each`);
+    // console.log(`✅ Created matched pair: ${morphPair.meshA.normals } vertices each`);
     return morphPair;
   }
 

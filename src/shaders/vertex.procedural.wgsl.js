@@ -165,7 +165,7 @@ fn main(input: VertexInput) -> VertexOutput {
     output.Position  = scene.cameraViewProjMatrix * worldPos;
     output.fragPos   = worldPos.xyz;
     output.shadowPos = scene.lightViewProjMatrix * worldPos;
-    output.fragNorm  = normalize(normalMatrix * -input.normal); // correct input
+    output.fragNorm  = normalize(normalMatrix * input.normal); // correct input
     output.uv        = input.uv;
 
     return output;

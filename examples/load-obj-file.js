@@ -176,14 +176,15 @@ export var loadObjFile = function() {
 
           // const normals = this.computeSmoothNormals(positions, indices);
 
+
         loadObjFile.addProceduralMeshObj({
-          material: {type: 'power'},
+          material: {type: 'standard'},
           position: {x: 0, y: 1, z: -10},
           rotation: {x: 0, y: 0, z: 0},
-          scale: [-1, -1, -1],
+          scale: [1, 1, 1],
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: ['./res/textures/cube-g1_low.webp'],
-          meshA: MeshMorpher['sphere'](1),
+          meshA: MeshMorpher['plane'](1),
           meshB: MeshMorpher['sphere'](1),
           name: `morph`,
           physics: {
@@ -198,12 +199,12 @@ export var loadObjFile = function() {
       loadObjFile.addLight();
       loadObjFile.lightContainer[0].intensity = 20;
 
-      loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.001)
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
-        light.target[0] = light.behavior.setPath0()
-      })
+      // loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.1)
+      // loadObjFile.lightContainer[0].behavior.value_ = -1;
+      // loadObjFile.lightContainer[0].updater.push((light) => {
+      //   light.position[0] = light.behavior.setPath0()
+      //   light.target[0] = light.behavior.setPath0()
+      // })
 
       loadObjFile.lightContainer[0].position = [0, 16, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
