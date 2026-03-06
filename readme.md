@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.9.2 2026
+📅 Version: 1.9.5 2026
 
 ---
 
@@ -25,10 +25,11 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 Backend editor support list:
 Only for windows (linux must be adapted paths rule)
- - Chrome    - desktop [windows]
- - Firefox   - desktop [windows]
- - Edge      - desktop [windows]
- - Opera     - desktop [windows]
+
+- Chrome - desktop [windows]
+- Firefox - desktop [windows]
+- Edge - desktop [windows]
+- Opera - desktop [windows]
 
 ---
 
@@ -45,7 +46,8 @@ Only for windows (linux must be adapted paths rule)
 - ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect
 - ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/)
 - ✔️ Trace from V8.GC_MC_BACKGROUND_MARKING (67.9ms) to V8.GCScavenger (7.7ms).
-     GC is no longer a factor. ✅
+  GC is no longer a factor. ✅
+- ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend
 
 ## Roadmap
 
@@ -56,10 +58,10 @@ Only for windows (linux must be adapted paths rule)
 - 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
 
-
 ## FluxCodexVertex Web Graph Editor 🚀 (since version 1.8.0)
 
 EditorX has **two main parts**:
+
 - **Frontend** (`./src/tools/editor`)
 - **Backend** (`./src/tools/editor/backend`)
 
@@ -89,7 +91,7 @@ The backend is built using **Node.js** 🟢
 
 - Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access**
 - Get SceneObject → set position → bind `onTargetReach` events
-- SetTexture, setMaterial, 
+- SetTexture, setMaterial,
 - Fetch, GetArray, forEach, Print, IF, Math, compare, string operation etc...
 - Custom func editor - Function Manager after creating use it from visual scripting.
 - Generator physics bodies in sequence pos in choosen geometry in world pos (Pyramid, wall, in place).
@@ -108,9 +110,9 @@ The backend is built using **Node.js** 🟢
   If you need to create it use this format:
   ```js
   export const aiConfig = {
-    ollama: '***********',
-    qrok: '************'
-  }
+    ollama: "***********",
+    qrok: "************",
+  };
   ```
   For now i create graphs with simple tasks.
   In future it will be able to create whole scenes or simple games.
@@ -148,12 +150,10 @@ All changes in graph must be saved manually/clicking for now 💾 (no autosave f
 
 ---
 
-
 ## Api documentation
 
 Live :
 https://maximumroulette.com/apps/webgpu/api-docs/
-
 
 ## Features
 
@@ -182,7 +182,6 @@ https://maximumroulette.com/apps/webgpu/api-docs/
 - Also interest for clearing physics body and render part:
 
   ```js
-
   app.destroyByPrefix("towers");
   // OR
   app.destroyBySufix("_001");
@@ -334,13 +333,26 @@ loadObjFile.lightContainer[0].updater.push(light => {
 ### Materials
 
 With last glb feature materials become part of engine also.
+
 ```js
-material: {type: 'standard'}
-material: {type: 'pong'}
-material: {type: 'power'}
-material: {type: 'water'}
-material: {type: 'metal'}
-material: {type: 'mirror'}
+material: {
+  type: "standard";
+}
+material: {
+  type: "pong";
+}
+material: {
+  type: "power";
+}
+material: {
+  type: "water";
+}
+material: {
+  type: "metal";
+}
+material: {
+  type: "mirror";
+}
 ```
 
 - Standard is fully supported with lights shadow cast down (not for anims yet)
@@ -375,21 +387,20 @@ TEST_ANIM.addGlbObj({
 ```
 
 - Mirror mat update params In runtime:
+
 ```js
 // Access some object with mirror mat
-app.mainRenderBundle[5].writeParamsMirror(
-  {
-    baseColorMix: 0.9,
-    mirrorTint: [0.9, 0.95, 1.0],
-    reflectivity: 0.25,
-    illuminateColor: [1.3, 0.7, 1.0],
-    illuminateStrength: 11.4,
-    illuminatePulse: 1.1,
-    fresnelPower: 2.50,
-    envLodBias: 2.5,
-    usePlanarReflection: false,
-  }
-)
+app.mainRenderBundle[5].writeParamsMirror({
+  baseColorMix: 0.9,
+  mirrorTint: [0.9, 0.95, 1.0],
+  reflectivity: 0.25,
+  illuminateColor: [1.3, 0.7, 1.0],
+  illuminateStrength: 11.4,
+  illuminatePulse: 1.1,
+  fresnelPower: 2.5,
+  envLodBias: 2.5,
+  usePlanarReflection: false,
+});
 ```
 
 - Change only textures (no recreation of pipeline)
@@ -400,35 +411,39 @@ app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
 ```
 
 - Setup Blend (For water mat use blend!)
+
 ```js
 app.mainRenderBundle[0].setBlend(0.5);
 ```
 
 Examples for setup water params:
+
 ```js
 app.mainRenderBundle[0].updateWaterParams(
-  [0.0, 0.1, 0.3],      // Deep: navy
-  [0.2, 0.6, 0.9],      // Shallow: blue
-  2.0,                   // Wave speed: fast continuous
-  1.8,                   // Wave scale: rolling waves
-  0.5,                   // Wave height: tall active waves
-  1.5,                   // Fresnel: strong
-  50.0                   // Specular: soft highlights
+  [0.0, 0.1, 0.3], // Deep: navy
+  [0.2, 0.6, 0.9], // Shallow: blue
+  2.0, // Wave speed: fast continuous
+  1.8, // Wave scale: rolling waves
+  0.5, // Wave height: tall active waves
+  1.5, // Fresnel: strong
+  50.0, // Specular: soft highlights
 );
 
 app.mainRenderBundle[0].updateWaterParams(
-  [0.0, 0.3, 0.5],      // Deep: medium blue
-  [0.3, 0.8, 1.0],      // Shallow: bright cyan
-  1.2,                   // Wave speed: gentle continuous (changed from 0.6)
-  2.5,                   // Wave scale: smooth ripples (changed from 5.0)
-  0.3,                   // Wave height: visible movement
-  2.5,                   // Fresnel: moderate reflection
-  100.0                  // Specular: sharp sparkles
+  [0.0, 0.3, 0.5], // Deep: medium blue
+  [0.3, 0.8, 1.0], // Shallow: bright cyan
+  1.2, // Wave speed: gentle continuous (changed from 0.6)
+  2.5, // Wave scale: smooth ripples (changed from 5.0)
+  0.3, // Wave height: visible movement
+  2.5, // Fresnel: moderate reflection
+  100.0, // Specular: sharp sparkles
 );
 ```
 
 ### Effect (Standalone pipeline draw subsystem)
+
 Activation for prebuild(buildin) effects
+
 ```js
 
 TEST_ANIM.addGlbObj({
@@ -464,10 +479,9 @@ Fancy results:
 
 ### Volumetric effect
 
-In [1.9.2] added `activateVolumetricEffect`
-  !Note volumetric works only if bloom is activated. Bloom can work alone.
-  !To avoid createing bind group in loop. 
-
+Call from app `activateVolumetricEffect()`
+!Note volumetric works only if bloom is activated. Bloom can work alone.
+!To avoid createing bind group in loop.
 
 ### Object Interaction (Raycasting)
 
@@ -494,7 +508,7 @@ window.addEventListener("click", event => {
         rayOrigin,
         rayDirection,
         object.position,
-        object.raycast.radius
+        object.raycast.radius,
       )
     ) {
       console.log("Object clicked:", object.name);
@@ -547,7 +561,7 @@ export let application = new MatrixEngineWGPU(
           sphere: "./res/meshes/blender/sphere.obj",
           cube: "./res/meshes/blender/cube.obj",
         },
-        onLoadObj
+        onLoadObj,
       );
     });
 
@@ -583,7 +597,7 @@ export let application = new MatrixEngineWGPU(
         },
       });
     }
-  }
+  },
 );
 
 window.app = application;
@@ -618,7 +632,7 @@ export var loadObjsSequence = function () {
             to: 20,
           }),
           onLoadObj,
-          {scale: [10, 10, 10]}
+          {scale: [10, 10, 10]},
         );
       });
 
@@ -652,7 +666,7 @@ export var loadObjsSequence = function () {
 
         app.mainRenderBundle[0].objAnim.play("walk");
       }
-    }
+    },
   );
 
   window.app = loadObjFile;
@@ -680,7 +694,7 @@ Example:
 
 ```js
 var glbFile01 = await fetch(p).then(res =>
-  res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device))
+  res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)),
 );
 this.core.addGlbObjInctance(
   {
@@ -693,7 +707,7 @@ this.core.addGlbObjInctance(
     pointerEffect: {enabled: true},
   },
   null,
-  glbFile01
+  glbFile01,
 );
 
 // access  - index -0 is BASE MESH ! I added maxLimit = 5 you can change this from engine source.
@@ -701,6 +715,105 @@ this.core.addGlbObjInctance(
 app.mainRenderBundle[1].instanceTargets[1].position[2] = 10;
 // This recreate buffer it is not for loop call space
 app.mainRenderBundle[1].updateInstances(5);
+```
+
+### ProceduralMesh
+
+```js
+export const geoTypesForMorph = {
+  cube: "cube",
+  sphere: "sphere",
+  mobius: "mobius",
+  plane: "plane",
+  capsule: "capsule",
+  cone: "cone",
+  torus: "torus",
+  cylinder: "cylinder",
+  wavePlane: "wavePlane",
+  supershape: "supershape",
+  pyramid: "pyramid",
+  diamond: "diamond",
+  icosahedron: "icosahedron",
+  circlePlane: "circlePlane",
+  rock: "rock",
+  star: "star",
+  star3d: "star3d",
+  littleStar: "littleStar",
+  flatStar: "flatStar",
+  klein: "klein",
+  shell: "shell",
+  rippleSphere: "rippleSphere",
+  twistedTorus: "twistedTorus",
+  tornado: "tornado",
+  galaxySpiral: "galaxySpiral",
+};
+```
+
+Draw all buildin proceduralMesh shapes:
+
+```js
+const spacing = 3;
+const keys = Object.keys(geoTypesForMorph);
+let col = 0;
+let row = 0;
+for (let i = 0; i < keys.length - 1; i++) {
+  const typeA = keys[i];
+  const typeB = keys[i + 1];
+  loadObjFile.addProceduralMeshObj({
+    material: {type: "power"},
+    position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
+    rotation: {x: 0, y: 0, z: 0},
+    scale: [1, 1, 1],
+    rotationSpeed: {x: 0, y: 0, z: 0},
+    texturesPaths: ["./res/textures/cube-g1_low.webp"],
+    meshA: MeshMorpher[typeA](1),
+    meshB: MeshMorpher[typeB](1),
+    name: `morph_${typeA}_to_${typeB}`,
+    physics: {
+      enabled: false,
+      geometry: "Sphere",
+    },
+  });
+  col++;
+  if (col % 4 === 0) {
+    row++;
+    col = 0;
+  }
+}
+
+// Also works - but tested just two cube.
+// need to improve and est more
+// let test = MeshMorpher.compose(
+//   {shape: MeshMorpher.cube(1), offset: [-2, 0, 0]},
+//   {shape: MeshMorpher.cube(1), offset: [2, 0, 0]},
+// );
+
+// loadObjFile.addProceduralMeshObj({
+//     material: {type: 'power'},
+//     position: {x: 0 , y: 5, z: -15},
+//     rotation: {x: 0, y: 0, z: 0},
+//     scale: [1, 1, 1],
+//     rotationSpeed: {x: 0, y: 0, z: 0},
+//     texturesPaths: ['./res/textures/cube-g1_low.webp'],
+//     meshA: test,
+//     meshB: test,
+//     name: `morph_1`,
+//     physics: {
+//       enabled: false,
+//       geometry: "Sphere"
+//     }
+//   });
+```
+
+Morph between two shapes
+```js
+sceneObject.morphTo(1.0, 2000, () => {
+  /*callback*/
+});
+
+sceneObject.morphTo(0.0, 2000, () => {
+  /*callback*/
+});
 ```
 
 ### 📽️ Video textures
@@ -918,6 +1031,7 @@ Performance for Jamb game:
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
 
 Special licence for MOBA example:
+
 ```
 Creative Commons Attribution 4.0 International (CC BY 4.0)
 
@@ -968,6 +1082,7 @@ saves.
 ### Usage Note
 
 You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).
+
 - Most important is reference on matrix-engine-wgpu.
 - You need just to copy paste this text to about form on your web page or any other type of app.
 - You can remove almost all licence for assets if you remove current assest from your project
@@ -1023,5 +1138,6 @@ Top level main.js instance (Jamb 3d deluxe)
 ---
 
 ## 📘 Learning Resource:
- [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
-  ChatGPT , claude ai
+
+[WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+ChatGPT , claude ai

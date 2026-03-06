@@ -1,6 +1,7 @@
 import {mirrorIlluminateFragmentWGSL} from "../../shaders/fragment.mirror.wgsl";
 import {fragmentWGSL} from "../../shaders/fragment.wgsl";
 import {fragmentWGSLMetal} from "../../shaders/fragment.wgsl.metal";
+import {fragmentWGSLNoCut} from "../../shaders/fragment.wgsl.noCut";
 import {fragmentWGSLNormalMap} from "../../shaders/fragment.wgsl.normalmap";
 import {fragmentWGSLPong} from "../../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../../shaders/fragment.wgsl.power";
@@ -100,18 +101,14 @@ export default class MaterialsInstanced {
           magFilter: 'linear',
           minFilter: 'linear',
         });
-      } else {
-        // console.log('>>>ERRR >>>normalTexture>>')
       }
     } else {
-      // console.log('>DUMMY>normalTexture>')
       // dummy for normal map 1x1 neutral normal map
       this.normalDummyTex = device.createTexture({
         size: [1, 1, 1],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
       });
-      // RGBA value for neutral normal in tangent space
       const neutralNormal = new Uint8Array([128, 128, 255, 255]);
       this.device.queue.writeTexture(
         {texture: this.normalDummyTex},
@@ -119,14 +116,12 @@ export default class MaterialsInstanced {
         {bytesPerRow: 4},
         [1, 1, 1]
       );
-      // Create texture view & sampler
       this.normalTextureView = this.normalDummyTex.createView();
       this.normalSampler = this.device.createSampler({
         magFilter: 'linear',
         minFilter: 'linear',
       });
     }
-
     this.createBufferForWater();
   }
 
@@ -182,7 +177,7 @@ export default class MaterialsInstanced {
 
   createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
     const defaults = {
-      mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+      mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
       reflectivity: 0.25,               // 25% reflection blend
       illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
       illuminateStrength: 0.4,          // Gentle rim
@@ -214,9 +209,9 @@ export default class MaterialsInstanced {
       data[10] = o.envLodBias ?? cfg.envLodBias;
       data[11] = o.usePlanarReflection ? 1.0 : 0.0;
       data[12] = o.baseColorMix ?? cfg.baseColorMix;
-      data[13] = 0; // padding
-      data[14] = 0; // padding
-      data[15] = 0; // padding
+      data[13] = 0;
+      data[14] = 0;
+      data[15] = 0;
       this.device.queue.writeBuffer(paramsBuffer, 0, data);
     }
     this.writeParamsMirror(cfg);
@@ -227,8 +222,6 @@ export default class MaterialsInstanced {
       addressModeU: 'repeat',
       addressModeV: 'clamp-to-edge',
     });
-    // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
-    console.warn('⚠️ envTexture provided, using white dummy!');
     const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture :
       cfg.envTexture.texture ?? (() => {
         console.warn('⚠️ No envTexture provided, using white dummy!');
@@ -258,7 +251,6 @@ export default class MaterialsInstanced {
     return {
       bindGroup,
       paramsBuffer,
-      /** Call this at runtime to hot-update mirror params without rebuilding. */
       updateParams: (o) => this.writeParamsMirror(o),
     };
   }
@@ -287,7 +279,7 @@ export default class MaterialsInstanced {
   }
 
   getMaterial() {
-    // make it for all after all....
+    // procedural mesh not suport all
     if(this.material.type == 'standard') {
       return fragmentWGSLInstanced;
     } else if(this.material.type == 'pong') {
@@ -304,10 +296,9 @@ export default class MaterialsInstanced {
       return this.material.fromGraph;
     } else if(this.material.type === "mirror") {
       return fragmentMirrorWGSLInstanced;
+    } else if(this.material.type === "free") {
+      return fragmentWGSLNoCut;
     }
-    //  else if(this.material.type == 'mix1') {
-    //   return fragmentWGSLMix1;
-    // }
     console.warn('Unknown material type use standard:', this.material?.type);
     return fragmentWGSL;
   }
@@ -481,25 +472,18 @@ export default class MaterialsInstanced {
 
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
-
-    if(!matDef) {
-      console.warn('[engine] no material in glb...');
-      return null;
-    }
-
+    if(!matDef) {console.warn('[engine] no material in glb...'); return null;}
     if(matDef.pbrMetallicRoughness?.baseColorTexture) {
       const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
       return glb.glbJsonData.glbTextures[texIndex].createView();
     }
-
     return null;
   }
+
   getMaterialTextureFromMaterial(material) {
     if(!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
-
     const texInfo = material.pbrMetallicRoughness.baseColorTexture;
     if(!texInfo) return this.fallbackTextureView;
-
     const texIndex = texInfo.index;
     return this.glb.glbTextures[texIndex].createView();
   }
@@ -508,27 +492,18 @@ export default class MaterialsInstanced {
     let textureResource = this.isVideo
       ? this.externalTexture
       : this.texture0.createView();
-    // console.log('TEST TEX this.texture0 ', this.texture0);
     if(this.material.useTextureFromGlb === true) {
-      // console.log('TEST TEX material use from file ', this.name);
-      // 0 probably always for basicColor
       const material = this.skinnedNode.mesh.primitives[0].material;
       const textureView = material.baseColorTexture.imageView;
-      // const sampler = material.baseColorTexture.sampler;
       textureResource = textureView;
     }
-
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if(!textureResource) console.warn("❗Missing res texture: ", textureResource);
-      if(!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      // if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if(typeof textureResource === 'undefined') {
-        this.updateVideoTexture();
-      }
+      if(!textureResource) console.warn("❗Missing texture: ", textureResource);
+      if(!this.sceneUniformBuffer) console.warn("❗Missing sceneUniformBuffer: ", this.sceneUniformBuffer);
+      if(typeof textureResource === 'undefined') this.updateVideoTexture();
       return;
     }
     if(this.isVideo == true) {
-      // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [
@@ -661,7 +636,6 @@ export default class MaterialsInstanced {
           }
         ])
     ];
-    // console.log("BG E :  is used normal  ", this.material.type)
     this.bglForRender = this.device.createBindGroupLayout({label: 'bglForRender', entries: e, });
   }
 }

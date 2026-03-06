@@ -1,5 +1,106 @@
 ## CHANGES [Started from feb 2026]
 
+
+[1.9.5]
+### ProceduralMesh
+
+```js
+export const geoTypesForMorph = {
+  cube: "cube",
+  sphere: "sphere",
+  mobius: "mobius",
+  plane: "plane",
+  capsule: "capsule",
+  cone: "cone",
+  torus: "torus",
+  cylinder: "cylinder",
+  wavePlane: "wavePlane",
+  supershape: "supershape",
+  pyramid: "pyramid",
+  diamond: "diamond",
+  icosahedron: "icosahedron",
+  circlePlane: "circlePlane",
+  rock: "rock",
+  star: "star",
+  star3d: "star3d",
+  littleStar: "littleStar",
+  flatStar: "flatStar",
+  klein: "klein",
+  shell: "shell",
+  rippleSphere: "rippleSphere",
+  twistedTorus: "twistedTorus",
+  tornado: "tornado",
+  galaxySpiral: "galaxySpiral",
+};
+```
+
+Draw all buildin proceduralMesh shapes:
+
+```js
+const spacing = 3;
+const keys = Object.keys(geoTypesForMorph);
+let col = 0;
+let row = 0;
+for (let i = 0; i < keys.length - 1; i++) {
+  const typeA = keys[i];
+  const typeB = keys[i + 1];
+  loadObjFile.addProceduralMeshObj({
+    material: {type: "power"},
+    position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
+    rotation: {x: 0, y: 0, z: 0},
+    scale: [1, 1, 1],
+    rotationSpeed: {x: 0, y: 0, z: 0},
+    texturesPaths: ["./res/textures/cube-g1_low.webp"],
+    meshA: MeshMorpher[typeA](1),
+    meshB: MeshMorpher[typeB](1),
+    name: `morph_${typeA}_to_${typeB}`,
+    physics: {
+      enabled: false,
+      geometry: "Sphere",
+    },
+  });
+  col++;
+  if (col % 4 === 0) {
+    row++;
+    col = 0;
+  }
+}
+
+// Also works - but tested just two cube.
+// need to improve and est more
+// let test = MeshMorpher.compose(
+//   {shape: MeshMorpher.cube(1), offset: [-2, 0, 0]},
+//   {shape: MeshMorpher.cube(1), offset: [2, 0, 0]},
+// );
+
+// loadObjFile.addProceduralMeshObj({
+//     material: {type: 'power'},
+//     position: {x: 0 , y: 5, z: -15},
+//     rotation: {x: 0, y: 0, z: 0},
+//     scale: [1, 1, 1],
+//     rotationSpeed: {x: 0, y: 0, z: 0},
+//     texturesPaths: ['./res/textures/cube-g1_low.webp'],
+//     meshA: test,
+//     meshB: test,
+//     name: `morph_1`,
+//     physics: {
+//       enabled: false,
+//       geometry: "Sphere"
+//     }
+//   });
+```
+
+Morph between two shapes
+```js
+sceneObject.morphTo(1.0, 2000, () => {
+  /*callback*/
+});
+
+sceneObject.morphTo(0.0, 2000, () => {
+  /*callback*/
+});
+```
+
 [1.9.3]
 No memory leaks
 

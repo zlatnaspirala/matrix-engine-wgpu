@@ -142,7 +142,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/raycast.js":56,"../src/engine/utils.js":57,"../src/world.js":99}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/raycast.js":56,"../src/engine/utils.js":57,"../src/world.js":100}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -396,7 +396,7 @@ function loadGLBLoader() {
 
 // loadGLBLoader()
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/loaders/webgpu-gltf.js":47,"../src/world.js":99}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/loaders/webgpu-gltf.js":47,"../src/world.js":100}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -408,8 +408,6 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     useSingleRenderPass: true,
@@ -435,7 +433,7 @@ var loadObjFile = function () {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
-        scale: [10, 1, 10]
+        scale: [30, 0.5, 30]
       });
     });
     function onGround(m) {
@@ -533,59 +531,27 @@ var loadObjFile = function () {
           geometry: "Sphere"
         }
       });
+      // let test = MeshMorpher.compose(
+      //   {shape: MeshMorpher.cube(1), offset: [-2, 0, 0]},
+      //   {shape: MeshMorpher.cube(1), offset: [2, 0, 0]},
+      // );
 
-      // loadObjFile.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 1, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [0.5, 0.5, 0.5],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-      //   envMapParams: {
-      //     baseColorMix: 0.0, // CLEAR SKY
-      //     mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-      //     reflectivity: 0.25,               // 25% reflection blend
-      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //     illuminateStrength: 0.1,          // Gentle rim
-      //     illuminatePulse: 0.01,             // No pulse (static)
-      //     fresnelPower: 2.0,                // Medium-sharp edge
-      //     envLodBias: 1.5,
-      //     usePlanarReflection: false,  // ✅ Env map mode
-      //   },
-      //   name: 'CUBE',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
-
-      // const spacing = 4;
-      // let i = 0;
-      // let j = 0;
-      // for(const key in geoTypesForMorph) {
-      //   loadObjFile.addProceduralMeshObj({
-      //     material: {type: 'standard'},
-      //     position: {x: i * spacing - 5, y: 1, z: -20 + j * spacing},
+      // loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'power'},
+      //     position: {x: 0 , y: 5, z: -15},
       //     rotation: {x: 0, y: 0, z: 0},
       //     scale: [1, 1, 1],
       //     rotationSpeed: {x: 0, y: 0, z: 0},
       //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //     meshA: MeshMorpher[key](1),
-      //     meshB: MeshMorpher[key](1),
-      //     name: `myProCube_${key}`,
+      //     meshA: test,
+      //     meshB: test,
+      //     name: `morph_1`,
       //     physics: {
       //       enabled: false,
       //       geometry: "Sphere"
       //     }
       //   });
-      //   i++;
-      //   if(i % 4 == 0) {
-      //     j++;
-      //     i = 0;
-      //   }
-      // }
-
+      const meshObjects = [];
       const spacing = 3;
       const keys = Object.keys(_utils.geoTypesForMorph);
       let col = 0;
@@ -593,9 +559,9 @@ var loadObjFile = function () {
       for (let i = 0; i < keys.length - 1; i++) {
         const typeA = keys[i];
         const typeB = keys[i + 1];
-        loadObjFile.addProceduralMeshObj({
+        const obj = loadObjFile.addProceduralMeshObj({
           material: {
-            type: 'power'
+            type: 'free'
           },
           position: {
             x: col * spacing - 5,
@@ -621,48 +587,24 @@ var loadObjFile = function () {
             enabled: false,
             geometry: "Sphere"
           }
-
-          // envMapParams: {
-          //   baseColorMix: 0.0, // CLEAR SKY
-          //   mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          //   reflectivity: 0.25,               // 25% reflection blend
-          //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          //   illuminateStrength: 0.1,          // Gentle rim
-          //   illuminatePulse: 0.01,             // No pulse (static)
-          //   fresnelPower: 2.0,                // Medium-sharp edge
-          //   envLodBias: 1.5,
-          //   usePlanarReflection: false,  // ✅ Env map mode
-          // },
         });
+        meshObjects.push(obj);
         col++;
         if (col % 4 === 0) {
           row++;
           col = 0;
         }
       }
-
-      // const normals = this.computeSmoothNormals(positions, indices);
-
-      // loadObjFile.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 1, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher['plane'](1),
-      //   meshB: MeshMorpher['sphere'](1),
-      //   name: `morph`,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
-
-      console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
+      const runChain = index => {
+        if (index >= meshObjects.length) return; // all done
+        meshObjects[index].morphTo(1.0, 2000, () => {
+          runChain(index + 1);
+        });
+      };
+      runChain(0);
       loadObjFile.addLight();
-      loadObjFile.lightContainer[0].intensity = 20;
-
+      loadObjFile.lightContainer[0].intensity = 10;
+      loadObjFile.activateBloomEffect();
       // loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.1)
       // loadObjFile.lightContainer[0].behavior.value_ = -1;
       // loadObjFile.lightContainer[0].updater.push((light) => {
@@ -670,7 +612,7 @@ var loadObjFile = function () {
       //   light.target[0] = light.behavior.setPath0()
       // })
 
-      loadObjFile.lightContainer[0].position = [0, 16, -10];
+      loadObjFile.lightContainer[0].position = [0, 18, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
@@ -689,7 +631,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/procedural-mesh.js":54,"../src/engine/utils.js":57,"../src/world.js":99}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/procedural-mesh.js":54,"../src/engine/utils.js":57,"../src/world.js":100}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -819,7 +761,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/utils.js":57,"../src/world.js":99}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/utils.js":57,"../src/world.js":100}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1160,7 +1102,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/raycast.js":56,"../src/engine/utils.js":57,"../src/world.js":99}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/raycast.js":56,"../src/engine/utils.js":57,"../src/world.js":100}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1251,7 +1193,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":44,"../src/engine/raycast.js":56,"../src/engine/utils.js":57,"../src/world.js":99}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":44,"../src/engine/raycast.js":56,"../src/engine/utils.js":57,"../src/world.js":100}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20665,7 +20607,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":79,"../geometry-factory.js":39,"wgpu-matrix":22}],31:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":80,"../geometry-factory.js":39,"wgpu-matrix":22}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20924,7 +20866,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":79,"../geometry-factory.js":39,"wgpu-matrix":22}],32:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":80,"../geometry-factory.js":39,"wgpu-matrix":22}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21115,7 +21057,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":78,"../geometry-factory.js":39,"wgpu-matrix":22}],33:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":79,"../geometry-factory.js":39,"wgpu-matrix":22}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21574,7 +21516,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":72}],34:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":73}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21882,7 +21824,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":80,"wgpu-matrix":22}],36:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":81,"wgpu-matrix":22}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22064,7 +22006,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":81}],37:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":82}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23036,7 +22978,7 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":95,"../loader-obj":44}],39:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":96,"../loader-obj":44}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24118,9 +24060,10 @@ exports.default = void 0;
 var _fragmentMirror = require("../../shaders/fragment.mirror.wgsl");
 var _fragment = require("../../shaders/fragment.wgsl");
 var _fragmentWgsl = require("../../shaders/fragment.wgsl.metal");
-var _fragmentWgsl2 = require("../../shaders/fragment.wgsl.normalmap");
-var _fragmentWgsl3 = require("../../shaders/fragment.wgsl.pong");
-var _fragmentWgsl4 = require("../../shaders/fragment.wgsl.power");
+var _fragmentWgsl2 = require("../../shaders/fragment.wgsl.noCut");
+var _fragmentWgsl3 = require("../../shaders/fragment.wgsl.normalmap");
+var _fragmentWgsl4 = require("../../shaders/fragment.wgsl.pong");
+var _fragmentWgsl5 = require("../../shaders/fragment.wgsl.power");
 var _fragmentInstanced = require("../../shaders/instanced/fragment.instanced.wgsl");
 var _fragmentMirrorInstanced = require("../../shaders/instanced/fragment.mirror.instanced.wgsl");
 var _waterC = require("../../shaders/water/water-c.wgls");
@@ -24214,25 +24157,20 @@ class MaterialsInstanced {
           magFilter: 'linear',
           minFilter: 'linear'
         });
-      } else {
-        // console.log('>>>ERRR >>>normalTexture>>')
       }
     } else {
-      // console.log('>DUMMY>normalTexture>')
       // dummy for normal map 1x1 neutral normal map
       this.normalDummyTex = device.createTexture({
         size: [1, 1, 1],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
       });
-      // RGBA value for neutral normal in tangent space
       const neutralNormal = new Uint8Array([128, 128, 255, 255]);
       this.device.queue.writeTexture({
         texture: this.normalDummyTex
       }, neutralNormal, {
         bytesPerRow: 4
       }, [1, 1, 1]);
-      // Create texture view & sampler
       this.normalTextureView = this.normalDummyTex.createView();
       this.normalSampler = this.device.createSampler({
         magFilter: 'linear',
@@ -24333,9 +24271,9 @@ class MaterialsInstanced {
       data[10] = o.envLodBias ?? cfg.envLodBias;
       data[11] = o.usePlanarReflection ? 1.0 : 0.0;
       data[12] = o.baseColorMix ?? cfg.baseColorMix;
-      data[13] = 0; // padding
-      data[14] = 0; // padding
-      data[15] = 0; // padding
+      data[13] = 0;
+      data[14] = 0;
+      data[15] = 0;
       this.device.queue.writeBuffer(paramsBuffer, 0, data);
     };
     this.writeParamsMirror(cfg);
@@ -24346,8 +24284,6 @@ class MaterialsInstanced {
       addressModeU: 'repeat',
       addressModeV: 'clamp-to-edge'
     });
-    // ── Dummy 1×1 white env texture (used when no real env map is supplied) ──
-    console.warn('⚠️ envTexture provided, using white dummy!');
     const envTexture = cfg.envTexture instanceof GPUTexture ? cfg.envTexture : cfg.envTexture.texture ?? (() => {
       console.warn('⚠️ No envTexture provided, using white dummy!');
       const tex = this.device.createTexture({
@@ -24382,7 +24318,6 @@ class MaterialsInstanced {
     return {
       bindGroup,
       paramsBuffer,
-      /** Call this at runtime to hot-update mirror params without rebuilding. */
       updateParams: o => this.writeParamsMirror(o)
     };
   }
@@ -24409,27 +24344,26 @@ class MaterialsInstanced {
     this.setupMaterialPBR([1, 1, 1, alpha]);
   };
   getMaterial() {
-    // make it for all after all....
+    // procedural mesh not suport all
     if (this.material.type == 'standard') {
       return _fragmentInstanced.fragmentWGSLInstanced;
     } else if (this.material.type == 'pong') {
-      return _fragmentWgsl3.fragmentWGSLPong;
+      return _fragmentWgsl4.fragmentWGSLPong;
     } else if (this.material.type == 'power') {
-      return _fragmentWgsl4.fragmentWGSLPower;
+      return _fragmentWgsl5.fragmentWGSLPower;
     } else if (this.material.type == 'metal') {
       return _fragmentWgsl.fragmentWGSLMetal;
     } else if (this.material.type == 'normalmap') {
-      return _fragmentWgsl2.fragmentWGSLNormalMap;
+      return _fragmentWgsl3.fragmentWGSLNormalMap;
     } else if (this.material.type == 'water') {
       return _waterC.fragmentWaterWGSL;
     } else if (this.material.type == 'graph') {
       return this.material.fromGraph;
     } else if (this.material.type === "mirror") {
       return _fragmentMirrorInstanced.fragmentMirrorWGSLInstanced;
+    } else if (this.material.type === "free") {
+      return _fragmentWgsl2.fragmentWGSLNoCut;
     }
-    //  else if(this.material.type == 'mix1') {
-    //   return fragmentWGSLMix1;
-    // }
     console.warn('Unknown material type use standard:', this.material?.type);
     return _fragment.fragmentWGSL;
   }
@@ -24621,26 +24555,18 @@ class MaterialsInstanced {
   }
   createBindGroupForRender() {
     let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
-    // console.log('TEST TEX this.texture0 ', this.texture0);
     if (this.material.useTextureFromGlb === true) {
-      // console.log('TEST TEX material use from file ', this.name);
-      // 0 probably always for basicColor
       const material = this.skinnedNode.mesh.primitives[0].material;
       const textureView = material.baseColorTexture.imageView;
-      // const sampler = material.baseColorTexture.sampler;
       textureResource = textureView;
     }
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
-      if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      // if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if (typeof textureResource === 'undefined') {
-        this.updateVideoTexture();
-      }
+      if (!textureResource) console.warn("❗Missing texture: ", textureResource);
+      if (!this.sceneUniformBuffer) console.warn("❗Missing sceneUniformBuffer: ", this.sceneUniformBuffer);
+      if (typeof textureResource === 'undefined') this.updateVideoTexture();
       return;
     }
     if (this.isVideo == true) {
-      // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [{
@@ -24818,7 +24744,6 @@ class MaterialsInstanced {
         type: 'filtering'
       }
     }])];
-    // console.log("BG E :  is used normal  ", this.material.type)
     this.bglForRender = this.device.createBindGroupLayout({
       label: 'bglForRender',
       entries: e
@@ -24827,7 +24752,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":65,"../../shaders/fragment.wgsl":67,"../../shaders/fragment.wgsl.metal":68,"../../shaders/fragment.wgsl.normalmap":69,"../../shaders/fragment.wgsl.pong":70,"../../shaders/fragment.wgsl.power":71,"../../shaders/instanced/fragment.instanced.wgsl":73,"../../shaders/instanced/fragment.mirror.instanced.wgsl":74,"../../shaders/water/water-c.wgls":86}],41:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":65,"../../shaders/fragment.wgsl":67,"../../shaders/fragment.wgsl.metal":68,"../../shaders/fragment.wgsl.noCut":69,"../../shaders/fragment.wgsl.normalmap":70,"../../shaders/fragment.wgsl.pong":71,"../../shaders/fragment.wgsl.power":72,"../../shaders/instanced/fragment.instanced.wgsl":74,"../../shaders/instanced/fragment.mirror.instanced.wgsl":75,"../../shaders/water/water-c.wgls":87}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24888,7 +24813,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.time = 0;
     this.deltaTimeAdapter = 10;
     this._sceneData = new Float32Array(48);
-
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
@@ -24970,7 +24894,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         if (Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
       }
       this.mesh.weightsBuffer = this.device.createBuffer({
-        label: "weightsBuffer real data",
+        label: "weightsBuffer real",
         size: weightsArray.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
@@ -24988,7 +24912,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       }
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer[real-data]",
+        label: "jointsBuffer[real]",
         size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
@@ -25006,7 +24930,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         tangentArray = new Float32Array(tangentView.buffer, byteOffsetT, byteLengthT / 4);
         this.mesh.tangents = tangentArray;
         this.mesh.tangentsBuffer = this.device.createBuffer({
-          label: "tangentsBuffer[real-data]",
+          label: "tangentsBuffer[real]",
           size: tangentArray.byteLength,
           usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
           mappedAtCreation: true
@@ -25014,13 +24938,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
         this.mesh.tangentsBuffer.unmap();
       } else {
-        // Dummy
         const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
         for (let i = 0; i < dummyTangents.length; i += 4) {
-          dummyTangents[i + 0] = 1.0; // T = (1,0,0)
+          dummyTangents[i + 0] = 1.0;
           dummyTangents[i + 1] = 0.0;
           dummyTangents[i + 2] = 0.0;
-          dummyTangents[i + 3] = 1.0; // handedness
+          dummyTangents[i + 3] = 1.0;
         }
         this.mesh.tangentsBuffer = this.device.createBuffer({
           label: "tangentsBuffer dummy",
@@ -25030,7 +24953,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly) Low level priority warn.");
       }
     } else {
       this.mesh.uvs = this.mesh.textures;
@@ -25099,7 +25022,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.weights = {
         data: weightsData,
         buffer: weightsBuffer,
-        stride: 16 // vec4<f32>
+        stride: 16
       };
     }
     this.runProgram = () => {
@@ -25128,8 +25051,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
         this.vertexBuffer.unmap();
       }
-
-      // Create the model vertex buffer.
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.VERTEX,
@@ -25148,8 +25069,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         new Float32Array(this.vertexTexCoordsBuffer.getMappedRange()).set(this.mesh.textures);
         this.vertexTexCoordsBuffer.unmap();
       }
-
-      // Create the model index buffer.
       this.indexCount = this.mesh.indices.length;
       const indexCount = this.mesh.indices.length;
       const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
@@ -25163,7 +25082,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.indexCount = indexCount;
       let glbInfo = {
         arrayStride: 4 * 4,
-        // vec4<f32> = 4 * 4 bytes
         attributes: [{
           format: 'float32x4',
           offset: 0,
@@ -25441,21 +25359,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      let MAX_BONES = 100;
-      this.MAX_BONES = MAX_BONES;
-      // this.bonesBuffer = device.createBuffer({
-      //   label: "bonesBuffer",
-      //   size: alignTo256(64 * MAX_BONES),
-      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      // });
-
-      // const bones = new Float32Array(this.MAX_BONES * 16);
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   // identity matrices
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
-      // this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      const TRAIL_INSTANCES = 10; // your total instance count
+      this.MAX_BONES = 100;
+      // your total instance count
+      const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
@@ -25470,13 +25376,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
-      //
       // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
-        label: "Vertex Animation Params",
+        label: "Vertex AnimationParams",
         size: Math.ceil(this.vertexAnimParams.byteLength / 256) * 256,
-        // 256, //this.vertexAnimParams.byteLength, // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -25603,11 +25507,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        // const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        // Pass explicit alpha — 0.5 = semi transparent
-        // this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
       };
-      //
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
@@ -25631,9 +25531,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.modelBindGroupInstanced = this.device.createBindGroup({
         label: 'modelBindGroup in mesh [instanced]',
         layout: this.uniformBufferBindGroupLayoutInstanced,
-        entries: [
-        //
-        {
+        entries: [{
           binding: 0,
           resource: {
             buffer: this.instanceBuffer
@@ -25667,7 +25565,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }]
       });
       this.effects = {};
-      // console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
@@ -25700,8 +25597,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-
-      // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -25762,7 +25657,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       }
     }).then(() => {
       if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('updateMeshListBuffers...');
+        // console.log('updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     });
@@ -25790,7 +25685,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       shadowDepthTextureSize: this.shadowDepthTextureSize
     };
 
-    // ── Opaque pipeline ───────────────────────────────────────────────────────
+    // Opaque pipeline
     this.pipeline = this.device.createRenderPipeline({
       label: 'Pipeline Opaque ✅',
       layout: pipelineLayout,
@@ -25811,7 +25706,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       primitive: this.primitive
     });
 
-    // ── Transparent pipeline ──────────────────────────────────────────────────
+    // Transparent pipeline
     this.pipelineTransparent = this.device.createRenderPipeline({
       label: 'Pipeline Transparent ✅',
       layout: pipelineLayout,
@@ -25838,7 +25733,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        // transparent never writes depth
         depthCompare: 'less',
         format: 'depth24plus'
       },
@@ -25913,8 +25807,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
     }
-
-    // Bind each light’s shadow texture & sampler
     if (this.isVideo == false) {
       if (this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
@@ -25931,16 +25823,14 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
-        pass.setVertexBuffer(3, this.joints.buffer); // new dummy
-        pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+        pass.setVertexBuffer(3, this.joints.buffer); // dummy
+        pass.setVertexBuffer(4, this.weights.buffer); // dummy
       }
     }
-    if (this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
+    if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     if (this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent);else pass.setPipeline(this.pipeline);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for (var ins = 1; ins < this.instanceCount; ins++) {
@@ -25974,12 +25864,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     if (this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer); // dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer);
+      renderPass.setVertexBuffer(4, this.weights.buffer);
     }
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
@@ -26001,8 +25891,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
         shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
         shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
@@ -26018,7 +25908,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":66,"../../shaders/instanced/vertex.instanced.wgsl":75,"../effects/energy-bar":27,"../effects/flame":29,"../effects/flame-emmiter":28,"../effects/gen":32,"../effects/gen-tex":30,"../effects/gen-tex2":31,"../effects/mana-bar":34,"../effects/pointerEffect":35,"../literals":43,"../loaders/bvh-instaced":45,"../matrix-class":49,"../utils":57,"./materials-instanced":40,"wgpu-matrix":22}],42:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":66,"../../shaders/instanced/vertex.instanced.wgsl":76,"../effects/energy-bar":27,"../effects/flame":29,"../effects/flame-emmiter":28,"../effects/gen":32,"../effects/gen-tex":30,"../effects/gen-tex2":31,"../effects/mana-bar":34,"../effects/pointerEffect":35,"../literals":43,"../loaders/bvh-instaced":45,"../matrix-class":49,"../utils":57,"./materials-instanced":40,"wgpu-matrix":22}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26531,7 +26421,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":76,"../shaders/vertex.procedural.wgsl":82,"../shaders/vertexShadow.wgsl":85,"./behavior":24,"wgpu-matrix":22}],43:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":77,"../shaders/vertex.procedural.wgsl":83,"../shaders/vertexShadow.wgsl":86,"./behavior":24,"wgpu-matrix":22}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28776,6 +28666,7 @@ var _waterC = require("../shaders/water/water-c.wgls");
 var _fragmentMirror = require("../shaders/fragment.mirror.wgsl");
 var _utils = require("./utils");
 var _fragmentGpt = require("../shaders/fragment.gpt.wgsl");
+var _fragmentWgsl5 = require("../shaders/fragment.wgsl.noCut");
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -29109,6 +29000,8 @@ class Materials {
       return _fragmentMix.fragmentWGSLMix1; // ?
     } else if (this.material.type === "mirror") {
       return _fragmentMirror.mirrorIlluminateFragmentWGSL;
+    } else if (this.material.type === "free") {
+      return _fragmentWgsl5.fragmentWGSLNoCut;
     }
     console.warn('Unknown material type:', this.material?.type);
     return _fragment.fragmentWGSL;
@@ -29549,7 +29442,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.gpt.wgsl":64,"../shaders/fragment.mirror.wgsl":65,"../shaders/fragment.wgsl":67,"../shaders/fragment.wgsl.metal":68,"../shaders/fragment.wgsl.normalmap":69,"../shaders/fragment.wgsl.pong":70,"../shaders/fragment.wgsl.power":71,"../shaders/mixed/fragmentMix1.wgsl":77,"../shaders/water/water-c.wgls":86,"./utils":57}],49:[function(require,module,exports){
+},{"../shaders/fragment.gpt.wgsl":64,"../shaders/fragment.mirror.wgsl":65,"../shaders/fragment.wgsl":67,"../shaders/fragment.wgsl.metal":68,"../shaders/fragment.wgsl.noCut":69,"../shaders/fragment.wgsl.normalmap":70,"../shaders/fragment.wgsl.pong":71,"../shaders/fragment.wgsl.power":72,"../shaders/mixed/fragmentMix1.wgsl":78,"../shaders/water/water-c.wgls":87,"./utils":57}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31045,7 +30938,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":66,"../shaders/vertex.wgsl":83,"../shaders/vertex.wgsl.normalmap":84,"./effects/destruction":26,"./effects/flame":29,"./effects/flame-emmiter":28,"./effects/gizmo":33,"./effects/topology-point":36,"./literals":43,"./materials":48,"./matrix-class":49,"./procedures/procedural-textures":55,"./utils":57,"wgpu-matrix":22}],51:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":66,"../shaders/vertex.wgsl":84,"../shaders/vertex.wgsl.normalmap":85,"./effects/destruction":26,"./effects/flame":29,"./effects/flame-emmiter":28,"./effects/gizmo":33,"./effects/topology-point":36,"./literals":43,"./materials":48,"./matrix-class":49,"./procedures/procedural-textures":55,"./utils":57,"wgpu-matrix":22}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31998,32 +31891,6 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
  * 
- * KEY FEATURES:
- * - Loads geometry from GeometryFactory (no file I/O)
- * - GPU-accelerated morphing between two meshes
- * - Reuses Materials + shader pipeline from MEMeshObj
- * - NO GLB/OBJ parsing, skinning, or tangents
- * 
- * USAGE:
- * const mesh = new ProceduralMeshObj(canvas, device, context, {
- *   name: 'morphCube',
- *   geometryA: {type: 'cube', size: 1},
- *   geometryB: {type: 'sphere', size: 1, segments: 16},
- *   material: {...},
- *   position: {x:0, y:0, z:0},
- *   rotation: {x:0, y:0, z:0},
- *   cameras: [...],
- *   mainCameraParams: {...}
- * });
- * 
- * // Morph API
- * mesh.setMorphBlend(0.5); // 50% cube, 50% sphere
- * mesh.morphTo(1.0, 2000); // animate to sphere over 2 seconds
- */
-
-/**
- * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
- * 
  * Extends Materials class - inherits all material/texture/shader functionality
  * 
  * KEY DIFFERENCES FROM MEMeshObj:
@@ -32035,16 +31902,13 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  */
 class ProceduralMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient) {
-    // Pass all required params to Materials parent class
     super(device, o.material, null, o.textureCache);
-    // BASIC SETUP
     this.name = o.name || (0, _utils.genName)(3);
     this.done = false;
     this.canvas = canvas;
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
-    // GEOMETRY LOADING
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
@@ -32057,11 +31921,12 @@ class ProceduralMeshObj extends _materials.default {
       this._validateMorphCompatibility();
     } else if (o.geometryA) {
       // OLD: Generate from GeometryFactory (may not match!)
+      console.warn(`%cPlease use meshA, meshB not geometryA.`, _utils.LOG_WARN);
       this.meshA = this._loadGeometry(o.geometryA);
       this.meshB = o.geometryB ? this._loadGeometry(o.geometryB) : this._loadGeometry(o.geometryA);
       this._validateMorphCompatibility();
     }
-    this.morphBlend = o.morphBlend ?? 0.0; // default to 0
+    this.morphBlend = o.morphBlend ?? 0.0;
     this.morphAnimation = {
       active: false,
       startBlend: this.morphBlend,
@@ -32070,8 +31935,6 @@ class ProceduralMeshObj extends _materials.default {
       elapsed: 0,
       onComplete: null
     };
-    console.log(`%cProceduralMesh loaded: ${this.name}`, _utils.LOG_FUNNY_ARCADE);
-    // TRANSFORM & CAMERA
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -32100,7 +31963,6 @@ class ProceduralMeshObj extends _materials.default {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 1024;
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
-
         // Load textures if provided
         if (o.texturesPaths && o.texturesPaths.length > 0 && o.textureCache) {
           this.texturesPaths = [...o.texturesPaths];
@@ -32122,11 +31984,11 @@ class ProceduralMeshObj extends _materials.default {
       this._setupUniforms();
       this._setupPipeline();
       this.done = true;
-      console.log(`%cProceduralMesh ready: ${this.name}`, _utils.LOG_FUNNY_SMALL);
+      // console.log(`%cProceduralMesh ready: ${this.name}`, LOG_FUNNY_SMALL);
     });
   }
 
-  // GEOMETRY LOADING
+  // GEOMETRY LOADING old
   _loadGeometry(spec) {
     const {
       type,
@@ -32561,15 +32423,10 @@ class ProceduralMeshObj extends _materials.default {
     if (this.morphBlendBuffer) {
       this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
     } else {
-      console.error('❌ NO BUFFER!');
+      console.error('❌ NO BUFFER in setMorphBlend.');
     }
   }
   morphTo(targetBlend, duration = 1000, onComplete = () => {}) {
-    // console.log('🔥 morphTo ENTRY:', {
-    //   targetBlend,
-    //   duration,
-    //   'this.morphAnimation': this.morphAnimation
-    // });
     const safeDuration = Math.max(duration, 100);
     this.morphAnimation = {
       active: true,
@@ -32584,7 +32441,7 @@ class ProceduralMeshObj extends _materials.default {
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
     this.morphAnimation.duration = safeDuration;
-    this.morphAnimation.elapsed = 0; // ⚠️ CRITICAL: Reset elapsed time!
+    this.morphAnimation.elapsed = 0;
     this.morphAnimation.onComplete = onComplete;
     if (this.morphAnimation.debug || true) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
@@ -32611,17 +32468,11 @@ class ProceduralMeshObj extends _materials.default {
     const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
     this.setMorphBlend(blend);
-    // console.log('⚡ UPDATE CALC:', {
-    //   elapsed_after: this.morphAnimation.elapsed,
-    //   t: t,
-    //   will_complete: t >= 1
-    // });
     if (t >= 1) {
       this.morphAnimation.active = false;
       if (this.morphAnimation.onComplete) {
         this.morphAnimation.onComplete();
       }
-      console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
     }
   }
   getModelMatrix(pos, useScale = false) {
@@ -32673,16 +32524,14 @@ class ProceduralMeshObj extends _materials.default {
     this.vertexAnimParams[0] = this.time;
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
-
-  // RENDERING
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.mainRenderBindGroup);
-    pass.setVertexBuffer(0, this.vertexBufferA); // posA
-    pass.setVertexBuffer(1, this.normalBufferA); // normalA
-    pass.setVertexBuffer(2, this.uvBuffer); // uv
-    pass.setVertexBuffer(3, this.vertexBufferB); // posB
-    pass.setVertexBuffer(4, this.normalBufferB); // normalB
+    pass.setVertexBuffer(0, this.vertexBufferA);
+    pass.setVertexBuffer(1, this.normalBufferA);
+    pass.setVertexBuffer(2, this.uvBuffer);
+    pass.setVertexBuffer(3, this.vertexBufferB);
+    pass.setVertexBuffer(4, this.normalBufferB);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
@@ -32690,19 +32539,14 @@ class ProceduralMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBufferA);
     shadowPass.setVertexBuffer(1, this.normalBufferA);
     shadowPass.setVertexBuffer(2, this.uvBuffer);
-    shadowPass.setVertexBuffer(3, this.vertexBufferB); // posB - same as render
-    shadowPass.setVertexBuffer(4, this.normalBufferB); // normalB - same as render
-    // shadowPass.setVertexBuffer(3, this.dummyJointsBuffer);  // joints (dummy)
-    // shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
-
+    shadowPass.setVertexBuffer(3, this.vertexBufferB);
+    shadowPass.setVertexBuffer(4, this.normalBufferB);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
   getMainPipeline() {
     return this.pipeline;
   }
-
-  // CLEANUP NOT WORKS PERFECT YET
   destroy() {
     if (this._destroyed) return;
     this._destroyed = true;
@@ -32724,30 +32568,126 @@ class ProceduralMeshObj extends _materials.default {
     console.info(`🧹 Destroyed ProceduralMesh: ${this.name}`);
   }
 }
-
-/**
- * Creates morphable geometry pairs that share identical topology.
- * This enables TRUE morphing (not deformation).
- * 
- * STRATEGY:
- * 1. Both meshes built from same parametric UV grid
- * 2. Each (u,v) coordinate maps to a vertex in both shapes
- * 3. Perfect 1:1 vertex correspondence
- */
 exports.default = ProceduralMeshObj;
 class MeshMorpher {
   static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
-    const morphPair = {
-      meshA: this._generateFromFunction(shapeA, resolutionU, resolutionV),
-      meshB: this._generateFromFunction(shapeB, resolutionU, resolutionV),
+    const shapeAObj = typeof shapeA === "function" ? {
+      func: shapeA
+    } : shapeA;
+    const shapeBObj = typeof shapeB === "function" ? {
+      func: shapeB
+    } : shapeB;
+    const meshA = this._generateFromFunction(shapeAObj.func, resolutionU, resolutionV);
+    const meshB = this._generateFromFunction(shapeBObj.func, resolutionU, resolutionV);
+    if (!shapeAObj.flat) meshA.normals = this.computeSmoothNormals(meshA.vertices, meshA.indices);
+    if (!shapeBObj.flat) meshB.normals = this.computeSmoothNormals(meshB.vertices, meshB.indices);
+    return {
+      meshA,
+      meshB,
       vertexCount: (resolutionU + 1) * (resolutionV + 1)
     };
-    morphPair.meshA.normals = this.computeSmoothNormals(morphPair.meshA.vertices, morphPair.meshA.indices);
-    morphPair.meshB.normals = this.computeSmoothNormals(morphPair.meshB.vertices, morphPair.meshB.indices);
-
-    // console.log(`✅ Created matched pair: ${morphPair.meshA.normals } vertices each`);
-    return morphPair;
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MULTI-PART GEOMETRY
+  // Combines N shape functions into a single UV-partitioned mesh.
+  // Each part gets an equal slice of V-space. Bridge rows between parts
+  // are collapsed to a hidden point so no connecting triangles are visible.
+  //
+  // Usage:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.cube(1),   offset: [-2, 0, 0] },
+  //     { shape: MeshMorpher.cube(1),   offset: [ 2, 0, 0] },
+  //   )
+  //
+  //   // With rotation too:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.sphere(1), offset: [0, 0, 0], rotation: [0, 0, 0] },
+  //     { shape: MeshMorpher.torus(),   offset: [3, 0, 0], rotation: [Math.PI/2, 0, 0] },
+  //   )
+  //
+  // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
+  // ─────────────────────────────────────────────────────────────────────────────
+  static compose(...parts) {
+    const n = parts.length;
+    const normalised = parts.map(p => {
+      const raw = p.shape ?? p.func ?? p;
+      const func = typeof raw === "function" ? raw : raw.func;
+      const flat = p.flat ?? (typeof raw === "object" ? raw.flat : false) ?? false;
+      const offset = p.offset ?? [0, 0, 0];
+      const rotation = p.rotation ?? [0, 0, 0];
+      const scale = p.scale ?? [1, 1, 1];
+      return {
+        func,
+        flat,
+        offset,
+        rotation,
+        scale
+      };
+    });
+    const applyTransform = (pos, part) => {
+      let [x, y, z] = pos;
+      x *= part.scale[0];
+      y *= part.scale[1];
+      z *= part.scale[2];
+      const [rx, ry, rz] = part.rotation;
+      if (rx !== 0) {
+        const cy = Math.cos(rx),
+          sy = Math.sin(rx);
+        const ny = cy * y - sy * z,
+          nz = sy * y + cy * z;
+        y = ny;
+        z = nz;
+      }
+      if (ry !== 0) {
+        const cx = Math.cos(ry),
+          sx = Math.sin(ry);
+        const nx = cx * x + sx * z,
+          nz = -sx * x + cx * z;
+        x = nx;
+        z = nz;
+      }
+      if (rz !== 0) {
+        const cz = Math.cos(rz),
+          sz = Math.sin(rz);
+        const nx = cz * x - sz * y,
+          ny = sz * x + cz * y;
+        x = nx;
+        y = ny;
+      }
+      x += part.offset[0];
+      y += part.offset[1];
+      z += part.offset[2];
+      return [x, y, z];
+    };
+    const composed = (u, vGlobal) => {
+      const sliceSize = 1 / n;
+      const partIndex = Math.min(Math.floor(vGlobal / sliceSize), n - 1);
+      const part = normalised[partIndex];
+      const vLocal = (vGlobal - partIndex * sliceSize) / sliceSize;
+      const DEAD = 0.1; // wide enough to cover 2-3 vertex rows at resV=32
+
+      if (vLocal < DEAD) {
+        // Entire dead band collapses to a single point: part's v=0 center
+        return applyTransform(part.func(0, 0), part); // same u=0 → same point for ALL u
+      }
+      if (vLocal > 1 - DEAD) {
+        return applyTransform(part.func(0, 0), part); // same trick at the top
+      }
+      const vMapped = (vLocal - DEAD) / (1 - DEAD * 2);
+      return applyTransform(part.func(u, vMapped), part);
+    };
+    const allFlat = normalised.every(p => p.flat);
+    return allFlat ? {
+      func: composed,
+      flat: true
+    } : composed;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // All original methods below — completely unchanged
+  // ─────────────────────────────────────────────────────────────────────────────
+
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -32797,25 +32737,17 @@ class MeshMorpher {
     const normals = [];
     const uvs = [];
     const indices = [];
-
-    // Generate vertices
     for (let v = 0; v <= resV; v++) {
       for (let u = 0; u <= resU; u++) {
-        const uNorm = u / resU; // [0, 1]
-        const vNorm = v / resV; // [0, 1]
-
-        // Get position from shape function
+        const uNorm = u / resU;
+        const vNorm = v / resV;
         const pos = shapeFunc(uNorm, vNorm);
         positions.push(pos[0], pos[1], pos[2]);
-
-        // Calculate normal via finite differences
         const eps = 0.01;
         const posU = shapeFunc(Math.min(uNorm + eps, 1), vNorm);
         const posV = shapeFunc(uNorm, Math.min(vNorm + eps, 1));
         const tangentU = [posU[0] - pos[0], posU[1] - pos[1], posU[2] - pos[2]];
         const tangentV = [posV[0] - pos[0], posV[1] - pos[1], posV[2] - pos[2]];
-
-        // Cross product for normal
         const normal = [tangentU[1] * tangentV[2] - tangentU[2] * tangentV[1], tangentU[2] * tangentV[0] - tangentU[0] * tangentV[2], tangentU[0] * tangentV[1] - tangentU[1] * tangentV[0]];
         const len = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
         if (len > 0) {
@@ -32823,20 +32755,21 @@ class MeshMorpher {
           normal[1] /= len;
           normal[2] /= len;
         }
+        if (Math.abs(pos[1]) < 0.01 && Math.abs(posU[1]) < 0.01 && Math.abs(posV[1]) < 0.01) {
+          normal[0] = 0;
+          normal[1] = 1;
+          normal[2] = 0;
+        }
         normals.push(normal[0], normal[1], normal[2]);
         uvs.push(uNorm, vNorm);
       }
     }
-
-    // Generate indices (quad grid)
     for (let v = 0; v < resV; v++) {
       for (let u = 0; u < resU; u++) {
         const i0 = v * (resU + 1) + u;
         const i1 = i0 + 1;
         const i2 = i0 + (resU + 1);
         const i3 = i2 + 1;
-
-        // Two triangles per quad
         indices.push(i0, i2, i1);
         indices.push(i1, i2, i3);
       }
@@ -32846,32 +32779,54 @@ class MeshMorpher {
       normals: new Float32Array(normals),
       uvs: new Float32Array(uvs),
       indices: new Uint16Array(indices),
-      vertexCount: positions.length / 3
+      vertexCount: positions.length / 3,
+      flat: this.flat === true
     };
   }
   static sphere(radius = 1) {
     return (u, v) => {
-      const theta = -u * Math.PI * 2; // Longitude
-      const phi = -v * Math.PI; // Latitude
-
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
       return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)];
     };
   }
   static cube(size = 1) {
+    const s = size * 0.5;
     return (u, v) => {
-      // Map UV to cube surface (normalized sphere approach)
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI;
-      let x = Math.sin(phi) * Math.cos(theta);
-      let y = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
-
-      // Project to cube surface (dominant axis)
-      const absX = Math.abs(x);
-      const absY = Math.abs(y);
-      const absZ = Math.abs(z);
-      const max = Math.max(absX, absY, absZ);
-      return [x / max * size, y / max * size, z / max * size];
+      let x, y, z;
+      const unitU = u * 4 % 1;
+      const side = Math.floor(u * 4) % 4;
+      let sx, sz;
+      if (side === 0) {
+        sx = s;
+        sz = (unitU - 0.5) * size;
+      } else if (side === 1) {
+        sx = (0.5 - unitU) * size;
+        sz = s;
+      } else if (side === 2) {
+        sx = -s;
+        sz = (0.5 - unitU) * size;
+      } else {
+        sx = (unitU - 0.5) * size;
+        sz = -s;
+      }
+      if (v < 0.2) {
+        const lerp = v / 0.2;
+        x = sx * lerp;
+        y = -s;
+        z = sz * lerp;
+      } else if (v > 0.8) {
+        const lerp = (1.0 - v) / 0.2;
+        x = sx * lerp;
+        y = s;
+        z = sz * lerp;
+      } else {
+        const lerpY = (v - 0.2) / 0.6;
+        x = sx;
+        y = (lerpY - 0.5) * size;
+        z = sz;
+      }
+      return [x, y, z];
     };
   }
   static cylinder(radius = 1, height = 2) {
@@ -32893,35 +32848,30 @@ class MeshMorpher {
     return (u, v) => {
       const theta = u * Math.PI * 2;
       const h = v * height;
-      const r = baseRadius * (1 - v); // Radius shrinks with height
-
+      const r = baseRadius * (1 - v);
       return [r * Math.cos(theta), h, r * Math.sin(theta)];
     };
   }
   static capsule(radius = 0.5, height = 2) {
+    const halfH = height / 2;
     return (u, v) => {
-      const theta = u * Math.PI * 2;
-
-      // v = v;
       if (v < 0.25) {
-        // Bottom hemisphere
-        const phi = v / 0.25 * Math.PI * 0.5 + Math.PI * 0.5;
-        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) - height / 2, radius * Math.sin(phi) * Math.sin(theta)];
+        const theta = -u * Math.PI * 2;
+        const phi = v / 0.25 * (Math.PI / 2) + Math.PI / 2;
+        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) - halfH, radius * Math.sin(phi) * Math.sin(theta)];
       } else if (v > 0.75) {
-        // Top hemisphere
-        const phi = (v - 0.75) / 0.25 * Math.PI * 0.5;
-        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) + height / 2, radius * Math.sin(phi) * Math.sin(theta)];
+        const theta = -u * Math.PI * 2;
+        const phi = (v - 0.75) / 0.25 * (Math.PI / 2);
+        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) + halfH, radius * Math.sin(phi) * Math.sin(theta)];
       } else {
-        // Cylinder middle
-        const h = (v - 0.25) / 0.5 * height - height / 2;
-        return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
+        const theta = u * Math.PI * 2;
+        const y = (v - 0.25) / 0.5 * height - halfH;
+        return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
       }
     };
   }
   static plane(size = 1) {
-    return (u, v) => {
-      return [(u - 0.5) * size, 0, (v - 0.5) * size];
-    };
+    return (u, v) => [(u - 0.5) * size, 0, (v - 0.5) * size];
   }
   static mobius(radius = 1, width = 0.5) {
     return (u, v) => {
@@ -32935,20 +32885,33 @@ class MeshMorpher {
     return (u, v) => {
       const angle = u * Math.PI * 2;
       const r = (1 - v) * size;
-      const x = r * Math.cos(angle);
-      const z = r * Math.sin(angle);
-      const y = v * size;
-      return [x, y, z];
+      return [r * Math.cos(angle), v * size, r * Math.sin(angle)];
     };
   }
   static supershape(size = 1) {
     return (u, v) => {
-      const theta = u * Math.PI * 2;
+      const theta = -u * Math.PI * 2;
       const phi = v * Math.PI;
       const r = size * (0.5 + 0.5 * Math.sin(5 * theta) * Math.sin(3 * phi));
-      const x = r * Math.sin(phi) * Math.cos(theta);
-      const y = r * Math.cos(phi);
-      const z = r * Math.sin(phi) * Math.sin(theta);
+      return [r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta)];
+    };
+  }
+  static star(radius = 1, innerRadius = 0.4, depth = 0.3) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const r = radius * (0.7 + 0.3 * Math.cos(5 * theta));
+      let x, y, z;
+      if (v < 0.5) {
+        const lerp = v / 0.5;
+        x = r * Math.cos(theta) * lerp;
+        z = r * Math.sin(theta) * lerp;
+        y = depth * (1 - lerp);
+      } else {
+        const lerp = (1.0 - v) / 0.5;
+        x = r * Math.cos(theta) * lerp;
+        z = r * Math.sin(theta) * lerp;
+        y = -depth * (1 - lerp);
+      }
       return [x, y, z];
     };
   }
@@ -32964,9 +32927,7 @@ class MeshMorpher {
     return (u, v) => {
       const angle = -u * Math.PI * 2;
       const r = -v * radius;
-      const x = r * Math.cos(angle);
-      const z = r * Math.sin(angle);
-      return [x, 0, z];
+      return [r * Math.cos(angle), 0, r * Math.sin(angle)];
     };
   }
   static icosahedron(radius = 1) {
@@ -32976,8 +32937,6 @@ class MeshMorpher {
       let x = Math.sin(phi) * Math.cos(theta);
       let y = Math.cos(phi);
       let z = Math.sin(phi) * Math.sin(theta);
-
-      // create icosahedral distortion
       const f = Math.abs(x) + Math.abs(y) + Math.abs(z);
       x /= f;
       y /= f;
@@ -33005,19 +32964,148 @@ class MeshMorpher {
       return [x * r, y * r, z * r];
     };
   }
-  static star(radius = 1) {
+  static star3d(radius = 1) {
     return (u, v) => {
-      const theta = u * Math.PI * 2;
+      const theta = -u * Math.PI * 2;
       const phi = v * Math.PI;
       const spike = 1 + 0.3 * Math.sin(theta * 5);
       const r = radius * spike;
       return [r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta)];
     };
   }
+  static galaxySpiral(scale = 10, arms = 3, twist = 2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radius = v;
+      const armOffset = theta * arms % (Math.PI * 2);
+      const r = radius * (1 + 0.2 * Math.sin(armOffset * twist));
+      const x = r * Math.cos(theta);
+      const y = 0.1 * radius * Math.sin(5 * theta);
+      const z = r * Math.sin(theta);
+      return [x * scale, y * scale, z * scale];
+    };
+  }
+  static littleStar(radius = 1, innerRadius = 0.4, depth = 0.2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const sector = u * 10 % 2;
+      const lerp = sector > 1 ? 2 - sector : sector;
+      const r = innerRadius + (radius - innerRadius) * lerp;
+      const posX = r * Math.cos(theta);
+      const posZ = r * Math.sin(theta);
+      let x, y, z;
+      if (v < 0.5) {
+        const f = v / 0.5;
+        x = posX * f;
+        z = posZ * f;
+        y = depth * (1 - f);
+      } else {
+        const f = (1.0 - v) / 0.5;
+        x = posX * f;
+        z = posZ * f;
+        y = -depth * (1 - f);
+      }
+      return [x, y, z];
+    };
+  }
+  static flatStar(radius = 1, innerRadius = 0.2, thickness = 0.1) {
+    const func = (u, v) => {
+      const spikes = 5;
+      const theta = -u * Math.PI * 2;
+      const star = Math.cos(spikes * theta);
+      const r = innerRadius + (radius - innerRadius) * (star * 0.5 + 0.5);
+      const finalR = r * v;
+      return [finalR * Math.cos(theta), 0, finalR * Math.sin(theta)];
+    };
+    return {
+      func,
+      flat: true
+    };
+  }
+  static klein(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      let x, y, z;
+      if (theta < Math.PI) {
+        x = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(theta) * Math.cos(phi);
+        z = -8 * Math.sin(theta) - 2 * (1 - Math.cos(theta) / 2) * Math.sin(theta) * Math.cos(phi);
+      } else {
+        x = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(phi + Math.PI);
+        z = -8 * Math.sin(theta);
+      }
+      y = 2 * (1 - Math.cos(theta) / 2) * Math.sin(phi);
+      return [x * 0.1 * radius, y * 0.1 * radius, z * 0.1 * radius];
+    };
+  }
+  static shell(scale = 1) {
+    scale = scale / 4;
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const phi = -v * Math.PI * 2;
+      const r = 0.4 + Math.exp(-theta * 0.12);
+      const x = r * Math.cos(theta) * (1 + 0.3 * Math.cos(phi));
+      const y = r * Math.sin(theta) * (1 + 0.3 * Math.cos(phi));
+      const z = 0.3 * r * Math.sin(phi);
+      return [x * scale, z * scale, y * scale];
+    };
+  }
+  static rippleSphere(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const ripple = 1 + 0.2 * Math.sin(10 * theta) * Math.sin(6 * phi);
+      const r = radius * ripple;
+      return [r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta)];
+    };
+  }
+  static twistedTorus(R = 1, r = 0.3, twists = 3) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      const twist = phi + theta * twists;
+      return [(R + r * Math.cos(twist)) * Math.cos(theta), r * Math.sin(twist), (R + r * Math.cos(twist)) * Math.sin(theta)];
+    };
+  }
+  static tornado(height = 2, radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const y = (v - 0.5) * height;
+      const r = Math.pow(v, 1.5) * radius;
+      return [r * Math.cos(theta), y, r * Math.sin(theta)];
+    };
+  }
+  static brain(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x = Math.sin(phi) * Math.cos(theta);
+      let y = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const wrinkle = 0.25 * Math.sin(theta * 6) * Math.sin(phi * 4);
+      const r = radius + wrinkle;
+      return [x * r, y * r, z * r];
+    };
+  }
+  static galaxyComposite(numStars = 500, arms = 4, twist = 2, scale = 20) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radial = v;
+      const arm = Math.floor(radial * arms);
+      const armOffset = arm / arms * Math.PI * 2;
+      const r = radial * (1 + 0.2 * Math.sin(theta * 5 + armOffset));
+      const y = 0.1 * radial * Math.sin(theta * 8);
+      const clusterOffsetX = 0.05 * Math.sin(armOffset + v * 12);
+      const clusterOffsetZ = 0.05 * Math.cos(armOffset + u * 12);
+      const x = (r * Math.cos(theta) + clusterOffsetX) * scale;
+      const z = (r * Math.sin(theta) + clusterOffsetZ) * scale;
+      return [x, y * scale, z];
+    };
+  }
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/vertex.procedural.wgsl":82,"./geometry-factory":39,"./materials":48,"./matrix-class":49,"./utils":57,"wgpu-matrix":22}],55:[function(require,module,exports){
+},{"../shaders/vertex.procedural.wgsl":83,"./geometry-factory":39,"./materials":48,"./matrix-class":49,"./utils":57,"wgpu-matrix":22}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34453,11 +34541,11 @@ const geoTypesForMorph = exports.geoTypesForMorph = {
   cube: "cube",
   sphere: "sphere",
   mobius: "mobius",
+  cylinder: "cylinder",
   plane: "plane",
   capsule: "capsule",
   cone: "cone",
   torus: "torus",
-  cylinder: "cylinder",
   wavePlane: "wavePlane",
   supershape: "supershape",
   pyramid: "pyramid",
@@ -34465,7 +34553,16 @@ const geoTypesForMorph = exports.geoTypesForMorph = {
   icosahedron: "icosahedron",
   circlePlane: "circlePlane",
   rock: "rock",
-  star: "star"
+  star: "star",
+  star3d: "star3d",
+  littleStar: "littleStar",
+  flatStar: "flatStar",
+  klein: "klein",
+  shell: "shell",
+  rippleSphere: "rippleSphere",
+  twistedTorus: "twistedTorus",
+  tornado: "tornado",
+  galaxySpiral: "galaxySpiral"
 };
 
 },{}],58:[function(require,module,exports){
@@ -36375,6 +36472,184 @@ let validLight = select(0.0, 1.0, NdotL > 0.0);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.fragmentWGSLNoCut = void 0;
+let fragmentWGSLNoCut = exports.fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+    alpha     : f32,  // ✅ Added alpha
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// PBR textures
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = texColor.a * material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+// PCF shadow sampling
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+  }
+  return visibility / 9.0;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) {
+      discard;
+  }
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  var Lo = vec3f(0.0);
+
+    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let L = normalize(spotlights[i].position - input.fragPos);
+      let H = normalize(V + L);
+      let distance = length(spotlights[i].position - input.fragPos);
+      let dist        = length(spotlights[i].position - input.fragPos);
+      let r           = dist / max(spotlights[i].range, 0.001);
+      let attenuation = 1.0 / (1.0 + r * r);
+      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+      let NDF = distributionGGX(N, H, materialData.roughness);
+      let G   = geometrySmith(N, V, L, materialData.roughness);
+      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+      let kS = F;
+      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+      let diffuse  = kD * materialData.baseColor / PI;
+      let NdotL = max(dot(N, L), 0.0);
+      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+      Lo += (diffuse + specular) * radiance * NdotL;
+  }
+
+  let maxIntensity = max(length(Lo), 0.0);
+  let ambientScale = clamp(maxIntensity * 0.5 + 0.05, 0.0, 1.0);
+  let ambient = scene.globalAmbient * materialData.baseColor * ambientScale;
+  var color = ambient + Lo;
+
+  color = pow(max(color, vec3f(0.0)), vec3f(1.0 / 2.2));
+  return vec4f(color, 1.0);
+}
+`;
+
+},{}],70:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.fragmentWGSLNormalMap = void 0;
 let fragmentWGSLNormalMap = exports.fragmentWGSLNormalMap = `
 override shadowDepthTextureSize: f32 = 1024.0;
@@ -36617,7 +36892,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36840,7 +37115,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37005,7 +37280,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37074,7 +37349,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(input.color, 1.0);
 }`;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37325,7 +37600,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // return vec4f(1.0, 0.0, 0.0, 0.1);
 }`;
 
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37615,7 +37890,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37877,7 +38152,7 @@ fn main(
   return output;
 }`;
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38069,7 +38344,7 @@ fn main(
 }
 `;
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38289,7 +38564,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38347,7 +38622,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38434,7 +38709,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38492,7 +38767,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],81:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38583,7 +38858,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],82:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38932,8 +39207,8 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 @vertex
 fn main(input: VertexInput) -> @builtin(position) vec4f {
   // 1. Morph positions
-  // let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
-  let blendedPosition = input.positionA;
+  let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
+  // let blendedPosition = input.positionA;
   
   // 2. Apply the same vertex animations
   var finalPos = blendedPosition;
@@ -38947,7 +39222,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
 }
 `;
 
-},{}],83:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39223,7 +39498,7 @@ fn main(
   return output;
 }`;
 
-},{}],84:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39334,7 +39609,7 @@ fn main(
   return output;
 }`;
 
-},{}],85:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39600,7 +39875,7 @@ fn main(
 }
 `;
 
-},{}],86:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39848,7 +40123,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(vibrantColor, alpha);
 }`;
 
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39935,7 +40210,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],88:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40005,7 +40280,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40342,7 +40617,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":57}],90:[function(require,module,exports){
+},{"../../engine/utils":57}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41109,7 +41384,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":57}],91:[function(require,module,exports){
+},{"../../engine/utils":57}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41283,7 +41558,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":51,"../../engine/utils":57,"./client":89,"./editor.provider":92,"./flexCodexShader":93,"./fluxCodexVertex":95,"./hud":97,"./methodsManager":98}],92:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":51,"../../engine/utils":57,"./client":90,"./editor.provider":93,"./flexCodexShader":94,"./fluxCodexVertex":96,"./hud":98,"./methodsManager":99}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41511,7 +41786,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":44,"../../engine/loaders/webgpu-gltf":47}],93:[function(require,module,exports){
+},{"../../engine/loader-obj":44,"../../engine/loaders/webgpu-gltf":47}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43705,7 +43980,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":57,"./flexCodexShaderAdapter.js":94}],94:[function(require,module,exports){
+},{"../../engine/utils.js":57,"./flexCodexShaderAdapter.js":95}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43919,7 +44194,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{}],95:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50056,7 +50331,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/utils":57,"./curve-editor":90,"./generateAISchema.js":96}],96:[function(require,module,exports){
+},{"../../engine/utils":57,"./curve-editor":91,"./generateAISchema.js":97}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50183,7 +50458,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],97:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51540,7 +51815,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":57,"./flexCodexShader.js":93}],98:[function(require,module,exports){
+},{"../../engine/utils.js":57,"./flexCodexShader.js":94}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51857,7 +52132,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],99:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53219,4 +53494,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/core-cache.js":25,"./engine/effects/energy-bar.js":27,"./engine/effects/flame-emmiter.js":28,"./engine/effects/flame.js":29,"./engine/effects/mana-bar.js":34,"./engine/effects/pointerEffect.js":35,"./engine/engine.js":37,"./engine/generators/generator.js":38,"./engine/instanced/mesh-obj-instances.js":41,"./engine/lights.js":42,"./engine/loader-obj.js":44,"./engine/loaders/bvh-instaced.js":45,"./engine/loaders/bvh.js":46,"./engine/mesh-obj.js":50,"./engine/postprocessing/bloom.js":52,"./engine/postprocessing/volumetric.js":53,"./engine/procedural-mesh.js":54,"./engine/raycast.js":56,"./engine/utils.js":57,"./multilang/lang.js":58,"./physics/matrix-ammo.js":59,"./sounds/audioAsset.js":87,"./sounds/sounds.js":88,"./tools/editor/editor.js":91,"./tools/editor/flexCodexShaderAdapter.js":94,"wgpu-matrix":22}]},{},[1]);
+},{"./engine/core-cache.js":25,"./engine/effects/energy-bar.js":27,"./engine/effects/flame-emmiter.js":28,"./engine/effects/flame.js":29,"./engine/effects/mana-bar.js":34,"./engine/effects/pointerEffect.js":35,"./engine/engine.js":37,"./engine/generators/generator.js":38,"./engine/instanced/mesh-obj-instances.js":41,"./engine/lights.js":42,"./engine/loader-obj.js":44,"./engine/loaders/bvh-instaced.js":45,"./engine/loaders/bvh.js":46,"./engine/mesh-obj.js":50,"./engine/postprocessing/bloom.js":52,"./engine/postprocessing/volumetric.js":53,"./engine/procedural-mesh.js":54,"./engine/raycast.js":56,"./engine/utils.js":57,"./multilang/lang.js":58,"./physics/matrix-ammo.js":59,"./sounds/audioAsset.js":88,"./sounds/sounds.js":89,"./tools/editor/editor.js":92,"./tools/editor/flexCodexShaderAdapter.js":95,"wgpu-matrix":22}]},{},[1]);

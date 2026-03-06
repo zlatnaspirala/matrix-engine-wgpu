@@ -342,8 +342,8 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 @vertex
 fn main(input: VertexInput) -> @builtin(position) vec4f {
   // 1. Morph positions
-  // let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
-  let blendedPosition = input.positionA;
+  let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
+  // let blendedPosition = input.positionA;
   
   // 2. Apply the same vertex animations
   var finalPos = blendedPosition;

@@ -1,37 +1,10 @@
 import {vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL} from './utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN} from './utils';
 import Materials from './materials';
 import {GeometryFactory} from './geometry-factory';
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 // import {VERTEX_ANIM_FLAGS} from './literals';
-
-/**
- * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
- * 
- * KEY FEATURES:
- * - Loads geometry from GeometryFactory (no file I/O)
- * - GPU-accelerated morphing between two meshes
- * - Reuses Materials + shader pipeline from MEMeshObj
- * - NO GLB/OBJ parsing, skinning, or tangents
- * 
- * USAGE:
- * const mesh = new ProceduralMeshObj(canvas, device, context, {
- *   name: 'morphCube',
- *   geometryA: {type: 'cube', size: 1},
- *   geometryB: {type: 'sphere', size: 1, segments: 16},
- *   material: {...},
- *   position: {x:0, y:0, z:0},
- *   rotation: {x:0, y:0, z:0},
- *   cameras: [...],
- *   mainCameraParams: {...}
- * });
- * 
- * // Morph API
- * mesh.setMorphBlend(0.5); // 50% cube, 50% sphere
- * mesh.morphTo(1.0, 2000); // animate to sphere over 2 seconds
- */
-
 
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -47,20 +20,17 @@ import {Position, Rotation} from "./matrix-class";
  */
 export default class ProceduralMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient) {
-    // Pass all required params to Materials parent class
     super(device, o.material, null, o.textureCache);
-    // BASIC SETUP
     this.name = o.name || genName(3);
     this.done = false;
     this.canvas = canvas;
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
-    // GEOMETRY LOADING
+
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
-
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -68,9 +38,9 @@ export default class ProceduralMeshObj extends Materials {
       this.meshB = pair.meshB;
       this.vertexCount = pair.vertexCount;
       this._validateMorphCompatibility();
-
     } else if(o.geometryA) {
       // OLD: Generate from GeometryFactory (may not match!)
+      console.warn(`%cPlease use meshA, meshB not geometryA.`, LOG_WARN);
       this.meshA = this._loadGeometry(o.geometryA);
       this.meshB = o.geometryB
         ? this._loadGeometry(o.geometryB)
@@ -78,7 +48,7 @@ export default class ProceduralMeshObj extends Materials {
       this._validateMorphCompatibility();
     }
 
-    this.morphBlend = o.morphBlend ?? 0.0; // default to 0
+    this.morphBlend = o.morphBlend ?? 0.0;
     this.morphAnimation = {
       active: false,
       startBlend: this.morphBlend,
@@ -88,8 +58,6 @@ export default class ProceduralMeshObj extends Materials {
       onComplete: null
     };
 
-    console.log(`%cProceduralMesh loaded: ${this.name}`, LOG_FUNNY_ARCADE);
-    // TRANSFORM & CAMERA
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -97,7 +65,6 @@ export default class ProceduralMeshObj extends Materials {
       responseCoef: o.mainCameraParams.responseCoef
     };
     this.lastFrameMS = 0;
-
     this.position = new Position(o.position.x, o.position.y, o.position.z);
     this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
     this.rotation.rotationSpeed.x = o.rotationSpeed?.x || 0;
@@ -105,11 +72,9 @@ export default class ProceduralMeshObj extends Materials {
     this.rotation.rotationSpeed.z = o.rotationSpeed?.z || 0;
     this.scale = o.scale || [1, 1, 1];
     this.useScale = o.useScale || false;
-
     this.time = 0;
     this.deltaTimeAdapter = 10;
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-
     this.raycast = o.raycast || {enabled: false, radius: 2};
     this.pointerEffect = o.pointerEffect || {enabled: false};
 
@@ -117,7 +82,6 @@ export default class ProceduralMeshObj extends Materials {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
         this.modelViewProjectionMatrix = mat4.create();
-
         // Load textures if provided
         if(o.texturesPaths && o.texturesPaths.length > 0 && o.textureCache) {
           this.texturesPaths = [...o.texturesPaths];
@@ -130,7 +94,6 @@ export default class ProceduralMeshObj extends Materials {
         } else {
           await this._createDefaultTexture();
         }
-
         resolve();
       });
     };
@@ -141,11 +104,11 @@ export default class ProceduralMeshObj extends Materials {
       this._setupUniforms();
       this._setupPipeline();
       this.done = true;
-      console.log(`%cProceduralMesh ready: ${this.name}`, LOG_FUNNY_SMALL);
+      // console.log(`%cProceduralMesh ready: ${this.name}`, LOG_FUNNY_SMALL);
     });
   }
 
-  // GEOMETRY LOADING
+  // GEOMETRY LOADING old
   _loadGeometry(spec) {
     const {type, size, segments, options} = spec;
     const geo = GeometryFactory.create(type, size, segments, options);
@@ -160,7 +123,6 @@ export default class ProceduralMeshObj extends Materials {
 
   _generateNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
-
     for(let i = 0;i < indices.length;i += 3) {
       const i0 = indices[i] * 3;
       const i1 = indices[i + 1] * 3;
@@ -466,16 +428,11 @@ export default class ProceduralMeshObj extends Materials {
     if(this.morphBlendBuffer) {
       this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
     } else {
-      console.error('❌ NO BUFFER!');
+      console.error('❌ NO BUFFER in setMorphBlend.');
     }
   }
 
-  morphTo(targetBlend, duration = 1000, onComplete = ()=>{}) {
-    // console.log('🔥 morphTo ENTRY:', {
-    //   targetBlend,
-    //   duration,
-    //   'this.morphAnimation': this.morphAnimation
-    // });
+  morphTo(targetBlend, duration = 1000, onComplete = () => {}) {
     const safeDuration = Math.max(duration, 100);
     this.morphAnimation = {
       active: true,
@@ -490,7 +447,7 @@ export default class ProceduralMeshObj extends Materials {
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
     this.morphAnimation.duration = safeDuration;
-    this.morphAnimation.elapsed = 0; // ⚠️ CRITICAL: Reset elapsed time!
+    this.morphAnimation.elapsed = 0;
     this.morphAnimation.onComplete = onComplete;
     if(this.morphAnimation.debug || true) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
@@ -522,17 +479,11 @@ export default class ProceduralMeshObj extends Materials {
     const blend = this.morphAnimation.startBlend +
       (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
     this.setMorphBlend(blend);
-    // console.log('⚡ UPDATE CALC:', {
-    //   elapsed_after: this.morphAnimation.elapsed,
-    //   t: t,
-    //   will_complete: t >= 1
-    // });
     if(t >= 1) {
       this.morphAnimation.active = false;
       if(this.morphAnimation.onComplete) {
         this.morphAnimation.onComplete();
       }
-      console.log('onComplete =', this.morphAnimation.active, 'deltaTime=', deltaTime);
     }
   }
 
@@ -606,15 +557,14 @@ export default class ProceduralMeshObj extends Materials {
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
 
-  // RENDERING
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.mainRenderBindGroup);
-    pass.setVertexBuffer(0, this.vertexBufferA);  // posA
-    pass.setVertexBuffer(1, this.normalBufferA);  // normalA
-    pass.setVertexBuffer(2, this.uvBuffer);       // uv
-    pass.setVertexBuffer(3, this.vertexBufferB);  // posB
-    pass.setVertexBuffer(4, this.normalBufferB);  // normalB
+    pass.setVertexBuffer(0, this.vertexBufferA);
+    pass.setVertexBuffer(1, this.normalBufferA);
+    pass.setVertexBuffer(2, this.uvBuffer);
+    pass.setVertexBuffer(3, this.vertexBufferB);
+    pass.setVertexBuffer(4, this.normalBufferB);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
@@ -623,71 +573,144 @@ export default class ProceduralMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBufferA);
     shadowPass.setVertexBuffer(1, this.normalBufferA);
     shadowPass.setVertexBuffer(2, this.uvBuffer);
-
-    shadowPass.setVertexBuffer(3, this.vertexBufferB);  // posB - same as render
-    shadowPass.setVertexBuffer(4, this.normalBufferB);  // normalB - same as render
-    // shadowPass.setVertexBuffer(3, this.dummyJointsBuffer);  // joints (dummy)
-    // shadowPass.setVertexBuffer(4, this.dummyWeightsBuffer); // weights (dummy)
-
+    shadowPass.setVertexBuffer(3, this.vertexBufferB);
+    shadowPass.setVertexBuffer(4, this.normalBufferB);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
 
-  getMainPipeline() {
-    return this.pipeline;
-  }
+  getMainPipeline() {return this.pipeline}
 
-  // CLEANUP NOT WORKS PERFECT YET
   destroy() {
     if(this._destroyed) return;
     this._destroyed = true;
-
     this.vertexBufferA?.destroy();
     this.vertexBufferB?.destroy();
     this.normalBufferA?.destroy();
     this.normalBufferB?.destroy();
     this.uvBuffer?.destroy();
     this.indexBuffer?.destroy();
-
     this.modelUniformBuffer?.destroy();
     this.sceneUniformBuffer?.destroy();
     this.morphBlendBuffer?.destroy();
     this.vertexAnimBuffer?.destroy();
-
     this.shadowDepthTexture?.destroy();
-
     this.pipeline = null;
     this.pipelineTransparent = null;
     this.modelBindGroup = null;
     this.sceneBindGroupForRender = null;
-
     console.info(`🧹 Destroyed ProceduralMesh: ${this.name}`);
   }
 }
 
-/**
- * Creates morphable geometry pairs that share identical topology.
- * This enables TRUE morphing (not deformation).
- * 
- * STRATEGY:
- * 1. Both meshes built from same parametric UV grid
- * 2. Each (u,v) coordinate maps to a vertex in both shapes
- * 3. Perfect 1:1 vertex correspondence
- */
 export class MeshMorpher {
   static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
-    const morphPair = {
-      meshA: this._generateFromFunction(shapeA, resolutionU, resolutionV),
-      meshB: this._generateFromFunction(shapeB, resolutionU, resolutionV),
+    const shapeAObj = (typeof shapeA === "function") ? {func: shapeA} : shapeA;
+    const shapeBObj = (typeof shapeB === "function") ? {func: shapeB} : shapeB;
+    const meshA = this._generateFromFunction(shapeAObj.func, resolutionU, resolutionV);
+    const meshB = this._generateFromFunction(shapeBObj.func, resolutionU, resolutionV);
+    if(!shapeAObj.flat)
+      meshA.normals = this.computeSmoothNormals(meshA.vertices, meshA.indices);
+    if(!shapeBObj.flat)
+      meshB.normals = this.computeSmoothNormals(meshB.vertices, meshB.indices);
+    return {
+      meshA,
+      meshB,
       vertexCount: (resolutionU + 1) * (resolutionV + 1)
     };
-
-    morphPair.meshA.normals = this.computeSmoothNormals(morphPair.meshA.vertices, morphPair.meshA.indices);
-    morphPair.meshB.normals = this.computeSmoothNormals(morphPair.meshB.vertices, morphPair.meshB.indices);
-
-    // console.log(`✅ Created matched pair: ${morphPair.meshA.normals } vertices each`);
-    return morphPair;
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MULTI-PART GEOMETRY
+  // Combines N shape functions into a single UV-partitioned mesh.
+  // Each part gets an equal slice of V-space. Bridge rows between parts
+  // are collapsed to a hidden point so no connecting triangles are visible.
+  //
+  // Usage:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.cube(1),   offset: [-2, 0, 0] },
+  //     { shape: MeshMorpher.cube(1),   offset: [ 2, 0, 0] },
+  //   )
+  //
+  //   // With rotation too:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.sphere(1), offset: [0, 0, 0], rotation: [0, 0, 0] },
+  //     { shape: MeshMorpher.torus(),   offset: [3, 0, 0], rotation: [Math.PI/2, 0, 0] },
+  //   )
+  //
+  // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
+  // ─────────────────────────────────────────────────────────────────────────────
+  static compose(...parts) {
+    const n = parts.length;
+
+    const normalised = parts.map(p => {
+      const raw = p.shape ?? p.func ?? p;
+      const func = (typeof raw === "function") ? raw : raw.func;
+      const flat = p.flat ?? (typeof raw === "object" ? raw.flat : false) ?? false;
+      const offset = p.offset ?? [0, 0, 0];
+      const rotation = p.rotation ?? [0, 0, 0];
+      const scale = p.scale ?? [1, 1, 1];
+      return {func, flat, offset, rotation, scale};
+    });
+
+    const applyTransform = (pos, part) => {
+      let [x, y, z] = pos;
+
+      x *= part.scale[0];
+      y *= part.scale[1];
+      z *= part.scale[2];
+
+      const [rx, ry, rz] = part.rotation;
+      if(rx !== 0) {
+        const cy = Math.cos(rx), sy = Math.sin(rx);
+        const ny = cy * y - sy * z, nz = sy * y + cy * z;
+        y = ny; z = nz;
+      }
+      if(ry !== 0) {
+        const cx = Math.cos(ry), sx = Math.sin(ry);
+        const nx = cx * x + sx * z, nz = -sx * x + cx * z;
+        x = nx; z = nz;
+      }
+      if(rz !== 0) {
+        const cz = Math.cos(rz), sz = Math.sin(rz);
+        const nx = cz * x - sz * y, ny = sz * x + cz * y;
+        x = nx; y = ny;
+      }
+
+      x += part.offset[0];
+      y += part.offset[1];
+      z += part.offset[2];
+
+      return [x, y, z];
+    };
+
+    const composed = (u, vGlobal) => {
+      const sliceSize = 1 / n;
+      const partIndex = Math.min(Math.floor(vGlobal / sliceSize), n - 1);
+      const part = normalised[partIndex];
+      const vLocal = (vGlobal - partIndex * sliceSize) / sliceSize;
+
+      const DEAD = 0.1; // wide enough to cover 2-3 vertex rows at resV=32
+
+      if(vLocal < DEAD) {
+        // Entire dead band collapses to a single point: part's v=0 center
+        return applyTransform(part.func(0, 0), part); // same u=0 → same point for ALL u
+      }
+      if(vLocal > 1 - DEAD) {
+        return applyTransform(part.func(0, 0), part); // same trick at the top
+      }
+
+      const vMapped = (vLocal - DEAD) / (1 - DEAD * 2);
+      return applyTransform(part.func(u, vMapped), part);
+    };
+
+    const allFlat = normalised.every(p => p.flat);
+    return allFlat ? {func: composed, flat: true} : composed;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // All original methods below — completely unchanged
+  // ─────────────────────────────────────────────────────────────────────────────
 
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
@@ -734,17 +757,14 @@ export class MeshMorpher {
     const uvs = [];
     const indices = [];
 
-    // Generate vertices
     for(let v = 0;v <= resV;v++) {
       for(let u = 0;u <= resU;u++) {
-        const uNorm = u / resU;  // [0, 1]
-        const vNorm = v / resV;  // [0, 1]
+        const uNorm = u / resU;
+        const vNorm = v / resV;
 
-        // Get position from shape function
         const pos = shapeFunc(uNorm, vNorm);
         positions.push(pos[0], pos[1], pos[2]);
 
-        // Calculate normal via finite differences
         const eps = 0.01;
         const posU = shapeFunc(Math.min(uNorm + eps, 1), vNorm);
         const posV = shapeFunc(uNorm, Math.min(vNorm + eps, 1));
@@ -752,7 +772,6 @@ export class MeshMorpher {
         const tangentU = [posU[0] - pos[0], posU[1] - pos[1], posU[2] - pos[2]];
         const tangentV = [posV[0] - pos[0], posV[1] - pos[1], posV[2] - pos[2]];
 
-        // Cross product for normal
         const normal = [
           tangentU[1] * tangentV[2] - tangentU[2] * tangentV[1],
           tangentU[2] * tangentV[0] - tangentU[0] * tangentV[2],
@@ -766,12 +785,19 @@ export class MeshMorpher {
           normal[2] /= len;
         }
 
+        if(Math.abs(pos[1]) < 0.01 &&
+          Math.abs(posU[1]) < 0.01 &&
+          Math.abs(posV[1]) < 0.01) {
+          normal[0] = 0;
+          normal[1] = 1;
+          normal[2] = 0;
+        }
+
         normals.push(normal[0], normal[1], normal[2]);
         uvs.push(uNorm, vNorm);
       }
     }
 
-    // Generate indices (quad grid)
     for(let v = 0;v < resV;v++) {
       for(let u = 0;u < resU;u++) {
         const i0 = v * (resU + 1) + u;
@@ -779,7 +805,6 @@ export class MeshMorpher {
         const i2 = i0 + (resU + 1);
         const i3 = i2 + 1;
 
-        // Two triangles per quad
         indices.push(i0, i2, i1);
         indices.push(i1, i2, i3);
       }
@@ -790,15 +815,15 @@ export class MeshMorpher {
       normals: new Float32Array(normals),
       uvs: new Float32Array(uvs),
       indices: new Uint16Array(indices),
-      vertexCount: positions.length / 3
+      vertexCount: positions.length / 3,
+      flat: this.flat === true
     };
   }
 
   static sphere(radius = 1) {
     return (u, v) => {
-      const theta = -u * Math.PI * 2;  // Longitude
-      const phi = -v * Math.PI;         // Latitude
-
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
       return [
         radius * Math.sin(phi) * Math.cos(theta),
         radius * Math.cos(phi),
@@ -808,26 +833,30 @@ export class MeshMorpher {
   }
 
   static cube(size = 1) {
+    const s = size * 0.5;
     return (u, v) => {
-      // Map UV to cube surface (normalized sphere approach)
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI;
+      let x, y, z;
+      const unitU = (u * 4) % 1;
+      const side = Math.floor(u * 4) % 4;
 
-      let x = Math.sin(phi) * Math.cos(theta);
-      let y = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
+      let sx, sz;
+      if(side === 0) {sx = s; sz = (unitU - 0.5) * size;}
+      else if(side === 1) {sx = (0.5 - unitU) * size; sz = s;}
+      else if(side === 2) {sx = -s; sz = (0.5 - unitU) * size;}
+      else {sx = (unitU - 0.5) * size; sz = -s;}
 
-      // Project to cube surface (dominant axis)
-      const absX = Math.abs(x);
-      const absY = Math.abs(y);
-      const absZ = Math.abs(z);
-      const max = Math.max(absX, absY, absZ);
+      if(v < 0.2) {
+        const lerp = v / 0.2;
+        x = sx * lerp; y = -s; z = sz * lerp;
+      } else if(v > 0.8) {
+        const lerp = (1.0 - v) / 0.2;
+        x = sx * lerp; y = s; z = sz * lerp;
+      } else {
+        const lerpY = (v - 0.2) / 0.6;
+        x = sx; y = (lerpY - 0.5) * size; z = sz;
+      }
 
-      return [
-        (x / max) * size,
-        (y / max) * size,
-        (z / max) * size
-      ];
+      return [x, y, z];
     };
   }
 
@@ -835,12 +864,7 @@ export class MeshMorpher {
     return (u, v) => {
       const theta = u * Math.PI * 2;
       const h = (v - 0.5) * height;
-
-      return [
-        radius * Math.cos(theta),
-        h,
-        radius * Math.sin(theta)
-      ];
+      return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
     };
   }
 
@@ -848,14 +872,8 @@ export class MeshMorpher {
     return (u, v) => {
       const theta = u * Math.PI * 2;
       const phi = v * Math.PI * 2;
-
       const r = majorRadius + minorRadius * Math.cos(phi);
-
-      return [
-        r * Math.cos(theta),
-        minorRadius * Math.sin(phi),
-        r * Math.sin(theta)
-      ];
+      return [r * Math.cos(theta), minorRadius * Math.sin(phi), r * Math.sin(theta)];
     };
   }
 
@@ -863,57 +881,40 @@ export class MeshMorpher {
     return (u, v) => {
       const theta = u * Math.PI * 2;
       const h = v * height;
-      const r = baseRadius * (1 - v); // Radius shrinks with height
-
-      return [
-        r * Math.cos(theta),
-        h,
-        r * Math.sin(theta)
-      ];
+      const r = baseRadius * (1 - v);
+      return [r * Math.cos(theta), h, r * Math.sin(theta)];
     };
   }
 
   static capsule(radius = 0.5, height = 2) {
+    const halfH = height / 2;
     return (u, v) => {
-      const theta = u * Math.PI * 2;
-
-      // v = v;
       if(v < 0.25) {
-        // Bottom hemisphere
-        const phi = (v / 0.25) * Math.PI * 0.5 + Math.PI * 0.5;
+        const theta = -u * Math.PI * 2;
+        const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) - height / 2,
+          radius * Math.cos(phi) - halfH,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else if(v > 0.75) {
-        // Top hemisphere
-        const phi = ((v - 0.75) / 0.25) * Math.PI * 0.5;
+        const theta = -u * Math.PI * 2;
+        const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) + height / 2,
+          radius * Math.cos(phi) + halfH,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else {
-        // Cylinder middle
-        const h = ((v - 0.25) / 0.5) * height - height / 2;
-        return [
-          radius * Math.cos(theta),
-          h,
-          radius * Math.sin(theta)
-        ];
+        const theta = u * Math.PI * 2;
+        const y = ((v - 0.25) / 0.5) * height - halfH;
+        return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
       }
     };
   }
 
   static plane(size = 1) {
-    return (u, v) => {
-      return [
-        (u - 0.5) * size,
-        0,
-        (v - 0.5) * size
-      ];
-    };
+    return (u, v) => [(u - 0.5) * size, 0, (v - 0.5) * size];
   }
 
   static mobius(radius = 1, width = 0.5) {
@@ -921,7 +922,6 @@ export class MeshMorpher {
       const theta = u * Math.PI * 2;
       const t = (v - 0.5) * width;
       const halfTheta = theta / 2;
-
       return [
         (radius + t * Math.cos(halfTheta)) * Math.cos(theta),
         t * Math.sin(halfTheta),
@@ -932,31 +932,41 @@ export class MeshMorpher {
 
   static pyramid(size = 1) {
     return (u, v) => {
-
       const angle = u * Math.PI * 2;
-
       const r = (1 - v) * size;
-
-      const x = r * Math.cos(angle);
-      const z = r * Math.sin(angle);
-      const y = v * size;
-
-      return [x, y, z];
+      return [r * Math.cos(angle), v * size, r * Math.sin(angle)];
     };
   }
 
   static supershape(size = 1) {
     return (u, v) => {
-
-      const theta = u * Math.PI * 2;
+      const theta = -u * Math.PI * 2;
       const phi = v * Math.PI;
-
       const r = size * (0.5 + 0.5 * Math.sin(5 * theta) * Math.sin(3 * phi));
+      return [
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
 
-      const x = r * Math.sin(phi) * Math.cos(theta);
-      const y = r * Math.cos(phi);
-      const z = r * Math.sin(phi) * Math.sin(theta);
-
+  static star(radius = 1, innerRadius = 0.4, depth = 0.3) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const r = radius * (0.7 + 0.3 * Math.cos(5 * theta));
+      let x, y, z;
+      if(v < 0.5) {
+        const lerp = v / 0.5;
+        x = r * Math.cos(theta) * lerp;
+        z = r * Math.sin(theta) * lerp;
+        y = depth * (1 - lerp);
+      } else {
+        const lerp = (1.0 - v) / 0.5;
+        x = r * Math.cos(theta) * lerp;
+        z = r * Math.sin(theta) * lerp;
+        y = -depth * (1 - lerp);
+      }
       return [x, y, z];
     };
   }
@@ -972,99 +982,201 @@ export class MeshMorpher {
 
   static circlePlane(radius = 1) {
     return (u, v) => {
-
       const angle = -u * Math.PI * 2;
       const r = -v * radius;
-
-      const x = r * Math.cos(angle);
-      const z = r * Math.sin(angle);
-
-      return [x, 0, z];
+      return [r * Math.cos(angle), 0, r * Math.sin(angle)];
     };
   }
 
   static icosahedron(radius = 1) {
     return (u, v) => {
-
       const theta = -u * Math.PI * 2;
       const phi = -v * Math.PI;
-
       let x = Math.sin(phi) * Math.cos(theta);
       let y = Math.cos(phi);
       let z = Math.sin(phi) * Math.sin(theta);
-
-      // create icosahedral distortion
       const f = Math.abs(x) + Math.abs(y) + Math.abs(z);
-
-      x /= f;
-      y /= f;
-      z /= f;
-
-      return [
-        x * radius,
-        y * radius,
-        z * radius
-      ];
+      x /= f; y /= f; z /= f;
+      return [x * radius, y * radius, z * radius];
     };
   }
 
   static diamond(size = 1) {
     return (u, v) => {
-
       const theta = u * Math.PI * 2;
-
       const y = (v - 0.5) * 2 * size;
-
       const r = size * (1 - Math.abs(v - 0.5) * 2);
-
-      return [
-        r * Math.cos(theta),
-        y,
-        r * Math.sin(theta)
-      ];
+      return [r * Math.cos(theta), y, r * Math.sin(theta)];
     };
   }
 
   static rock(radius = 1) {
     return (u, v) => {
-
       const theta = -u * Math.PI * 2;
       const phi = -v * Math.PI;
-
       let x = Math.sin(phi) * Math.cos(theta);
       let y = Math.cos(phi);
       let z = Math.sin(phi) * Math.sin(theta);
-
-      const noise =
-        0.2 * Math.sin(theta * 7) *
-        Math.cos(phi * 5);
-
+      const noise = 0.2 * Math.sin(theta * 7) * Math.cos(phi * 5);
       const r = radius + noise;
-
-      return [
-        x * r,
-        y * r,
-        z * r
-      ];
-    }
+      return [x * r, y * r, z * r];
+    };
   }
 
-  static star(radius = 1) {
+  static star3d(radius = 1) {
     return (u, v) => {
-
-      const theta = u * Math.PI * 2;
+      const theta = -u * Math.PI * 2;
       const phi = v * Math.PI;
-
       const spike = 1 + 0.3 * Math.sin(theta * 5);
-
       const r = radius * spike;
-
       return [
         r * Math.sin(phi) * Math.cos(theta),
         r * Math.cos(phi),
         r * Math.sin(phi) * Math.sin(theta)
       ];
-    }
+    };
   }
 
+  static galaxySpiral(scale = 10, arms = 3, twist = 2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radius = v;
+      const armOffset = (theta * arms) % (Math.PI * 2);
+      const r = radius * (1 + 0.2 * Math.sin(armOffset * twist));
+      const x = r * Math.cos(theta);
+      const y = 0.1 * radius * Math.sin(5 * theta);
+      const z = r * Math.sin(theta);
+      return [x * scale, y * scale, z * scale];
+    };
+  }
+
+  static littleStar(radius = 1, innerRadius = 0.4, depth = 0.2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const sector = (u * 10) % 2;
+      const lerp = sector > 1 ? 2 - sector : sector;
+      const r = innerRadius + (radius - innerRadius) * lerp;
+      const posX = r * Math.cos(theta);
+      const posZ = r * Math.sin(theta);
+      let x, y, z;
+      if(v < 0.5) {
+        const f = v / 0.5;
+        x = posX * f; z = posZ * f; y = depth * (1 - f);
+      } else {
+        const f = (1.0 - v) / 0.5;
+        x = posX * f; z = posZ * f; y = -depth * (1 - f);
+      }
+      return [x, y, z];
+    };
+  }
+
+  static flatStar(radius = 1, innerRadius = 0.2, thickness = 0.1) {
+    const func = (u, v) => {
+      const spikes = 5;
+      const theta = -u * Math.PI * 2;
+      const star = Math.cos(spikes * theta);
+      const r = innerRadius + (radius - innerRadius) * (star * 0.5 + 0.5);
+      const finalR = r * v;
+      return [finalR * Math.cos(theta), 0, finalR * Math.sin(theta)];
+    };
+    return {func, flat: true};
+  }
+
+  static klein(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      let x, y, z;
+      if(theta < Math.PI) {
+        x = 3 * Math.cos(theta) * (1 + Math.sin(theta)) +
+          (2 * (1 - Math.cos(theta) / 2)) * Math.cos(theta) * Math.cos(phi);
+        z = -8 * Math.sin(theta) -
+          (2 * (1 - Math.cos(theta) / 2)) * Math.sin(theta) * Math.cos(phi);
+      } else {
+        x = 3 * Math.cos(theta) * (1 + Math.sin(theta)) +
+          (2 * (1 - Math.cos(theta) / 2)) * Math.cos(phi + Math.PI);
+        z = -8 * Math.sin(theta);
+      }
+      y = (2 * (1 - Math.cos(theta) / 2)) * Math.sin(phi);
+      return [x * 0.1 * radius, y * 0.1 * radius, z * 0.1 * radius];
+    };
+  }
+
+  static shell(scale = 1) {
+    scale = scale / 4;
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const phi = -v * Math.PI * 2;
+      const r = 0.4 + Math.exp(-theta * 0.12);
+      const x = r * Math.cos(theta) * (1 + 0.3 * Math.cos(phi));
+      const y = r * Math.sin(theta) * (1 + 0.3 * Math.cos(phi));
+      const z = 0.3 * r * Math.sin(phi);
+      return [x * scale, z * scale, y * scale];
+    };
+  }
+
+  static rippleSphere(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const ripple = 1 + 0.2 * Math.sin(10 * theta) * Math.sin(6 * phi);
+      const r = radius * ripple;
+      return [
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+
+  static twistedTorus(R = 1, r = 0.3, twists = 3) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      const twist = phi + theta * twists;
+      return [
+        (R + r * Math.cos(twist)) * Math.cos(theta),
+        r * Math.sin(twist),
+        (R + r * Math.cos(twist)) * Math.sin(theta)
+      ];
+    };
+  }
+
+  static tornado(height = 2, radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const y = (v - 0.5) * height;
+      const r = Math.pow(v, 1.5) * radius;
+      return [r * Math.cos(theta), y, r * Math.sin(theta)];
+    };
+  }
+
+  static brain(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x = Math.sin(phi) * Math.cos(theta);
+      let y = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const wrinkle = 0.25 * Math.sin(theta * 6) * Math.sin(phi * 4);
+      const r = radius + wrinkle;
+      return [x * r, y * r, z * r];
+    };
+  }
+
+  static galaxyComposite(numStars = 500, arms = 4, twist = 2, scale = 20) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radial = v;
+      const arm = Math.floor(radial * arms);
+      const armOffset = (arm / arms) * Math.PI * 2;
+      const r = radial * (1 + 0.2 * Math.sin(theta * 5 + armOffset));
+      const y = 0.1 * radial * Math.sin(theta * 8);
+      const clusterOffsetX = 0.05 * Math.sin(armOffset + v * 12);
+      const clusterOffsetZ = 0.05 * Math.cos(armOffset + u * 12);
+      const x = (r * Math.cos(theta) + clusterOffsetX) * scale;
+      const z = (r * Math.sin(theta) + clusterOffsetZ) * scale;
+      return [x, y * scale, z];
+    };
+  }
 }

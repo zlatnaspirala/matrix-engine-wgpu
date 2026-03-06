@@ -8,6 +8,8 @@ import {fragmentWaterWGSL} from "../shaders/water/water-c.wgls";
 import {mirrorIlluminateFragmentWGSL} from "../shaders/fragment.mirror.wgsl";
 import {byId, LOG_FUNNY_ARCADE} from "./utils";
 import {fragmentWGSLGPT} from "../shaders/fragment.gpt.wgsl";
+import {fragmentWGSLNoCut} from "../shaders/fragment.wgsl.noCut";
+
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -340,7 +342,11 @@ export default class Materials {
       return fragmentWGSLMix1; // ?
     } else if(this.material.type === "mirror") {
       return mirrorIlluminateFragmentWGSL;
+    } else if(this.material.type === "free") {
+      return fragmentWGSLNoCut;
     }
+
+
     console.warn('Unknown material type:', this.material?.type);
     return fragmentWGSL;
   }
