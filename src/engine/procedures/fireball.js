@@ -54,16 +54,12 @@ export class FireballSystem {
     this.fireballMesh.position.y = fromPosition.y;
     this.fireballMesh.position.z = fromPosition.z;
     this.fireballMesh.position.setSpeed(FireballSystem.CONFIG.speed);
-
     this.projectiles.push({
       mesh: this.fireballMesh,
       target: target,
       spawnTime: performance.now(),
       alive: true,
     });
-
-    // Add to scene
-    // app.mainRenderBundle.push(fireballMesh);
   }
 
   update(deltaTime) {

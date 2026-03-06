@@ -1216,7 +1216,16 @@ let forestOfHollowBloodStartSceen = new _world.default({
 }, forestOfHollowBloodStartSceen => {
   if ('serviceWorker' in navigator) {
     if (location.hostname.indexOf('localhost') == -1) {
-      navigator.serviceWorker.register('cache.js');
+      navigator.serviceWorker.register('cache.js').then(registration => {
+        if (!navigator.serviceWorker.controller) {
+          console.log('Installing & caching for the first time');
+          forestOfHollowBloodStartSceen.fakeL = 450;
+          //
+        } else {
+          forestOfHollowBloodStartSceen.fakeL = 150;
+          console.log('Loading from cache as normal');
+        }
+      });
     } else {
       // RCSAccount
       navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -2130,10 +2139,10 @@ let forestOfHollowBloodStartSceen = new _world.default({
         progress += Math.random() * 3.5;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
-        counter.textContent = Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
+        counter.textContent = (app.fakeL > 150 ? "Installing" : "Loading") + Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
         let grayEffect = 30 / progress;
         (0, _utils.byId)('loader').style.filter = `grayscale(${grayEffect})`;
-        setTimeout(fakeProgress, 80 + Math.random() * 150);
+        setTimeout(fakeProgress, 80 + Math.random() * app.fakeL);
       } else {
         counter.textContent = app.label.get.letthegame + " - This is beta 1 version - no magic attack...";
         bar.style.boxShadow = "0 0 30px #00ff99";
@@ -27451,22 +27460,22 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
-    if (!this.bvh.sharedState) {
-      this.bvh.sharedState = {
-        emitAnimationEvent: false,
-        animationStarted: false,
-        currentFrame: 0,
-        timeAccumulator: 0,
-        animationFinished: false
-      };
-    }
+    // if(!this.bvh.sharedState) {
+    this.sharedState = {
+      emitAnimationEvent: false,
+      animationStarted: false,
+      currentFrame: 0,
+      timeAccumulator: 0,
+      animationFinished: false
+    };
+    // }
+
     this._emptyChannels = [];
     this.MAX_BONES = 100;
     //cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
-    this.sharedState = this.bvh.sharedState;
-    this.animationIndex = this.glb.animationIndex;
+    this.animationIndex = this.animationIndex;
     this.nodes = this.glb.nodes.map(n => ({
       ...n,
       translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),
@@ -28057,7 +28066,7 @@ class BVHPlayer extends _meshObj.default {
     }
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
-    this.animationIndex = this.glb.animationIndex;
+    this.animationIndex = this.animationIndex;
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     this.nodes = this.glb.nodes.map(n => ({
       ...n,
@@ -32057,12 +32066,16 @@ class MatrixStream {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
-        } else if (e.data.netRotX) {
+        } else if (e.data.netRotX || e.data.netRotX == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
-        } else if (e.data.netRotZ) {
+        } else if (e.data.netRotZ || e.data.netRotZ == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
         } else if (e.data.animationIndex || e.data.animationIndex == 0) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+          console.log(`play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+               e.data.animationIndex ${e.data.animationIndex}
+            
+            `);
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).playAnimationByIndex(e.data.animationIndex);
         }
       } catch (err) {
         console.info('mmo-err:', err);
@@ -33249,7 +33262,7 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   };
 }
 function computeWorldVertsAndAABB(object) {
-  const modelMatrix = object.getModelMatrix(object.position);
+  const modelMatrix = object.getModelMatrix(object.position, true);
   const worldVerts = [];
   for (let i = 0; i < object.mesh.vertices.length; i += 3) {
     const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
@@ -44859,16 +44872,13 @@ class FluxCodexVertex {
       select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
-
       // Populate scene objects
       if (spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
-      const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
-
+      // const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      // console.log('WORKS objects', spec.accessObject.length);
       spec.accessObject.forEach(obj => {
         const opt = document.createElement("option");
         opt.value = obj.name;
@@ -46617,7 +46627,7 @@ class FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
         accessObjectLiteral: "window.app?.mainRenderBundle",
-        exposeProps: ["name", "glb.glbJsonData.animations", "glb.animationIndex", "playAnimationByName", "playAnimationByIndex"]
+        exposeProps: ["name", "glb.glbJsonData.animations", "animationIndex", "playAnimationByName", "playAnimationByIndex"]
       }),
       getPosition: (id, x, y) => ({
         id,
@@ -51498,7 +51508,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
-    this.logLoopError = true;
+    this.logLoopError = false;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";

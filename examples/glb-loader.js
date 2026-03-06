@@ -134,7 +134,7 @@ export function loadGLBLoader() {
     function onGround(m) {
       TEST_ANIM.addLight();
       TEST_ANIM.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         envMapParams: {
           baseColorMix: 0.55,
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint

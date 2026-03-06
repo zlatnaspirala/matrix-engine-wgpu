@@ -2,6 +2,7 @@ import {mat4, vec3} from 'wgpu-matrix';
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import Behavior from './behavior';
 import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.instanced.wgsl';
+import {vertexMorphShadowWGSL, vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
 /**
  * @description
  * Spot light with shadow cast.
@@ -41,13 +42,15 @@ export class SpotLight {
     target = vec3.create(0, 0, -20),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
 
-    aspect = 1; // hot fix
+    aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {return "light" + indexx};
     this.fov = fov;
     this.aspect = 1;
     this.near = near;
     this.far = far;
+
+    this.lightDinamic = true;
 
     this.camera = camera;
     this.inputHandler = inputHandler;
@@ -92,7 +95,7 @@ export class SpotLight {
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
-      cullMode: 'back', // for front interest border drawen shadows !
+      cullMode: 'back', // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     }
 
@@ -138,11 +141,9 @@ export class SpotLight {
     this.shadowBindGroup = [];
 
     this.getShadowBindGroup = (mesh, index) => {
-
-      if(this.shadowBindGroupContainer[index]) {
+      if(this.shadowBindGroupContainer[index] && this.lightDinamic == false) {
         return this.shadowBindGroupContainer[index];
       }
-
       this.shadowBindGroupContainer[index] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
@@ -197,6 +198,16 @@ export class SpotLight {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
       ],
+    });
+
+    this.modelBindGroupLayoutMorph = this.device.createBindGroupLayout({
+      label: 'modelBindGroupLayout light [morph]',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // model
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // bones
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // vertexAnim
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}  // morphBlend
+      ]
     });
 
     this.shadowPipeline = this.device.createRenderPipeline({
@@ -273,6 +284,9 @@ export class SpotLight {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
+        depthBias: 2,
+        depthBiasSlopeScale: 2,
+        depthBiasClamp: 0
       },
       primitive: this.primitive,
     });
@@ -301,7 +315,7 @@ export class SpotLight {
               },
             ],
           },
-           // ✅ ADD @location(1) - normal
+          // ✅ ADD @location(1) - normal
           {
             arrayStride: 12,
             attributes: [
@@ -353,6 +367,41 @@ export class SpotLight {
         depthBias: 2,              // Constant bias (try 1-4)
         depthBiasSlopeScale: 2.0,
         format: 'depth32float',
+        depthBiasClamp: 0
+      },
+      primitive: this.primitive,
+    });
+
+    // 4. NEW MORPH PIPELINE - Added to handle procedural mesh shadows
+    this.shadowPipelineMorph = this.device.createRenderPipeline({
+      label: 'shadowPipeline light [MORPH]',
+      layout: this.device.createPipelineLayout({
+        label: 'pipelineLayout light [morph]',
+        bindGroupLayouts: [
+          this.uniformBufferBindGroupLayout,
+          this.modelBindGroupLayoutMorph,
+        ],
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: vertexMorphShadowWGSL, // Use the morphing shader logic
+        }),
+        // IMPORTANT: Use the 5-buffer layout defined in your ProceduralMeshObj
+        buffers: [
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]}, // posA
+          {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}, // nrmA
+          {arrayStride: 8, attributes: [{shaderLocation: 2, offset: 0, format: "float32x2"}]}, // uv
+          {arrayStride: 12, attributes: [{shaderLocation: 6, offset: 0, format: "float32x3"}]}, // posB
+          {arrayStride: 12, attributes: [{shaderLocation: 7, offset: 0, format: "float32x3"}]}, // nrmB
+        ]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float',
+        depthBias: 10,
+        depthBiasSlopeScale: 5.0,
+        depthBiasClamp: 0.05
       },
       primitive: this.primitive,
     });
@@ -361,7 +410,7 @@ export class SpotLight {
       // You can cache it per mesh to avoid recreating each frame
       if(!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
       const index = mesh._lightBindGroupIndex || 0;
-      if(this.mainPassBindGroupContainer[index]) {
+      if(this.mainPassBindGroupContainer[index] && this.lightDinamic == false) {
         return this.mainPassBindGroupContainer[index];
       }
       this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
@@ -380,10 +429,8 @@ export class SpotLight {
       });
       return this.mainPassBindGroupContainer[index];
     }
-
     // Only osc values +-
     this.behavior = new Behavior();
-
     // put here only func
     this.updater = [];
   }
@@ -391,8 +438,7 @@ export class SpotLight {
   update() {
     this.updater.forEach((update) => {update(this)})
     this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    const target = vec3.add(this.position, this.direction);
-    this.viewMatrix = mat4.lookAt(this.position, target, this.up);
+    this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
 

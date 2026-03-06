@@ -1221,57 +1221,54 @@ export class FullscreenManager {
 
 export function alignTo256(n) {return Math.ceil(n / 256) * 256;}
 
-// export let ADDITIVE_BLEND_CONFIGURATIONS = {
-//   color: {
-//                 srcFactor: 'src-alpha', // This makes intensity scale correctly
-//                 dstFactor: 'one',       // This is the "Additive" part
-//                 operation: 'add',
-//               },
-//               alpha: {
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//                 operation: 'add',
-//               },
-//               color: {
-//                 // Result = (ShaderColor * ShaderAlpha) + (DestColor * 1)
-//                 operation: 'add',
-//                 srcFactor: 'src-alpha',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 // Keeps the background alpha as is
-//                 operation: 'add',
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//               }
-//               color: {
-//                 operation: 'add',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one-minus-src-alpha',
-//               },
-//               alpha: {
-//                 operation: 'add',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one-minus-src-alpha',
-//               }
-//               color: {
-//                 operation: 'add',
-//                 srcFactor: 'one-minus-dst-color',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 operation: 'add',
-//                 srcFactor: 'zero',
-//                 dstFactor: 'one',
-//               }
-//               color: {
-//                 operation: 'max', // Take whichever is brighter
-//                 srcFactor: 'one',
-//                 dstFactor: 'one',
-//               },
-//               alpha: {
-//                 operation: 'max',
-//                 srcFactor: 'one',
-//                 dstFactor: 'one',
-//               }
-// }
+export const geometryTypes = {
+  "quad": "quad",
+  "cube": "cube",
+  "sphere": "sphere",
+  "pyramid": "pyramid",
+  "star": "star",
+  "circle": "circle",
+  "diamond": "diamond",
+  "rock": "rock",
+  "meteor": "meteor",
+  "thunder": "thunder",
+  "shard": "shard",
+  "circlePlane": "circlePlane",
+  "ring": "ring",
+  "icosahedron": "icosahedron",
+  // "dodecahedron": "dodecahedron",
+  "torusKnot": "torusKnot",
+  "mobius": "mobius",
+  "crystal": "crystal",
+  "starPrism": "starPrism",
+  "crescent": "crescent",
+  "pyramidFractal": "pyramidFractal",
+};
+
+export const geoTypesForMorph = {
+  cube: "cube",
+  sphere: "sphere",
+  mobius: "mobius",
+  cylinder: "cylinder",
+  plane: "plane",
+  capsule: "capsule",
+  cone: "cone",
+  torus: "torus",
+  wavePlane: "wavePlane",
+  supershape: "supershape",
+  pyramid: "pyramid",
+  diamond: "diamond",
+  icosahedron: "icosahedron",
+  circlePlane: "circlePlane",
+  rock: "rock",
+  star: "star",
+  star3d: "star3d",
+  littleStar: "littleStar",
+  flatStar: "flatStar",
+  klein: "klein",
+  shell: "shell",
+  rippleSphere: "rippleSphere",
+  twistedTorus: "twistedTorus",
+  tornado: "tornado",
+  galaxySpiral: "galaxySpiral"
+};

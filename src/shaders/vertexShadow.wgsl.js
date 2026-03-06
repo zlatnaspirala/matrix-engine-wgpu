@@ -4,7 +4,6 @@ const MAX_BONES = 100u;
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
 }
 
 struct Model {

@@ -604,10 +604,10 @@ export class HUD {
         progress += Math.random() * 4;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
-        counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        counter.textContent = "Prepare" + " gameplay " + Math.floor(progress) + '%';
         let grayEffect = 30 / progress;
         loader.style.filter = `grayscale(${grayEffect})`;
-        setTimeout(fakeProgress, 80 + Math.random() * 150);
+        setTimeout(fakeProgress, 80 + Math.random() * 170);
       } else {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";

@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {LOG_MATRIX} from "../src/engine/utils.js";
-// import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
+import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
@@ -22,20 +22,20 @@ export var loadObjFile = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
-        {scale: [20, 1, 20]})
+        {scale: [30, 0.5, 30]})
     })
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
-          baseColorMix: 0.95,
+          baseColorMix: 0.5,
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
+          reflectivity: 0.4,               // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
           illuminateStrength: 0.1,          // Gentle rim
           illuminatePulse: 0.001,             // No pulse (static)
@@ -43,7 +43,7 @@ export var loadObjFile = function() {
           envLodBias: 2.5,
           usePlanarReflection: false,  // ✅ Env map mode
         },
-        name: 'ground',
+        name: 'floor',
         mesh: m.cube,
         physics: {
           enabled: false,
@@ -57,70 +57,95 @@ export var loadObjFile = function() {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
-        position: {x: 0, y: 3, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
-        name: 'cube1',
-        mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.2, // normal mix
-          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          reflectivity: 0.95,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.4,          // Gentle rim
-          illuminatePulse: 0.001,             // No pulse (static)
-          fresnelPower: 5.0,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,  // ✅ Env map mode
-        },
-        physics: {
-          enabled: false,
-          geometry: "Cube",
-        },
-        // pointerEffect: {
-        //   // enabled: true,
-        //   // flameEffect: true,
-        //   // flameEmitter: true,
-        // },
-        raycast: {enabled: true, radius: 2}
-      })
-
-      loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         envMapParams: {
-          baseColorMix: 0.0, // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+          baseColorMix: 0.0,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
           reflectivity: 0.25,               // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
           illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,             // No pulse (static)
+          illuminatePulse: 0.01,            // No pulse (static)
           fresnelPower: 2.0,                // Medium-sharp edge
           envLodBias: 1.5,
-          usePlanarReflection: false,  // ✅ Env map mode
+          usePlanarReflection: false,       // ✅ Env map mode
         },
-        name: 'ball1',
+        name: 'sky',
         mesh: m.ball,
         physics: {
           enabled: false,
           geometry: "Sphere"
         }
-      })
+      });
+      // let test = MeshMorpher.compose(
+      //   {shape: MeshMorpher.cube(1), offset: [-2, 0, 0]},
+      //   {shape: MeshMorpher.cube(1), offset: [2, 0, 0]},
+      // );
 
-      console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
+      // loadObjFile.addProceduralMeshObj({
+      //     material: {type: 'power'},
+      //     position: {x: 0 , y: 5, z: -15},
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     scale: [1, 1, 1],
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //     meshA: test,
+      //     meshB: test,
+      //     name: `morph_1`,
+      //     physics: {
+      //       enabled: false,
+      //       geometry: "Sphere"
+      //     }
+      //   });
+      const meshObjects = [];
+      const spacing = 3;
+      const keys = Object.keys(geoTypesForMorph);
+      let col = 0;
+      let row = 0;
+      for(let i = 0;i < keys.length - 1;i++) {
+        const typeA = keys[i];
+        const typeB = keys[i + 1];
+        const obj = loadObjFile.addProceduralMeshObj({
+          material: {type: 'free'},
+          position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
+          rotation: {x: 0, y: 0, z: 0},
+          scale: [1, 1, 1],
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: ['./res/textures/cube-g1_low.webp'],
+          meshA: MeshMorpher[typeA](1),
+          meshB: MeshMorpher[typeB](1),
+          name: `morph_${typeA}_to_${typeB}`,
+          physics: {enabled: false, geometry: "Sphere"}
+        });
+        meshObjects.push(obj);
+        col++;
+        if(col % 4 === 0) {row++; col = 0;}
+      }
+      const runChain = (index) => {
+        if(index >= meshObjects.length) return; // all done
+        meshObjects[index].morphTo(1.0, 2000, () => {
+          runChain(index + 1);
+        });
+      };
 
+      runChain(0);
       loadObjFile.addLight();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
-      })
-      loadObjFile.lightContainer[0].position[1] = 11;
+      loadObjFile.lightContainer[0].intensity = 10;
+
+      loadObjFile.activateBloomEffect();
+      // loadObjFile.lightContainer[0].behavior.setOsc0(-5, 5, 0.1)
+      // loadObjFile.lightContainer[0].behavior.value_ = -1;
+      // loadObjFile.lightContainer[0].updater.push((light) => {
+      //   light.position[0] = light.behavior.setPath0()
+      //   light.target[0] = light.behavior.setPath0()
+      // })
+
+      loadObjFile.lightContainer[0].position = [0, 18, -10];
+      loadObjFile.lightContainer[0].target = [0, 0, -10];
+
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();

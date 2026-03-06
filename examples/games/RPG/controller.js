@@ -1,4 +1,4 @@
-import {computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
+import { addRaycastsAABBListener, computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
 import {byId, LOG_MATRIX, mb} from "../../../src/engine/utils.js";
 import {followPath} from "./nav-mesh.js";
@@ -7,13 +7,13 @@ export class Controller {
 
   ignoreList = ['ground', 'mouseTarget_Circle'];
   selected = [];
-
   nav = null;
-  // ONLY LOCAL
   heroe_bodies = null;
 
+  // Must be same init !!!
   // incorporate with automated 'close-distance'
-  distanceForAction = 36;
+  distanceForAction     = 36;
+  distanceForLongAction = 36;
 
   distanceForLongAction = 36;
 
@@ -50,10 +50,9 @@ export class Controller {
       }
     });
 
-    addRaycastsListener(undefined, 'click');
+    addRaycastsAABBListener(undefined, 'click');
 
     this.canvas.addEventListener("ray.hit.event", (e) => {
-      
       const {hitObject, hitPoint, button, eventName} = e.detail;
 
       console.log('ray.hit.event detected : ', hitObject.name);
@@ -102,14 +101,14 @@ export class Controller {
         // after all check is it eneimy
         this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
-        // 37 LIMIT FOR ATTACH
         // cases for magic ->>>>>>>>>>>>>>>>>>>>>
-        if (this.core.localHero.name == 'MariaSword') {
+        // distance attack
+        if(testDistance < this.distanceForLongAction) {
           console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]")
           this.core.localHero.setAttack(e.detail.hitObject);
           return;
         }
-
+        // close contact
         if(testDistance < this.distanceForAction) {
           console.log("this.core.localHero.setAttack [e.detail.hitObject]")
           this.core.localHero.setAttack(e.detail.hitObject);

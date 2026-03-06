@@ -216,24 +216,16 @@ export class Character extends Hero {
           if(id == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             // subMesh
-
-            // test   fot magic
+            // test fot magic
             // subMesh.updateMaxInstances(5);
             // subMesh.updateInstances(5);
             // subMesh.trailAnimation.enabled = true;
-
-            console.log("on player cast ***************************************");
-            subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
-            this.core.autoUpdate.push(subMesh.fireballSystem);
-          } else if(id == 1) {
-
-            // check by hero TEST
-            if(subMesh.name.includes('Maria') == true) {
-              // console.log("on player cast MARIA SWORD ", subMesh.name);
-              // subMesh.playAnimationByIndex = array[id-1].playAnimationByIndex;
-
+            if(app.localHero.name == "MariaSword") {
+              console.log("Cast only for long distance attackers...");
+              subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
+              subMesh.fireballSystem.fireballMesh.effects.flameEmitter.recreateVertexDataRND(10);
+              this.core.autoUpdate.push(subMesh.fireballSystem);
             }
-
           }
 
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
@@ -431,10 +423,13 @@ export class Character extends Hero {
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
     // test fireball
-    this.heroe_bodies[0].fireballSystem.spawn(
-      this.heroe_bodies[0].position,
-      this.heroFocusAttackOn
-    );
+    // or bind from exstern becouse can be massive in future !!!!!
+    if(this.core.RPG.distanceForAction < this.core.RPG.distanceForLongAction) {
+      this.heroe_bodies[0].fireballSystem.spawn(
+        this.heroe_bodies[0].position,
+        this.heroFocusAttackOn
+      );
+    }
   }
 
   setWalkCreep(creepIndex) {
@@ -744,7 +739,6 @@ export class Character extends Hero {
 
     addEventListener('onMouseTarget', (e) => {
       if(this.core.RPG.selected.includes(this.heroe_bodies[0])) {
-        // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z)
         if(e.detail.type == "attach") {
           this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [1, 0, 0, 0.9];

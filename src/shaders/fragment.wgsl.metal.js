@@ -143,30 +143,56 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let V = normalize(scene.cameraPos - input.fragPos);
     var Lo = vec3f(0.0);
     
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let L = normalize(spotlights[i].position - input.fragPos);
-        let H = normalize(V + L);
-        let distance = length(spotlights[i].position - input.fragPos);
-        let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 
-        let NdotL = max(dot(N, L), 0.0);
+    let L = normalize(spotlights[i].position - input.fragPos);
+    let H = normalize(V + L);
 
-        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+    // let NdotL = max(dot(N, L), 0.0);
+let NdotL = max(dot(N, L), 0.0);
+let validLight = select(0.0, 1.0, NdotL > 0.0);
 
-        let NDF = distributionGGX(N, H, materialData.roughness);
-        let G   = geometrySmith(N, V, L, materialData.roughness);
-        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    // ---- SHADOW SPACE ----
+    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+    let p  = sc.xyz / sc.w;
 
-        let kS = F;
-        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+    let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+    let depthRef = p.z;
 
-        let diffuse  = kD * materialData.baseColor / PI;
-        let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+    let visibility = sampleShadow(
+        uv,
+        i32(i),
+        depthRef,
+        N,
+        L
+    );
 
-        // Combine diffuse + specular and multiply by NdotL and radiance
-        Lo += (diffuse + specular) * radiance * NdotL;
-    }
+    let inFrustum =
+        p.z >= 0.0 && p.z <= 1.0 &&
+        p.x >= -1.0 && p.x <= 1.0 &&
+        p.y >= -1.0 && p.y <= 1.0;
+
+    let shadowFactor = select(1.0, visibility, inFrustum);
+
+    // ---- PBR ----
+    let NDF = distributionGGX(N, H, materialData.roughness);
+    let G   = geometrySmith(N, V, L, materialData.roughness);
+
+    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+
+    let diffuse  = kD * materialData.baseColor / PI;
+    let specular = (NDF * G * F) /
+                   (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+
+    let radiance = spotlights[i].color * spotlights[i].intensity;
+
+    // Lo += (diffuse + specular) * radiance * NdotL * shadowFactor;
+    Lo += (diffuse + specular) * radiance * NdotL * shadowFactor * validLight;
+}
 
     let ambient = scene.globalAmbient * materialData.baseColor;
     var color = ambient + Lo;

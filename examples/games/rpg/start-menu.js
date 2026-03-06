@@ -60,7 +60,16 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   if('serviceWorker' in navigator) {
     if(location.hostname.indexOf('localhost') == -1) {
-      navigator.serviceWorker.register('cache.js');
+      navigator.serviceWorker.register('cache.js').then(registration => {
+        if(!navigator.serviceWorker.controller) {
+          console.log('Installing & caching for the first time');
+          forestOfHollowBloodStartSceen.fakeL = 450;
+          //
+        } else {
+          forestOfHollowBloodStartSceen.fakeL = 150;
+          console.log('Loading from cache as normal');
+        }
+      });
     } else {
       // RCSAccount
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -565,7 +574,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   app.lightContainer[0].position[2] = 1;
   app.lightContainer[0].position[1] = 50;
   app.lightContainer[0].position[0] = 0;
-  app.lightContainer[0].target = [0 , 0 , -10]
+  app.lightContainer[0].target = [0, 0, -10]
   app.lightContainer[0].intensity = 40;
 
   app.activateBloomEffect();
@@ -994,10 +1003,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         progress += Math.random() * 3.5;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
-        counter.textContent = Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
+        counter.textContent = (app.fakeL > 150 ? "Installing" : "Loading") + Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
         let grayEffect = 30 / progress;
         byId('loader').style.filter = `grayscale(${grayEffect})`;
-        setTimeout(fakeProgress, 80 + Math.random() * 150);
+        setTimeout(fakeProgress, 80 + Math.random() * app.fakeL);
       } else {
         counter.textContent = app.label.get.letthegame + " - This is beta 1 version - no magic attack...";
         bar.style.boxShadow = "0 0 30px #00ff99";
