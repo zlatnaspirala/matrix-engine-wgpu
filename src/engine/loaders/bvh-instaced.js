@@ -50,7 +50,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
-    // if(!this.bvh.sharedState) {
+
     this.sharedState = {
       emitAnimationEvent: false,
       animationStarted: false,
@@ -58,7 +58,12 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       timeAccumulator: 0,
       animationFinished: false
     };
-    // }
+
+    this.animEndEvent = new CustomEvent(`animationEnd-${this.name}`, {
+      detail: {
+        animationName: this.glb.glbJsonData.animations[this.animationIndex].name
+      }
+    });
 
     this._emptyChannels = [];
     this.MAX_BONES = 100;
@@ -235,11 +240,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if(this.animationIndex == null) this.animationIndex = 0;
-        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
-          detail: {
-            animationName: this.glb.glbJsonData.animations[this.animationIndex].name
-          }
-        }))
+        dispatchEvent(this.animEndEvent);
       }, inTime * 1000)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
@@ -249,10 +250,10 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
           const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
           this.updateSingleBoneCubeAnimation(
             this.glb.glbJsonData.animations[this.animationIndex],
-            this.nodes,   // ← same nodes, no clone
-            currentTime,      // ← only this changes per instance
+            this.nodes,       // ← same nodes, no clone
+            currentTime,
             this._boneMatrices,
-            i                 // ← writes to correct buffer slot
+            i
           );
         }
       } else {
