@@ -9,6 +9,7 @@ import {mirrorIlluminateFragmentWGSL} from "../shaders/fragment.mirror.wgsl";
 import {byId, LOG_FUNNY_ARCADE} from "./utils";
 import {fragmentWGSLGPT} from "../shaders/fragment.gpt.wgsl";
 import {fragmentWGSLNoCut} from "../shaders/fragment.wgsl.noCut";
+import {fountainFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
 
 /**
  * @description
@@ -344,6 +345,8 @@ export default class Materials {
       return mirrorIlluminateFragmentWGSL;
     } else if(this.material.type === "free") {
       return fragmentWGSLNoCut;
+    } else if(this.material.type === "fontana") {
+      return fountainFragmentWGSL;
     }
 
 

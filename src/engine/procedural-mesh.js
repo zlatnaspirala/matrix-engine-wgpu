@@ -5,6 +5,9 @@ import {GeometryFactory} from './geometry-factory';
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {VERTEX_ANIM_FLAGS} from './literals';
+import {FlameEmitter} from './effects/flame-emmiter';
+import {GizmoEffect} from './effects/gizmo';
+import {FlameEffect} from './effects/flame';
 
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -58,6 +61,8 @@ export default class ProceduralMeshObj extends Materials {
       onComplete: null
     };
 
+    this.pointerEffect = o.pointerEffect;
+
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -73,10 +78,18 @@ export default class ProceduralMeshObj extends Materials {
     this.scale = o.scale || [1, 1, 1];
     this.useScale = o.useScale || false;
     this.time = 0;
-    this.deltaTimeAdapter = 10;
+    this.deltaTimeAdapter = 1;
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.raycast = o.raycast || {enabled: false, radius: 2};
     this.pointerEffect = o.pointerEffect || {enabled: false};
+
+    if(typeof o.vertexWGSL !== 'undefined') {
+      this.vertexWGSL = o.vertexWGSL;
+    }
+
+    if(typeof o.fragmentWGSL !== 'undefined') {
+      this.fragmentWGSL = o.fragmentWGSL;
+    }
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
@@ -296,16 +309,38 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   _setupUniforms() {
+    // console.log('EEEEEEEEEEEEEEEEEEEEEEEEEEEE', this.pointerEffect)
+    this.effects = {};
+    if(this.pointerEffect && this.pointerEffect.enabled === true) {
+      let pf = navigator.gpu.getPreferredCanvasFormat();
+      if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
+        this.effects.flameEmitter = new FlameEmitter(this.device, 'rgba16float');
+      }
+      if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
+        this.effects.gizmoEffect = new GizmoEffect(this.device, 'rgba16float');
+      }
+      if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
+        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", 'torch');
+      }
+    }
+    //
     this.modelUniformBuffer = this.device.createBuffer({size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.sceneUniformBuffer = this.device.createBuffer({size: 192, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
 
     this.bonesBuffer = this.device.createBuffer({size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    this.vertexAnimParams = new Float32Array(32).fill(0);
-    this.vertexAnimBuffer = this.device.createBuffer({size: this.vertexAnimParams.byteLength, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-
     this.morphBlendBuffer = this.device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
+
+    // vertex Anim
+    this.vertexAnimParams = new Float32Array([
+      0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
+    ]);
+
+    this.vertexAnimBuffer = this.device.createBuffer({
+      label: "Vertex Animation Params",
+      size: this.vertexAnimParams.byteLength, // 128 bytes
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
 
     // Bind group layout for model + morph
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -348,18 +383,6 @@ export default class ProceduralMeshObj extends Materials {
     });
 
     this._sceneData = new Float32Array(48);
-
-    //
-    // vertex Anim
-    this.vertexAnimParams = new Float32Array([
-      0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
-    ]);
-
-    this.vertexAnimBuffer = this.device.createBuffer({
-      label: "Vertex Animation Params",
-      size: this.vertexAnimParams.byteLength, // 128 bytes
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
 
     this.vertexAnim = {
       enableWave: () => {
@@ -496,14 +519,14 @@ export default class ProceduralMeshObj extends Materials {
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: vertexMorphWGSL,
+          code: this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL,
         }),
         buffers: this.vertexBuffers,
       },
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.getMaterial(),
+          code: this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial(),
         }),
         targets: [{format: 'rgba16float', blend: undefined}],
         constants: {shadowDepthTextureSize: this.shadowDepthTextureSize},
@@ -527,14 +550,14 @@ export default class ProceduralMeshObj extends Materials {
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: vertexMorphWGSL,
+          code: this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL,
         }),
         buffers: this.vertexBuffers,
       },
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.getMaterial(),
+          code: this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial(),
         }),
         targets: [{
           format: 'rgba16float',
@@ -563,24 +586,30 @@ export default class ProceduralMeshObj extends Materials {
     }
   }
 
-  morphTo(targetBlend, duration = 1000, onComplete = () => {}) {
+  morphTo(targetBlend, duration = 1000, onComplete) {
     const safeDuration = Math.max(duration, 100);
-    this.morphAnimation = {
-      active: true,
-      startBlend: this.morphBlend,
-      targetBlend: Math.max(0, Math.min(1, targetBlend)),
-      duration: Math.max(duration, 100),
-      elapsed: 0,
-      onComplete: onComplete,
-      debug: this.morphAnimation.debug
-    };
+    this.morphAnimation.active = true;
+    this.morphAnimation.startBlend = this.morphBlend;
+    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend))
+    this.morphAnimation.duration = Math.max(duration, 100)
+    this.morphAnimation.elapsed = 0;
+    // this.morphAnimation = {
+    //   active: true,
+    //   startBlend: this.morphBlend,
+    //   targetBlend: Math.max(0, Math.min(1, targetBlend)),
+    //   duration: Math.max(duration, 100),
+    //   elapsed: 0,
+    //   debug: this.morphAnimation.debug
+    // };
+    if(onComplete) this.morphAnimation.onComplete = onComplete;
+
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
     this.morphAnimation.duration = safeDuration;
     this.morphAnimation.elapsed = 0;
-    this.morphAnimation.onComplete = onComplete;
-    if(this.morphAnimation.debug || true) {
+    // this.morphAnimation.onComplete = onComplete;
+    if(this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
   }
@@ -613,7 +642,7 @@ export default class ProceduralMeshObj extends Materials {
     if(t >= 1) {
       this.morphAnimation.active = false;
       if(this.morphAnimation.onComplete) {
-        this.morphAnimation.onComplete();
+        this.morphAnimation.onComplete(blend);
       }
     }
   }
@@ -683,9 +712,9 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   updateTime(time) {
-         this.time += time * this.deltaTimeAdapter;
-        this.vertexAnimParams[0] = this.time;
-        this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+    this.time += time * this.deltaTimeAdapter;
+    this.vertexAnimParams[0] = this.time;
+    this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
 
   drawElements(pass, lightContainer) {

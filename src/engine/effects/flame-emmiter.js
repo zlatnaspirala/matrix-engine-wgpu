@@ -37,7 +37,8 @@ export class FlameEmitter {
         color: [1, 0.3, 0, 0.1],
         time: 1,
         intensity: 1,
-        riseSpeed: 1
+        riseSpeed: 1,
+        tintStrength: 1
       });
     }
     this._initPipeline();
@@ -66,11 +67,21 @@ export class FlameEmitter {
 
   // not tested
   recreateVertexDataCrazzy(S) {
+    const memory1 = -randomFloatFromTo(0.1, 0.1 + S);
+    const memory11 = randomFloatFromTo(0.1, 0.1 + S);
+    const memory12 = randomFloatFromTo(0.1, 0.1 + S);
+    const memory13 = randomFloatFromTo(0.1, 0.1 + S);
+    const memory2 = randomFloatFromTo(0.4, 0.4 + S);
+    const memory21 = randomFloatFromTo(0.4, 0.4 + S);
+    const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
+    const memory23 = -randomFloatFromTo(0.4, 0.4 + S)
+    this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
+    console.info('crazzy flame emitter case data:', this.memoryCrazzyCase);
     const vertexData = new Float32Array([
-      -randomFloatFromTo(0.1, 0.1 + S), randomFloatFromTo(0.4, 0.4 + S), 0.0,
-      randomFloatFromTo(0.1, 0.1 + S), randomFloatFromTo(0.4, 0.4 + S), 0.0,
-      -randomFloatFromTo(0.1, 0.1 + S), -randomFloatFromTo(0.4, 0.4 + S), 0.0,
-      randomFloatFromTo(0.1, 0.1 + S), -randomFloatFromTo(0.4, 0.4 + S), 0.0,
+      memory1, memory2, 0.0,
+      memory11, memory21, 0.0,
+      memory12, memory22, 0.0,
+      memory13, memory23, 0.0,
     ]);
     if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;

@@ -61,20 +61,6 @@ const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
-// struct VertexInput {
-//   @location(0) position: vec3f,
-//   @location(1) normal: vec3f,
-//   @location(2) uv: vec2f,
-// };
-
-// struct VertexOutput {
-//   @location(0) shadowPos: vec4f,
-//   @location(1) fragPos: vec3f,
-//   @location(2) fragNorm: vec3f,
-//   @location(3) uv: vec2f,
-//   @builtin(position) Position: vec4f,
-// }
-
 struct VertexInput {
   @location(0) position:  vec3f,   // posA
   @location(1) normal:    vec3f,   // normalA
