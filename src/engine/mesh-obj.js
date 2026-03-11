@@ -55,6 +55,9 @@ export default class MEMeshObj extends Materials {
 
     this.time = 0;
     this.deltaTimeAdapter = 10;
+    //cache
+    this._camVP = mat4.create();
+    this._modelMatrix = mat4.identity();
 
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
@@ -692,7 +695,7 @@ export default class MEMeshObj extends Materials {
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
-        const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+        const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
@@ -715,7 +718,7 @@ export default class MEMeshObj extends Materials {
       };
 
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = mat4.identity();
+        let modelMatrix = mat4.identity(this._modelMatrix);
         mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if(this.itIsPhysicsBody) {
           mat4.rotate(modelMatrix,

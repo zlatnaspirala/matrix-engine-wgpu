@@ -25243,6 +25243,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
+    this._modelMatrix = _wgpuMatrix.mat4.identity();
+
+    //cache
+    this._camVP = _wgpuMatrix.mat4.create();
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -26046,7 +26050,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
-        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
+        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
@@ -26068,7 +26072,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
+        let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
         _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
           _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
@@ -30355,6 +30359,9 @@ class MEMeshObj extends _materials.default {
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
+    //cache
+    this._camVP = _wgpuMatrix.mat4.create();
+    this._modelMatrix = _wgpuMatrix.mat4.identity();
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
       // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
@@ -31033,7 +31040,7 @@ class MEMeshObj extends _materials.default {
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
-        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
+        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
@@ -31055,7 +31062,7 @@ class MEMeshObj extends _materials.default {
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = _wgpuMatrix.mat4.identity();
+        let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
         _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
           _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
@@ -32374,6 +32381,8 @@ class ProceduralMeshObj extends _materials.default {
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
+    //cache
+    this._camVP = _wgpuMatrix.mat4.create();
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
@@ -32401,6 +32410,7 @@ class ProceduralMeshObj extends _materials.default {
       onComplete: null
     };
     this.pointerEffect = o.pointerEffect;
+    this._modelMatrix = _wgpuMatrix.mat4.identity();
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -33091,7 +33101,7 @@ class ProceduralMeshObj extends _materials.default {
     }
   }
   getModelMatrix(pos, useScale = false) {
-    let modelMatrix = _wgpuMatrix.mat4.identity();
+    let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
     _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
     if (this.itIsPhysicsBody) {
       _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
@@ -33113,7 +33123,7 @@ class ProceduralMeshObj extends _materials.default {
     this.lastFrameMS = now;
     const camera = this.cameras[this.mainCameraParams.type];
     if (index === 0) camera.update(dt, this.inputHandler());
-    const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
+    const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
     this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
     this._sceneData[32] = camera.position[0];

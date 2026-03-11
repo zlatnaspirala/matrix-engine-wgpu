@@ -35,6 +35,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
 
+    this._modelMatrix = mat4.identity();
+
+    //cache
+    this._camVP = mat4.create();
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -774,7 +778,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
-        const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+        const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
@@ -797,7 +801,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       };
 
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = mat4.identity();
+        let modelMatrix = mat4.identity(this._modelMatrix);
         mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if(this.itIsPhysicsBody) {
           mat4.rotate(modelMatrix,

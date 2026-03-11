@@ -30,7 +30,8 @@ export default class ProceduralMeshObj extends Materials {
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
-
+    //cache
+    this._camVP = mat4.create();
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
@@ -62,7 +63,7 @@ export default class ProceduralMeshObj extends Materials {
     };
 
     this.pointerEffect = o.pointerEffect;
-
+    this._modelMatrix = mat4.identity();
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -648,7 +649,7 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   getModelMatrix(pos, useScale = false) {
-    let modelMatrix = mat4.identity();
+    let modelMatrix = mat4.identity(this._modelMatrix);
     mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
     if(this.itIsPhysicsBody) {
       mat4.rotate(modelMatrix,
@@ -682,7 +683,7 @@ export default class ProceduralMeshObj extends Materials {
     this.lastFrameMS = now;
     const camera = this.cameras[this.mainCameraParams.type];
     if(index === 0) camera.update(dt, this.inputHandler());
-    const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+    const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
     this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
     this._sceneData[32] = camera.position[0];
