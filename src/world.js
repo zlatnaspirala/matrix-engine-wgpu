@@ -749,6 +749,11 @@ export default class MatrixEngineWGPU {
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo4.meshA, meshB: geo4.meshB, resolutionU: geo4.resolutionU, resolutionV: geo4.resolutionV,
       fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      pointerEffect: {
+        enabled: true,
+        flameEffect: false,
+        flameEmitter: true,
+      }
     });
 
     const geo5 = fountainBasinWaterConfig(MeshMorpher);
@@ -764,9 +769,10 @@ export default class MatrixEngineWGPU {
     m1.rotation.setRotateY(1000);
     m4.setBlend(0.1);
 
-    m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-      i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-    })
+    setTimeout(() => {
+       m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+       i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
+    }) } , 1000)
 
     // m4.morphTo(1, 2000)
     // m4.morphAnimation.onComplete = (e) => {
@@ -858,27 +864,27 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
-    // const floatsPerLight = 36;
-    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   this._lightsData.set(
-    //     i < this.lightContainer.length
-    //       ? this.lightContainer[i].getLightDataBuffer()
-    //       : this._emptyLight,
-    //     i * floatsPerLight
-    //   );
-    // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
-    const floatsPerLight = 36; // not 20 anymore
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      if(i < this.lightContainer.length) {
-        const buf = this.lightContainer[i].getLightDataBuffer();
-        data.set(buf, i * floatsPerLight);
-      } else {
-        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-      }
+      this._lightsData.set(
+        i < this.lightContainer.length
+          ? this.lightContainer[i].getLightDataBuffer()
+          : this._emptyLight,
+        i * floatsPerLight
+      );
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
+    // const floatsPerLight = 36; // not 20 anymore
+    // const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+    //   if(i < this.lightContainer.length) {
+    //     const buf = this.lightContainer[i].getLightDataBuffer();
+    //     data.set(buf, i * floatsPerLight);
+    //   } else {
+    //     data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
+    //   }
+    // }
+    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
   }
 
   frameSinglePass = () => {
