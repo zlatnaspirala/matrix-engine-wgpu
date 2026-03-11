@@ -69,6 +69,11 @@ export class SpotLight {
       this.far
     );
 
+    this._lightBuffer = new Float32Array(36); // matches floatsPerLight = 36
+    this._tempSubtract = new Float32Array(3);  // scratch for vec3.subtract
+    this._viewMatrix = new Float32Array(16); // scratch for lookAt result
+    this._viewProjMatrix = new Float32Array(16); // scratch for multiply result
+
     this.setProjection = function(fov = (2 * Math.PI) / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
     }
@@ -444,21 +449,23 @@ export class SpotLight {
 
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
-    return new Float32Array([
-      ...this.position, 0.0,
-      ...this.direction, 0.0,
-      this.innerCutoff,
-      this.outerCutoff,
-      this.intensity,
-      0.0,
-      ...this.color,
-      0.0,
-      this.range,
-      this.ambientFactor,
-      this.shadowBias,
-      0.0,
-      ...m
-    ]);
+    const b = this._lightBuffer;
+    b.set(this.position, 0);
+    b[3] = 0.0;
+    b.set(this.direction, 4);
+    b[7] = 0.0;
+    b[8] = this.innerCutoff;
+    b[9] = this.outerCutoff;
+    b[10] = this.intensity;
+    b[11] = 0.0;
+    b.set(this.color, 12);
+    b[15] = 0.0;
+    b[16] = this.range;
+    b[17] = this.ambientFactor;
+    b[18] = this.shadowBias;
+    b[19] = 0.0;
+    b.set(m, 20);
+    return b;
   }
 
   // Setters

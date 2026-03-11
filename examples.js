@@ -34,6 +34,8 @@ byId('camera-texture').addEventListener("click", () => switchDemo('3'));
 byId('video-texture').addEventListener("click", () => switchDemo('4'));
 byId('objs-anim').addEventListener("click", () => switchDemo('5'));
 byId('glb-loader').addEventListener("click", () => switchDemo('6'));
+byId('procedural-mesh').addEventListener("click", () => switchDemo('7'));
+byId('fontana').addEventListener("click", () => switchDemo('8'));
 
 if(urlQ['demo'] === '1') {
   loadObjFile();

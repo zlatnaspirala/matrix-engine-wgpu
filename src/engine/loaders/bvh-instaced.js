@@ -59,13 +59,17 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       animationFinished: false
     };
 
-    this.animationIndex = this.animationIndex;
+    this.animationIndex = 0;
 
-    this.animEndEvent = new CustomEvent(`animationEnd-${this.name}`, {
+    // 
+    this.glb.glbJsonData.animations.forEach((anim, index) => {
+      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${anim.name}`, {
       detail: {
-        animationName: this.glb.glbJsonData.animations[this.animationIndex].name
+        animationName: this.glb.glbJsonData.animations[index].name
       }
     });
+    });
+    
 
     this._emptyChannels = [];
     this.MAX_BONES = 100;
@@ -241,7 +245,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if(this.animationIndex == null) this.animationIndex = 0;
-        dispatchEvent(this.animEndEvent);
+        dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + this.animationIndex]);
       }, inTime * 1000)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {

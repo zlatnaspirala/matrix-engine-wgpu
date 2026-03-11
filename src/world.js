@@ -111,7 +111,7 @@ export default class MatrixEngineWGPU {
     }
     this.editorAddOBJ = addOBJ.bind(this);
 
-    this.logLoopError = false;
+    this.logLoopError = true;
     // context select options
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -128,6 +128,8 @@ export default class MatrixEngineWGPU {
     // cache
     this._viewProjMatrix = mat4.create();
     this._invViewProj = mat4.create();
+
+
 
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
@@ -378,6 +380,10 @@ export default class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+
+
+    this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
+    this._emptyLight = new Float32Array(36); // reused for empty slots, stays zeroed
 
     this.SHADOW_RES = 1024;
     this.createTexArrayForShadows()
@@ -759,7 +765,7 @@ export default class MatrixEngineWGPU {
     m4.setBlend(0.1);
 
     m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-      i.color = [ 0 , randomIntFromTo(0,100) , randomIntFromTo(50,200)];
+      i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
     })
 
     // m4.morphTo(1, 2000)
@@ -852,6 +858,16 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
+    // const floatsPerLight = 36;
+    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+    //   this._lightsData.set(
+    //     i < this.lightContainer.length
+    //       ? this.lightContainer[i].getLightDataBuffer()
+    //       : this._emptyLight,
+    //     i * floatsPerLight
+    //   );
+    // }
+    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
     const floatsPerLight = 36; // not 20 anymore
     const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {

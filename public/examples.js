@@ -33,6 +33,8 @@ const switchDemo = id => {
 (0, _utils.byId)('video-texture').addEventListener("click", () => switchDemo('4'));
 (0, _utils.byId)('objs-anim').addEventListener("click", () => switchDemo('5'));
 (0, _utils.byId)('glb-loader').addEventListener("click", () => switchDemo('6'));
+(0, _utils.byId)('procedural-mesh').addEventListener("click", () => switchDemo('7'));
+(0, _utils.byId)('fontana').addEventListener("click", () => switchDemo('8'));
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
 } else if (urlQ['demo'] === '2') {
@@ -26407,6 +26409,11 @@ class SpotLight {
     this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(position, target, this.up);
     this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
+    this._lightBuffer = new Float32Array(36); // matches floatsPerLight = 36
+    this._tempSubtract = new Float32Array(3); // scratch for vec3.subtract
+    this._viewMatrix = new Float32Array(16); // scratch for lookAt result
+    this._viewProjMatrix = new Float32Array(16); // scratch for multiply result
+
     this.setProjection = function (fov = 2 * Math.PI / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
     };
@@ -26816,7 +26823,23 @@ class SpotLight {
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias, 0.0, ...m]);
+    const b = this._lightBuffer;
+    b.set(this.position, 0);
+    b[3] = 0.0;
+    b.set(this.direction, 4);
+    b[7] = 0.0;
+    b[8] = this.innerCutoff;
+    b[9] = this.outerCutoff;
+    b[10] = this.intensity;
+    b[11] = 0.0;
+    b.set(this.color, 12);
+    b[15] = 0.0;
+    b[16] = this.range;
+    b[17] = this.ambientFactor;
+    b[18] = this.shadowBias;
+    b[19] = 0.0;
+    b.set(m, 20);
+    return b;
   }
 
   // Setters
@@ -27421,11 +27444,15 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       timeAccumulator: 0,
       animationFinished: false
     };
-    this.animationIndex = this.animationIndex;
-    this.animEndEvent = new CustomEvent(`animationEnd-${this.name}`, {
-      detail: {
-        animationName: this.glb.glbJsonData.animations[this.animationIndex].name
-      }
+    this.animationIndex = 0;
+
+    // 
+    this.glb.glbJsonData.animations.forEach((anim, index) => {
+      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${anim.name}`, {
+        detail: {
+          animationName: this.glb.glbJsonData.animations[index].name
+        }
+      });
     });
     this._emptyChannels = [];
     this.MAX_BONES = 100;
@@ -27608,7 +27635,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if (this.animationIndex == null) this.animationIndex = 0;
-        dispatchEvent(this.animEndEvent);
+        dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + this.animationIndex]);
       }, inTime * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
@@ -53438,7 +53465,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
-    this.logLoopError = false;
+    this.logLoopError = true;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -53701,6 +53728,9 @@ class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
+    this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
+    this._emptyLight = new Float32Array(36); // reused for empty slots, stays zeroed
+
     this.SHADOW_RES = 1024;
     this.createTexArrayForShadows();
     this.mainDepthTexture = this.device.createTexture({
@@ -54388,6 +54418,16 @@ class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
   updateLights() {
+    // const floatsPerLight = 36;
+    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+    //   this._lightsData.set(
+    //     i < this.lightContainer.length
+    //       ? this.lightContainer[i].getLightDataBuffer()
+    //       : this._emptyLight,
+    //     i * floatsPerLight
+    //   );
+    // }
+    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
     const floatsPerLight = 36; // not 20 anymore
     const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
     for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
