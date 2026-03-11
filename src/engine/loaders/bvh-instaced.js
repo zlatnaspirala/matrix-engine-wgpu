@@ -59,6 +59,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       animationFinished: false
     };
 
+    this.animationIndex = this.animationIndex;
+
     this.animEndEvent = new CustomEvent(`animationEnd-${this.name}`, {
       detail: {
         animationName: this.glb.glbJsonData.animations[this.animationIndex].name
@@ -70,7 +72,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     //cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
-    this.animationIndex = this.animationIndex;
     this.nodes = this.glb.nodes.map(n => ({
       ...n,
       translation: n.translation ? n.translation.slice() : new Float32Array([0, 0, 0]),

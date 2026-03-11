@@ -20,7 +20,7 @@ export var loadObjFile = function() {
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj,
-        {scale: [2, 2, 2]})
+        {scale: [1, 1, 1]})
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,

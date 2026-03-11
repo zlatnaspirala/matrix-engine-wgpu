@@ -3,7 +3,7 @@ import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -623,7 +623,7 @@ export default class MatrixEngineWGPU {
     }
 
     if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
-    
+
     // ENTITY ARGS (for your engine's internal use)
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -733,7 +733,6 @@ export default class MatrixEngineWGPU {
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo3.meshA, meshB: geo3.meshB, resolutionU: geo3.resolutionU, resolutionV: geo3.resolutionV,
       fragmentWGSL: fountainCapFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
-      // fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
     });
 
     const geo4 = fountainCurtainConfig(MeshMorpher);
@@ -758,6 +757,10 @@ export default class MatrixEngineWGPU {
 
     m1.rotation.setRotateY(1000);
     m4.setBlend(0.1);
+
+    m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+      i.color = [ 0 , randomIntFromTo(0,100) , randomIntFromTo(50,200)];
+    })
 
     // m4.morphTo(1, 2000)
     // m4.morphAnimation.onComplete = (e) => {

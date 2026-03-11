@@ -4,8 +4,8 @@ import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
-export var loadObjFile = function() {
-  let loadObjFile = new MatrixEngineWGPU({
+export var fontana = function() {
+  let fontana = new MatrixEngineWGPU({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -28,7 +28,7 @@ export var loadObjFile = function() {
     })
 
     function onGround(m) {
-      loadObjFile.addMeshObj({
+      fontana.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -56,8 +56,8 @@ export var loadObjFile = function() {
     }
 
     function onLoadObj(m) {
-      loadObjFile.myLoadedMeshes = m;
-      loadObjFile.addMeshObj({
+      fontana.myLoadedMeshes = m;
+      fontana.addMeshObj({
         material: {type: 'mirror'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -83,7 +83,7 @@ export var loadObjFile = function() {
         }
       });
       // fontana
-      const obj = loadObjFile.addFontana({
+      const obj = fontana.addFontana({
         material: {type: 'free'},
         position: {x: 0, y: 4, z: -15} ,
         rotation: {x: 0, y: 0, z: 0},
@@ -95,21 +95,21 @@ export var loadObjFile = function() {
         raycast: {enabled: true, radius: 1.5}
       });
 
-      loadObjFile.addLight();
-      loadObjFile.lightContainer[0].intensity = 10;
+      fontana.addLight();
+      fontana.lightContainer[0].intensity = 10;
 
-      loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push((light) => {
+      fontana.activateBloomEffect();
+      fontana.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
+      fontana.lightContainer[0].behavior.value_ = -1;
+      fontana.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
         light.target[0] = light.behavior.setPath0()
       })
 
-      loadObjFile.lightContainer[0].position = [0, 17, -10];
-      loadObjFile.lightContainer[0].target = [0, 0, -10];
+      fontana.lightContainer[0].position = [0, 17, -10];
+      fontana.lightContainer[0].target = [0, 0, -10];
 
-      var TEST = loadObjFile.getSceneObjectByName('cube2');
+      var TEST = fontana.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();
         let cube1 = app.getSceneObjectByName('cube1')
@@ -122,12 +122,12 @@ export var loadObjFile = function() {
       }, 800);
     }
 
-    loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
+    fontana.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
 
     });
 
   })
-  window.app = loadObjFile;
+  window.app = fontana;
 }

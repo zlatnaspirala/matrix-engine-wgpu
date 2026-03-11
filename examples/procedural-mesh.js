@@ -4,8 +4,8 @@ import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
-export var loadObjFile = function() {
-  let loadObjFile = new MatrixEngineWGPU({
+export var procMesh = function() {
+  let procMesh = new MatrixEngineWGPU({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -28,7 +28,7 @@ export var loadObjFile = function() {
     })
 
     function onGround(m) {
-      loadObjFile.addMeshObj({
+      procMesh.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -56,8 +56,8 @@ export var loadObjFile = function() {
     }
 
     function onLoadObj(m) {
-      loadObjFile.myLoadedMeshes = m;
-      loadObjFile.addMeshObj({
+      procMesh.myLoadedMeshes = m;
+      procMesh.addMeshObj({
         material: {type: 'mirror'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -88,7 +88,7 @@ export var loadObjFile = function() {
         {shape: MeshMorpher.cube(1), offset: [2, 0, 0]},
       );
 
-      loadObjFile.addProceduralMeshObj({
+      procMesh.addProceduralMeshObj({
         material: {type: 'power'},
         position: {x: 0, y: 5, z: -15},
         rotation: {x: 0, y: 0, z: 0},
@@ -111,7 +111,7 @@ export var loadObjFile = function() {
       for(let i = 0;i < keys.length - 1;i++) {
         const typeA = keys[i];
         const typeB = keys[i + 1];
-        const obj = loadObjFile.addProceduralMeshObj({
+        const obj = procMesh.addProceduralMeshObj({
           material: {type: 'free'},
           position: {x: col * spacing - 5, y: 1, z: -15 + row * spacing},
           rotation: {x: 0, y: 0, z: 0},
@@ -138,21 +138,21 @@ export var loadObjFile = function() {
 
       runChain(0);
 
-      loadObjFile.addLight();
-      loadObjFile.lightContainer[0].intensity = 10;
+      procMesh.addLight();
+      procMesh.lightContainer[0].intensity = 10;
 
-      // loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push((light) => {
+      // procMesh.activateBloomEffect();
+      procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
+      procMesh.lightContainer[0].behavior.value_ = -1;
+      procMesh.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
         light.target[0] = light.behavior.setPath0()
       })
 
-      loadObjFile.lightContainer[0].position = [0, 17, -10];
-      loadObjFile.lightContainer[0].target = [0, 0, -10];
+      procMesh.lightContainer[0].position = [0, 17, -10];
+      procMesh.lightContainer[0].target = [0, 0, -10];
 
-      var TEST = loadObjFile.getSceneObjectByName('cube2');
+      var TEST = procMesh.getSceneObjectByName('cube2');
       setTimeout(() => {
         let cube1 = app.getSceneObjectByName('cube1')
         // cube1.effects.flameEffect.intensity = 100;
@@ -164,12 +164,12 @@ export var loadObjFile = function() {
       }, 800);
     }
 
-    loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
+    procMesh.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
 
     });
 
   })
-  window.app = loadObjFile;
+  window.app = procMesh;
 }
