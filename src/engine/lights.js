@@ -145,8 +145,9 @@ export class SpotLight {
     this.shadowBindGroupContainer = [];
     this.shadowBindGroup = [];
 
+    // && this.lightDinamic == false
     this.getShadowBindGroup = (mesh, index) => {
-      if(this.shadowBindGroupContainer[index] && this.lightDinamic == false) {
+      if(this.shadowBindGroupContainer[index]) {
         return this.shadowBindGroupContainer[index];
       }
       this.shadowBindGroupContainer[index] = this.device.createBindGroup({

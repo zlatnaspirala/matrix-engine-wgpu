@@ -73,7 +73,17 @@ export class BVHPlayer extends MEMeshObj {
     this._tempMat = mat4.create();
     this.buildNodeChannelMap();
     this.buildSortedNodes();
+    this.initNodeOriginals();
 
+  }
+
+  initNodeOriginals() {
+    for(let j = 0;j < this.skeleton.length;j++) {
+      const node = this.nodes[this.skeleton[j]];
+      if(!node.originalTranslation) node.originalTranslation = node.translation.slice();
+      if(!node.originalRotation) node.originalRotation = node.rotation.slice();
+      if(!node.originalScale) node.originalScale = node.scale.slice();
+    }
   }
 
   buildSortedNodes() {
@@ -403,35 +413,34 @@ export class BVHPlayer extends MEMeshObj {
     const scale = new Float32Array([sx, sy, sz]);
     return {translation: t, rotation: rot, scale: scale};
   }
-
   slerp(q0, q1, t, out) {
     let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
-    if(dot < 0) {
-      dot = -dot;
-      q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
-    }
+    const flip = dot < 0 ? (dot = -dot, -1) : 1;  // ← no array, just a scalar
+
     if(dot > 0.9995) {
-      const x = q0[0] + t * (q1[0] - q0[0]);
-      const y = q0[1] + t * (q1[1] - q0[1]);
-      const z = q0[2] + t * (q1[2] - q0[2]);
-      const w = q0[3] + t * (q1[3] - q0[3]);
-      const invLen = 1 / Math.sqrt(x * x + y * y + z * z + w * w);
-      out[0] = x * invLen;
-      out[1] = y * invLen;
-      out[2] = z * invLen;
-      out[3] = w * invLen;
+      const invLen = 1 / Math.sqrt(
+        (q0[0] + t * (flip * q1[0] - q0[0])) ** 2 +
+        (q0[1] + t * (flip * q1[1] - q0[1])) ** 2 +
+        (q0[2] + t * (flip * q1[2] - q0[2])) ** 2 +
+        (q0[3] + t * (flip * q1[3] - q0[3])) ** 2
+      );
+      out[0] = (q0[0] + t * (flip * q1[0] - q0[0])) * invLen;
+      out[1] = (q0[1] + t * (flip * q1[1] - q0[1])) * invLen;
+      out[2] = (q0[2] + t * (flip * q1[2] - q0[2])) * invLen;
+      out[3] = (q0[3] + t * (flip * q1[3] - q0[3])) * invLen;
       return;
     }
+
     const theta0 = Math.acos(dot);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
-    out[0] = s0 * q0[0] + s1 * q1[0];
-    out[1] = s0 * q0[1] + s1 * q1[1];
-    out[2] = s0 * q0[2] + s1 * q1[2];
-    out[3] = s0 * q0[3] + s1 * q1[3];
+    out[0] = s0 * q0[0] + s1 * flip * q1[0];
+    out[1] = s0 * q0[1] + s1 * flip * q1[1];
+    out[2] = s0 * q0[2] + s1 * flip * q1[2];
+    out[3] = s0 * q0[3] + s1 * flip * q1[3];
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
@@ -442,13 +451,14 @@ export class BVHPlayer extends MEMeshObj {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
       // --- Initialize node TRS if needed
-      if(!node.translation) node.translation = new Float32Array([0, 0, 0]);
-      if(!node.rotation) node.rotation = quat.create();
-      if(!node.scale) node.scale = new Float32Array([1, 1, 1]);
-      // --- Keep original TRS for additive animation
-      if(!node.originalTranslation) node.originalTranslation = node.translation.slice();
-      if(!node.originalRotation) node.originalRotation = node.rotation.slice();
-      if(!node.originalScale) node.originalScale = node.scale.slice();
+      // node.translation = new Float32Array([0, 0, 0]);
+      // node.rotation = quat.create();
+      // node.scale = new Float32Array([1, 1, 1]);
+      // // --- Keep original TRS for additive animation
+      // node.originalTranslation = node.translation.slice();
+      // node.originalRotation = node.rotation.slice();
+      // node.originalScale = node.scale.slice();
+      
       const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for(const channel of channelsForNode) {
         const path = channel.target.path;
