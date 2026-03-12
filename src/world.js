@@ -472,6 +472,17 @@ export default class MatrixEngineWGPU {
         dimension: '2d-array'
       });
 
+      this.shadowPassViews = [];
+      for(let i = 0;i < this.lightContainer.length;i++) {
+        this.shadowPassViews[i] = this.shadowTextureArray.createView({
+          dimension: '2d',
+          baseArrayLayer: i,
+          arrayLayerCount: 1,
+          baseMipLevel: 0,
+          mipLevelCount: 1,
+        });
+      }
+
       this.shadowVideoTexture = this.device.createTexture({
         size: [1024, 1024],
         format: "depth32float",
@@ -936,8 +947,6 @@ export default class MatrixEngineWGPU {
         })
       })
 
-      this.device.queue.writeBuffer(this.dummyBuffer, 0, this.dummyData);
-
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -952,7 +961,7 @@ export default class MatrixEngineWGPU {
           label: "shadowPass",
           colorAttachments: [],
           depthStencilAttachment: {
-            view: ViewPerLightRenderShadowPass,
+            view:  this.shadowPassViews[i],
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
             depthClearValue: 1.0,

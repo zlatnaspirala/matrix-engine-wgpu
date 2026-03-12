@@ -725,9 +725,9 @@ export default class MEMeshObj extends Materials {
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);
-        // this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
-        // mat4.translate(modelMatrix, this._posArray, modelMatrix);
-        mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
+        mat4.translate(modelMatrix, this._posArray, modelMatrix);
+        // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if(this.itIsPhysicsBody) {
           mat4.rotate(modelMatrix,
             [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],

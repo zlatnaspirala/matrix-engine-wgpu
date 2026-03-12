@@ -25237,6 +25237,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.identity();
 
     //cache
@@ -26067,7 +26069,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posArray[0] = pos.x;
+        this._posArray[1] = pos.y;
+        this._posArray[2] = pos.z;
+        _wgpuMatrix.mat4.translate(modelMatrix, this._posArray, modelMatrix);
+        // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
           _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
@@ -26454,7 +26460,7 @@ class SpotLight {
       label: "descriptor shadowPass[SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
-        view: this.shadowTexture.createView(),
+        view: this.shadowTextureView,
         depthClearValue: 1.0,
         depthLoadOp: "clear",
         depthStoreOp: "store"
@@ -26472,10 +26478,8 @@ class SpotLight {
     });
     this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
-
-    // && this.lightDinamic == false
     this.getShadowBindGroup = (mesh, index) => {
-      // if(this.shadowBindGroupContainer[mesh.name] && this.lightDinamic == false) return this.shadowBindGroupContainer[mesh.name];
+      if (this.shadowBindGroupContainer[mesh.name]) return this.shadowBindGroupContainer[mesh.name];
       this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
@@ -26771,15 +26775,16 @@ class SpotLight {
     });
     this.getMainPassBindGroup = function (mesh) {
       const key = mesh.name;
+      if (this.mainPassBindGroupContainer[key]) {
+        return this.mainPassBindGroupContainer[key];
+      }
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
         entries: [{
           binding: 0,
-          resource: this.shadowTexture.createView()
-        },
-        //this.shadowTextureView2D},// this.shadowTexture.createView() }, // ← back to per-light 2d view
-        {
+          resource: this.shadowTextureView
+        }, {
           binding: 1,
           resource: this.shadowSampler
         }]
@@ -31038,9 +31043,11 @@ class MEMeshObj extends _materials.default {
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
-        // this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
-        // mat4.translate(modelMatrix, this._posArray, modelMatrix);
-        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._posArray[0] = pos.x;
+        this._posArray[1] = pos.y;
+        this._posArray[2] = pos.z;
+        _wgpuMatrix.mat4.translate(modelMatrix, this._posArray, modelMatrix);
+        // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
           _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
@@ -32388,6 +32395,8 @@ class ProceduralMeshObj extends _materials.default {
     };
     this.pointerEffect = o.pointerEffect;
     this._modelMatrix = _wgpuMatrix.mat4.identity();
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -33079,7 +33088,11 @@ class ProceduralMeshObj extends _materials.default {
   }
   getModelMatrix(pos, useScale = false) {
     let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
-    _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+    this._posArray[0] = pos.x;
+    this._posArray[1] = pos.y;
+    this._posArray[2] = pos.z;
+    _wgpuMatrix.mat4.translate(modelMatrix, this._posArray, modelMatrix);
+    // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
     if (this.itIsPhysicsBody) {
       _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
     } else {
@@ -53801,6 +53814,16 @@ class MatrixEngineWGPU {
       this.shadowArrayView = this.shadowTextureArray.createView({
         dimension: '2d-array'
       });
+      this.shadowPassViews = [];
+      for (let i = 0; i < this.lightContainer.length; i++) {
+        this.shadowPassViews[i] = this.shadowTextureArray.createView({
+          dimension: '2d',
+          baseArrayLayer: i,
+          arrayLayerCount: 1,
+          baseMipLevel: 0,
+          mipLevelCount: 1
+        });
+      }
       this.shadowVideoTexture = this.device.createTexture({
         size: [1024, 1024],
         format: "depth32float",
@@ -54482,7 +54505,6 @@ class MatrixEngineWGPU {
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       });
-      this.device.queue.writeBuffer(this.dummyBuffer, 0, this.dummyData);
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -54497,7 +54519,7 @@ class MatrixEngineWGPU {
           label: "shadowPass",
           colorAttachments: [],
           depthStencilAttachment: {
-            view: ViewPerLightRenderShadowPass,
+            view: this.shadowPassViews[i],
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
             depthClearValue: 1.0

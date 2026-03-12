@@ -125,7 +125,7 @@ export class SpotLight {
       label: "descriptor shadowPass[SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
-        view: this.shadowTexture.createView(),
+        view: this.shadowTextureView,
         depthClearValue: 1.0,
         depthLoadOp: "clear",
         depthStoreOp: "store",
@@ -147,10 +147,8 @@ export class SpotLight {
 
     this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
-
-    // && this.lightDinamic == false
     this.getShadowBindGroup = (mesh, index) => {
-      // if(this.shadowBindGroupContainer[mesh.name] && this.lightDinamic == false) return this.shadowBindGroupContainer[mesh.name];
+      if(this.shadowBindGroupContainer[mesh.name]) return this.shadowBindGroupContainer[mesh.name];
       this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
@@ -385,12 +383,14 @@ export class SpotLight {
 
     this.getMainPassBindGroup = function(mesh) {
       const key = mesh.name;
+      if(this.mainPassBindGroupContainer[key]) {
+        return this.mainPassBindGroupContainer[key];
+      }
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
         entries: [
-          {binding: 0, resource: this.shadowTexture.createView() },
-            //this.shadowTextureView2D},// this.shadowTexture.createView() }, // ← back to per-light 2d view
+          {binding: 0, resource: this.shadowTextureView},
           {binding: 1, resource: this.shadowSampler},
         ],
       });
