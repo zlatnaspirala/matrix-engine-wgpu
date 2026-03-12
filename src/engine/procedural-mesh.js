@@ -30,7 +30,8 @@ export default class ProceduralMeshObj extends Materials {
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
-
+    //cache
+    this._camVP = mat4.create();
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
@@ -62,7 +63,9 @@ export default class ProceduralMeshObj extends Materials {
     };
 
     this.pointerEffect = o.pointerEffect;
-
+    this._modelMatrix = mat4.create();
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -93,7 +96,7 @@ export default class ProceduralMeshObj extends Materials {
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 1024;
+        this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = mat4.create();
         // Load textures if provided
         if(o.texturesPaths && o.texturesPaths.length > 0 && o.textureCache) {
@@ -648,8 +651,10 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   getModelMatrix(pos, useScale = false) {
-    let modelMatrix = mat4.identity();
-    mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+    let modelMatrix = mat4.identity(this._modelMatrix);
+    this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
+    mat4.translate(modelMatrix, this._posArray, modelMatrix);
+    // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
     if(this.itIsPhysicsBody) {
       mat4.rotate(modelMatrix,
         [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
@@ -682,7 +687,7 @@ export default class ProceduralMeshObj extends Materials {
     this.lastFrameMS = now;
     const camera = this.cameras[this.mainCameraParams.type];
     if(index === 0) camera.update(dt, this.inputHandler());
-    const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+    const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
     this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
     this._sceneData[32] = camera.position[0];

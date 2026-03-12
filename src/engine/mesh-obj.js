@@ -42,6 +42,9 @@ export default class MEMeshObj extends Materials {
       o.material.useTextureFromGlb = false;
     }
 
+    this._translateVec = new Float32Array(3);
+    this._scaleVec = new Float32Array(3);
+
     if(typeof o.material.useBlend === 'undefined' ||
       typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
@@ -55,6 +58,11 @@ export default class MEMeshObj extends Materials {
 
     this.time = 0;
     this.deltaTimeAdapter = 10;
+    //cache
+    this._camVP = mat4.create();
+
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
 
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
@@ -260,6 +268,8 @@ export default class MEMeshObj extends Materials {
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
+
+
     // new dummy for skin mesh
     if(!this.joints) {
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
@@ -299,11 +309,13 @@ export default class MEMeshObj extends Materials {
         buffer: weightsBuffer,
         stride: 16, // vec4<f32>
       };
+
+      this._modelMatrix = mat4.create();
     }
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 1024;
+        this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve()
@@ -692,7 +704,7 @@ export default class MEMeshObj extends Materials {
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
-        const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+        const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
@@ -715,20 +727,31 @@ export default class MEMeshObj extends Materials {
       };
 
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = mat4.identity();
-        mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        let modelMatrix = mat4.identity(this._modelMatrix);
+
+        this._translateVec[0] = pos.x;
+        this._translateVec[1] = pos.y;
+        this._translateVec[2] = pos.z;
+        mat4.translate(modelMatrix, this._translateVec, modelMatrix);
+
         if(this.itIsPhysicsBody) {
-          mat4.rotate(modelMatrix,
-            [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-            degToRad(this.rotation.angle),
-            modelMatrix
-          );
+          // rotation axis array also allocates:
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
         } else {
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
+
+        if(useScale == true) {
+          this._scaleVec[0] = this.scale[0];
+          this._scaleVec[1] = this.scale[1];
+          this._scaleVec[2] = this.scale[2];
+          mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+        }
         return modelMatrix;
       };
 
@@ -743,6 +766,7 @@ export default class MEMeshObj extends Materials {
         modelData.byteLength
       );
       this.done = true;
+      this.updateModelUniformBuffer();
       if(this.texturesPaths.length > 1) {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
           try {this.envMapParams.envTexture = envTexture;} catch(err) {
@@ -863,8 +887,7 @@ export default class MEMeshObj extends Materials {
   }
 
   updateModelUniformBuffer = () => {
-    if(this.done == false) return;
-    // Per-object model matrix only
+    if(!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,

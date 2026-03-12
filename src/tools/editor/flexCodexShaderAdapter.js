@@ -5,7 +5,7 @@ export function graphAdapter(compilerResult, nodes) {
 
   const globals = new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
-  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
+  globals.add("override shadowDepthTextureSize: f32 = 512.0;");
 
   // 3️⃣ Prepare final color outputs
   const baseColor = outputs.baseColor || "vec3f(1.0)";

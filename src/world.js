@@ -129,8 +129,6 @@ export default class MatrixEngineWGPU {
     this._viewProjMatrix = mat4.create();
     this._invViewProj = mat4.create();
 
-
-
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
     }
@@ -213,9 +211,9 @@ export default class MatrixEngineWGPU {
         this.label.get = r;
       }).catch((r) => {
         this.label.get = r;
-      });;
+      });
     }
-    this.init({canvas, callback})
+    this.init({canvas, callback});
   }
 
   init = async ({canvas, callback}) => {
@@ -244,7 +242,6 @@ export default class MatrixEngineWGPU {
       alphaMode: 'premultiplied',
     });
 
-    // if(this.options.useSingleRenderPass == true) {
     this.frame = this.frameSinglePass;
 
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
@@ -277,6 +274,9 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
+    //shadows fix
+    this.SHADOW_RES = 512;
+
     // OPTIMISATION
     this.textureCache = new TextureCache(this.device);
     this._destroyQueue = new Set();
@@ -380,14 +380,9 @@ export default class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
     this._emptyLight = new Float32Array(36); // reused for empty slots, stays zeroed
-
-    this.SHADOW_RES = 1024;
     this.createTexArrayForShadows()
-
     this.mainDepthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: 'depth24plus',
@@ -441,28 +436,23 @@ export default class MatrixEngineWGPU {
     let numberOfLights = this.lightContainer.length;
     if(this.lightContainer.length == 0) {
       setTimeout(() => {
-        // console.info('Test light again...')
         this.createMe();
-      }, 800);
+      }, 50);
     }
-
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          // console.info('Create now test...')
           this.createMe();
-        }, 800);
+        }, 50);
         return;
       }
-
-      // console.warn('Create this.shadowTextureArray...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
-          width: 1024,
-          height: 1024,
-          depthOrArrayLayers: numberOfLights, // at least 1
+          width: this.SHADOW_RES,
+          height: this.SHADOW_RES,
+          depthOrArrayLayers: numberOfLights,
         },
         dimension: '2d',
         format: 'depth32float',
@@ -473,8 +463,19 @@ export default class MatrixEngineWGPU {
         dimension: '2d-array'
       });
 
+      this.shadowPassViews = [];
+      for(let i = 0;i < this.lightContainer.length;i++) {
+        this.shadowPassViews[i] = this.shadowTextureArray.createView({
+          dimension: '2d',
+          baseArrayLayer: i,
+          arrayLayerCount: 1,
+          baseMipLevel: 0,
+          mipLevelCount: 1,
+        });
+      }
+
       this.shadowVideoTexture = this.device.createTexture({
-        size: [1024, 1024],
+        size: [this.SHADOW_RES, this.SHADOW_RES],
         format: "depth32float",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       });
@@ -483,7 +484,6 @@ export default class MatrixEngineWGPU {
         dimension: "2d",
       });
     }
-
     this.createMe();
   }
 
@@ -749,6 +749,11 @@ export default class MatrixEngineWGPU {
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo4.meshA, meshB: geo4.meshB, resolutionU: geo4.resolutionU, resolutionV: geo4.resolutionV,
       fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      pointerEffect: {
+        enabled: true,
+        flameEffect: false,
+        flameEmitter: true,
+      }
     });
 
     const geo5 = fountainBasinWaterConfig(MeshMorpher);
@@ -764,9 +769,11 @@ export default class MatrixEngineWGPU {
     m1.rotation.setRotateY(1000);
     m4.setBlend(0.1);
 
-    m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-      i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-    })
+    setTimeout(() => {
+      m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+        i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
+      })
+    }, 1000)
 
     // m4.morphTo(1, 2000)
     // m4.morphAnimation.onComplete = (e) => {
@@ -858,27 +865,16 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
-    // const floatsPerLight = 36;
-    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   this._lightsData.set(
-    //     i < this.lightContainer.length
-    //       ? this.lightContainer[i].getLightDataBuffer()
-    //       : this._emptyLight,
-    //     i * floatsPerLight
-    //   );
-    // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
-    const floatsPerLight = 36; // not 20 anymore
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      if(i < this.lightContainer.length) {
-        const buf = this.lightContainer[i].getLightDataBuffer();
-        data.set(buf, i * floatsPerLight);
-      } else {
-        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-      }
+      this._lightsData.set(
+        i < this.lightContainer.length
+          ? this.lightContainer[i].getLightDataBuffer()
+          : this._emptyLight,
+        i * floatsPerLight
+      );
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
   }
 
   frameSinglePass = () => {
@@ -932,27 +928,30 @@ export default class MatrixEngineWGPU {
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
-          dimension: '2d',
-          baseArrayLayer: i,
-          arrayLayerCount: 1, // must be > 0
-          baseMipLevel: 0,
-          mipLevelCount: 1,
-        });
+        // let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+        //   dimension: '2d',
+        //   baseArrayLayer: i,
+        //   arrayLayerCount: 1, // must be > 0
+        //   baseMipLevel: 0,
+        //   mipLevelCount: 1,
+        // });
 
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],
           depthStencilAttachment: {
-            view: ViewPerLightRenderShadowPass,
+            view: this.shadowPassViews[i],
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
             depthClearValue: 1.0,
           }
         });
 
+        // light.shadowTextureView2D = this.shadowPassViews[i];
+
         now = performance.now() / 1000;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+
           // if (mesh.name == "floor") continue; 
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))

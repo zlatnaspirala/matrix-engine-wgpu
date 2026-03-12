@@ -1,5 +1,5 @@
 const SHARED = `
-override shadowDepthTextureSize : f32 = 1024.0;
+override shadowDepthTextureSize : f32 = 512.0;
 const PI  : f32 = 3.141592653589793;
 const TAU : f32 = 6.283185307179586;
 

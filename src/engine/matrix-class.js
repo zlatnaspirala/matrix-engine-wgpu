@@ -301,53 +301,114 @@ export class Rotation {
   }
 
   getRotX = () => {
+    // if(this.rotationSpeed.x == 0) {
+    //   if(this.netx != this.x && this.emitX) {
+    //     app.net.send({
+    //       remoteName: this.remoteName,
+    //       sceneName: this.emitX,
+    //       netRotX: this.x
+    //     })
+    //   }
+    //   this.netx = this.x;
+    //   return degToRad(this.x);
+    // } else {
+    //   this.x = this.x + this.rotationSpeed.x * 0.001;
+    //   return degToRad(this.x);
+    // }
+
     if(this.rotationSpeed.x == 0) {
       if(this.netx != this.x && this.emitX) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitX,
-          netRotX: this.x
-        })
+        app.net.send({remoteName: this.remoteName, sceneName: this.emitX, netRotX: this.x})
       }
       this.netx = this.x;
-      return degToRad(this.x);
+      if(this._cachedRadX === undefined || this._lastX !== this.x) {
+        this._cachedRadX = degToRad(this.x);
+        this._lastX = this.x;
+      }
+      return this._cachedRadX;
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
-      return degToRad(this.x);
+      this._cachedRadX = degToRad(this.x);
+      this._lastX = this.x;
+      return this._cachedRadX;
     }
   }
 
   getRotY = () => {
+    // if(this.rotationSpeed.y == 0) {
+    //   if(this.nety != this.y && this.emitY) {
+    //     // ---------------------------------------
+    //     if(this.teams.length == 0) {
+    //       app.net.send({
+    //         toRemote: this.toRemote,
+    //         remoteName: this.remoteName,
+    //         sceneName: this.emitY,
+    //         netRotY: this.y
+    //       });
+    //       this.nety = this.y;
+    //     } else {
+    //       if(this.teams[0].length > 0) app.net.send({
+    //         toRemote: this.teams[0],
+    //         sceneName: this.emitY,
+    //         netRotY: this.y
+    //       });
+    //       if(this.teams[1].length > 0) app.net.send({
+    //         toRemote: this.teams[1],
+    //         remoteName: this.remoteName,
+    //         sceneName: this.emitY,
+    //         netRotY: this.y
+    //       });
+    //       this.nety = this.y;
+    //     }
+    //   }
+    //   return degToRad(this.y);
+    // } else {
+    //   this.y = this.y + this.rotationSpeed.y * 0.001;
+    //   return degToRad(this.y);
+    // }
+
     if(this.rotationSpeed.y == 0) {
       if(this.nety != this.y && this.emitY) {
-        // ---------------------------------------
-        if(this.teams.length == 0) {
-          app.net.send({
-            toRemote: this.toRemote,
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          this.nety = this.y;
-        } else {
-          if(this.teams[0].length > 0) app.net.send({
-            toRemote: this.teams[0],
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          if(this.teams[1].length > 0) app.net.send({
-            toRemote: this.teams[1],
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          this.nety = this.y;
+        // net send code unchanged...
+
+        if(this.nety != this.y && this.emitY) {
+          // ---------------------------------------
+          if(this.teams.length == 0) {
+            app.net.send({
+              toRemote: this.toRemote,
+              remoteName: this.remoteName,
+              sceneName: this.emitY,
+              netRotY: this.y
+            });
+            this.nety = this.y;
+          } else {
+            if(this.teams[0].length > 0) app.net.send({
+              toRemote: this.teams[0],
+              sceneName: this.emitY,
+              netRotY: this.y
+            });
+            if(this.teams[1].length > 0) app.net.send({
+              toRemote: this.teams[1],
+              remoteName: this.remoteName,
+              sceneName: this.emitY,
+              netRotY: this.y
+            });
+            this.nety = this.y;
+          }
         }
+
+        this.nety = this.y;
       }
-      return degToRad(this.y);
+      if(this._cachedRotY === undefined || this._lastY !== this.y) {
+        this._cachedRotY = degToRad(this.y);
+        this._lastY = this.y;
+      }
+      return this._cachedRotY;
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
-      return degToRad(this.y);
+      this._cachedRotY = degToRad(this.y);
+      this._lastY = this.y;
+      return this._cachedRotY;
     }
   }
 
@@ -358,13 +419,19 @@ export class Rotation {
           remoteName: this.remoteName,
           sceneName: this.emitZ,
           netRotZ: this.z
-        })
+        });
+        this.netz = this.z;
       }
-      this.netz = this.z;
-      return degToRad(this.z);
+      if(this._cachedRotZ === undefined || this._lastZ !== this.z) {
+        this._cachedRotZ = degToRad(this.z);
+        this._lastZ = this.z;
+      }
+      return this._cachedRotZ;
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
-      return degToRad(this.z);
+      this._cachedRotZ = degToRad(this.z);
+      this._lastZ = this.z;
+      return this._cachedRotZ;
     }
   }
 

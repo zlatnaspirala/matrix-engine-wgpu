@@ -51,6 +51,7 @@ export class SpotLight {
     this.far = far;
 
     this.lightDinamic = true;
+    this.mainPassBindGroupContainer = {};
 
     this.camera = camera;
     this.inputHandler = inputHandler;
@@ -97,7 +98,7 @@ export class SpotLight {
     this.range = 20.0;
     this.shadowBias = 0.01;
 
-    this.SHADOW_RES = 1024;
+    this.SHADOW_RES = 512;
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'back', // 'back', // for front interest border drawen shadows !
@@ -111,6 +112,8 @@ export class SpotLight {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
 
+    this.shadowTextureView = this.shadowTexture.createView();
+
     this.shadowSampler = device.createSampler({
       label: 'shadowSampler[light]',
       compare: 'less',
@@ -122,7 +125,7 @@ export class SpotLight {
       label: "descriptor shadowPass[SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
-        view: this.shadowTexture.createView(),
+        view: this.shadowTextureView,
         depthClearValue: 1.0,
         depthLoadOp: "clear",
         depthStoreOp: "store",
@@ -142,49 +145,16 @@ export class SpotLight {
       ],
     });
 
-    this.shadowBindGroupContainer = [];
+    this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
-
     this.getShadowBindGroup = (mesh, index) => {
-      if(this.shadowBindGroupContainer[index] && this.lightDinamic == false) {
-        return this.shadowBindGroupContainer[index];
-      }
-      this.shadowBindGroupContainer[index] = this.device.createBindGroup({
+      if(this.shadowBindGroupContainer[mesh.name]) return this.shadowBindGroupContainer[mesh.name];
+      this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: mesh.sceneUniformBuffer,
-            },
-          },
-        ],
+        entries: [{binding: 0, resource: {buffer: mesh.sceneUniformBuffer}}],
       });
-      return this.shadowBindGroupContainer[index];
-    }
-
-    this.getShadowBindGroup_bones = (index) => {
-      if(this.shadowBindGroup[index]) return this.shadowBindGroup[index];
-
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16, // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-
-      this.shadowBindGroup[index] = this.device.createBindGroup({
-        label: 'model BindGroupForShadow in light',
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: this.modelUniformBuffer,
-            },
-          },
-        ],
-      });
-      return this.shadowBindGroup[index];
+      return this.shadowBindGroupContainer[mesh.name];
     }
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
@@ -412,27 +382,20 @@ export class SpotLight {
     });
 
     this.getMainPassBindGroup = function(mesh) {
-      // You can cache it per mesh to avoid recreating each frame
-      if(!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
-      const index = mesh._lightBindGroupIndex || 0;
-      if(this.mainPassBindGroupContainer[index] && this.lightDinamic == false) {
-        return this.mainPassBindGroupContainer[index];
+      const key = mesh.name;
+      if(this.mainPassBindGroupContainer[key]) {
+        return this.mainPassBindGroupContainer[key];
       }
-      this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
+      this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
         entries: [
-          {
-            binding: 0,
-            resource: this.shadowTexture.createView(),
-          },
-          {
-            binding: 1,
-            resource: this.shadowSampler,
-          },
+          {binding: 0, resource: this.shadowTextureView},
+          {binding: 1, resource: this.shadowSampler},
         ],
       });
-      return this.mainPassBindGroupContainer[index];
+      return this.mainPassBindGroupContainer[key];
+
     }
     // Only osc values +-
     this.behavior = new Behavior();
