@@ -51,6 +51,7 @@ export class SpotLight {
     this.far = far;
 
     this.lightDinamic = true;
+    this.mainPassBindGroupContainer = {};
 
     this.camera = camera;
     this.inputHandler = inputHandler;
@@ -144,12 +145,12 @@ export class SpotLight {
       ],
     });
 
-    this.shadowBindGroupContainer = [];
+    this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
 
     // && this.lightDinamic == false
     this.getShadowBindGroup = (mesh, index) => {
-      if(this.shadowBindGroupContainer[mesh.name] && this.lightDinamic == false) return this.shadowBindGroupContainer[mesh.name];
+      // if(this.shadowBindGroupContainer[mesh.name] && this.lightDinamic == false) return this.shadowBindGroupContainer[mesh.name];
       this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
@@ -383,20 +384,18 @@ export class SpotLight {
     });
 
     this.getMainPassBindGroup = function(mesh) {
-      if(!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = {};
       const key = mesh.name;
-      if(this.mainPassBindGroupContainer[key] && this.lightDinamic == false) {
-        return this.mainPassBindGroupContainer[key];
-      }
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
         entries: [
-          {binding: 0, resource: this.shadowTexture.createView()},
+          {binding: 0, resource: this.shadowTexture.createView() },
+            //this.shadowTextureView2D},// this.shadowTexture.createView() }, // ← back to per-light 2d view
           {binding: 1, resource: this.shadowSampler},
         ],
       });
       return this.mainPassBindGroupContainer[key];
+
     }
     // Only osc values +-
     this.behavior = new Behavior();

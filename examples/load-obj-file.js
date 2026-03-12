@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
@@ -14,18 +15,29 @@ export var loadObjFile = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
+
+    loadObjFile.addLight();
+
     addEventListener('AmmoReady', () => {
       addRaycastsAABBListener();
+
+
+    })
+
+
+    setTimeout(() => {
       downloadMeshes({
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj,
         {scale: [1, 1, 1]})
+
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
         {scale: [30, 0.5, 30]})
-    })
+
+    }, 2)
 
     function onGround(m) {
       loadObjFile.addMeshObj({
@@ -33,18 +45,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
-        envMapParams: {
-          baseColorMix: 0.5,
-          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          reflectivity: 0.4,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.001,             // No pulse (static)
-          fresnelPower: 5.0,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,  // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/floor1.jpg'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -55,7 +56,7 @@ export var loadObjFile = function() {
       })
     }
 
-    function onLoadObj(m) {
+    async function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
@@ -89,17 +90,6 @@ export var loadObjFile = function() {
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/floor1.jpg'],
-        envMapParams: {
-          baseColorMix: 0.5,
-          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          reflectivity: 0.4,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.001,             // No pulse (static)
-          fresnelPower: 5.0,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,  // ✅ Env map mode
-        },
         name: 'cube',
         mesh: m.cube,
         physics: {
@@ -109,16 +99,39 @@ export var loadObjFile = function() {
         }
       })
 
-      loadObjFile.addLight();
+
+      // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, loadObjFile.device)));
+      //    loadObjFile.addGlbObjInctance({
+      //      material: {type: 'mirror', useTextureFromGlb: true},
+      //      envMapParams: {
+      //        baseColorMix: 0.75,
+      //        mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
+      //        reflectivity: 0.5,               // 25% reflection blend
+      //        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //        illuminateStrength: 0.1,          // Gentle rim
+      //        illuminatePulse: 0.001,             // No pulse (static)
+      //        fresnelPower: 5.0,                // Medium-sharp edge
+      //        envLodBias: 2.5,
+      //        usePlanarReflection: false,  // ✅ Env map mode
+      //      },
+      //      useScale: true,
+      //      scale: [20, 20, 20],
+      //      position: {x: 0, y: -4, z: -20},
+      //      name: 'woman1',
+      //      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp'],
+      //    }, null, glbFile11);
+
+
+
       loadObjFile.lightContainer[0].intensity = 10;
 
-      loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
-        light.target[0] = light.behavior.setPath0()
-      })
+      // loadObjFile.activateBloomEffect();
+      // loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
+      // loadObjFile.lightContainer[0].behavior.value_ = -1;
+      // loadObjFile.lightContainer[0].updater.push((light) => {
+      //   light.position[0] = light.behavior.setPath0()
+      //   light.target[0] = light.behavior.setPath0()
+      // })
 
       loadObjFile.lightContainer[0].position = [0, 17, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];

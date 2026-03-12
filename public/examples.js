@@ -602,6 +602,7 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _raycast = require("../src/engine/raycast.js");
+var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
@@ -618,8 +619,11 @@ var loadObjFile = function () {
       a: 1
     }
   }, () => {
+    loadObjFile.addLight();
     addEventListener('AmmoReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
+    });
+    setTimeout(() => {
       (0, _loaderObj.downloadMeshes)({
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj"
@@ -631,7 +635,7 @@ var loadObjFile = function () {
       }, onGround, {
         scale: [30, 0.5, 30]
       });
-    });
+    }, 2);
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
@@ -652,24 +656,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
-        envMapParams: {
-          baseColorMix: 0.5,
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.4,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.001,
-          // No pulse (static)
-          fresnelPower: 5.0,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/floor1.jpg'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -679,7 +666,7 @@ var loadObjFile = function () {
         }
       });
     }
-    function onLoadObj(m) {
+    async function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
         material: {
@@ -747,23 +734,6 @@ var loadObjFile = function () {
           z: 0
         },
         texturesPaths: ['./res/textures/floor1.jpg'],
-        envMapParams: {
-          baseColorMix: 0.5,
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.4,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.001,
-          // No pulse (static)
-          fresnelPower: 5.0,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
         name: 'cube',
         mesh: m.cube,
         physics: {
@@ -772,15 +742,38 @@ var loadObjFile = function () {
           geometry: "Cube"
         }
       });
-      loadObjFile.addLight();
+
+      // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, loadObjFile.device)));
+      //    loadObjFile.addGlbObjInctance({
+      //      material: {type: 'mirror', useTextureFromGlb: true},
+      //      envMapParams: {
+      //        baseColorMix: 0.75,
+      //        mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
+      //        reflectivity: 0.5,               // 25% reflection blend
+      //        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //        illuminateStrength: 0.1,          // Gentle rim
+      //        illuminatePulse: 0.001,             // No pulse (static)
+      //        fresnelPower: 5.0,                // Medium-sharp edge
+      //        envLodBias: 2.5,
+      //        usePlanarReflection: false,  // ✅ Env map mode
+      //      },
+      //      useScale: true,
+      //      scale: [20, 20, 20],
+      //      position: {x: 0, y: -4, z: -20},
+      //      name: 'woman1',
+      //      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp'],
+      //    }, null, glbFile11);
+
       loadObjFile.lightContainer[0].intensity = 10;
-      loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push(light => {
-        light.position[0] = light.behavior.setPath0();
-        light.target[0] = light.behavior.setPath0();
-      });
+
+      // loadObjFile.activateBloomEffect();
+      // loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
+      // loadObjFile.lightContainer[0].behavior.value_ = -1;
+      // loadObjFile.lightContainer[0].updater.push((light) => {
+      //   light.position[0] = light.behavior.setPath0()
+      //   light.target[0] = light.behavior.setPath0()
+      // })
+
       loadObjFile.lightContainer[0].position = [0, 17, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
@@ -804,7 +797,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":46,"../src/engine/procedural-mesh.js":56,"../src/engine/raycast.js":59,"../src/engine/utils.js":60,"../src/world.js":104}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":46,"../src/engine/loaders/webgpu-gltf.js":49,"../src/engine/procedural-mesh.js":56,"../src/engine/raycast.js":59,"../src/engine/utils.js":60,"../src/world.js":104}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26404,6 +26397,7 @@ class SpotLight {
     this.near = near;
     this.far = far;
     this.lightDinamic = true;
+    this.mainPassBindGroupContainer = {};
     this.camera = camera;
     this.inputHandler = inputHandler;
     this.position = position;
@@ -26476,12 +26470,12 @@ class SpotLight {
         }
       }]
     });
-    this.shadowBindGroupContainer = [];
+    this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
 
     // && this.lightDinamic == false
     this.getShadowBindGroup = (mesh, index) => {
-      if (this.shadowBindGroupContainer[mesh.name] && this.lightDinamic == false) return this.shadowBindGroupContainer[mesh.name];
+      // if(this.shadowBindGroupContainer[mesh.name] && this.lightDinamic == false) return this.shadowBindGroupContainer[mesh.name];
       this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
@@ -26776,18 +26770,16 @@ class SpotLight {
       primitive: this.primitive
     });
     this.getMainPassBindGroup = function (mesh) {
-      if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = {};
       const key = mesh.name;
-      if (this.mainPassBindGroupContainer[key] && this.lightDinamic == false) {
-        return this.mainPassBindGroupContainer[key];
-      }
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
         entries: [{
           binding: 0,
           resource: this.shadowTexture.createView()
-        }, {
+        },
+        //this.shadowTextureView2D},// this.shadowTexture.createView() }, // ← back to per-light 2d view
+        {
           binding: 1,
           resource: this.shadowSampler
         }]
@@ -30341,7 +30333,6 @@ class MEMeshObj extends _materials.default {
     this.deltaTimeAdapter = 10;
     //cache
     this._camVP = _wgpuMatrix.mat4.create();
-    this._modelMatrix = _wgpuMatrix.mat4.identity();
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     addEventListener('update-pipeine', () => {
@@ -30538,6 +30529,7 @@ class MEMeshObj extends _materials.default {
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
+
     // new dummy for skin mesh
     if (!this.joints) {
       const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
@@ -30593,6 +30585,7 @@ class MEMeshObj extends _materials.default {
         format: this.presentationFormat,
         alphaMode: 'premultiplied'
       });
+      this._modelMatrix = _wgpuMatrix.mat4.identity();
 
       // Create the model vertex buffer.
       this.vertexBuffer = this.device.createBuffer({
@@ -31064,6 +31057,7 @@ class MEMeshObj extends _materials.default {
       const modelData = modelMatrix;
       this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
       this.done = true;
+      this.updateModelUniformBuffer();
       if (this.texturesPaths.length > 1) {
         this.loadEnvMap(this.texturesPaths, true).then(envTexture => {
           try {
@@ -31177,6 +31171,7 @@ class MEMeshObj extends _materials.default {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
+    if (!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
@@ -53558,7 +53553,6 @@ class MatrixEngineWGPU {
       }).catch(r => {
         this.label.get = r;
       });
-      ;
     }
     this.init({
       canvas,
@@ -53595,8 +53589,6 @@ class MatrixEngineWGPU {
       format: presentationFormat,
       alphaMode: 'premultiplied'
     });
-
-    // if(this.options.useSingleRenderPass == true) {
     this.frame = this.frameSinglePass;
     this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
@@ -53622,6 +53614,13 @@ class MatrixEngineWGPU {
     }, 50);
   };
   createGlobalStuff() {
+    //shadows fix
+    this.dummyBuffer = this.device.createBuffer({
+      size: 4,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.dummyData = new Float32Array(1);
+
     // OPTIMISATION
     this.textureCache = new _coreCache.TextureCache(this.device);
     this._destroyQueue = new Set();
@@ -53777,27 +53776,23 @@ class MatrixEngineWGPU {
     let numberOfLights = this.lightContainer.length;
     if (this.lightContainer.length == 0) {
       setTimeout(() => {
-        // console.info('Test light again...')
         this.createMe();
-      }, 800);
+      }, 50);
     }
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
       if (this.lightContainer.length == 0) {
         setTimeout(() => {
-          // console.info('Create now test...')
           this.createMe();
-        }, 800);
+        }, 50);
         return;
       }
-
-      // console.warn('Create this.shadowTextureArray...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
           width: 1024,
           height: 1024,
-          depthOrArrayLayers: numberOfLights // at least 1
+          depthOrArrayLayers: numberOfLights
         },
         dimension: '2d',
         format: 'depth32float',
@@ -54414,22 +54409,28 @@ class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
   updateLights() {
-    const floatsPerLight = 36;
-    for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
-      this._lightsData.set(i < this.lightContainer.length ? this.lightContainer[i].getLightDataBuffer() : this._emptyLight, i * floatsPerLight);
-    }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
-    // const floatsPerLight = 36; // not 20 anymore
-    // const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    // const floatsPerLight = 36;
     // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   if(i < this.lightContainer.length) {
-    //     const buf = this.lightContainer[i].getLightDataBuffer();
-    //     data.set(buf, i * floatsPerLight);
-    //   } else {
-    //     data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-    //   }
+    //   this._lightsData.set(
+    //     i < this.lightContainer.length
+    //       ? this.lightContainer[i].getLightDataBuffer()
+    //       : this._emptyLight,
+    //     i * floatsPerLight
+    //   );
     // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
+
+    const floatsPerLight = 36; // not 20 anymore
+    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
+      if (i < this.lightContainer.length) {
+        const buf = this.lightContainer[i].getLightDataBuffer();
+        data.set(buf, i * floatsPerLight);
+      } else {
+        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
+      }
+    }
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
   }
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
@@ -54481,6 +54482,7 @@ class MatrixEngineWGPU {
           mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       });
+      this.device.queue.writeBuffer(this.dummyBuffer, 0, this.dummyData);
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -54501,6 +54503,7 @@ class MatrixEngineWGPU {
             depthClearValue: 1.0
           }
         });
+        light.shadowTextureView2D = ViewPerLightRenderShadowPass;
         now = performance.now() / 1000;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           // if (mesh.name == "floor") continue; 

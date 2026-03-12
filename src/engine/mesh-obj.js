@@ -57,7 +57,6 @@ export default class MEMeshObj extends Materials {
     this.deltaTimeAdapter = 10;
     //cache
     this._camVP = mat4.create();
-    this._modelMatrix = mat4.identity();
 
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
@@ -266,6 +265,8 @@ export default class MEMeshObj extends Materials {
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
+
+
     // new dummy for skin mesh
     if(!this.joints) {
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
@@ -323,6 +324,8 @@ export default class MEMeshObj extends Materials {
         format: this.presentationFormat,
         alphaMode: 'premultiplied',
       });
+
+      this._modelMatrix = mat4.identity();
 
       // Create the model vertex buffer.
       this.vertexBuffer = this.device.createBuffer({
@@ -751,6 +754,7 @@ export default class MEMeshObj extends Materials {
         modelData.byteLength
       );
       this.done = true;
+      this.updateModelUniformBuffer();
       if(this.texturesPaths.length > 1) {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
           try {this.envMapParams.envTexture = envTexture;} catch(err) {
@@ -871,6 +875,7 @@ export default class MEMeshObj extends Materials {
   }
 
   updateModelUniformBuffer = () => {
+    if(!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,

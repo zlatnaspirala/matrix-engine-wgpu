@@ -129,8 +129,6 @@ export default class MatrixEngineWGPU {
     this._viewProjMatrix = mat4.create();
     this._invViewProj = mat4.create();
 
-
-
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
     }
@@ -213,9 +211,9 @@ export default class MatrixEngineWGPU {
         this.label.get = r;
       }).catch((r) => {
         this.label.get = r;
-      });;
+      });
     }
-    this.init({canvas, callback})
+    this.init({canvas, callback});
   }
 
   init = async ({canvas, callback}) => {
@@ -244,7 +242,6 @@ export default class MatrixEngineWGPU {
       alphaMode: 'premultiplied',
     });
 
-    // if(this.options.useSingleRenderPass == true) {
     this.frame = this.frameSinglePass;
 
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
@@ -277,6 +274,13 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
+    //shadows fix
+    this.dummyBuffer = this.device.createBuffer({
+      size: 4,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this.dummyData = new Float32Array(1);
+
     // OPTIMISATION
     this.textureCache = new TextureCache(this.device);
     this._destroyQueue = new Set();
@@ -441,28 +445,23 @@ export default class MatrixEngineWGPU {
     let numberOfLights = this.lightContainer.length;
     if(this.lightContainer.length == 0) {
       setTimeout(() => {
-        // console.info('Test light again...')
         this.createMe();
-      }, 800);
+      }, 50);
     }
-
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          // console.info('Create now test...')
           this.createMe();
-        }, 800);
+        }, 50);
         return;
       }
-
-      // console.warn('Create this.shadowTextureArray...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
           width: 1024,
           height: 1024,
-          depthOrArrayLayers: numberOfLights, // at least 1
+          depthOrArrayLayers: numberOfLights,
         },
         dimension: '2d',
         format: 'depth32float',
@@ -483,7 +482,6 @@ export default class MatrixEngineWGPU {
         dimension: "2d",
       });
     }
-
     this.createMe();
   }
 
@@ -770,9 +768,10 @@ export default class MatrixEngineWGPU {
     m4.setBlend(0.1);
 
     setTimeout(() => {
-       m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-       i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-    }) } , 1000)
+      m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+        i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
+      })
+    }, 1000)
 
     // m4.morphTo(1, 2000)
     // m4.morphAnimation.onComplete = (e) => {
@@ -864,27 +863,28 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
-    const floatsPerLight = 36;
-    for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      this._lightsData.set(
-        i < this.lightContainer.length
-          ? this.lightContainer[i].getLightDataBuffer()
-          : this._emptyLight,
-        i * floatsPerLight
-      );
-    }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
-    // const floatsPerLight = 36; // not 20 anymore
-    // const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    // const floatsPerLight = 36;
     // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   if(i < this.lightContainer.length) {
-    //     const buf = this.lightContainer[i].getLightDataBuffer();
-    //     data.set(buf, i * floatsPerLight);
-    //   } else {
-    //     data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-    //   }
+    //   this._lightsData.set(
+    //     i < this.lightContainer.length
+    //       ? this.lightContainer[i].getLightDataBuffer()
+    //       : this._emptyLight,
+    //     i * floatsPerLight
+    //   );
     // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
+
+    const floatsPerLight = 36; // not 20 anymore
+    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+      if(i < this.lightContainer.length) {
+        const buf = this.lightContainer[i].getLightDataBuffer();
+        data.set(buf, i * floatsPerLight);
+      } else {
+        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
+      }
+    }
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
   }
 
   frameSinglePass = () => {
@@ -936,6 +936,8 @@ export default class MatrixEngineWGPU {
         })
       })
 
+      this.device.queue.writeBuffer(this.dummyBuffer, 0, this.dummyData);
+
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -956,6 +958,8 @@ export default class MatrixEngineWGPU {
             depthClearValue: 1.0,
           }
         });
+
+        light.shadowTextureView2D = ViewPerLightRenderShadowPass;
 
         now = performance.now() / 1000;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
