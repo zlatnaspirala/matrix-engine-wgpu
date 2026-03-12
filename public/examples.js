@@ -578,9 +578,10 @@ function loadGLBLoader() {
       });
       app.lightContainer[0].position[1] = 35;
       app.lightContainer[0].intensity = 6;
-      app.activateBloomEffect();
+
+      // app.activateBloomEffect();
       // app.activateVolumetricEffect();
-      app.bloomPass.setIntensity(0.25);
+      // app.bloomPass.setIntensity(0.25);
     }
   });
   // just for dev
@@ -26448,6 +26449,7 @@ class SpotLight {
       format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
+    this.shadowTextureView = this.shadowTexture.createView();
     this.shadowSampler = device.createSampler({
       label: 'shadowSampler[light]',
       compare: 'less',
@@ -26479,10 +26481,8 @@ class SpotLight {
 
     // && this.lightDinamic == false
     this.getShadowBindGroup = (mesh, index) => {
-      if (this.shadowBindGroupContainer[index]) {
-        return this.shadowBindGroupContainer[index];
-      }
-      this.shadowBindGroupContainer[index] = this.device.createBindGroup({
+      if (this.shadowBindGroupContainer[mesh.name] && this.lightDinamic == false) return this.shadowBindGroupContainer[mesh.name];
+      this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
         entries: [{
@@ -26492,26 +26492,7 @@ class SpotLight {
           }
         }]
       });
-      return this.shadowBindGroupContainer[index];
-    };
-    this.getShadowBindGroup_bones = index => {
-      if (this.shadowBindGroup[index]) return this.shadowBindGroup[index];
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16,
-        // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.shadowBindGroup[index] = this.device.createBindGroup({
-        label: 'model BindGroupForShadow in light',
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.modelUniformBuffer
-          }
-        }]
-      });
-      return this.shadowBindGroup[index];
+      return this.shadowBindGroupContainer[mesh.name];
     };
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
       label: 'modelBindGroupLayout light [one bindings]',
@@ -26795,13 +26776,12 @@ class SpotLight {
       primitive: this.primitive
     });
     this.getMainPassBindGroup = function (mesh) {
-      // You can cache it per mesh to avoid recreating each frame
-      if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
-      const index = mesh._lightBindGroupIndex || 0;
-      if (this.mainPassBindGroupContainer[index] && this.lightDinamic == false) {
-        return this.mainPassBindGroupContainer[index];
+      if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = {};
+      const key = mesh.name;
+      if (this.mainPassBindGroupContainer[key] && this.lightDinamic == false) {
+        return this.mainPassBindGroupContainer[key];
       }
-      this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
+      this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
         entries: [{
@@ -26812,7 +26792,7 @@ class SpotLight {
           resource: this.shadowSampler
         }]
       });
-      return this.mainPassBindGroupContainer[index];
+      return this.mainPassBindGroupContainer[key];
     };
     // Only osc values +-
     this.behavior = new _behavior.default();
@@ -30362,6 +30342,8 @@ class MEMeshObj extends _materials.default {
     //cache
     this._camVP = _wgpuMatrix.mat4.create();
     this._modelMatrix = _wgpuMatrix.mat4.identity();
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
       // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
@@ -31063,6 +31045,8 @@ class MEMeshObj extends _materials.default {
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
+        // this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
+        // mat4.translate(modelMatrix, this._posArray, modelMatrix);
         _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
           _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
@@ -31193,8 +31177,6 @@ class MEMeshObj extends _materials.default {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
-    if (this.done == false) return;
-    // Per-object model matrix only
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };

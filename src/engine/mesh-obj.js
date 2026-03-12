@@ -59,6 +59,9 @@ export default class MEMeshObj extends Materials {
     this._camVP = mat4.create();
     this._modelMatrix = mat4.identity();
 
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
+
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
       // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
@@ -719,6 +722,8 @@ export default class MEMeshObj extends Materials {
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);
+        // this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
+        // mat4.translate(modelMatrix, this._posArray, modelMatrix);
         mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if(this.itIsPhysicsBody) {
           mat4.rotate(modelMatrix,
@@ -866,8 +871,6 @@ export default class MEMeshObj extends Materials {
   }
 
   updateModelUniformBuffer = () => {
-    if(this.done == false) return;
-    // Per-object model matrix only
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,

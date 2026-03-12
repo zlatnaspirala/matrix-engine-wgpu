@@ -161,9 +161,9 @@ export function loadGLBLoader() {
       app.lightContainer[0].position[1] = 35;
       app.lightContainer[0].intensity = 6;
 
-      app.activateBloomEffect();
+      // app.activateBloomEffect();
       // app.activateVolumetricEffect();
-      app.bloomPass.setIntensity(0.25);
+      // app.bloomPass.setIntensity(0.25);
 
     }
   })
