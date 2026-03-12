@@ -13,9 +13,18 @@ export default class MatrixAmmo {
     this.speedUpSimulation = 1;
   }
 
+  initPhysicsScratch() {
+    this._trans = new Ammo.btTransform();
+    this._transform = new Ammo.btTransform();
+    this._origin = new Ammo.btVector3(0, 0, 0);
+    this._quat = new Ammo.btQuaternion();
+    this._axis = new Ammo.btVector3(0, 0, 0);
+  }
+
   init = () => {
     Ammo().then(Ammo => {
-      // Physics variables
+      // Physics 
+      this.initPhysicsScratch();
       this.dynamicsWorld = null;
       this.rigidBodies = [];
       this.Ammo = Ammo;
@@ -253,55 +262,48 @@ export default class MatrixAmmo {
 
   updatePhysics() {
     if(typeof Ammo === 'undefined') return;
-    const trans = new Ammo.btTransform();
-    const transform = new Ammo.btTransform();
 
-    this.rigidBodies.forEach(function(body) {
+    this.rigidBodies.forEach((body) => {
       if(body.isKinematic) {
-        transform.setIdentity();
-        transform.setOrigin(new Ammo.btVector3(
+        this._transform.setIdentity();
+        this._origin.setValue(
           body.MEObject.position.x,
           body.MEObject.position.y,
           body.MEObject.position.z
-        ));
-        const quat = new Ammo.btQuaternion();
-        quat.setRotation(
-          new Ammo.btVector3(
-            body.MEObject.rotation.axis.x,
-            body.MEObject.rotation.axis.y,
-            body.MEObject.rotation.axis.z
-          ),
-          degToRad(body.MEObject.rotation.angle)
         );
-        transform.setRotation(quat);
+        this._transform.setOrigin(this._origin);
 
-        body.setWorldTransform(transform);
+        this._axis.setValue(
+          body.MEObject.rotation.axis.x,
+          body.MEObject.rotation.axis.y,
+          body.MEObject.rotation.axis.z
+        );
+        this._quat.setRotation(this._axis, degToRad(body.MEObject.rotation.angle));
+        this._transform.setRotation(this._quat);
+
+        body.setWorldTransform(this._transform);
         const ms = body.getMotionState();
-        if(ms) ms.setWorldTransform(transform);
+        if(ms) ms.setWorldTransform(this._transform);
       }
     });
 
-    Ammo.destroy(transform);
-
-    // Step simulation AFTER setting kinematic transforms
     const timeStep = 1 / 60;
     const maxSubSteps = 10;
-
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }
 
-    this.rigidBodies.forEach(function(body) {
+    this.rigidBodies.forEach((body) => {
       if(!body.isKinematic && body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
+        body.getMotionState().getWorldTransform(this._trans);
 
-        const _x = +trans.getOrigin().x().toFixed(2);
-        const _y = +trans.getOrigin().y().toFixed(2);
-        const _z = +trans.getOrigin().z().toFixed(2);
+        const _x = +this._trans.getOrigin().x().toFixed(2);
+        const _y = +this._trans.getOrigin().y().toFixed(2);
+        const _z = +this._trans.getOrigin().z().toFixed(2);
 
         body.MEObject.position.setPosition(_x, _y, _z);
 
-        const rot = trans.getRotation();
+        const rot = this._trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
 
@@ -313,7 +315,6 @@ export default class MatrixAmmo {
       }
     });
 
-    Ammo.destroy(trans);
     this.detectCollision();
   }
 }

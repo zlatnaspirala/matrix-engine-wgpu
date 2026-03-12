@@ -30204,6 +30204,21 @@ class Rotation {
     return Math.cos((0, _utils.radToDeg)(this.axis.y) / 2);
   };
   getRotX = () => {
+    // if(this.rotationSpeed.x == 0) {
+    //   if(this.netx != this.x && this.emitX) {
+    //     app.net.send({
+    //       remoteName: this.remoteName,
+    //       sceneName: this.emitX,
+    //       netRotX: this.x
+    //     })
+    //   }
+    //   this.netx = this.x;
+    //   return degToRad(this.x);
+    // } else {
+    //   this.x = this.x + this.rotationSpeed.x * 0.001;
+    //   return degToRad(this.x);
+    // }
+
     if (this.rotationSpeed.x == 0) {
       if (this.netx != this.x && this.emitX) {
         app.net.send({
@@ -30213,43 +30228,92 @@ class Rotation {
         });
       }
       this.netx = this.x;
-      return (0, _utils.degToRad)(this.x);
+      if (this._cachedRadX === undefined || this._lastX !== this.x) {
+        this._cachedRadX = (0, _utils.degToRad)(this.x);
+        this._lastX = this.x;
+      }
+      return this._cachedRadX;
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
-      return (0, _utils.degToRad)(this.x);
+      this._cachedRadX = (0, _utils.degToRad)(this.x);
+      this._lastX = this.x;
+      return this._cachedRadX;
     }
   };
   getRotY = () => {
+    // if(this.rotationSpeed.y == 0) {
+    //   if(this.nety != this.y && this.emitY) {
+    //     // ---------------------------------------
+    //     if(this.teams.length == 0) {
+    //       app.net.send({
+    //         toRemote: this.toRemote,
+    //         remoteName: this.remoteName,
+    //         sceneName: this.emitY,
+    //         netRotY: this.y
+    //       });
+    //       this.nety = this.y;
+    //     } else {
+    //       if(this.teams[0].length > 0) app.net.send({
+    //         toRemote: this.teams[0],
+    //         sceneName: this.emitY,
+    //         netRotY: this.y
+    //       });
+    //       if(this.teams[1].length > 0) app.net.send({
+    //         toRemote: this.teams[1],
+    //         remoteName: this.remoteName,
+    //         sceneName: this.emitY,
+    //         netRotY: this.y
+    //       });
+    //       this.nety = this.y;
+    //     }
+    //   }
+    //   return degToRad(this.y);
+    // } else {
+    //   this.y = this.y + this.rotationSpeed.y * 0.001;
+    //   return degToRad(this.y);
+    // }
+
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
-        // ---------------------------------------
-        if (this.teams.length == 0) {
-          app.net.send({
-            toRemote: this.toRemote,
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          this.nety = this.y;
-        } else {
-          if (this.teams[0].length > 0) app.net.send({
-            toRemote: this.teams[0],
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          if (this.teams[1].length > 0) app.net.send({
-            toRemote: this.teams[1],
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          this.nety = this.y;
+        // net send code unchanged...
+
+        if (this.nety != this.y && this.emitY) {
+          // ---------------------------------------
+          if (this.teams.length == 0) {
+            app.net.send({
+              toRemote: this.toRemote,
+              remoteName: this.remoteName,
+              sceneName: this.emitY,
+              netRotY: this.y
+            });
+            this.nety = this.y;
+          } else {
+            if (this.teams[0].length > 0) app.net.send({
+              toRemote: this.teams[0],
+              sceneName: this.emitY,
+              netRotY: this.y
+            });
+            if (this.teams[1].length > 0) app.net.send({
+              toRemote: this.teams[1],
+              remoteName: this.remoteName,
+              sceneName: this.emitY,
+              netRotY: this.y
+            });
+            this.nety = this.y;
+          }
         }
+        this.nety = this.y;
       }
-      return (0, _utils.degToRad)(this.y);
+      if (this._cachedRotY === undefined || this._lastY !== this.y) {
+        this._cachedRotY = (0, _utils.degToRad)(this.y);
+        this._lastY = this.y;
+      }
+      return this._cachedRotY;
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
-      return (0, _utils.degToRad)(this.y);
+      this._cachedRotY = (0, _utils.degToRad)(this.y);
+      this._lastY = this.y;
+      return this._cachedRotY;
     }
   };
   getRotZ = () => {
@@ -30260,12 +30324,18 @@ class Rotation {
           sceneName: this.emitZ,
           netRotZ: this.z
         });
+        this.netz = this.z;
       }
-      this.netz = this.z;
-      return (0, _utils.degToRad)(this.z);
+      if (this._cachedRotZ === undefined || this._lastZ !== this.z) {
+        this._cachedRotZ = (0, _utils.degToRad)(this.z);
+        this._lastZ = this.z;
+      }
+      return this._cachedRotZ;
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
-      return (0, _utils.degToRad)(this.z);
+      this._cachedRotZ = (0, _utils.degToRad)(this.z);
+      this._lastZ = this.z;
+      return this._cachedRotZ;
     }
   };
 }
@@ -35310,9 +35380,17 @@ class MatrixAmmo {
     this.presentScore = '';
     this.speedUpSimulation = 1;
   }
+  initPhysicsScratch() {
+    this._trans = new Ammo.btTransform();
+    this._transform = new Ammo.btTransform();
+    this._origin = new Ammo.btVector3(0, 0, 0);
+    this._quat = new Ammo.btQuaternion();
+    this._axis = new Ammo.btVector3(0, 0, 0);
+  }
   init = () => {
     Ammo().then(Ammo => {
-      // Physics variables
+      // Physics 
+      this.initPhysicsScratch();
       this.dynamicsWorld = null;
       this.rigidBodies = [];
       this.Ammo = Ammo;
@@ -35533,36 +35611,32 @@ class MatrixAmmo {
   }
   updatePhysics() {
     if (typeof Ammo === 'undefined') return;
-    const trans = new Ammo.btTransform();
-    const transform = new Ammo.btTransform();
-    this.rigidBodies.forEach(function (body) {
+    this.rigidBodies.forEach(body => {
       if (body.isKinematic) {
-        transform.setIdentity();
-        transform.setOrigin(new Ammo.btVector3(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z));
-        const quat = new Ammo.btQuaternion();
-        quat.setRotation(new Ammo.btVector3(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z), (0, _utils.degToRad)(body.MEObject.rotation.angle));
-        transform.setRotation(quat);
-        body.setWorldTransform(transform);
+        this._transform.setIdentity();
+        this._origin.setValue(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z);
+        this._transform.setOrigin(this._origin);
+        this._axis.setValue(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z);
+        this._quat.setRotation(this._axis, (0, _utils.degToRad)(body.MEObject.rotation.angle));
+        this._transform.setRotation(this._quat);
+        body.setWorldTransform(this._transform);
         const ms = body.getMotionState();
-        if (ms) ms.setWorldTransform(transform);
+        if (ms) ms.setWorldTransform(this._transform);
       }
     });
-    Ammo.destroy(transform);
-
-    // Step simulation AFTER setting kinematic transforms
     const timeStep = 1 / 60;
     const maxSubSteps = 10;
     for (let i = 0; i < this.speedUpSimulation; i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }
-    this.rigidBodies.forEach(function (body) {
+    this.rigidBodies.forEach(body => {
       if (!body.isKinematic && body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        const _x = +trans.getOrigin().x().toFixed(2);
-        const _y = +trans.getOrigin().y().toFixed(2);
-        const _z = +trans.getOrigin().z().toFixed(2);
+        body.getMotionState().getWorldTransform(this._trans);
+        const _x = +this._trans.getOrigin().x().toFixed(2);
+        const _y = +this._trans.getOrigin().y().toFixed(2);
+        const _z = +this._trans.getOrigin().z().toFixed(2);
         body.MEObject.position.setPosition(_x, _y, _z);
-        const rot = trans.getRotation();
+        const rot = this._trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
         body.MEObject.rotation.axis.x = rotAxis.x();
@@ -35572,7 +35646,6 @@ class MatrixAmmo {
         body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
       }
     });
-    Ammo.destroy(trans);
     this.detectCollision();
   }
 }
