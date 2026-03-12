@@ -33916,25 +33916,27 @@ let touchCoordinate = exports.touchCoordinate = {
   y: 0,
   stopOnFirstDetectedHit: false
 };
-function multiplyMatrixVector(matrix, vector) {
-  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
-}
+const _invProj = _wgpuMatrix.mat4.create();
+const _invView = _wgpuMatrix.mat4.create();
+const _clip = new Float32Array([0, 0, 1, 1]);
+const _rayOrigin = new Float32Array(3);
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   const x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  const y = -((event.clientY - rect.top) / rect.height * 2 - 1); // flip Y (WebGPU NDC)
-
-  // Use precomputed projection if available
-  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
-  const invView = _wgpuMatrix.mat4.inverse(camera.view);
-  const clip = [x, y, 1, 1];
-  let eye = _wgpuMatrix.vec4.transformMat4(clip, invProjection);
+  const y = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  _wgpuMatrix.mat4.inverse(camera.projectionMatrix, _invProj);
+  _wgpuMatrix.mat4.inverse(camera.view, _invView);
+  _clip[0] = x;
+  _clip[1] = y;
+  let eye = _wgpuMatrix.vec4.transformMat4(_clip, _invProj);
   eye = [eye[0], eye[1], -1, 0];
-  const worldDir4 = _wgpuMatrix.vec4.transformMat4(eye, invView);
+  const worldDir4 = _wgpuMatrix.vec4.transformMat4(eye, _invView);
   const rayDirection = _wgpuMatrix.vec3.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
-  const rayOrigin = [...camera.position];
+  _rayOrigin[0] = camera.position[0];
+  _rayOrigin[1] = camera.position[1];
+  _rayOrigin[2] = camera.position[2];
   return {
-    rayOrigin,
+    rayOrigin: _rayOrigin,
     rayDirection,
     screen: {
       x,
@@ -34000,28 +34002,54 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   };
 }
 function computeWorldVertsAndAABB(object) {
-  const modelMatrix = object.getModelMatrix(object.position, true);
-  const worldVerts = [];
-  if (object.meshA) {
-    for (let i = 0; i < object.meshA.vertices.length; i += 3) {
-      const local = [object.meshA.vertices[i], object.meshA.vertices[i + 1], object.meshA.vertices[i + 2]];
-      const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix);
-      worldVerts.push(...world);
-    }
-  } else {
-    for (let i = 0; i < object.mesh.vertices.length; i += 3) {
-      const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
-      const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix);
-      worldVerts.push(...world);
-    }
+  // const modelMatrix = object.getModelMatrix(object.position, true);
+  // const worldVerts = [];
+  // if(object.meshA) {
+  //   for(let i = 0;i < object.meshA.vertices.length;i += 3) {
+  //     const local = [object.meshA.vertices[i], object.meshA.vertices[i + 1], object.meshA.vertices[i + 2]];
+  //     const world = vec3.transformMat4(local, modelMatrix);
+  //     worldVerts.push(...world);
+  //   }
+  // } else {
+  //   for(let i = 0;i < object.mesh.vertices.length;i += 3) {
+  //     const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
+  //     const world = vec3.transformMat4(local, modelMatrix);
+  //     worldVerts.push(...world);
+  //   }
+  // }
+  // const [boxMin, boxMax] = computeAABB(worldVerts);
+  // return {modelMatrix, worldVerts, boxMin, boxMax};
+
+  // Return cached AABB if object hasn't moved
+  if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
+    return object._aabbCache;
   }
-  const [boxMin, boxMax] = computeAABB(worldVerts);
-  return {
+  const modelMatrix = object.getModelMatrix(object.position, true);
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
+
+  // Compute AABB directly without building worldVerts array
+  for (let i = 0; i < verts.length; i += 3) {
+    const world = _wgpuMatrix.vec3.transformMat4([verts[i], verts[i + 1], verts[i + 2]], modelMatrix);
+    min[0] = Math.min(min[0], world[0]);
+    min[1] = Math.min(min[1], world[1]);
+    min[2] = Math.min(min[2], world[2]);
+    max[0] = Math.max(max[0], world[0]);
+    max[1] = Math.max(max[1], world[1]);
+    max[2] = Math.max(max[2], world[2]);
+  }
+
+  // Cache result with position snapshot
+  object._aabbCache = {
     modelMatrix,
-    worldVerts,
-    boxMin,
-    boxMax
+    boxMin: min,
+    boxMax: max,
+    x: object.position.x,
+    y: object.position.y,
+    z: object.position.z
   };
+  return object._aabbCache;
 }
 
 // 🧠 Dispatch rich event
