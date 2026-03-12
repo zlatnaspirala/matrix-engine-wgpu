@@ -63,7 +63,7 @@ export default class ProceduralMeshObj extends Materials {
     };
 
     this.pointerEffect = o.pointerEffect;
-    this._modelMatrix = mat4.identity();
+    this._modelMatrix = mat4.create();
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this.inputHandler = inputHandler;
@@ -96,7 +96,7 @@ export default class ProceduralMeshObj extends Materials {
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 1024;
+        this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = mat4.create();
         // Load textures if provided
         if(o.texturesPaths && o.texturesPaths.length > 0 && o.textureCache) {

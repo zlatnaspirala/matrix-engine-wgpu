@@ -1,4 +1,4 @@
-export let fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
+export let fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 512.0;
 
 struct Scene {
   lightViewProjMatrix : mat4x4f,

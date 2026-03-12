@@ -9,6 +9,7 @@ export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
+    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -17,12 +18,12 @@ export var loadObjFile = function() {
   }, () => {
 
     loadObjFile.addLight();
-
-    addEventListener('AmmoReady', () => {
-      addRaycastsAABBListener();
+ addRaycastsAABBListener();
 
 
-    })
+    // addEventListener('AmmoReady', () => {
+     
+    // })
 
 
     setTimeout(() => {

@@ -608,6 +608,7 @@ var loadObjFile = function () {
   let loadObjFile = new _world.default({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
+    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -620,9 +621,12 @@ var loadObjFile = function () {
     }
   }, () => {
     loadObjFile.addLight();
-    addEventListener('AmmoReady', () => {
-      (0, _raycast.addRaycastsAABBListener)();
-    });
+    (0, _raycast.addRaycastsAABBListener)();
+
+    // addEventListener('AmmoReady', () => {
+
+    // })
+
     setTimeout(() => {
       (0, _loaderObj.downloadMeshes)({
         ball: "./res/meshes/blender/sphere.obj",
@@ -25239,7 +25243,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.useScale = o.useScale || false;
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
-    this._modelMatrix = _wgpuMatrix.mat4.identity();
+    this._modelMatrix = _wgpuMatrix.mat4.create();
+    this._translateVec = new Float32Array(3);
+    this._scaleVec = new Float32Array(3);
 
     //cache
     this._camVP = _wgpuMatrix.mat4.create();
@@ -25470,7 +25476,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
-        this.shadowDepthTextureSize = 1024;
+        this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve();
@@ -26069,19 +26075,26 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
-        this._posArray[0] = pos.x;
-        this._posArray[1] = pos.y;
-        this._posArray[2] = pos.z;
-        _wgpuMatrix.mat4.translate(modelMatrix, this._posArray, modelMatrix);
-        // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._translateVec[0] = pos.x;
+        this._translateVec[1] = pos.y;
+        this._translateVec[2] = pos.z;
+        _wgpuMatrix.mat4.translate(modelMatrix, this._translateVec, modelMatrix);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(modelMatrix, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
           _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        if (useScale == true) {
+          this._scaleVec[0] = this.scale[0];
+          this._scaleVec[1] = this.scale[1];
+          this._scaleVec[2] = this.scale[2];
+          _wgpuMatrix.mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+        }
         return modelMatrix;
       };
       this.done = true;
@@ -26436,7 +26449,7 @@ class SpotLight {
     this.ambientFactor = 0.5;
     this.range = 20.0;
     this.shadowBias = 0.01;
-    this.SHADOW_RES = 1024;
+    this.SHADOW_RES = 512;
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'back',
@@ -30396,6 +30409,8 @@ class MEMeshObj extends _materials.default {
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
+    this._translateVec = new Float32Array(3);
+    this._scaleVec = new Float32Array(3);
     if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
@@ -30644,10 +30659,11 @@ class MEMeshObj extends _materials.default {
         buffer: weightsBuffer,
         stride: 16 // vec4<f32>
       };
+      this._modelMatrix = _wgpuMatrix.mat4.create();
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
-        this.shadowDepthTextureSize = 1024;
+        this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve();
@@ -30660,7 +30676,6 @@ class MEMeshObj extends _materials.default {
         format: this.presentationFormat,
         alphaMode: 'premultiplied'
       });
-      this._modelMatrix = _wgpuMatrix.mat4.identity();
 
       // Create the model vertex buffer.
       this.vertexBuffer = this.device.createBuffer({
@@ -31113,19 +31128,27 @@ class MEMeshObj extends _materials.default {
       };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
-        this._posArray[0] = pos.x;
-        this._posArray[1] = pos.y;
-        this._posArray[2] = pos.z;
-        _wgpuMatrix.mat4.translate(modelMatrix, this._posArray, modelMatrix);
-        // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        this._translateVec[0] = pos.x;
+        this._translateVec[1] = pos.y;
+        this._translateVec[2] = pos.z;
+        _wgpuMatrix.mat4.translate(modelMatrix, this._translateVec, modelMatrix);
         if (this.itIsPhysicsBody) {
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          // rotation axis array also allocates:
+          this._rotAxisVec[0] = this.rotation.axis.x;
+          this._rotAxisVec[1] = this.rotation.axis.y;
+          this._rotAxisVec[2] = this.rotation.axis.z;
+          _wgpuMatrix.mat4.rotate(modelMatrix, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
           _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        if (useScale == true) {
+          this._scaleVec[0] = this.scale[0];
+          this._scaleVec[1] = this.scale[1];
+          this._scaleVec[2] = this.scale[2];
+          _wgpuMatrix.mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+        }
         return modelMatrix;
       };
 
@@ -32464,7 +32487,7 @@ class ProceduralMeshObj extends _materials.default {
       onComplete: null
     };
     this.pointerEffect = o.pointerEffect;
-    this._modelMatrix = _wgpuMatrix.mat4.identity();
+    this._modelMatrix = _wgpuMatrix.mat4.create();
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this.inputHandler = inputHandler;
@@ -32499,7 +32522,7 @@ class ProceduralMeshObj extends _materials.default {
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
-        this.shadowDepthTextureSize = 1024;
+        this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         // Load textures if provided
         if (o.texturesPaths && o.texturesPaths.length > 0 && o.textureCache) {
@@ -35653,7 +35676,7 @@ class MatrixAmmo {
       }
     });
     const timeStep = 1 / 60;
-    const maxSubSteps = 10;
+    const maxSubSteps = 4;
     for (let i = 0; i < this.speedUpSimulation; i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }
@@ -36197,7 +36220,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fountainWaterVertexWGSL = exports.fountainCurtainFragmentWGSL = exports.fountainCapFragmentWGSL = exports.fountainBasinFragmentWGSL = void 0;
 const SHARED = `
-override shadowDepthTextureSize : f32 = 1024.0;
+override shadowDepthTextureSize : f32 = 512.0;
 const PI  : f32 = 3.141592653589793;
 const TAU : f32 = 6.283185307179586;
 
@@ -36734,7 +36757,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLGPT = void 0;
 let fragmentWGSLGPT = exports.fragmentWGSLGPT = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -36935,7 +36958,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.mirrorIlluminateFragmentWGSL = void 0;
 const mirrorIlluminateFragmentWGSL = exports.mirrorIlluminateFragmentWGSL = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -37265,7 +37288,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentVideoWGSL = void 0;
-let fragmentVideoWGSL = exports.fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
+let fragmentVideoWGSL = exports.fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 512.0;
 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
@@ -37354,7 +37377,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSL = void 0;
 let fragmentWGSL = exports.fragmentWGSL = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -37583,7 +37606,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSLMetal = void 0;
-let fragmentWGSLMetal = exports.fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = 1024.0;
+let fragmentWGSLMetal = exports.fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -37794,7 +37817,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSLNoCut = void 0;
-let fragmentWGSLNoCut = exports.fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = 1024.0;
+let fragmentWGSLNoCut = exports.fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -37973,7 +37996,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLNormalMap = void 0;
 let fragmentWGSLNormalMap = exports.fragmentWGSLNormalMap = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -38221,7 +38244,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLPong = void 0;
 let fragmentWGSLPong = exports.fragmentWGSLPong = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -38443,7 +38466,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSLPower = void 0;
-let fragmentWGSLPower = exports.fragmentWGSLPower = `override shadowDepthTextureSize: f32 = 1024.0;
+let fragmentWGSLPower = exports.fragmentWGSLPower = `override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -38678,7 +38701,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLInstanced = void 0;
 let fragmentWGSLInstanced = exports.fragmentWGSLInstanced = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -38929,7 +38952,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentMirrorWGSLInstanced = void 0;
 const fragmentMirrorWGSLInstanced = exports.fragmentMirrorWGSLInstanced = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -39672,7 +39695,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSLMix1 = void 0;
-let fragmentWGSLMix1 = exports.fragmentWGSLMix1 = `override shadowDepthTextureSize: f32 = 1024.0;
+let fragmentWGSLMix1 = exports.fragmentWGSLMix1 = `override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -41194,7 +41217,7 @@ let fragmentWaterWGSL = exports.fragmentWaterWGSL = `
 
 // DINAMIC GLOBALS
 const PI: f32 = 3.141592653589793;
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 
 // DINAMIC STRUCTS
 
@@ -45308,7 +45331,7 @@ function graphAdapter(compilerResult, nodes) {
 
   const globals = new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
-  globals.add("override shadowDepthTextureSize: f32 = 1024.0;");
+  globals.add("override shadowDepthTextureSize: f32 = 512.0;");
 
   // 3️⃣ Prepare final color outputs
   const baseColor = outputs.baseColor || "vec3f(1.0)";
@@ -53729,11 +53752,7 @@ class MatrixEngineWGPU {
   };
   createGlobalStuff() {
     //shadows fix
-    this.dummyBuffer = this.device.createBuffer({
-      size: 4,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.dummyData = new Float32Array(1);
+    this.SHADOW_RES = 512;
 
     // OPTIMISATION
     this.textureCache = new _coreCache.TextureCache(this.device);
@@ -53832,8 +53851,6 @@ class MatrixEngineWGPU {
     });
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
     this._emptyLight = new Float32Array(36); // reused for empty slots, stays zeroed
-
-    this.SHADOW_RES = 1024;
     this.createTexArrayForShadows();
     this.mainDepthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -53904,8 +53921,8 @@ class MatrixEngineWGPU {
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
-          width: 1024,
-          height: 1024,
+          width: this.SHADOW_RES,
+          height: this.SHADOW_RES,
           depthOrArrayLayers: numberOfLights
         },
         dimension: '2d',
@@ -53926,7 +53943,7 @@ class MatrixEngineWGPU {
         });
       }
       this.shadowVideoTexture = this.device.createTexture({
-        size: [1024, 1024],
+        size: [this.SHADOW_RES, this.SHADOW_RES],
         format: "depth32float",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
       });
@@ -54533,28 +54550,11 @@ class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
   updateLights() {
-    // const floatsPerLight = 36;
-    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   this._lightsData.set(
-    //     i < this.lightContainer.length
-    //       ? this.lightContainer[i].getLightDataBuffer()
-    //       : this._emptyLight,
-    //     i * floatsPerLight
-    //   );
-    // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
-
-    const floatsPerLight = 36; // not 20 anymore
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    const floatsPerLight = 36;
     for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
-      if (i < this.lightContainer.length) {
-        const buf = this.lightContainer[i].getLightDataBuffer();
-        data.set(buf, i * floatsPerLight);
-      } else {
-        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-      }
+      this._lightsData.set(i < this.lightContainer.length ? this.lightContainer[i].getLightDataBuffer() : this._emptyLight, i * floatsPerLight);
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
   }
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
@@ -54608,14 +54608,14 @@ class MatrixEngineWGPU {
       });
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
-          dimension: '2d',
-          baseArrayLayer: i,
-          arrayLayerCount: 1,
-          // must be > 0
-          baseMipLevel: 0,
-          mipLevelCount: 1
-        });
+        // let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+        //   dimension: '2d',
+        //   baseArrayLayer: i,
+        //   arrayLayerCount: 1, // must be > 0
+        //   baseMipLevel: 0,
+        //   mipLevelCount: 1,
+        // });
+
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],
@@ -54626,7 +54626,9 @@ class MatrixEngineWGPU {
             depthClearValue: 1.0
           }
         });
-        light.shadowTextureView2D = ViewPerLightRenderShadowPass;
+
+        // light.shadowTextureView2D = this.shadowPassViews[i];
+
         now = performance.now() / 1000;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           // if (mesh.name == "floor") continue; 

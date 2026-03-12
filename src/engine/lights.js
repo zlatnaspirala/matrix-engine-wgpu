@@ -98,7 +98,7 @@ export class SpotLight {
     this.range = 20.0;
     this.shadowBias = 0.01;
 
-    this.SHADOW_RES = 1024;
+    this.SHADOW_RES = 512;
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'back', // 'back', // for front interest border drawen shadows !

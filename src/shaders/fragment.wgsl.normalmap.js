@@ -1,5 +1,5 @@
 export let fragmentWGSLNormalMap = `
-override shadowDepthTextureSize: f32 = 1024.0;
+override shadowDepthTextureSize: f32 = 512.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {

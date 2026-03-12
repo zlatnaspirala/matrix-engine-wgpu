@@ -288,7 +288,7 @@ export default class MatrixAmmo {
     });
 
     const timeStep = 1 / 60;
-    const maxSubSteps = 10;
+    const maxSubSteps = 4;
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }

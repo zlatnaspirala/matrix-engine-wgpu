@@ -275,11 +275,7 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff() {
     //shadows fix
-    this.dummyBuffer = this.device.createBuffer({
-      size: 4,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    this.dummyData = new Float32Array(1);
+    this.SHADOW_RES = 512;
 
     // OPTIMISATION
     this.textureCache = new TextureCache(this.device);
@@ -384,14 +380,9 @@ export default class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
     this._emptyLight = new Float32Array(36); // reused for empty slots, stays zeroed
-
-    this.SHADOW_RES = 1024;
     this.createTexArrayForShadows()
-
     this.mainDepthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: 'depth24plus',
@@ -459,8 +450,8 @@ export default class MatrixEngineWGPU {
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
-          width: 1024,
-          height: 1024,
+          width: this.SHADOW_RES,
+          height: this.SHADOW_RES,
           depthOrArrayLayers: numberOfLights,
         },
         dimension: '2d',
@@ -484,7 +475,7 @@ export default class MatrixEngineWGPU {
       }
 
       this.shadowVideoTexture = this.device.createTexture({
-        size: [1024, 1024],
+        size: [this.SHADOW_RES, this.SHADOW_RES],
         format: "depth32float",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       });
@@ -874,28 +865,16 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
-    // const floatsPerLight = 36;
-    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   this._lightsData.set(
-    //     i < this.lightContainer.length
-    //       ? this.lightContainer[i].getLightDataBuffer()
-    //       : this._emptyLight,
-    //     i * floatsPerLight
-    //   );
-    // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
-
-    const floatsPerLight = 36; // not 20 anymore
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      if(i < this.lightContainer.length) {
-        const buf = this.lightContainer[i].getLightDataBuffer();
-        data.set(buf, i * floatsPerLight);
-      } else {
-        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-      }
+      this._lightsData.set(
+        i < this.lightContainer.length
+          ? this.lightContainer[i].getLightDataBuffer()
+          : this._emptyLight,
+        i * floatsPerLight
+      );
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
   }
 
   frameSinglePass = () => {
@@ -949,26 +928,26 @@ export default class MatrixEngineWGPU {
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
-          dimension: '2d',
-          baseArrayLayer: i,
-          arrayLayerCount: 1, // must be > 0
-          baseMipLevel: 0,
-          mipLevelCount: 1,
-        });
+        // let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+        //   dimension: '2d',
+        //   baseArrayLayer: i,
+        //   arrayLayerCount: 1, // must be > 0
+        //   baseMipLevel: 0,
+        //   mipLevelCount: 1,
+        // });
 
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],
           depthStencilAttachment: {
-            view:  this.shadowPassViews[i],
+            view: this.shadowPassViews[i],
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
             depthClearValue: 1.0,
           }
         });
 
-        light.shadowTextureView2D = ViewPerLightRenderShadowPass;
+        // light.shadowTextureView2D = this.shadowPassViews[i];
 
         now = performance.now() / 1000;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
