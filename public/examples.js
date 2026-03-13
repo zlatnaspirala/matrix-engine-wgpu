@@ -53845,6 +53845,8 @@ class MatrixEngineWGPU {
     // cache
     this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this._invViewProj = _wgpuMatrix.mat4.create();
+    this._tempViewProj = _wgpuMatrix.mat4.create();
+    this._identity = _wgpuMatrix.mat4.identity();
     if (typeof options.dontUsePhysics === 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
@@ -54792,45 +54794,38 @@ class MatrixEngineWGPU {
     let now;
     const currentTime = performance.now() / 1000;
     this._bufferUpdates.length = 0;
-    this.mainRenderBundle.forEach(m => {
+    for (let i = 0; i < this.mainRenderBundle.length; i++) {
+      const m = this.mainRenderBundle[i];
       if (m.vertexAnimBuffer && m.vertexAnimParams) {
         m.time = currentTime * m.deltaTimeAdapter;
         m.vertexAnimParams[0] = m.time;
-        this._bufferUpdates.push({
-          buffer: m.vertexAnimBuffer,
-          data: m.vertexAnimParams
-        });
+        // Immediate update is faster on mobile than storing in intermediate objectss
+        this.device.queue.writeBuffer(m.vertexAnimBuffer, 0, m.vertexAnimParams);
       }
-      if (m.isVideo == true) {
-        if (!m.externalTexture) {
-          m.createBindGroupForRender();
-          setTimeout(() => {
-            requestAnimationFrame(this.frame);
-          }, 300);
-          return;
-        }
+      // Video handling...
+      if (m.isVideo && !m.externalTexture) {
+        m.createBindGroupForRender();
+        setTimeout(() => requestAnimationFrame(this.frame), 300);
+        return;
       }
-    });
-    for (const update of this._bufferUpdates) {
-      this.device.queue.writeBuffer(update.buffer, 0, update.data);
     }
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
-      this.mainRenderBundle.forEach((mesh, index) => {
+      for (let i = 0; i < this.mainRenderBundle.length; i++) {
+        const mesh = this.mainRenderBundle[i];
         mesh.position.update();
         mesh.updateModelUniformBuffer();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(currentTime);
         if (mesh.update) mesh.update(mesh.time);
-        if (mesh.updateTime) {
-          mesh.updateTime(currentTime);
-        }
-        this.lightContainer.forEach(light => {
+        if (mesh.updateTime) mesh.updateTime(currentTime);
+        for (let j = 0; j < this.lightContainer.length; j++) {
+          const light = this.lightContainer[j];
           light.update();
-          mesh.getTransformationMatrix(this.mainRenderBundle, light, index);
-        });
-      });
+          mesh.getTransformationMatrix(this.mainRenderBundle, light, i);
+        }
+      }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass({
@@ -54913,22 +54908,25 @@ class MatrixEngineWGPU {
       const cam = this.cameras[this.mainCameraParams.type];
       if (this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity());
+      // const viewProjMatrix = mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity());
+      _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._tempViewProj);
+      const viewProjMatrix = this._tempViewProj;
       for (const mesh of this.mainRenderBundle) {
-        if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
-          const effect = mesh.effects[effect_];
-          if (effect == null || effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
-          if (effect.updateInstanceData) effect.updateInstanceData(md);
-          effect.render(transPass, mesh, viewProjMatrix);
-        });
+        if (mesh.effects) {
+          for (const effectName in mesh.effects) {
+            const effect = mesh.effects[effectName];
+            if (!effect || effect.enabled === false) continue;
+            let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
+            if (effect.updateInstanceData) effect.updateInstanceData(md);
+            effect.render(transPass, mesh, viewProjMatrix);
+          }
+        }
       }
       transPass.end();
       // volumetric
       if (this.volumetricPass.enabled === true) {
         _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
-        // Grab first light for direction + shadow matrix
         const light = this.lightContainer[0];
         this.volumetricPass.render(commandEncoder, this.sceneTextureView,
         // ← your existing scene color
@@ -54945,7 +54943,6 @@ class MatrixEngineWGPU {
         });
       }
       const canvasView = this.context.getCurrentTexture().createView();
-      // Bloom
       if (this.bloomPass.enabled == true) {
         const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
