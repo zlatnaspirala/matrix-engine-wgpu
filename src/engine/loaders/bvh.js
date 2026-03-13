@@ -102,26 +102,52 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   buildNodeChannelMap() {
-    this._nodeChannels.clear();
+  
+  const anim = this.glb.glbJsonData.animations[this.animationIndex];
+  const nodeCount = this.glb.glbJsonData.nodes.length;
 
-    const anim = this.glb.glbJsonData.animations[this.animationIndex];
+  this._nodeChannelsArray = new Array(nodeCount);
 
-    for(const channel of anim.channels) {
-      if(!this._nodeChannels.has(channel.target.node)) {
-        this._nodeChannels.set(channel.target.node, []);
-      }
-      this._nodeChannels.get(channel.target.node).push(channel);
+  for (let i = 0; i < anim.channels.length; i++) {
+    const channel = anim.channels[i];
+    const nodeIndex = channel.target.node;
+
+    if (!this._nodeChannelsArray[nodeIndex]) {
+      this._nodeChannelsArray[nodeIndex] = [];
     }
 
-    // ── Pre-cache accessor arrays + metadata per channel ─────────────
-    for(const channel of anim.channels) {
-      const sampler = anim.samplers[channel.sampler];  // ← from glbJsonData
-      channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
-      channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
-      channel._numComponents = channel.target.path === 'rotation' ? 4 : 3;
-      channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
-      channel._isStep = sampler.interpolation === 'STEP';  // bonus: handle STEP correctly
+    this._nodeChannelsArray[nodeIndex].push(channel);
+  }
+
+  // metadata cache
+  for (let i = 0; i < anim.channels.length; i++) {
+    const channel = anim.channels[i];
+    const sampler = anim.samplers[channel.sampler];
+
+    channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
+    channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
+    channel._numComponents = channel.target.path === 'rotation' ? 4 : 3;
+    channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
+    channel._isStep = sampler.interpolation === 'STEP';
+    channel._lastKeyIndex = 0;
+    channel._pathType =
+      channel.target.path === 'rotation' ? 2 :
+      channel.target.path === 'translation' ? 0 : 1;
+    channel._lastFrame = channel._inputTimes.length - 1;
+  }
+
+  this._animationLength = this.getAnimationLength(anim);
+  }
+
+  getAnimationLength(animation) {
+    let maxTime = 0;
+    for(const channel of animation.channels) {
+      const sampler = animation.samplers[channel.sampler];
+      const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+      const lastTime = inputTimes[inputTimes.length - 1];
+      if(lastTime > maxTime) maxTime = lastTime;
     }
+    return maxTime;
   }
 
   makeSkeletal() {
@@ -449,33 +475,31 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const samplers = glbAnimation.samplers;
-    // --- Map channels per node for faster lookup
     const nodeChannels = this._nodeChannels;
     for(let j = 0;j < this.skeleton.length;j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-
-      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
+      const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
       for(const channel of channelsForNode) {
-        const path = channel.target.path;
-        const inputTimes = channel._inputTimes;   // ← pre-cached, no getAccessorArray call
-        const outputArray = channel._outputArray;  // ← pre-cached
-        const numComponents = channel._numComponents;
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
         const animTime = time % channel._animLength;
+        const lastFrame = channel._lastFrame;
+        const pathType = channel._pathType;
 
-        let i = 0;
-        while(i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+        let i = channel._lastKeyIndex;
+        if(inputTimes[i] > animTime) i = 0;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
 
         if(channel._isStep) {
-          // STEP: just copy keyframe i directly, no interpolation
-          const base0 = i * numComponents;
-          if(path === 'rotation') {
+          const base0 = i * channel._numComponents;
+          if(pathType === 2) {
             node.rotation[0] = outputArray[base0];
             node.rotation[1] = outputArray[base0 + 1];
             node.rotation[2] = outputArray[base0 + 2];
             node.rotation[3] = outputArray[base0 + 3];
-          } else if(path === 'translation') {
+          } else if(pathType === 0) {
             node.translation[0] = outputArray[base0];
             node.translation[1] = outputArray[base0 + 1];
             node.translation[2] = outputArray[base0 + 2];
@@ -485,29 +509,25 @@ export class BVHPlayer extends MEMeshObj {
             node.scale[2] = outputArray[base0 + 2];
           }
         } else {
-          // LINEAR
           const t0 = inputTimes[i];
-          const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+          const t1 = inputTimes[Math.min(i + 1, lastFrame)];
           const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-          const base0 = i * numComponents;
-          const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
-
-          if(path === 'translation') {
+          const base0 = i * channel._numComponents;
+          const base1 = Math.min(i + 1, lastFrame) * channel._numComponents;
+          if(pathType === 0) {
             node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
             node.translation[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if(path === 'scale') {
+          } else if(pathType === 1) {
             node.scale[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.scale[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
             node.scale[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if(path === 'rotation') {
-            // subarray() replaced with direct indices — no object creation
+          } else {
             this.slerp(outputArray, base0, outputArray, base1, factor, node.rotation);
           }
         }
       }
-      // --- Recompose local transform
-      this.composeTRS(node.translation, node.rotation, node.scale, node.transform)
+      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
     }
     for(const nodeIndex of this._sortedNodes) {
       const node = nodes[nodeIndex];

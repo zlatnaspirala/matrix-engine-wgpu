@@ -22864,11 +22864,12 @@ function createInputHandler(window, canvas) {
   canvas.addEventListener('pointerup', () => {
     mouseDown = false;
   });
+  const MOUSE_SENS = 0.1;
   canvas.addEventListener('pointermove', e => {
     mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
     if (mouseDown) {
-      analog.x += e.movementX / 10;
-      analog.y += e.movementY / 10;
+      analog.x += e.movementX * MOUSE_SENS;
+      analog.y += e.movementY * MOUSE_SENS;
     }
   });
   canvas.addEventListener('wheel', e => {
@@ -22927,6 +22928,11 @@ class RPGCamera extends CameraBase {
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
 
+      this._posScratch = _wgpuMatrix.vec3.create();
+      this._targetVelScratch = _wgpuMatrix.vec3.create();
+      this._rotYScratch = _wgpuMatrix.mat4.create();
+      this._rotXScratch = _wgpuMatrix.mat4.create();
+      this._viewScratch = _wgpuMatrix.mat4.create();
       this.mousRollInAction = false;
       addEventListener('wheel', e => {
         // Scroll up = zoom out / higher Y
@@ -22948,19 +22954,12 @@ class RPGCamera extends CameraBase {
   }
   update(deltaTime, input) {
     const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
-    // Apply the delta rotation to the pitch and yaw angles
-    this.yaw = 0; //-= input.analog.x * deltaTime * this.rotationSpeed;
-    this.pitch = -0.88; //  -= input.analog.y * deltaTime * this.rotationSpeed;
-    // // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
+    this.yaw = 0;
+    this.pitch = -0.88;
     this.yaw = mod(this.yaw, Math.PI * 2);
-    // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-    // Save the current position, as we're about to rebuild the camera matrix.
     if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
-      //  console.log("  follow : " + this.followMe.x)
-
       this.followMeOffset = this.scrollY;
-      // if player not move allow mouse explore map 
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
       app.lightContainer[0].position[0] = this.followMe.x;
@@ -22971,30 +22970,44 @@ class RPGCamera extends CameraBase {
     }
     const smoothFactor = 0.1;
     this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
-    let position = _wgpuMatrix.vec3.copy(this.position);
-    // Reconstruct the camera's rotation, and store into the camera matrix.
-    super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
-    // Calculate the new target velocity
+
+    // ← was: let position = vec3.copy(this.position)  — allocated new vec3
+    _wgpuMatrix.vec3.copy(this.position, this._posScratch);
+
+    // ← was: mat4.rotateX(mat4.rotationY(...))  — 2 new mat4s
+    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
+    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
+    super.matrix = this._rotXScratch;
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
-    const targetVelocity = _wgpuMatrix.vec3.create();
     const deltaBack = sign(digital.backward, digital.forward);
-    // older then follow
-    if (deltaBack == -1) {
-      // console.log(deltaBack + "  deltaBack ")
-      position[2] += -10;
-    } else if (deltaBack == 1) {
-      position[2] += 10;
-    }
-    position[0] += deltaRight * 10;
-    _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
-    _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
-    _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
-    this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
-    this.view = _wgpuMatrix.mat4.invert(this.matrix);
+    if (deltaBack == -1) this._posScratch[2] += -10;else if (deltaBack == 1) this._posScratch[2] += 10;
+    this._posScratch[0] += deltaRight * 10;
+
+    // ← was: const targetVelocity = vec3.create()  — allocated new vec3
+    this._targetVelScratch[0] = 0;
+    this._targetVelScratch[1] = 0;
+    this._targetVelScratch[2] = 0;
+    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.right, deltaRight, this._targetVelScratch);
+    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.up, deltaUp, this._targetVelScratch);
+    _wgpuMatrix.vec3.normalize(this._targetVelScratch, this._targetVelScratch);
+    _wgpuMatrix.vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
+
+    // ← was: lerp(targetVelocity, this.velocity, t)  — lerp allocated internally
+    const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
+    this._targetVelScratch[0] += (this.velocity_[0] - this._targetVelScratch[0]) * t;
+    this._targetVelScratch[1] += (this.velocity_[1] - this._targetVelScratch[1]) * t;
+    this._targetVelScratch[2] += (this.velocity_[2] - this._targetVelScratch[2]) * t;
+    _wgpuMatrix.vec3.copy(this._targetVelScratch, this.velocity_);
+
+    // ← was: vec3.addScaled(position, ...)  — position was the old allocated vec3
+    _wgpuMatrix.vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
+    this.position = this._posScratch;
+
+    // ← was: mat4.invert(this.matrix)  — new mat4
+    _wgpuMatrix.mat4.invert(this.matrix, this._viewScratch);
+    super.view = this._viewScratch;
     return this.view;
   }
   recalculateAngles(dir) {
@@ -27509,24 +27522,32 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this._sortedNodes = sorted;
   }
   buildNodeChannelMap() {
-    this._nodeChannels.clear();
     const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    for (const channel of anim.channels) {
-      if (!this._nodeChannels.has(channel.target.node)) {
-        this._nodeChannels.set(channel.target.node, []);
+    const nodeCount = this.glb.glbJsonData.nodes.length;
+    this._nodeChannelsArray = new Array(nodeCount);
+    for (let i = 0; i < anim.channels.length; i++) {
+      const channel = anim.channels[i];
+      const nodeIndex = channel.target.node;
+      if (!this._nodeChannelsArray[nodeIndex]) {
+        this._nodeChannelsArray[nodeIndex] = [];
       }
-      this._nodeChannels.get(channel.target.node).push(channel);
+      this._nodeChannelsArray[nodeIndex].push(channel);
     }
 
-    // ── Pre-cache accessor arrays + metadata per channel ─────────────
-    for (const channel of anim.channels) {
-      const sampler = anim.samplers[channel.sampler]; // ← from glbJsonData
+    // metadata cache
+    for (let i = 0; i < anim.channels.length; i++) {
+      const channel = anim.channels[i];
+      const sampler = anim.samplers[channel.sampler];
       channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
       channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
       channel._numComponents = channel.target.path === 'rotation' ? 4 : 3;
       channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
-      channel._isStep = sampler.interpolation === 'STEP'; // bonus: handle STEP correctly
+      channel._isStep = sampler.interpolation === 'STEP';
+      channel._lastKeyIndex = 0;
+      channel._pathType = channel.target.path === 'rotation' ? 2 : channel.target.path === 'translation' ? 0 : 1;
+      channel._lastFrame = channel._inputTimes.length - 1;
     }
+    this._animationLength = this.getAnimationLength(anim);
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -27939,29 +27960,31 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     out[3] = s0 * aw + s1 * bw;
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
-    const samplers = glbAnimation.samplers;
     const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
+      const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
       for (const channel of channelsForNode) {
-        const path = channel.target.path;
-        const inputTimes = channel._inputTimes; // ← pre-cached, no getAccessorArray call
-        const outputArray = channel._outputArray; // ← pre-cached
-        const numComponents = channel._numComponents;
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
         const animTime = time % channel._animLength;
-        let i = 0;
-        while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+        const lastFrame = channel._lastFrame;
+        const pathType = channel._pathType;
+
+        // ← cached index, O(1) for most frames
+        let i = channel._lastKeyIndex;
+        if (inputTimes[i] > animTime) i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
         if (channel._isStep) {
-          // STEP: just copy keyframe i directly, no interpolation
-          const base0 = i * numComponents;
-          if (path === 'rotation') {
+          const base0 = i * channel._numComponents;
+          if (pathType === 2) {
             node.rotation[0] = outputArray[base0];
             node.rotation[1] = outputArray[base0 + 1];
             node.rotation[2] = outputArray[base0 + 2];
             node.rotation[3] = outputArray[base0 + 3];
-          } else if (path === 'translation') {
+          } else if (pathType === 0) {
             node.translation[0] = outputArray[base0];
             node.translation[1] = outputArray[base0 + 1];
             node.translation[2] = outputArray[base0 + 2];
@@ -27971,22 +27994,20 @@ class BVHPlayerInstances extends _meshObjInstances.default {
             node.scale[2] = outputArray[base0 + 2];
           }
         } else {
-          // LINEAR
           const t0 = inputTimes[i];
-          const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+          const t1 = inputTimes[Math.min(i + 1, lastFrame)];
           const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-          const base0 = i * numComponents;
-          const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
-          if (path === 'translation') {
+          const base0 = i * channel._numComponents;
+          const base1 = Math.min(i + 1, lastFrame) * channel._numComponents;
+          if (pathType === 0) {
             node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
             node.translation[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if (path === 'scale') {
+          } else if (pathType === 1) {
             node.scale[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.scale[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
             node.scale[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if (path === 'rotation') {
-            // subarray() replaced with direct indices — no object creation
+          } else {
             this.slerp(outputArray, base0, outputArray, base1, factor, node.rotation);
           }
         }
@@ -28128,24 +28149,42 @@ class BVHPlayer extends _meshObj.default {
     this._sortedNodes = sorted;
   }
   buildNodeChannelMap() {
-    this._nodeChannels.clear();
     const anim = this.glb.glbJsonData.animations[this.animationIndex];
-    for (const channel of anim.channels) {
-      if (!this._nodeChannels.has(channel.target.node)) {
-        this._nodeChannels.set(channel.target.node, []);
+    const nodeCount = this.glb.glbJsonData.nodes.length;
+    this._nodeChannelsArray = new Array(nodeCount);
+    for (let i = 0; i < anim.channels.length; i++) {
+      const channel = anim.channels[i];
+      const nodeIndex = channel.target.node;
+      if (!this._nodeChannelsArray[nodeIndex]) {
+        this._nodeChannelsArray[nodeIndex] = [];
       }
-      this._nodeChannels.get(channel.target.node).push(channel);
+      this._nodeChannelsArray[nodeIndex].push(channel);
     }
 
-    // ── Pre-cache accessor arrays + metadata per channel ─────────────
-    for (const channel of anim.channels) {
-      const sampler = anim.samplers[channel.sampler]; // ← from glbJsonData
+    // metadata cache
+    for (let i = 0; i < anim.channels.length; i++) {
+      const channel = anim.channels[i];
+      const sampler = anim.samplers[channel.sampler];
       channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
       channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
       channel._numComponents = channel.target.path === 'rotation' ? 4 : 3;
       channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
-      channel._isStep = sampler.interpolation === 'STEP'; // bonus: handle STEP correctly
+      channel._isStep = sampler.interpolation === 'STEP';
+      channel._lastKeyIndex = 0;
+      channel._pathType = channel.target.path === 'rotation' ? 2 : channel.target.path === 'translation' ? 0 : 1;
+      channel._lastFrame = channel._inputTimes.length - 1;
     }
+    this._animationLength = this.getAnimationLength(anim);
+  }
+  getAnimationLength(animation) {
+    let maxTime = 0;
+    for (const channel of animation.channels) {
+      const sampler = animation.samplers[channel.sampler];
+      const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+      const lastTime = inputTimes[inputTimes.length - 1];
+      if (lastTime > maxTime) maxTime = lastTime;
+    }
+    return maxTime;
   }
   makeSkeletal() {
     let skin = this.glb.skins[0];
@@ -28528,30 +28567,29 @@ class BVHPlayer extends _meshObj.default {
     out[3] = s0 * aw + s1 * bw;
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const samplers = glbAnimation.samplers;
-    // --- Map channels per node for faster lookup
     const nodeChannels = this._nodeChannels;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
-      const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
+      const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
       for (const channel of channelsForNode) {
-        const path = channel.target.path;
-        const inputTimes = channel._inputTimes; // ← pre-cached, no getAccessorArray call
-        const outputArray = channel._outputArray; // ← pre-cached
-        const numComponents = channel._numComponents;
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
         const animTime = time % channel._animLength;
-        let i = 0;
-        while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+        const lastFrame = channel._lastFrame;
+        const pathType = channel._pathType;
+        let i = channel._lastKeyIndex;
+        if (inputTimes[i] > animTime) i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
         if (channel._isStep) {
-          // STEP: just copy keyframe i directly, no interpolation
-          const base0 = i * numComponents;
-          if (path === 'rotation') {
+          const base0 = i * channel._numComponents;
+          if (pathType === 2) {
             node.rotation[0] = outputArray[base0];
             node.rotation[1] = outputArray[base0 + 1];
             node.rotation[2] = outputArray[base0 + 2];
             node.rotation[3] = outputArray[base0 + 3];
-          } else if (path === 'translation') {
+          } else if (pathType === 0) {
             node.translation[0] = outputArray[base0];
             node.translation[1] = outputArray[base0 + 1];
             node.translation[2] = outputArray[base0 + 2];
@@ -28561,27 +28599,24 @@ class BVHPlayer extends _meshObj.default {
             node.scale[2] = outputArray[base0 + 2];
           }
         } else {
-          // LINEAR
           const t0 = inputTimes[i];
-          const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+          const t1 = inputTimes[Math.min(i + 1, lastFrame)];
           const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-          const base0 = i * numComponents;
-          const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
-          if (path === 'translation') {
+          const base0 = i * channel._numComponents;
+          const base1 = Math.min(i + 1, lastFrame) * channel._numComponents;
+          if (pathType === 0) {
             node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
             node.translation[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if (path === 'scale') {
+          } else if (pathType === 1) {
             node.scale[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.scale[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
             node.scale[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if (path === 'rotation') {
-            // subarray() replaced with direct indices — no object creation
+          } else {
             this.slerp(outputArray, base0, outputArray, base1, factor, node.rotation);
           }
         }
       }
-      // --- Recompose local transform
       this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
     }
     for (const nodeIndex of this._sortedNodes) {
