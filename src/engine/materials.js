@@ -624,6 +624,7 @@ export default class Materials {
       });
       // Special case for video maybe better solution exist
       if(this.video.paused == true) this.video.play();
+      this.isWaiting = false;
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [mesh][materials]',

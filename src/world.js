@@ -780,6 +780,7 @@ export default class MatrixEngineWGPU {
   }
 
   async run(callback) {
+    this._lastPipeline = null;
     this.frame = this.frameSinglePass;
     setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
     setTimeout(() => {callback(this)}, 200)
@@ -863,27 +864,26 @@ export default class MatrixEngineWGPU {
     let now;
     const currentTime = performance.now() / 1000;
     this._bufferUpdates.length = 0;
-    for(let i = 0;i < this.mainRenderBundle.length;i++) {
-      const m = this.mainRenderBundle[i];
-      if(m.vertexAnimBuffer && m.vertexAnimParams) {
-        m.time = currentTime * m.deltaTimeAdapter;
-        m.vertexAnimParams[0] = m.time;
-        // Immediate update is faster on mobile than storing in intermediate objectss
-        this.device.queue.writeBuffer(m.vertexAnimBuffer, 0, m.vertexAnimParams);
-      }
-      // Video handling...
-      if(m.isVideo && !m.externalTexture) {
-        m.createBindGroupForRender();
-        setTimeout(() => requestAnimationFrame(this.frame), 300);
-        return;
-      }
-    }
+
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       for(let i = 0;i < this.mainRenderBundle.length;i++) {
         const mesh = this.mainRenderBundle[i];
+        if(mesh.vertexAnimBuffer && mesh.vertexAnimParams) {
+          mesh.time = currentTime * mesh.deltaTimeAdapter;
+          mesh.vertexAnimParams[0] = mesh.time;
+          this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
+        }
+        // Video handling...
+        if(mesh.isVideo && !mesh.externalTexture) {
+          if(!mesh.isWaiting) {
+            mesh.isWaiting = true;
+            mesh.createBindGroupForRender();
+          }
+          continue;
+        }
         mesh.position.update();
         mesh.updateModelUniformBuffer();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(currentTime);
@@ -891,7 +891,7 @@ export default class MatrixEngineWGPU {
         if(mesh.updateTime) mesh.updateTime(currentTime);
         for(let j = 0;j < this.lightContainer.length;j++) {
           const light = this.lightContainer[j];
-          light.update();
+          if(i === 0) light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, i);
         }
       }
