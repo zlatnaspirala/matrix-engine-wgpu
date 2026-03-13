@@ -3,7 +3,7 @@ import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -27,8 +27,6 @@ import {FlameEffect} from "./engine/effects/flame.js";
 import ProceduralMeshObj, {MeshMorpher} from "./engine/procedural-mesh.js";
 import {FOUNTAIN_COLUMN_TOP, fountainBasinConfig, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainMeshConfig, fountainStructureConfig, fountainWaterConfig} from "./engine/procedures/fontana.js";
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
-import {vertexWGSL} from "./shaders/vertex.wgsl.js";
-
 
 /**
  * @description
@@ -39,7 +37,7 @@ import {vertexWGSL} from "./shaders/vertex.wgsl.js";
  * @github zlatnaspirala
  */
 export default class MatrixEngineWGPU {
-  // save class reference
+  // Save class reference
   reference = {
     MEMeshObj,
     MEMeshObjInstances,
@@ -100,8 +98,6 @@ export default class MatrixEngineWGPU {
         responseCoef: 2000
       }
     }
-
-    // in case of optimisation
     if(typeof options.dontUsePhysics == 'undefined') {
       this.physicsBodiesGenerator = physicsBodiesGenerator.bind(this);
       this.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall.bind(this);
@@ -235,6 +231,8 @@ export default class MatrixEngineWGPU {
     // canvas.width = canvas.clientWidth * devicePixelRatio;
     // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
+    console.log('test mobile ', presentationFormat)
 
     this.context.configure({
       device: this.device,
@@ -370,9 +368,10 @@ export default class MatrixEngineWGPU {
       `
         }),
         entryPoint: 'main',
-        targets: [{format: 'bgra8unorm'}], // rgba16float  bgra8unorm
+        targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}], // rgba16float  bgra8unorm rgba8unorm
       },
     });
+
 
     this.createBloomBindGroup();
 
@@ -980,18 +979,18 @@ export default class MatrixEngineWGPU {
           pass.setPipeline(this.mainRenderBundle[0].pipeline);
         }
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
-          for(const m of this.mainRenderBundle) {
-            if(m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-              m.shadowDepthTextureView = this.shadowVideoView;
-              m.FINISH_VIDIO_INIT = true;
-              m.setupPipeline();
-              pass.setPipeline(mesh.pipeline);
-            } else {
-              m.shadowDepthTextureView = this.shadowArrayView;
-              if(m.setupPipeline) m.setupPipeline();
-            }
+          // for(const m of this.mainRenderBundle) {
+          if(mesh.isVideo == true) {
+            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+            mesh.shadowDepthTextureView = this.shadowVideoView;
+            mesh.FINISH_VIDIO_INIT = true;
+            mesh.setupPipeline();
+            pass.setPipeline(mesh.pipeline);
+          } else {
+            mesh.shadowDepthTextureView = this.shadowArrayView;
+            if(mesh.setupPipeline) mesh.setupPipeline();
           }
+          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -1000,18 +999,18 @@ export default class MatrixEngineWGPU {
         if(mesh.material?.useBlend !== true) continue;
         pass.setPipeline(mesh.pipelineTransparent);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
-          for(const m of this.mainRenderBundle) {
-            if(m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-              m.shadowDepthTextureView = this.shadowVideoView;
-              m.FINISH_VIDIO_INIT = true;
-              m.setupPipeline();
-              pass.setPipeline(mesh.pipelineTransparent);
-            } else {
-              m.shadowDepthTextureView = this.shadowArrayView;
-              m.setupPipeline();
-            }
+          // for(const m of this.mainRenderBundle) {
+          if(mesh.isVideo == true) {
+            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+            mesh.shadowDepthTextureView = this.shadowVideoView;
+            mesh.FINISH_VIDIO_INIT = true;
+            mesh.setupPipeline();
+            pass.setPipeline(mesh.pipelineTransparent);
+          } else {
+            mesh.shadowDepthTextureView = this.shadowArrayView;
+            mesh.setupPipeline();
           }
+          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -1034,10 +1033,6 @@ export default class MatrixEngineWGPU {
       // volumetric
       if(this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
-        // If you don't store it yet, compute once per frame:
-        // const invViewProj = mat4.invert(
-        //   mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
-        // );
         mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix

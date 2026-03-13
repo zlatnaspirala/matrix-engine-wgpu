@@ -18,7 +18,7 @@ window.urlQ = urlQuery;
 
 if('serviceWorker' in navigator) {
   if(location.hostname.indexOf('localhost') == -1) {
-    navigator.serviceWorker.register('cache.js');
+    // navigator.serviceWorker.register('cache.js');
   }
 }
 

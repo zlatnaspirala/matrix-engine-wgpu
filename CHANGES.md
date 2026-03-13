@@ -1,6 +1,9 @@
 ## CHANGES [Started from feb 2026]
 
 
+[1.9.6] Mobile render back HOT FIX
+        Clear allocations from loop
+
 [1.9.5]
 ### ProceduralMesh
 

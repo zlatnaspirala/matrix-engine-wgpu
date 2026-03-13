@@ -19,7 +19,7 @@ var _utils = require("./src/engine/utils.js");
 window.urlQ = _utils.urlQuery;
 if ('serviceWorker' in navigator) {
   if (location.hostname.indexOf('localhost') == -1) {
-    navigator.serviceWorker.register('cache.js');
+    // navigator.serviceWorker.register('cache.js');
   }
 }
 const switchDemo = id => {
@@ -53510,7 +53510,6 @@ var _flame = require("./engine/effects/flame.js");
 var _proceduralMesh = _interopRequireWildcard(require("./engine/procedural-mesh.js"));
 var _fontana = require("./engine/procedures/fontana.js");
 var _fontanaWgsl = require("./shaders/fontana/fontana.wgsl.js");
-var _vertexWgsl = require("./shaders/vertex.wgsl.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
@@ -53522,7 +53521,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * @github zlatnaspirala
  */
 class MatrixEngineWGPU {
-  // save class reference
+  // Save class reference
   reference = {
     MEMeshObj: _meshObj.default,
     MEMeshObjInstances: _meshObjInstances.default,
@@ -53589,8 +53588,6 @@ class MatrixEngineWGPU {
         responseCoef: 2000
       };
     }
-
-    // in case of optimisation
     if (typeof options.dontUsePhysics == 'undefined') {
       this.physicsBodiesGenerator = _generator.physicsBodiesGenerator.bind(this);
       this.physicsBodiesGeneratorWall = _generator.physicsBodiesGeneratorWall.bind(this);
@@ -53734,6 +53731,7 @@ class MatrixEngineWGPU {
     // canvas.width = canvas.clientWidth * devicePixelRatio;
     // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    console.log('test mobile ', presentationFormat);
     this.context.configure({
       device: this.device,
       format: presentationFormat,
@@ -53853,8 +53851,8 @@ class MatrixEngineWGPU {
         }),
         entryPoint: 'main',
         targets: [{
-          format: 'bgra8unorm'
-        }] // rgba16float  bgra8unorm
+          format: (0, _utils.isMobile)() == true ? 'rgba8unorm' : 'bgra8unorm'
+        }] // rgba16float  bgra8unorm rgba8unorm
       }
     });
     this.createBloomBindGroup();
@@ -54671,18 +54669,18 @@ class MatrixEngineWGPU {
           pass.setPipeline(this.mainRenderBundle[0].pipeline);
         }
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          for (const m of this.mainRenderBundle) {
-            if (m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-              m.shadowDepthTextureView = this.shadowVideoView;
-              m.FINISH_VIDIO_INIT = true;
-              m.setupPipeline();
-              pass.setPipeline(mesh.pipeline);
-            } else {
-              m.shadowDepthTextureView = this.shadowArrayView;
-              if (m.setupPipeline) m.setupPipeline();
-            }
+          // for(const m of this.mainRenderBundle) {
+          if (mesh.isVideo == true) {
+            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+            mesh.shadowDepthTextureView = this.shadowVideoView;
+            mesh.FINISH_VIDIO_INIT = true;
+            mesh.setupPipeline();
+            pass.setPipeline(mesh.pipeline);
+          } else {
+            mesh.shadowDepthTextureView = this.shadowArrayView;
+            if (mesh.setupPipeline) mesh.setupPipeline();
           }
+          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -54691,18 +54689,18 @@ class MatrixEngineWGPU {
         if (mesh.material?.useBlend !== true) continue;
         pass.setPipeline(mesh.pipelineTransparent);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          for (const m of this.mainRenderBundle) {
-            if (m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-              m.shadowDepthTextureView = this.shadowVideoView;
-              m.FINISH_VIDIO_INIT = true;
-              m.setupPipeline();
-              pass.setPipeline(mesh.pipelineTransparent);
-            } else {
-              m.shadowDepthTextureView = this.shadowArrayView;
-              m.setupPipeline();
-            }
+          // for(const m of this.mainRenderBundle) {
+          if (mesh.isVideo == true) {
+            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+            mesh.shadowDepthTextureView = this.shadowVideoView;
+            mesh.FINISH_VIDIO_INIT = true;
+            mesh.setupPipeline();
+            pass.setPipeline(mesh.pipelineTransparent);
+          } else {
+            mesh.shadowDepthTextureView = this.shadowArrayView;
+            mesh.setupPipeline();
           }
+          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -54723,10 +54721,6 @@ class MatrixEngineWGPU {
       // volumetric
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
-        // If you don't store it yet, compute once per frame:
-        // const invViewProj = mat4.invert(
-        //   mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
-        // );
         _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix
@@ -55062,4 +55056,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/core-cache.js":27,"./engine/effects/energy-bar.js":29,"./engine/effects/flame-emmiter.js":30,"./engine/effects/flame.js":31,"./engine/effects/mana-bar.js":36,"./engine/effects/pointerEffect.js":37,"./engine/engine.js":39,"./engine/generators/generator.js":40,"./engine/instanced/mesh-obj-instances.js":43,"./engine/lights.js":44,"./engine/loader-obj.js":46,"./engine/loaders/bvh-instaced.js":47,"./engine/loaders/bvh.js":48,"./engine/mesh-obj.js":52,"./engine/postprocessing/bloom.js":54,"./engine/postprocessing/volumetric.js":55,"./engine/procedural-mesh.js":56,"./engine/procedures/fontana.js":57,"./engine/raycast.js":59,"./engine/utils.js":60,"./multilang/lang.js":61,"./physics/matrix-ammo.js":62,"./shaders/fontana/fontana.wgsl.js":67,"./shaders/vertex.wgsl.js":88,"./sounds/audioAsset.js":92,"./sounds/sounds.js":93,"./tools/editor/editor.js":96,"./tools/editor/flexCodexShaderAdapter.js":99,"wgpu-matrix":24}]},{},[1]);
+},{"./engine/core-cache.js":27,"./engine/effects/energy-bar.js":29,"./engine/effects/flame-emmiter.js":30,"./engine/effects/flame.js":31,"./engine/effects/mana-bar.js":36,"./engine/effects/pointerEffect.js":37,"./engine/engine.js":39,"./engine/generators/generator.js":40,"./engine/instanced/mesh-obj-instances.js":43,"./engine/lights.js":44,"./engine/loader-obj.js":46,"./engine/loaders/bvh-instaced.js":47,"./engine/loaders/bvh.js":48,"./engine/mesh-obj.js":52,"./engine/postprocessing/bloom.js":54,"./engine/postprocessing/volumetric.js":55,"./engine/procedural-mesh.js":56,"./engine/procedures/fontana.js":57,"./engine/raycast.js":59,"./engine/utils.js":60,"./multilang/lang.js":61,"./physics/matrix-ammo.js":62,"./shaders/fontana/fontana.wgsl.js":67,"./sounds/audioAsset.js":92,"./sounds/sounds.js":93,"./tools/editor/editor.js":96,"./tools/editor/flexCodexShaderAdapter.js":99,"wgpu-matrix":24}]},{},[1]);
