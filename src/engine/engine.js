@@ -411,40 +411,32 @@ export function createInputHandler(window, canvas) {
     e.stopPropagation();
   };
 
-  window.addEventListener('keydown', (e) => setDigital(e, true));
-  window.addEventListener('keyup', (e) => setDigital(e, false));
-
+  window.addEventListener('keydown', (e) => setDigital(e, true), { passive: true });
+  window.addEventListener('keyup', (e) => setDigital(e, false), { passive: true });
   canvas.style.touchAction = 'pinch-zoom';
-
-  canvas.addEventListener('pointerdown', () => {mouseDown = true;});
-  canvas.addEventListener('pointerup', () => {mouseDown = false;});
-
+  canvas.addEventListener('pointerdown', () => {mouseDown = true;}, { passive: true });
+  canvas.addEventListener('pointerup', () => {mouseDown = false;}, { passive: true });
   const MOUSE_SENS = 0.1;
-
   canvas.addEventListener('pointermove', (e) => {
     mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
     if(mouseDown) {
       analog.x += e.movementX * MOUSE_SENS;
       analog.y += e.movementY * MOUSE_SENS;
     }
-  });
+  }, { passive: true });
 
-  canvas.addEventListener('wheel', (e) => {
-    // analog.zoom += Math.sign(e.deltaY);
-  }, {passive: false});
+  // canvas.addEventListener('wheel', (e) => {
+  //   // analog.zoom += Math.sign(e.deltaY);
+  // }, {passive: false});
 
   return function getInput() {
-
-    // Guard
     output.analog.x = analog.x || 0.0001;
     output.analog.y = analog.y || 0.0001;
     output.analog.zoom = analog.zoom;
     output.analog.touching = mouseDown;
-
     analog.x = 0;
     analog.y = 0;
     analog.zoom = 0;
-
     return output;
   };
 }

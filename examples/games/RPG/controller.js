@@ -1,4 +1,4 @@
-import { addRaycastsAABBListener, computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
+import {addRaycastsAABBListener, computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
 import {byId, LOG_MATRIX, mb} from "../../../src/engine/utils.js";
 import {followPath} from "./nav-mesh.js";
@@ -12,7 +12,7 @@ export class Controller {
 
   // Must be same init !!!
   // incorporate with automated 'close-distance'
-  distanceForAction     = 36;
+  distanceForAction = 36;
   distanceForLongAction = 36;
 
   distanceForLongAction = 36;
@@ -31,13 +31,13 @@ export class Controller {
         this.dragStart = {x: e.clientX, y: e.clientY};
         this.dragEnd = {x: e.clientX, y: e.clientY};
       }  // else if(e.button === 0) { }
-    });
+    }, {passive: true});
 
     this.canvas.addEventListener('mousemove', (e) => {
       if(this.selecting) {
         this.dragEnd = {x: e.clientX, y: e.clientY};
       }
-    });
+    }, {passive: true});
 
     this.canvas.addEventListener('mouseup', (e) => {
       if(this.selecting) {
@@ -48,7 +48,7 @@ export class Controller {
           if(this.ctx) this.ctx.clearRect(0, 0, this.overlay.width, this.overlay.height);
         }, 100);
       }
-    });
+    }, {passive: true});
 
     addRaycastsAABBListener(undefined, 'click');
 

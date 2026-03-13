@@ -50,7 +50,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
-
     this.sharedState = {
       emitAnimationEvent: false,
       animationStarted: false,
@@ -58,10 +57,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       timeAccumulator: 0,
       animationFinished: false
     };
-
     this.animationIndex = 0;
-
-    // 
     this.glb.glbJsonData.animations.forEach((anim, index) => {
       this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${anim.name}`, {
         detail: {
@@ -69,11 +65,9 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         }
       });
     });
-
-
     this._emptyChannels = [];
     this.MAX_BONES = 100;
-    //cache
+    // cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
     this.nodes = this.glb.nodes.map(n => ({
@@ -126,23 +120,41 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   buildNodeChannelMap() {
-
     const anim = this.glb.glbJsonData.animations[this.animationIndex];
     const nodeCount = this.glb.glbJsonData.nodes.length;
-
     this._nodeChannelsArray = new Array(nodeCount);
+    for(let i = 0;i < nodeCount;i++) {
+      this._nodeChannelsArray[i] = [];
+    }
+
+    this._translationChannels = new Array(nodeCount);
+    this._rotationChannels = new Array(nodeCount);
+    this._scaleChannels = new Array(nodeCount);
+
+    for(let i = 0;i < nodeCount;i++) {
+      this._translationChannels[i] = [];
+      this._rotationChannels[i] = [];
+      this._scaleChannels[i] = [];
+    }
 
     for(let i = 0;i < anim.channels.length;i++) {
       const channel = anim.channels[i];
       const nodeIndex = channel.target.node;
-
       if(!this._nodeChannelsArray[nodeIndex]) {
         this._nodeChannelsArray[nodeIndex] = [];
       }
-
       this._nodeChannelsArray[nodeIndex].push(channel);
-    }
 
+      if(channel.target.path === "translation") {
+        this._translationChannels[nodeIndex].push(channel);
+      }
+      else if(channel.target.path === "rotation") {
+        this._rotationChannels[nodeIndex].push(channel);
+      }
+      else {
+        this._scaleChannels[nodeIndex].push(channel);
+      }
+    }
     // metadata cache
     for(let i = 0;i < anim.channels.length;i++) {
       const channel = anim.channels[i];
@@ -524,71 +536,100 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
-    const nodeChannels = this._nodeChannels;
     const animTime = time % this._animationLength;
-
-    for(let j = 0;j < this.skeleton.length;j++) {
-      const nodeIndex = this.skeleton[j];
+    const skeleton = this.skeleton;
+    for(let j = 0;j < skeleton.length;j++) {
+      const nodeIndex = skeleton[j];
       const node = nodes[nodeIndex];
-      const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
-     
-
-      for(let k = 0;k < channelsForNode.length;k++) {
-        const channel = channelsForNode[k];
+      const tr = node.translation;
+      const sc = node.scale;
+      const rot = node.rotation;
+      const tChannels = this._translationChannels[nodeIndex] || [];
+      const sChannels = this._scaleChannels[nodeIndex] || [];
+      const rChannels = this._rotationChannels[nodeIndex] || [];
+      /* ── TRANSLATION CHANNELS ── */
+      for(let k = 0;k < tChannels.length;k++) {
+        const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
-        // let animTime = time;
-        // if(animTime >= channel._animLength) {
-        //   animTime -= channel._animLength * Math.floor(animTime / channel._animLength);
-        // }
         const lastFrame = channel._lastFrame;
-        const pathType = channel._pathType;
 
-        // ← cached index, O(1) for most frames
         let i = channel._lastKeyIndex;
         if(inputTimes[i] > animTime) i = 0;
         while(i < lastFrame && inputTimes[i + 1] <= animTime) i++;
         channel._lastKeyIndex = i;
 
-        if(channel._isStep) {
-          const base0 = i * channel._numComponents;
-          if(pathType === 2) {
-            node.rotation[0] = outputArray[base0];
-            node.rotation[1] = outputArray[base0 + 1];
-            node.rotation[2] = outputArray[base0 + 2];
-            node.rotation[3] = outputArray[base0 + 3];
-          } else if(pathType === 0) {
-            node.translation[0] = outputArray[base0];
-            node.translation[1] = outputArray[base0 + 1];
-            node.translation[2] = outputArray[base0 + 2];
-          } else {
-            node.scale[0] = outputArray[base0];
-            node.scale[1] = outputArray[base0 + 1];
-            node.scale[2] = outputArray[base0 + 2];
-          }
-        } else {
-          const t0 = inputTimes[i];
-          const next = i < lastFrame ? i + 1 : lastFrame;
-          const t1 = inputTimes[next];
-          const base1 = next * channel._numComponents;
-          const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-          const base0 = i * channel._numComponents;
-          if(pathType === 0) {
-            node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
-            node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
-            node.translation[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if(pathType === 1) {
-            node.scale[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
-            node.scale[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
-            node.scale[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else {
-            this.slerp(outputArray, base0, outputArray, base1, factor, node.rotation);
-          }
-        }
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1 - factor;
+
+        const base0 = i * 3;
+        const base1 = next * 3;
+
+        tr[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
+
+      /* ── SCALE CHANNELS ── */
+      for(let k = 0;k < sChannels.length;k++) {
+        const channel = sChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        const lastFrame = channel._lastFrame;
+
+        let i = channel._lastKeyIndex;
+        if(inputTimes[i] > animTime) i = 0;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
+
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1 - factor;
+
+        const base0 = i * 3;
+        const base1 = next * 3;
+
+        sc[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
+      }
+
+      /* ── ROTATION CHANNELS ── */
+      for(let k = 0;k < rChannels.length;k++) {
+        const channel = rChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        const lastFrame = channel._lastFrame;
+
+        let i = channel._lastKeyIndex;
+        if(inputTimes[i] > animTime) i = 0;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
+
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+
+        const base0 = i * 4;
+        const base1 = next * 4;
+
+        this.slerp(outputArray, base0, outputArray, base1, factor, rot);
+      }
+
+      /* ── COMPOSE LOCAL TRANSFORM ── */
+      this.composeTRS(tr, rot, sc, node.transform);
     }
-    for(const nodeIndex of this._sortedNodes) {
+
+    /* ── WORLD MATRICES ── */
+    const sorted = this._sortedNodes;
+    for(let i = 0;i < sorted.length;i++) {
+      const nodeIndex = sorted[i];
       const node = nodes[nodeIndex];
       const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
       if(parentWorld) {
@@ -597,13 +638,18 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         mat4.copy(node.transform, node.worldMatrix);
       }
     }
-    for(let j = 0;j < this.skeleton.length;j++) {
-      const jointNode = nodes[this.skeleton[j]];
+
+    /* ── BONE MATRICES ── */
+    for(let j = 0;j < skeleton.length;j++) {
+      const jointNode = nodes[skeleton[j]];
       mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
+
+    /* ── WRITE TO GPU BUFFER ── */
     const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
+
     return boneMatrices;
   }
 }

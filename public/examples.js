@@ -359,6 +359,7 @@ function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
+    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -369,166 +370,167 @@ function loadGLBLoader() {
       g: 0.122,
       a: 1
     }
-  }, () => {
-    addEventListener('AmmoReady', async () => {
-      setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 35;
-      }, 2000);
-      (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/blender/cube.obj"
-      }, onGround, {
-        scale: [120, 0.5, 120]
-      });
-
-      // // Monster1
-      var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {
-          x: 0,
-          y: -4,
-          z: -70
-        },
-        name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile01);
-
-      // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {
-          type: 'power',
-          useTextureFromGlb: true
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {
-          x: -40,
-          y: -4,
-          z: -70
-        },
-        name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile01);
-
-      // var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {
-          type: 'pong',
-          useTextureFromGlb: true
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {
-          x: 40,
-          y: -4,
-          z: -70
-        },
-        name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile01);
-
-      // woman
-      var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObjInctance({
-        material: {
-          type: 'mirror',
-          useTextureFromGlb: true
-        },
-        envMapParams: {
-          baseColorMix: 0.75,
-          mirrorTint: [0.9, 0.5, 1.0],
-          // Slight cool tint
-          reflectivity: 0.5,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.001,
-          // No pulse (static)
-          fresnelPower: 5.0,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {
-          x: 0,
-          y: -4,
-          z: -20
-        },
-        name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp']
-      }, null, glbFile11);
-
-      // var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {
-          type: 'power',
-          useTextureFromGlb: true
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {
-          x: -40,
-          y: -4,
-          z: -20
-        },
-        name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile11);
-
-      // var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {
-          type: 'pong',
-          useTextureFromGlb: true
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {
-          x: 40,
-          y: -4,
-          z: -20
-        },
-        name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile11);
-
-      // var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      // TEST_ANIM.addGlbObj({
-      //   material: {type: 'pong', useTextureFromGlb: true},
-      //   useScale: true,
-      //   scale: [20, 20, 20],
-      //   position: {x: 40, y: -4, z: -20},
-      //   name: 'glbFileWhouse',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      // }, null, glbFileWhouse);
-
-      // this is future load and replace skeletal anim.
-      // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
-      // const path = 'res/meshes/glb/glb-test1.bvh';
-      // loadBVH(path).then(async (BVHANIM) => {
-      //   var glbFile = await fetch(
-      //     "res/meshes/glb/test.glb")
-      //     .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      //   TEST_ANIM.addGlbObj({
-      //     // scale: [1,1,1],
-      //     scale: [10, 10, 10],
-      //     name: 'firstGlb',
-      //     texturesPaths: ['./res/textures/rust.jpg'],
-      //   }, BVHANIM, glbFile);
-      // });
+  }, async () => {
+    // addEventListener('AmmoReady', async () => {
+    setTimeout(() => {
+      app.cameras.WASD.yaw = -0.03;
+      app.cameras.WASD.pitch = -0.49;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 35;
+    }, 2000);
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, onGround, {
+      scale: [120, 0.5, 120]
     });
+
+    // // Monster1
+    var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 0,
+        y: -4,
+        z: -70
+      },
+      name: 'firstGlb',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+    }, null, glbFile01);
+
+    // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'power',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: -40,
+        y: -4,
+        z: -70
+      },
+      name: 'firstGlb',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+    }, null, glbFile01);
+
+    // var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'pong',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 40,
+        y: -4,
+        z: -70
+      },
+      name: 'firstGlb',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+    }, null, glbFile01);
+
+    // woman
+    var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObjInctance({
+      material: {
+        type: 'mirror',
+        useTextureFromGlb: true
+      },
+      envMapParams: {
+        baseColorMix: 0.75,
+        mirrorTint: [0.9, 0.5, 1.0],
+        // Slight cool tint
+        reflectivity: 0.5,
+        // 25% reflection blend
+        illuminateColor: [0.3, 0.7, 1.0],
+        // Soft cyan
+        illuminateStrength: 0.1,
+        // Gentle rim
+        illuminatePulse: 0.001,
+        // No pulse (static)
+        fresnelPower: 5.0,
+        // Medium-sharp edge
+        envLodBias: 2.5,
+        usePlanarReflection: false // ✅ Env map mode
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 0,
+        y: -4,
+        z: -20
+      },
+      name: 'woman1',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp']
+    }, null, glbFile11);
+
+    // var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'power',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: -40,
+        y: -4,
+        z: -20
+      },
+      name: 'woman1',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+    }, null, glbFile11);
+
+    // var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'pong',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 40,
+        y: -4,
+        z: -20
+      },
+      name: 'woman1',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+    }, null, glbFile11);
+
+    // var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'pong', useTextureFromGlb: true},
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: 40, y: -4, z: -20},
+    //   name: 'glbFileWhouse',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+    // }, null, glbFileWhouse);
+
+    // this is future load and replace skeletal anim.
+    // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
+    // const path = 'res/meshes/glb/glb-test1.bvh';
+    // loadBVH(path).then(async (BVHANIM) => {
+    //   var glbFile = await fetch(
+    //     "res/meshes/glb/test.glb")
+    //     .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    //   TEST_ANIM.addGlbObj({
+    //     // scale: [1,1,1],
+    //     scale: [10, 10, 10],
+    //     name: 'firstGlb',
+    //     texturesPaths: ['./res/textures/rust.jpg'],
+    //   }, BVHANIM, glbFile);
+    // });
+    // })
+
     function onGround(m) {
       TEST_ANIM.addLight();
       TEST_ANIM.addMeshObj({
@@ -22807,7 +22809,7 @@ function lerp(a, b, s) {
   return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
 }
 function createInputHandler(window, canvas) {
-  let digital = {
+  const digital = {
     forward: false,
     backward: false,
     left: false,
@@ -22815,12 +22817,23 @@ function createInputHandler(window, canvas) {
     up: false,
     down: false
   };
-  let analog = {
+  const analog = {
     x: 0,
     y: 0,
     zoom: 0
   };
   let mouseDown = false;
+
+  // PREALLOCATED OUTPUT
+  const output = {
+    digital: digital,
+    analog: {
+      x: 0,
+      y: 0,
+      zoom: 0,
+      touching: false
+    }
+  };
   const setDigital = (e, value) => {
     switch (e.code) {
       case 'KeyW':
@@ -22842,54 +22855,49 @@ function createInputHandler(window, canvas) {
         digital.down = value;
         break;
     }
-    // if you wanna dosavle all keyboard input for some reason...
-    // add later like new option feature...
-    // e.preventDefault();
     e.stopPropagation();
   };
-  window.addEventListener('keydown', e => setDigital(e, true));
-  window.addEventListener('keyup', e => setDigital(e, false));
+  window.addEventListener('keydown', e => setDigital(e, true), {
+    passive: true
+  });
+  window.addEventListener('keyup', e => setDigital(e, false), {
+    passive: true
+  });
   canvas.style.touchAction = 'pinch-zoom';
   canvas.addEventListener('pointerdown', () => {
     mouseDown = true;
+  }, {
+    passive: true
   });
   canvas.addEventListener('pointerup', () => {
     mouseDown = false;
+  }, {
+    passive: true
   });
+  const MOUSE_SENS = 0.1;
   canvas.addEventListener('pointermove', e => {
     mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
     if (mouseDown) {
-      analog.x += e.movementX / 10;
-      analog.y += e.movementY / 10;
+      analog.x += e.movementX * MOUSE_SENS;
+      analog.y += e.movementY * MOUSE_SENS;
     }
-  });
-  canvas.addEventListener('wheel', e => {
-    // if((e.buttons & 1) !== 0) {
-    //   analog.zoom += Math.sign(e.deltaY);
-    //   e.preventDefault();
-    //   e.stopPropagation();
-    // }
   }, {
-    passive: false
+    passive: true
   });
-  return () => {
-    // Guard: prevent zero deltas from breaking camera math
-    const safeX = analog.x || 0.0001;
-    const safeY = analog.y || 0.0001;
-    const out = {
-      digital,
-      analog: {
-        x: safeX,
-        y: safeY,
-        zoom: analog.zoom,
-        touching: mouseDown
-      }
-    };
-    // Reset only the deltas for next frame
+
+  // canvas.addEventListener('wheel', (e) => {
+  //   // analog.zoom += Math.sign(e.deltaY);
+  // }, {passive: false});
+
+  return function getInput() {
+    output.analog.x = analog.x || 0.0001;
+    output.analog.y = analog.y || 0.0001;
+    output.analog.zoom = analog.zoom;
+    output.analog.touching = mouseDown;
     analog.x = 0;
     analog.y = 0;
     analog.zoom = 0;
-    return out;
+    return output;
   };
 }
 class RPGCamera extends CameraBase {
@@ -22931,6 +22939,11 @@ class RPGCamera extends CameraBase {
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
 
+      this._posScratch = _wgpuMatrix.vec3.create();
+      this._targetVelScratch = _wgpuMatrix.vec3.create();
+      this._rotYScratch = _wgpuMatrix.mat4.create();
+      this._rotXScratch = _wgpuMatrix.mat4.create();
+      this._viewScratch = _wgpuMatrix.mat4.create();
       this.mousRollInAction = false;
       addEventListener('wheel', e => {
         // Scroll up = zoom out / higher Y
@@ -22952,19 +22965,12 @@ class RPGCamera extends CameraBase {
   }
   update(deltaTime, input) {
     const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
-    // Apply the delta rotation to the pitch and yaw angles
-    this.yaw = 0; //-= input.analog.x * deltaTime * this.rotationSpeed;
-    this.pitch = -0.88; //  -= input.analog.y * deltaTime * this.rotationSpeed;
-    // // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
+    this.yaw = 0;
+    this.pitch = -0.88;
     this.yaw = mod(this.yaw, Math.PI * 2);
-    // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-    // Save the current position, as we're about to rebuild the camera matrix.
     if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
-      //  console.log("  follow : " + this.followMe.x)
-
       this.followMeOffset = this.scrollY;
-      // if player not move allow mouse explore map 
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
       app.lightContainer[0].position[0] = this.followMe.x;
@@ -22975,30 +22981,44 @@ class RPGCamera extends CameraBase {
     }
     const smoothFactor = 0.1;
     this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
-    let position = _wgpuMatrix.vec3.copy(this.position);
-    // Reconstruct the camera's rotation, and store into the camera matrix.
-    super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
-    // Calculate the new target velocity
+
+    // ← was: let position = vec3.copy(this.position)  — allocated new vec3
+    _wgpuMatrix.vec3.copy(this.position, this._posScratch);
+
+    // ← was: mat4.rotateX(mat4.rotationY(...))  — 2 new mat4s
+    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
+    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
+    super.matrix = this._rotXScratch;
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
-    const targetVelocity = _wgpuMatrix.vec3.create();
     const deltaBack = sign(digital.backward, digital.forward);
-    // older then follow
-    if (deltaBack == -1) {
-      // console.log(deltaBack + "  deltaBack ")
-      position[2] += -10;
-    } else if (deltaBack == 1) {
-      position[2] += 10;
-    }
-    position[0] += deltaRight * 10;
-    _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
-    _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
-    _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
-    this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
-    this.view = _wgpuMatrix.mat4.invert(this.matrix);
+    if (deltaBack == -1) this._posScratch[2] += -10;else if (deltaBack == 1) this._posScratch[2] += 10;
+    this._posScratch[0] += deltaRight * 10;
+
+    // ← was: const targetVelocity = vec3.create()  — allocated new vec3
+    this._targetVelScratch[0] = 0;
+    this._targetVelScratch[1] = 0;
+    this._targetVelScratch[2] = 0;
+    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.right, deltaRight, this._targetVelScratch);
+    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.up, deltaUp, this._targetVelScratch);
+    _wgpuMatrix.vec3.normalize(this._targetVelScratch, this._targetVelScratch);
+    _wgpuMatrix.vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
+
+    // ← was: lerp(targetVelocity, this.velocity, t)  — lerp allocated internally
+    const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
+    this._targetVelScratch[0] += (this.velocity_[0] - this._targetVelScratch[0]) * t;
+    this._targetVelScratch[1] += (this.velocity_[1] - this._targetVelScratch[1]) * t;
+    this._targetVelScratch[2] += (this.velocity_[2] - this._targetVelScratch[2]) * t;
+    _wgpuMatrix.vec3.copy(this._targetVelScratch, this.velocity_);
+
+    // ← was: vec3.addScaled(position, ...)  — position was the old allocated vec3
+    _wgpuMatrix.vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
+    this.position = this._posScratch;
+
+    // ← was: mat4.invert(this.matrix)  — new mat4
+    _wgpuMatrix.mat4.invert(this.matrix, this._viewScratch);
+    super.view = this._viewScratch;
     return this.view;
   }
   recalculateAngles(dir) {
@@ -26436,6 +26456,10 @@ class SpotLight {
     this._viewMatrix = new Float32Array(16); // scratch for lookAt result
     this._viewProjMatrix = new Float32Array(16); // scratch for multiply result
 
+    this._diffScratch = _wgpuMatrix.vec3.create();
+    this._dirScratch = _wgpuMatrix.vec3.create();
+    this._viewMatrix = _wgpuMatrix.mat4.create();
+    this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this.setProjection = function (fov = 2 * Math.PI / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
     };
@@ -26460,10 +26484,6 @@ class SpotLight {
       // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     };
-    this._dirScratch = _wgpuMatrix.vec3.create();
-    this._diffScratch = _wgpuMatrix.vec3.create();
-    this._viewMatrix = _wgpuMatrix.mat4.create();
-    this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this.shadowTexture = this.device.createTexture({
       label: 'shadowTexture[light]',
       size: [this.SHADOW_RES, this.SHADOW_RES, 1],
@@ -26818,15 +26838,20 @@ class SpotLight {
     this.updater = [];
   }
   update() {
-    // this.updater.forEach((update) => {update(this)})
-    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    // vec3.subtract(this.target, this.position, this._diffScratch);
+    // vec3.normalize(this._diffScratch, this._dirScratch);
+    // this.direction = this._dirScratch;
+    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
     _wgpuMatrix.vec3.subtract(this.target, this.position, this._diffScratch);
     _wgpuMatrix.vec3.normalize(this._diffScratch, this._dirScratch);
+
+    // Direct reference - no allocation
     this.direction = this._dirScratch;
-    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
-    this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
+
+    // In-place updates for matrices
+    _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
@@ -27452,8 +27477,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       animationFinished: false
     };
     this.animationIndex = 0;
-
-    // 
     this.glb.glbJsonData.animations.forEach((anim, index) => {
       this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${anim.name}`, {
         detail: {
@@ -27463,7 +27486,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     });
     this._emptyChannels = [];
     this.MAX_BONES = 100;
-    //cache
+    // cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
     this.nodes = this.glb.nodes.map(n => ({
@@ -27516,6 +27539,17 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const anim = this.glb.glbJsonData.animations[this.animationIndex];
     const nodeCount = this.glb.glbJsonData.nodes.length;
     this._nodeChannelsArray = new Array(nodeCount);
+    for (let i = 0; i < nodeCount; i++) {
+      this._nodeChannelsArray[i] = [];
+    }
+    this._translationChannels = new Array(nodeCount);
+    this._rotationChannels = new Array(nodeCount);
+    this._scaleChannels = new Array(nodeCount);
+    for (let i = 0; i < nodeCount; i++) {
+      this._translationChannels[i] = [];
+      this._rotationChannels[i] = [];
+      this._scaleChannels[i] = [];
+    }
     for (let i = 0; i < anim.channels.length; i++) {
       const channel = anim.channels[i];
       const nodeIndex = channel.target.node;
@@ -27523,8 +27557,14 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         this._nodeChannelsArray[nodeIndex] = [];
       }
       this._nodeChannelsArray[nodeIndex].push(channel);
+      if (channel.target.path === "translation") {
+        this._translationChannels[nodeIndex].push(channel);
+      } else if (channel.target.path === "rotation") {
+        this._rotationChannels[nodeIndex].push(channel);
+      } else {
+        this._scaleChannels[nodeIndex].push(channel);
+      }
     }
-
     // metadata cache
     for (let i = 0; i < anim.channels.length; i++) {
       const channel = anim.channels[i];
@@ -27951,67 +27991,88 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     out[3] = s0 * aw + s1 * bw;
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
-    const nodeChannels = this._nodeChannels;
     const animTime = time % this._animationLength;
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const nodeIndex = this.skeleton[j];
+    const skeleton = this.skeleton;
+    for (let j = 0; j < skeleton.length; j++) {
+      const nodeIndex = skeleton[j];
       const node = nodes[nodeIndex];
-      const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
-      for (let k = 0; k < channelsForNode.length; k++) {
-        const channel = channelsForNode[k];
+      const tr = node.translation;
+      const sc = node.scale;
+      const rot = node.rotation;
+      const tChannels = this._translationChannels[nodeIndex] || [];
+      const sChannels = this._scaleChannels[nodeIndex] || [];
+      const rChannels = this._rotationChannels[nodeIndex] || [];
+      /* ── TRANSLATION CHANNELS ── */
+      for (let k = 0; k < tChannels.length; k++) {
+        const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
-        // let animTime = time;
-        // if(animTime >= channel._animLength) {
-        //   animTime -= channel._animLength * Math.floor(animTime / channel._animLength);
-        // }
         const lastFrame = channel._lastFrame;
-        const pathType = channel._pathType;
-
-        // ← cached index, O(1) for most frames
         let i = channel._lastKeyIndex;
         if (inputTimes[i] > animTime) i = 0;
         while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
         channel._lastKeyIndex = i;
-        if (channel._isStep) {
-          const base0 = i * channel._numComponents;
-          if (pathType === 2) {
-            node.rotation[0] = outputArray[base0];
-            node.rotation[1] = outputArray[base0 + 1];
-            node.rotation[2] = outputArray[base0 + 2];
-            node.rotation[3] = outputArray[base0 + 3];
-          } else if (pathType === 0) {
-            node.translation[0] = outputArray[base0];
-            node.translation[1] = outputArray[base0 + 1];
-            node.translation[2] = outputArray[base0 + 2];
-          } else {
-            node.scale[0] = outputArray[base0];
-            node.scale[1] = outputArray[base0 + 1];
-            node.scale[2] = outputArray[base0 + 2];
-          }
-        } else {
-          const t0 = inputTimes[i];
-          const next = i < lastFrame ? i + 1 : lastFrame;
-          const t1 = inputTimes[next];
-          const base1 = next * channel._numComponents;
-          const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-          const base0 = i * channel._numComponents;
-          if (pathType === 0) {
-            node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
-            node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
-            node.translation[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if (pathType === 1) {
-            node.scale[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
-            node.scale[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
-            node.scale[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else {
-            this.slerp(outputArray, base0, outputArray, base1, factor, node.rotation);
-          }
-        }
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1 - factor;
+        const base0 = i * 3;
+        const base1 = next * 3;
+        tr[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
+
+      /* ── SCALE CHANNELS ── */
+      for (let k = 0; k < sChannels.length; k++) {
+        const channel = sChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        const lastFrame = channel._lastFrame;
+        let i = channel._lastKeyIndex;
+        if (inputTimes[i] > animTime) i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1 - factor;
+        const base0 = i * 3;
+        const base1 = next * 3;
+        sc[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
+      }
+
+      /* ── ROTATION CHANNELS ── */
+      for (let k = 0; k < rChannels.length; k++) {
+        const channel = rChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        const lastFrame = channel._lastFrame;
+        let i = channel._lastKeyIndex;
+        if (inputTimes[i] > animTime) i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const base0 = i * 4;
+        const base1 = next * 4;
+        this.slerp(outputArray, base0, outputArray, base1, factor, rot);
+      }
+
+      /* ── COMPOSE LOCAL TRANSFORM ── */
+      this.composeTRS(tr, rot, sc, node.transform);
     }
-    for (const nodeIndex of this._sortedNodes) {
+
+    /* ── WORLD MATRICES ── */
+    const sorted = this._sortedNodes;
+    for (let i = 0; i < sorted.length; i++) {
+      const nodeIndex = sorted[i];
       const node = nodes[nodeIndex];
       const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
       if (parentWorld) {
@@ -28020,11 +28081,15 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
       }
     }
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const jointNode = nodes[this.skeleton[j]];
+
+    /* ── BONE MATRICES ── */
+    for (let j = 0; j < skeleton.length; j++) {
+      const jointNode = nodes[skeleton[j]];
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
+
+    /* ── WRITE TO GPU BUFFER ── */
     const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
@@ -28149,6 +28214,17 @@ class BVHPlayer extends _meshObj.default {
     const anim = this.glb.glbJsonData.animations[this.animationIndex];
     const nodeCount = this.glb.glbJsonData.nodes.length;
     this._nodeChannelsArray = new Array(nodeCount);
+    for (let i = 0; i < nodeCount; i++) {
+      this._nodeChannelsArray[i] = [];
+    }
+    this._translationChannels = new Array(nodeCount);
+    this._rotationChannels = new Array(nodeCount);
+    this._scaleChannels = new Array(nodeCount);
+    for (let i = 0; i < nodeCount; i++) {
+      this._translationChannels[i] = [];
+      this._rotationChannels[i] = [];
+      this._scaleChannels[i] = [];
+    }
     for (let i = 0; i < anim.channels.length; i++) {
       const channel = anim.channels[i];
       const nodeIndex = channel.target.node;
@@ -28156,6 +28232,13 @@ class BVHPlayer extends _meshObj.default {
         this._nodeChannelsArray[nodeIndex] = [];
       }
       this._nodeChannelsArray[nodeIndex].push(channel);
+      if (channel.target.path === "translation") {
+        this._translationChannels[nodeIndex].push(channel);
+      } else if (channel.target.path === "rotation") {
+        this._rotationChannels[nodeIndex].push(channel);
+      } else {
+        this._scaleChannels[nodeIndex].push(channel);
+      }
     }
 
     // metadata cache
@@ -28564,65 +28647,94 @@ class BVHPlayer extends _meshObj.default {
     out[3] = s0 * aw + s1 * bw;
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const nodeChannels = this._nodeChannels;
     const animTime = time % this._animationLength;
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const nodeIndex = this.skeleton[j];
+    const skeleton = this.skeleton;
+    for (let j = 0; j < skeleton.length; j++) {
+      const nodeIndex = skeleton[j];
       const node = nodes[nodeIndex];
-      const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
-      for (let k = 0; k < channelsForNode.length; k++) {
-        const channel = channelsForNode[k];
+      const tr = node.translation;
+      const sc = node.scale;
+      const rot = node.rotation;
+      const tChannels = this._translationChannels[nodeIndex];
+      const sChannels = this._scaleChannels[nodeIndex];
+      const rChannels = this._rotationChannels[nodeIndex];
+
+      /* TRANSLATION CHANNELS */
+
+      for (let k = 0; k < tChannels.length; k++) {
+        const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
-        // let animTime = time;
-        // if(animTime >= channel._animLength) {
-        //   animTime -= channel._animLength * Math.floor(animTime / channel._animLength);
-        // }
-        const lastFrame = channel._lastFrame;
-        const pathType = channel._pathType;
         let i = channel._lastKeyIndex;
+        const lastFrame = channel._lastFrame;
         if (inputTimes[i] > animTime) i = 0;
         while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
         channel._lastKeyIndex = i;
-        if (channel._isStep) {
-          const base0 = i * channel._numComponents;
-          if (pathType === 2) {
-            node.rotation[0] = outputArray[base0];
-            node.rotation[1] = outputArray[base0 + 1];
-            node.rotation[2] = outputArray[base0 + 2];
-            node.rotation[3] = outputArray[base0 + 3];
-          } else if (pathType === 0) {
-            node.translation[0] = outputArray[base0];
-            node.translation[1] = outputArray[base0 + 1];
-            node.translation[2] = outputArray[base0 + 2];
-          } else {
-            node.scale[0] = outputArray[base0];
-            node.scale[1] = outputArray[base0 + 1];
-            node.scale[2] = outputArray[base0 + 2];
-          }
-        } else {
-          const t0 = inputTimes[i];
-          const next = i < lastFrame ? i + 1 : lastFrame;
-          const t1 = inputTimes[next];
-          const base1 = next * channel._numComponents;
-          const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-          const base0 = i * channel._numComponents;
-          if (pathType === 0) {
-            node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
-            node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
-            node.translation[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else if (pathType === 1) {
-            node.scale[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
-            node.scale[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
-            node.scale[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
-          } else {
-            this.slerp(outputArray, base0, outputArray, base1, factor, node.rotation);
-          }
-        }
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1 - factor;
+        const base0 = i * 3;
+        const base1 = next * 3;
+        tr[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-      this.composeTRS(node.translation, node.rotation, node.scale, node.transform);
+
+      /* SCALE CHANNELS */
+
+      for (let k = 0; k < sChannels.length; k++) {
+        const channel = sChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        let i = channel._lastKeyIndex;
+        const lastFrame = channel._lastFrame;
+        if (inputTimes[i] > animTime) i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1 - factor;
+        const base0 = i * 3;
+        const base1 = next * 3;
+        sc[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
+      }
+
+      /* ROTATION CHANNELS */
+
+      for (let k = 0; k < rChannels.length; k++) {
+        const channel = rChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        let i = channel._lastKeyIndex;
+        const lastFrame = channel._lastFrame;
+        if (inputTimes[i] > animTime) i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
+        channel._lastKeyIndex = i;
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const base0 = i * 4;
+        const base1 = next * 4;
+        this.slerp(outputArray, base0, outputArray, base1, factor, rot);
+      }
+
+      /* COMPOSE LOCAL TRANSFORM */
+
+      this.composeTRS(tr, rot, sc, node.transform);
     }
-    for (const nodeIndex of this._sortedNodes) {
+
+    /* HIERARCHY WORLD MATRICES */
+
+    const sorted = this._sortedNodes;
+    for (let i = 0; i < sorted.length; i++) {
+      const nodeIndex = sorted[i];
       const node = nodes[nodeIndex];
       const parentWorld = node.parent != null ? nodes[node.parent].worldMatrix : null;
       if (parentWorld) {
@@ -28631,8 +28743,11 @@ class BVHPlayer extends _meshObj.default {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
       }
     }
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const jointNode = nodes[this.skeleton[j]];
+
+    /* BONE MATRICES */
+
+    for (let j = 0; j < skeleton.length; j++) {
+      const jointNode = nodes[skeleton[j]];
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
@@ -53635,7 +53750,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 /**
  * @description
  * Main engine root class.
- * @author Nikola Lukic 2025
+ * @author Nikola Lukic 2026
  * @email zlatnaspirala@gmail.com
  * @web https://maximumroulette.com
  * @github zlatnaspirala
@@ -53716,6 +53831,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
+    this.label = new _lang.MultiLang();
     this.logLoopError = true;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
@@ -53724,16 +53840,12 @@ class MatrixEngineWGPU {
       console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied' !!!");
       return;
     }
-    if (typeof options.useContex == 'undefined') {
-      options.useContex = "webgpu";
-      // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
-      // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
-    }
+    if (typeof options.useContex == 'undefined') options.useContex = "webgpu";
 
     // cache
     this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this._invViewProj = _wgpuMatrix.mat4.create();
-    if (typeof options.dontUsePhysics == 'undefined') {
+    if (typeof options.dontUsePhysics === 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
     this.editor = undefined;
@@ -53784,14 +53896,11 @@ class MatrixEngineWGPU {
       canvas.height = this.options.canvasSize.h;
     }
     target.append(canvas);
-    // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
     this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
     };
-
-    // add defaul generatl config later
     this.cameras = {
       arcball: new _engine.ArcballCamera({
         position: initialCameraPosition
@@ -53807,7 +53916,6 @@ class MatrixEngineWGPU {
         canvas: canvas
       })
     };
-    this.label = new _lang.MultiLang();
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
         this.label.get = r;
@@ -53846,18 +53954,12 @@ class MatrixEngineWGPU {
         alphaMode: 'premultiplied'
       });
     }
-
-    // const devicePixelRatio = window.devicePixelRatio;
-    // canvas.width = canvas.clientWidth * devicePixelRatio;
-    // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    console.log('test mobile ', presentationFormat);
     this.context.configure({
       device: this.device,
       format: presentationFormat,
       alphaMode: 'premultiplied'
     });
-    this.frame = this.frameSinglePass;
     this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
@@ -53872,9 +53974,9 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.9.0 ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.9.8 ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
-    console.log("%cMatrix Engine WGPU - Port is open.\n" + "Creative power loaded with visual scripting.\n" + "Last features : Adding Gizmo , Optimised render in name of performance,\n" + " audioReactiveNode, onDraw , onKey , curve editor.\n" + "No tracking. No hype. Just solutions. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
+    console.log("%cMatrix Engine WGPU - Port is open.\n" + "Creative power loaded with visual scripting.\n" + "Last features : Adding Gizmo , Optimised render in name of performance,\n" + " audioReactiveNode, onDraw , onKey , curve editor.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
     // pseude async
     setTimeout(() => {
@@ -53882,11 +53984,8 @@ class MatrixEngineWGPU {
     }, 50);
   };
   createGlobalStuff() {
-    //shadows fix
     this.SHADOW_RES = 512;
     this._bufferUpdates = [];
-
-    // OPTIMISATION
     this.textureCache = new _coreCache.TextureCache(this.device);
     this._destroyQueue = new Set();
     this.flushDestroyQueue = () => {
@@ -53956,15 +54055,12 @@ class MatrixEngineWGPU {
           code: `
         @group(0) @binding(0) var hdrTex : texture_2d<f32>;
         @group(0) @binding(1) var samp : sampler;
-
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
           let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
           let hdr = textureSample(hdrTex, samp, uv).rgb;
-
           // simple tonemap
           let ldr = hdr / (hdr + vec3(1.0));
-
           return vec4<f32>(ldr, 1.0);
         }
       `
@@ -53982,7 +54078,7 @@ class MatrixEngineWGPU {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
-    this._emptyLight = new Float32Array(36); // reused for empty slots, stays zeroed
+    this._emptyLight = new Float32Array(36);
     this.createTexArrayForShadows();
     this.mainDepthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -53994,7 +54090,6 @@ class MatrixEngineWGPU {
       label: 'mainRenderPassDesc',
       colorAttachments: [{
         view: undefined,
-        // set each frame
         loadOp: 'clear',
         storeOp: 'store',
         clearValue: [0.02, 0.02, 0.02, 1]
@@ -54620,18 +54715,16 @@ class MatrixEngineWGPU {
     });
   }
   async run(callback) {
-    // await this.device.queue.onSubmittedWorkDone();
+    this.frame = this.frameSinglePass;
     setTimeout(() => {
       requestAnimationFrame(this.frame);
-    }, 200);
+    }, 100);
     setTimeout(() => {
       callback(this);
-    }, 1);
+    }, 200);
   }
   destroyProgram = () => {
     console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');
-
-    // 1️⃣ Stop render loop
     this.frame = () => {};
     if (this._rafId) {
       cancelAnimationFrame(this._rafId);
@@ -54692,7 +54785,7 @@ class MatrixEngineWGPU {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
       setTimeout(() => {
         requestAnimationFrame(this.frame);
-      }, 100);
+      }, 200);
       return;
     }
     this.autoUpdate.forEach(_ => _.update());
@@ -54774,10 +54867,6 @@ class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-
-      // with no postprocessing
-      // const currentTextureView = this.context.getCurrentTexture().createView();
-      // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // opaque
@@ -54789,7 +54878,6 @@ class MatrixEngineWGPU {
           pass.setPipeline(this.mainRenderBundle[0].pipeline);
         }
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          // for(const m of this.mainRenderBundle) {
           if (mesh.isVideo == true) {
             // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
             mesh.shadowDepthTextureView = this.shadowVideoView;
@@ -54800,7 +54888,6 @@ class MatrixEngineWGPU {
             mesh.shadowDepthTextureView = this.shadowArrayView;
             if (mesh.setupPipeline) mesh.setupPipeline();
           }
-          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -54809,7 +54896,6 @@ class MatrixEngineWGPU {
         if (mesh.material?.useBlend !== true) continue;
         pass.setPipeline(mesh.pipelineTransparent);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          // for(const m of this.mainRenderBundle) {
           if (mesh.isVideo == true) {
             // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
             mesh.shadowDepthTextureView = this.shadowVideoView;
@@ -54820,14 +54906,14 @@ class MatrixEngineWGPU {
             mesh.shadowDepthTextureView = this.shadowArrayView;
             mesh.setupPipeline();
           }
-          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
+      const cam = this.cameras[this.mainCameraParams.type];
       if (this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
+      const viewProjMatrix = _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
@@ -54840,7 +54926,6 @@ class MatrixEngineWGPU {
       transPass.end();
       // volumetric
       if (this.volumetricPass.enabled === true) {
-        const cam = this.cameras[this.mainCameraParams.type];
         _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix
@@ -54864,8 +54949,6 @@ class MatrixEngineWGPU {
       if (this.bloomPass.enabled == true) {
         const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        // ori
-        // this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
       pass = commandEncoder.beginRenderPass({
         colorAttachments: [{

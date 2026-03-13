@@ -14,14 +14,15 @@ export function loadGLBLoader() {
   let TEST_ANIM = new MatrixEngineWGPU({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
+    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
-  }, () => {
+  }, async () => {
 
-    addEventListener('AmmoReady', async () => {
+    // addEventListener('AmmoReady', async () => {
       setTimeout(() => {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
@@ -129,7 +130,7 @@ export function loadGLBLoader() {
       //     texturesPaths: ['./res/textures/rust.jpg'],
       //   }, BVHANIM, glbFile);
       // });
-    })
+    // })
 
     function onGround(m) {
       TEST_ANIM.addLight();

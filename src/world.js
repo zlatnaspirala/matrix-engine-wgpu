@@ -31,7 +31,7 @@ import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragm
 /**
  * @description
  * Main engine root class.
- * @author Nikola Lukic 2025
+ * @author Nikola Lukic 2026
  * @email zlatnaspirala@gmail.com
  * @web https://maximumroulette.com
  * @github zlatnaspirala
@@ -66,9 +66,7 @@ export default class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
-
   autoUpdate = [];
-
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
 
@@ -107,6 +105,8 @@ export default class MatrixEngineWGPU {
     }
     this.editorAddOBJ = addOBJ.bind(this);
 
+    this.label = new MultiLang();
+
     this.logLoopError = true;
     // context select options
     if(typeof options.alphaMode == 'undefined') {
@@ -115,19 +115,13 @@ export default class MatrixEngineWGPU {
       console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied' !!!");
       return;
     }
-    if(typeof options.useContex == 'undefined') {
-      options.useContex = "webgpu";
-      // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
-      // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
-    }
+    if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
 
     // cache
     this._viewProjMatrix = mat4.create();
     this._invViewProj = mat4.create();
 
-    if(typeof options.dontUsePhysics == 'undefined') {
-      this.matrixAmmo = new MatrixAmmo();
-    }
+    if(typeof options.dontUsePhysics === 'undefined') {this.matrixAmmo = new MatrixAmmo()}
 
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
@@ -181,21 +175,19 @@ export default class MatrixEngineWGPU {
       canvas.height = this.options.canvasSize.h;
     }
     target.append(canvas);
-    // The camera types
+
     const initialCameraPosition = vec3.create(0, 0, 0);
     this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
     };
 
-    // add defaul generatl config later
     this.cameras = {
       arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
       RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
-    this.label = new MultiLang()
     if(urlQuery.lang != null) {
       this.label.loadMultilang(urlQuery.lang).then((r) => {
         this.label.get = r;
@@ -227,20 +219,12 @@ export default class MatrixEngineWGPU {
       this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
     }
 
-    // const devicePixelRatio = window.devicePixelRatio;
-    // canvas.width = canvas.clientWidth * devicePixelRatio;
-    // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-
-    console.log('test mobile ', presentationFormat)
-
     this.context.configure({
       device: this.device,
       format: presentationFormat,
       alphaMode: 'premultiplied',
     });
-
-    this.frame = this.frameSinglePass;
 
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
@@ -256,14 +240,14 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.9.0 ", LOG_FUNNY);
+    console.log("%c Version 1.9.8 ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Port is open.\n" +
       "Creative power loaded with visual scripting.\n" +
       "Last features : Adding Gizmo , Optimised render in name of performance,\n" +
       " audioReactiveNode, onDraw , onKey , curve editor.\n" +
-      "No tracking. No hype. Just solutions. 🔥", LOG_FUNNY_BIG_ARCADE);
+      "No tracking. No hype. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
@@ -272,11 +256,9 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
-    //shadows fix
     this.SHADOW_RES = 512;
     this._bufferUpdates = [];
 
-    // OPTIMISATION
     this.textureCache = new TextureCache(this.device);
     this._destroyQueue = new Set();
     this.flushDestroyQueue = () => {
@@ -336,7 +318,6 @@ export default class MatrixEngineWGPU {
     });
 
     this.sceneTextureView = this.sceneTexture.createView();
-
     this.presentSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear'
@@ -354,15 +335,12 @@ export default class MatrixEngineWGPU {
           code: `
         @group(0) @binding(0) var hdrTex : texture_2d<f32>;
         @group(0) @binding(1) var samp : sampler;
-
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
           let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
           let hdr = textureSample(hdrTex, samp, uv).rgb;
-
           // simple tonemap
           let ldr = hdr / (hdr + vec3(1.0));
-
           return vec4<f32>(ldr, 1.0);
         }
       `
@@ -372,7 +350,6 @@ export default class MatrixEngineWGPU {
       },
     });
 
-
     this.createBloomBindGroup();
 
     this.spotlightUniformBuffer = this.device.createBuffer({
@@ -381,7 +358,7 @@ export default class MatrixEngineWGPU {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
-    this._emptyLight = new Float32Array(36); // reused for empty slots, stays zeroed
+    this._emptyLight = new Float32Array(36);
     this.createTexArrayForShadows()
     this.mainDepthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -390,11 +367,10 @@ export default class MatrixEngineWGPU {
     });
 
     this.mainDepthView = this.mainDepthTexture.createView();
-
     this.mainRenderPassDesc = {
       label: 'mainRenderPassDesc',
       colorAttachments: [{
-        view: undefined,                // set each frame
+        view: undefined,
         loadOp: 'clear',
         storeOp: 'store',
         clearValue: [0.02, 0.02, 0.02, 1],
@@ -802,15 +778,13 @@ export default class MatrixEngineWGPU {
   }
 
   async run(callback) {
-    // await this.device.queue.onSubmittedWorkDone();
-    setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
-    setTimeout(() => {callback(this)}, 1)
+    this.frame = this.frameSinglePass;
+    setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
+    setTimeout(() => {callback(this)}, 200)
   }
 
   destroyProgram = () => {
     console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');
-
-    // 1️⃣ Stop render loop
     this.frame = () => {};
     if(this._rafId) {
       cancelAnimationFrame(this._rafId);
@@ -879,7 +853,7 @@ export default class MatrixEngineWGPU {
 
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
-      setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
+      setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
       return;
     }
 
@@ -965,9 +939,6 @@ export default class MatrixEngineWGPU {
         shadowPass.end();
       }
 
-      // with no postprocessing
-      // const currentTextureView = this.context.getCurrentTexture().createView();
-      // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // opaque
@@ -979,7 +950,6 @@ export default class MatrixEngineWGPU {
           pass.setPipeline(this.mainRenderBundle[0].pipeline);
         }
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
-          // for(const m of this.mainRenderBundle) {
           if(mesh.isVideo == true) {
             // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
             mesh.shadowDepthTextureView = this.shadowVideoView;
@@ -990,7 +960,6 @@ export default class MatrixEngineWGPU {
             mesh.shadowDepthTextureView = this.shadowArrayView;
             if(mesh.setupPipeline) mesh.setupPipeline();
           }
-          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -999,7 +968,6 @@ export default class MatrixEngineWGPU {
         if(mesh.material?.useBlend !== true) continue;
         pass.setPipeline(mesh.pipelineTransparent);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
-          // for(const m of this.mainRenderBundle) {
           if(mesh.isVideo == true) {
             // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
             mesh.shadowDepthTextureView = this.shadowVideoView;
@@ -1010,16 +978,15 @@ export default class MatrixEngineWGPU {
             mesh.shadowDepthTextureView = this.shadowArrayView;
             mesh.setupPipeline();
           }
-          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
 
+      const cam = this.cameras[this.mainCameraParams.type];
       if(this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix,
-        this.cameras[this.mainCameraParams.type].view, mat4.identity());
+      const viewProjMatrix = mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity());
       for(const mesh of this.mainRenderBundle) {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
@@ -1032,7 +999,6 @@ export default class MatrixEngineWGPU {
       transPass.end();
       // volumetric
       if(this.volumetricPass.enabled === true) {
-        const cam = this.cameras[this.mainCameraParams.type];
         mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix
@@ -1057,8 +1023,6 @@ export default class MatrixEngineWGPU {
           ? this.volumetricPass.compositeOutputTexView
           : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        // ori
-        // this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
 
       pass = commandEncoder.beginRenderPass({

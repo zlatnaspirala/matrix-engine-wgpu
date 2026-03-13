@@ -70,10 +70,15 @@ export class SpotLight {
       this.far
     );
 
-    this._lightBuffer = new Float32Array(36); // matches floatsPerLight = 36
-    this._tempSubtract = new Float32Array(3);  // scratch for vec3.subtract
-    this._viewMatrix = new Float32Array(16); // scratch for lookAt result
-    this._viewProjMatrix = new Float32Array(16); // scratch for multiply result
+    this._lightBuffer = new Float32Array(36);     // matches floatsPerLight = 36
+    this._tempSubtract = new Float32Array(3);     // scratch for vec3.subtract
+    this._viewMatrix = new Float32Array(16);      // scratch for lookAt result
+    this._viewProjMatrix = new Float32Array(16);  // scratch for multiply result
+
+    this._diffScratch = vec3.create();
+    this._dirScratch = vec3.create();
+    this._viewMatrix = mat4.create();
+    this._viewProjMatrix = mat4.create();
 
     this.setProjection = function(fov = (2 * Math.PI) / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
@@ -104,11 +109,6 @@ export class SpotLight {
       cullMode: 'back', // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     }
-
-    this._dirScratch = vec3.create();
-    this._diffScratch = vec3.create();
-    this._viewMatrix = mat4.create();
-    this._viewProjMatrix = mat4.create();
 
     this.shadowTexture = this.device.createTexture({
       label: 'shadowTexture[light]',
@@ -409,15 +409,20 @@ export class SpotLight {
   }
 
   update() {
-    // this.updater.forEach((update) => {update(this)})
-    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    // vec3.subtract(this.target, this.position, this._diffScratch);
+    // vec3.normalize(this._diffScratch, this._dirScratch);
+    // this.direction = this._dirScratch;
+    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
     vec3.subtract(this.target, this.position, this._diffScratch);
     vec3.normalize(this._diffScratch, this._dirScratch);
+
+    // Direct reference - no allocation
     this.direction = this._dirScratch;
-    this.viewMatrix = mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
-    this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
+
+    // In-place updates for matrices
+    mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
   }
 
   getLightDataBuffer() {
