@@ -19,7 +19,7 @@ var _utils = require("./src/engine/utils.js");
 window.urlQ = _utils.urlQuery;
 if ('serviceWorker' in navigator) {
   if (location.hostname.indexOf('localhost') == -1) {
-    navigator.serviceWorker.register('cache.js');
+    // navigator.serviceWorker.register('cache.js');
   }
 }
 const switchDemo = id => {
@@ -622,7 +622,6 @@ var loadObjFile = function () {
   }, () => {
     loadObjFile.addLight();
     (0, _raycast.addRaycastsAABBListener)();
-
     // addEventListener('AmmoReady', () => {
 
     // })
@@ -22599,6 +22598,11 @@ class WASDCamera extends CameraBase {
       this.suspendDrag = false;
       if (options.pitch) this.setPitch(options.pitch);
       if (options.yaw) this.setYaw(options.yaw);
+      this._posScratch = _wgpuMatrix.vec3.create();
+      this._targetVelScratch = _wgpuMatrix.vec3.create();
+      this._rotYScratch = _wgpuMatrix.mat4.create();
+      this._rotXScratch = _wgpuMatrix.mat4.create();
+      this._viewScratch = _wgpuMatrix.mat4.create();
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
@@ -22616,44 +22620,44 @@ class WASDCamera extends CameraBase {
   update(deltaTime, input) {
     const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
     if (this.suspendDrag == false) {
-      // Apply the delta rotation to the pitch and yaw angles
       this.yaw -= input.analog.x * deltaTime * this.rotationSpeed;
       this.pitch -= input.analog.y * deltaTime * this.rotationSpeed;
     }
-
-    // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
     this.yaw = mod(this.yaw, Math.PI * 2);
-    // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-
-    // Save the current position, as we're about to rebuild the camera matrix.
-    const position = _wgpuMatrix.vec3.copy(this.position);
-
-    // Reconstruct the camera's rotation, and store into the camera matrix.
-    super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
-    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
-    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
-
-    // Calculate the new target velocity
+    _wgpuMatrix.vec3.copy(this.position, this._posScratch);
+    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
+    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
+    super.matrix = this._rotXScratch;
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
-    const targetVelocity = _wgpuMatrix.vec3.create();
     const deltaBack = sign(digital.backward, digital.forward);
-    _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
-    _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    _wgpuMatrix.vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
-    _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
-    _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
 
-    // Mix new target velocity
-    this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
+    // ← reuse scratch, zero it first
+    this._targetVelScratch[0] = 0;
+    this._targetVelScratch[1] = 0;
+    this._targetVelScratch[2] = 0;
+    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.right, deltaRight, this._targetVelScratch);
+    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.up, deltaUp, this._targetVelScratch);
+    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.back, deltaBack, this._targetVelScratch);
+    _wgpuMatrix.vec3.normalize(this._targetVelScratch, this._targetVelScratch);
+    _wgpuMatrix.vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
 
-    // Integrate velocity to calculate new position
-    this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
+    // lerp into _targetVelScratch directly — no new array
+    const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
+    this._targetVelScratch[0] = this._targetVelScratch[0] + (this.velocity_[0] - this._targetVelScratch[0]) * t;
+    this._targetVelScratch[1] = this._targetVelScratch[1] + (this.velocity_[1] - this._targetVelScratch[1]) * t;
+    this._targetVelScratch[2] = this._targetVelScratch[2] + (this.velocity_[2] - this._targetVelScratch[2]) * t;
+    _wgpuMatrix.vec3.copy(this._targetVelScratch, this.velocity_); // write back into velocity_ directly
 
-    // Invert the camera matrix to build the view matrix
-    this.view = _wgpuMatrix.mat4.invert(this.matrix);
+    // integrate position — fix: was `position`, should be `this._posScratch`
+    _wgpuMatrix.vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
+    this.position = this._posScratch;
+
+    // ← reuse view scratch
+    _wgpuMatrix.mat4.invert(this.matrix, this._viewScratch);
+    super.view = this._viewScratch;
     return this.view;
   }
 
@@ -26456,6 +26460,10 @@ class SpotLight {
       // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     };
+    this._dirScratch = _wgpuMatrix.vec3.create();
+    this._diffScratch = _wgpuMatrix.vec3.create();
+    this._viewMatrix = _wgpuMatrix.mat4.create();
+    this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this.shadowTexture = this.device.createTexture({
       label: 'shadowTexture[light]',
       size: [this.SHADOW_RES, this.SHADOW_RES, 1],
@@ -26810,12 +26818,15 @@ class SpotLight {
     this.updater = [];
   }
   update() {
-    this.updater.forEach(update => {
-      update(this);
-    });
-    this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(this.target, this.position));
-    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up);
-    this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    // this.updater.forEach((update) => {update(this)})
+    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
+    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    _wgpuMatrix.vec3.subtract(this.target, this.position, this._diffScratch);
+    _wgpuMatrix.vec3.normalize(this._diffScratch, this._dirScratch);
+    this.direction = this._dirScratch;
+    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
@@ -32307,6 +32318,7 @@ class VolumetricPass {
   /** Call once after constructor. Chainable: new VolumetricPass(...).init() */
   init() {
     this.compositeOutputTex = this._createTexture(this.width, this.height);
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
     return this;
   }
 
@@ -32316,6 +32328,7 @@ class VolumetricPass {
     this.height = height;
     this.volumetricTex = this._createTexture(width, height);
     this.compositeOutputTex = this._createTexture(width, height);
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
   }
 }
 
@@ -53497,7 +53510,6 @@ var _flame = require("./engine/effects/flame.js");
 var _proceduralMesh = _interopRequireWildcard(require("./engine/procedural-mesh.js"));
 var _fontana = require("./engine/procedures/fontana.js");
 var _fontanaWgsl = require("./shaders/fontana/fontana.wgsl.js");
-var _vertexWgsl = require("./shaders/vertex.wgsl.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
@@ -53509,7 +53521,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * @github zlatnaspirala
  */
 class MatrixEngineWGPU {
-  // save class reference
+  // Save class reference
   reference = {
     MEMeshObj: _meshObj.default,
     MEMeshObjInstances: _meshObjInstances.default,
@@ -53576,8 +53588,6 @@ class MatrixEngineWGPU {
         responseCoef: 2000
       };
     }
-
-    // in case of optimisation
     if (typeof options.dontUsePhysics == 'undefined') {
       this.physicsBodiesGenerator = _generator.physicsBodiesGenerator.bind(this);
       this.physicsBodiesGeneratorWall = _generator.physicsBodiesGeneratorWall.bind(this);
@@ -53721,6 +53731,7 @@ class MatrixEngineWGPU {
     // canvas.width = canvas.clientWidth * devicePixelRatio;
     // canvas.height = canvas.clientHeight * devicePixelRatio;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    console.log('test mobile ', presentationFormat);
     this.context.configure({
       device: this.device,
       format: presentationFormat,
@@ -53753,6 +53764,7 @@ class MatrixEngineWGPU {
   createGlobalStuff() {
     //shadows fix
     this.SHADOW_RES = 512;
+    this._bufferUpdates = [];
 
     // OPTIMISATION
     this.textureCache = new _coreCache.TextureCache(this.device);
@@ -53839,8 +53851,8 @@ class MatrixEngineWGPU {
         }),
         entryPoint: 'main',
         targets: [{
-          format: 'bgra8unorm'
-        }] // rgba16float  bgra8unorm
+          format: (0, _utils.isMobile)() == true ? 'rgba8unorm' : 'bgra8unorm'
+        }] // rgba16float  bgra8unorm rgba8unorm
       }
     });
     this.createBloomBindGroup();
@@ -54566,12 +54578,12 @@ class MatrixEngineWGPU {
     this.autoUpdate.forEach(_ => _.update());
     let now;
     const currentTime = performance.now() / 1000;
-    const bufferUpdates = [];
-    this.mainRenderBundle.forEach((m, index) => {
+    this._bufferUpdates.length = 0;
+    this.mainRenderBundle.forEach(m => {
       if (m.vertexAnimBuffer && m.vertexAnimParams) {
         m.time = currentTime * m.deltaTimeAdapter;
         m.vertexAnimParams[0] = m.time;
-        bufferUpdates.push({
+        this._bufferUpdates.push({
           buffer: m.vertexAnimBuffer,
           data: m.vertexAnimParams
         });
@@ -54586,7 +54598,7 @@ class MatrixEngineWGPU {
         }
       }
     });
-    for (const update of bufferUpdates) {
+    for (const update of this._bufferUpdates) {
       this.device.queue.writeBuffer(update.buffer, 0, update.data);
     }
     try {
@@ -54608,14 +54620,6 @@ class MatrixEngineWGPU {
       });
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        // let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
-        //   dimension: '2d',
-        //   baseArrayLayer: i,
-        //   arrayLayerCount: 1, // must be > 0
-        //   baseMipLevel: 0,
-        //   mipLevelCount: 1,
-        // });
-
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],
@@ -54626,12 +54630,8 @@ class MatrixEngineWGPU {
             depthClearValue: 1.0
           }
         });
-
-        // light.shadowTextureView2D = this.shadowPassViews[i];
-
         now = performance.now() / 1000;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
-          // if (mesh.name == "floor") continue; 
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
             shadowPass.setPipeline(light.shadowPipelineInstanced);
@@ -54669,18 +54669,18 @@ class MatrixEngineWGPU {
           pass.setPipeline(this.mainRenderBundle[0].pipeline);
         }
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          for (const m of this.mainRenderBundle) {
-            if (m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-              m.shadowDepthTextureView = this.shadowVideoView;
-              m.FINISH_VIDIO_INIT = true;
-              m.setupPipeline();
-              pass.setPipeline(mesh.pipeline);
-            } else {
-              m.shadowDepthTextureView = this.shadowArrayView;
-              if (m.setupPipeline) m.setupPipeline();
-            }
+          // for(const m of this.mainRenderBundle) {
+          if (mesh.isVideo == true) {
+            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+            mesh.shadowDepthTextureView = this.shadowVideoView;
+            mesh.FINISH_VIDIO_INIT = true;
+            mesh.setupPipeline();
+            pass.setPipeline(mesh.pipeline);
+          } else {
+            mesh.shadowDepthTextureView = this.shadowArrayView;
+            if (mesh.setupPipeline) mesh.setupPipeline();
           }
+          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -54689,18 +54689,18 @@ class MatrixEngineWGPU {
         if (mesh.material?.useBlend !== true) continue;
         pass.setPipeline(mesh.pipelineTransparent);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          for (const m of this.mainRenderBundle) {
-            if (m.isVideo == true) {
-              // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-              m.shadowDepthTextureView = this.shadowVideoView;
-              m.FINISH_VIDIO_INIT = true;
-              m.setupPipeline();
-              pass.setPipeline(mesh.pipelineTransparent);
-            } else {
-              m.shadowDepthTextureView = this.shadowArrayView;
-              m.setupPipeline();
-            }
+          // for(const m of this.mainRenderBundle) {
+          if (mesh.isVideo == true) {
+            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
+            mesh.shadowDepthTextureView = this.shadowVideoView;
+            mesh.FINISH_VIDIO_INIT = true;
+            mesh.setupPipeline();
+            pass.setPipeline(mesh.pipelineTransparent);
+          } else {
+            mesh.shadowDepthTextureView = this.shadowArrayView;
+            mesh.setupPipeline();
           }
+          // }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -54721,10 +54721,6 @@ class MatrixEngineWGPU {
       // volumetric
       if (this.volumetricPass.enabled === true) {
         const cam = this.cameras[this.mainCameraParams.type];
-        // If you don't store it yet, compute once per frame:
-        // const invViewProj = mat4.invert(
-        //   mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity())
-        // );
         _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
         // Grab first light for direction + shadow matrix
@@ -54746,7 +54742,7 @@ class MatrixEngineWGPU {
       const canvasView = this.context.getCurrentTexture().createView();
       // Bloom
       if (this.bloomPass.enabled == true) {
-        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTex.createView() : this.sceneTextureView;
+        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
         // ori
         // this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
@@ -55060,4 +55056,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/core-cache.js":27,"./engine/effects/energy-bar.js":29,"./engine/effects/flame-emmiter.js":30,"./engine/effects/flame.js":31,"./engine/effects/mana-bar.js":36,"./engine/effects/pointerEffect.js":37,"./engine/engine.js":39,"./engine/generators/generator.js":40,"./engine/instanced/mesh-obj-instances.js":43,"./engine/lights.js":44,"./engine/loader-obj.js":46,"./engine/loaders/bvh-instaced.js":47,"./engine/loaders/bvh.js":48,"./engine/mesh-obj.js":52,"./engine/postprocessing/bloom.js":54,"./engine/postprocessing/volumetric.js":55,"./engine/procedural-mesh.js":56,"./engine/procedures/fontana.js":57,"./engine/raycast.js":59,"./engine/utils.js":60,"./multilang/lang.js":61,"./physics/matrix-ammo.js":62,"./shaders/fontana/fontana.wgsl.js":67,"./shaders/vertex.wgsl.js":88,"./sounds/audioAsset.js":92,"./sounds/sounds.js":93,"./tools/editor/editor.js":96,"./tools/editor/flexCodexShaderAdapter.js":99,"wgpu-matrix":24}]},{},[1]);
+},{"./engine/core-cache.js":27,"./engine/effects/energy-bar.js":29,"./engine/effects/flame-emmiter.js":30,"./engine/effects/flame.js":31,"./engine/effects/mana-bar.js":36,"./engine/effects/pointerEffect.js":37,"./engine/engine.js":39,"./engine/generators/generator.js":40,"./engine/instanced/mesh-obj-instances.js":43,"./engine/lights.js":44,"./engine/loader-obj.js":46,"./engine/loaders/bvh-instaced.js":47,"./engine/loaders/bvh.js":48,"./engine/mesh-obj.js":52,"./engine/postprocessing/bloom.js":54,"./engine/postprocessing/volumetric.js":55,"./engine/procedural-mesh.js":56,"./engine/procedures/fontana.js":57,"./engine/raycast.js":59,"./engine/utils.js":60,"./multilang/lang.js":61,"./physics/matrix-ammo.js":62,"./shaders/fontana/fontana.wgsl.js":67,"./sounds/audioAsset.js":92,"./sounds/sounds.js":93,"./tools/editor/editor.js":96,"./tools/editor/flexCodexShaderAdapter.js":99,"wgpu-matrix":24}]},{},[1]);

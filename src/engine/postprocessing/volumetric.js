@@ -23,6 +23,7 @@ export class VolumetricPass {
 
     this.volumetricTex = this._createTexture(width, height);
 
+    
     // Linear sampler — composite pass
     this.sampler = device.createSampler({
       label: 'VolumetricPass.linearSampler',
@@ -272,6 +273,7 @@ export class VolumetricPass {
   /** Call once after constructor. Chainable: new VolumetricPass(...).init() */
   init() {
     this.compositeOutputTex = this._createTexture(this.width, this.height);
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
     return this;
   }
 
@@ -281,6 +283,7 @@ export class VolumetricPass {
     this.height = height;
     this.volumetricTex      = this._createTexture(width, height);
     this.compositeOutputTex = this._createTexture(width, height);
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
   }
 }
 

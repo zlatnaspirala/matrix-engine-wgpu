@@ -18,13 +18,10 @@ export var loadObjFile = function() {
   }, () => {
 
     loadObjFile.addLight();
- addRaycastsAABBListener();
-
-
+    addRaycastsAABBListener();
     // addEventListener('AmmoReady', () => {
-     
-    // })
 
+    // })
 
     setTimeout(() => {
       downloadMeshes({
