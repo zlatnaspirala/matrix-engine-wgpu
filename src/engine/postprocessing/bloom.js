@@ -65,6 +65,17 @@ export class BloomPass {
       {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
       {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}]
     );
+
+    // ── Pre-create all stable views ──────────────────────────────────────
+    this._brightView = this.brightTex.createView();
+    this._blurAView = this.blurTexA.createView();
+    this._blurBView = this.blurTexB.createView();
+
+    // ── Pre-create all stable bind groups ───────────────────────────────
+    // brightBindGroup depends on sceneView (changes each frame) → stays dynamic
+    this._blurXBindGroup = this._blurBindGroup(this._brightView, this.blurDirX);
+    this._blurYBindGroup = this._blurBindGroup(this._blurAView, this.blurDirY);
+    // combineBindGroup depends on sceneView → stays dynamic
   }
 
   _createTexture() {
@@ -187,25 +198,25 @@ export class BloomPass {
   render(encoder, sceneView, finalTargetView) {
     // ----- Bright pass -----
     {
-      const pass = this._beginFullscreenPass(encoder, this.brightTex.createView());
+      const pass = this._beginFullscreenPass(encoder, this._brightView);
       pass.setPipeline(this.brightPipeline);
-      pass.setBindGroup(0, this._brightBindGroup(sceneView));
+      pass.setBindGroup(0, this._brightBindGroup(sceneView));  // sceneView changes → dynamic
       pass.draw(6);
       pass.end();
     }
     // ----- Blur X -----
     {
-      const pass = this._beginFullscreenPass(encoder, this.blurTexA.createView());
+      const pass = this._beginFullscreenPass(encoder, this._blurAView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurBindGroup(this.brightTex.createView(), this.blurDirX));
+      pass.setBindGroup(0, this._blurXBindGroup);              // ← cached
       pass.draw(6);
       pass.end();
     }
     // ----- Blur Y -----
     {
-      const pass = this._beginFullscreenPass(encoder, this.blurTexB.createView());
+      const pass = this._beginFullscreenPass(encoder, this._blurBView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurBindGroup(this.blurTexA.createView(), this.blurDirY));
+      pass.setBindGroup(0, this._blurYBindGroup);              // ← cached
       pass.draw(6);
       pass.end();
     }
@@ -213,8 +224,7 @@ export class BloomPass {
     {
       const pass = this._beginFullscreenPass(encoder, finalTargetView);
       pass.setPipeline(this.combinePipeline);
-      pass.setBindGroup(0, this._combineBindGroup(sceneView, this.blurTexB.createView())
-      );
+      pass.setBindGroup(0, this._combineBindGroup(sceneView, this._blurBView)); // sceneView changes → dynamic
       pass.draw(6);
       pass.end();
     }

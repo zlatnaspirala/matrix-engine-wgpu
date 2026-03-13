@@ -370,7 +370,8 @@ function lerp(a, b, s) {
 }
 
 export function createInputHandler(window, canvas) {
-  let digital = {
+
+  const digital = {
     forward: false,
     backward: false,
     left: false,
@@ -378,12 +379,25 @@ export function createInputHandler(window, canvas) {
     up: false,
     down: false,
   };
-  let analog = {
+
+  const analog = {
     x: 0,
     y: 0,
     zoom: 0,
   };
+
   let mouseDown = false;
+
+  // PREALLOCATED OUTPUT
+  const output = {
+    digital: digital,
+    analog: {
+      x: 0,
+      y: 0,
+      zoom: 0,
+      touching: false,
+    }
+  };
 
   const setDigital = (e, value) => {
     switch(e.code) {
@@ -394,9 +408,6 @@ export function createInputHandler(window, canvas) {
       case 'KeyV': digital.up = value; break;
       case 'KeyC': digital.down = value; break;
     }
-    // if you wanna dosavle all keyboard input for some reason...
-    // add later like new option feature...
-    // e.preventDefault();
     e.stopPropagation();
   };
 
@@ -404,42 +415,40 @@ export function createInputHandler(window, canvas) {
   window.addEventListener('keyup', (e) => setDigital(e, false));
 
   canvas.style.touchAction = 'pinch-zoom';
-  canvas.addEventListener('pointerdown', () => {mouseDown = true;});
-  canvas.addEventListener('pointerup', () => {mouseDown = false;});
+
+  canvas.addEventListener('pointerdown', () => { mouseDown = true; });
+  canvas.addEventListener('pointerup', () => { mouseDown = false; });
+
   canvas.addEventListener('pointermove', (e) => {
-    mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
+
+    mouseDown = e.pointerType === 'mouse'
+      ? (e.buttons & 1) !== 0
+      : true;
+
     if(mouseDown) {
       analog.x += e.movementX / 10;
       analog.y += e.movementY / 10;
     }
+
   });
 
   canvas.addEventListener('wheel', (e) => {
-    // if((e.buttons & 1) !== 0) {
-    //   analog.zoom += Math.sign(e.deltaY);
-    //   e.preventDefault();
-    //   e.stopPropagation();
-    // }
-  }, {passive: false});
+    // analog.zoom += Math.sign(e.deltaY);
+  }, { passive:false });
 
-  return () => {
-    // Guard: prevent zero deltas from breaking camera math
-    const safeX = analog.x || 0.0001;
-    const safeY = analog.y || 0.0001;
-    const out = {
-      digital,
-      analog: {
-        x: safeX,
-        y: safeY,
-        zoom: analog.zoom,
-        touching: mouseDown,
-      },
-    };
-    // Reset only the deltas for next frame
+  return function getInput() {
+
+    // Guard
+    output.analog.x = analog.x || 0.0001;
+    output.analog.y = analog.y || 0.0001;
+    output.analog.zoom = analog.zoom;
+    output.analog.touching = mouseDown;
+
     analog.x = 0;
     analog.y = 0;
     analog.zoom = 0;
-    return out;
+
+    return output;
   };
 }
 

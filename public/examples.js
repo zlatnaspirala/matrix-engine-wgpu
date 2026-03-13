@@ -19,7 +19,7 @@ var _utils = require("./src/engine/utils.js");
 window.urlQ = _utils.urlQuery;
 if ('serviceWorker' in navigator) {
   if (location.hostname.indexOf('localhost') == -1) {
-    // navigator.serviceWorker.register('cache.js');
+    navigator.serviceWorker.register('cache.js');
   }
 }
 const switchDemo = id => {
@@ -22807,7 +22807,7 @@ function lerp(a, b, s) {
   return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
 }
 function createInputHandler(window, canvas) {
-  let digital = {
+  const digital = {
     forward: false,
     backward: false,
     left: false,
@@ -22815,12 +22815,23 @@ function createInputHandler(window, canvas) {
     up: false,
     down: false
   };
-  let analog = {
+  const analog = {
     x: 0,
     y: 0,
     zoom: 0
   };
   let mouseDown = false;
+
+  // PREALLOCATED OUTPUT
+  const output = {
+    digital: digital,
+    analog: {
+      x: 0,
+      y: 0,
+      zoom: 0,
+      touching: false
+    }
+  };
   const setDigital = (e, value) => {
     switch (e.code) {
       case 'KeyW':
@@ -22842,9 +22853,6 @@ function createInputHandler(window, canvas) {
         digital.down = value;
         break;
     }
-    // if you wanna dosavle all keyboard input for some reason...
-    // add later like new option feature...
-    // e.preventDefault();
     e.stopPropagation();
   };
   window.addEventListener('keydown', e => setDigital(e, true));
@@ -22864,32 +22872,20 @@ function createInputHandler(window, canvas) {
     }
   });
   canvas.addEventListener('wheel', e => {
-    // if((e.buttons & 1) !== 0) {
-    //   analog.zoom += Math.sign(e.deltaY);
-    //   e.preventDefault();
-    //   e.stopPropagation();
-    // }
+    // analog.zoom += Math.sign(e.deltaY);
   }, {
     passive: false
   });
-  return () => {
-    // Guard: prevent zero deltas from breaking camera math
-    const safeX = analog.x || 0.0001;
-    const safeY = analog.y || 0.0001;
-    const out = {
-      digital,
-      analog: {
-        x: safeX,
-        y: safeY,
-        zoom: analog.zoom,
-        touching: mouseDown
-      }
-    };
-    // Reset only the deltas for next frame
+  return function getInput() {
+    // Guard
+    output.analog.x = analog.x || 0.0001;
+    output.analog.y = analog.y || 0.0001;
+    output.analog.zoom = analog.zoom;
+    output.analog.touching = mouseDown;
     analog.x = 0;
     analog.y = 0;
     analog.zoom = 0;
-    return out;
+    return output;
   };
 }
 class RPGCamera extends CameraBase {
@@ -31653,6 +31649,17 @@ class BloomPass {
         type: 'uniform'
       }
     }]);
+
+    // ── Pre-create all stable views ──────────────────────────────────────
+    this._brightView = this.brightTex.createView();
+    this._blurAView = this.blurTexA.createView();
+    this._blurBView = this.blurTexB.createView();
+
+    // ── Pre-create all stable bind groups ───────────────────────────────
+    // brightBindGroup depends on sceneView (changes each frame) → stays dynamic
+    this._blurXBindGroup = this._blurBindGroup(this._brightView, this.blurDirX);
+    this._blurYBindGroup = this._blurBindGroup(this._blurAView, this.blurDirY);
+    // combineBindGroup depends on sceneView → stays dynamic
   }
   _createTexture() {
     return this.device.createTexture({
@@ -31795,25 +31802,25 @@ class BloomPass {
   render(encoder, sceneView, finalTargetView) {
     // ----- Bright pass -----
     {
-      const pass = this._beginFullscreenPass(encoder, this.brightTex.createView());
+      const pass = this._beginFullscreenPass(encoder, this._brightView);
       pass.setPipeline(this.brightPipeline);
-      pass.setBindGroup(0, this._brightBindGroup(sceneView));
+      pass.setBindGroup(0, this._brightBindGroup(sceneView)); // sceneView changes → dynamic
       pass.draw(6);
       pass.end();
     }
     // ----- Blur X -----
     {
-      const pass = this._beginFullscreenPass(encoder, this.blurTexA.createView());
+      const pass = this._beginFullscreenPass(encoder, this._blurAView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurBindGroup(this.brightTex.createView(), this.blurDirX));
+      pass.setBindGroup(0, this._blurXBindGroup); // ← cached
       pass.draw(6);
       pass.end();
     }
     // ----- Blur Y -----
     {
-      const pass = this._beginFullscreenPass(encoder, this.blurTexB.createView());
+      const pass = this._beginFullscreenPass(encoder, this._blurBView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurBindGroup(this.blurTexA.createView(), this.blurDirY));
+      pass.setBindGroup(0, this._blurYBindGroup); // ← cached
       pass.draw(6);
       pass.end();
     }
@@ -31821,7 +31828,7 @@ class BloomPass {
     {
       const pass = this._beginFullscreenPass(encoder, finalTargetView);
       pass.setPipeline(this.combinePipeline);
-      pass.setBindGroup(0, this._combineBindGroup(sceneView, this.blurTexB.createView()));
+      pass.setBindGroup(0, this._combineBindGroup(sceneView, this._blurBView)); // sceneView changes → dynamic
       pass.draw(6);
       pass.end();
     }
