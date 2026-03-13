@@ -151,6 +151,11 @@ export class WASDCamera extends CameraBase {
       this.suspendDrag = false;
       if(options.pitch) this.setPitch(options.pitch)
       if(options.yaw) this.setYaw(options.yaw)
+      this._posScratch = vec3.create();
+      this._targetVelScratch = vec3.create();
+      this._rotYScratch = mat4.create();
+      this._rotXScratch = mat4.create();
+      this._viewScratch = mat4.create();
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
@@ -167,52 +172,50 @@ export class WASDCamera extends CameraBase {
   }
 
   update(deltaTime, input) {
-    const sign = (positive, negative) =>
-      (positive ? 1 : 0) - (negative ? 1 : 0);
+    const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
 
     if(this.suspendDrag == false) {
-      // Apply the delta rotation to the pitch and yaw angles
       this.yaw -= input.analog.x * deltaTime * this.rotationSpeed;
       this.pitch -= input.analog.y * deltaTime * this.rotationSpeed;
     }
 
-    // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
     this.yaw = mod(this.yaw, Math.PI * 2);
-    // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
 
-    // Save the current position, as we're about to rebuild the camera matrix.
-    const position = vec3.copy(this.position);
+    vec3.copy(this.position, this._posScratch);
+    mat4.rotationY(this.yaw, this._rotYScratch);
+    mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
+    super.matrix = this._rotXScratch;
 
-    // Reconstruct the camera's rotation, and store into the camera matrix.
-    super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch);
-    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
-    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
-
-    // Calculate the new target velocity
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
-    const targetVelocity = vec3.create();
     const deltaBack = sign(digital.backward, digital.forward);
-    vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
-    vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
-    vec3.normalize(targetVelocity, targetVelocity);
-    vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
 
-    // Mix new target velocity
-    this.velocity = lerp(
-      targetVelocity,
-      this.velocity,
-      Math.pow(1 - this.frictionCoefficient, deltaTime)
-    );
+    // ← reuse scratch, zero it first
+    this._targetVelScratch[0] = 0;
+    this._targetVelScratch[1] = 0;
+    this._targetVelScratch[2] = 0;
+    vec3.addScaled(this._targetVelScratch, this.right, deltaRight, this._targetVelScratch);
+    vec3.addScaled(this._targetVelScratch, this.up, deltaUp, this._targetVelScratch);
+    vec3.addScaled(this._targetVelScratch, this.back, deltaBack, this._targetVelScratch);
+    vec3.normalize(this._targetVelScratch, this._targetVelScratch);
+    vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
 
-    // Integrate velocity to calculate new position
-    this.position = vec3.addScaled(position, this.velocity, deltaTime);
+    // lerp into _targetVelScratch directly — no new array
+    const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
+    this._targetVelScratch[0] = this._targetVelScratch[0] + (this.velocity_[0] - this._targetVelScratch[0]) * t;
+    this._targetVelScratch[1] = this._targetVelScratch[1] + (this.velocity_[1] - this._targetVelScratch[1]) * t;
+    this._targetVelScratch[2] = this._targetVelScratch[2] + (this.velocity_[2] - this._targetVelScratch[2]) * t;
+    vec3.copy(this._targetVelScratch, this.velocity_);  // write back into velocity_ directly
 
-    // Invert the camera matrix to build the view matrix
-    this.view = mat4.invert(this.matrix);
+    // integrate position — fix: was `position`, should be `this._posScratch`
+    vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
+    this.position = this._posScratch;
+
+    // ← reuse view scratch
+    mat4.invert(this.matrix, this._viewScratch);
+    super.view = this._viewScratch;
     return this.view;
   }
 

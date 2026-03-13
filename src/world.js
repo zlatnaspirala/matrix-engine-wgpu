@@ -276,6 +276,7 @@ export default class MatrixEngineWGPU {
   createGlobalStuff() {
     //shadows fix
     this.SHADOW_RES = 512;
+    this._bufferUpdates = [];
 
     // OPTIMISATION
     this.textureCache = new TextureCache(this.device);
@@ -886,12 +887,12 @@ export default class MatrixEngineWGPU {
     this.autoUpdate.forEach((_) => _.update())
     let now;
     const currentTime = performance.now() / 1000;
-    const bufferUpdates = [];
-    this.mainRenderBundle.forEach((m, index) => {
+    this._bufferUpdates.length = 0;
+    this.mainRenderBundle.forEach((m) => {
       if(m.vertexAnimBuffer && m.vertexAnimParams) {
         m.time = currentTime * m.deltaTimeAdapter;
         m.vertexAnimParams[0] = m.time;
-        bufferUpdates.push({
+        this._bufferUpdates.push({
           buffer: m.vertexAnimBuffer,
           data: m.vertexAnimParams
         });
@@ -906,7 +907,7 @@ export default class MatrixEngineWGPU {
         }
       }
     })
-    for(const update of bufferUpdates) {
+    for(const update of this._bufferUpdates) {
       this.device.queue.writeBuffer(update.buffer, 0, update.data);
     }
     try {
@@ -928,14 +929,6 @@ export default class MatrixEngineWGPU {
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        // let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
-        //   dimension: '2d',
-        //   baseArrayLayer: i,
-        //   arrayLayerCount: 1, // must be > 0
-        //   baseMipLevel: 0,
-        //   mipLevelCount: 1,
-        // });
-
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],
@@ -946,13 +939,8 @@ export default class MatrixEngineWGPU {
             depthClearValue: 1.0,
           }
         });
-
-        // light.shadowTextureView2D = this.shadowPassViews[i];
-
         now = performance.now() / 1000;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
-
-          // if (mesh.name == "floor") continue; 
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
             shadowPass.setPipeline(light.shadowPipelineInstanced);
@@ -961,7 +949,6 @@ export default class MatrixEngineWGPU {
           } else {
             shadowPass.setPipeline(light.shadowPipeline);
           }
-
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             if(mesh instanceof BVHPlayerInstances) {
@@ -983,7 +970,6 @@ export default class MatrixEngineWGPU {
       // const currentTextureView = this.context.getCurrentTexture().createView();
       // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // opaque
       for(const mesh of this.mainRenderBundle) {
@@ -1073,7 +1059,7 @@ export default class MatrixEngineWGPU {
       // Bloom
       if(this.bloomPass.enabled == true) {
         const bloomInput = this.volumetricPass.enabled
-          ? this.volumetricPass.compositeOutputTex.createView()
+          ? this.volumetricPass.compositeOutputTexView
           : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
         // ori

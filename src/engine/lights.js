@@ -105,6 +105,11 @@ export class SpotLight {
       frontFace: 'ccw'
     }
 
+    this._dirScratch = vec3.create();
+    this._diffScratch = vec3.create();
+    this._viewMatrix = mat4.create();
+    this._viewProjMatrix = mat4.create();
+
     this.shadowTexture = this.device.createTexture({
       label: 'shadowTexture[light]',
       size: [this.SHADOW_RES, this.SHADOW_RES, 1],
@@ -404,10 +409,15 @@ export class SpotLight {
   }
 
   update() {
-    this.updater.forEach((update) => {update(this)})
-    this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-    this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    // this.updater.forEach((update) => {update(this)})
+    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
+    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    vec3.subtract(this.target, this.position, this._diffScratch);
+    vec3.normalize(this._diffScratch, this._dirScratch);
+    this.direction = this._dirScratch;
+    this.viewMatrix = mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
   }
 
   getLightDataBuffer() {

@@ -429,7 +429,7 @@ function createHTMLProjectDocument(name) {
     <meta name="theme-color" content="#000000" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0,minimal-ui" />
     <link rel="icon" type="image/png" sizes="512x512" href="res/icons/512.png" />
-    <script src="./hacker-timer/hack-timer-worker.min.js"></script>
+    // <script src="./hacker-timer/hack-timer-worker.min.js"></script>
   </head>
   <body allow="autoplay" class="meBody">
     <script src="${name}.js"></script>
