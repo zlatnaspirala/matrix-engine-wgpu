@@ -288,7 +288,6 @@ export class ArcballCamera extends CameraBase {
 
   update(deltaTime, input) {
     const epsilon = 0.0000001;
-
     if(input.analog.touching) {
       // Currently being dragged.
       this.angularVelocity = 0;
@@ -296,26 +295,20 @@ export class ArcballCamera extends CameraBase {
       // Dampen any existing angular velocity
       this.angularVelocity *= Math.pow(1 - this.frictionCoefficient, deltaTime);
     }
-
     // Calculate the movement vector
     const movement = vec3.create();
     vec3.addScaled(movement, this.right, input.analog.x, movement);
     vec3.addScaled(movement, this.up, -input.analog.y, movement);
-
     // Cross the movement vector with the view direction to calculate the rotation axis x magnitude
     const crossProduct = vec3.cross(movement, this.back);
-
     // Calculate the magnitude of the drag
     const magnitude = vec3.len(crossProduct);
-
     if(magnitude > epsilon) {
       // Normalize the crossProduct to get the rotation axis
       this.axis = vec3.scale(crossProduct, 1 / magnitude);
-
       // Remember the current angular velocity. This is used when the touch is released for a fling.
       this.angularVelocity = magnitude * this.rotationSpeed;
     }
-
     // The rotation around this.axis to apply to the camera matrix this update
     const rotationAngle = this.angularVelocity * deltaTime;
     if(rotationAngle > epsilon) {
@@ -334,8 +327,9 @@ export class ArcballCamera extends CameraBase {
     this.position = vec3.scale(this.back, this.distance);
 
     // Invert the camera matrix to build the view matrix
-    this.view = mat4.invert(this.matrix);
-    return this.view;
+    // this.view = mat4.invert(this.matrix);
+    mat4.invert(this.matrix, this.view_);
+    return this.view_;
   }
 
   // Assigns `this.right` with the cross product of `this.up` and `this.back`

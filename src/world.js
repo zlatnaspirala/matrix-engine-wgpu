@@ -855,16 +855,14 @@ export default class MatrixEngineWGPU {
   }
 
   frameSinglePass = () => {
-    if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
-      setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
-      return;
-    }
-
+    // if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
+    //   setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
+    //   return;
+    // }
     this.autoUpdate.forEach((_) => _.update())
     let now;
     const currentTime = performance.now() / 1000;
     this._bufferUpdates.length = 0;
-
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -937,61 +935,56 @@ export default class MatrixEngineWGPU {
 
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      // opaque
+      let lastPipeline = null;
       for(const mesh of this.mainRenderBundle) {
-        if(mesh.material?.useBlend === true) continue;
-        if(mesh.pipeline) {
-          pass.setPipeline(mesh.pipeline);
-        } else {
-          pass.setPipeline(this.mainRenderBundle[0].pipeline);
+        if(mesh.material?.useBlend) continue;
+        const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
+        if(!mesh.sceneBindGroupForRender || (mesh.isVideo && !mesh.FINISH_VIDIO_INIT)) {
+          mesh.shadowDepthTextureView = mesh.isVideo ? this.shadowVideoView : this.shadowArrayView;
+          if(mesh.setupPipeline) mesh.setupPipeline();
+          mesh.FINISH_VIDIO_INIT = true;
         }
-        if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
-          if(mesh.isVideo == true) {
-            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-            mesh.shadowDepthTextureView = this.shadowVideoView;
-            mesh.FINISH_VIDIO_INIT = true;
-            mesh.setupPipeline();
-            pass.setPipeline(mesh.pipeline);
-          } else {
-            mesh.shadowDepthTextureView = this.shadowArrayView;
-            if(mesh.setupPipeline) mesh.setupPipeline();
-          }
+        if(lastPipeline !== targetPipeline) {
+          pass.setPipeline(targetPipeline);
+          lastPipeline = targetPipeline;
         }
         mesh.drawElements(pass, this.lightContainer);
       }
+
       // blend
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend !== true) continue;
-        pass.setPipeline(mesh.pipelineTransparent);
-        if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
-          if(mesh.isVideo == true) {
-            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-            mesh.shadowDepthTextureView = this.shadowVideoView;
-            mesh.FINISH_VIDIO_INIT = true;
-            mesh.setupPipeline();
-            pass.setPipeline(mesh.pipelineTransparent);
+
+        // ── one-time setup guard ─────────────────────────────────────────
+        if(!mesh.sceneBindGroupForRender) {
+          if(mesh.isVideo === true) {
+            if(mesh.FINISH_VIDIO_INIT === false) {
+              mesh.shadowDepthTextureView = this.shadowVideoView;
+              mesh.FINISH_VIDIO_INIT = true;
+              mesh.setupPipeline();
+            }
           } else {
             mesh.shadowDepthTextureView = this.shadowArrayView;
             mesh.setupPipeline();
           }
         }
+
+        // ── per-frame draw ───────────────────────────────────────────────
+        pass.setPipeline(mesh.pipelineTransparent);
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
 
       const cam = this.cameras[this.mainCameraParams.type];
       if(this.collisionSystem) this.collisionSystem.update();
-
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      // const viewProjMatrix = mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity());
       mat4.multiply(cam.projectionMatrix, cam.view, this._tempViewProj);
       const viewProjMatrix = this._tempViewProj;
       for(const mesh of this.mainRenderBundle) {
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if(!effect || effect.enabled === false) continue;
-
+            if(effect.enabled === false) continue;
             let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
             if(effect.updateInstanceData) effect.updateInstanceData(md);
             effect.render(transPass, mesh, viewProjMatrix);

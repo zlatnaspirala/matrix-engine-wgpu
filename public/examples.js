@@ -22736,25 +22736,20 @@ class ArcballCamera extends CameraBase {
       // Dampen any existing angular velocity
       this.angularVelocity *= Math.pow(1 - this.frictionCoefficient, deltaTime);
     }
-
     // Calculate the movement vector
     const movement = _wgpuMatrix.vec3.create();
     _wgpuMatrix.vec3.addScaled(movement, this.right, input.analog.x, movement);
     _wgpuMatrix.vec3.addScaled(movement, this.up, -input.analog.y, movement);
-
     // Cross the movement vector with the view direction to calculate the rotation axis x magnitude
     const crossProduct = _wgpuMatrix.vec3.cross(movement, this.back);
-
     // Calculate the magnitude of the drag
     const magnitude = _wgpuMatrix.vec3.len(crossProduct);
     if (magnitude > epsilon) {
       // Normalize the crossProduct to get the rotation axis
       this.axis = _wgpuMatrix.vec3.scale(crossProduct, 1 / magnitude);
-
       // Remember the current angular velocity. This is used when the touch is released for a fling.
       this.angularVelocity = magnitude * this.rotationSpeed;
     }
-
     // The rotation around this.axis to apply to the camera matrix this update
     const rotationAngle = this.angularVelocity * deltaTime;
     if (rotationAngle > epsilon) {
@@ -22773,8 +22768,9 @@ class ArcballCamera extends CameraBase {
     this.position = _wgpuMatrix.vec3.scale(this.back, this.distance);
 
     // Invert the camera matrix to build the view matrix
-    this.view = _wgpuMatrix.mat4.invert(this.matrix);
-    return this.view;
+    // this.view = mat4.invert(this.matrix);
+    _wgpuMatrix.mat4.invert(this.matrix, this.view_);
+    return this.view_;
   }
 
   // Assigns `this.right` with the cross product of `this.up` and `this.back`
@@ -27703,7 +27699,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     out[15] = 1;
   }
   update(deltaTime) {
-    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex]);
+    // var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.animationIndex])
+    var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
       setTimeout(() => {
@@ -54786,12 +54783,10 @@ class MatrixEngineWGPU {
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
   }
   frameSinglePass = () => {
-    if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
-      setTimeout(() => {
-        requestAnimationFrame(this.frame);
-      }, 200);
-      return;
-    }
+    // if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
+    //   setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
+    //   return;
+    // }
     this.autoUpdate.forEach(_ => _.update());
     let now;
     const currentTime = performance.now() / 1000;
@@ -54864,58 +54859,55 @@ class MatrixEngineWGPU {
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      // opaque
+      let lastPipeline = null;
       for (const mesh of this.mainRenderBundle) {
-        if (mesh.material?.useBlend === true) continue;
-        if (mesh.pipeline) {
-          pass.setPipeline(mesh.pipeline);
-        } else {
-          pass.setPipeline(this.mainRenderBundle[0].pipeline);
+        if (mesh.material?.useBlend) continue;
+        const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
+        if (!mesh.sceneBindGroupForRender || mesh.isVideo && !mesh.FINISH_VIDIO_INIT) {
+          mesh.shadowDepthTextureView = mesh.isVideo ? this.shadowVideoView : this.shadowArrayView;
+          if (mesh.setupPipeline) mesh.setupPipeline();
+          mesh.FINISH_VIDIO_INIT = true;
         }
-        if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          if (mesh.isVideo == true) {
-            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-            mesh.shadowDepthTextureView = this.shadowVideoView;
-            mesh.FINISH_VIDIO_INIT = true;
-            mesh.setupPipeline();
-            pass.setPipeline(mesh.pipeline);
-          } else {
-            mesh.shadowDepthTextureView = this.shadowArrayView;
-            if (mesh.setupPipeline) mesh.setupPipeline();
-          }
+        if (lastPipeline !== targetPipeline) {
+          pass.setPipeline(targetPipeline);
+          lastPipeline = targetPipeline;
         }
         mesh.drawElements(pass, this.lightContainer);
       }
+
       // blend
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend !== true) continue;
-        pass.setPipeline(mesh.pipelineTransparent);
-        if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          if (mesh.isVideo == true) {
-            // console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
-            mesh.shadowDepthTextureView = this.shadowVideoView;
-            mesh.FINISH_VIDIO_INIT = true;
-            mesh.setupPipeline();
-            pass.setPipeline(mesh.pipelineTransparent);
+
+        // ── one-time setup guard ─────────────────────────────────────────
+        if (!mesh.sceneBindGroupForRender) {
+          if (mesh.isVideo === true) {
+            if (mesh.FINISH_VIDIO_INIT === false) {
+              mesh.shadowDepthTextureView = this.shadowVideoView;
+              mesh.FINISH_VIDIO_INIT = true;
+              mesh.setupPipeline();
+            }
           } else {
             mesh.shadowDepthTextureView = this.shadowArrayView;
             mesh.setupPipeline();
           }
         }
+
+        // ── per-frame draw ───────────────────────────────────────────────
+        pass.setPipeline(mesh.pipelineTransparent);
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
       const cam = this.cameras[this.mainCameraParams.type];
       if (this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      // const viewProjMatrix = mat4.multiply(cam.projectionMatrix, cam.view, mat4.identity());
       _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._tempViewProj);
       const viewProjMatrix = this._tempViewProj;
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if (!effect || effect.enabled === false) continue;
+            if (effect.enabled === false) continue;
             let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
             if (effect.updateInstanceData) effect.updateInstanceData(md);
             effect.render(transPass, mesh, viewProjMatrix);
