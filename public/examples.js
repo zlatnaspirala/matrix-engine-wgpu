@@ -27952,14 +27952,19 @@ class BVHPlayerInstances extends _meshObjInstances.default {
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
     const nodeChannels = this._nodeChannels;
+    const animTime = time % this._animationLength;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
       const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
-      for (const channel of channelsForNode) {
+      for (let k = 0; k < channelsForNode.length; k++) {
+        const channel = channelsForNode[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
-        const animTime = time % channel._animLength;
+        // let animTime = time;
+        // if(animTime >= channel._animLength) {
+        //   animTime -= channel._animLength * Math.floor(animTime / channel._animLength);
+        // }
         const lastFrame = channel._lastFrame;
         const pathType = channel._pathType;
 
@@ -27986,10 +27991,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
           }
         } else {
           const t0 = inputTimes[i];
-          const t1 = inputTimes[Math.min(i + 1, lastFrame)];
+          const next = i < lastFrame ? i + 1 : lastFrame;
+          const t1 = inputTimes[next];
+          const base1 = next * channel._numComponents;
           const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
           const base0 = i * channel._numComponents;
-          const base1 = Math.min(i + 1, lastFrame) * channel._numComponents;
           if (pathType === 0) {
             node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
@@ -28559,14 +28565,19 @@ class BVHPlayer extends _meshObj.default {
   }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
     const nodeChannels = this._nodeChannels;
+    const animTime = time % this._animationLength;
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
       const channelsForNode = this._nodeChannelsArray[nodeIndex] || this._emptyChannels;
-      for (const channel of channelsForNode) {
+      for (let k = 0; k < channelsForNode.length; k++) {
+        const channel = channelsForNode[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
-        const animTime = time % channel._animLength;
+        // let animTime = time;
+        // if(animTime >= channel._animLength) {
+        //   animTime -= channel._animLength * Math.floor(animTime / channel._animLength);
+        // }
         const lastFrame = channel._lastFrame;
         const pathType = channel._pathType;
         let i = channel._lastKeyIndex;
@@ -28591,10 +28602,11 @@ class BVHPlayer extends _meshObj.default {
           }
         } else {
           const t0 = inputTimes[i];
-          const t1 = inputTimes[Math.min(i + 1, lastFrame)];
+          const next = i < lastFrame ? i + 1 : lastFrame;
+          const t1 = inputTimes[next];
+          const base1 = next * channel._numComponents;
           const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
           const base0 = i * channel._numComponents;
-          const base1 = Math.min(i + 1, lastFrame) * channel._numComponents;
           if (pathType === 0) {
             node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
             node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
