@@ -22807,7 +22807,7 @@ function lerp(a, b, s) {
   return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
 }
 function createInputHandler(window, canvas) {
-  const digital = {
+  let digital = {
     forward: false,
     backward: false,
     left: false,
@@ -22815,23 +22815,12 @@ function createInputHandler(window, canvas) {
     up: false,
     down: false
   };
-  const analog = {
+  let analog = {
     x: 0,
     y: 0,
     zoom: 0
   };
   let mouseDown = false;
-
-  // PREALLOCATED OUTPUT
-  const output = {
-    digital: digital,
-    analog: {
-      x: 0,
-      y: 0,
-      zoom: 0,
-      touching: false
-    }
-  };
   const setDigital = (e, value) => {
     switch (e.code) {
       case 'KeyW':
@@ -22853,6 +22842,9 @@ function createInputHandler(window, canvas) {
         digital.down = value;
         break;
     }
+    // if you wanna dosavle all keyboard input for some reason...
+    // add later like new option feature...
+    // e.preventDefault();
     e.stopPropagation();
   };
   window.addEventListener('keydown', e => setDigital(e, true));
@@ -22864,29 +22856,40 @@ function createInputHandler(window, canvas) {
   canvas.addEventListener('pointerup', () => {
     mouseDown = false;
   });
-  const MOUSE_SENS = 0.1;
   canvas.addEventListener('pointermove', e => {
     mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
     if (mouseDown) {
-      analog.x += e.movementX * MOUSE_SENS;
-      analog.y += e.movementY * MOUSE_SENS;
+      analog.x += e.movementX / 10;
+      analog.y += e.movementY / 10;
     }
   });
   canvas.addEventListener('wheel', e => {
-    // analog.zoom += Math.sign(e.deltaY);
+    // if((e.buttons & 1) !== 0) {
+    //   analog.zoom += Math.sign(e.deltaY);
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    // }
   }, {
     passive: false
   });
-  return function getInput() {
-    // Guard
-    output.analog.x = analog.x || 0.0001;
-    output.analog.y = analog.y || 0.0001;
-    output.analog.zoom = analog.zoom;
-    output.analog.touching = mouseDown;
+  return () => {
+    // Guard: prevent zero deltas from breaking camera math
+    const safeX = analog.x || 0.0001;
+    const safeY = analog.y || 0.0001;
+    const out = {
+      digital,
+      analog: {
+        x: safeX,
+        y: safeY,
+        zoom: analog.zoom,
+        touching: mouseDown
+      }
+    };
+    // Reset only the deltas for next frame
     analog.x = 0;
     analog.y = 0;
     analog.zoom = 0;
-    return output;
+    return out;
   };
 }
 class RPGCamera extends CameraBase {
@@ -22928,11 +22931,6 @@ class RPGCamera extends CameraBase {
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
 
-      this._posScratch = _wgpuMatrix.vec3.create();
-      this._targetVelScratch = _wgpuMatrix.vec3.create();
-      this._rotYScratch = _wgpuMatrix.mat4.create();
-      this._rotXScratch = _wgpuMatrix.mat4.create();
-      this._viewScratch = _wgpuMatrix.mat4.create();
       this.mousRollInAction = false;
       addEventListener('wheel', e => {
         // Scroll up = zoom out / higher Y
@@ -22954,12 +22952,19 @@ class RPGCamera extends CameraBase {
   }
   update(deltaTime, input) {
     const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
-    this.yaw = 0;
-    this.pitch = -0.88;
+    // Apply the delta rotation to the pitch and yaw angles
+    this.yaw = 0; //-= input.analog.x * deltaTime * this.rotationSpeed;
+    this.pitch = -0.88; //  -= input.analog.y * deltaTime * this.rotationSpeed;
+    // // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
     this.yaw = mod(this.yaw, Math.PI * 2);
+    // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
+    // Save the current position, as we're about to rebuild the camera matrix.
     if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
+      //  console.log("  follow : " + this.followMe.x)
+
       this.followMeOffset = this.scrollY;
+      // if player not move allow mouse explore map 
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
       app.lightContainer[0].position[0] = this.followMe.x;
@@ -22970,44 +22975,30 @@ class RPGCamera extends CameraBase {
     }
     const smoothFactor = 0.1;
     this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
-
-    // ← was: let position = vec3.copy(this.position)  — allocated new vec3
-    _wgpuMatrix.vec3.copy(this.position, this._posScratch);
-
-    // ← was: mat4.rotateX(mat4.rotationY(...))  — 2 new mat4s
-    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
-    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
-    super.matrix = this._rotXScratch;
+    let position = _wgpuMatrix.vec3.copy(this.position);
+    // Reconstruct the camera's rotation, and store into the camera matrix.
+    super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
+    // Calculate the new target velocity
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
+    const targetVelocity = _wgpuMatrix.vec3.create();
     const deltaBack = sign(digital.backward, digital.forward);
-    if (deltaBack == -1) this._posScratch[2] += -10;else if (deltaBack == 1) this._posScratch[2] += 10;
-    this._posScratch[0] += deltaRight * 10;
-
-    // ← was: const targetVelocity = vec3.create()  — allocated new vec3
-    this._targetVelScratch[0] = 0;
-    this._targetVelScratch[1] = 0;
-    this._targetVelScratch[2] = 0;
-    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.right, deltaRight, this._targetVelScratch);
-    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.up, deltaUp, this._targetVelScratch);
-    _wgpuMatrix.vec3.normalize(this._targetVelScratch, this._targetVelScratch);
-    _wgpuMatrix.vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
-
-    // ← was: lerp(targetVelocity, this.velocity, t)  — lerp allocated internally
-    const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
-    this._targetVelScratch[0] += (this.velocity_[0] - this._targetVelScratch[0]) * t;
-    this._targetVelScratch[1] += (this.velocity_[1] - this._targetVelScratch[1]) * t;
-    this._targetVelScratch[2] += (this.velocity_[2] - this._targetVelScratch[2]) * t;
-    _wgpuMatrix.vec3.copy(this._targetVelScratch, this.velocity_);
-
-    // ← was: vec3.addScaled(position, ...)  — position was the old allocated vec3
-    _wgpuMatrix.vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
-    this.position = this._posScratch;
-
-    // ← was: mat4.invert(this.matrix)  — new mat4
-    _wgpuMatrix.mat4.invert(this.matrix, this._viewScratch);
-    super.view = this._viewScratch;
+    // older then follow
+    if (deltaBack == -1) {
+      // console.log(deltaBack + "  deltaBack ")
+      position[2] += -10;
+    } else if (deltaBack == 1) {
+      position[2] += 10;
+    }
+    position[0] += deltaRight * 10;
+    _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
+    _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
+    _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
+    _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
+    this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
+    this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
+    this.view = _wgpuMatrix.mat4.invert(this.matrix);
     return this.view;
   }
   recalculateAngles(dir) {
