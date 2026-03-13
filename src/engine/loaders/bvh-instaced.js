@@ -136,6 +136,16 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       }
       this._nodeChannels.get(channel.target.node).push(channel);
     }
+
+    // ── Pre-cache accessor arrays + metadata per channel ─────────────
+    for(const channel of anim.channels) {
+      const sampler = anim.samplers[channel.sampler];  // ← from glbJsonData
+      channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
+      channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
+      channel._numComponents = channel.target.path === 'rotation' ? 4 : 3;
+      channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
+      channel._isStep = sampler.interpolation === 'STEP';  // bonus: handle STEP correctly
+    }
   }
 
   makeSkeletal() {
@@ -473,34 +483,29 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     return {translation: t, rotation: rot, scale: scale};
   }
 
-  slerp(q0, q1, t, out) {
-    let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
-    const flip = dot < 0 ? (dot = -dot, -1) : 1;  // ← no array, just a scalar
-
+  slerp(arr0, off0, arr1, off1, t, out) {
+    let ax = arr0[off0], ay = arr0[off0 + 1], az = arr0[off0 + 2], aw = arr0[off0 + 3];
+    let bx = arr1[off1], by = arr1[off1 + 1], bz = arr1[off1 + 2], bw = arr1[off1 + 3];
+    let dot = ax * bx + ay * by + az * bz + aw * bw;
+    const flip = dot < 0 ? (dot = -dot, -1) : 1;
+    bx *= flip; by *= flip; bz *= flip; bw *= flip;
     if(dot > 0.9995) {
-      const invLen = 1 / Math.sqrt(
-        (q0[0] + t * (flip * q1[0] - q0[0])) ** 2 +
-        (q0[1] + t * (flip * q1[1] - q0[1])) ** 2 +
-        (q0[2] + t * (flip * q1[2] - q0[2])) ** 2 +
-        (q0[3] + t * (flip * q1[3] - q0[3])) ** 2
-      );
-      out[0] = (q0[0] + t * (flip * q1[0] - q0[0])) * invLen;
-      out[1] = (q0[1] + t * (flip * q1[1] - q0[1])) * invLen;
-      out[2] = (q0[2] + t * (flip * q1[2] - q0[2])) * invLen;
-      out[3] = (q0[3] + t * (flip * q1[3] - q0[3])) * invLen;
+      out[0] = ax + t * (bx - ax);
+      out[1] = ay + t * (by - ay);
+      out[2] = az + t * (bz - az);
+      out[3] = aw + t * (bw - aw);
+      const len = Math.sqrt(out[0] ** 2 + out[1] ** 2 + out[2] ** 2 + out[3] ** 2);
+      out[0] /= len; out[1] /= len; out[2] /= len; out[3] /= len;
       return;
     }
-
     const theta0 = Math.acos(dot);
-    const theta = theta0 * t;
-    const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
-    const s1 = sinTheta / sinTheta0;
-    out[0] = s0 * q0[0] + s1 * flip * q1[0];
-    out[1] = s0 * q0[1] + s1 * flip * q1[1];
-    out[2] = s0 * q0[2] + s1 * flip * q1[2];
-    out[3] = s0 * q0[3] + s1 * flip * q1[3];
+    const s0 = Math.cos(theta0 * t) - dot * Math.sin(theta0 * t) / sinTheta0;
+    const s1 = Math.sin(theta0 * t) / sinTheta0;
+    out[0] = s0 * ax + s1 * bx;
+    out[1] = s0 * ay + s1 * by;
+    out[2] = s0 * az + s1 * bz;
+    out[3] = s0 * aw + s1 * bw;
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
@@ -512,37 +517,51 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       const channelsForNode = nodeChannels.get(nodeIndex) || this._emptyChannels;
       for(const channel of channelsForNode) {
         const path = channel.target.path;
-        const sampler = samplers[channel.sampler];
-        const inputTimes = this.getAccessorArray(this.glb, sampler.input);
-        const outputArray = this.getAccessorArray(this.glb, sampler.output);
-        const numComponents = path === "rotation" ? 4 : 3;
-        const animTime = time % inputTimes[inputTimes.length - 1];
+        const inputTimes = channel._inputTimes;   // ← pre-cached, no getAccessorArray call
+        const outputArray = channel._outputArray;  // ← pre-cached
+        const numComponents = channel._numComponents;
+        const animTime = time % channel._animLength;
+
         let i = 0;
         while(i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
-        const t0 = inputTimes[i];
-        const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
-        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const base0 = i * numComponents;
-        const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
-        if(path === "translation") {
-          for(let k = 0;k < 3;k++) {
-            node.translation[k] =
-              outputArray[base0 + k] * (1 - factor) +
-              outputArray[base1 + k] * factor;
+
+        if(channel._isStep) {
+          // STEP: just copy keyframe i directly, no interpolation
+          const base0 = i * numComponents;
+          if(path === 'rotation') {
+            node.rotation[0] = outputArray[base0];
+            node.rotation[1] = outputArray[base0 + 1];
+            node.rotation[2] = outputArray[base0 + 2];
+            node.rotation[3] = outputArray[base0 + 3];
+          } else if(path === 'translation') {
+            node.translation[0] = outputArray[base0];
+            node.translation[1] = outputArray[base0 + 1];
+            node.translation[2] = outputArray[base0 + 2];
+          } else {
+            node.scale[0] = outputArray[base0];
+            node.scale[1] = outputArray[base0 + 1];
+            node.scale[2] = outputArray[base0 + 2];
           }
-        } else if(path === "scale") {
-          for(let k = 0;k < 3;k++) {
-            node.scale[k] =
-              outputArray[base0 + k] * (1 - factor) +
-              outputArray[base1 + k] * factor;
+        } else {
+          // LINEAR
+          const t0 = inputTimes[i];
+          const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+          const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+          const base0 = i * numComponents;
+          const base1 = Math.min(i + 1, inputTimes.length - 1) * numComponents;
+
+          if(path === 'translation') {
+            node.translation[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
+            node.translation[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
+            node.translation[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
+          } else if(path === 'scale') {
+            node.scale[0] = outputArray[base0] * (1 - factor) + outputArray[base1] * factor;
+            node.scale[1] = outputArray[base0 + 1] * (1 - factor) + outputArray[base1 + 1] * factor;
+            node.scale[2] = outputArray[base0 + 2] * (1 - factor) + outputArray[base1 + 2] * factor;
+          } else if(path === 'rotation') {
+            // subarray() replaced with direct indices — no object creation
+            this.slerp(outputArray, base0, outputArray, base1, factor, node.rotation);
           }
-        } else if(path === "rotation") {
-          this.slerp(
-            outputArray.subarray(base0, base0 + 4),
-            outputArray.subarray(base1, base1 + 4),
-            factor,
-            node.rotation
-          );
         }
       }
       this.composeTRS(node.translation, node.rotation, node.scale, node.transform)
