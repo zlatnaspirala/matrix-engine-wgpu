@@ -94,6 +94,11 @@ export var loadObjFile = function() {
           enabled: false,
           mass: 0,
           geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          pointer: true,
+          flameEmitter: true,
         }
       })
 

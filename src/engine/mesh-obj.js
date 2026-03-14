@@ -752,6 +752,7 @@ export default class MEMeshObj extends Materials {
           this._scaleVec[2] = this.scale[2];
           mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
         }
+        this.modelMatrix = modelMatrix;
         return modelMatrix;
       };
 

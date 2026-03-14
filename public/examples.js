@@ -743,6 +743,11 @@ var loadObjFile = function () {
           enabled: false,
           mass: 0,
           geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          pointer: true,
+          flameEmitter: true
         }
       });
 
@@ -31367,6 +31372,7 @@ class MEMeshObj extends _materials.default {
           this._scaleVec[2] = this.scale[2];
           _wgpuMatrix.mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
         }
+        this.modelMatrix = modelMatrix;
         return modelMatrix;
       };
 
@@ -53815,6 +53821,7 @@ class MatrixEngineWGPU {
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
     this.label = new _lang.MultiLang();
+    this.now = 0;
     this.logLoopError = true;
     // context select options
     if (typeof options.alphaMode == 'undefined') {
@@ -54768,14 +54775,8 @@ class MatrixEngineWGPU {
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
   }
   frameSinglePass = () => {
-    // if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
-    //   setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
-    //   return;
-    // }
     this.autoUpdate.forEach(_ => _.update());
-    let now;
     const currentTime = performance.now() / 1000;
-    this._bufferUpdates.length = 0;
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -54818,7 +54819,7 @@ class MatrixEngineWGPU {
             depthClearValue: 1.0
           }
         });
-        now = performance.now() / 1000;
+        this.now = performance.now() / 1000;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
@@ -54863,8 +54864,6 @@ class MatrixEngineWGPU {
       // blend
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend !== true) continue;
-
-        // ── one-time setup guard ─────────────────────────────────────────
         if (!mesh.sceneBindGroupForRender) {
           if (mesh.isVideo === true) {
             if (mesh.FINISH_VIDIO_INIT === false) {
@@ -54877,8 +54876,6 @@ class MatrixEngineWGPU {
             mesh.setupPipeline();
           }
         }
-
-        // ── per-frame draw ───────────────────────────────────────────────
         pass.setPipeline(mesh.pipelineTransparent);
         mesh.drawElements(pass, this.lightContainer);
       }
@@ -54888,7 +54885,8 @@ class MatrixEngineWGPU {
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       _wgpuMatrix.mat4.multiply(cam.projectionMatrix, cam.view, this._tempViewProj);
       const viewProjMatrix = this._tempViewProj;
-      for (const mesh of this.mainRenderBundle) {
+      for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
+        const mesh = this.mainRenderBundle[meshIndex];
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
@@ -54941,7 +54939,7 @@ class MatrixEngineWGPU {
       pass.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
       pass.draw(6);
       pass.end();
-      this.graphUpdate(now);
+      this.graphUpdate(this.now);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
