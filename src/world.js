@@ -144,7 +144,7 @@ export default class MatrixEngineWGPU {
         app.activateEditor();
         return false;
       }
-    });
+    }, {passive: true});
 
     this.activateEditor = () => {
       if(this.editor == null || typeof this.editor === 'undefined') {
@@ -561,7 +561,7 @@ export default class MatrixEngineWGPU {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
     }
     this.mainRenderBundle.push(myMesh1);
-
+    this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
@@ -675,6 +675,7 @@ export default class MatrixEngineWGPU {
       this.matrixAmmo.addPhysics(myMesh, o.physics);
     }
     this.mainRenderBundle.push(myMesh);
+    this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
@@ -856,8 +857,8 @@ export default class MatrixEngineWGPU {
   }
 
   frameSinglePass = () => {
-    this.autoUpdate.forEach((_) => _.update())
     this.now = performance.now() / 1000;
+    this.autoUpdate.forEach((_) => _.update())
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -901,16 +902,23 @@ export default class MatrixEngineWGPU {
             depthClearValue: 1.0,
           }
         });
-        
+
+        let lastShadowPipeline = null;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          let targetShadowPipeline;
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
-            shadowPass.setPipeline(light.shadowPipelineInstanced);
+            targetShadowPipeline = light.shadowPipelineInstanced;
           } else if(mesh instanceof ProceduralMeshObj) {
-            shadowPass.setPipeline(light.shadowPipelineMorph);
+            targetShadowPipeline = light.shadowPipelineMorph;
           } else {
-            shadowPass.setPipeline(light.shadowPipeline);
+            targetShadowPipeline = light.shadowPipeline;
           }
+          if(lastShadowPipeline !== targetShadowPipeline) {
+            shadowPass.setPipeline(targetShadowPipeline);
+            lastShadowPipeline = targetShadowPipeline;
+          }
+
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             if(mesh instanceof BVHPlayerInstances) {
@@ -984,9 +992,7 @@ export default class MatrixEngineWGPU {
         }
       }
       transPass.end();
-      // volumetric
       if(this.volumetricPass.enabled === true) {
-        // mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         mat4.invert(this._viewProjMatrix, this._invViewProj);
         const light = this.lightContainer[0];
         this.volumetricPass.render(
@@ -996,8 +1002,8 @@ export default class MatrixEngineWGPU {
           this.shadowArrayView,         // ← your existing shadow array
           {invViewProjectionMatrix: this._invViewProj},
           {
-            viewProjectionMatrix: light.viewProjMatrix, // Float32Array 16
-            direction: light.direction,                       // [x, y, z]
+            viewProjectionMatrix: light.viewProjMatrix,
+            direction: light.direction,
           }
         );
       }
@@ -1099,6 +1105,7 @@ export default class MatrixEngineWGPU {
         // }
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
+        this.sortRenderBundle();
         setTimeout(() => {
           document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
         }, 50);
@@ -1189,6 +1196,7 @@ export default class MatrixEngineWGPU {
         // make it soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
+          this.sortRenderBundle();
           setTimeout(() => {
             document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
           }, 50);
@@ -1200,6 +1208,21 @@ export default class MatrixEngineWGPU {
     if(typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
+  }
+
+  sortRenderBundle() {
+    this.mainRenderBundle.sort((a, b) => {
+      // blend meshes always go last (you already have a second loop for them)
+      const aBlend = a.material?.useBlend ? 1 : 0;
+      const bBlend = b.material?.useBlend ? 1 : 0;
+      if(aBlend !== bBlend) return aBlend - bBlend;
+      // group by pipeline reference
+      const aPipe = a.pipeline || this.mainRenderBundle[0].pipeline;
+      const bPipe = b.pipeline || this.mainRenderBundle[0].pipeline;
+      if(aPipe < bPipe) return -1;
+      if(aPipe > bPipe) return 1;
+      return 0;
+    });
   }
 
   activateBloomEffect = () => {

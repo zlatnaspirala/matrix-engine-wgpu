@@ -806,12 +806,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);
-
         this._translateVec[0] = pos.x;
         this._translateVec[1] = pos.y;
         this._translateVec[2] = pos.z;
         mat4.translate(modelMatrix, this._translateVec, modelMatrix);
-
         if(this.itIsPhysicsBody) {
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
@@ -830,7 +828,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
         return modelMatrix;
       };
-
       this.done = true;
       if(this.texturesPaths.length > 1 && this.material.type == "mirror") {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {

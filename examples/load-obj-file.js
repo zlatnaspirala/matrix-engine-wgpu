@@ -43,7 +43,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg'],
+        texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -57,7 +57,7 @@ export var loadObjFile = function() {
     async function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
@@ -87,7 +87,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg'],
+        texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube',
         mesh: m.cube,
         physics: {
