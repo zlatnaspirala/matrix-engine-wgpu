@@ -857,7 +857,7 @@ export default class MatrixEngineWGPU {
 
   frameSinglePass = () => {
     this.autoUpdate.forEach((_) => _.update())
-    const currentTime = performance.now() / 1000;
+    this.now = performance.now() / 1000;
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -865,7 +865,7 @@ export default class MatrixEngineWGPU {
       for(let i = 0;i < this.mainRenderBundle.length;i++) {
         const mesh = this.mainRenderBundle[i];
         if(mesh.vertexAnimBuffer && mesh.vertexAnimParams) {
-          mesh.time = currentTime * mesh.deltaTimeAdapter;
+          mesh.time = this.now * mesh.deltaTimeAdapter;
           mesh.vertexAnimParams[0] = mesh.time;
           this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
         }
@@ -879,9 +879,9 @@ export default class MatrixEngineWGPU {
         }
         mesh.position.update();
         mesh.updateModelUniformBuffer();
-        if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(currentTime);
+        if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(mesh.time);
-        if(mesh.updateTime) mesh.updateTime(currentTime);
+        if(mesh.updateTime) mesh.updateTime(this.now);
         for(let j = 0;j < this.lightContainer.length;j++) {
           const light = this.lightContainer[j];
           if(i === 0) light.update();
@@ -901,7 +901,7 @@ export default class MatrixEngineWGPU {
             depthClearValue: 1.0,
           }
         });
-        this.now = performance.now() / 1000;
+        
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
@@ -969,8 +969,8 @@ export default class MatrixEngineWGPU {
       const cam = this.cameras[this.mainCameraParams.type];
       if(this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      mat4.multiply(cam.projectionMatrix, cam.view, this._tempViewProj);
-      const viewProjMatrix = this._tempViewProj;
+      mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+      const viewProjMatrix = this._viewProjMatrix;
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if(mesh.effects) {
@@ -986,7 +986,7 @@ export default class MatrixEngineWGPU {
       transPass.end();
       // volumetric
       if(this.volumetricPass.enabled === true) {
-        mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+        // mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
         mat4.invert(this._viewProjMatrix, this._invViewProj);
         const light = this.lightContainer[0];
         this.volumetricPass.render(
