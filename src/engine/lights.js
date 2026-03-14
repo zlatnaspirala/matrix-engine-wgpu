@@ -71,9 +71,6 @@ export class SpotLight {
     );
 
     this._lightBuffer = new Float32Array(36);     // matches floatsPerLight = 36
-    this._tempSubtract = new Float32Array(3);     // scratch for vec3.subtract
-    this._viewMatrix = new Float32Array(16);      // scratch for lookAt result
-    this._viewProjMatrix = new Float32Array(16);  // scratch for multiply result
 
     this._diffScratch = vec3.create();
     this._dirScratch = vec3.create();
@@ -404,25 +401,15 @@ export class SpotLight {
     }
     // Only osc values +-
     this.behavior = new Behavior();
-    // put here only func
     this.updater = [];
   }
 
   update() {
-    // vec3.subtract(this.target, this.position, this._diffScratch);
-    // vec3.normalize(this._diffScratch, this._dirScratch);
-    // this.direction = this._dirScratch;
-    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
     vec3.subtract(this.target, this.position, this._diffScratch);
     vec3.normalize(this._diffScratch, this._dirScratch);
-
-    // Direct reference - no allocation
     this.direction = this._dirScratch;
-
-    // In-place updates for matrices
     mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
-    mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
+    mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
   }
 
   getLightDataBuffer() {

@@ -359,7 +359,6 @@ function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
-    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -370,167 +369,166 @@ function loadGLBLoader() {
       g: 0.122,
       a: 1
     }
-  }, async () => {
-    // addEventListener('AmmoReady', async () => {
-    setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 35;
-    }, 2000);
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
-    }, onGround, {
-      scale: [120, 0.5, 120]
+  }, () => {
+    addEventListener('AmmoReady', async () => {
+      setTimeout(() => {
+        app.cameras.WASD.yaw = -0.03;
+        app.cameras.WASD.pitch = -0.49;
+        app.cameras.WASD.position[2] = 0;
+        app.cameras.WASD.position[1] = 35;
+      }, 2000);
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj"
+      }, onGround, {
+        scale: [120, 0.5, 120]
+      });
+
+      // // Monster1
+      var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        useScale: true,
+        scale: [20, 20, 20],
+        position: {
+          x: 0,
+          y: -4,
+          z: -70
+        },
+        name: 'firstGlb',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFile01);
+
+      // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {
+          type: 'power',
+          useTextureFromGlb: true
+        },
+        useScale: true,
+        scale: [20, 20, 20],
+        position: {
+          x: -40,
+          y: -4,
+          z: -70
+        },
+        name: 'firstGlb',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFile01);
+
+      // var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {
+          type: 'pong',
+          useTextureFromGlb: true
+        },
+        useScale: true,
+        scale: [20, 20, 20],
+        position: {
+          x: 40,
+          y: -4,
+          z: -70
+        },
+        name: 'firstGlb',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFile01);
+
+      // woman
+      var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObjInctance({
+        material: {
+          type: 'mirror',
+          useTextureFromGlb: true
+        },
+        envMapParams: {
+          baseColorMix: 0.75,
+          mirrorTint: [0.9, 0.5, 1.0],
+          // Slight cool tint
+          reflectivity: 0.5,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0],
+          // Soft cyan
+          illuminateStrength: 0.1,
+          // Gentle rim
+          illuminatePulse: 0.001,
+          // No pulse (static)
+          fresnelPower: 5.0,
+          // Medium-sharp edge
+          envLodBias: 2.5,
+          usePlanarReflection: false // ✅ Env map mode
+        },
+        useScale: true,
+        scale: [20, 20, 20],
+        position: {
+          x: 0,
+          y: -4,
+          z: -20
+        },
+        name: 'woman1',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp']
+      }, null, glbFile11);
+
+      // var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {
+          type: 'power',
+          useTextureFromGlb: true
+        },
+        useScale: true,
+        scale: [20, 20, 20],
+        position: {
+          x: -40,
+          y: -4,
+          z: -20
+        },
+        name: 'woman1',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFile11);
+
+      // var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {
+          type: 'pong',
+          useTextureFromGlb: true
+        },
+        useScale: true,
+        scale: [20, 20, 20],
+        position: {
+          x: 40,
+          y: -4,
+          z: -20
+        },
+        name: 'woman1',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFile11);
+
+      // var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'pong', useTextureFromGlb: true},
+      //   useScale: true,
+      //   scale: [20, 20, 20],
+      //   position: {x: 40, y: -4, z: -20},
+      //   name: 'glbFileWhouse',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFileWhouse);
+
+      // this is future load and replace skeletal anim.
+      // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
+      // const path = 'res/meshes/glb/glb-test1.bvh';
+      // loadBVH(path).then(async (BVHANIM) => {
+      //   var glbFile = await fetch(
+      //     "res/meshes/glb/test.glb")
+      //     .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      //   TEST_ANIM.addGlbObj({
+      //     // scale: [1,1,1],
+      //     scale: [10, 10, 10],
+      //     name: 'firstGlb',
+      //     texturesPaths: ['./res/textures/rust.jpg'],
+      //   }, BVHANIM, glbFile);
+      // });
     });
-
-    // // Monster1
-    var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 0,
-        y: -4,
-        z: -70
-      },
-      name: 'firstGlb',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-    }, null, glbFile01);
-
-    // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'power',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: -40,
-        y: -4,
-        z: -70
-      },
-      name: 'firstGlb',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-    }, null, glbFile01);
-
-    // var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'pong',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 40,
-        y: -4,
-        z: -70
-      },
-      name: 'firstGlb',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-    }, null, glbFile01);
-
-    // woman
-    var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObjInctance({
-      material: {
-        type: 'mirror',
-        useTextureFromGlb: true
-      },
-      envMapParams: {
-        baseColorMix: 0.75,
-        mirrorTint: [0.9, 0.5, 1.0],
-        // Slight cool tint
-        reflectivity: 0.5,
-        // 25% reflection blend
-        illuminateColor: [0.3, 0.7, 1.0],
-        // Soft cyan
-        illuminateStrength: 0.1,
-        // Gentle rim
-        illuminatePulse: 0.001,
-        // No pulse (static)
-        fresnelPower: 5.0,
-        // Medium-sharp edge
-        envLodBias: 2.5,
-        usePlanarReflection: false // ✅ Env map mode
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 0,
-        y: -4,
-        z: -20
-      },
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp']
-    }, null, glbFile11);
-
-    // var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'power',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: -40,
-        y: -4,
-        z: -20
-      },
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-    }, null, glbFile11);
-
-    // var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'pong',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 40,
-        y: -4,
-        z: -20
-      },
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-    }, null, glbFile11);
-
-    // var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'pong', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: 40, y: -4, z: -20},
-    //   name: 'glbFileWhouse',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-    // }, null, glbFileWhouse);
-
-    // this is future load and replace skeletal anim.
-    // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
-    // const path = 'res/meshes/glb/glb-test1.bvh';
-    // loadBVH(path).then(async (BVHANIM) => {
-    //   var glbFile = await fetch(
-    //     "res/meshes/glb/test.glb")
-    //     .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    //   TEST_ANIM.addGlbObj({
-    //     // scale: [1,1,1],
-    //     scale: [10, 10, 10],
-    //     name: 'firstGlb',
-    //     texturesPaths: ['./res/textures/rust.jpg'],
-    //   }, BVHANIM, glbFile);
-    // });
-    // })
-
     function onGround(m) {
       TEST_ANIM.addLight();
       TEST_ANIM.addMeshObj({
@@ -26448,9 +26446,6 @@ class SpotLight {
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(position, target, this.up);
     this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
     this._lightBuffer = new Float32Array(36); // matches floatsPerLight = 36
-    this._tempSubtract = new Float32Array(3); // scratch for vec3.subtract
-    this._viewMatrix = new Float32Array(16); // scratch for lookAt result
-    this._viewProjMatrix = new Float32Array(16); // scratch for multiply result
 
     this._diffScratch = _wgpuMatrix.vec3.create();
     this._dirScratch = _wgpuMatrix.vec3.create();
@@ -26830,24 +26825,14 @@ class SpotLight {
     };
     // Only osc values +-
     this.behavior = new _behavior.default();
-    // put here only func
     this.updater = [];
   }
   update() {
-    // vec3.subtract(this.target, this.position, this._diffScratch);
-    // vec3.normalize(this._diffScratch, this._dirScratch);
-    // this.direction = this._dirScratch;
-    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
     _wgpuMatrix.vec3.subtract(this.target, this.position, this._diffScratch);
     _wgpuMatrix.vec3.normalize(this._diffScratch, this._dirScratch);
-
-    // Direct reference - no allocation
     this.direction = this._dirScratch;
-
-    // In-place updates for matrices
     _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
-    _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this._viewProjMatrix);
+    _wgpuMatrix.mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
