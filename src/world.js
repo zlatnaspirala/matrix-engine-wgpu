@@ -232,7 +232,7 @@ export default class MatrixEngineWGPU {
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
-    this.createGlobalStuff();
+    this.createGlobalStuff(callback);
     this.shadersPack = {};
 
     // if('OffscreenCanvas' in window) {
@@ -254,11 +254,9 @@ export default class MatrixEngineWGPU {
     console.log(
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
-    // pseude async
-    setTimeout(() => {this.run(callback)}, 50);
   };
 
-  createGlobalStuff() {
+  createGlobalStuff(callback) {
     this.SHADOW_RES = 512;
     this._bufferUpdates = [];
 
@@ -358,11 +356,11 @@ export default class MatrixEngineWGPU {
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
       size: this.MAX_SPOTLIGHTS * 144,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
     this._emptyLight = new Float32Array(36);
-    this.createTexArrayForShadows()
+    this.createTexArrayForShadows(callback)
     this.mainDepthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: 'depth24plus',
@@ -409,23 +407,17 @@ export default class MatrixEngineWGPU {
         depthClearValue: 1.0,
       }
     };
+
+
   }
 
-  createTexArrayForShadows() {
-    let numberOfLights = this.lightContainer.length;
-    if(this.lightContainer.length == 0) {
-      setTimeout(() => {
-        this.createMe();
-      }, 50);
-    }
+  createTexArrayForShadows(callback) {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      if(this.lightContainer.length == 0) {
-        setTimeout(() => {
-          this.createMe();
-        }, 50);
-        return;
-      }
+      console.log('createTexArrayForShadows called, stack:', new Error().stack);
+      // if(this.lightContainer.length == 0) {setTimeout(() => {this.createMe()}, 50); return;}
+      let numberOfLights = 20;
+      console.log('LIGHT NUM', numberOfLights);
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -442,8 +434,17 @@ export default class MatrixEngineWGPU {
         dimension: '2d-array'
       });
 
+      this.shadowSampler = this.device.createSampler({
+        label: 'shadowSampler[GLOBAL]',
+        // compare: 'less',
+        compare: 'less-equal',
+        magFilter: 'linear',
+        minFilter: 'linear',
+      });
+
+
       this.shadowPassViews = [];
-      for(let i = 0;i < this.lightContainer.length;i++) {
+      for(let i = 0;i < numberOfLights;i++) {
         this.shadowPassViews[i] = this.shadowTextureArray.createView({
           dimension: '2d',
           baseArrayLayer: i,
@@ -462,7 +463,12 @@ export default class MatrixEngineWGPU {
       this.shadowVideoView = this.shadowVideoTexture.createView({
         dimension: "2d",
       });
-    }
+
+      setTimeout(() => {this.run(callback)}, 200);
+
+    };
+
+
     this.createMe();
   }
 
@@ -492,10 +498,21 @@ export default class MatrixEngineWGPU {
   }
 
   addLight(o) {
+
+    console.log(`%cAdd light  this.shadowPassViews : ${this.shadowPassViews}`, LOG_FUNNY_ARCADE);
+    console.log(`%cAdd light  this.lightContainer.length : ${this.lightContainer.length}`, LOG_FUNNY_ARCADE);
+
     const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
+    let newLight = new SpotLight(camera,
+      this.inputHandler, this.device, this.lightContainer.length,
+      this.shadowPassViews[this.lightContainer.length], this.shadowSampler
+    );
     this.lightContainer.push(newLight);
-    this.createTexArrayForShadows();
+
+    for(const mesh of this.mainRenderBundle) {
+      mesh.shadowDepthTextureView = this.shadowArrayView;
+      mesh.createBindGroupForRender();
+    }
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
 
@@ -846,6 +863,7 @@ export default class MatrixEngineWGPU {
   updateLights() {
     const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+      if (this.lightContainer[i]?.update) this.lightContainer[i].update();
       this._lightsData.set(
         i < this.lightContainer.length
           ? this.lightContainer[i].getLightDataBuffer()
@@ -853,7 +871,7 @@ export default class MatrixEngineWGPU {
         i * floatsPerLight
       );
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
 
   frameSinglePass = () => {
@@ -862,6 +880,7 @@ export default class MatrixEngineWGPU {
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+
       this.updateLights();
       for(let i = 0;i < this.mainRenderBundle.length;i++) {
         const mesh = this.mainRenderBundle[i];
@@ -885,13 +904,18 @@ export default class MatrixEngineWGPU {
         if(mesh.updateTime) mesh.updateTime(this.now);
         for(let j = 0;j < this.lightContainer.length;j++) {
           const light = this.lightContainer[j];
-          if(i === 0) light.update();
           mesh.getTransformationMatrix(this.mainRenderBundle, light, i);
         }
       }
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
+        // // Write THIS light's VP into all mesh scene buffers
+        // for(const mesh of this.mainRenderBundle) {
+        //   mesh._sceneData.set(light.viewProjMatrix, 0); // offset 0 = lightViewProjMatrix
+        //   this.device.queue.writeBuffer(mesh.sceneUniformBuffer, 0,
+        //     mesh._sceneData.buffer, mesh._sceneData.byteOffset, 64); // only 64 bytes
+        // }
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],
@@ -936,6 +960,7 @@ export default class MatrixEngineWGPU {
         shadowPass.end();
       }
 
+      // opacy
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       let lastPipeline = null;

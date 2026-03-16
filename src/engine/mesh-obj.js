@@ -964,21 +964,19 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElements = (pass, lightContainer) => {
-    if(this.isVideo) {
-      this.updateVideoTexture();
-    }
-    // Bind per-mesh uniforms
+    if(this.isVideo) this.updateVideoTexture()
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if(this.isVideo == false) {
-        let bindIndex = 2;
-        for(const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
+      // else if(this.isVideo == false) {
+      // let bindIndex = 2;
+      // for(const light of lightContainer) {
+      //   pass.setBindGroup(bindIndex, light.getMainPassBindGroup(this));
+      // }
+      // }
     }
     pass.setBindGroup(3, this.waterBindGroup);
 

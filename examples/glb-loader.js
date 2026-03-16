@@ -40,7 +40,7 @@ export function loadGLBLoader() {
         scale: [20, 20, 20],
         position: {x: 0, y: -4, z: -70},
         name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile01);
 
       // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
@@ -50,7 +50,7 @@ export function loadGLBLoader() {
         scale: [20, 20, 20],
         position: {x: -40, y: -4, z: -70},
         name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile01);
 
       // var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
@@ -60,7 +60,7 @@ export function loadGLBLoader() {
         scale: [20, 20, 20],
         position: {x: 40, y: -4, z: -70},
         name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile01);
 
       // woman
@@ -82,7 +82,7 @@ export function loadGLBLoader() {
         scale: [20, 20, 20],
         position: {x: 0, y: -4, z: -20},
         name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
       }, null, glbFile11);
 
       // var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
@@ -92,7 +92,7 @@ export function loadGLBLoader() {
         scale: [20, 20, 20],
         position: {x: -40, y: -4, z: -20},
         name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile11);
 
       // var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
@@ -102,7 +102,7 @@ export function loadGLBLoader() {
         scale: [20, 20, 20],
         position: {x: 40, y: -4, z: -20},
         name: 'woman1',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile11);
 
 
@@ -113,7 +113,7 @@ export function loadGLBLoader() {
       //   scale: [20, 20, 20],
       //   position: {x: 40, y: -4, z: -20},
       //   name: 'glbFileWhouse',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       // }, null, glbFileWhouse);
 
       // this is future load and replace skeletal anim.
@@ -150,7 +150,7 @@ export function loadGLBLoader() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {

@@ -8,7 +8,7 @@
 
 ## Logo
 
-<img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true" />
+<img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 
 > Logo includes the official WebGPU logo.
 > **WebGPU logo by [W3C](https://www.w3.org/)**
@@ -702,7 +702,7 @@ this.core.addGlbObjInctance(
     scale: [20, 20, 20],
     position: {x: 0, y: -4, z: -220},
     name: this.name,
-    texturesPaths: ["./res/meshes/glb/textures/mutant_origin.png"],
+    texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"],
     raycast: {enabled: true, radius: 1.5},
     pointerEffect: {enabled: true},
   },

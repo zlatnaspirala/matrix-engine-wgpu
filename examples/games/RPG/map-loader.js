@@ -65,7 +65,7 @@ export class MEMapLoader {
         z: 950
       },
       name: 'rocks1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
         enabled: true
@@ -84,7 +84,7 @@ export class MEMapLoader {
         z: 850
       },
       name: 'rocks2',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
         enabled: true,
@@ -112,7 +112,7 @@ export class MEMapLoader {
         z: creepPoints[app.player.data.team].finalPoint[2]
       },
       name: 'enemytron',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
         enabled: true,

@@ -103,7 +103,7 @@ export let settingsBox = `
       </button>
     </div>
 
-    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
+    <img src="res/icons/512.webp" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
   </div>
 </div>`;
 
