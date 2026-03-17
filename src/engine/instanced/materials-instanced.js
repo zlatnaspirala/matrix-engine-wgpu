@@ -604,7 +604,7 @@ export default class MaterialsInstanced {
           {
             binding: 5,
             visibility: GPUShaderStage.FRAGMENT,
-            buffer: {type: 'uniform'},
+            buffer: { type: 'read-only-storage' } 
           },
           {
             binding: 6,

@@ -25401,7 +25401,7 @@ class MaterialsInstanced {
       binding: 5,
       visibility: GPUShaderStage.FRAGMENT,
       buffer: {
-        type: 'uniform'
+        type: 'read-only-storage'
       }
     }, {
       binding: 6,
@@ -26304,15 +26304,15 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
         this._sceneData[33] = camera.position[1];
         this._sceneData[34] = camera.position[2];
         this._sceneData[35] = 0.0;
-        this._sceneData[36] = spotLight.position[0];
-        this._sceneData[37] = spotLight.position[1];
-        this._sceneData[38] = spotLight.position[2];
+        // this._sceneData[36] = spotLight.position[0];
+        // this._sceneData[37] = spotLight.position[1];
+        // this._sceneData[38] = spotLight.position[2];
         this._sceneData[39] = 0.0;
         this._sceneData[40] = this.globalAmbient[0];
         this._sceneData[41] = this.globalAmbient[1];
@@ -26687,7 +26687,7 @@ class SpotLight {
     this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this.lightVPBuffer = device.createBuffer({
       label: 'lightVPBuffer_' + indexx,
-      size: 128,
+      size: 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.setProjection = function (fov = 2 * Math.PI / 5, aspect = 1.0, near = 0.1, far = 200) {
@@ -26714,10 +26714,9 @@ class SpotLight {
       // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     };
-    // this.shadowTexture = shadowPassView;
+    // global
     this.shadowTextureView = shadowPassView;
     this.shadowSampler = shadowSampler;
-    console.log("shadow view", this.shadowTextureView);
     this.renderPassDescriptor = {
       label: "descriptor shadowPass[SpotLigth]",
       colorAttachments: [],
@@ -26755,7 +26754,7 @@ class SpotLight {
       return this.shadowBindGroupContainer[mesh.name];
     };
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'modelBindGroupLayout light [one bindings]',
+      label: 'modelBindGroupLayout light',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -27042,9 +27041,7 @@ class SpotLight {
     });
     this.getMainPassBindGroup = function (mesh) {
       const key = mesh.name;
-      // if(this.mainPassBindGroupContainer[key]) {
-      //   return this.mainPassBindGroupContainer[key];
-      // }
+      if (this.mainPassBindGroupContainer[key]) return this.mainPassBindGroupContainer[key];
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
@@ -27067,7 +27064,6 @@ class SpotLight {
     _wgpuMatrix.vec3.normalize(this._diffScratch, this.direction);
     _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
-    // Write VP to its own dedicated buffer
     this.device.queue.writeBuffer(this.lightVPBuffer, 0, this.viewProjMatrix);
   }
   getLightDataBuffer() {
@@ -30193,7 +30189,6 @@ class Materials {
       if (this.video.paused == true) this.video.play();
       this.isWaiting = false;
     } else {
-      console.log('TEST TEX LIGHT ', this.spotlightUniformBuffer);
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
@@ -31560,15 +31555,15 @@ class MEMeshObj extends _materials.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
         this._sceneData[33] = camera.position[1];
         this._sceneData[34] = camera.position[2];
         this._sceneData[35] = 0.0;
-        this._sceneData[36] = spotLight.position[0];
-        this._sceneData[37] = spotLight.position[1];
-        this._sceneData[38] = spotLight.position[2];
+        // this._sceneData[36] = spotLight.position[0];
+        // this._sceneData[37] = spotLight.position[1];
+        // this._sceneData[38] = spotLight.position[2];
         this._sceneData[39] = 0.0;
         this._sceneData[40] = this.globalAmbient[0];
         this._sceneData[41] = this.globalAmbient[1];
@@ -33673,15 +33668,15 @@ class ProceduralMeshObj extends _materials.default {
     const camera = this.cameras[this.mainCameraParams.type];
     if (index === 0) camera.update(dt, this.inputHandler());
     const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-    this._sceneData.set(spotLight.viewProjMatrix, 0);
+    // this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
     this._sceneData[32] = camera.position[0];
     this._sceneData[33] = camera.position[1];
     this._sceneData[34] = camera.position[2];
     this._sceneData[35] = 0.0;
-    this._sceneData[36] = spotLight.position[0];
-    this._sceneData[37] = spotLight.position[1];
-    this._sceneData[38] = spotLight.position[2];
+    // this._sceneData[36] = spotLight.position[0];
+    // this._sceneData[37] = spotLight.position[1];
+    // this._sceneData[38] = spotLight.position[2];
     this._sceneData[39] = 0.0;
     this._sceneData[40] = this.globalAmbient[0];
     this._sceneData[41] = this.globalAmbient[1];
@@ -36729,7 +36724,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler            : sampler_comparison;
 @group(0) @binding(3) var meshTexture              : texture_2d<f32>;
 @group(0) @binding(4) var meshSampler              : sampler;
-@group(0) @binding(5) var<uniform> spotlights      : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 @group(0) @binding(6) var metallicRoughnessTex     : texture_2d<f32>;
 @group(0) @binding(7) var metallicRoughnessSampler : sampler;
 @group(0) @binding(8) var<uniform> material        : MaterialPBR;
@@ -37280,7 +37275,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
@@ -37494,7 +37489,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var          shadowSampler          : sampler_comparison;
 @group(0) @binding(3) var          meshTexture            : texture_2d<f32>;
 @group(0) @binding(4) var          meshSampler            : sampler;
-@group(0) @binding(5) var<uniform> spotlights             : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 @group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
 @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
 @group(0) @binding(8) var<uniform> material               : MaterialPBR;
@@ -38129,7 +38124,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
@@ -38340,7 +38335,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
@@ -38518,7 +38513,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
@@ -38766,7 +38761,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
@@ -38988,7 +38983,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
@@ -39221,7 +39216,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
@@ -39488,7 +39483,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var          shadowSampler           : sampler_comparison;
 @group(0) @binding(3) var          meshTexture             : texture_2d<f32>;
 @group(0) @binding(4) var          meshSampler             : sampler;
-@group(0) @binding(5) var<uniform> spotlights              : array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 @group(0) @binding(6) var          metallicRoughnessTex    : texture_2d<f32>;
 @group(0) @binding(7) var          metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material                : MaterialPBR;
@@ -40217,7 +40212,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
@@ -41747,7 +41742,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
@@ -45946,7 +45941,7 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
@@ -54352,10 +54347,7 @@ class MatrixEngineWGPU {
   createTexArrayForShadows(callback) {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      console.log('createTexArrayForShadows called, stack:', new Error().stack);
-      // if(this.lightContainer.length == 0) {setTimeout(() => {this.createMe()}, 50); return;}
       let numberOfLights = 20;
-      console.log('LIGHT NUM', numberOfLights);
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -54372,7 +54364,6 @@ class MatrixEngineWGPU {
       });
       this.shadowSampler = this.device.createSampler({
         label: 'shadowSampler[GLOBAL]',
-        // compare: 'less',
         compare: 'less-equal',
         magFilter: 'linear',
         minFilter: 'linear'
@@ -54429,8 +54420,6 @@ class MatrixEngineWGPU {
     return true;
   };
   addLight(o) {
-    console.log(`%cAdd light  this.shadowPassViews : ${this.shadowPassViews}`, _utils.LOG_FUNNY_ARCADE);
-    console.log(`%cAdd light  this.lightContainer.length : ${this.lightContainer.length}`, _utils.LOG_FUNNY_ARCADE);
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length, this.shadowPassViews[this.lightContainer.length], this.shadowSampler);
     this.lightContainer.push(newLight);
@@ -55038,19 +55027,10 @@ class MatrixEngineWGPU {
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(mesh.time);
         if (mesh.updateTime) mesh.updateTime(this.now);
-        for (let j = 0; j < this.lightContainer.length; j++) {
-          const light = this.lightContainer[j];
-          mesh.getTransformationMatrix(this.mainRenderBundle, light, i);
-        }
+        mesh.getTransformationMatrix(null, null, i);
       }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        // // Write THIS light's VP into all mesh scene buffers
-        // for(const mesh of this.mainRenderBundle) {
-        //   mesh._sceneData.set(light.viewProjMatrix, 0); // offset 0 = lightViewProjMatrix
-        //   this.device.queue.writeBuffer(mesh.sceneUniformBuffer, 0,
-        //     mesh._sceneData.buffer, mesh._sceneData.byteOffset, 64); // only 64 bytes
-        // }
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],

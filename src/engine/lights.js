@@ -82,7 +82,7 @@ export class SpotLight {
 
     this.lightVPBuffer = device.createBuffer({
       label: 'lightVPBuffer_' + indexx,
-      size: 128,
+      size: 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
@@ -115,12 +115,9 @@ export class SpotLight {
       cullMode: 'back', // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     }
-    // this.shadowTexture = shadowPassView;
+    // global
     this.shadowTextureView = shadowPassView;
-
     this.shadowSampler = shadowSampler;
-    console.log("shadow view", this.shadowTextureView);
-
 
     this.renderPassDescriptor = {
       label: "descriptor shadowPass[SpotLigth]",
@@ -149,17 +146,17 @@ export class SpotLight {
     this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
     this.getShadowBindGroup = (mesh, index) => {
- if(this.shadowBindGroupContainer[mesh.name]) return this.shadowBindGroupContainer[mesh.name];
-  this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
-    label: 'sceneBindGroupForShadow light',
-    layout: this.uniformBufferBindGroupLayout,
-    entries: [{binding: 0, resource: {buffer: this.lightVPBuffer}}], // ← per-light buffer
-  });
-  return this.shadowBindGroupContainer[mesh.name];
+      if(this.shadowBindGroupContainer[mesh.name]) return this.shadowBindGroupContainer[mesh.name];
+      this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
+        label: 'sceneBindGroupForShadow light',
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [{binding: 0, resource: {buffer: this.lightVPBuffer}}], // ← per-light buffer
+      });
+      return this.shadowBindGroupContainer[mesh.name];
     }
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'modelBindGroupLayout light [one bindings]',
+      label: 'modelBindGroupLayout light',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
@@ -387,9 +384,7 @@ export class SpotLight {
 
     this.getMainPassBindGroup = function(mesh) {
       const key = mesh.name;
-      // if(this.mainPassBindGroupContainer[key]) {
-      //   return this.mainPassBindGroupContainer[key];
-      // }
+      if(this.mainPassBindGroupContainer[key]) return this.mainPassBindGroupContainer[key];
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout,
@@ -407,13 +402,11 @@ export class SpotLight {
   }
 
   update() {
- vec3.subtract(this.target, this.position, this._diffScratch);
-  vec3.normalize(this._diffScratch, this.direction);
-  mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
-  mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
-  // Write VP to its own dedicated buffer
-  this.device.queue.writeBuffer(this.lightVPBuffer, 0, this.viewProjMatrix);
-
+    vec3.subtract(this.target, this.position, this._diffScratch);
+    vec3.normalize(this._diffScratch, this.direction);
+    mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
+    this.device.queue.writeBuffer(this.lightVPBuffer, 0, this.viewProjMatrix);
   }
 
   getLightDataBuffer() {

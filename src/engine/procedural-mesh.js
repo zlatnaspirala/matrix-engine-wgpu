@@ -688,15 +688,15 @@ export default class ProceduralMeshObj extends Materials {
     const camera = this.cameras[this.mainCameraParams.type];
     if(index === 0) camera.update(dt, this.inputHandler());
     const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-    this._sceneData.set(spotLight.viewProjMatrix, 0);
+    // this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
     this._sceneData[32] = camera.position[0];
     this._sceneData[33] = camera.position[1];
     this._sceneData[34] = camera.position[2];
     this._sceneData[35] = 0.0;
-    this._sceneData[36] = spotLight.position[0];
-    this._sceneData[37] = spotLight.position[1];
-    this._sceneData[38] = spotLight.position[2];
+    // this._sceneData[36] = spotLight.position[0];
+    // this._sceneData[37] = spotLight.position[1];
+    // this._sceneData[38] = spotLight.position[2];
     this._sceneData[39] = 0.0;
     this._sceneData[40] = this.globalAmbient[0];
     this._sceneData[41] = this.globalAmbient[1];
@@ -707,13 +707,7 @@ export default class ProceduralMeshObj extends Materials {
     this._sceneData[46] = 0;
     this._sceneData[47] = 0;
 
-    this.device.queue.writeBuffer(
-      this.sceneUniformBuffer,
-      0,
-      this._sceneData.buffer,
-      this._sceneData.byteOffset,
-      this._sceneData.byteLength
-    );
+    this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
   }
 
   updateTime(time) {

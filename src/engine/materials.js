@@ -623,9 +623,6 @@ export default class Materials {
       if(this.video.paused == true) this.video.play();
       this.isWaiting = false;
     } else {
-
-      console.log('TEST TEX LIGHT ', this.spotlightUniformBuffer);
-
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
@@ -714,7 +711,7 @@ export default class Materials {
             binding: 5,
             visibility: GPUShaderStage.FRAGMENT,
             // buffer: {type: 'uniform'},
-             buffer: { type: 'read-only-storage' } 
+            buffer: {type: 'read-only-storage'}
           },
           {
             binding: 6,

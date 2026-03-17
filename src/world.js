@@ -407,17 +407,12 @@ export default class MatrixEngineWGPU {
         depthClearValue: 1.0,
       }
     };
-
-
   }
 
   createTexArrayForShadows(callback) {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      console.log('createTexArrayForShadows called, stack:', new Error().stack);
-      // if(this.lightContainer.length == 0) {setTimeout(() => {this.createMe()}, 50); return;}
       let numberOfLights = 20;
-      console.log('LIGHT NUM', numberOfLights);
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -436,12 +431,10 @@ export default class MatrixEngineWGPU {
 
       this.shadowSampler = this.device.createSampler({
         label: 'shadowSampler[GLOBAL]',
-        // compare: 'less',
         compare: 'less-equal',
         magFilter: 'linear',
         minFilter: 'linear',
       });
-
 
       this.shadowPassViews = [];
       for(let i = 0;i < numberOfLights;i++) {
@@ -465,10 +458,7 @@ export default class MatrixEngineWGPU {
       });
 
       setTimeout(() => {this.run(callback)}, 200);
-
     };
-
-
     this.createMe();
   }
 
@@ -498,10 +488,6 @@ export default class MatrixEngineWGPU {
   }
 
   addLight(o) {
-
-    console.log(`%cAdd light  this.shadowPassViews : ${this.shadowPassViews}`, LOG_FUNNY_ARCADE);
-    console.log(`%cAdd light  this.lightContainer.length : ${this.lightContainer.length}`, LOG_FUNNY_ARCADE);
-
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new SpotLight(camera,
       this.inputHandler, this.device, this.lightContainer.length,
@@ -863,7 +849,7 @@ export default class MatrixEngineWGPU {
   updateLights() {
     const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      if (this.lightContainer[i]?.update) this.lightContainer[i].update();
+      if(this.lightContainer[i]?.update) this.lightContainer[i].update();
       this._lightsData.set(
         i < this.lightContainer.length
           ? this.lightContainer[i].getLightDataBuffer()
@@ -902,20 +888,11 @@ export default class MatrixEngineWGPU {
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(mesh.time);
         if(mesh.updateTime) mesh.updateTime(this.now);
-        for(let j = 0;j < this.lightContainer.length;j++) {
-          const light = this.lightContainer[j];
-          mesh.getTransformationMatrix(this.mainRenderBundle, light, i);
-        }
+        mesh.getTransformationMatrix(null, null, i);
       }
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        // // Write THIS light's VP into all mesh scene buffers
-        // for(const mesh of this.mainRenderBundle) {
-        //   mesh._sceneData.set(light.viewProjMatrix, 0); // offset 0 = lightViewProjMatrix
-        //   this.device.queue.writeBuffer(mesh.sceneUniformBuffer, 0,
-        //     mesh._sceneData.buffer, mesh._sceneData.byteOffset, 64); // only 64 bytes
-        // }
         const shadowPass = commandEncoder.beginRenderPass({
           label: "shadowPass",
           colorAttachments: [],
@@ -926,7 +903,6 @@ export default class MatrixEngineWGPU {
             depthClearValue: 1.0,
           }
         });
-
         let lastShadowPipeline = null;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           let targetShadowPipeline;
