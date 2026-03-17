@@ -679,9 +679,10 @@ export default class ProceduralMeshObj extends Materials {
       modelMatrix.byteOffset,
       modelMatrix.byteLength
     );
+    this.modelMatrix = modelMatrix;
   }
 
-  getTransformationMatrix(mainRenderBundle, spotLight, index) {
+  getTransformationMatrix(index) {
     const now = Date.now();
     const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;

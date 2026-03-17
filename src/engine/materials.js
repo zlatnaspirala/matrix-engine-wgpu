@@ -540,12 +540,12 @@ export default class Materials {
     // ✅ Now - maybe noT
     this.createLayoutForRender();
     this.createBindGroupForRender();
-    // dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
+    //  dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
 
   updateVideoTexture() {
     if(!this.video || this.video.readyState < 2) {
-      // console.info('this.video.readyState', this.video.readyState)
+      console.info('this.video.readyState not reaady', this.video.readyState)
       return;
     }
     if(!this.externalTexture) {
@@ -555,6 +555,7 @@ export default class Materials {
       this.videoIsReady = 'YES';
       console.log("%c✅video bind.", LOG_FUNNY_ARCADE);
     } else {
+      this.videoIsReady = 'YES';
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
     }
@@ -607,12 +608,15 @@ export default class Materials {
     }
     if(this.isVideo == true) {
       // console.info("✅ video sceneBindGroupForRender");
+
+ 
+
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
         entries: [
           {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
-          {binding: 1, resource: this.shadowDepthTextureView, },
+          {binding: 1, resource: this.shadowVideoView },
           {binding: 2, resource: this.compareSampler, },
           {binding: 3, resource: textureResource, },
           {binding: 4, resource: this.videoSampler, },

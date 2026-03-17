@@ -776,7 +776,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
 
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+      this.getTransformationMatrix = (index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
@@ -826,8 +826,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           this._scaleVec[2] = this.scale[2];
           mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
         }
+        this.modelMatrix = modelMatrix;
         return modelMatrix;
       };
+
+      this.getModelMatrix(this.position, this.useScale);
+
       this.done = true;
       if(this.texturesPaths.length > 1 && this.material.type == "mirror") {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {

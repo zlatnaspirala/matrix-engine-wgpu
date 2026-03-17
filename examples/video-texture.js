@@ -50,7 +50,7 @@ export var loadVideoTexture = function() {
         name: 'MyVideoTex',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
         },
         raycast: {enabled: true, radius: 12}

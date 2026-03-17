@@ -698,7 +698,7 @@ export default class MEMeshObj extends Materials {
         }
       }
 
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+      this.getTransformationMatrix = (index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
@@ -897,6 +897,7 @@ export default class MEMeshObj extends Materials {
       modelMatrix.byteOffset,
       modelMatrix.byteLength
     );
+    this.modelMatrix = modelMatrix;
   }
 
   createGPUBuffer(dataArray, usage) {

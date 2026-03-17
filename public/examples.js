@@ -120,18 +120,16 @@ var loadCameraTexture = function () {
         name: 'MyVideoTex',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
         }
         // raycast: { enabled: true , radius: 2 }
       });
       var TEST = cameraTexture.getSceneObjectByName('MyVideoTex');
-      setTimeout(() => {
-        console.log(`%c Test video-texture...`, _utils.LOG_MATRIX);
-        TEST.loadVideoTexture({
-          type: 'camera'
-        });
-      }, 4000);
+      console.log(`%c Test video-texture...`, _utils.LOG_MATRIX);
+      TEST.loadVideoTexture({
+        type: 'camera'
+      });
     }
   });
   window.app = cameraTexture;
@@ -1835,7 +1833,7 @@ var loadVideoTexture = function () {
         name: 'MyVideoTex',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
         },
         raycast: {
@@ -26297,7 +26295,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+      this.getTransformationMatrix = index => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
@@ -26346,8 +26344,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this._scaleVec[2] = this.scale[2];
           _wgpuMatrix.mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
         }
+        this.modelMatrix = modelMatrix;
         return modelMatrix;
       };
+      this.getModelMatrix(this.position, this.useScale);
       this.done = true;
       if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
         this.loadEnvMap(this.texturesPaths, true).then(envTexture => {
@@ -30097,11 +30097,11 @@ class Materials {
     // ✅ Now - maybe noT
     this.createLayoutForRender();
     this.createBindGroupForRender();
-    // dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
+    //  dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
   updateVideoTexture() {
     if (!this.video || this.video.readyState < 2) {
-      // console.info('this.video.readyState', this.video.readyState)
+      console.info('this.video.readyState not reaady', this.video.readyState);
       return;
     }
     if (!this.externalTexture) {
@@ -30113,6 +30113,7 @@ class Materials {
       this.videoIsReady = 'YES';
       console.log("%c✅video bind.", _utils.LOG_FUNNY_ARCADE);
     } else {
+      this.videoIsReady = 'YES';
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
       });
@@ -30158,6 +30159,7 @@ class Materials {
     }
     if (this.isVideo == true) {
       // console.info("✅ video sceneBindGroupForRender");
+
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
@@ -30168,7 +30170,7 @@ class Materials {
           }
         }, {
           binding: 1,
-          resource: this.shadowDepthTextureView
+          resource: this.shadowVideoView
         }, {
           binding: 2,
           resource: this.compareSampler
@@ -30381,7 +30383,7 @@ class Position {
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
-    this.inMove = false;
+    this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
@@ -30553,19 +30555,19 @@ class Position {
     return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
   }
   SetX(newx, em) {
+    this.inMove = true;
     this.x = newx;
     this.targetX = newx;
-    this.inMove = false;
   }
   SetY(newy, em) {
     this.y = newy;
     this.targetY = newy;
-    this.inMove = false;
+    this.inMove = true;
   }
   SetZ(newz, em) {
     this.z = newz;
     this.targetZ = newz;
-    this.inMove = false;
+    this.inMove = true;
   }
   get X() {
     return parseFloat(this.x);
@@ -31548,7 +31550,7 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+      this.getTransformationMatrix = index => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
@@ -31724,6 +31726,7 @@ class MEMeshObj extends _materials.default {
     if (!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+    this.modelMatrix = modelMatrix;
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -33660,8 +33663,9 @@ class ProceduralMeshObj extends _materials.default {
   updateModelUniformBuffer() {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+    this.modelMatrix = modelMatrix;
   }
-  getTransformationMatrix(mainRenderBundle, spotLight, index) {
+  getTransformationMatrix(index) {
     const now = Date.now();
     const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
@@ -34508,6 +34512,7 @@ function computeWorldVertsAndAABB(object) {
   if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
     return object._aabbCache;
   }
+  console.log('tay compute call');
   const modelMatrix = object.getModelMatrix(object.position, true);
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
@@ -54383,8 +54388,17 @@ class MatrixEngineWGPU {
         format: "depth32float",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
       });
-      this.shadowVideoView = this.shadowVideoTexture.createView({
-        dimension: "2d"
+
+      // this.shadowVideoView = this.shadowVideoTexture.createView({
+      //   dimension: "2d",
+      // });
+
+      this.shadowVideoView = this.shadowTextureArray.createView({
+        dimension: '2d',
+        // Single 2D view
+        baseArrayLayer: 0,
+        // Just layer 0
+        arrayLayerCount: 1
       });
       setTimeout(() => {
         this.run(callback);
@@ -54539,6 +54553,7 @@ class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -55022,12 +55037,14 @@ class MatrixEngineWGPU {
           }
           continue;
         }
+        mesh.getTransformationMatrix(i);
+        if (mesh.position.inMove == true) {
+          mesh.updateModelUniformBuffer(i);
+        }
         mesh.position.update();
-        mesh.updateModelUniformBuffer();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-        if (mesh.update) mesh.update(mesh.time);
-        if (mesh.updateTime) mesh.updateTime(this.now);
-        mesh.getTransformationMatrix(null, null, i);
+        if (mesh.update) mesh.update();
+        mesh.updateTime(this.now);
       }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -55045,7 +55062,7 @@ class MatrixEngineWGPU {
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           let targetShadowPipeline;
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale));
+            mesh.updateInstanceData(mesh.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if (mesh instanceof _proceduralMesh.default) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -55079,6 +55096,7 @@ class MatrixEngineWGPU {
         if (mesh.material?.useBlend) continue;
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
         if (!mesh.sceneBindGroupForRender || mesh.isVideo && !mesh.FINISH_VIDIO_INIT) {
+          console.log('test   video ');
           mesh.shadowDepthTextureView = mesh.isVideo ? this.shadowVideoView : this.shadowArrayView;
           if (mesh.setupPipeline) mesh.setupPipeline();
           mesh.FINISH_VIDIO_INIT = true;
@@ -55120,8 +55138,7 @@ class MatrixEngineWGPU {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect.enabled === false) continue;
-            let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
-            if (effect.updateInstanceData) effect.updateInstanceData(md);
+            if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(transPass, mesh, viewProjMatrix);
           }
         }
@@ -55169,7 +55186,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      if (this.logLoopError) console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      if (this.logLoopError) console.log('%cLoop(warn):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };

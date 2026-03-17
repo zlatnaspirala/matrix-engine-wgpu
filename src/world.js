@@ -453,8 +453,14 @@ export default class MatrixEngineWGPU {
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       });
 
-      this.shadowVideoView = this.shadowVideoTexture.createView({
-        dimension: "2d",
+      // this.shadowVideoView = this.shadowVideoTexture.createView({
+      //   dimension: "2d",
+      // });
+
+      this.shadowVideoView = this.shadowTextureArray.createView({
+        dimension: '2d',  // Single 2D view
+        baseArrayLayer: 0,  // Just layer 0
+        arrayLayerCount: 1
       });
 
       setTimeout(() => {this.run(callback)}, 200);
@@ -559,6 +565,7 @@ export default class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
@@ -877,18 +884,15 @@ export default class MatrixEngineWGPU {
         }
         // Video handling...
         if(mesh.isVideo && !mesh.externalTexture) {
-          if(!mesh.isWaiting) {
-            mesh.isWaiting = true;
-            mesh.createBindGroupForRender();
-          }
+          if(!mesh.isWaiting) {mesh.isWaiting = true; mesh.createBindGroupForRender();}
           continue;
         }
+        mesh.getTransformationMatrix(i);
+        if(mesh.position.inMove == true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
-        mesh.updateModelUniformBuffer();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-        if(mesh.update) mesh.update(mesh.time);
-        if(mesh.updateTime) mesh.updateTime(this.now);
-        mesh.getTransformationMatrix(null, null, i);
+        if(mesh.update) mesh.update();
+        mesh.updateTime(this.now);
       }
 
       for(let i = 0;i < this.lightContainer.length;i++) {
@@ -907,7 +911,7 @@ export default class MatrixEngineWGPU {
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           let targetShadowPipeline;
           if(mesh instanceof BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position, mesh.useScale))
+            mesh.updateInstanceData(mesh.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if(mesh instanceof ProceduralMeshObj) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -918,7 +922,6 @@ export default class MatrixEngineWGPU {
             shadowPass.setPipeline(targetShadowPipeline);
             lastShadowPipeline = targetShadowPipeline;
           }
-
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             if(mesh instanceof BVHPlayerInstances) {
@@ -944,6 +947,7 @@ export default class MatrixEngineWGPU {
         if(mesh.material?.useBlend) continue;
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
         if(!mesh.sceneBindGroupForRender || (mesh.isVideo && !mesh.FINISH_VIDIO_INIT)) {
+          console.log('test   video ')
           mesh.shadowDepthTextureView = mesh.isVideo ? this.shadowVideoView : this.shadowArrayView;
           if(mesh.setupPipeline) mesh.setupPipeline();
           mesh.FINISH_VIDIO_INIT = true;
@@ -986,8 +990,7 @@ export default class MatrixEngineWGPU {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if(effect.enabled === false) continue;
-            let md = mesh.getModelMatrix(mesh.position, mesh.useScale);
-            if(effect.updateInstanceData) effect.updateInstanceData(md);
+            if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(transPass, mesh, viewProjMatrix);
           }
         }
@@ -1031,7 +1034,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      if(this.logLoopError) console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      if(this.logLoopError) console.log('%cLoop(warn):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }

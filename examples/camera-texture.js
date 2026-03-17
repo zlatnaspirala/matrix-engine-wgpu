@@ -41,19 +41,18 @@ export var loadCameraTexture = function() {
         name: 'MyVideoTex',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
         },
         // raycast: { enabled: true , radius: 2 }
       })
 
       var TEST = cameraTexture.getSceneObjectByName('MyVideoTex');
-      setTimeout(() => {
-        console.log(`%c Test video-texture...`, LOG_MATRIX);
-        TEST.loadVideoTexture({
-          type: 'camera'
-        });
-      }, 4000);
+
+      console.log(`%c Test video-texture...`, LOG_MATRIX);
+      TEST.loadVideoTexture({
+        type: 'camera'
+      });
     }
   })
 
