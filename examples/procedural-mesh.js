@@ -14,6 +14,9 @@ export var procMesh = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
+
+    procMesh.addLight();
+
     addEventListener('AmmoReady', () => {
       addRaycastsAABBListener();
       downloadMeshes({
@@ -58,7 +61,7 @@ export var procMesh = function() {
     function onLoadObj(m) {
       procMesh.myLoadedMeshes = m;
       procMesh.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
@@ -89,7 +92,7 @@ export var procMesh = function() {
       );
 
       procMesh.addProceduralMeshObj({
-        material: {type: 'power'},
+        material: {type: 'standard'},
         position: {x: 0, y: 5, z: -15},
         rotation: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],
@@ -138,11 +141,11 @@ export var procMesh = function() {
 
       runChain(0);
 
-      procMesh.addLight();
+
       procMesh.lightContainer[0].intensity = 10;
 
       // procMesh.activateBloomEffect();
-      procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
+      procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1)
       procMesh.lightContainer[0].behavior.value_ = -1;
       procMesh.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()

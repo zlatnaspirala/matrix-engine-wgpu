@@ -603,10 +603,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.myLights = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
-var _utils = require("../src/engine/utils.js");
-var _proceduralMesh = require("../src/engine/procedural-mesh.js");
-var _raycast = require("../src/engine/raycast.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var myLights = function () {
   let myLights = new _world.default({
@@ -623,31 +621,45 @@ var myLights = function () {
       g: 0.122,
       a: 1
     }
-  }, () => {
-    myLights.addLight();
-    myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
+  }, async () => {
+    const NUM_LIGHTS = 4;
+    const ORBIT_RADIUS = 8;
+    const ORBIT_SPEED = 0.6;
+    const TARGET = {
+      x: 0,
+      y: 0,
+      z: -10
+    };
 
-    (0, _raycast.addRaycastsAABBListener)();
+    // Light colors cycling around the hue wheel
+    const LIGHT_COLORS = [[1.0, 0.2, 0.2],
+    // red
+    [1.0, 0.6, 0.1],
+    // orange
+    [1.0, 1.0, 0.1],
+    // yellow
+    [0.2, 1.0, 0.2],
+    // green
+    [0.1, 1.0, 0.6],
+    // teal
+    [0.1, 0.6, 1.0],
+    // sky
+    [0.2, 0.2, 1.0],
+    // blue
+    [0.6, 0.1, 1.0],
+    // purple
+    [1.0, 0.1, 0.8],
+    // pink
+    [1.0, 0.1, 0.4] // rose
+    ];
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      myLights.addLight();
+    }
+
+    // Ground
     (0, _loaderObj.downloadMeshes)({
-      ball: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj"
-    }, onLoadObj, {
-      scale: [1, 1, 1]
-    });
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
-    }, onGround, {
-      scale: [30, 0.5, 30]
-    });
-    function onGround(m) {
+    }, m => {
       myLights.addMeshObj({
         material: {
           type: 'standard'
@@ -657,166 +669,73 @@ var myLights = function () {
           y: -5,
           z: -10
         },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
+        scale: [30, 0.5, 30],
         physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
+          enabled: false
         }
       });
-    }
-    async function onLoadObj(m) {
-      myLights.myLoadedMeshes = m;
-      myLights.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: -1,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [100, 100, 100],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.25,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 2.0,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
-      myLights.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 3,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'cube',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          pointer: true,
-          flameEmitter: true
-        }
-      });
-
-      // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, myLights.device)));
-      //    myLights.addGlbObjInctance({
-      //      material: {type: 'mirror', useTextureFromGlb: true},
-      //      envMapParams: {
-      //        baseColorMix: 0.75,
-      //        mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
-      //        reflectivity: 0.5,               // 25% reflection blend
-      //        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //        illuminateStrength: 0.1,          // Gentle rim
-      //        illuminatePulse: 0.001,             // No pulse (static)
-      //        fresnelPower: 5.0,                // Medium-sharp edge
-      //        envLodBias: 2.5,
-      //        usePlanarReflection: false,  // ✅ Env map mode
-      //      },
-      //      useScale: true,
-      //      scale: [20, 20, 20],
-      //      position: {x: 0, y: -4, z: -20},
-      //      name: 'woman1',
-      //      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
-      //    }, null, glbFile11);
-
-      myLights.lightContainer[0].intensity = 10;
-      myLights.lightContainer[1].intensity = 10;
-
-      // myLights.activateBloomEffect();
-      // myLights.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
-      // myLights.lightContainer[0].behavior.value_ = -1;
-      // myLights.lightContainer[0].updater.push((light) => {
-      //   light.position[0] = light.behavior.setPath0()
-      //   light.target[0] = light.behavior.setPath0()
-      // })
-
-      myLights.lightContainer[0].position = [20, 17, -10];
-      myLights.lightContainer[0].target = [20, 0, -10];
-      myLights.lightContainer[1].position = [-20, 17, -10];
-      myLights.lightContainer[1].target = [-20, 0, -10];
-      var TEST = myLights.getSceneObjectByName('cube2');
-      setTimeout(() => {
-        // app.activateBloomEffect();
-        let cube1 = app.getSceneObjectByName('cube1');
-        // cube1.effects.flameEffect.intensity = 100;
-        // cube1.effects.flameEffect.morphTo("pyramid", 8)
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 5;
-      }, 800);
-    }
-    myLights.canvas.addEventListener("ray.hit.event", e => {
-      console.log('ray.hit.event detected');
-      if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
+    }, {
+      scale: [30, 0.5, 30]
     });
+
+    // GLB monster
+    const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
+    myLights.addGlbObj({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [5, 5, 5],
+      position: {
+        x: TARGET.x,
+        y: TARGET.y - 4,
+        z: TARGET.z
+      },
+      name: 'monster',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile);
+
+    // Set up lights evenly spaced around the circle
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      const light = myLights.lightContainer[i];
+      const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
+      const color = LIGHT_COLORS[i];
+      light.intensity = 8;
+      light.color = color;
+
+      // Orbit height varies slightly per light for more visual interest
+      const heightOffset = Math.sin(angleOffset) * 2;
+      light.position = [TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS];
+      light.target = [TARGET.x, TARGET.y, TARGET.z];
+
+      // Each light orbits at its own phase offset
+      light.orbitAngle = angleOffset;
+      light.updater.push(light => {
+        light.orbitAngle += ORBIT_SPEED * 0.01;
+        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
+        light.position = [x, height, z];
+        light.target = [TARGET.x, TARGET.y, TARGET.z];
+      });
+    }
+
+    // Camera setup
+    setTimeout(() => {
+      myLights.cameras.WASD.yaw = -0.03;
+      myLights.cameras.WASD.pitch = -0.35;
+      myLights.cameras.WASD.position = [0, 8, 5];
+    }, 800);
   });
   window.app = myLights;
 };
 exports.myLights = myLights;
 
-},{"../src/engine/loader-obj.js":47,"../src/engine/loaders/webgpu-gltf.js":50,"../src/engine/procedural-mesh.js":57,"../src/engine/raycast.js":60,"../src/engine/utils.js":61,"../src/world.js":105}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":47,"../src/engine/loaders/webgpu-gltf.js":50,"../src/engine/utils.js":61,"../src/world.js":105}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1189,6 +1108,11 @@ var physicsPlayground = function () {
     }
   }, () => {
     (0, _raycast.addRaycastsListener)();
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, onGround, {
+      scale: [20, 0.01, 20]
+    });
     addEventListener('AmmoReady', () => {
       app.matrixAmmo.speedUpSimulation = 4;
 
@@ -1197,11 +1121,6 @@ var physicsPlayground = function () {
       //   cube: "./res/meshes/blender/cube.obj",
       // }, onLoadObj,
       //   {scale: [1, 1, 1]})
-      (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/blender/cube.obj"
-      }, onGround, {
-        scale: [20, 0.01, 20]
-      });
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -1241,7 +1160,7 @@ var physicsPlayground = function () {
       // );
 
       // 
-      app.physicsBodiesGeneratorWall("mirror", {
+      app.physicsBodiesGeneratorWall("standard", {
         x: -4.5,
         y: 0,
         z: -10
@@ -1249,7 +1168,9 @@ var physicsPlayground = function () {
         x: 0,
         y: 0,
         z: 0
-      }, ["./res/textures/rust.jpg", "./res/textures/env-maps/sky1.webp"], 'my_set_walls', "5x5", true, [1, 1, 1], 2, 70);
+      }, ["./res/textures/rust.jpg"],
+      // "./res/textures/env-maps/sky1.webp"],
+      'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
       let strength = 10;
       app.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
@@ -1257,18 +1178,6 @@ var physicsPlayground = function () {
         const i = new Ammo.btVector3(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength);
         b.applyCentralImpulse(i);
       });
-
-      // physicsPlayground.physicsBodiesGeneratorTower(
-      //   "standard",
-      //   {x: 0, y: 0, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   "./res/meshes/blender/cube.png",
-      //   "tower",
-      //   10,
-      //   true,
-      //   [1, 1, 1],
-      //   2
-      // );
     });
     function onGround(m) {
       setTimeout(() => {
@@ -1530,6 +1439,7 @@ var procMesh = function () {
       a: 1
     }
   }, () => {
+    procMesh.addLight();
     addEventListener('AmmoReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
       (0, _loaderObj.downloadMeshes)({
@@ -1595,7 +1505,7 @@ var procMesh = function () {
       procMesh.myLoadedMeshes = m;
       procMesh.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -1648,7 +1558,7 @@ var procMesh = function () {
       });
       procMesh.addProceduralMeshObj({
         material: {
-          type: 'power'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -1730,11 +1640,10 @@ var procMesh = function () {
         });
       };
       runChain(0);
-      procMesh.addLight();
       procMesh.lightContainer[0].intensity = 10;
 
       // procMesh.activateBloomEffect();
-      procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
+      procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1);
       procMesh.lightContainer[0].behavior.value_ = -1;
       procMesh.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
@@ -23457,7 +23366,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
               // Medium-sharp edge
               envLodBias: 2.5,
               usePlanarReflection: false // ✅ Env map mode
-            } : null,
+            } : undefined,
             position: {
               x: pos.x + x * spacing,
               y: pos.y + y * spacing - 2.8,
@@ -25323,7 +25232,7 @@ class MaterialsInstanced {
       textureResource = textureView;
     }
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("❗Missing texture: ", textureResource);
+      if (!textureResource) console.warn("❗i Missing texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing sceneUniformBuffer: ", this.sceneUniformBuffer);
       if (typeof textureResource === 'undefined') this.updateVideoTexture();
       return;
@@ -25566,6 +25475,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
     this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
     //cache
@@ -27132,6 +27042,9 @@ class SpotLight {
     this.updater = [];
   }
   update() {
+    this.updater.forEach(func => {
+      func(this);
+    });
     _wgpuMatrix.vec3.subtract(this.target, this.position, this._diffScratch);
     _wgpuMatrix.vec3.normalize(this._diffScratch, this.direction);
     _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
@@ -30038,13 +29951,17 @@ class Materials {
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
   async loadTex0(texturesPaths) {
-    const path = texturesPaths[0];
-    const {
-      texture,
-      sampler
-    } = await this.textureCache.get(path, this.getFormat());
-    this.texture0 = texture;
-    this.sampler = sampler;
+    return new Promise(async resolve => {
+      console.log('______');
+      const path = texturesPaths[0];
+      const {
+        texture,
+        sampler
+      } = await this.textureCache.get(path, this.getFormat());
+      this.texture0 = texture;
+      this.sampler = sampler;
+      resolve();
+    });
   }
   async loadEnvMap(texturesPaths, isEnvMap = false) {
     const path = texturesPaths[1] || texturesPaths[0];
@@ -30938,6 +30855,7 @@ class MEMeshObj extends _materials.default {
       o.material.useTextureFromGlb = false;
     }
     this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
     if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
@@ -31968,8 +31886,15 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    shadowPass.setVertexBuffer(3, this.joints.buffer);
-    shadowPass.setVertexBuffer(4, this.weights.buffer);
+    // if(this.joints) {
+    if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    } else {
+      shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
+      shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+    }
+    // }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
@@ -54713,6 +54638,7 @@ class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if (o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
@@ -55102,10 +55028,10 @@ class MatrixEngineWGPU {
       let lastPipeline = null;
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend) continue;
-        //         if(!mesh.sceneBindGroupForRender) {
-        //   mesh.shadowDepthTextureView = this.shadowArrayView;
-        //   mesh.setupPipeline();
-        // }
+        if (!mesh.sceneBindGroupForRender) {
+          mesh.shadowDepthTextureView = this.shadowArrayView;
+          mesh.setupPipeline();
+        }
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
         if (lastPipeline !== targetPipeline) {
           pass.setPipeline(targetPipeline);
@@ -55288,6 +55214,8 @@ class MatrixEngineWGPU {
         skinnedNodeIndex++;
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
+        // bvhPlayer.shadowVideoView = this.shadowVideoView;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)

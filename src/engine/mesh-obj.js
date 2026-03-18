@@ -43,6 +43,7 @@ export default class MEMeshObj extends Materials {
     }
 
     this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
     if(typeof o.material.useBlend === 'undefined' ||
@@ -1007,7 +1008,7 @@ export default class MEMeshObj extends Materials {
     if(!this.sceneBindGroupForRender) return;
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-     pass.setBindGroup(3, this.waterBindGroup);  // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
+    pass.setBindGroup(3, this.waterBindGroup);  // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
 
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -1076,8 +1077,15 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    shadowPass.setVertexBuffer(3, this.joints.buffer);
-    shadowPass.setVertexBuffer(4, this.weights.buffer);
+    // if(this.joints) {
+    if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    } else {
+      shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
+      shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+    }
+    // }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }

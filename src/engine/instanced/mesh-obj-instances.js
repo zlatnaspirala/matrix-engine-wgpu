@@ -39,6 +39,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4.create();
     this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
     //cache

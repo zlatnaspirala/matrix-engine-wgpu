@@ -1,9 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
-import {MeshMorpher} from "../src/engine/procedural-mesh.js";
-import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
+import {ORBIT} from '../src/engine/utils.js';
 
 export var myLights = function() {
   let myLights = new MatrixEngineWGPU({
@@ -15,152 +13,99 @@ export var myLights = function() {
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
-  }, () => {
+  }, async () => {
 
-    myLights.addLight();
-    myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
-    // myLights.addLight();
+    const NUM_LIGHTS = 4;
+    const ORBIT_RADIUS = 8;
+    const ORBIT_SPEED  = 0.6;
+    const TARGET = { x: 0, y: 0, z: -10 };
 
- 
+    // Light colors cycling around the hue wheel
+    const LIGHT_COLORS = [
+      [1.0, 0.2, 0.2],  // red
+      [1.0, 0.6, 0.1],  // orange
+      [1.0, 1.0, 0.1],  // yellow
+      [0.2, 1.0, 0.2],  // green
+      [0.1, 1.0, 0.6],  // teal
+      [0.1, 0.6, 1.0],  // sky
+      [0.2, 0.2, 1.0],  // blue
+      [0.6, 0.1, 1.0],  // purple
+      [1.0, 0.1, 0.8],  // pink
+      [1.0, 0.1, 0.4],  // rose
+    ];
 
-    addRaycastsAABBListener();
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      myLights.addLight();
+    }
 
-    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", }, onLoadObj,
-      {scale: [1, 1, 1]})
-    downloadMeshes({cube: "./res/meshes/blender/cube.obj", }, onGround,
-      {scale: [30, 0.5, 30]})
-
-    function onGround(m) {
+    // Ground
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
       myLights.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: -5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
+        material: { type: 'standard' },
+        position: { x: 0, y: -5, z: -10 },
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
-    }
-
-    async function onLoadObj(m) {
-      myLights.myLoadedMeshes = m;
-      myLights.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 2.0,                // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
+        scale: [30, 0.5, 30],
+        physics: { enabled: false }
       });
+    }, { scale: [30, 0.5, 30] });
 
-      myLights.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 3, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'cube',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          pointer: true,
-          flameEmitter: true,
-        }
-      })
+    // GLB monster
+    const glbFile = await fetch("res/meshes/glb/monster.glb")
+      .then(res => res.arrayBuffer())
+      .then(buf => uploadGLBModel(buf, myLights.device));
 
-      // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, myLights.device)));
-      //    myLights.addGlbObjInctance({
-      //      material: {type: 'mirror', useTextureFromGlb: true},
-      //      envMapParams: {
-      //        baseColorMix: 0.75,
-      //        mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
-      //        reflectivity: 0.5,               // 25% reflection blend
-      //        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //        illuminateStrength: 0.1,          // Gentle rim
-      //        illuminatePulse: 0.001,             // No pulse (static)
-      //        fresnelPower: 5.0,                // Medium-sharp edge
-      //        envLodBias: 2.5,
-      //        usePlanarReflection: false,  // ✅ Env map mode
-      //      },
-      //      useScale: true,
-      //      scale: [20, 20, 20],
-      //      position: {x: 0, y: -4, z: -20},
-      //      name: 'woman1',
-      //      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
-      //    }, null, glbFile11);
+    myLights.addGlbObj({
+      material: { type: 'standard', useTextureFromGlb: true },
+      useScale: true,
+      scale: [5, 5, 5],
+      position: { x: TARGET.x, y: TARGET.y - 4, z: TARGET.z },
+      name: 'monster',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+    }, null, glbFile);
 
+    // Set up lights evenly spaced around the circle
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      const light = myLights.lightContainer[i];
+      const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
+      const color = LIGHT_COLORS[i];
 
+      light.intensity = 8;
+      light.color = color;
 
-      myLights.lightContainer[0].intensity = 10;
-      myLights.lightContainer[1].intensity = 10;
+      // Orbit height varies slightly per light for more visual interest
+      const heightOffset = Math.sin(angleOffset) * 2;
+      light.position = [
+        TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
+        4 + heightOffset,
+        TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
+      ];
+      light.target = [TARGET.x, TARGET.y, TARGET.z];
 
-      // myLights.activateBloomEffect();
-      // myLights.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
-      // myLights.lightContainer[0].behavior.value_ = -1;
-      // myLights.lightContainer[0].updater.push((light) => {
-      //   light.position[0] = light.behavior.setPath0()
-      //   light.target[0] = light.behavior.setPath0()
-      // })
+      // Each light orbits at its own phase offset
+      light.orbitAngle = angleOffset;
 
-      myLights.lightContainer[0].position = [20, 17, -10];
-      myLights.lightContainer[0].target = [20, 0, -10];
+      light.updater.push((light) => {
+        light.orbitAngle += ORBIT_SPEED * 0.01;
 
-      myLights.lightContainer[1].position = [-20, 17, -10];
-      myLights.lightContainer[1].target = [-20, 0, -10];
+        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
 
-      var TEST = myLights.getSceneObjectByName('cube2');
-      setTimeout(() => {
-        // app.activateBloomEffect();
-        let cube1 = app.getSceneObjectByName('cube1')
-        // cube1.effects.flameEffect.intensity = 100;
-        // cube1.effects.flameEffect.morphTo("pyramid", 8)
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 5;
-      }, 800);
+        light.position = [x, height, z];
+        light.target   = [TARGET.x, TARGET.y, TARGET.z];
+      });
     }
 
-    myLights.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
-      if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
+    // Camera setup
+    setTimeout(() => {
+      myLights.cameras.WASD.yaw      = -0.03;
+      myLights.cameras.WASD.pitch    = -0.35;
+      myLights.cameras.WASD.position = [0, 8, 5];
+    }, 800);
 
-    });
+  });
 
-  })
   window.app = myLights;
 }

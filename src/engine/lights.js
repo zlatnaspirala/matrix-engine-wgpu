@@ -402,6 +402,10 @@ export class SpotLight {
   }
 
   update() {
+
+    this.updater.forEach((func) => {
+      func(this);
+    })
     vec3.subtract(this.target, this.position, this._diffScratch);
     vec3.normalize(this._diffScratch, this.direction);
     mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);

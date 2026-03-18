@@ -16,6 +16,11 @@ export var physicsPlayground = function() {
 
     addRaycastsListener();
 
+          downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj",
+      }, onGround,
+        {scale: [20, 0.01, 20]})
+
     addEventListener('AmmoReady', () => {
 
       app.matrixAmmo.speedUpSimulation = 4;
@@ -25,10 +30,7 @@ export var physicsPlayground = function() {
       //   cube: "./res/meshes/blender/cube.obj",
       // }, onLoadObj,
       //   {scale: [1, 1, 1]})
-      downloadMeshes({
-        cube: "./res/meshes/blender/cube.obj",
-      }, onGround,
-        {scale: [20, 0.01, 20]})
+
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -69,11 +71,11 @@ export var physicsPlayground = function() {
 
       // 
       app.physicsBodiesGeneratorWall(
-        "mirror",
+        "standard",
         {x: -4.5, y: 0, z: -10},
         {x: 0, y: 0, z: 0},
-        ["./res/textures/rust.jpg", "./res/textures/env-maps/sky1.webp"],
-        'my_set_walls', "5x5", true, [1, 1, 1], 2, 70);
+        ["./res/textures/rust.jpg",], // "./res/textures/env-maps/sky1.webp"],
+        'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
       let strength = 10;
       app.canvas.addEventListener("ray.hit.event", (e) => {
@@ -87,17 +89,7 @@ export var physicsPlayground = function() {
         b.applyCentralImpulse(i);
       });
 
-      // physicsPlayground.physicsBodiesGeneratorTower(
-      //   "standard",
-      //   {x: 0, y: 0, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   "./res/meshes/blender/cube.png",
-      //   "tower",
-      //   10,
-      //   true,
-      //   [1, 1, 1],
-      //   2
-      // );
+ 
 
     })
 

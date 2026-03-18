@@ -598,6 +598,7 @@ export default class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
@@ -849,10 +850,10 @@ export default class MatrixEngineWGPU {
       let lastPipeline = null;
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend) continue;
-        //         if(!mesh.sceneBindGroupForRender) {
-        //   mesh.shadowDepthTextureView = this.shadowArrayView;
-        //   mesh.setupPipeline();
-        // }
+        if(!mesh.sceneBindGroupForRender) {
+          mesh.shadowDepthTextureView = this.shadowArrayView;
+          mesh.setupPipeline();
+        }
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
         if(lastPipeline !== targetPipeline) {
           pass.setPipeline(targetPipeline);
@@ -987,6 +988,8 @@ export default class MatrixEngineWGPU {
         skinnedNodeIndex++;
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
+        // bvhPlayer.shadowVideoView = this.shadowVideoView;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
