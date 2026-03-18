@@ -904,7 +904,7 @@ export default class MEMeshObj extends Materials {
       modelMatrix.byteOffset,
       modelMatrix.byteLength
     );
-    // this.modelMatrix = modelMatrix;
+    this.modelMatrix = modelMatrix;
   }
 
   createGPUBuffer(dataArray, usage) {

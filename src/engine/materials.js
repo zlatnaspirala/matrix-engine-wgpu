@@ -423,7 +423,6 @@ export default class Materials {
   async loadTex0(texturesPaths) {
     return new Promise(async (resolve) => {
       const path = texturesPaths[0];
-      console.log('loadTex0', path)
       const {texture, sampler} = await this.textureCache.get(path, this.getFormat());
       this.texture0 = texture;
       this.sampler = sampler;
@@ -595,8 +594,6 @@ export default class Materials {
     return this.glb.glbTextures[texIndex].createView();
   }
 
-
-
   createBindGroupForRender() {
     if(this.isVideo) {
       if(!this.externalTexture || !this.sceneUniformBuffer) {console.warn("❗video BG: missing resource"); return;}
@@ -615,9 +612,6 @@ export default class Materials {
       if(this.video.paused) this.video.play().catch(() => {});
       this.isWaiting = false;
     } else {
-
-      console.warn("❗TEST E");
-
       let textureResource = this.texture0.createView();
       if(this.material.useTextureFromGlb === true) {
         const material = this.skinnedNode.mesh.primitives[0].material;

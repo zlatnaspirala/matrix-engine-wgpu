@@ -1106,19 +1106,16 @@ var physicsPlayground = function () {
       a: 1
     }
   }, () => {
+    physicsPlayground.addLight();
     (0, _raycast.addRaycastsListener)();
     (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
+      cube: "./res/meshes/blender/cube.obj",
+      ball: "./res/meshes/shapes/sphere.obj"
     }, onGround, {
       scale: [1, 1, 1]
     });
     addEventListener('AmmoReady', () => {
       physicsPlayground.matrixAmmo.speedUpSimulation = 4;
-      // downloadMeshes({
-      //   ball: "./res/meshes/blender/sphere.obj",
-      //   cube: "./res/meshes/blender/cube.obj",
-      // }, onLoadObj,
-      //   {scale: [1, 1, 1]})
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -1165,7 +1162,6 @@ var physicsPlayground = function () {
       //   ["./res/textures/rust.jpg",], // "./res/textures/env-maps/sky1.webp"],
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
-      physicsPlayground.addLight();
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
@@ -1181,6 +1177,37 @@ var physicsPlayground = function () {
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
       }, 1000);
+      physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: -1,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 111,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball1',
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          geometry: "Sphere"
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
       physicsPlayground.addMeshObj({
         position: {
           x: 0,
@@ -1206,7 +1233,6 @@ var physicsPlayground = function () {
           mass: 0,
           geometry: "Cube"
         }
-        // raycast: { enabled: true , radius: 2 }
       });
 
       // physicsPlayground.addMeshObj({
@@ -1227,16 +1253,14 @@ var physicsPlayground = function () {
       // });
 
       app.physicsBodiesGeneratorWall("standard", {
-        x: -4.5,
+        x: -5,
         y: 0,
-        z: -10
+        z: -20
       }, {
         x: 0,
         y: 0,
         z: 0
-      }, ["./res/textures/rust.jpg"],
-      // "./res/textures/env-maps/sky1.webp"],
-      'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+      }, ["./res/textures/rust.jpg"], 'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push(light => {
@@ -1302,37 +1326,6 @@ var physicsPlayground = function () {
         physics: {
           enabled: false,
           geometry: "Cube"
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: -1,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 111,
-          z: 0
-        },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'ball1',
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          geometry: "Sphere"
         },
         raycast: {
           enabled: true,
@@ -1704,10 +1697,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.loadVideoTexture = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
-var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// @group(0) @binding(5) var<uniform> postFXMode: u32;
 var loadVideoTexture = function () {
   let videoTexture = new _world.default({
     useSingleRenderPass: true,
@@ -1737,15 +1728,11 @@ var loadVideoTexture = function () {
         piramyd: "./res/meshes/blender/piramyd.obj",
         cube: "./res/meshes/blender/cube.obj"
       }, onLoadObj, {
-        scale: [5, 5, 5]
+        scale: [1, 1, 1]
       });
     });
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;
-      // for(var key in m) {
-      //   console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
-      // }
-
       videoTexture.addMeshObj({
         material: {
           type: 'standard'
@@ -1765,6 +1752,7 @@ var loadVideoTexture = function () {
           y: 0,
           z: 0
         },
+        scale: [10, 0.01, 10],
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
@@ -1777,8 +1765,8 @@ var loadVideoTexture = function () {
       videoTexture.addMeshObj({
         position: {
           x: 0,
-          y: 5,
-          z: -20
+          y: -1,
+          z: -15
         },
         rotation: {
           x: 0,
@@ -1791,6 +1779,7 @@ var loadVideoTexture = function () {
           z: 0
         },
         texturesPaths: ['./res/meshes/blender/cube.png'],
+        scale: [4, 3, 0.1],
         name: 'MyVideoTex',
         mesh: m.cube,
         isVideo: {
@@ -1808,8 +1797,8 @@ var loadVideoTexture = function () {
       });
       videoTexture.addMeshObj({
         position: {
-          x: 10,
-          y: 5,
+          x: 0,
+          y: 7,
           z: -20
         },
         rotation: {
@@ -1825,6 +1814,7 @@ var loadVideoTexture = function () {
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'MyVideoTex',
         mesh: m.piramyd,
+        scale: [5, 5, 5],
         isVideo: {
           type: 'video',
           src: 'res/videos/tunel.mp4'
@@ -1845,7 +1835,6 @@ var loadVideoTexture = function () {
       //   type: 'video',
       //   src: 'res/videos/tunel.mp4'
       // });
-
       setTimeout(() => {
         videoTexture.cameras.WASD.yaw = -0.03;
         videoTexture.cameras.WASD.pitch = -0.49;
@@ -1858,7 +1847,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":47,"../src/engine/raycast.js":60,"../src/engine/utils.js":61,"../src/world.js":105}],11:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":47,"../src/engine/raycast.js":60,"../src/world.js":105}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29977,7 +29966,6 @@ class Materials {
   async loadTex0(texturesPaths) {
     return new Promise(async resolve => {
       const path = texturesPaths[0];
-      console.log('loadTex0', path);
       const {
         texture,
         sampler
@@ -30183,7 +30171,6 @@ class Materials {
       if (this.video.paused) this.video.play().catch(() => {});
       this.isWaiting = false;
     } else {
-      console.warn("❗TEST E");
       let textureResource = this.texture0.createView();
       if (this.material.useTextureFromGlb === true) {
         const material = this.skinnedNode.mesh.primitives[0].material;
@@ -31750,7 +31737,7 @@ class MEMeshObj extends _materials.default {
     if (!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    // this.modelMatrix = modelMatrix;
+    this.modelMatrix = modelMatrix;
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -36200,12 +36187,6 @@ class MatrixAmmo {
         const rot = this._trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
-
-        // const rotAxis = rot.getAxis();
-        const ax = rotAxis.x();
-        const ay = rotAxis.y();
-        const az = rotAxis.z();
-        const len = Math.sqrt(ax * ax + ay * ay + az * az);
         body.MEObject.rotation.axis.x = rotAxis.x();
         body.MEObject.rotation.axis.y = rotAxis.y();
         body.MEObject.rotation.axis.z = rotAxis.z();

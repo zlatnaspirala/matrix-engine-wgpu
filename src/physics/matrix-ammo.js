@@ -296,34 +296,21 @@ export default class MatrixAmmo {
     this.rigidBodies.forEach((body) => {
       if(!body.isKinematic && body.getMotionState()) {
         body.getMotionState().getWorldTransform(this._trans);
-
         const _x = +this._trans.getOrigin().x();
         const _y = +this._trans.getOrigin().y();
         const _z = +this._trans.getOrigin().z();
-
         body.MEObject.position.setPosition(_x, _y, _z);
         body.MEObject.position.inMove = true;
-
         const rot = this._trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
-
-
-        // const rotAxis = rot.getAxis();
-        const ax = rotAxis.x();
-        const ay = rotAxis.y();
-        const az = rotAxis.z();
-        const len = Math.sqrt(ax * ax + ay * ay + az * az);
- 
-          body.MEObject.rotation.axis.x = rotAxis.x();
-          body.MEObject.rotation.axis.y = rotAxis.y();
-          body.MEObject.rotation.axis.z = rotAxis.z();
-          body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
-          body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle()));
- 
+        body.MEObject.rotation.axis.x = rotAxis.x();
+        body.MEObject.rotation.axis.y = rotAxis.y();
+        body.MEObject.rotation.axis.z = rotAxis.z();
+        body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
+        body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle()));
       }
     });
-
     this.detectCollision();
   }
 }
