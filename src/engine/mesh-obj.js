@@ -1002,6 +1002,7 @@ export default class MEMeshObj extends Materials {
   }
 
   drawVideoElements = (pass) => {
+    if(!this.video || this.video.readyState < 2) return;
     this.updateVideoTexture();
     if(!this.sceneBindGroupForRender) return;
     pass.setBindGroup(0, this.sceneBindGroupForRender);

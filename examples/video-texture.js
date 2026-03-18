@@ -29,12 +29,10 @@ export var loadVideoTexture = function() {
     console.log('test AmmoReady attach')
     addEventListener('AmmoReady', () => {
       downloadMeshes({
-        welcomeText: "./res/meshes/blender/piramyd.obj",
-        armor: "./res/meshes/obj/armor.obj",
-        sphere: "./res/meshes/blender/sphere.obj",
+        piramyd: "./res/meshes/blender/piramyd.obj",
         cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj,
-        {scale: [1, 1, 1]})
+        {scale: [5, 5, 5]})
     })
 
     function onLoadObj(m) {
@@ -44,16 +42,16 @@ export var loadVideoTexture = function() {
       }
 
       videoTexture.addMeshObj({
-        position: {x: 0, y: 2, z: -10},
+        position: {x: 0, y: 5, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'MyVideoTex',
         mesh: m.cube,
-        // isVideo: {
-        //   type: 'video',
-        //   src: 'res/videos/tunel.mp4'
-        // },
+        isVideo: {
+          type: 'video',
+          src: 'res/videos/tunel.mp4'
+        },
         physics: {
           enabled: false,
           geometry: "Cube"
@@ -61,15 +59,38 @@ export var loadVideoTexture = function() {
         raycast: {enabled: true, radius: 12}
       })
 
-      var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
+      
+      videoTexture.addMeshObj({
+        position: {x: 10, y: 5, z: -20},
+        rotation: {x: 90, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'MyVideoTex',
+        mesh: m.piramyd,
+        isVideo: {
+          type: 'video',
+          src: 'res/videos/tunel.mp4'
+        },
+        physics: {
+          enabled: false,
+          geometry: "piramyd"
+        },
+        raycast: {enabled: true, radius: 12}
+      })
+      // also possibole to switch in runtime
+      // var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
+      // console.log(`%c Test video-texture...`, LOG_MATRIX);
+      // TEST.loadVideoTexture({
+      //   type: 'video',
+      //   src: 'res/videos/tunel.mp4'
+      // });
 
-      console.log(`%c Test video-texture...`, LOG_MATRIX);
-  
-      TEST.loadVideoTexture({
-        type: 'video',
-        src: 'res/videos/tunel.mp4'
-      });
-
+      setTimeout(() => {
+      videoTexture.cameras.WASD.yaw = -0.03;
+      videoTexture.cameras.WASD.pitch = -0.49;
+      videoTexture.cameras.WASD.position[2] = 10;
+      videoTexture.cameras.WASD.position[1] = 5;
+      }, 1000)
     }
   })
 

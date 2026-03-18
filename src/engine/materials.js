@@ -448,9 +448,11 @@ export default class Materials {
       this.video.autoplay = true;
       this.video.loop = true;
       document.body.append(this.video);
-      this.video.style.display = 'block';
+      // this.video.style.display = 'none';
       this.video.style.position = 'absolute';
-      this.video.style.top = '-750px';
+      this.video.style.width = '640px';
+      this.video.style.height = '480px';
+      this.video.style.top = '-470px';
       this.video.style.left = '50%';
 
       await this.video.play();
