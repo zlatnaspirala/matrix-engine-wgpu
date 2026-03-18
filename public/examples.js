@@ -1809,9 +1809,38 @@ var loadVideoTexture = function () {
     });
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;
-      for (var key in m) {
-        console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
-      }
+      // for(var key in m) {
+      //   console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
+      // }
+
+      videoTexture.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: -5,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'floor',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
       videoTexture.addMeshObj({
         position: {
           x: 0,
@@ -30144,10 +30173,8 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-    console.log('override drws video 22222222222222222f');
     this.createLayoutForRender();
     this.createBindGroupForRender();
-    //  dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
   updateVideoTexture() {
     if (!this.video || this.video.readyState < 2) return;
@@ -30215,6 +30242,7 @@ class Materials {
       if (this.video.paused) this.video.play().catch(() => {});
       this.isWaiting = false;
     } else {
+      console.warn("❗TEST E");
       let textureResource = this.texture0.createView();
       if (this.material.useTextureFromGlb === true) {
         const material = this.skinnedNode.mesh.primitives[0].material;
@@ -31872,7 +31900,7 @@ class MEMeshObj extends _materials.default {
     if (!this.sceneBindGroupForRender) return;
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup); // ← dummy (same as mesh path)
+    pass.setBindGroup(3, this.waterBindGroup); // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
 
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -54596,6 +54624,7 @@ class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh1.shadowDepthTextureView = this.shadowArrayView;
     myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -55073,6 +55102,10 @@ class MatrixEngineWGPU {
       let lastPipeline = null;
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend) continue;
+        //         if(!mesh.sceneBindGroupForRender) {
+        //   mesh.shadowDepthTextureView = this.shadowArrayView;
+        //   mesh.setupPipeline();
+        // }
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
         if (lastPipeline !== targetPipeline) {
           pass.setPipeline(targetPipeline);

@@ -37,9 +37,24 @@ export var loadVideoTexture = function() {
 
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;
-      for(var key in m) {
-        console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
-      }
+      // for(var key in m) {
+      //   console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
+      // }
+
+       videoTexture.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: -5, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'floor',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      })
 
       videoTexture.addMeshObj({
         position: {x: 0, y: 5, z: -20},

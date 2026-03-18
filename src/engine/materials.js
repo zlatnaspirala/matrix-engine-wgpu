@@ -551,11 +551,8 @@ export default class Materials {
       minFilter: 'linear',
     });
 
-    console.log('override drws video 22222222222222222f')
-
     this.createLayoutForRender();
     this.createBindGroupForRender();
-    //  dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
 
   updateVideoTexture() {
@@ -614,6 +611,9 @@ export default class Materials {
       if(this.video.paused) this.video.play().catch(() => {});
       this.isWaiting = false;
     } else {
+
+      console.warn("❗TEST E");
+
       let textureResource = this.texture0.createView();
       if(this.material.useTextureFromGlb === true) {
         const material = this.skinnedNode.mesh.primitives[0].material;

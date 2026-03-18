@@ -542,6 +542,7 @@ export default class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh1.shadowDepthTextureView = this.shadowArrayView;
     myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -848,6 +849,10 @@ export default class MatrixEngineWGPU {
       let lastPipeline = null;
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend) continue;
+        //         if(!mesh.sceneBindGroupForRender) {
+        //   mesh.shadowDepthTextureView = this.shadowArrayView;
+        //   mesh.setupPipeline();
+        // }
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
         if(lastPipeline !== targetPipeline) {
           pass.setPipeline(targetPipeline);
