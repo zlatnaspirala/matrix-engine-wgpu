@@ -29,10 +29,9 @@ export var loadCameraTexture = function() {
 
     function onLoadObj(m) {
       cameraTexture.myLoadedMeshes = m;
-      for(var key in m) {
-        console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
-      }
-
+      // for(var key in m) {
+      //   console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
+      // }
       cameraTexture.addMeshObj({
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},

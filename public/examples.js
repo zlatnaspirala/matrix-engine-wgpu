@@ -97,9 +97,9 @@ var loadCameraTexture = function () {
     });
     function onLoadObj(m) {
       cameraTexture.myLoadedMeshes = m;
-      for (var key in m) {
-        console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
-      }
+      // for(var key in m) {
+      //   console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
+      // }
       cameraTexture.addMeshObj({
         position: {
           x: 0,
@@ -30142,13 +30142,12 @@ class Materials {
   createBindGroupForRender() {
     if (this.isVideo) {
       if (!this.externalTexture || !this.sceneUniformBuffer) {
-        console.warn("❗ video BG: missing resource");
+        console.warn("❗video BG: missing resource");
         return;
       }
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
-        // <-- VIDEO layout, not bglForRender
         entries: [{
           binding: 0,
           resource: {
@@ -30175,9 +30174,7 @@ class Materials {
       });
       if (this.video.paused) this.video.play().catch(() => {});
       this.isWaiting = false;
-      // console.info("✅ video sceneBindGroupForRender");
     } else {
-      // ── MESH path (unchanged) ───────────────────────────────────────
       let textureResource = this.texture0.createView();
       if (this.material.useTextureFromGlb === true) {
         const material = this.skinnedNode.mesh.primitives[0].material;
@@ -30191,7 +30188,6 @@ class Materials {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
-        // <-- MESH layout
         entries: [{
           binding: 0,
           resource: {
@@ -54086,7 +54082,6 @@ class MatrixEngineWGPU {
       return;
     }
     if (typeof options.useContex == 'undefined') options.useContex = "webgpu";
-
     // cache
     this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this._invViewProj = _wgpuMatrix.mat4.create();
@@ -54223,9 +54218,9 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.9.8 ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.9.9 ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
-    console.log("%cMatrix Engine WGPU - Port is open.\n" + "Creative power loaded with visual scripting.\n" + "Last features : Adding Gizmo , Optimised render in name of performance,\n" + " audioReactiveNode, onDraw , onKey , curve editor.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
+    console.log("%cMatrix Engine WGPU - Port is open.\n" + "Creative power loaded with visual scripting.\n" + "Last features : optimised render - optimised video textures(camera-video-canvas2d) \n" + "Morph procedural mesh entity, Fix multi lights shadow casting,\n" + "Adding basic gizmo, optimised render in name of performance,\n" + " audioReactiveNode, onDraw , onKey , curve editor.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
@@ -54341,20 +54336,11 @@ class MatrixEngineWGPU {
       }],
       depthStencilAttachment: {
         view: this.mainDepthView,
-        // fixed
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
         depthClearValue: 1.0
       }
     };
-
-    // pointer effect-not in use
-    const depthTexture = this.device.createTexture({
-      size: [this.canvas.width, this.canvas.height],
-      format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.depthTextureViewTrail = depthTexture.createView();
     this._transPassDesc = {
       colorAttachments: [{
         view: this.sceneTextureView,
@@ -54376,7 +54362,7 @@ class MatrixEngineWGPU {
     };
     this.run(callback);
   }
-  createTexArrayForShadows(callback) {
+  createTexArrayForShadows() {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
       let numberOfLights = 20;
@@ -54420,8 +54406,6 @@ class MatrixEngineWGPU {
         baseArrayLayer: 0,
         arrayLayerCount: 1
       });
-
-      // this.run(callback);
     };
     this.createMe();
   }
@@ -54520,7 +54504,6 @@ class MatrixEngineWGPU {
         scale: [1, 1, 1],
         enabled: true,
         geometry: "Sphere",
-        // must be fixed<<
         radius: typeof o.scale == Number ? o.scale : o.scale[0],
         name: o.name,
         rotation: o.rotation
@@ -54574,14 +54557,10 @@ class MatrixEngineWGPU {
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
-    if (o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myMesh1, o.physics);
-    }
+    if (o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
-    if (typeof this.editor !== 'undefined') {
-      this.editor.editorHud.updateSceneContainer();
-    }
+    if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
   };
   addProceduralMeshObj = (o, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
@@ -54608,7 +54587,6 @@ class MatrixEngineWGPU {
         z: 0
       };
     }
-    // GEOMETRY DEFAULTS - The key difference from addMeshObj
     if (typeof o.geometryA === 'undefined') {
       o.geometryA = {
         type: 'cube',
@@ -54616,51 +54594,26 @@ class MatrixEngineWGPU {
       };
     }
     if (typeof o.geometryB === 'undefined') {
-      // Default to same as geometryA (no morph)
       o.geometryB = o.geometryA;
     }
-
-    // MATERIAL & TEXTURE DEFAULTS
-    if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
-    }
-    if (typeof o.material === 'undefined') {
-      o.material = {
-        type: 'standard'
-      };
-    }
-    if (typeof o.envMapParams === 'undefined') {
-      o.envMapParams = null;
-    }
-
-    // CAMERA & SCALE DEFAULTS
-    if (typeof o.mainCameraParams === 'undefined') {
-      o.mainCameraParams = this.mainCameraParams;
-    }
-    if (typeof o.scale === 'undefined') {
-      o.scale = [1, 1, 1];
-    }
-    if (typeof o.useScale === 'undefined') {
-      o.useScale = true;
-    }
-    // RAYCAST DEFAULTS
-    if (typeof o.raycast === 'undefined') {
-      o.raycast = {
-        enabled: false,
-        radius: 2
-      };
-    }
-    if (typeof o.pointerEffect === 'undefined') {
-      o.pointerEffect = {
-        enabled: false
-      };
-    }
-
-    // ENTITY ARGS (for your engine's internal use)
+    if (typeof o.texturesPaths === 'undefined') o.texturesPaths = ['./res/textures/default.png'];
+    if (typeof o.material === 'undefined') o.material = {
+      type: 'standard'
+    };
+    if (typeof o.envMapParams === 'undefined') o.envMapParams = null;
+    if (typeof o.mainCameraParams === 'undefined') o.mainCameraParams = this.mainCameraParams;
+    if (typeof o.scale === 'undefined') o.scale = [1, 1, 1];
+    if (typeof o.useScale === 'undefined') o.useScale = true;
+    if (typeof o.raycast === 'undefined') o.raycast = {
+      enabled: false,
+      radius: 2
+    };
+    if (typeof o.pointerEffect === 'undefined') o.pointerEffect = {
+      enabled: false
+    };
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     o.textureCache = this.textureCache;
-
     // PHYSICS DEFAULTS
     if (typeof o.physics === 'undefined') {
       o.physics = {
@@ -54672,52 +54625,29 @@ class MatrixEngineWGPU {
         rotation: o.rotation
       };
     }
-    if (typeof o.physics.enabled === 'undefined') {
-      o.physics.enabled = true;
-    }
-    if (typeof o.physics.geometry === 'undefined') {
-      o.physics.geometry = "Cube";
-    }
-    if (typeof o.physics.radius === 'undefined') {
-      o.physics.radius = o.scale;
-    }
-    if (typeof o.physics.mass === 'undefined') {
-      o.physics.mass = 1;
-    }
-    if (typeof o.physics.name === 'undefined') {
-      o.physics.name = o.name;
-    }
-    if (typeof o.physics.scale === 'undefined') {
-      o.physics.scale = o.scale;
-    }
-    if (typeof o.physics.rotation === 'undefined') {
-      o.physics.rotation = o.rotation;
-    }
+    if (typeof o.physics.enabled === 'undefined') o.physics.enabled = true;
+    if (typeof o.physics.geometry === 'undefined') o.physics.geometry = "Cube";
+    if (typeof o.physics.radius === 'undefined') o.physics.radius = o.scale;
+    if (typeof o.physics.mass === 'undefined') o.physics.mass = 1;
+    if (typeof o.physics.name === 'undefined') o.physics.name = o.name;
+    if (typeof o.physics.scale === 'undefined') o.physics.scale = o.scale;
+    if (typeof o.physics.rotation === 'undefined') o.physics.rotation = o.rotation;
     o.physics.position = o.position;
-
-    // MORPH ANIMATION DEFAULTS (new for ProceduralMeshObj)
     if (typeof o.morphAnimation === 'undefined') {
       o.morphAnimation = null;
     } else {
-      // Set up auto-play morph animation if specified
       if (typeof o.morphAnimation.autoPlay !== 'undefined' && o.morphAnimation.autoPlay === true) {
         o.morphAnimation.enabled = true;
       }
     }
-
-    // CREATE PROCEDURAL MESH OBJECT
     let AM = this.globalAmbient.slice();
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh.clearColor = clearColor;
-    if (o.physics.enabled === true) {
-      this.matrixAmmo.addPhysics(myMesh, o.physics);
-    }
+    if (o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
-    if (typeof this.editor !== 'undefined') {
-      this.editor.editorHud.updateSceneContainer();
-    }
+    if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh;
   };
   addFontana = (o, clearColor = this.options.clearColor) => {
@@ -54975,6 +54905,8 @@ class MatrixEngineWGPU {
       callback(this);
     }, 200);
   }
+
+  // still not perfect but works
   destroyProgram = () => {
     console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');
     this.frame = () => {};
@@ -54982,8 +54914,6 @@ class MatrixEngineWGPU {
       cancelAnimationFrame(this._rafId);
       this._rafId = null;
     }
-
-    // 2️⃣ Destroy scene objects
     for (const obj of this.mainRenderBundle) {
       try {
         obj?.destroy?.();
@@ -55048,11 +54978,6 @@ class MatrixEngineWGPU {
           mesh.vertexAnimParams[0] = mesh.time;
           this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
         }
-        // Video handling...
-        // if(mesh.isVideo && !mesh.externalTexture) {
-        //   if(!mesh.isWaiting) {mesh.isWaiting = true; mesh.createBindGroupForRender();}
-        //   continue;
-        // }
         mesh.getTransformationMatrix(i);
         if (mesh.position.inMove == true) {
           mesh.updateModelUniformBuffer(i);
@@ -55089,17 +55014,15 @@ class MatrixEngineWGPU {
             shadowPass.setPipeline(targetShadowPipeline);
             lastShadowPipeline = targetShadowPipeline;
           }
-          if (mesh.videoIsReady == 'NONE') {
-            shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
-              shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
-            } else if (mesh instanceof _proceduralMesh.default) {
-              shadowPass.setBindGroup(1, mesh.mainRenderBindGroup);
-            } else {
-              shadowPass.setBindGroup(1, mesh.modelBindGroup);
-            }
-            mesh.drawShadows(shadowPass, light);
+          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
+          if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
+            shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
+          } else if (mesh instanceof _proceduralMesh.default) {
+            shadowPass.setBindGroup(1, mesh.mainRenderBindGroup);
+          } else {
+            shadowPass.setBindGroup(1, mesh.modelBindGroup);
           }
+          mesh.drawShadows(shadowPass, light);
         }
         shadowPass.end();
       }

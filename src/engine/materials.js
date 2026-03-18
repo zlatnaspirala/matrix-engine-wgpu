@@ -452,7 +452,7 @@ export default class Materials {
       this.video.style.position = 'absolute';
       this.video.style.top = '-750px';
       this.video.style.left = '50%';
-      
+
       await this.video.play();
 
     } else if(arg.type === 'videoElement') {
@@ -550,7 +550,7 @@ export default class Materials {
     });
 
     console.log('override drws video 22222222222222222f')
-    
+
     this.createLayoutForRender();
     this.createBindGroupForRender();
     //  dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
@@ -596,14 +596,10 @@ export default class Materials {
 
   createBindGroupForRender() {
     if(this.isVideo) {
-      if(!this.externalTexture || !this.sceneUniformBuffer) {
-        console.warn("❗ video BG: missing resource");
-        return;
-      }
-
+      if(!this.externalTexture || !this.sceneUniformBuffer) {console.warn("❗video BG: missing resource"); return;}
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [video]',
-        layout: this.bglForRender,   // <-- VIDEO layout, not bglForRender
+        layout: this.bglForRender,
         entries: [
           {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
           {binding: 1, resource: this.shadowVideoView},
@@ -613,19 +609,14 @@ export default class Materials {
           {binding: 5, resource: {buffer: this.postFXModeBuffer}},
         ],
       });
-
-      if(this.video.paused) this.video.play().catch(()=>{});
+      if(this.video.paused) this.video.play().catch(() => {});
       this.isWaiting = false;
-      // console.info("✅ video sceneBindGroupForRender");
-
     } else {
-      // ── MESH path (unchanged) ───────────────────────────────────────
       let textureResource = this.texture0.createView();
       if(this.material.useTextureFromGlb === true) {
         const material = this.skinnedNode.mesh.primitives[0].material;
         textureResource = material.baseColorTexture.imageView;
       }
-
       if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
         if(!textureResource) console.log("%c❗Missing res texture", LOG_FUNNY_ARCADE);
         if(!this.sceneUniformBuffer) console.warn("❗Missing res: sceneUniformBuffer");
@@ -634,7 +625,7 @@ export default class Materials {
 
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [mesh][materials]',
-        layout: this.bglForRender,        // <-- MESH layout
+        layout: this.bglForRender,
         entries: [
           {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
           {binding: 1, resource: this.shadowDepthTextureView},
