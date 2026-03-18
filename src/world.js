@@ -481,7 +481,7 @@ export default class MatrixEngineWGPU {
 
     for(const mesh of this.mainRenderBundle) {
       mesh.shadowDepthTextureView = this.shadowArrayView;
-      mesh.createBindGroupForRender();
+      // mesh.createBindGroupForRender();
     }
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
@@ -797,7 +797,7 @@ export default class MatrixEngineWGPU {
           this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
         }
         mesh.getTransformationMatrix(i);
-        if(mesh.position.inMove == true) {mesh.updateModelUniformBuffer(i)}
+        if(mesh.position.inMove == true || this.matrixAmmo) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update();

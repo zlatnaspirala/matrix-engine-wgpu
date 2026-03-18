@@ -740,11 +740,13 @@ export default class MEMeshObj extends Materials {
         mat4.translate(modelMatrix, this._translateVec, modelMatrix);
 
         if(this.itIsPhysicsBody) {
-          // rotation axis array also allocates:
+          // rotation axis array also allocates: sss
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
           this._rotAxisVec[2] = this.rotation.axis.z;
-          mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
+          // mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
+
+          mat4.rotate(modelMatrix, [this._rotAxisVec[0], this._rotAxisVec[1], this._rotAxisVec[2]], degToRad(this.rotation.angle), modelMatrix);
         } else {
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
@@ -902,7 +904,7 @@ export default class MEMeshObj extends Materials {
       modelMatrix.byteOffset,
       modelMatrix.byteLength
     );
-    this.modelMatrix = modelMatrix;
+    // this.modelMatrix = modelMatrix;
   }
 
   createGPUBuffer(dataArray, usage) {

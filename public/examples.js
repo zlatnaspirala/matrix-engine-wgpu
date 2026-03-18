@@ -1094,7 +1094,6 @@ var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -1111,11 +1110,10 @@ var physicsPlayground = function () {
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/blender/cube.obj"
     }, onGround, {
-      scale: [20, 0.01, 20]
+      scale: [1, 1, 1]
     });
     addEventListener('AmmoReady', () => {
-      app.matrixAmmo.speedUpSimulation = 4;
-
+      physicsPlayground.matrixAmmo.speedUpSimulation = 4;
       // downloadMeshes({
       //   ball: "./res/meshes/blender/sphere.obj",
       //   cube: "./res/meshes/blender/cube.obj",
@@ -1160,19 +1158,16 @@ var physicsPlayground = function () {
       // );
 
       // 
-      app.physicsBodiesGeneratorWall("standard", {
-        x: -4.5,
-        y: 0,
-        z: -10
-      }, {
-        x: 0,
-        y: 0,
-        z: 0
-      }, ["./res/textures/rust.jpg"],
-      // "./res/textures/env-maps/sky1.webp"],
-      'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+      // app.physicsBodiesGeneratorWall(
+      //   "standard",
+      //   {x: -4.5, y: 0, z: -10},
+      //   {x: 0, y: 0, z: 0},
+      //   ["./res/textures/rust.jpg",], // "./res/textures/env-maps/sky1.webp"],
+      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+
+      physicsPlayground.addLight();
       let strength = 10;
-      app.canvas.addEventListener("ray.hit.event", e => {
+      physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
         let b = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
         const i = new Ammo.btVector3(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength);
@@ -1202,6 +1197,7 @@ var physicsPlayground = function () {
           y: 0,
           z: 0
         },
+        scale: [25, 0.01, 25],
         texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'ground',
         mesh: m.cube,
@@ -1212,7 +1208,35 @@ var physicsPlayground = function () {
         }
         // raycast: { enabled: true , radius: 2 }
       });
-      physicsPlayground.addLight();
+
+      // physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 2, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [2, 2, 2],
+      //   texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+      //   name: 'TEST1',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: true,
+      //     mass: 10,
+      //     geometry: "Cube"
+      //   },
+      //   // raycast: { enabled: true , radius: 2 }
+      // });
+
+      app.physicsBodiesGeneratorWall("standard", {
+        x: -4.5,
+        y: 0,
+        z: -10
+      }, {
+        x: 0,
+        y: 0,
+        z: 0
+      }, ["./res/textures/rust.jpg"],
+      // "./res/textures/env-maps/sky1.webp"],
+      'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push(light => {
@@ -29952,8 +29976,8 @@ class Materials {
   }
   async loadTex0(texturesPaths) {
     return new Promise(async resolve => {
-      console.log('______');
       const path = texturesPaths[0];
+      console.log('loadTex0', path);
       const {
         texture,
         sampler
@@ -31582,11 +31606,13 @@ class MEMeshObj extends _materials.default {
         this._translateVec[2] = pos.z;
         _wgpuMatrix.mat4.translate(modelMatrix, this._translateVec, modelMatrix);
         if (this.itIsPhysicsBody) {
-          // rotation axis array also allocates:
+          // rotation axis array also allocates: sss
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
           this._rotAxisVec[2] = this.rotation.axis.z;
-          _wgpuMatrix.mat4.rotate(modelMatrix, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          // mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
+
+          _wgpuMatrix.mat4.rotate(modelMatrix, [this._rotAxisVec[0], this._rotAxisVec[1], this._rotAxisVec[2]], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
           _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
@@ -31724,7 +31750,7 @@ class MEMeshObj extends _materials.default {
     if (!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    this.modelMatrix = modelMatrix;
+    // this.modelMatrix = modelMatrix;
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -36166,18 +36192,25 @@ class MatrixAmmo {
     this.rigidBodies.forEach(body => {
       if (!body.isKinematic && body.getMotionState()) {
         body.getMotionState().getWorldTransform(this._trans);
-        const _x = +this._trans.getOrigin().x().toFixed(2);
-        const _y = +this._trans.getOrigin().y().toFixed(2);
-        const _z = +this._trans.getOrigin().z().toFixed(2);
+        const _x = +this._trans.getOrigin().x();
+        const _y = +this._trans.getOrigin().y();
+        const _z = +this._trans.getOrigin().z();
         body.MEObject.position.setPosition(_x, _y, _z);
+        body.MEObject.position.inMove = true;
         const rot = this._trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
+
+        // const rotAxis = rot.getAxis();
+        const ax = rotAxis.x();
+        const ay = rotAxis.y();
+        const az = rotAxis.z();
+        const len = Math.sqrt(ax * ax + ay * ay + az * az);
         body.MEObject.rotation.axis.x = rotAxis.x();
         body.MEObject.rotation.axis.y = rotAxis.y();
         body.MEObject.rotation.axis.z = rotAxis.z();
         body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(rot);
-        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle()));
       }
     });
     this.detectCollision();
@@ -54436,7 +54469,7 @@ class MatrixEngineWGPU {
     this.lightContainer.push(newLight);
     for (const mesh of this.mainRenderBundle) {
       mesh.shadowDepthTextureView = this.shadowArrayView;
-      mesh.createBindGroupForRender();
+      // mesh.createBindGroupForRender();
     }
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
@@ -54975,7 +55008,7 @@ class MatrixEngineWGPU {
           this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
         }
         mesh.getTransformationMatrix(i);
-        if (mesh.position.inMove == true) {
+        if (mesh.position.inMove == true || this.matrixAmmo) {
           mesh.updateModelUniformBuffer(i);
         }
         mesh.position.update();

@@ -422,12 +422,12 @@ export default class Materials {
 
   async loadTex0(texturesPaths) {
     return new Promise(async (resolve) => {
-    console.log('______')
-    const path = texturesPaths[0];
-    const {texture, sampler} = await this.textureCache.get(path, this.getFormat());
-    this.texture0 = texture;
-    this.sampler = sampler;
-    resolve();
+      const path = texturesPaths[0];
+      console.log('loadTex0', path)
+      const {texture, sampler} = await this.textureCache.get(path, this.getFormat());
+      this.texture0 = texture;
+      this.sampler = sampler;
+      resolve();
     });
   }
 
