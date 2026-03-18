@@ -26,6 +26,7 @@ export var loadVideoTexture = function() {
       console.log('test ray after shadows merge')
     })
 
+    console.log('test AmmoReady attach')
     addEventListener('AmmoReady', () => {
       downloadMeshes({
         welcomeText: "./res/meshes/blender/piramyd.obj",
@@ -49,6 +50,10 @@ export var loadVideoTexture = function() {
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'MyVideoTex',
         mesh: m.cube,
+        // isVideo: {
+        //   type: 'video',
+        //   src: 'res/videos/tunel.mp4'
+        // },
         physics: {
           enabled: false,
           geometry: "Cube"
@@ -59,6 +64,7 @@ export var loadVideoTexture = function() {
       var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
 
       console.log(`%c Test video-texture...`, LOG_MATRIX);
+  
       TEST.loadVideoTexture({
         type: 'video',
         src: 'res/videos/tunel.mp4'

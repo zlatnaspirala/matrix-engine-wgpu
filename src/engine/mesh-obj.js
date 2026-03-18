@@ -16,7 +16,7 @@ import {createGroundTexture} from './procedures/procedural-textures';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile, o.textureCache);
+    super(device, o.material, _glbFile, o.textureCache, o.isVideo);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
       this.raycast = {enabled: false, radius: 2};
@@ -251,6 +251,10 @@ export default class MEMeshObj extends Materials {
       }
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
+    } else if(typeof o.isVideo !== 'undefined') {
+
+      this.loadVideoTexture(o.isVideo);
+      this.drawElements = this.drawVideoElements;
     }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
@@ -965,19 +969,13 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElements = (pass, lightContainer) => {
-    if(this.isVideo) this.updateVideoTexture()
+    // if(this.isVideo) this.updateVideoTexture()
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
       }
-      // else if(this.isVideo == false) {
-      // let bindIndex = 2;
-      // for(const light of lightContainer) {
-      //   pass.setBindGroup(bindIndex, light.getMainPassBindGroup(this));
-      // }
-      // }
     }
     pass.setBindGroup(3, this.waterBindGroup);
 
@@ -1002,6 +1000,24 @@ export default class MEMeshObj extends Materials {
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
+
+  drawVideoElements = (pass) => {
+    this.updateVideoTexture();
+    if(!this.sceneBindGroupForRender) return;
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
+     pass.setBindGroup(3, this.waterBindGroup);  // ← dummy (same as mesh path)
+
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if(this.joints) {
+      pass.setVertexBuffer(3, this.joints.buffer);
+      pass.setVertexBuffer(4, this.weights.buffer);
+    }
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
 
   drawElementsAnim = (renderPass, lightContainer) => {
     if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log('NULL1'); return;}

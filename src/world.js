@@ -73,7 +73,6 @@ export default class MatrixEngineWGPU {
   constructor(options, callback) {
     if(typeof options == 'undefined' || typeof options == "function") {
       this.options = {
-        useSingleRenderPass: true,
         canvasSize: 'fullscreen',
         canvasId: 'canvas1',
         mainCameraParams: {
@@ -407,6 +406,8 @@ export default class MatrixEngineWGPU {
         depthClearValue: 1.0,
       }
     };
+
+    this.run(callback);
   }
 
   createTexArrayForShadows(callback) {
@@ -453,17 +454,13 @@ export default class MatrixEngineWGPU {
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       });
 
-      // this.shadowVideoView = this.shadowVideoTexture.createView({
-      //   dimension: "2d",
-      // });
-
       this.shadowVideoView = this.shadowTextureArray.createView({
-        dimension: '2d',  // Single 2D view
-        baseArrayLayer: 0,  // Just layer 0
+        dimension: '2d',
+        baseArrayLayer: 0,
         arrayLayerCount: 1
       });
 
-      setTimeout(() => {this.run(callback)}, 200);
+      // this.run(callback);
     };
     this.createMe();
   }
@@ -883,10 +880,10 @@ export default class MatrixEngineWGPU {
           this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
         }
         // Video handling...
-        if(mesh.isVideo && !mesh.externalTexture) {
-          if(!mesh.isWaiting) {mesh.isWaiting = true; mesh.createBindGroupForRender();}
-          continue;
-        }
+        // if(mesh.isVideo && !mesh.externalTexture) {
+        //   if(!mesh.isWaiting) {mesh.isWaiting = true; mesh.createBindGroupForRender();}
+        //   continue;
+        // }
         mesh.getTransformationMatrix(i);
         if(mesh.position.inMove == true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
@@ -938,7 +935,6 @@ export default class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-
       // opacy
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -946,33 +942,18 @@ export default class MatrixEngineWGPU {
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend) continue;
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
-        if(!mesh.sceneBindGroupForRender || (mesh.isVideo && !mesh.FINISH_VIDIO_INIT)) {
-          console.log('test   video ')
-          mesh.shadowDepthTextureView = mesh.isVideo ? this.shadowVideoView : this.shadowArrayView;
-          if(mesh.setupPipeline) mesh.setupPipeline();
-          mesh.FINISH_VIDIO_INIT = true;
-        }
         if(lastPipeline !== targetPipeline) {
           pass.setPipeline(targetPipeline);
           lastPipeline = targetPipeline;
         }
         mesh.drawElements(pass, this.lightContainer);
       }
-
       // blend
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend !== true) continue;
         if(!mesh.sceneBindGroupForRender) {
-          if(mesh.isVideo === true) {
-            if(mesh.FINISH_VIDIO_INIT === false) {
-              mesh.shadowDepthTextureView = this.shadowVideoView;
-              mesh.FINISH_VIDIO_INIT = true;
-              mesh.setupPipeline();
-            }
-          } else {
-            mesh.shadowDepthTextureView = this.shadowArrayView;
-            mesh.setupPipeline();
-          }
+          mesh.shadowDepthTextureView = this.shadowArrayView;
+          mesh.setupPipeline();
         }
         pass.setPipeline(mesh.pipelineTransparent);
         mesh.drawElements(pass, this.lightContainer);
@@ -999,23 +980,14 @@ export default class MatrixEngineWGPU {
       if(this.volumetricPass.enabled === true) {
         mat4.invert(this._viewProjMatrix, this._invViewProj);
         const light = this.lightContainer[0];
-        this.volumetricPass.render(
-          commandEncoder,
-          this.sceneTextureView,        // ← your existing scene color
-          this.mainDepthView,           // ← your existing depth
-          this.shadowArrayView,         // ← your existing shadow array
-          {invViewProjectionMatrix: this._invViewProj},
-          {
-            viewProjectionMatrix: light.viewProjMatrix,
-            direction: light.direction,
-          }
-        );
+        this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView,
+          this.shadowArrayView, {invViewProjectionMatrix: this._invViewProj},
+          {viewProjectionMatrix: light.viewProjMatrix, direction: light.direction, }
+        )
       }
       const canvasView = this.context.getCurrentTexture().createView();
       if(this.bloomPass.enabled == true) {
-        const bloomInput = this.volumetricPass.enabled
-          ? this.volumetricPass.compositeOutputTexView
-          : this.sceneTextureView;
+        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
       }
       pass = commandEncoder.beginRenderPass({

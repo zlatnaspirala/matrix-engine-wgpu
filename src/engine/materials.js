@@ -19,12 +19,18 @@ import {fountainFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
  * @email zlatnaspirala@gmail.com
  */
 export default class Materials {
-  constructor(device, material, glb, textureCache) {
+  constructor(device, material, glb, textureCache, isVideo) {
     this.device = device;
     this.textureCache = textureCache;
     this.glb = glb;
     this.material = material;
-    this.isVideo = false;
+
+    if(typeof isVideo !== 'undefined') {
+      this.isVideo = true;
+    } else {
+      this.isVideo = false;
+    }
+
     this.videoIsReady = 'NONE';
     this.compareSampler = this.device.createSampler({
       compare: 'less-equal',           // safer for shadow comparison
@@ -431,6 +437,10 @@ export default class Materials {
 
   async loadVideoTexture(arg) {
     this.videoIsReady = 'MAYBE';
+
+    this.isVideo = true;
+    this.drawElements = this.drawVideoElements;
+
     if(arg.type === 'video') {
       this.video = document.createElement('video');
       this.video.src = arg.src || 'res/videos/tunel.mp4';
@@ -438,12 +448,13 @@ export default class Materials {
       this.video.autoplay = true;
       this.video.loop = true;
       document.body.append(this.video);
-      this.video.style.display = 'none';
+      this.video.style.display = 'block';
       this.video.style.position = 'absolute';
-      this.video.style.top = '750px';
-      this.video.style.left = '50px';
+      this.video.style.top = '-750px';
+      this.video.style.left = '50%';
+      
       await this.video.play();
-      this.isVideo = true;
+
     } else if(arg.type === 'videoElement') {
       this.video = arg.el;
       await this.video.play();
@@ -537,28 +548,22 @@ export default class Materials {
       magFilter: 'linear',
       minFilter: 'linear',
     });
-    // ✅ Now - maybe noT
+
+    console.log('override drws video 22222222222222222f')
+    
     this.createLayoutForRender();
     this.createBindGroupForRender();
     //  dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
 
   updateVideoTexture() {
-    if(!this.video || this.video.readyState < 2) {
-      console.info('this.video.readyState not reaady', this.video.readyState)
-      return;
-    }
-    if(!this.externalTexture) {
-      // create it once
-      this.externalTexture = this.device.importExternalTexture({source: this.video});
-      this.createBindGroupForRender();
-      this.videoIsReady = 'YES';
-      console.log("%c✅video bind.", LOG_FUNNY_ARCADE);
-    } else {
-      this.videoIsReady = 'YES';
-      this.externalTexture = this.device.importExternalTexture({source: this.video});
-      this.createBindGroupForRender();
-    }
+    if(!this.video || this.video.readyState < 2) return;
+
+    // Always re-import — external textures expire each frame, never cache them
+    this.externalTexture = this.device.importExternalTexture({source: this.video});
+
+    // Always rebuild BG against the VIDEO layout
+    this.createBindGroupForRender();
   }
 
   getMaterialTexture(glb, materialIndex) {
@@ -587,60 +592,59 @@ export default class Materials {
     return this.glb.glbTextures[texIndex].createView();
   }
 
+
+
   createBindGroupForRender() {
-    let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
-    if(this.material.useTextureFromGlb === true) {
-      // 0 probably always for basicColor
-      const material = this.skinnedNode.mesh.primitives[0].material;
-      const textureView = material.baseColorTexture.imageView;
-      // const sampler = material.baseColorTexture.sampler;
-      textureResource = textureView;
-    }
-
-    if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if(!textureResource) console.log("%c❗Missing res texture ", LOG_FUNNY_ARCADE);
-      if(!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      // if(!this.shadowDepthTextureView) // console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if(typeof textureResource === 'undefined') {
-        this.updateVideoTexture();
+    if(this.isVideo) {
+      if(!this.externalTexture || !this.sceneUniformBuffer) {
+        console.warn("❗ video BG: missing resource");
+        return;
       }
-      return;
-    }
-    if(this.isVideo == true) {
-      // console.info("✅ video sceneBindGroupForRender");
-
- 
 
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [video]',
-        layout: this.bglForRender,
+        layout: this.bglForRender,   // <-- VIDEO layout, not bglForRender
         entries: [
-          {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
-          {binding: 1, resource: this.shadowVideoView },
-          {binding: 2, resource: this.compareSampler, },
-          {binding: 3, resource: textureResource, },
-          {binding: 4, resource: this.videoSampler, },
-          {binding: 5, resource: {buffer: this.postFXModeBuffer}}
+          {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
+          {binding: 1, resource: this.shadowVideoView},
+          {binding: 2, resource: this.compareSampler},
+          {binding: 3, resource: this.externalTexture},
+          {binding: 4, resource: this.videoSampler},
+          {binding: 5, resource: {buffer: this.postFXModeBuffer}},
         ],
       });
-      // Special case for video maybe better solution exist
-      if(this.video.paused == true) this.video.play();
+
+      if(this.video.paused) this.video.play().catch(()=>{});
       this.isWaiting = false;
+      // console.info("✅ video sceneBindGroupForRender");
+
     } else {
+      // ── MESH path (unchanged) ───────────────────────────────────────
+      let textureResource = this.texture0.createView();
+      if(this.material.useTextureFromGlb === true) {
+        const material = this.skinnedNode.mesh.primitives[0].material;
+        textureResource = material.baseColorTexture.imageView;
+      }
+
+      if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
+        if(!textureResource) console.log("%c❗Missing res texture", LOG_FUNNY_ARCADE);
+        if(!this.sceneUniformBuffer) console.warn("❗Missing res: sceneUniformBuffer");
+        return;
+      }
+
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [mesh][materials]',
-        layout: this.bglForRender,
+        layout: this.bglForRender,        // <-- MESH layout
         entries: [
-          {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
-          {binding: 1, resource: this.shadowDepthTextureView, },
-          {binding: 2, resource: this.compareSampler, },
-          {binding: 3, resource: textureResource, },
-          {binding: 4, resource: this.imageSampler, },
-          {binding: 5, resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer}, },
+          {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
+          {binding: 1, resource: this.shadowDepthTextureView},
+          {binding: 2, resource: this.compareSampler},
+          {binding: 3, resource: textureResource},
+          {binding: 4, resource: this.imageSampler},
+          {binding: 5, resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer}},
           {binding: 6, resource: this.metallicRoughnessTextureView},
           {binding: 7, resource: this.metallicRoughnessSampler},
           {binding: 8, resource: {buffer: this.materialPBRBuffer}},
-          // NEW: dummy normal map
           {binding: 9, resource: this.normalTextureView},
           {binding: 10, resource: this.normalSampler},
         ],
@@ -649,105 +653,117 @@ export default class Materials {
   }
 
   createLayoutForRender() {
-    let e = [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {type: 'uniform'},
-      },
-      ...(this.isVideo == false
-        ? [
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: {
-              sampleType: "depth",
-              viewDimension: "2d-array", // <- must match shadowMapArray
-              multisampled: false,
-            },
-          },
-        ] : [{
+    // ── VIDEO layout (separate, never mixed with mesh pipeline) ───────
+    if(this.isVideo) {
+      const videoEntries = [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: {type: 'uniform'},
+        },
+        {
           binding: 1,
           visibility: GPUShaderStage.FRAGMENT,
           texture: {
             sampleType: "depth",
-            viewDimension: "2d",
+            viewDimension: "2d",   // single shadow map for video objects
+            multisampled: false,
           },
-        },])
-      , {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {type: 'comparison'},
-      },
-      ...(this.isVideo
-        ? [ // VIDEO
-          {
-            binding: 3,
-            visibility: GPUShaderStage.FRAGMENT,
-            externalTexture: {},
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'comparison'},
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          externalTexture: {},     // GPUExternalTexture slot
+        },
+        {
+          binding: 4,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'filtering'},
+        },
+        {
+          binding: 5,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {type: 'uniform'},
+          // buffer: {type: 'read-only-storage'}
+        },
+      ];
+
+      this.bglForRender = this.device.createBindGroupLayout({
+        label: 'bglForRenderVideo',
+        entries: videoEntries,
+      });
+    } else {
+      const meshEntries = [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: {type: 'uniform'},
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: "depth",
+            viewDimension: "2d-array",
+            multisampled: false,
           },
-          {
-            binding: 4,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {type: 'filtering'}, // for video sampling
-          },
-          {
-            binding: 5,
-            visibility: GPUShaderStage.FRAGMENT,
-            buffer: {type: 'uniform'},
-          }
-        ]
-        : [ // IMAGE
-          {
-            binding: 3,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: {
-              sampleType: 'float',
-              viewDimension: '2d',
-            },
-          },
-          {
-            binding: 4,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {type: 'filtering'},
-          },
-          {
-            binding: 5,
-            visibility: GPUShaderStage.FRAGMENT,
-            // buffer: {type: 'uniform'},
-            buffer: {type: 'read-only-storage'}
-          },
-          {
-            binding: 6,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: {
-              sampleType: 'float',
-              viewDimension: '2d'
-            }
-          },
-          {
-            binding: 7,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {type: 'filtering'}
-          },
-          {
-            binding: 8,
-            visibility: GPUShaderStage.FRAGMENT,
-            buffer: {type: 'uniform'}
-          },
-          {
-            binding: 9,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: {sampleType: 'float', viewDimension: '2d'},
-          },
-          {
-            binding: 10,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {type: 'filtering'}
-          }
-        ])
-    ];
-    // console.log("BG E :  is used normal  ", this.material.type)
-    this.bglForRender = this.device.createBindGroupLayout({label: 'bglForRender', entries: e, });
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'comparison'},
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {sampleType: 'float', viewDimension: '2d'},
+        },
+        {
+          binding: 4,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'filtering'},
+        },
+        {
+          binding: 5,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {type: 'read-only-storage'}
+        },
+        {
+          binding: 6,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {sampleType: 'float', viewDimension: '2d'}
+        },
+        {
+          binding: 7,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'filtering'}
+        },
+        {
+          binding: 8,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {type: 'uniform'}
+        },
+        {
+          binding: 9,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {sampleType: 'float', viewDimension: '2d'},
+        },
+        {
+          binding: 10,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'filtering'}
+        }
+      ];
+
+      this.bglForRender = this.device.createBindGroupLayout({
+        label: 'bglForRender',
+        entries: meshEntries,
+      });
+    }
   }
 }

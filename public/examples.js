@@ -1798,6 +1798,7 @@ var loadVideoTexture = function () {
     videoTexture.canvas.addEventListener("ray.hit.event", e => {
       console.log('test ray after shadows merge');
     });
+    console.log('test AmmoReady attach');
     addEventListener('AmmoReady', () => {
       (0, _loaderObj.downloadMeshes)({
         welcomeText: "./res/meshes/blender/piramyd.obj",
@@ -1832,6 +1833,10 @@ var loadVideoTexture = function () {
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'MyVideoTex',
         mesh: m.cube,
+        // isVideo: {
+        //   type: 'video',
+        //   src: 'res/videos/tunel.mp4'
+        // },
         physics: {
           enabled: false,
           geometry: "Cube"
@@ -29578,12 +29583,16 @@ var _fontana = require("../shaders/fontana/fontana.wgsl");
  * @email zlatnaspirala@gmail.com
  */
 class Materials {
-  constructor(device, material, glb, textureCache) {
+  constructor(device, material, glb, textureCache, isVideo) {
     this.device = device;
     this.textureCache = textureCache;
     this.glb = glb;
     this.material = material;
-    this.isVideo = false;
+    if (typeof isVideo !== 'undefined') {
+      this.isVideo = true;
+    } else {
+      this.isVideo = false;
+    }
     this.videoIsReady = 'NONE';
     this.compareSampler = this.device.createSampler({
       compare: 'less-equal',
@@ -29983,6 +29992,8 @@ class Materials {
   }
   async loadVideoTexture(arg) {
     this.videoIsReady = 'MAYBE';
+    this.isVideo = true;
+    this.drawElements = this.drawVideoElements;
     if (arg.type === 'video') {
       this.video = document.createElement('video');
       this.video.src = arg.src || 'res/videos/tunel.mp4';
@@ -29990,12 +30001,11 @@ class Materials {
       this.video.autoplay = true;
       this.video.loop = true;
       document.body.append(this.video);
-      this.video.style.display = 'none';
+      this.video.style.display = 'block';
       this.video.style.position = 'absolute';
-      this.video.style.top = '750px';
-      this.video.style.left = '50px';
+      this.video.style.top = '-750px';
+      this.video.style.left = '50%';
       await this.video.play();
-      this.isVideo = true;
     } else if (arg.type === 'videoElement') {
       this.video = arg.el;
       await this.video.play();
@@ -30094,31 +30104,21 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-    // ✅ Now - maybe noT
+    console.log('override drws video 22222222222222222f');
     this.createLayoutForRender();
     this.createBindGroupForRender();
     //  dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) {
-      console.info('this.video.readyState not reaady', this.video.readyState);
-      return;
-    }
-    if (!this.externalTexture) {
-      // create it once
-      this.externalTexture = this.device.importExternalTexture({
-        source: this.video
-      });
-      this.createBindGroupForRender();
-      this.videoIsReady = 'YES';
-      console.log("%c✅video bind.", _utils.LOG_FUNNY_ARCADE);
-    } else {
-      this.videoIsReady = 'YES';
-      this.externalTexture = this.device.importExternalTexture({
-        source: this.video
-      });
-      this.createBindGroupForRender();
-    }
+    if (!this.video || this.video.readyState < 2) return;
+
+    // Always re-import — external textures expire each frame, never cache them
+    this.externalTexture = this.device.importExternalTexture({
+      source: this.video
+    });
+
+    // Always rebuild BG against the VIDEO layout
+    this.createBindGroupForRender();
   }
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
@@ -30140,29 +30140,15 @@ class Materials {
     return this.glb.glbTextures[texIndex].createView();
   }
   createBindGroupForRender() {
-    let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
-    if (this.material.useTextureFromGlb === true) {
-      // 0 probably always for basicColor
-      const material = this.skinnedNode.mesh.primitives[0].material;
-      const textureView = material.baseColorTexture.imageView;
-      // const sampler = material.baseColorTexture.sampler;
-      textureResource = textureView;
-    }
-    if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.log("%c❗Missing res texture ", _utils.LOG_FUNNY_ARCADE);
-      if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      // if(!this.shadowDepthTextureView) // console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if (typeof textureResource === 'undefined') {
-        this.updateVideoTexture();
+    if (this.isVideo) {
+      if (!this.externalTexture || !this.sceneUniformBuffer) {
+        console.warn("❗ video BG: missing resource");
+        return;
       }
-      return;
-    }
-    if (this.isVideo == true) {
-      // console.info("✅ video sceneBindGroupForRender");
-
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
+        // <-- VIDEO layout, not bglForRender
         entries: [{
           binding: 0,
           resource: {
@@ -30176,7 +30162,7 @@ class Materials {
           resource: this.compareSampler
         }, {
           binding: 3,
-          resource: textureResource
+          resource: this.externalTexture
         }, {
           binding: 4,
           resource: this.videoSampler
@@ -30187,13 +30173,25 @@ class Materials {
           }
         }]
       });
-      // Special case for video maybe better solution exist
-      if (this.video.paused == true) this.video.play();
+      if (this.video.paused) this.video.play().catch(() => {});
       this.isWaiting = false;
+      // console.info("✅ video sceneBindGroupForRender");
     } else {
+      // ── MESH path (unchanged) ───────────────────────────────────────
+      let textureResource = this.texture0.createView();
+      if (this.material.useTextureFromGlb === true) {
+        const material = this.skinnedNode.mesh.primitives[0].material;
+        textureResource = material.baseColorTexture.imageView;
+      }
+      if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
+        if (!textureResource) console.log("%c❗Missing res texture", _utils.LOG_FUNNY_ARCADE);
+        if (!this.sceneUniformBuffer) console.warn("❗Missing res: sceneUniformBuffer");
+        return;
+      }
       this.sceneBindGroupForRender = this.device.createBindGroup({
         label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
+        // <-- MESH layout
         entries: [{
           binding: 0,
           resource: {
@@ -30227,9 +30225,7 @@ class Materials {
           resource: {
             buffer: this.materialPBRBuffer
           }
-        },
-        // NEW: dummy normal map
-        {
+        }, {
           binding: 9,
           resource: this.normalTextureView
         }, {
@@ -30240,112 +30236,129 @@ class Materials {
     }
   }
   createLayoutForRender() {
-    let e = [{
-      binding: 0,
-      visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-      buffer: {
-        type: 'uniform'
-      }
-    }, ...(this.isVideo == false ? [{
-      binding: 1,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: "depth",
-        viewDimension: "2d-array",
-        // <- must match shadowMapArray
-        multisampled: false
-      }
-    }] : [{
-      binding: 1,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: "depth",
-        viewDimension: "2d"
-      }
-    }]), {
-      binding: 2,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'comparison'
-      }
-    }, ...(this.isVideo ? [
-    // VIDEO
-    {
-      binding: 3,
-      visibility: GPUShaderStage.FRAGMENT,
-      externalTexture: {}
-    }, {
-      binding: 4,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      } // for video sampling
-    }, {
-      binding: 5,
-      visibility: GPUShaderStage.FRAGMENT,
-      buffer: {
-        type: 'uniform'
-      }
-    }] : [
-    // IMAGE
-    {
-      binding: 3,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: 'float',
-        viewDimension: '2d'
-      }
-    }, {
-      binding: 4,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      }
-    }, {
-      binding: 5,
-      visibility: GPUShaderStage.FRAGMENT,
-      // buffer: {type: 'uniform'},
-      buffer: {
-        type: 'read-only-storage'
-      }
-    }, {
-      binding: 6,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: 'float',
-        viewDimension: '2d'
-      }
-    }, {
-      binding: 7,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      }
-    }, {
-      binding: 8,
-      visibility: GPUShaderStage.FRAGMENT,
-      buffer: {
-        type: 'uniform'
-      }
-    }, {
-      binding: 9,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: 'float',
-        viewDimension: '2d'
-      }
-    }, {
-      binding: 10,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      }
-    }])];
-    // console.log("BG E :  is used normal  ", this.material.type)
-    this.bglForRender = this.device.createBindGroupLayout({
-      label: 'bglForRender',
-      entries: e
-    });
+    // ── VIDEO layout (separate, never mixed with mesh pipeline) ───────
+    if (this.isVideo) {
+      const videoEntries = [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: "depth",
+          viewDimension: "2d",
+          // single shadow map for video objects
+          multisampled: false
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'comparison'
+        }
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        externalTexture: {} // GPUExternalTexture slot
+      }, {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 5,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+        // buffer: {type: 'read-only-storage'}
+      }];
+      this.bglForRender = this.device.createBindGroupLayout({
+        label: 'bglForRenderVideo',
+        entries: videoEntries
+      });
+    } else {
+      const meshEntries = [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: "depth",
+          viewDimension: "2d-array",
+          multisampled: false
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'comparison'
+        }
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float',
+          viewDimension: '2d'
+        }
+      }, {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 5,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'read-only-storage'
+        }
+      }, {
+        binding: 6,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float',
+          viewDimension: '2d'
+        }
+      }, {
+        binding: 7,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 8,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 9,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float',
+          viewDimension: '2d'
+        }
+      }, {
+        binding: 10,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }];
+      this.bglForRender = this.device.createBindGroupLayout({
+        label: 'bglForRender',
+        entries: meshEntries
+      });
+    }
   }
 }
 exports.default = Materials;
@@ -30831,7 +30844,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile, o.textureCache);
+    super(device, o.material, _glbFile, o.textureCache, o.isVideo);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
@@ -31051,6 +31064,9 @@ class MEMeshObj extends _materials.default {
       }
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, _utils.LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
+    } else if (typeof o.isVideo !== 'undefined') {
+      this.loadVideoTexture(o.isVideo);
+      this.drawElements = this.drawVideoElements;
     }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
@@ -31786,19 +31802,13 @@ class MEMeshObj extends _materials.default {
     }
   }
   drawElements = (pass, lightContainer) => {
-    if (this.isVideo) this.updateVideoTexture();
+    // if(this.isVideo) this.updateVideoTexture()
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
       if (this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
       }
-      // else if(this.isVideo == false) {
-      // let bindIndex = 2;
-      // for(const light of lightContainer) {
-      //   pass.setBindGroup(bindIndex, light.getMainPassBindGroup(this));
-      // }
-      // }
     }
     pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -31816,6 +31826,23 @@ class MEMeshObj extends _materials.default {
     }
     if (this.mesh.tangentsBuffer) {
       pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    }
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
+  drawVideoElements = pass => {
+    this.updateVideoTexture();
+    if (!this.sceneBindGroupForRender) return;
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
+    pass.setBindGroup(3, this.waterBindGroup); // ← dummy (same as mesh path)
+
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if (this.joints) {
+      pass.setVertexBuffer(3, this.joints.buffer);
+      pass.setVertexBuffer(4, this.weights.buffer);
     }
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
@@ -35917,7 +35944,7 @@ class MatrixAmmo {
       // simulate async
       setTimeout(() => {
         dispatchEvent(new CustomEvent('AmmoReady', {}));
-      }, 200);
+      }, 250);
     });
   };
   initPhysics() {
@@ -54008,7 +54035,6 @@ class MatrixEngineWGPU {
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
       this.options = {
-        useSingleRenderPass: true,
         canvasSize: 'fullscreen',
         canvasId: 'canvas1',
         mainCameraParams: {
@@ -54348,6 +54374,7 @@ class MatrixEngineWGPU {
         depthClearValue: 1.0
       }
     };
+    this.run(callback);
   }
   createTexArrayForShadows(callback) {
     this.createMe = () => {
@@ -54388,21 +54415,13 @@ class MatrixEngineWGPU {
         format: "depth32float",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
       });
-
-      // this.shadowVideoView = this.shadowVideoTexture.createView({
-      //   dimension: "2d",
-      // });
-
       this.shadowVideoView = this.shadowTextureArray.createView({
         dimension: '2d',
-        // Single 2D view
         baseArrayLayer: 0,
-        // Just layer 0
         arrayLayerCount: 1
       });
-      setTimeout(() => {
-        this.run(callback);
-      }, 200);
+
+      // this.run(callback);
     };
     this.createMe();
   }
@@ -55030,13 +55049,10 @@ class MatrixEngineWGPU {
           this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
         }
         // Video handling...
-        if (mesh.isVideo && !mesh.externalTexture) {
-          if (!mesh.isWaiting) {
-            mesh.isWaiting = true;
-            mesh.createBindGroupForRender();
-          }
-          continue;
-        }
+        // if(mesh.isVideo && !mesh.externalTexture) {
+        //   if(!mesh.isWaiting) {mesh.isWaiting = true; mesh.createBindGroupForRender();}
+        //   continue;
+        // }
         mesh.getTransformationMatrix(i);
         if (mesh.position.inMove == true) {
           mesh.updateModelUniformBuffer(i);
@@ -55087,7 +55103,6 @@ class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-
       // opacy
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -55095,33 +55110,18 @@ class MatrixEngineWGPU {
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend) continue;
         const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
-        if (!mesh.sceneBindGroupForRender || mesh.isVideo && !mesh.FINISH_VIDIO_INIT) {
-          console.log('test   video ');
-          mesh.shadowDepthTextureView = mesh.isVideo ? this.shadowVideoView : this.shadowArrayView;
-          if (mesh.setupPipeline) mesh.setupPipeline();
-          mesh.FINISH_VIDIO_INIT = true;
-        }
         if (lastPipeline !== targetPipeline) {
           pass.setPipeline(targetPipeline);
           lastPipeline = targetPipeline;
         }
         mesh.drawElements(pass, this.lightContainer);
       }
-
       // blend
       for (const mesh of this.mainRenderBundle) {
         if (mesh.material?.useBlend !== true) continue;
         if (!mesh.sceneBindGroupForRender) {
-          if (mesh.isVideo === true) {
-            if (mesh.FINISH_VIDIO_INIT === false) {
-              mesh.shadowDepthTextureView = this.shadowVideoView;
-              mesh.FINISH_VIDIO_INIT = true;
-              mesh.setupPipeline();
-            }
-          } else {
-            mesh.shadowDepthTextureView = this.shadowArrayView;
-            mesh.setupPipeline();
-          }
+          mesh.shadowDepthTextureView = this.shadowArrayView;
+          mesh.setupPipeline();
         }
         pass.setPipeline(mesh.pipelineTransparent);
         mesh.drawElements(pass, this.lightContainer);
@@ -55147,13 +55147,7 @@ class MatrixEngineWGPU {
       if (this.volumetricPass.enabled === true) {
         _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
         const light = this.lightContainer[0];
-        this.volumetricPass.render(commandEncoder, this.sceneTextureView,
-        // ← your existing scene color
-        this.mainDepthView,
-        // ← your existing depth
-        this.shadowArrayView,
-        // ← your existing shadow array
-        {
+        this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, {
           invViewProjectionMatrix: this._invViewProj
         }, {
           viewProjectionMatrix: light.viewProjMatrix,

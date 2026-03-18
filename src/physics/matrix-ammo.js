@@ -34,7 +34,7 @@ export default class MatrixAmmo {
       // simulate async
       setTimeout(() => {
         dispatchEvent(new CustomEvent('AmmoReady', {}))
-      }, 200)
+      }, 250);
     });
   };
 

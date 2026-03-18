@@ -238,7 +238,6 @@ function CBoptions(p, n, pName) {
   useEditor: true,
   projectType: "created from editor",
   ${pName ? `projectName: '${pName}',` : ""}
-  useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type: 'WASD',
