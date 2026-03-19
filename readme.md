@@ -1017,7 +1017,7 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - 💲💲💲 Support JAMB 3D this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
 - [MOBA Forest Of Hollow Blood Live](https://maximumroulette.com/apps/webgpu/examples.html)
 
-  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
+  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/2026-loading-performance.png?raw=true" />
 
 - [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
   → Uses `empty.js` build from:

@@ -24,11 +24,11 @@ export var myLights = function() {
     const LIGHT_COLORS = [
       [1.0, 0.2, 0.2],  // red
       [1.0, 0.6, 0.1],  // orange
+      [0.2, 0.2, 1.0],  // blue
       [1.0, 1.0, 0.1],  // yellow
       [0.2, 1.0, 0.2],  // green
       [0.1, 1.0, 0.6],  // teal
       [0.1, 0.6, 1.0],  // sky
-      [0.2, 0.2, 1.0],  // blue
       [0.6, 0.1, 1.0],  // purple
       [1.0, 0.1, 0.8],  // pink
       [1.0, 0.1, 0.4],  // rose
@@ -98,6 +98,7 @@ export var myLights = function() {
       });
     }
 
+    myLights.activateBloomEffect();
     // Camera setup
     setTimeout(() => {
       myLights.cameras.WASD.yaw      = -0.03;
