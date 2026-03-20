@@ -57,7 +57,7 @@ export var loadObjFile = function() {
     async function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
