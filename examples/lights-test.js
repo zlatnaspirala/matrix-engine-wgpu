@@ -56,7 +56,7 @@ export var myLights = function() {
       .then(res => res.arrayBuffer())
       .then(buf => uploadGLBModel(buf, myLights.device));
 
-    myLights.addGlbObj({
+    myLights.addGlbObjInctance({
       material: { type: 'standard', useTextureFromGlb: true },
       useScale: true,
       scale: [5, 5, 5],

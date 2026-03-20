@@ -17,7 +17,7 @@ export var snakeLights = function() {
     const NUM_LIGHTS = 20;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
-    const LIGHT_HEIGHT = 10;
+    const LIGHT_HEIGHT = 20;
     const CENTER = {x: 0, z: -10};
 
     const LIGHT_COLORS = [
@@ -204,21 +204,21 @@ export var snakeLights = function() {
       });
     }, {scale: [50, 0.5, 50]});
 
-    const glbFile = await fetch("res/meshes/glb/monster.glb")
+    const glbFile = await fetch("res/meshes/glb/dancing-woman.glb")
       .then(r => r.arrayBuffer())
-      .then(buf => uploadGLBModel(buf, app.device));
+      .then(buf => uploadGLBModel(buf, app.device)); 
 
     app.addGlbObj({
       material: {type: 'standard', useTextureFromGlb: true},
       useScale: true,
-      scale: [5, 5, 5],
+      scale: [2, 2, 2],
       position: {x: CENTER.x, y: -4, z: CENTER.z},
       name: 'monster',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile);
 
     app.activateBloomEffect();
-    
+
     setTimeout(() => {
       app.cameras.WASD.yaw = 0;
       app.cameras.WASD.pitch = -0.55;

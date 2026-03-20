@@ -1127,6 +1127,8 @@ You may use, modify, and sell projects based on this code — just keep this not
   Invertory images
   https://djinnbestiary.itch.io/ancient-oddities-vol-1-13-free-potions
 
+  "Dancing girl" (https://skfb.ly/p7vNU) by planetrey.com is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)

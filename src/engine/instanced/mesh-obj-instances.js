@@ -1003,11 +1003,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if(this.isVideo == false) {
-        let bindIndex = 2;
-        for(const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
     pass.setBindGroup(3, this.waterBindGroup);
@@ -1046,11 +1041,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if(this.isVideo == false) {
-        let bindIndex = 2;
-        for(const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
 

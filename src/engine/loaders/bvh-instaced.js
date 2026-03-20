@@ -44,8 +44,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.fps = 30;
     this.timeAccumulator = 0;
     this.trailAnimation = {
-      enabled: false,
-      delay: 100
+      enabled: false, // deplaced
+      delay: 0
     };
     // debug
     this.scaleBoneTest = 1;
@@ -284,7 +284,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     out[12] = t[0]; out[13] = t[1]; out[14] = t[2]; out[15] = 1;
   }
 
-  update(deltaTime) {
+  update(now) {
     var inTime = this._animationLength;
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
@@ -295,22 +295,16 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       }, inTime * 1000)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      if(this.trailAnimation.enabled == true) {
-        for(let i = 0;i < this.instanceCount;i++) {
-          const timeOffsetMs = i * this.trailAnimation.delay;
-          const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
-          this.updateSingleBoneCubeAnimation(
-            this.glb.glbJsonData.animations[this.animationIndex],
-            this.nodes,       // ← same nodes, no clone
-            currentTime,
-            this._boneMatrices,
-            i
-          );
-        }
-      } else {
-        const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0)
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 1)
+      for(let i = 0;i < this.instanceCount;i++) {
+        const timeOffsetMs = i * this.trailAnimation.delay;
+        const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+        this.updateSingleBoneCubeAnimation(
+          this.glb.glbJsonData.animations[this.animationIndex],
+          this.nodes,
+          currentTime,
+          this._boneMatrices,
+          i
+        );
       }
     }
   }

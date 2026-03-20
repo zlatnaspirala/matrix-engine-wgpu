@@ -783,7 +783,7 @@ export default class MatrixEngineWGPU {
   }
 
   frameSinglePass = () => {
-    this.now = performance.now() / 1000;
+    this.now = performance.now();// / 1000;
     this.autoUpdate.forEach((_) => _.update())
     try {
       let commandEncoder = this.device.createCommandEncoder();
@@ -800,7 +800,7 @@ export default class MatrixEngineWGPU {
         if(mesh.position.inMove == true || this.matrixAmmo) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-        if(mesh.update) mesh.update();
+        if(mesh.update) mesh.update(this.now);
         mesh.updateTime(this.now);
       }
       for(let i = 0;i < this.lightContainer.length;i++) {
@@ -985,7 +985,6 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        skinnedNodeIndex++;
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
@@ -1002,6 +1001,7 @@ export default class MatrixEngineWGPU {
         }, 50);
         c++;
       }
+      skinnedNodeIndex++;
     }
     if(typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();

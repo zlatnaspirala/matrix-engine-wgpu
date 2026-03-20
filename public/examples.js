@@ -687,7 +687,7 @@ var myLights = function () {
 
     // GLB monster
     const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
-    myLights.addGlbObj({
+    myLights.addGlbObjInctance({
       material: {
         type: 'standard',
         useTextureFromGlb: true
@@ -1722,7 +1722,7 @@ var snakeLights = function () {
     const NUM_LIGHTS = 20;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
-    const LIGHT_HEIGHT = 10;
+    const LIGHT_HEIGHT = 20;
     const CENTER = {
       x: 0,
       z: -10
@@ -1903,14 +1903,14 @@ var snakeLights = function () {
     }, {
       scale: [50, 0.5, 50]
     });
-    const glbFile = await fetch("res/meshes/glb/monster.glb").then(r => r.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device));
+    const glbFile = await fetch("res/meshes/glb/dancing-woman.glb").then(r => r.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device));
     app.addGlbObj({
       material: {
         type: 'standard',
         useTextureFromGlb: true
       },
       useScale: true,
-      scale: [5, 5, 5],
+      scale: [2, 2, 2],
       position: {
         x: CENTER.x,
         y: -4,
@@ -26758,11 +26758,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     if (this.isVideo == false) {
       if (this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if (this.isVideo == false) {
-        let bindIndex = 2;
-        for (const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
     pass.setBindGroup(3, this.waterBindGroup);
@@ -26800,11 +26795,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     if (this.isVideo == false) {
       if (this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if (this.isVideo == false) {
-        let bindIndex = 2;
-        for (const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
     pass.setBindGroup(3, this.waterBindGroup);
@@ -27917,7 +27907,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.timeAccumulator = 0;
     this.trailAnimation = {
       enabled: false,
-      delay: 100
+      // deplaced
+      delay: 0
     };
     // debug
     this.scaleBoneTest = 1;
@@ -28155,7 +28146,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     out[14] = t[2];
     out[15] = 1;
   }
-  update(deltaTime) {
+  update(now) {
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
@@ -28166,18 +28157,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       }, inTime * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      if (this.trailAnimation.enabled == true) {
-        for (let i = 0; i < this.instanceCount; i++) {
-          const timeOffsetMs = i * this.trailAnimation.delay;
-          const currentTime = (performance.now() - timeOffsetMs) / this.animationSpeed - this.startTime;
-          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes,
-          // ← same nodes, no clone
-          currentTime, this._boneMatrices, i);
-        }
-      } else {
-        const currentTime = performance.now() / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 1);
+      for (let i = 0; i < this.instanceCount; i++) {
+        const timeOffsetMs = i * this.trailAnimation.delay;
+        const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, i);
       }
     }
   }
@@ -28826,8 +28809,8 @@ class BVHPlayer extends _meshObj.default {
     out[14] = t[2];
     out[15] = 1;
   }
-  update(deltaTime) {
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
+  update(now) {
+    const currentTime = now / this.animationSpeed - this.startTime;
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices);
     }
@@ -55217,7 +55200,7 @@ class MatrixEngineWGPU {
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
   frameSinglePass = () => {
-    this.now = performance.now() / 1000;
+    this.now = performance.now(); // / 1000;
     this.autoUpdate.forEach(_ => _.update());
     try {
       let commandEncoder = this.device.createCommandEncoder();
@@ -55236,7 +55219,7 @@ class MatrixEngineWGPU {
         }
         mesh.position.update();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-        if (mesh.update) mesh.update();
+        if (mesh.update) mesh.update(this.now);
         mesh.updateTime(this.now);
       }
       for (let i = 0; i < this.lightContainer.length; i++) {
@@ -55467,7 +55450,6 @@ class MatrixEngineWGPU {
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        skinnedNodeIndex++;
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
@@ -55486,6 +55468,7 @@ class MatrixEngineWGPU {
         }, 50);
         c++;
       }
+      skinnedNodeIndex++;
     }
     if (typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
