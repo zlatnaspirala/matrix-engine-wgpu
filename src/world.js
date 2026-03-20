@@ -478,10 +478,8 @@ export default class MatrixEngineWGPU {
       this.shadowPassViews[this.lightContainer.length], this.shadowSampler
     );
     this.lightContainer.push(newLight);
-
     for(const mesh of this.mainRenderBundle) {
       mesh.shadowDepthTextureView = this.shadowArrayView;
-      // mesh.createBindGroupForRender();
     }
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }

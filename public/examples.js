@@ -54984,7 +54984,6 @@ class MatrixEngineWGPU {
     this.lightContainer.push(newLight);
     for (const mesh of this.mainRenderBundle) {
       mesh.shadowDepthTextureView = this.shadowArrayView;
-      // mesh.createBindGroupForRender();
     }
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
