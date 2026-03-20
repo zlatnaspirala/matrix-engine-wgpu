@@ -22,7 +22,7 @@ export class FireballSystem {
         z: this.parent.position.z
       },
       name: "FIRE", // this.parent.name + "-fireball",
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {enabled: true, radius: 1.5},
       pointerEffect: {
         enabled: true,
@@ -50,9 +50,12 @@ export class FireballSystem {
     // Create new MeshObjInstanced for this fireball
     // position: new Position(fromPosition.x, fromPosition.y, fromPosition.z),
     // let fireballMesh = app.getSceneObjectByName('FIRE_Circle');
+
+    // change it to setX
     this.fireballMesh.position.x = fromPosition.x;
     this.fireballMesh.position.y = fromPosition.y;
     this.fireballMesh.position.z = fromPosition.z;
+
     this.fireballMesh.position.setSpeed(FireballSystem.CONFIG.speed);
     this.projectiles.push({
       mesh: this.fireballMesh,

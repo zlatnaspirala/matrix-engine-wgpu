@@ -33,7 +33,7 @@ export var fontana = function() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg', './res/textures/env-maps/sky1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
         envMapParams: {
           baseColorMix: 0.5,
           mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint

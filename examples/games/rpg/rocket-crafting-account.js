@@ -49,7 +49,7 @@ export class RCSAccount {
     logo.id = 'logologin';
     logo.setAttribute('alt', 'Login');
     logo.style = 'width: 100px;border-radius: 10px;padding: 6px;'
-    logo.src = './res/icons/512.png';
+    logo.src = './res/icons/512.webp';
 
     var title = document.createElement('div');
     title.style.display = 'flex';

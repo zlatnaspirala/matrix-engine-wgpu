@@ -1,11 +1,10 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
+import {LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsListener} from "../src/engine/raycast.js";
 
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -14,21 +13,13 @@ export var physicsPlayground = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
+    physicsPlayground.addLight();
     addRaycastsListener();
+    downloadMeshes({cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/shapes/sphere.obj" }, onGround, {scale: [1, 1, 1]})
 
     addEventListener('AmmoReady', () => {
+      physicsPlayground.matrixAmmo.speedUpSimulation = 4;
 
-      app.matrixAmmo.speedUpSimulation = 4;
-      
-      // downloadMeshes({
-      //   ball: "./res/meshes/blender/sphere.obj",
-      //   cube: "./res/meshes/blender/cube.obj",
-      // }, onLoadObj,
-      //   {scale: [1, 1, 1]})
-      downloadMeshes({
-        cube: "./res/meshes/blender/cube.obj",
-      }, onGround,
-        {scale: [20, 0.01, 20]})
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -68,15 +59,15 @@ export var physicsPlayground = function() {
       // );
 
       // 
-      app.physicsBodiesGeneratorWall(
-        "mirror",
-        {x: -4.5, y: 0, z: -10},
-        {x: 0, y: 0, z: 0},
-        ["./res/textures/rust.jpg", "./res/textures/env-maps/sky1.webp"],
-        'my_set_walls', "5x5", true, [1, 1, 1], 2, 70);
+      // app.physicsBodiesGeneratorWall(
+      //   "standard",
+      //   {x: -4.5, y: 0, z: -10},
+      //   {x: 0, y: 0, z: 0},
+      //   ["./res/textures/rust.jpg",], // "./res/textures/env-maps/sky1.webp"],
+      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
       let strength = 10;
-      app.canvas.addEventListener("ray.hit.event", (e) => {
+      physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
         let b = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
         const i = new Ammo.btVector3(
@@ -86,19 +77,6 @@ export var physicsPlayground = function() {
         );
         b.applyCentralImpulse(i);
       });
-
-      // physicsPlayground.physicsBodiesGeneratorTower(
-      //   "standard",
-      //   {x: 0, y: 0, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   "./res/meshes/blender/cube.png",
-      //   "tower",
-      //   10,
-      //   true,
-      //   [1, 1, 1],
-      //   2
-      // );
-
     })
 
     function onGround(m) {
@@ -108,10 +86,27 @@ export var physicsPlayground = function() {
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
       }, 1000);
+
+      physicsPlayground.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: -1, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 111, z: 0},
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball1',
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          geometry: "Sphere"
+        },
+        raycast: {enabled: true, radius: 1}
+      })
+
       physicsPlayground.addMeshObj({
         position: {x: 0, y: -3.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [25, 0.01, 25],
         texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'ground',
         mesh: m.cube,
@@ -119,11 +114,33 @@ export var physicsPlayground = function() {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
-        // raycast: { enabled: true , radius: 2 }
+        }
       });
 
-      physicsPlayground.addLight();
+      // physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 2, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [2, 2, 2],
+      //   texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+      //   name: 'TEST1',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: true,
+      //     mass: 10,
+      //     geometry: "Cube"
+      //   },
+      //   // raycast: { enabled: true , radius: 2 }
+      // });
+
+      app.physicsBodiesGeneratorWall(
+        "standard",
+        {x: -5, y: 0, z: -20},
+        {x: 0, y: 0, z: 0},
+        ["./res/textures/rust.jpg",],
+        'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
+
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push((light) => {
@@ -164,20 +181,7 @@ export var physicsPlayground = function() {
         raycast: {enabled: true, radius: 1}
       })
 
-      physicsPlayground.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 111, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'ball1',
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          geometry: "Sphere"
-        },
-        raycast: {enabled: true, radius: 1}
-      })
+
 
       var TEST = physicsPlayground.getSceneObjectByName('cube1');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);

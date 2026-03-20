@@ -263,9 +263,8 @@ export class BVHPlayer extends MEMeshObj {
     out[12] = t[0]; out[13] = t[1]; out[14] = t[2]; out[15] = 1;
   }
 
-  update(deltaTime) {
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    
+  update(now) {
+    const currentTime = now / this.animationSpeed - this.startTime;
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices)
     }

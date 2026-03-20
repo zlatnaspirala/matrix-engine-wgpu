@@ -6,7 +6,6 @@ let app = new MatrixEngineWGPU({
   dontUsePhysics: true,
   useEditor: true,
   projectType: "pre editor",
-  useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type: 'WASD',

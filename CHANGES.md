@@ -1,5 +1,8 @@
 ## CHANGES [Started from feb 2026]
 
+[1.9.9]  More optimises main loop
+Multi light casting shadows on each other hot fix.
+
 
 [1.9.6] Mobile render back HOT FIX
         Clear allocations from loop

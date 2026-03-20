@@ -39,6 +39,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4.create();
     this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
     //cache
@@ -776,22 +777,22 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
 
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+      this.getTransformationMatrix = (index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
         this._sceneData[33] = camera.position[1];
         this._sceneData[34] = camera.position[2];
         this._sceneData[35] = 0.0;
-        this._sceneData[36] = spotLight.position[0];
-        this._sceneData[37] = spotLight.position[1];
-        this._sceneData[38] = spotLight.position[2];
+        // this._sceneData[36] = spotLight.position[0];
+        // this._sceneData[37] = spotLight.position[1];
+        // this._sceneData[38] = spotLight.position[2];
         this._sceneData[39] = 0.0;
         this._sceneData[40] = this.globalAmbient[0];
         this._sceneData[41] = this.globalAmbient[1];
@@ -806,12 +807,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);
-
         this._translateVec[0] = pos.x;
         this._translateVec[1] = pos.y;
         this._translateVec[2] = pos.z;
         mat4.translate(modelMatrix, this._translateVec, modelMatrix);
-
         if(this.itIsPhysicsBody) {
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
@@ -828,8 +827,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           this._scaleVec[2] = this.scale[2];
           mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
         }
+        this.modelMatrix = modelMatrix;
         return modelMatrix;
       };
+
+      this.getModelMatrix(this.position, this.useScale);
 
       this.done = true;
       if(this.texturesPaths.length > 1 && this.material.type == "mirror") {
@@ -1001,11 +1003,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if(this.isVideo == false) {
-        let bindIndex = 2;
-        for(const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
     pass.setBindGroup(3, this.waterBindGroup);
@@ -1044,11 +1041,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if(this.isVideo == false) {
-        let bindIndex = 2;
-        for(const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
 

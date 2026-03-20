@@ -16,7 +16,7 @@ import {createGroundTexture} from './procedures/procedural-textures';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile, o.textureCache);
+    super(device, o.material, _glbFile, o.textureCache, o.isVideo);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
       this.raycast = {enabled: false, radius: 2};
@@ -43,6 +43,7 @@ export default class MEMeshObj extends Materials {
     }
 
     this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
     if(typeof o.material.useBlend === 'undefined' ||
@@ -251,6 +252,11 @@ export default class MEMeshObj extends Materials {
       }
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
+      this.drawShadows = this.drawShadowsAnim;
+    } else if(typeof o.isVideo !== 'undefined') {
+
+      this.loadVideoTexture(o.isVideo);
+      this.drawElements = this.drawVideoElements;
     }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
@@ -698,22 +704,22 @@ export default class MEMeshObj extends Materials {
         }
       }
 
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+      this.getTransformationMatrix = (index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
         if(index == 0) camera.update(dt, inputHandler());
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        this._sceneData.set(spotLight.viewProjMatrix, 0);
+        // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
         this._sceneData[32] = camera.position[0];
         this._sceneData[33] = camera.position[1];
         this._sceneData[34] = camera.position[2];
         this._sceneData[35] = 0.0;
-        this._sceneData[36] = spotLight.position[0];
-        this._sceneData[37] = spotLight.position[1];
-        this._sceneData[38] = spotLight.position[2];
+        // this._sceneData[36] = spotLight.position[0];
+        // this._sceneData[37] = spotLight.position[1];
+        // this._sceneData[38] = spotLight.position[2];
         this._sceneData[39] = 0.0;
         this._sceneData[40] = this.globalAmbient[0];
         this._sceneData[41] = this.globalAmbient[1];
@@ -735,11 +741,13 @@ export default class MEMeshObj extends Materials {
         mat4.translate(modelMatrix, this._translateVec, modelMatrix);
 
         if(this.itIsPhysicsBody) {
-          // rotation axis array also allocates:
+          // rotation axis array also allocates: sss
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
           this._rotAxisVec[2] = this.rotation.axis.z;
-          mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
+          // mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
+
+          mat4.rotate(modelMatrix, [this._rotAxisVec[0], this._rotAxisVec[1], this._rotAxisVec[2]], degToRad(this.rotation.angle), modelMatrix);
         } else {
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
@@ -897,6 +905,7 @@ export default class MEMeshObj extends Materials {
       modelMatrix.byteOffset,
       modelMatrix.byteLength
     );
+    this.modelMatrix = modelMatrix;
   }
 
   createGPUBuffer(dataArray, usage) {
@@ -964,20 +973,12 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElements = (pass, lightContainer) => {
-    if(this.isVideo) {
-      this.updateVideoTexture();
-    }
-    // Bind per-mesh uniforms
+    // if(this.isVideo) this.updateVideoTexture()
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         pass.setBindGroup(2, this.mirrorBindGroup);
-      } else if(this.isVideo == false) {
-        let bindIndex = 2;
-        for(const light of lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
     pass.setBindGroup(3, this.waterBindGroup);
@@ -1004,7 +1005,26 @@ export default class MEMeshObj extends Materials {
     pass.drawIndexed(this.indexCount);
   }
 
-  drawElementsAnim = (renderPass, lightContainer) => {
+  drawVideoElements = (pass) => {
+    if(!this.video || this.video.readyState < 2) return;
+    this.updateVideoTexture();
+    if(!this.sceneBindGroupForRender) return;
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
+    pass.setBindGroup(3, this.waterBindGroup);  // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
+
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if(this.joints) {
+      pass.setVertexBuffer(3, this.joints.buffer);
+      pass.setVertexBuffer(4, this.weights.buffer);
+    }
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
+
+  drawElementsAnim = (renderPass) => {
     if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log('NULL1'); return;}
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
 
@@ -1015,11 +1035,6 @@ export default class MEMeshObj extends Materials {
     if(this.isVideo == false) {
       if(this.material.type === "mirror" && this.mirrorBindGroup) {
         renderPass.setBindGroup(2, this.mirrorBindGroup);
-      } else if(this.isVideo == false) {
-        let bindIndex = 2;
-        for(const light of lightContainer) {
-          renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-        }
       }
     }
     renderPass.setBindGroup(3, this.waterBindGroup);
@@ -1029,18 +1044,15 @@ export default class MEMeshObj extends Materials {
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
 
     if(this.constructor.name === "BVHPlayer") {
-      // real
       renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
       renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     } else {
-      // dummy
       renderPass.setVertexBuffer(3, this.joints.buffer);
       renderPass.setVertexBuffer(4, this.weights.buffer);
     }
 
-    if(this.mesh.tangentsBuffer) {
-      renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
+    if(this.mesh.tangentsBuffer) renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     if(this.objAnim.playing == true) {
@@ -1060,10 +1072,38 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    shadowPass.setVertexBuffer(3, this.joints.buffer);
-    shadowPass.setVertexBuffer(4, this.weights.buffer);
+    // if(this.joints) {
+    if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    } else {
+      shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
+      shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+    }
+    // }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
+  }
+
+  drawShadowsAnim = (shadowPass) => {
+    if(!this.objAnim?.meshList[this.objAnim.id + this.objAnim.currentAni]) return;
+
+    const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
+
+    shadowPass.setVertexBuffer(0, mesh.vertexBuffer);
+    shadowPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
+    shadowPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+
+    if(this.constructor.name === "BVHPlayer") {
+      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    } else {
+      shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
+      shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+    }
+
+    shadowPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
+    shadowPass.drawIndexed(mesh.indexCount);
   }
 
   destroy = () => {

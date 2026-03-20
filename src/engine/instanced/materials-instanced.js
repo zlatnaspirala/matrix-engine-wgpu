@@ -498,7 +498,7 @@ export default class MaterialsInstanced {
       textureResource = textureView;
     }
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if(!textureResource) console.warn("❗Missing texture: ", textureResource);
+      if(!textureResource) console.warn("❗i Missing texture: ", textureResource);
       if(!this.sceneUniformBuffer) console.warn("❗Missing sceneUniformBuffer: ", this.sceneUniformBuffer);
       if(typeof textureResource === 'undefined') this.updateVideoTexture();
       return;
@@ -604,7 +604,7 @@ export default class MaterialsInstanced {
           {
             binding: 5,
             visibility: GPUShaderStage.FRAGMENT,
-            buffer: {type: 'uniform'},
+            buffer: { type: 'read-only-storage' } 
           },
           {
             binding: 6,

@@ -113,7 +113,7 @@ export function physicsBodiesGeneratorWall(
               fresnelPower: 2.0,                // Medium-sharp edge
               envLodBias: 2.5,
               usePlanarReflection: false,  // ✅ Env map mode
-            } : null),
+            } : undefined),
             position: {
               x: pos.x + x * spacing,
               y: pos.y + y * spacing - 2.8,

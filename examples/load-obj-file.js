@@ -43,7 +43,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg'],
+        texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -87,7 +87,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.jpg'],
+        texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube',
         mesh: m.cube,
         physics: {
@@ -121,7 +121,7 @@ export var loadObjFile = function() {
       //      scale: [20, 20, 20],
       //      position: {x: 0, y: -4, z: -20},
       //      name: 'woman1',
-      //      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png', './res/textures/env-maps/sky1.webp'],
+      //      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
       //    }, null, glbFile11);
 
 

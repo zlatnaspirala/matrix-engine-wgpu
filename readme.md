@@ -2,13 +2,13 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.9.6 2026
+📅 Version: 1.9.9 2026
 
 ---
 
 ## Logo
 
-<img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true" />
+<img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 
 > Logo includes the official WebGPU logo.
 > **WebGPU logo by [W3C](https://www.w3.org/)**
@@ -702,7 +702,7 @@ this.core.addGlbObjInctance(
     scale: [20, 20, 20],
     position: {x: 0, y: -4, z: -220},
     name: this.name,
-    texturesPaths: ["./res/meshes/glb/textures/mutant_origin.png"],
+    texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"],
     raycast: {enabled: true, radius: 1.5},
     pointerEffect: {enabled: true},
   },
@@ -1017,7 +1017,7 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - 💲💲💲 Support JAMB 3D this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
 - [MOBA Forest Of Hollow Blood Live](https://maximumroulette.com/apps/webgpu/examples.html)
 
-  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
+  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/2026-loading-performance.png?raw=true" />
 
 - [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
   → Uses `empty.js` build from:
@@ -1126,6 +1126,8 @@ You may use, modify, and sell projects based on this code — just keep this not
 
   Invertory images
   https://djinnbestiary.itch.io/ancient-oddities-vol-1-13-free-potions
+
+  "Dancing girl" (https://skfb.ly/p7vNU) by planetrey.com is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
 ---
 

@@ -125,6 +125,7 @@ export function computeWorldVertsAndAABB(object) {
     return object._aabbCache;
   }
 
+  console.log('tay compute call')
   const modelMatrix = object.getModelMatrix(object.position, true);
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];

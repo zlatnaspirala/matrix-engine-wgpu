@@ -29,7 +29,7 @@ export class Position {
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
-    this.inMove = false;
+    this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
@@ -181,21 +181,21 @@ export class Position {
   }
 
   SetX(newx, em) {
+    this.inMove = true;
     this.x = newx;
     this.targetX = newx;
-    this.inMove = false;
   }
 
   SetY(newy, em) {
     this.y = newy;
     this.targetY = newy;
-    this.inMove = false;
+    this.inMove = true;
   }
 
   SetZ(newz, em) {
     this.z = newz;
     this.targetZ = newz;
-    this.inMove = false;
+    this.inMove = true;
   }
 
   get X() {
