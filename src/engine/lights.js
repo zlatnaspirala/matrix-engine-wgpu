@@ -414,6 +414,25 @@ export class SpotLight {
   }
 
   getLightDataBuffer() {
+    // const m = this.viewProjMatrix;
+    // const b = this._lightBuffer;
+    // b.set(this.position, 0);
+    // b[3] = 0.0;
+    // b.set(this.direction, 4);
+    // b[7] = 0.0;
+    // b[8] = this.innerCutoff;
+    // b[9] = this.outerCutoff;
+    // b[10] = this.intensity;
+    // b[11] = 0.0;
+    // b.set(this.color, 12);
+    // b[15] = 0.0;
+    // b[16] = this.range;
+    // b[17] = this.ambientFactor;
+    // b[18] = this.shadowBias;
+    // b[19] = 0.0;
+    // b.set(m, 20);
+    // // return b.slice();
+    // return b;
     const m = this.viewProjMatrix;
     const b = this._lightBuffer;
     b.set(this.position, 0);
@@ -431,7 +450,7 @@ export class SpotLight {
     b[18] = this.shadowBias;
     b[19] = 0.0;
     b.set(m, 20);
-    return b.slice();
+    return b;
   }
 
   // Setters

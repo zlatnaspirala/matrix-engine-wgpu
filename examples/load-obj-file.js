@@ -99,6 +99,7 @@ export var loadObjFile = function() {
           enabled: true,
           pointer: true,
           flameEmitter: true,
+          flameEffect: true,
         }
       })
 

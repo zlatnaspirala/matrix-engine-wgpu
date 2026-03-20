@@ -105,6 +105,13 @@ export class FlameEffect {
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
     this.setGeometry("quad", this.scale);
+
+    this._localMatrix = mat4.create();
+    this._finalMatrix = mat4.create();
+    this._timeSpeed = new Float32Array(4);
+    this._params = new Float32Array(4);
+    this._tint = new Float32Array(4);
+    this._uniformData = new Float32Array(28);
   }
 
   setGeometry(type, size = 1, segments = 32) {
@@ -193,25 +200,44 @@ export class FlameEffect {
   }
 
   updateInstanceData(baseModelMatrix) {
-    const local = mat4.identity();
+    const local = this._localMatrix;
+    const finalMat = this._finalMatrix;
+    mat4.identity(local);
+    mat4.identity(finalMat);
     mat4.translate(local, this.localOffset, local);
     mat4.rotateX(local, this.localRotation[0], local);
     mat4.rotateY(local, this.localRotation[1], local);
     mat4.rotateZ(local, this.localRotation[2], local);
-
     if(this.activeRotate[0] !== 0) {mat4.rotateX(local, this.activeRotate[0] * this.time, local);}
     if(this.activeRotate[1] !== 0) {mat4.rotateY(local, this.activeRotate[1] * this.time, local);}
     if(this.activeRotate[2] !== 0) {mat4.rotateZ(local, this.activeRotate[2] * this.time, local);}
-
-    const finalMat = mat4.identity();
     mat4.multiply(baseModelMatrix, local, finalMat);
-    const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
-    const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
-    const tint = new Float32Array([...this.tint, this.tintStrength]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeSpeed);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, params);
-    this.device.queue.writeBuffer(this.modelBuffer, 96, tint);
+
+    const ts = this._timeSpeed;
+    ts[0] = this.time;
+    ts[1] = this.speed;
+    ts[2] = 0;
+    ts[3] = 0;
+
+    const p = this._params;
+    p[0] = this.intensity;
+    p[1] = this.turbulence;
+    p[2] = this.stretch;
+    p[3] = 0;
+
+    const t = this._tint;
+    t[0] = this.tint[0];
+    t[1] = this.tint[1];
+    t[2] = this.tint[2];
+    t[3] = this.tintStrength;
+    // const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
+    // const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
+    // const tint = new Float32Array([...this.tint, this.tintStrength]);
+    this._uniformData.set(finalMat, 0);
+    this._uniformData.set(ts, 16);
+    this._uniformData.set(p, 20);
+    this._uniformData.set(t, 24);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData)
   }
 
   draw(pass, cameraMatrix) {
