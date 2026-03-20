@@ -905,7 +905,8 @@ var loadObjFile = function () {
         pointerEffect: {
           enabled: true,
           pointer: true,
-          flameEmitter: true
+          flameEmitter: true,
+          flameEffect: true
         }
       });
 
@@ -20980,6 +20981,10 @@ class FlameEmitter {
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
+
+    // cache
+    this._localMatrix = _wgpuMatrix.mat4.create();
+    this._finalMatrix = _wgpuMatrix.mat4.create();
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -21140,20 +21145,21 @@ class FlameEmitter {
   }
   updateInstanceData = baseModelMatrix => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    const floatsPerInstance = 28; // 112 bytes / 4
+    const floatsPerInstance = 28;
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
-      const local = _wgpuMatrix.mat4.identity();
+      const local = this._localMatrix;
+      _wgpuMatrix.mat4.identity(local);
       _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
       _wgpuMatrix.mat4.rotateY(local, t.rotation, local);
       _wgpuMatrix.mat4.scale(local, t.currentScale, local);
-      const finalMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      _wgpuMatrix.mat4.identity(this._finalMatrix);
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, this._finalMatrix);
       const offset = i * floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(this._finalMatrix, offset);
       this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
       this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
       this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
@@ -21345,6 +21351,12 @@ class FlameEffect {
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
     this.setGeometry("quad", this.scale);
+    this._localMatrix = _wgpuMatrix.mat4.create();
+    this._finalMatrix = _wgpuMatrix.mat4.create();
+    this._timeSpeed = new Float32Array(4);
+    this._params = new Float32Array(4);
+    this._tint = new Float32Array(4);
+    this._uniformData = new Float32Array(28);
   }
   setGeometry(type, size = 1, segments = 32) {
     const geo = _geometryFactory.GeometryFactory.create(type, size, segments);
@@ -21483,7 +21495,10 @@ class FlameEffect {
     return buf;
   }
   updateInstanceData(baseModelMatrix) {
-    const local = _wgpuMatrix.mat4.identity();
+    const local = this._localMatrix;
+    const finalMat = this._finalMatrix;
+    _wgpuMatrix.mat4.identity(local);
+    _wgpuMatrix.mat4.identity(finalMat);
     _wgpuMatrix.mat4.translate(local, this.localOffset, local);
     _wgpuMatrix.mat4.rotateX(local, this.localRotation[0], local);
     _wgpuMatrix.mat4.rotateY(local, this.localRotation[1], local);
@@ -21497,15 +21512,30 @@ class FlameEffect {
     if (this.activeRotate[2] !== 0) {
       _wgpuMatrix.mat4.rotateZ(local, this.activeRotate[2] * this.time, local);
     }
-    const finalMat = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-    const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
-    const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
-    const tint = new Float32Array([...this.tint, this.tintStrength]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeSpeed);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, params);
-    this.device.queue.writeBuffer(this.modelBuffer, 96, tint);
+    const ts = this._timeSpeed;
+    ts[0] = this.time;
+    ts[1] = this.speed;
+    ts[2] = 0;
+    ts[3] = 0;
+    const p = this._params;
+    p[0] = this.intensity;
+    p[1] = this.turbulence;
+    p[2] = this.stretch;
+    p[3] = 0;
+    const t = this._tint;
+    t[0] = this.tint[0];
+    t[1] = this.tint[1];
+    t[2] = this.tint[2];
+    t[3] = this.tintStrength;
+    // const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
+    // const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
+    // const tint = new Float32Array([...this.tint, this.tintStrength]);
+    this._uniformData.set(finalMat, 0);
+    this._uniformData.set(ts, 16);
+    this._uniformData.set(p, 20);
+    this._uniformData.set(t, 24);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
   }
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
@@ -27549,6 +27579,25 @@ class SpotLight {
     this.device.queue.writeBuffer(this.lightVPBuffer, 0, this.viewProjMatrix);
   }
   getLightDataBuffer() {
+    // const m = this.viewProjMatrix;
+    // const b = this._lightBuffer;
+    // b.set(this.position, 0);
+    // b[3] = 0.0;
+    // b.set(this.direction, 4);
+    // b[7] = 0.0;
+    // b[8] = this.innerCutoff;
+    // b[9] = this.outerCutoff;
+    // b[10] = this.intensity;
+    // b[11] = 0.0;
+    // b.set(this.color, 12);
+    // b[15] = 0.0;
+    // b[16] = this.range;
+    // b[17] = this.ambientFactor;
+    // b[18] = this.shadowBias;
+    // b[19] = 0.0;
+    // b.set(m, 20);
+    // // return b.slice();
+    // return b;
     const m = this.viewProjMatrix;
     const b = this._lightBuffer;
     b.set(this.position, 0);
@@ -27566,7 +27615,7 @@ class SpotLight {
     b[18] = this.shadowBias;
     b[19] = 0.0;
     b.set(m, 20);
-    return b.slice();
+    return b;
   }
 
   // Setters

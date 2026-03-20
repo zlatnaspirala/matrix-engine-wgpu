@@ -27,6 +27,10 @@ export class FlameEmitter {
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
 
+    // cache
+    this._localMatrix = mat4.create();
+    this._finalMatrix = mat4.create();
+
     for(let i = 0;i < maxParticles;i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -156,20 +160,21 @@ export class FlameEmitter {
 
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    const floatsPerInstance = 28; // 112 bytes / 4
+    const floatsPerInstance = 28;
     for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
       for(let j = 0;j < 3;j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
-      const local = mat4.identity();
+      const local = this._localMatrix;
+      mat4.identity(local);
       mat4.translate(local, t.currentPosition, local);
       mat4.rotateY(local, t.rotation, local);
       mat4.scale(local, t.currentScale, local);
-      const finalMat = mat4.identity();
-      mat4.multiply(baseModelMatrix, local, finalMat);
+      mat4.identity(this._finalMatrix);
+      mat4.multiply(baseModelMatrix, local, this._finalMatrix);
       const offset = i * floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(this._finalMatrix, offset);
       this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
       this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
       this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
