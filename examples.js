@@ -12,6 +12,7 @@ import {loadObjFile} from "./examples/load-obj-file.js";
 import {loadObjsSequence} from "./examples/load-objs-sequence.js";
 import {physicsPlayground} from "./examples/physics-playground.js";
 import {procMesh} from "./examples/procedural-mesh.js";
+import {snakeLightsInstanced} from "./examples/snake-lights-instanced.js";
 import {snakeLights} from "./examples/snake-lights.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId, urlQuery} from "./src/engine/utils.js";
@@ -40,6 +41,7 @@ byId('procedural-mesh').addEventListener("click", () => switchDemo('7'));
 byId('fontana').addEventListener("click", () => switchDemo('8'));
 byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
+byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 
 if(urlQ['demo'] === '1') {
   loadObjFile();
@@ -61,6 +63,8 @@ if(urlQ['demo'] === '1') {
   myLights();
 } else if(urlQ['demo'] === '10') {
   snakeLights();
+} else if(urlQ['demo'] === '11') {
+  snakeLightsInstanced();
 }
 
 

@@ -17,8 +17,8 @@ export var myLights = function() {
 
     const NUM_LIGHTS = 4;
     const ORBIT_RADIUS = 8;
-    const ORBIT_SPEED  = 0.6;
-    const TARGET = { x: 0, y: 0, z: -10 };
+    const ORBIT_SPEED = 0.6;
+    const TARGET = {x: 0, y: 0, z: -10};
 
     // Light colors cycling around the hue wheel
     const LIGHT_COLORS = [
@@ -34,22 +34,22 @@ export var myLights = function() {
       [1.0, 0.1, 0.4],  // rose
     ];
 
-    for (let i = 0; i < NUM_LIGHTS; i++) {
+    for(let i = 0;i < NUM_LIGHTS;i++) {
       myLights.addLight();
     }
 
     // Ground
-    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
       myLights.addMeshObj({
-        material: { type: 'standard' },
-        position: { x: 0, y: -5, z: -10 },
+        material: {type: 'standard'},
+        position: {x: 0, y: -5, z: -10},
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
         scale: [30, 0.5, 30],
-        physics: { enabled: false }
+        physics: {enabled: false}
       });
-    }, { scale: [30, 0.5, 30] });
+    }, {scale: [30, 0.5, 30]});
 
     // GLB monster
     const glbFile = await fetch("res/meshes/glb/monster.glb")
@@ -57,16 +57,16 @@ export var myLights = function() {
       .then(buf => uploadGLBModel(buf, myLights.device));
 
     myLights.addGlbObjInctance({
-      material: { type: 'standard', useTextureFromGlb: true },
+      material: {type: 'standard', useTextureFromGlb: true},
       useScale: true,
       scale: [5, 5, 5],
-      position: { x: TARGET.x, y: TARGET.y - 4, z: TARGET.z },
+      position: {x: TARGET.x, y: TARGET.y - 4, z: TARGET.z},
       name: 'monster',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile);
 
     // Set up lights evenly spaced around the circle
-    for (let i = 0; i < NUM_LIGHTS; i++) {
+    for(let i = 0;i < NUM_LIGHTS;i++) {
       const light = myLights.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
@@ -94,15 +94,22 @@ export var myLights = function() {
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
 
         light.position = [x, height, z];
-        light.target   = [TARGET.x, TARGET.y, TARGET.z];
+        light.target = [TARGET.x, TARGET.y, TARGET.z];
       });
     }
 
     myLights.activateBloomEffect();
     // Camera setup
     setTimeout(() => {
-      myLights.cameras.WASD.yaw      = -0.03;
-      myLights.cameras.WASD.pitch    = -0.35;
+
+      let monster = app.getSceneObjectByName('monster_MutantMesh');
+      monster.updateMaxInstances(7);
+      monster.updateInstances(7);
+      monster.trailAnimation.delay = 10;
+      monster.playAnimationByIndex(3);
+
+      myLights.cameras.WASD.yaw = -0.03;
+      myLights.cameras.WASD.pitch = -0.35;
       myLights.cameras.WASD.position = [0, 8, 5];
     }, 800);
 
