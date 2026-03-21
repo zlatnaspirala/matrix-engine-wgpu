@@ -234,7 +234,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -775,11 +774,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
 
-      this.getTransformationMatrix = (index, now, INPUT, dt) => {
-        // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = now;
-        const camera = this.cameras[this.mainCameraParams.type];
-        if(index == 0) camera.update(dt, INPUT);
+      this.getTransformationMatrix = (camera, dt) => {
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);

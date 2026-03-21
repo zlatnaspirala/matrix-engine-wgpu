@@ -26179,7 +26179,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
       this.texturesPaths.push(t);
@@ -26796,11 +26795,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-      this.getTransformationMatrix = (index, now, INPUT, dt) => {
-        // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = now;
-        const camera = this.cameras[this.mainCameraParams.type];
-        if (index == 0) camera.update(dt, INPUT);
+      this.getTransformationMatrix = (camera, dt) => {
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
@@ -31591,11 +31586,9 @@ class MEMeshObj extends _materials.default {
       //   _glbFile.glbJsonData.materials.forEach(material => {
       //     console.log('get material :', material);
       //   });
-
       //   _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
       //     console.log('get images :', imgGpuTexture);
       //   });
-
       //   _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
       //     console.log('get glbTextures :', glbTexture);
       //   });
@@ -31604,7 +31597,7 @@ class MEMeshObj extends _materials.default {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%cMesh loaded: ${o.name}`, _utils.LOG_FUNNY_ARCADE);
+    // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -31624,7 +31617,6 @@ class MEMeshObj extends _materials.default {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
       this.texturesPaths.push(t);
@@ -32116,10 +32108,7 @@ class MEMeshObj extends _materials.default {
         }
       }
       this.getTransformationMatrix = (camera, dt) => {
-        // const now = Date.now();
-        // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = dt;
-        // dt = dt / 1000;
+        // this.lastFrameMS = dt;
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
@@ -34260,11 +34249,7 @@ class ProceduralMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
     this.modelMatrix = modelMatrix;
   }
-  getTransformationMatrix(index, now, INPUT, dt) {
-    // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-    this.lastFrameMS = now;
-    const camera = this.cameras[this.mainCameraParams.type];
-    if (index === 0) camera.update(dt, INPUT);
+  getTransformationMatrix(camera, dt) {
     const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
     // this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);

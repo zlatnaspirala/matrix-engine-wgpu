@@ -231,12 +231,9 @@ export default class MEMeshObj extends Materials {
       //   _glbFile.glbJsonData.materials.forEach(material => {
       //     console.log('get material :', material);
       //   });
-
       //   _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
       //     console.log('get images :', imgGpuTexture);
       //   });
-
-
       //   _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
       //     console.log('get glbTextures :', glbTexture);
       //   });
@@ -245,7 +242,7 @@ export default class MEMeshObj extends Materials {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
+    // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -256,7 +253,6 @@ export default class MEMeshObj extends Materials {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if(typeof o.isVideo !== 'undefined') {
-
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     }
@@ -266,7 +262,6 @@ export default class MEMeshObj extends Materials {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -276,7 +271,6 @@ export default class MEMeshObj extends Materials {
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
-
 
     // new dummy for skin mesh
     if(!this.joints) {
@@ -706,10 +700,7 @@ export default class MEMeshObj extends Materials {
       }
 
       this.getTransformationMatrix = (camera, dt) => {
-        // const now = Date.now();
-        // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = dt;
-        // dt = dt / 1000;
+        // this.lastFrameMS = dt;
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);

@@ -688,11 +688,7 @@ export default class ProceduralMeshObj extends Materials {
     this.modelMatrix = modelMatrix;
   }
 
-  getTransformationMatrix(index, now, INPUT, dt) {
-    // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-    this.lastFrameMS = now;
-    const camera = this.cameras[this.mainCameraParams.type];
-    if(index === 0) camera.update(dt, INPUT);
+  getTransformationMatrix(camera, dt) {
     const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
     // this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
@@ -712,7 +708,6 @@ export default class ProceduralMeshObj extends Materials {
     this._sceneData[45] = dt;
     this._sceneData[46] = 0;
     this._sceneData[47] = 0;
-
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
   }
 
