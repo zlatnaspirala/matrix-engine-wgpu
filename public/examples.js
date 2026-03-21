@@ -23204,11 +23204,6 @@ Object.defineProperty(exports, "__esModule", {
 exports.WASDCamera = exports.RPGCamera = exports.ArcballCamera = void 0;
 exports.createInputHandler = createInputHandler;
 var _wgpuMatrix = require("wgpu-matrix");
-var _utils = require("./utils");
-// Note: The code in this file does not use the 'dst' output parameter of functions in the
-// 'wgpu-matrix' library, so produces many temporary vectors and matrices.
-// This is intentional, as this sample prefers readability over performance.
-
 // The common functionality between camera implementations
 class CameraBase {
   // The camera matrix
@@ -23288,9 +23283,7 @@ class CameraBase {
 
 // WASDCamera is a camera implementation that behaves similar to first-person-shooter PC games.
 class WASDCamera extends CameraBase {
-  // The camera absolute pitch angle
   pitch = 0;
-  // The camera absolute yaw angle
   yaw = 0;
   setPitch = pitch => {
     this.pitch = pitch;
@@ -23307,22 +23300,14 @@ class WASDCamera extends CameraBase {
   setZ = z => {
     this.position[2] = z;
   };
-
-  // The movement veloicty readonly
   velocity_ = _wgpuMatrix.vec3.create();
-
-  // Speed multiplier for camera movement
   movementSpeed = 10;
-
-  // Speed multiplier for camera rotation
   rotationSpeed = 1;
 
   // Movement velocity drag coeffient [0 .. 1]
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-
-  // Returns velocity vector
   get velocity() {
     return this.velocity_;
   }
@@ -23771,7 +23756,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":63,"wgpu-matrix":27}],43:[function(require,module,exports){
+},{"wgpu-matrix":27}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26008,6 +25993,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
+    this.mType = _utils.MeshType.BVHANIM;
+    this.shadowsCast = true;
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
@@ -26016,6 +26003,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this._scaleVec = new Float32Array(3);
 
     //cache
+    this._ghostScratch = new Float32Array(16);
+    this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = _wgpuMatrix.mat4.create();
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
@@ -26415,14 +26404,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
       this.updateInstanceData = modelMatrix => {
-        // original (base instance)
         this.instanceData.set(modelMatrix, 0);
-        this.instanceData.set([1, 1, 1, 1], 16);
-
-        // instanced clones
+        this.instanceData.set(this._defaultColor, 16);
         for (let i = 1; i < this.instanceCount; i++) {
           const t = this.instanceTargets[i];
-          const ghost = new Float32Array(modelMatrix);
+          this._ghostScratch.set(modelMatrix);
+          const ghost = this._ghostScratch;
           // --- Smooth interpolate position
           for (let j = 0; j < 3; j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
@@ -26432,7 +26419,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
               t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          // Apply smoothed transforms
           ghost[0] *= t.currentScale[0];
           ghost[5] *= t.currentScale[1];
           ghost[10] *= t.currentScale[2];
@@ -26440,12 +26426,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           ghost[12] += t.currentPosition[0]; // X
           ghost[13] += t.currentPosition[1]; // Y
           ghost[14] += t.currentPosition[2]; // Z
-
           // t.color[0] += t.currentColor[0]//r;
           // t.color[1] += t.currentColor[1]//r;
           // t.color[2] += t.currentColor[2]//r;
           // t.color[3] += t.currentColor[3]//r;
-          // Write instance matrix + color
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
           this.instanceData.set(t.currentColor, offset + 16);
@@ -26585,14 +26569,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-
-      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
       // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
@@ -26601,6 +26582,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
+        active: false,
         enableWave: () => {
           this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
@@ -26814,12 +26796,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-      this.getTransformationMatrix = index => {
-        const now = Date.now();
-        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+      this.getTransformationMatrix = (index, now, INPUT, dt) => {
+        // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        if (index == 0) camera.update(dt, inputHandler());
+        if (index == 0) camera.update(dt, INPUT);
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
@@ -27032,7 +27013,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.updateVideoTexture();
     }
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this instanceof _bvhInstaced.BVHPlayerInstances) {
+    if (mesh.mType == _utils.MeshType.BVHANIM) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
@@ -27140,10 +27121,13 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _behavior = _interopRequireDefault(require("./behavior"));
 var _vertexShadowInstanced = require("../shaders/instanced/vertexShadow.instanced.wgsl");
 var _vertexProcedural = require("../shaders/vertex.procedural.wgsl");
+var _utils = require("./utils");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
  * Spot light with shadow cast.
+ * Optimized: dirty-flag pattern for VP matrix and light buffer.
+ * writeBuffer for lightVPBuffer is deferred — called from updateLights only when dirty.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
@@ -27151,8 +27135,9 @@ class SpotLight {
   name;
   camera;
   inputHandler;
-  position;
-  target;
+  // Backing fields for dirty-tracked properties
+  _position;
+  _target;
   up;
   direction;
   viewMatrix;
@@ -27165,6 +27150,28 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
+
+  // Dirty flags
+  _dirty = true; // VP matrix needs recompute (position/target changed)
+  _lightBufferDirty = true; // _lightBuffer array needs rebuild before next upload
+
+  // ─── Getters / Setters ────────────────────────────────────────────────────
+  get position() {
+    return this._position;
+  }
+  set position(v) {
+    _wgpuMatrix.vec3.copy(v, this._position);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+  get target() {
+    return this._target;
+  }
+  set target(v) {
+    _wgpuMatrix.vec3.copy(v, this._target);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
   constructor(camera, inputHandler, device, indexx, shadowPassView = null, shadowSampler = null, fov = 45, aspect = 1.0, near = 0.1, far = 200) {
     aspect = 1;
     this.name = "light" + indexx;
@@ -27179,21 +27186,26 @@ class SpotLight {
     this.mainPassBindGroupContainer = {};
     this.camera = camera;
     this.inputHandler = inputHandler;
-    this.position = _wgpuMatrix.vec3.create(0, 10, -20);
-    this.target = _wgpuMatrix.vec3.create(0, 0, -20);
+
+    // Use backing fields directly in constructor to avoid setter overhead
+    // before scratch buffers exist
+    this._position = _wgpuMatrix.vec3.create(0, 10, -20);
+    this._target = _wgpuMatrix.vec3.create(0, 0, -20);
     this.up = _wgpuMatrix.vec3.create(0, 0, -1);
     this.direction = _wgpuMatrix.vec3.create();
-    // this.direction = vec3.normalize(vec3.subtract(target, position));
     this.intensity = 1.0;
     this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
-    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up);
+    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this._position, this._target, this.up);
     this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
-    this._lightBuffer = new Float32Array(36); // matches floatsPerLight = 36
-
+    this._lightBuffer = new Float32Array(36);
     this._diffScratch = _wgpuMatrix.vec3.create();
     this._dirScratch = _wgpuMatrix.vec3.create();
     this._viewMatrix = _wgpuMatrix.mat4.create();
     this._viewProjMatrix = _wgpuMatrix.mat4.create();
+
+    // Start dirty so first frame always uploads
+    this._dirty = true;
+    this._lightBufferDirty = true;
     this.lightVPBuffer = device.createBuffer({
       label: 'lightVPBuffer_' + indexx,
       size: 144,
@@ -27201,9 +27213,11 @@ class SpotLight {
     });
     this.setProjection = function (fov = 2 * Math.PI / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+      this._dirty = true;
     };
     this.updateProjection = function () {
       this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, this.aspect, this.near, this.far);
+      this._dirty = true;
     };
     this.device = device;
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -27216,14 +27230,12 @@ class SpotLight {
     this.ambientFactor = 0.5;
     this.range = 20.0;
     this.shadowBias = 0.01;
-    this.SHADOW_RES = 512;
+    this.SHADOW_RES = (0, _utils.isMobile)() ? 128 : 512;
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'back',
-      // 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     };
-    // global
     this.shadowTextureView = shadowPassView;
     this.shadowSampler = shadowSampler;
     this.renderPassDescriptor = {
@@ -27248,7 +27260,7 @@ class SpotLight {
     });
     this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
-    this.getShadowBindGroup = (mesh, index) => {
+    this.getShadowBindGroup = mesh => {
       if (this.shadowBindGroupContainer[mesh.name]) return this.shadowBindGroupContainer[mesh.name];
       this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
@@ -27258,7 +27270,7 @@ class SpotLight {
           resource: {
             buffer: this.lightVPBuffer
           }
-        }] // ← per-light buffer
+        }]
       });
       return this.shadowBindGroupContainer[mesh.name];
     };
@@ -27359,7 +27371,7 @@ class SpotLight {
             format: "float32x3"
           }]
         },
-        // ✅ ADD @location(1) - normal
+        // pos
         {
           arrayStride: 12,
           attributes: [{
@@ -27368,7 +27380,7 @@ class SpotLight {
             format: "float32x3"
           }]
         },
-        // ✅ ADD @location(2) - uv
+        // normal
         {
           arrayStride: 8,
           attributes: [{
@@ -27377,7 +27389,7 @@ class SpotLight {
             format: "float32x2"
           }]
         },
-        // ✅ ADD @location(3) - joints
+        // uv
         {
           arrayStride: 16,
           attributes: [{
@@ -27386,7 +27398,7 @@ class SpotLight {
             format: "uint32x4"
           }]
         },
-        // ✅ ADD @location(4) - weights
+        // joints
         {
           arrayStride: 16,
           attributes: [{
@@ -27394,14 +27406,15 @@ class SpotLight {
             offset: 0,
             format: "float32x4"
           }]
-        }]
+        } // weights
+        ]
       },
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
-        depthBias: 2,
-        depthBiasSlopeScale: 2,
+        depthBias: 1,
+        depthBiasSlopeScale: 1,
         depthBiasClamp: 0
       },
       primitive: this.primitive
@@ -27418,15 +27431,13 @@ class SpotLight {
         }),
         buffers: [{
           arrayStride: 12,
-          // 3 * 4 bytes (vec3f)
           attributes: [{
             shaderLocation: 0,
-            // must match @location(0) in vertex shader
             offset: 0,
             format: "float32x3"
           }]
         },
-        // ✅ ADD @location(1) - normal
+        // pos
         {
           arrayStride: 12,
           attributes: [{
@@ -27435,7 +27446,7 @@ class SpotLight {
             format: "float32x3"
           }]
         },
-        // ✅ ADD @location(2) - uv
+        // normal
         {
           arrayStride: 8,
           attributes: [{
@@ -27444,7 +27455,7 @@ class SpotLight {
             format: "float32x2"
           }]
         },
-        // ✅ ADD @location(3) - joints
+        // uv
         {
           arrayStride: 16,
           attributes: [{
@@ -27453,7 +27464,7 @@ class SpotLight {
             format: "uint32x4"
           }]
         },
-        // ✅ ADD @location(4) - weights
+        // joints
         {
           arrayStride: 16,
           attributes: [{
@@ -27461,21 +27472,19 @@ class SpotLight {
             offset: 0,
             format: "float32x4"
           }]
-        }]
+        } // weights
+        ]
       },
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
         depthBias: 2,
-        // Constant bias (try 1-4)
         depthBiasSlopeScale: 2.0,
         format: 'depth32float',
         depthBiasClamp: 0
       },
       primitive: this.primitive
     });
-
-    // 4. NEW MORPH PIPELINE - Added to handle procedural mesh shadows
     this.shadowPipelineMorph = this.device.createRenderPipeline({
       label: 'shadowPipeline light [MORPH]',
       layout: this.device.createPipelineLayout({
@@ -27484,9 +27493,8 @@ class SpotLight {
       }),
       vertex: {
         module: this.device.createShaderModule({
-          code: _vertexProcedural.vertexMorphShadowWGSL // Use the morphing shader logic
+          code: _vertexProcedural.vertexMorphShadowWGSL
         }),
-        // IMPORTANT: Use the 5-buffer layout defined in your ProceduralMeshObj
         buffers: [{
           arrayStride: 12,
           attributes: [{
@@ -27537,13 +27545,8 @@ class SpotLight {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
-        // depthBias: 10,
-        // depthBiasSlopeScale: 5.0,
-        // depthBiasClamp: 0.05
         depthBias: 0,
-        // ← zero
         depthBiasSlopeScale: 0,
-        // ← zero
         depthBiasClamp: 0
       },
       primitive: this.primitive
@@ -27552,7 +27555,7 @@ class SpotLight {
       const key = mesh.name;
       if (this.mainPassBindGroupContainer[key]) return this.mainPassBindGroupContainer[key];
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
-        label: `mainPassBindGroup for mesh`,
+        label: 'mainPassBindGroup for mesh',
         layout: mesh.mainPassBindGroupLayout,
         entries: [{
           binding: 0,
@@ -27564,43 +27567,44 @@ class SpotLight {
       });
       return this.mainPassBindGroupContainer[key];
     };
-    // Only osc values +-
     this.behavior = new _behavior.default();
     this.updater = [];
   }
+
+  // ─── Update ───────────────────────────────────────────────────────────────
+
+  /**
+   * Recomputes VP matrix only when dirty.
+   * Does NOT call writeBuffer — that is batched in updateLights().
+   * Returns true if the VP matrix was recomputed (caller should re-upload lightVPBuffer).
+   */
   update() {
+    // Run behavior animators — these call setters which mark _dirty
     this.updater.forEach(func => {
       func(this);
     });
-    _wgpuMatrix.vec3.subtract(this.target, this.position, this._diffScratch);
+    if (!this._dirty) return false;
+    _wgpuMatrix.vec3.subtract(this._target, this._position, this._diffScratch);
     _wgpuMatrix.vec3.normalize(this._diffScratch, this.direction);
-    _wgpuMatrix.mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    _wgpuMatrix.mat4.lookAt(this._position, this._target, this.up, this._viewMatrix);
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
-    this.device.queue.writeBuffer(this.lightVPBuffer, 0, this.viewProjMatrix);
+    this._dirty = false;
+    this._lightBufferDirty = true; // VP changed, so buffer needs rebuild too
+
+    return true; // signal: lightVPBuffer needs re-upload
   }
+
+  // ─── Light data buffer ────────────────────────────────────────────────────
+
+  /**
+   * Returns the packed Float32Array for the spotlight uniform array.
+   * Rebuilds only when _lightBufferDirty is true.
+   */
   getLightDataBuffer() {
-    // const m = this.viewProjMatrix;
-    // const b = this._lightBuffer;
-    // b.set(this.position, 0);
-    // b[3] = 0.0;
-    // b.set(this.direction, 4);
-    // b[7] = 0.0;
-    // b[8] = this.innerCutoff;
-    // b[9] = this.outerCutoff;
-    // b[10] = this.intensity;
-    // b[11] = 0.0;
-    // b.set(this.color, 12);
-    // b[15] = 0.0;
-    // b[16] = this.range;
-    // b[17] = this.ambientFactor;
-    // b[18] = this.shadowBias;
-    // b[19] = 0.0;
-    // b.set(m, 20);
-    // // return b.slice();
-    // return b;
+    if (!this._lightBufferDirty) return this._lightBuffer;
     const m = this.viewProjMatrix;
     const b = this._lightBuffer;
-    b.set(this.position, 0);
+    b.set(this._position, 0);
     b[3] = 0.0;
     b.set(this.direction, 4);
     b[7] = 0.0;
@@ -27615,53 +27619,74 @@ class SpotLight {
     b[18] = this.shadowBias;
     b[19] = 0.0;
     b.set(m, 20);
+    this._lightBufferDirty = false;
     return b;
   }
 
-  // Setters
+  // ─── Setters ──────────────────────────────────────────────────────────────
+  // Position components — mutate vec3 in place, mark both dirty flags
+
   setPosX = x => {
-    this.position[0] = x;
+    this._position[0] = x;
+    this._dirty = true;
+    this._lightBufferDirty = true;
   };
   setPosY = y => {
-    this.position[1] = y;
+    this._position[1] = y;
+    this._dirty = true;
+    this._lightBufferDirty = true;
   };
   setPosZ = z => {
-    this.position[2] = z;
+    this._position[2] = z;
+    this._dirty = true;
+    this._lightBufferDirty = true;
   };
+
+  // These only affect the light buffer, not the VP matrix
   setInnerCutoff = innerCutoff => {
     this.innerCutoff = innerCutoff;
+    this._lightBufferDirty = true;
   };
   setOuterCutoff = outerCutoff => {
     this.outerCutoff = outerCutoff;
+    this._lightBufferDirty = true;
   };
   setIntensity = intensity => {
     this.intensity = intensity;
+    this._lightBufferDirty = true;
   };
   setColor = color => {
     this.color = color;
+    this._lightBufferDirty = true;
   };
   setColorR = colorR => {
     this.color[0] = colorR;
+    this._lightBufferDirty = true;
   };
   setColorB = colorB => {
     this.color[1] = colorB;
+    this._lightBufferDirty = true;
   };
   setColorG = colorG => {
     this.color[2] = colorG;
+    this._lightBufferDirty = true;
   };
   setRange = range => {
     this.range = range;
+    this._lightBufferDirty = true;
   };
   setAmbientFactor = ambientFactor => {
     this.ambientFactor = ambientFactor;
+    this._lightBufferDirty = true;
   };
   setShadowBias = shadowBias => {
     this.shadowBias = shadowBias;
+    this._lightBufferDirty = true;
   };
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":84,"../shaders/vertex.procedural.wgsl":90,"../shaders/vertexShadow.wgsl":93,"./behavior":29,"wgpu-matrix":27}],48:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":84,"../shaders/vertex.procedural.wgsl":90,"../shaders/vertexShadow.wgsl":93,"./behavior":29,"./utils":63,"wgpu-matrix":27}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28203,6 +28228,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // bvh arg not actual at the moment
     this.bvh = {};
     this.glb = glb;
+    this.mType = _utils.MeshType.BVHANIM;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
@@ -28845,6 +28871,7 @@ var _bvhLoader = _interopRequireDefault(require("bvh-loader"));
 var _meshObj = _interopRequireDefault(require("../mesh-obj"));
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
+var _utils = require("../utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
@@ -28886,6 +28913,7 @@ class BVHPlayer extends _meshObj.default {
     // bvh arg not actula at the moment
     this.bvh = {};
     this.glb = glb;
+    this.mType = _utils.MeshType.BVHANIM;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
@@ -29494,7 +29522,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":55,"./webgpu-gltf.js":52,"bvh-loader":13,"wgpu-matrix":27}],52:[function(require,module,exports){
+},{"../mesh-obj":55,"../utils.js":63,"./webgpu-gltf.js":52,"bvh-loader":13,"wgpu-matrix":27}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31372,6 +31400,7 @@ class MEMeshObj extends _materials.default {
     } else {
       this.raycast = o.raycast;
     }
+    this.mType = _utils.MeshType.MESH;
     if (typeof o.pointerEffect === 'undefined') {
       this.pointerEffect = {
         enabled: false
@@ -31402,6 +31431,7 @@ class MEMeshObj extends _materials.default {
     }
     this.useScale = o.useScale || false;
     this.material = o.material;
+    this.shadowsCast = true;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     //cache
@@ -31900,6 +31930,7 @@ class MEMeshObj extends _materials.default {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
+        active: false,
         enableWave: () => {
           this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
@@ -32023,8 +32054,6 @@ class MEMeshObj extends _materials.default {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = this.time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        // const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        // this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
       };
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
@@ -33486,11 +33515,13 @@ class ProceduralMeshObj extends _materials.default {
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
+    this.mType = _utils.MeshType.PROCEDURAL;
     //cache
     this._camVP = _wgpuMatrix.mat4.create();
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
+    this.shadowsCast = true;
     if (o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -33943,6 +33974,7 @@ class ProceduralMeshObj extends _materials.default {
     });
     this._sceneData = new Float32Array(48);
     this.vertexAnim = {
+      active: false,
       enableWave: () => {
         this.vertexAnimParams[1] |= _literals.VERTEX_ANIM_FLAGS.WAVE;
         this.updateVertexAnimBuffer();
@@ -34229,12 +34261,11 @@ class ProceduralMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
     this.modelMatrix = modelMatrix;
   }
-  getTransformationMatrix(index) {
-    const now = Date.now();
-    const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+  getTransformationMatrix(index, now, INPUT, dt) {
+    // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
     const camera = this.cameras[this.mainCameraParams.type];
-    if (index === 0) camera.update(dt, this.inputHandler());
+    if (index === 0) camera.update(dt, INPUT);
     const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
     // this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);
@@ -35225,7 +35256,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_ARCADE = exports.LOG_FUNNY = exports.LOGO_FRAMES = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
+exports.MeshType = exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_ARCADE = exports.LOG_FUNNY = exports.LOGO_FRAMES = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -35255,6 +35286,12 @@ exports.supportsTouch = void 0;
 exports.typeText = typeText;
 exports.vec3 = exports.urlQuery = void 0;
 var supportsTouch = exports.supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+const MeshType = exports.MeshType = {
+  MESH: 0,
+  INSTANCED: 1,
+  PROCEDURAL: 2,
+  BVHANIM: 3
+};
 function isMobile() {
   if (supportsTouch == true) return true;
   const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
@@ -54751,7 +54788,7 @@ class MatrixEngineWGPU {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff(callback);
     this.shadersPack = {};
-
+    this.lastFrameMS = 0;
     // if('OffscreenCanvas' in window) {
     //   console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
     // } else {
@@ -54766,7 +54803,7 @@ class MatrixEngineWGPU {
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
-    this.SHADOW_RES = 512;
+    this.SHADOW_RES = (0, _utils.isMobile)() ? 128 : 512;
     this._bufferUpdates = [];
     this.textureCache = new _coreCache.TextureCache(this.device);
     this._destroyQueue = new Set();
@@ -55500,35 +55537,63 @@ class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
   updateLights() {
+    // const floatsPerLight = 36;
+    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+    //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
+    //   this._lightsData.set(
+    //     i < this.lightContainer.length
+    //       ? this.lightContainer[i].getLightDataBuffer()
+    //       : this._emptyLight,
+    //     i * floatsPerLight
+    //   );
+    // }
+    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
+
     const floatsPerLight = 36;
     for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
-      if (this.lightContainer[i]?.update) this.lightContainer[i].update();
-      this._lightsData.set(i < this.lightContainer.length ? this.lightContainer[i].getLightDataBuffer() : this._emptyLight, i * floatsPerLight);
+      const light = this.lightContainer[i];
+      if (light?.update) {
+        const vpDirty = light.update(); // returns true if VP matrix was recomputed
+        if (vpDirty) {
+          // upload per-light VP buffer only when it actually changed
+          this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
+        }
+      }
+      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() // rebuilds only when _lightBufferDirty
+      : this._emptyLight, i * floatsPerLight);
     }
+
+    // single upload for the full spotlight array — always needed
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
   frameSinglePass = () => {
-    this.now = performance.now() / 1000;
+    // this.now = performance.now() / 1000;
+    this.now = performance.now() * 0.001;
+    // const frameInput =  this.inputHandler();
+    const dt = (this.now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+    this.lastFrameMS = this.now;
     this.autoUpdate.forEach(_ => _.update());
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
+      const now2 = this.now * 1000;
       for (let i = 0; i < this.mainRenderBundle.length; i++) {
         const mesh = this.mainRenderBundle[i];
-        if (mesh.vertexAnimBuffer && mesh.vertexAnimParams) {
+        if (mesh.vertexAnim.active == true) {
           mesh.time = this.now * mesh.deltaTimeAdapter;
-          mesh.vertexAnimParams[0] = mesh.time;
-          this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
+          // mesh.vertexAnimParams[0] = mesh.time;
+          // this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
+          mesh.updateTime(this.now);
         }
+        // mesh.getTransformationMatrix(i, this.now, this.inputHandler(), dt);
         mesh.getTransformationMatrix(i);
         if (mesh.position.inMove == true || this.matrixAmmo) {
           mesh.updateModelUniformBuffer(i);
         }
         mesh.position.update();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-        if (mesh.update) mesh.update(this.now * 1000);
-        mesh.updateTime(this.now);
+        if (mesh.update) mesh.update(now2);
       }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -55544,11 +55609,15 @@ class MatrixEngineWGPU {
         });
         let lastShadowPipeline = null;
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          if (mesh.shadowsCast == false) continue;
           let targetShadowPipeline;
-          if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
+          _utils.MeshType; // = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2 , BVHANIM: 3};
+
+          // if(mesh instanceof BVHPlayerInstances) {
+          if (mesh.mType == _utils.MeshType.BVHANIM) {
             mesh.updateInstanceData(mesh.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
-          } else if (mesh instanceof _proceduralMesh.default) {
+          } else if (mesh.mType == _utils.MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
           } else {
             targetShadowPipeline = light.shadowPipeline;
@@ -55558,9 +55627,9 @@ class MatrixEngineWGPU {
             lastShadowPipeline = targetShadowPipeline;
           }
           shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-          if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
+          if (mesh.mType == _utils.MeshType.BVHANIM) {
             shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
-          } else if (mesh instanceof _proceduralMesh.default) {
+          } else if (mesh.mType == _utils.MeshType.PROCEDURAL) {
             shadowPass.setBindGroup(1, mesh.mainRenderBindGroup);
           } else {
             shadowPass.setBindGroup(1, mesh.modelBindGroup);

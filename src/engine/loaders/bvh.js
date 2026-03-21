@@ -2,6 +2,7 @@ import MEBvh from "bvh-loader";
 import MEMeshObj from "../mesh-obj";
 import {mat4, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
+import {MeshType} from "../utils.js";
 
 export var animBVH = new MEBvh();
 
@@ -41,6 +42,7 @@ export class BVHPlayer extends MEMeshObj {
     // bvh arg not actula at the moment
     this.bvh = {};
     this.glb = glb;
+    this.mType = MeshType.BVHANIM;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;

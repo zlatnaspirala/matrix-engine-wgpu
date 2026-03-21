@@ -1,7 +1,7 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {vertexWGSL} from '../shaders/vertex.wgsl';
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL} from './utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, MeshType} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
@@ -23,6 +23,8 @@ export default class MEMeshObj extends Materials {
     } else {
       this.raycast = o.raycast;
     }
+
+    this.mType = MeshType.MESH;
 
     if(typeof o.pointerEffect === 'undefined') {this.pointerEffect = {enabled: false};}
     this.pointerEffect = o.pointerEffect;
@@ -56,7 +58,7 @@ export default class MEMeshObj extends Materials {
 
     this.useScale = o.useScale || false;
     this.material = o.material;
-
+    this.shadowsCast = true;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     //cache
@@ -533,6 +535,7 @@ export default class MEMeshObj extends Materials {
       });
 
       this.vertexAnim = {
+        active: false,
         enableWave: () => {
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
@@ -654,8 +657,6 @@ export default class MEMeshObj extends Materials {
         this.time += time * this.deltaTimeAdapter;
         this.vertexAnimParams[0] = this.time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-        // const effectMix = 0.5 + 0.5 * Math.sin(this.time * 0.5);
-        // this.setupMaterialPBR([1.0, 1.0, 1.0, 0.5], false, false, effectMix, 1.0);
       }
 
       this.modelBindGroup = this.device.createBindGroup({

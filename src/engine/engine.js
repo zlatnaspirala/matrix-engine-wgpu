@@ -1,8 +1,4 @@
-// Note: The code in this file does not use the 'dst' output parameter of functions in the
-// 'wgpu-matrix' library, so produces many temporary vectors and matrices.
-// This is intentional, as this sample prefers readability over performance.
 import {mat4, vec3} from 'wgpu-matrix';
-import {LOG_INFO} from './utils';
 
 // The common functionality between camera implementations
 class CameraBase {
@@ -85,9 +81,7 @@ class CameraBase {
 
 // WASDCamera is a camera implementation that behaves similar to first-person-shooter PC games.
 export class WASDCamera extends CameraBase {
-  // The camera absolute pitch angle
   pitch = 0;
-  // The camera absolute yaw angle
   yaw = 0;
 
   setPitch = (pitch) => {
@@ -110,13 +104,10 @@ export class WASDCamera extends CameraBase {
     this.position[2] = z;
   }
 
-  // The movement veloicty readonly
   velocity_ = vec3.create();
 
-  // Speed multiplier for camera movement
   movementSpeed = 10;
 
-  // Speed multiplier for camera rotation
   rotationSpeed = 1;
 
   // Movement velocity drag coeffient [0 .. 1]
@@ -124,14 +115,9 @@ export class WASDCamera extends CameraBase {
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
 
-  // Returns velocity vector
-  get velocity() {
-    return this.velocity_;
-  }
+  get velocity() {return this.velocity_}
   // Assigns `vec` to the velocity vector
-  set velocity(vec) {
-    vec3.copy(vec, this.velocity_);
-  }
+  set velocity(vec) {vec3.copy(vec, this.velocity_)}
 
   setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
     this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
@@ -161,15 +147,10 @@ export class WASDCamera extends CameraBase {
   }
 
   // Returns the camera matrix
-  get matrix() {
-    return super.matrix;
-  }
+  get matrix() {return super.matrix}
 
   // Assigns `mat` to the camera matrix, and recalcuates the camera angles
-  set matrix(mat) {
-    super.matrix = mat;
-    this.recalculateAngles(this.back);
-  }
+  set matrix(mat) {super.matrix = mat; this.recalculateAngles(this.back);}
 
   update(deltaTime, input) {
     const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
@@ -405,11 +386,11 @@ export function createInputHandler(window, canvas) {
     e.stopPropagation();
   };
 
-  window.addEventListener('keydown', (e) => setDigital(e, true), { passive: true });
-  window.addEventListener('keyup', (e) => setDigital(e, false), { passive: true });
+  window.addEventListener('keydown', (e) => setDigital(e, true), {passive: true});
+  window.addEventListener('keyup', (e) => setDigital(e, false), {passive: true});
   canvas.style.touchAction = 'pinch-zoom';
-  canvas.addEventListener('pointerdown', () => {mouseDown = true;}, { passive: true });
-  canvas.addEventListener('pointerup', () => {mouseDown = false;}, { passive: true });
+  canvas.addEventListener('pointerdown', () => {mouseDown = true;}, {passive: true});
+  canvas.addEventListener('pointerup', () => {mouseDown = false;}, {passive: true});
   const MOUSE_SENS = 0.1;
   canvas.addEventListener('pointermove', (e) => {
     mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
@@ -417,7 +398,7 @@ export function createInputHandler(window, canvas) {
       analog.x += e.movementX * MOUSE_SENS;
       analog.y += e.movementY * MOUSE_SENS;
     }
-  }, { passive: true });
+  }, {passive: true});
 
   // canvas.addEventListener('wheel', (e) => {
   //   // analog.zoom += Math.sign(e.deltaY);

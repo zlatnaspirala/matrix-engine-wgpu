@@ -1,5 +1,5 @@
 import {vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN} from './utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN, MeshType} from './utils';
 import Materials from './materials';
 import {GeometryFactory} from './geometry-factory';
 import {mat4} from 'wgpu-matrix';
@@ -30,11 +30,16 @@ export default class ProceduralMeshObj extends Materials {
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
+
+    this.mType = MeshType.PROCEDURAL;
     //cache
     this._camVP = mat4.create();
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
+
+    this.shadowsCast = true;
+
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -388,6 +393,7 @@ export default class ProceduralMeshObj extends Materials {
     this._sceneData = new Float32Array(48);
 
     this.vertexAnim = {
+      active: false,
       enableWave: () => {
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
         this.updateVertexAnimBuffer();
@@ -682,12 +688,11 @@ export default class ProceduralMeshObj extends Materials {
     this.modelMatrix = modelMatrix;
   }
 
-  getTransformationMatrix(index) {
-    const now = Date.now();
-    const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+  getTransformationMatrix(index, now, INPUT, dt) {
+    // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
     const camera = this.cameras[this.mainCameraParams.type];
-    if(index === 0) camera.update(dt, this.inputHandler());
+    if(index === 0) camera.update(dt, INPUT);
     const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
     // this._sceneData.set(spotLight.viewProjMatrix, 0);
     this._sceneData.set(camVP, 16);

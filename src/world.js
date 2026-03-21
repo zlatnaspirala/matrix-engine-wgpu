@@ -3,7 +3,7 @@ import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -226,6 +226,7 @@ export default class MatrixEngineWGPU {
     this.createGlobalStuff(callback);
     this.shadersPack = {};
 
+    this.lastFrameMS = 0;
     // if('OffscreenCanvas' in window) {
     //   console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
     // } else {
@@ -250,7 +251,7 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff(callback) {
-    this.SHADOW_RES = 512;
+    this.SHADOW_RES = isMobile() ? 128 : 512;
     this._bufferUpdates = [];
 
     this.textureCache = new TextureCache(this.device);
@@ -767,39 +768,74 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
+    // const floatsPerLight = 36;
+    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+    //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
+    //   this._lightsData.set(
+    //     i < this.lightContainer.length
+    //       ? this.lightContainer[i].getLightDataBuffer()
+    //       : this._emptyLight,
+    //     i * floatsPerLight
+    //   );
+    // }
+    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
+
     const floatsPerLight = 36;
+
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      if(this.lightContainer[i]?.update) this.lightContainer[i].update();
+      const light = this.lightContainer[i];
+
+      if(light?.update) {
+        const vpDirty = light.update(); // returns true if VP matrix was recomputed
+        if(vpDirty) {
+          // upload per-light VP buffer only when it actually changed
+          this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
+        }
+      }
+
       this._lightsData.set(
         i < this.lightContainer.length
-          ? this.lightContainer[i].getLightDataBuffer()
+          ? light.getLightDataBuffer()  // rebuilds only when _lightBufferDirty
           : this._emptyLight,
         i * floatsPerLight
       );
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
+
+    // single upload for the full spotlight array — always needed
+    this.device.queue.writeBuffer(
+      this.spotlightUniformBuffer, 0,
+      this._lightsData.buffer,
+      this._lightsData.byteOffset,
+      this._lightsData.byteLength
+    );
   }
 
   frameSinglePass = () => {
-    this.now = performance.now() / 1000;
+    // this.now = performance.now() / 1000;
+    this.now = performance.now() * 0.001;
+    // const frameInput =  this.inputHandler();
+    const dt = (this.now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+    this.lastFrameMS = this.now;
     this.autoUpdate.forEach((_) => _.update())
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
+      const now2 = this.now * 1000;
       for(let i = 0;i < this.mainRenderBundle.length;i++) {
         const mesh = this.mainRenderBundle[i];
-        if(mesh.vertexAnimBuffer && mesh.vertexAnimParams) {
+        if(mesh.vertexAnim.active == true) {
           mesh.time = this.now * mesh.deltaTimeAdapter;
-          mesh.vertexAnimParams[0] = mesh.time;
-          this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
+          // mesh.vertexAnimParams[0] = mesh.time;
+          // this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
+          mesh.updateTime(this.now);
         }
+        // mesh.getTransformationMatrix(i, this.now, this.inputHandler(), dt);
         mesh.getTransformationMatrix(i);
         if(mesh.position.inMove == true || this.matrixAmmo) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-        if(mesh.update) mesh.update(this.now*1000);
-        mesh.updateTime(this.now);
+        if(mesh.update) mesh.update(now2);
       }
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
@@ -815,11 +851,15 @@ export default class MatrixEngineWGPU {
         });
         let lastShadowPipeline = null;
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          if(mesh.shadowsCast == false) continue;
           let targetShadowPipeline;
-          if(mesh instanceof BVHPlayerInstances) {
+           MeshType // = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2 , BVHANIM: 3};
+
+          // if(mesh instanceof BVHPlayerInstances) {
+          if(mesh.mType == MeshType.BVHANIM) {
             mesh.updateInstanceData(mesh.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
-          } else if(mesh instanceof ProceduralMeshObj) {
+          } else if(mesh.mType == MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
           } else {
             targetShadowPipeline = light.shadowPipeline;
@@ -829,10 +869,10 @@ export default class MatrixEngineWGPU {
             lastShadowPipeline = targetShadowPipeline;
           }
           shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-          if(mesh instanceof BVHPlayerInstances) {
+          if(mesh.mType == MeshType.BVHANIM) {
             shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
           }
-          else if(mesh instanceof ProceduralMeshObj) {
+          else if(mesh.mType == MeshType.PROCEDURAL) {
             shadowPass.setBindGroup(1, mesh.mainRenderBindGroup);
           }
           else {

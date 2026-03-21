@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN} from '../utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN, MeshType} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
 import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
@@ -35,6 +35,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
 
+    this.mType = MeshType.BVHANIM;
+    this.shadowsCast = true;
+
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4.create();
@@ -43,6 +46,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._scaleVec = new Float32Array(3);
 
     //cache
+    this._ghostScratch = new Float32Array(16);
+    this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = mat4.create();
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
@@ -439,14 +444,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.updateInstanceData = (modelMatrix) => {
-        // original (base instance)
         this.instanceData.set(modelMatrix, 0);
-        this.instanceData.set([1, 1, 1, 1], 16);
-
-        // instanced clones
+        this.instanceData.set(this._defaultColor, 16);
         for(let i = 1;i < this.instanceCount;i++) {
           const t = this.instanceTargets[i];
-          const ghost = new Float32Array(modelMatrix);
+          this._ghostScratch.set(modelMatrix);
+          const ghost = this._ghostScratch;
           // --- Smooth interpolate position
           for(let j = 0;j < 3;j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
@@ -456,7 +459,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
               t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          // Apply smoothed transforms
           ghost[0] *= t.currentScale[0];
           ghost[5] *= t.currentScale[1];
           ghost[10] *= t.currentScale[2];
@@ -464,12 +466,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           ghost[12] += t.currentPosition[0]; // X
           ghost[13] += t.currentPosition[1]; // Y
           ghost[14] += t.currentPosition[2]; // Z
-
           // t.color[0] += t.currentColor[0]//r;
           // t.color[1] += t.currentColor[1]//r;
           // t.color[2] += t.currentColor[2]//r;
           // t.color[3] += t.currentColor[3]//r;
-          // Write instance matrix + color
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
           this.instanceData.set(t.currentColor, offset + 16);
@@ -562,7 +562,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-
       this.MAX_BONES = 100;
       // your total instance count
       const TRAIL_INSTANCES = 10;
@@ -573,13 +572,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for(let i = 0;i < this.MAX_BONES * TRAIL_INSTANCES;i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
       // vertex Anim
       this.vertexAnimParams = new Float32Array([
         0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
@@ -592,6 +589,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.vertexAnim = {
+        active: false,
         enableWave: () => {
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
@@ -777,12 +775,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
 
-      this.getTransformationMatrix = (index) => {
-        const now = Date.now();
-        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+      this.getTransformationMatrix = (index, now, INPUT, dt) => {
+        // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        if(index == 0) camera.update(dt, inputHandler());
+        if(index == 0) camera.update(dt, INPUT);
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
@@ -995,7 +992,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   drawElements = (pass, lightContainer) => {
     if(this.isVideo) {this.updateVideoTexture()}
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if(this instanceof BVHPlayerInstances) {
+    if(mesh.mType == MeshType.BVHANIM) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
