@@ -1,44 +1,58 @@
 ## CHANGES [Started from feb 2026]
 
+[1.9.10] More optimisation in main loop!
+
+- Added options for sending arg to the volumetric activation func.
+
+````js
+{
+  density: 0.03,
+  steps: 32,
+  scatterStrength: 1.2,
+  heightFalloff: 0.08,
+  lightColor: [1.0, 0.88, 0.65],
+}
+```
+
 [1.9.9]  More optimises main loop
 Multi light casting shadows on each other hot fix.
 
 
 [1.9.6] Mobile render back HOT FIX
-        Clear allocations from loop
+       Clear allocations from loop
 
 [1.9.5]
 ### ProceduralMesh
 
 ```js
 export const geoTypesForMorph = {
-  cube: "cube",
-  sphere: "sphere",
-  mobius: "mobius",
-  plane: "plane",
-  capsule: "capsule",
-  cone: "cone",
-  torus: "torus",
-  cylinder: "cylinder",
-  wavePlane: "wavePlane",
-  supershape: "supershape",
-  pyramid: "pyramid",
-  diamond: "diamond",
-  icosahedron: "icosahedron",
-  circlePlane: "circlePlane",
-  rock: "rock",
-  star: "star",
-  star3d: "star3d",
-  littleStar: "littleStar",
-  flatStar: "flatStar",
-  klein: "klein",
-  shell: "shell",
-  rippleSphere: "rippleSphere",
-  twistedTorus: "twistedTorus",
-  tornado: "tornado",
-  galaxySpiral: "galaxySpiral",
+ cube: "cube",
+ sphere: "sphere",
+ mobius: "mobius",
+ plane: "plane",
+ capsule: "capsule",
+ cone: "cone",
+ torus: "torus",
+ cylinder: "cylinder",
+ wavePlane: "wavePlane",
+ supershape: "supershape",
+ pyramid: "pyramid",
+ diamond: "diamond",
+ icosahedron: "icosahedron",
+ circlePlane: "circlePlane",
+ rock: "rock",
+ star: "star",
+ star3d: "star3d",
+ littleStar: "littleStar",
+ flatStar: "flatStar",
+ klein: "klein",
+ shell: "shell",
+ rippleSphere: "rippleSphere",
+ twistedTorus: "twistedTorus",
+ tornado: "tornado",
+ galaxySpiral: "galaxySpiral",
 };
-```
+````
 
 Draw all buildin proceduralMesh shapes:
 
@@ -97,6 +111,7 @@ for (let i = 0; i < keys.length - 1; i++) {
 ```
 
 Morph between two shapes
+
 ```js
 sceneObject.morphTo(1.0, 2000, () => {
   /*callback*/

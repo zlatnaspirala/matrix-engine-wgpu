@@ -479,9 +479,20 @@ Fancy results:
 
 ### Volumetric effect
 
-Call from app `activateVolumetricEffect()`
+Call from app `app.activateVolumetricEffect()`
 !Note volumetric works only if bloom is activated. Bloom can work alone.
-!To avoid createing bind group in loop.
+
+Passing arguments:
+```js
+app.activateVolumetricEffect(
+{
+  density: 0.03,
+  steps: 32,
+  scatterStrength: 1.2,
+  heightFalloff: 0.08,
+  lightColor: [1.0, 0.88, 0.65],
+});
+```
 
 ### Object Interaction (Raycasting)
 

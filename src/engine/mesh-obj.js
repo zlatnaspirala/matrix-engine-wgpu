@@ -705,12 +705,11 @@ export default class MEMeshObj extends Materials {
         }
       }
 
-      this.getTransformationMatrix = (index) => {
-        const now = Date.now();
-        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = now;
-        const camera = this.cameras[this.mainCameraParams.type];
-        if(index == 0) camera.update(dt, inputHandler());
+      this.getTransformationMatrix = (camera, dt) => {
+        // const now = Date.now();
+        // const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+        this.lastFrameMS = dt;
+        // dt = dt / 1000;
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);

@@ -77,7 +77,7 @@ export default class MatrixEngineWGPU {
         canvasId: 'canvas1',
         mainCameraParams: {
           type: 'WASD',
-          responseCoef: 2000
+          responseCoef: 200
         },
         clearColor: {r: 0.584, g: 0, b: 0.239, a: 1.0}
       }
@@ -86,7 +86,7 @@ export default class MatrixEngineWGPU {
     if(typeof options.clearColor === 'undefined') {options.clearColor = {r: 0.584, g: 0, b: 0.239, a: 1.0}}
     if(typeof options.canvasId === 'undefined') {options.canvasId = 'canvas1'}
     if(typeof options.mainCameraParams === 'undefined') {
-      options.mainCameraParams = {type: 'WASD', responseCoef: 2000}
+      options.mainCameraParams = {type: 'WASD', responseCoef: 200}
     }
     if(typeof options.dontUsePhysics == 'undefined') {
       this.physicsBodiesGenerator = physicsBodiesGenerator.bind(this);
@@ -109,14 +109,20 @@ export default class MatrixEngineWGPU {
       return;
     }
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
+    if(typeof options.dontUsePhysics === 'undefined') {this.matrixAmmo = new MatrixAmmo()}
     // cache
     this._viewProjMatrix = mat4.create();
     this._invViewProj = mat4.create();
     this._tempViewProj = mat4.create();
     this._identity = mat4.identity();
-
-    if(typeof options.dontUsePhysics === 'undefined') {this.matrixAmmo = new MatrixAmmo()}
-
+    this.finalPS = {
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: {r: 0, g: 0, b: 0, a: 1}
+      }]
+    };
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
       if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -196,6 +202,10 @@ export default class MatrixEngineWGPU {
       });
     }
     this.init({canvas, callback});
+  }
+
+  getCamera() {
+    return this.cameras[this.mainCameraParams.type];
   }
 
   init = async ({canvas, callback}) => {
@@ -391,6 +401,9 @@ export default class MatrixEngineWGPU {
         depthClearValue: 1.0,
       }
     };
+
+    this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+
     this.run(callback);
   }
 
@@ -811,27 +824,21 @@ export default class MatrixEngineWGPU {
   }
 
   frameSinglePass = () => {
-    // this.now = performance.now() / 1000;
     this.now = performance.now() * 0.001;
-    // const frameInput =  this.inputHandler();
-    const dt = (this.now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+    const dt = (this.now - this.lastFrameMS);
     this.lastFrameMS = this.now;
     this.autoUpdate.forEach((_) => _.update())
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
+      const camera = this.getCamera();
       const now2 = this.now * 1000;
+      camera.update(dt, this.inputHandler());
       for(let i = 0;i < this.mainRenderBundle.length;i++) {
         const mesh = this.mainRenderBundle[i];
-        if(mesh.vertexAnim.active == true) {
-          mesh.time = this.now * mesh.deltaTimeAdapter;
-          // mesh.vertexAnimParams[0] = mesh.time;
-          // this.device.queue.writeBuffer(mesh.vertexAnimBuffer, 0, mesh.vertexAnimParams);
-          mesh.updateTime(this.now);
-        }
-        // mesh.getTransformationMatrix(i, this.now, this.inputHandler(), dt);
-        mesh.getTransformationMatrix(i);
+        if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
+        mesh.getTransformationMatrix(camera, this.now2);
         if(mesh.position.inMove == true || this.matrixAmmo) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
@@ -853,9 +860,6 @@ export default class MatrixEngineWGPU {
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh.shadowsCast == false) continue;
           let targetShadowPipeline;
-           MeshType // = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2 , BVHANIM: 3};
-
-          // if(mesh instanceof BVHPlayerInstances) {
           if(mesh.mType == MeshType.BVHANIM) {
             mesh.updateInstanceData(mesh.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
@@ -882,7 +886,7 @@ export default class MatrixEngineWGPU {
         }
         shadowPass.end();
       }
-      // opacy
+      // Main
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       let lastPipeline = null;
@@ -899,7 +903,7 @@ export default class MatrixEngineWGPU {
         }
         mesh.drawElements(pass, this.lightContainer);
       }
-      // blend
+      // Blend
       for(const mesh of this.mainRenderBundle) {
         if(mesh.material?.useBlend !== true) continue;
         if(!mesh.sceneBindGroupForRender) {
@@ -911,10 +915,10 @@ export default class MatrixEngineWGPU {
       }
       pass.end();
 
-      const cam = this.cameras[this.mainCameraParams.type];
+      // const cam = this.cameras[this.mainCameraParams.type];
       if(this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      mat4.multiply(cam.projectionMatrix, cam.view, this._viewProjMatrix);
+      mat4.multiply(camera.projectionMatrix, camera.view, this._viewProjMatrix);
       const viewProjMatrix = this._viewProjMatrix;
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -941,20 +945,15 @@ export default class MatrixEngineWGPU {
         const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
         this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
       }
-      pass = commandEncoder.beginRenderPass({
-        colorAttachments: [{
-          view: canvasView,
-          loadOp: 'clear',
-          storeOp: 'store',
-          clearValue: {r: 0, g: 0, b: 0, a: 1}
-        }]
-      });
+
+      this.finalPS.colorAttachments[0].view = canvasView;
+      pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this.bloomPass.enabled === true ? this.bloomBindGroup : this.noBloomBindGroup);
+      pass.setBindGroup(0, this._activeBindGroup);
       pass.draw(6);
       pass.end();
-      this.graphUpdate(this.now);
       this.device.queue.submit([commandEncoder.finish()]);
+      this.graphUpdate(this.now);
       requestAnimationFrame(this.frame);
     } catch(err) {
       if(this.logLoopError) console.log('%cLoop(warn):' + err + " info : " + err.stack, LOG_WARN)
@@ -1158,23 +1157,24 @@ export default class MatrixEngineWGPU {
     if(this.bloomPass.enabled != true) {
       this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
       this.bloomPass.enabled = true;
+      this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
     }
   }
 
-  activateVolumetricEffect = () => {
+  activateVolumetricEffect = (arg) => {
+    if(this.bloomPass.enabled != true) {console.warn(`%cMEW: You must enable bloom before volumetric.`); return;}
+    let p;
+    if(typeof arg === 'undefined') {
+      p = {
+        density: 0.03,
+        steps: 32,
+        scatterStrength: 1.2,
+        heightFalloff: 0.08,
+        lightColor: [1.0, 0.88, 0.65],
+      }
+    } else {p = arg}
     if(this.volumetricPass.enabled != true) {
-      this.volumetricPass = new VolumetricPass(
-        this.canvas.width,
-        this.canvas.height,
-        this.device,
-        {
-          density: 0.03,
-          steps: 32,
-          scatterStrength: 1.2,
-          heightFalloff: 0.08,
-          lightColor: [1.0, 0.88, 0.65],  // warm sunlight
-        }
-      ).init();
+      this.volumetricPass = new VolumetricPass(this.canvas.width, this.canvas.height, this.device, p).init();
       this.volumetricPass.enabled = true;
     }
   }
