@@ -4,6 +4,7 @@ import Behavior from './behavior';
 import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.instanced.wgsl';
 import {vertexMorphShadowWGSL, vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
 import {isMobile} from './utils';
+import {MEConfig} from '../me-config';
 
 /**
  * @description
@@ -138,7 +139,7 @@ export class SpotLight {
     this.range = 20.0;
     this.shadowBias = 0.01;
 
-    this.SHADOW_RES = isMobile() ? 128 : 512;
+    this.SHADOW_RES = MEConfig.SHADOW_RES;
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'back',
@@ -322,18 +323,14 @@ export class SpotLight {
   update() {
     // Run behavior animators — these call setters which mark _dirty
     this.updater.forEach((func) => {func(this);});
-
     if(!this._dirty) return false;
-
     vec3.subtract(this._target, this._position, this._diffScratch);
     vec3.normalize(this._diffScratch, this.direction);
     mat4.lookAt(this._position, this._target, this.up, this._viewMatrix);
     mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
-
     this._dirty = false;
-    this._lightBufferDirty = true; // VP changed, so buffer needs rebuild too
-
-    return true; // signal: lightVPBuffer needs re-upload
+    this._lightBufferDirty = true;
+    return true;
   }
 
   // ─── Light data buffer ────────────────────────────────────────────────────
@@ -371,16 +368,19 @@ export class SpotLight {
   // Position components — mutate vec3 in place, mark both dirty flags
 
   setPosX = (x) => {
+    if (this._position[0] === x) return;
     this._position[0] = x;
     this._dirty = true;
     this._lightBufferDirty = true;
   };
   setPosY = (y) => {
+    if (this._position[1] === y) return; 
     this._position[1] = y;
     this._dirty = true;
     this._lightBufferDirty = true;
   };
   setPosZ = (z) => {
+    if (this._position[1] === y) return; 
     this._position[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;

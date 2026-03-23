@@ -1118,7 +1118,7 @@ export function isOdd(n) {
   return n % 2 !== 0;
 }
 
-export class FullscreenManagerElement {
+export class FullScreenManagerElement {
   constructor(targetElement = document.documentElement) {
     this.target = targetElement;
   }

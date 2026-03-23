@@ -5,8 +5,8 @@ export class PointerEffect {
   constructor(device, format) {
     this.device = device;
     this.format = format;
-
-    // fiktive 
+    this._tempModelMatrix = mat4.identity();
+    this._tempTranslation = new Float32Array(3);
     this.enabled = true;
     this._initPipeline();
   }
@@ -110,8 +110,11 @@ export class PointerEffect {
 
   render(transPass, mesh, viewProjMatrix) {
       const objPos = mesh.position;
-      const modelMatrix = mat4.identity();
-      mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
+      mat4.identity(this._tempModelMatrix);
+      this._tempTranslation[0] = objPos.x;
+      this._tempTranslation[1] = objPos.y + 60;
+      this._tempTranslation[2] = objPos.z;
+      mat4.translate(this._tempModelMatrix, this._tempTranslation, this._tempModelMatrix);
       this.draw(transPass, viewProjMatrix, modelMatrix);
   }
 }

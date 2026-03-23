@@ -1,14 +1,9 @@
+import {MEConfig} from "../../me-config";
+
 export let fragmentWaterWGSL = `
-/* === Engine uniforms === */
-
-// DINAMIC GLOBALS
 const PI: f32 = 3.141592653589793;
-override shadowDepthTextureSize: f32 = 512.0;
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
-// DINAMIC STRUCTS
-
-
-// PREDEFINED
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -23,7 +18,6 @@ struct Scene {
     padding4             : vec2f,
 };
 
-// PREDEFINED
 struct SpotLight {
     position      : vec3f,
     _pad1         : f32,
@@ -42,7 +36,6 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-// PREDEFINED
 struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
@@ -51,17 +44,14 @@ struct MaterialPBR {
     _pad2           : f32,
 };
 
-// PREDEFINED
 struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
 };
 
-// PREDEFINED
 const MAX_SPOTLIGHTS = 20u;
 
-// PREDEFINED
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -86,8 +76,6 @@ struct WaterParams {
 
 @group(3) @binding(0) var<uniform> waterParams: WaterParams;
 
-// ✅ Graph custom functions
-
 // Gerstner wave function for realistic water waves
 fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, time: f32) -> vec3f {
     let k = 2.0 * PI / wavelength;
@@ -95,7 +83,6 @@ fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, t
     let d = normalize(direction);
     let f = k * (dot(d, pos) - c * time);
     let a = steepness / k;
-    
     return vec3f(
         d.x * a * cos(f),
         a * sin(f),
@@ -216,12 +203,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // Water foam — white peaks
     let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
     let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
-
     // Fire embers — bright yellow-white tips
     let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
     let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
-
-    
     // Add some caustics-like effect based on waves
     let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
                    sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
@@ -229,12 +213,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     
     // Final color with enhanced effects
     let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
-    
     // MUCH more transparent - alpha between 0.2 and 0.5
     let alpha = mix(0.2, 0.5, fresnel);
-    
     // Make the color more vibrant so it's visible even when transparent
     let vibrantColor = finalColor * 1.5;
-    
     return vec4f(vibrantColor, alpha);
 }`;

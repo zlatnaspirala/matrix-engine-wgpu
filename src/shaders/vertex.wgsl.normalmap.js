@@ -1,3 +1,5 @@
+import {MEConfig} from "../me-config";
+
 export let vertexWGSL_NM = `const MAX_BONES = 100u;
 
 struct Scene {

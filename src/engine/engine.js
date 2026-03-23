@@ -156,14 +156,14 @@ export class WASDCamera extends CameraBase {
     const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
 
     if(this.suspendDrag == false) {
-      this.yaw -= input.analog.x * deltaTime * this.rotationSpeed;
-      this.pitch -= input.analog.y * deltaTime * this.rotationSpeed;
+      this.yaw -= input.analog.x * this.rotationSpeed;
+      this.pitch -= input.analog.y * this.rotationSpeed;
     }
 
     this.yaw = mod(this.yaw, Math.PI * 2);
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
 
-    vec3.copy(this.position, this._posScratch);
+    // vec3.copy(this.position, this._posScratch);
     mat4.rotationY(this.yaw, this._rotYScratch);
     mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
     super.matrix = this._rotXScratch;
@@ -173,7 +173,6 @@ export class WASDCamera extends CameraBase {
     const deltaUp = sign(digital.up, digital.down);
     const deltaBack = sign(digital.backward, digital.forward);
 
-    // ← reuse scratch, zero it first
     this._targetVelScratch[0] = 0;
     this._targetVelScratch[1] = 0;
     this._targetVelScratch[2] = 0;
@@ -183,20 +182,27 @@ export class WASDCamera extends CameraBase {
     vec3.normalize(this._targetVelScratch, this._targetVelScratch);
     vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
 
-    // lerp into _targetVelScratch directly — no new array
     const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
     this._targetVelScratch[0] = this._targetVelScratch[0] + (this.velocity_[0] - this._targetVelScratch[0]) * t;
     this._targetVelScratch[1] = this._targetVelScratch[1] + (this.velocity_[1] - this._targetVelScratch[1]) * t;
     this._targetVelScratch[2] = this._targetVelScratch[2] + (this.velocity_[2] - this._targetVelScratch[2]) * t;
-    vec3.copy(this._targetVelScratch, this.velocity_);  // write back into velocity_ directly
+    vec3.copy(this._targetVelScratch, this.velocity_);
 
-    // integrate position — fix: was `position`, should be `this._posScratch`
     vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
     this.position = this._posScratch;
 
-    // ← reuse view scratch
-    mat4.invert(this.matrix, this._viewScratch);
-    super.view = this._viewScratch;
+    // // ← reuse view scratch
+    // // mat4.invert(this.matrix, this._viewScratch);
+    const rx = this.right_;
+    const uy = this.up_;
+    const bz = this.back_;
+    const p = this.position_;
+    const vs = this._viewScratch;
+    vs[0] = rx[0]; vs[4] = rx[1]; vs[8] = rx[2]; vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0]; vs[5] = uy[1]; vs[9] = uy[2]; vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0]; vs[6] = bz[1]; vs[10] = bz[2]; vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0; vs[7] = 0; vs[11] = 0; vs[15] = 1;
+    // super.view = this._viewScratch;
     return this.view;
   }
 
@@ -347,31 +353,20 @@ function lerp(a, b, s) {
 export function createInputHandler(window, canvas) {
 
   const digital = {
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-    up: false,
-    down: false,
+    forward: false, backward: false,
+    left: false, right: false,
+    up: false, down: false,
   };
 
-  const analog = {
-    x: 0,
-    y: 0,
-    zoom: 0,
-  };
+  const analog = {x: 0, y: 0, zoom: 0};
 
+  // Track last position per pointerId for reliable delta on touch
+  const pointerLast = new Map();
   let mouseDown = false;
 
-  // PREALLOCATED OUTPUT
   const output = {
-    digital: digital,
-    analog: {
-      x: 0,
-      y: 0,
-      zoom: 0,
-      touching: false,
-    }
+    digital,
+    analog: {x: 0, y: 0, zoom: 0, touching: false}
   };
 
   const setDigital = (e, value) => {
@@ -388,25 +383,50 @@ export function createInputHandler(window, canvas) {
 
   window.addEventListener('keydown', (e) => setDigital(e, true), {passive: true});
   window.addEventListener('keyup', (e) => setDigital(e, false), {passive: true});
-  canvas.style.touchAction = 'pinch-zoom';
-  canvas.addEventListener('pointerdown', () => {mouseDown = true;}, {passive: true});
-  canvas.addEventListener('pointerup', () => {mouseDown = false;}, {passive: true});
+
+  canvas.style.touchAction = 'none'; // ← critical: was 'pinch-zoom', blocks pointermove on mobile
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();              // ← must prevent default to receive move events reliably
+    mouseDown = true;
+    pointerLast.set(e.pointerId, {x: e.clientX, y: e.clientY});
+    canvas.setPointerCapture(e.pointerId); // ← capture so move fires even if finger drifts off canvas
+  }, {passive: false});            // ← passive: false required when calling preventDefault
+
+  canvas.addEventListener('pointerup', (e) => {
+    mouseDown = false;
+    pointerLast.delete(e.pointerId);
+  }, {passive: true});
+
+  canvas.addEventListener('pointercancel', (e) => {
+    mouseDown = false;
+    pointerLast.delete(e.pointerId);
+  }, {passive: true});
+
   const MOUSE_SENS = 0.1;
+  const TOUCH_SENS = 0.03; // touch needs higher sensitivity — raw pixels feel sluggish
+
   canvas.addEventListener('pointermove', (e) => {
-    mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
-    if(mouseDown) {
-      analog.x += e.movementX * MOUSE_SENS;
-      analog.y += e.movementY * MOUSE_SENS;
+    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for(const ce of events) {
+      if(ce.pointerType === 'mouse') {
+        if((ce.buttons & 1) === 0) continue;
+        analog.x += ce.movementX * MOUSE_SENS;
+        analog.y += ce.movementY * MOUSE_SENS;
+      } else {
+        const last = pointerLast.get(ce.pointerId);
+        if(!last) continue;
+        analog.x += (ce.clientX - last.x) * TOUCH_SENS;
+        analog.y += (ce.clientY - last.y) * TOUCH_SENS;
+        last.x = ce.clientX;
+        last.y = ce.clientY;
+      }
     }
   }, {passive: true});
 
-  // canvas.addEventListener('wheel', (e) => {
-  //   // analog.zoom += Math.sign(e.deltaY);
-  // }, {passive: false});
-
   return function getInput() {
-    output.analog.x = analog.x || 0.0001;
-    output.analog.y = analog.y || 0.0001;
+    output.analog.x = analog.x;
+    output.analog.y = analog.y;
     output.analog.zoom = analog.zoom;
     output.analog.touching = mouseDown;
     analog.x = 0;

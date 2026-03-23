@@ -7,7 +7,6 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -18,10 +17,7 @@ export var loadObjFile = function() {
   }, () => {
 
     loadObjFile.addLight();
-    addRaycastsAABBListener();
-    // addEventListener('AmmoReady', () => {
-
-    // })
+    // addRaycastsAABBListener();
 
     setTimeout(() => {
       downloadMeshes({
@@ -55,25 +51,25 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
-      loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 2.0,                // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/floor1.webp'],
+        // texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        // envMapParams: {
+        //   baseColorMix: 0.0,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.25,               // 25% reflection blend
+        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 2.0,                // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -97,9 +93,9 @@ export var loadObjFile = function() {
         },
         pointerEffect: {
           enabled: true,
-          pointer: true,
+          // pointer: true,
           flameEmitter: true,
-          flameEffect: true,
+          // flameEffect: true,
         }
       })
 
@@ -155,8 +151,7 @@ export var loadObjFile = function() {
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
-      if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
-
+      // if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
     });
 
   })
