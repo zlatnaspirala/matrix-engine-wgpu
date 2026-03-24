@@ -1,6 +1,6 @@
 import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
-import {createInputHandler} from "./engine/engine.js";
+// import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType} from "./engine/utils.js";
@@ -111,6 +111,11 @@ export default class MatrixEngineWGPU {
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {this.matrixAmmo = new MatrixAmmo()}
     // cache
+
+    this._viewScratch = new Float32Array(16);
+    this.blendQueue = [];
+
+
     this._cameraUpdateFrame = 0;
     this._viewProjMatrix = mat4.create();
     this._invViewProj = mat4.create();
@@ -171,8 +176,8 @@ export default class MatrixEngineWGPU {
     var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
     if(this.options.canvasSize == 'fullscreen') {
-      canvas.width = isMobile() == false ? window.innerWidth + 100 : window.innerWidth;
-      canvas.height = isMobile() == false ? window.innerHeight + 100 : window.innerHeight;
+      canvas.width = isMobile() == false ? window.innerWidth * 0.5 : window.innerWidth;
+      canvas.height = isMobile() == false ? window.innerHeight *0.5 : window.innerHeight;
       console.log('TEST MOBILE DEVICES canvas.width ', canvas.width)
     } else {
       canvas.width = this.options.canvasSize.w;
@@ -191,9 +196,9 @@ export default class MatrixEngineWGPU {
     };
 
     this.cameras = {
-      arcball: new ArcballCamera({position: initialCameraPosition}),
+      // arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
-      RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
+      // RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
     if(urlQuery.lang != null) {
@@ -239,11 +244,12 @@ export default class MatrixEngineWGPU {
 
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
-    this.inputHandler = createInputHandler(window, canvas);
+    this.inputHandler = null;// createInputHandler(window, canvas);
     this.createGlobalStuff(callback);
     this.shadersPack = {};
     this.lastFrameMS = 0;
 
+    this._camVP = mat4.create();
     // document.addEventListener('fullscreenchange', () => {
     //   // setTimeout(() => this.onResize(), 150); // small delay lets browser commit the new size
     // });
@@ -860,14 +866,8 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      // if(isMobile() === false)
-      this._cameraUpdateFrame++;
+      // camera.update();
 
-      const isMobileFrame = isMobile() && (this._cameraUpdateFrame % 2 === 0);
-      if(!isMobileFrame) {
-        camera.update(dt * 2, this.inputHandler()); // dt*2 to compensate
-        // console.log('dt:', dt, 'yaw:', camera.yaw, 'pitch:', camera.pitch, 'pos:', camera.position[0].toFixed(2))
-      }
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -877,7 +877,7 @@ export default class MatrixEngineWGPU {
           if(m.shadowsCast == false) continue;
           let targetShadowPipeline;
           if(m.mType == MeshType.BVHANIM) {
-            m.updateInstanceData(m.modelMatrix);
+            if (m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if(m.mType == MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -911,12 +911,13 @@ export default class MatrixEngineWGPU {
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
         if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        mesh.getTransformationMatrix(camera, now2);
+        // if(camera._dirty) mesh.getTransformationMatrix(camera.VP, now2);
+        mesh.getTransformationMatrix(camera.VP, now2);
         if(mesh.position.inMove == true || this.matrixAmmo) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
-        if(mesh.material?.useBlend) continue;
+        if(mesh.material?.useBlend) {this.blendQueue.push(mesh); continue;}
         if(!mesh.sceneBindGroupForRender) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
           mesh.setupPipeline();
@@ -931,20 +932,13 @@ export default class MatrixEngineWGPU {
       // Blend
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
-        if(mesh.material?.useBlend !== true) continue;
-        if(!mesh.sceneBindGroupForRender) {
-          mesh.shadowDepthTextureView = this.shadowArrayView;
-          mesh.setupPipeline();
-        }
         pass.setPipeline(mesh.pipelineTransparent);
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
 
-      if(this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      mat4.multiply(camera.projectionMatrix, camera.view, this._viewProjMatrix);
-      const viewProjMatrix = this._viewProjMatrix;
+      const viewProjMatrix = camera.VP;
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if(mesh.effects) {
@@ -993,10 +987,10 @@ export default class MatrixEngineWGPU {
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
       this.submitQueue[0] = null;
+      if(this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
     } catch(err) {
       if(this.logLoopError) console.log('%cLoop(warn):' + err + " info : " + err.stack, LOG_WARN)
-      // requestAnimationFrame(this.frame);
     }
   }
 

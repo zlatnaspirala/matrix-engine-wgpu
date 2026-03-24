@@ -23274,115 +23274,134 @@ class CameraBase {
 }
 
 // WASDCamera is a camera implementation that behaves similar to first-person-shooter PC games.
-class WASDCamera extends CameraBase {
+class WASDCamera {
   pitch = 0;
   yaw = 0;
-  setPitch = pitch => {
-    this.pitch = pitch;
+  position = new Float32Array(3);
+  velocity = new Float32Array(3);
+  view = new Float32Array(16);
+  VP = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  _moveVelScratch = new Float32Array(3);
+  right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
+  up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
+  back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
+  // view = mat4.create();
+  // projectionMatrix = mat4.create();
+  // VP = mat4.create();
+  // _moveVelScratch = vec3.create()
+  _rotYScratch = _wgpuMatrix.mat4.create();
+  _rotXScratch = _wgpuMatrix.mat4.create();
+  _viewScratch = _wgpuMatrix.mat4.create();
+  _digital = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    up: false,
+    down: false
   };
-  setYaw = yaw => {
-    this.yaw = yaw;
+  _lastX = 0;
+  _lastY = 0;
+  _mouseDown = false;
+  _pointerLastScratch = {
+    x: 0,
+    y: 0
   };
-  setX = x => {
-    this.position[0] = x;
-  };
-  setY = y => {
-    this.position[1] = y;
-  };
-  setZ = z => {
-    this.position[2] = z;
-  };
-  velocity_ = _wgpuMatrix.vec3.create();
-  movementSpeed = 10;
-  rotationSpeed = 1;
 
-  // Movement velocity drag coeffient [0 .. 1]
-  // 0: Continues forever
-  // 1: Instantly stops moving
-  frictionCoefficient = 0.99;
-  get velocity() {
-    return this.velocity_;
-  }
-  // Assigns `vec` to the velocity vector
-  set velocity(vec) {
-    _wgpuMatrix.vec3.copy(vec, this.velocity_);
+  // Sensitivity
+  MOUSE_SENS = 0.01;
+  TOUCH_SENS = 0.03;
+  movementSpeed = 0.2;
+  rotationSpeed = 1;
+  constructor(options = {}) {
+    if (options.position) {
+      this.position[0] = options.position[0];
+      this.position[1] = options.position[1];
+      this.position[2] = options.position[2];
+    }
+    if (options.pitch) this.pitch = options.pitch;
+    if (options.yaw) this.yaw = options.yaw;
+    this.canvas = options.canvas;
+    this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
+    if (this.canvas) this._setupInput(this.canvas);
+    this._recalculateViewVP();
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
-    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+    _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._recalculateViewVP();
   }
-  constructor(options) {
-    super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? _wgpuMatrix.vec3.create(0, 0, 0);
-      const target = options.target ?? _wgpuMatrix.vec3.create(0, 0, 0);
-      const forward = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.sub(target, position));
-      this.recalculateAngles(forward);
-      this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
-      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
-      this.suspendDrag = false;
-      if (options.pitch) this.setPitch(options.pitch);
-      if (options.yaw) this.setYaw(options.yaw);
-      this._posScratch = _wgpuMatrix.vec3.create();
-      this._targetVelScratch = _wgpuMatrix.vec3.create();
-      this._rotYScratch = _wgpuMatrix.mat4.create();
-      this._rotXScratch = _wgpuMatrix.mat4.create();
-      this._viewScratch = _wgpuMatrix.mat4.create();
-      // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
-    }
+  static mat4MultiplySafe(a, b, out) {
+    const a00 = a[0],
+      a01 = a[4],
+      a02 = a[8],
+      a03 = a[12];
+    const a10 = a[1],
+      a11 = a[5],
+      a12 = a[9],
+      a13 = a[13];
+    const a20 = a[2],
+      a21 = a[6],
+      a22 = a[10],
+      a23 = a[14];
+    const a30 = a[3],
+      a31 = a[7],
+      a32 = a[11],
+      a33 = a[15];
+    const b00 = b[0],
+      b01 = b[4],
+      b02 = b[8],
+      b03 = b[12];
+    const b10 = b[1],
+      b11 = b[5],
+      b12 = b[9],
+      b13 = b[13];
+    const b20 = b[2],
+      b21 = b[6],
+      b22 = b[10],
+      b23 = b[14];
+    const b30 = b[3],
+      b31 = b[7],
+      b32 = b[11],
+      b33 = b[15];
+    out[0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
+    out[1] = a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30;
+    out[2] = a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30;
+    out[3] = a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30;
+    out[4] = a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31;
+    out[5] = a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31;
+    out[6] = a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31;
+    out[7] = a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31;
+    out[8] = a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32;
+    out[9] = a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32;
+    out[10] = a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32;
+    out[11] = a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32;
+    out[12] = a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33;
+    out[13] = a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33;
+    out[14] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
+    out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
+    return out;
   }
-
-  // Returns the camera matrix
-  get matrix() {
-    return super.matrix;
-  }
-
-  // Assigns `mat` to the camera matrix, and recalcuates the camera angles
-  set matrix(mat) {
-    super.matrix = mat;
-    this.recalculateAngles(this.back);
-  }
-  update(deltaTime, input) {
-    const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
-    if (this.suspendDrag == false) {
-      this.yaw -= input.analog.x * this.rotationSpeed;
-      this.pitch -= input.analog.y * this.rotationSpeed;
-    }
-    this.yaw = mod(this.yaw, Math.PI * 2);
-    this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-
-    // vec3.copy(this.position, this._posScratch);
-    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
-    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
-    super.matrix = this._rotXScratch;
-    const digital = input.digital;
-    const deltaRight = sign(digital.right, digital.left);
-    const deltaUp = sign(digital.up, digital.down);
-    const deltaBack = sign(digital.backward, digital.forward);
-    this._targetVelScratch[0] = 0;
-    this._targetVelScratch[1] = 0;
-    this._targetVelScratch[2] = 0;
-    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.right, deltaRight, this._targetVelScratch);
-    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.up, deltaUp, this._targetVelScratch);
-    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.back, deltaBack, this._targetVelScratch);
-    _wgpuMatrix.vec3.normalize(this._targetVelScratch, this._targetVelScratch);
-    _wgpuMatrix.vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
-    const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
-    this._targetVelScratch[0] = this._targetVelScratch[0] + (this.velocity_[0] - this._targetVelScratch[0]) * t;
-    this._targetVelScratch[1] = this._targetVelScratch[1] + (this.velocity_[1] - this._targetVelScratch[1]) * t;
-    this._targetVelScratch[2] = this._targetVelScratch[2] + (this.velocity_[2] - this._targetVelScratch[2]) * t;
-    _wgpuMatrix.vec3.copy(this._targetVelScratch, this.velocity_);
-    _wgpuMatrix.vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
-    this.position = this._posScratch;
-
-    // // ← reuse view scratch
-    // // mat4.invert(this.matrix, this._viewScratch);
-    const rx = this.right_;
-    const uy = this.up_;
-    const bz = this.back_;
-    const p = this.position_;
-    const vs = this._viewScratch;
+  _recalculateViewVP() {
+    const cy = Math.cos(this.yaw),
+      sy = Math.sin(this.yaw);
+    const cp = Math.cos(this.pitch),
+      sp = Math.sin(this.pitch);
+    this.right[0] = cy;
+    this.right[1] = 0;
+    this.right[2] = -sy;
+    this.up[0] = sy * sp;
+    this.up[1] = cp;
+    this.up[2] = cy * sp;
+    this.back[0] = sy * cp;
+    this.back[1] = -sp;
+    this.back[2] = cy * cp;
+    const rx = this.right,
+      uy = this.up,
+      bz = this.back,
+      p = this.position;
+    const vs = this.view;
     vs[0] = rx[0];
     vs[4] = rx[1];
     vs[8] = rx[2];
@@ -23399,14 +23418,145 @@ class WASDCamera extends CameraBase {
     vs[7] = 0;
     vs[11] = 0;
     vs[15] = 1;
-    // super.view = this._viewScratch;
-    return this.view;
+    WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
+  _setupInput(canvas) {
+    // const pointerLast = this._pointerLast;
+    canvas.style.touchAction = 'none';
+    canvas.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      this._mouseDown = true;
+      this._lastX = e.clientX;
+      this._lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    }, {
+      passive: true
+    });
+    const pointerUp = e => {
+      this._mouseDown = false;
+    };
+    canvas.addEventListener('pointerup', pointerUp, {
+      passive: true
+    });
+    canvas.addEventListener('pointercancel', pointerUp, {
+      passive: true
+    });
+    canvas.addEventListener('pointermove', e => {
+      e.preventDefault();
+      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      for (const ce of events) {
+        let dx = 0,
+          dy = 0;
+        if (ce.pointerType === 'mouse') {
+          if ((ce.buttons & 1) === 0) continue;
+          dx = ce.movementX * this.MOUSE_SENS;
+          dy = ce.movementY * this.MOUSE_SENS;
+        } else {
+          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
+          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
+          this._lastX = ce.clientX;
+          this._lastY = ce.clientY;
+        }
+        this.yaw -= dx * this.rotationSpeed;
+        this.pitch -= dy * this.rotationSpeed;
+        this.yaw %= Math.PI * 2;
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._recalculateViewVP();
+      }
+    }, {
+      passive: false
+    });
+    this._keyInterval = null;
+    // Keyboard WASD
+    const setDigital = (e, value) => {
+      switch (e.code) {
+        case 'KeyW':
+          this._digital.forward = value;
+          break;
+        case 'KeyS':
+          this._digital.backward = value;
+          break;
+        case 'KeyA':
+          this._digital.left = value;
+          break;
+        case 'KeyD':
+          this._digital.right = value;
+          break;
+        case 'KeyV':
+          this._digital.up = value;
+          break;
+        case 'KeyC':
+          this._digital.down = value;
+          break;
+      }
+      if (value == true && this._keyInterval === null) {
+        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
+      } else {
+        const d = this._digital;
+        if (!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
+          clearInterval(this._keyInterval);
+          this._keyInterval = null;
+        }
+      }
+    };
+    window.addEventListener('keydown', e => setDigital(e, true), {
+      passive: true
+    });
+    window.addEventListener('keyup', e => setDigital(e, false), {
+      passive: true
+    });
+  }
+  _applyDigitalMovement() {
+    const d = this._digital;
+    let vx = 0,
+      vy = 0,
+      vz = 0;
+    if (d.forward) {
+      vx -= this.back[0];
+      vy -= this.back[1];
+      vz -= this.back[2];
+    }
+    if (d.backward) {
+      vx += this.back[0];
+      vy += this.back[1];
+      vz += this.back[2];
+    }
+    if (d.right) {
+      vx += this.right[0];
+      vy += this.right[1];
+      vz += this.right[2];
+    }
+    if (d.left) {
+      vx -= this.right[0];
+      vy -= this.right[1];
+      vz -= this.right[2];
+    }
+    if (d.up) {
+      vx += this.up[0];
+      vy += this.up[1];
+      vz += this.up[2];
+    }
+    if (d.down) {
+      vx -= this.up[0];
+      vy -= this.up[1];
+      vz -= this.up[2];
+    }
+    const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
+    if (len < 0.0001) return;
+    const s = this.movementSpeed; // / len;
+    this.position[0] += vx * s;
+    this.position[1] += vy * s;
+    this.position[2] += vz * s;
 
-  // Recalculates the yaw and pitch values from a directional vector
-  recalculateAngles(dir) {
-    this.yaw = Math.atan2(dir[0], dir[2]);
-    this.pitch = -Math.asin(dir[1]);
+    // only update translation — rotation already correct
+    const rx = this.right,
+      uy = this.up,
+      bz = this.back,
+      p = this.position;
+    this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
 }
 
@@ -23523,9 +23673,166 @@ class ArcballCamera extends CameraBase {
     this.up = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.cross(this.back, this.right));
   }
 }
+exports.ArcballCamera = ArcballCamera;
+class RPGCamera {
+  // ====== CORE ======
+  pitch = -0.88;
+  yaw = 0;
+  position = _wgpuMatrix.vec3.create();
+  right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
+  up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
+  back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
+  view = _wgpuMatrix.mat4.create();
+  projectionMatrix = _wgpuMatrix.mat4.create();
+  VP = _wgpuMatrix.mat4.create();
+  _viewScratch = _wgpuMatrix.mat4.create();
+  _rotYScratch = _wgpuMatrix.mat4.create();
+  _rotXScratch = _wgpuMatrix.mat4.create();
+
+  // ====== RPG LOGIC ======
+  followMe = null;
+  followMeOffset = 150;
+  scrollY = 50;
+  minY = 50.5;
+  maxY = 135.0;
+  scrollSpeed = 1;
+  mousRollInAction = false;
+  _dirty = true;
+  constructor(options = {}) {
+    if (options.position) _wgpuMatrix.vec3.copy(options.position, this.position);
+    this.canvas = options.canvas;
+    this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
+    this._setupEvents();
+
+    // initial build
+    this._updateOrientation();
+    this._recalculateViewVP();
+  }
+  setProjection(fov, aspect, near, far) {
+    _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._dirty = true;
+  }
+  static mat4MultiplySafe(a, b, out) {
+    const a00 = a[0],
+      a01 = a[4],
+      a02 = a[8],
+      a03 = a[12];
+    const a10 = a[1],
+      a11 = a[5],
+      a12 = a[9],
+      a13 = a[13];
+    const a20 = a[2],
+      a21 = a[6],
+      a22 = a[10],
+      a23 = a[14];
+    const a30 = a[3],
+      a31 = a[7],
+      a32 = a[11],
+      a33 = a[15];
+    const b00 = b[0],
+      b01 = b[4],
+      b02 = b[8],
+      b03 = b[12];
+    const b10 = b[1],
+      b11 = b[5],
+      b12 = b[9],
+      b13 = b[13];
+    const b20 = b[2],
+      b21 = b[6],
+      b22 = b[10],
+      b23 = b[14];
+    const b30 = b[3],
+      b31 = b[7],
+      b32 = b[11],
+      b33 = b[15];
+    out[0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
+    out[1] = a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30;
+    out[2] = a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30;
+    out[3] = a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30;
+    out[4] = a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31;
+    out[5] = a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31;
+    out[6] = a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31;
+    out[7] = a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31;
+    out[8] = a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32;
+    out[9] = a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32;
+    out[10] = a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32;
+    out[11] = a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32;
+    out[12] = a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33;
+    out[13] = a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33;
+    out[14] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
+    out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
+    return out;
+  }
+  _setupEvents() {
+    addEventListener('wheel', e => {
+      this.mousRollInAction = true;
+      this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+      this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+      this._dirty = true;
+    });
+  }
+  _updateOrientation() {
+    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
+    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
+    this.right[0] = this._rotXScratch[0];
+    this.right[1] = this._rotXScratch[1];
+    this.right[2] = this._rotXScratch[2];
+    this.up[0] = this._rotXScratch[4];
+    this.up[1] = this._rotXScratch[5];
+    this.up[2] = this._rotXScratch[6];
+    this.back[0] = this._rotXScratch[8];
+    this.back[1] = this._rotXScratch[9];
+    this.back[2] = this._rotXScratch[10];
+  }
+  _updateFollow() {
+    if (!this.followMe) return;
+    if (this.followMe.inMove === true || this.mousRollInAction) {
+      this.followMeOffset = this.scrollY;
+      this.position[0] = this.followMe.x;
+      this.position[2] = this.followMe.z + this.followMeOffset;
+      app.lightContainer[0].position[0] = this.followMe.x;
+      app.lightContainer[0].position[2] = this.followMe.z;
+      app.lightContainer[0].target[0] = this.followMe.x;
+      app.lightContainer[0].target[2] = this.followMe.z;
+      this.mousRollInAction = false;
+      this._dirty = true;
+    }
+    const smoothFactor = 0.1;
+    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+  }
+  update() {
+    this._updateFollow();
+    if (!this._dirty) return;
+    this._updateOrientation();
+    // build view NO INVERT
+    const rx = this.right,
+      uy = this.up,
+      bz = this.back,
+      p = this.position;
+    const vs = this._viewScratch;
+    vs[0] = rx[0];
+    vs[4] = rx[1];
+    vs[8] = rx[2];
+    vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0];
+    vs[5] = uy[1];
+    vs[9] = uy[2];
+    vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0];
+    vs[6] = bz[1];
+    vs[10] = bz[2];
+    vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = vs[7] = vs[11] = 0;
+    vs[15] = 1;
+    this.view.set(vs);
+    RPGCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    this._dirty = false;
+  }
+}
 
 // Returns `x` clamped between [`min` .. `max`]
-exports.ArcballCamera = ArcballCamera;
+exports.RPGCamera = RPGCamera;
 function clamp(x, min, max) {
   return Math.min(Math.max(x, min), max);
 }
@@ -23626,9 +23933,8 @@ function createInputHandler(window, canvas) {
   }, {
     passive: true
   });
-  const MOUSE_SENS = 0.1;
-  const TOUCH_SENS = 0.03; // touch needs higher sensitivity — raw pixels feel sluggish
-
+  const MOUSE_SENS = 0.07;
+  const TOUCH_SENS = 0.02;
   canvas.addEventListener('pointermove', e => {
     const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (const ce of events) {
@@ -23659,133 +23965,6 @@ function createInputHandler(window, canvas) {
     return output;
   };
 }
-class RPGCamera extends CameraBase {
-  followMe = null;
-  pitch = 0;
-  yaw = 0;
-  velocity_ = _wgpuMatrix.vec3.create();
-  movementSpeed = 10;
-  rotationSpeed = 1;
-  followMeOffset = 150; // << mobile adaptation needed after all...
-  // Movement velocity drag coeffient [0 .. 1]
-  // 0: Continues forever
-  // 1: Instantly stops moving
-  frictionCoefficient = 0.99;
-  // Inside your camera control init
-  scrollY = 50;
-  minY = 50.5; // minimum camera height
-  maxY = 135.0; // maximum camera height
-  scrollSpeed = 1;
-  get velocity() {
-    return this.velocity_;
-  }
-  set velocity(vec) {
-    _wgpuMatrix.vec3.copy(vec, this.velocity_);
-  }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
-    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
-  }
-  constructor(options) {
-    super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? _wgpuMatrix.vec3.create(0, 0, 0);
-      const target = options.target ?? _wgpuMatrix.vec3.create(0, 0, 0);
-      const forward = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.sub(target, position));
-      this.recalculateAngles(forward);
-      this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
-      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
-      // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
-
-      this._posScratch = _wgpuMatrix.vec3.create();
-      this._targetVelScratch = _wgpuMatrix.vec3.create();
-      this._rotYScratch = _wgpuMatrix.mat4.create();
-      this._rotXScratch = _wgpuMatrix.mat4.create();
-      this._viewScratch = _wgpuMatrix.mat4.create();
-      this.mousRollInAction = false;
-      addEventListener('wheel', e => {
-        // Scroll up = zoom out / higher Y
-        this.mousRollInAction = true;
-        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
-        // Clamp to range
-        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-      });
-    }
-  }
-  get matrix() {
-    return super.matrix;
-  }
-
-  // Assigns `mat` to the camera matrix, and recalcuates the camera angles
-  set matrix(mat) {
-    super.matrix = mat;
-    this.recalculateAngles(this.back);
-  }
-  update(deltaTime, input) {
-    const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
-    this.yaw = 0;
-    this.pitch = -0.88;
-    this.yaw = mod(this.yaw, Math.PI * 2);
-    this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-    if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
-      this.followMeOffset = this.scrollY;
-      this.position[0] = this.followMe.x;
-      this.position[2] = this.followMe.z + this.followMeOffset;
-      app.lightContainer[0].position[0] = this.followMe.x;
-      app.lightContainer[0].position[2] = this.followMe.z;
-      app.lightContainer[0].target[0] = this.followMe.x;
-      app.lightContainer[0].target[2] = this.followMe.z;
-      this.mousRollInAction = false;
-    }
-    const smoothFactor = 0.1;
-    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
-
-    // ← was: let position = vec3.copy(this.position)  — allocated new vec3
-    _wgpuMatrix.vec3.copy(this.position, this._posScratch);
-
-    // ← was: mat4.rotateX(mat4.rotationY(...))  — 2 new mat4s
-    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
-    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
-    super.matrix = this._rotXScratch;
-    const digital = input.digital;
-    const deltaRight = sign(digital.right, digital.left);
-    const deltaUp = sign(digital.up, digital.down);
-    const deltaBack = sign(digital.backward, digital.forward);
-    if (deltaBack == -1) this._posScratch[2] += -10;else if (deltaBack == 1) this._posScratch[2] += 10;
-    this._posScratch[0] += deltaRight * 10;
-
-    // ← was: const targetVelocity = vec3.create()  — allocated new vec3
-    this._targetVelScratch[0] = 0;
-    this._targetVelScratch[1] = 0;
-    this._targetVelScratch[2] = 0;
-    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.right, deltaRight, this._targetVelScratch);
-    _wgpuMatrix.vec3.addScaled(this._targetVelScratch, this.up, deltaUp, this._targetVelScratch);
-    _wgpuMatrix.vec3.normalize(this._targetVelScratch, this._targetVelScratch);
-    _wgpuMatrix.vec3.mulScalar(this._targetVelScratch, this.movementSpeed, this._targetVelScratch);
-
-    // ← was: lerp(targetVelocity, this.velocity, t)  — lerp allocated internally
-    const t = Math.pow(1 - this.frictionCoefficient, deltaTime);
-    this._targetVelScratch[0] += (this.velocity_[0] - this._targetVelScratch[0]) * t;
-    this._targetVelScratch[1] += (this.velocity_[1] - this._targetVelScratch[1]) * t;
-    this._targetVelScratch[2] += (this.velocity_[2] - this._targetVelScratch[2]) * t;
-    _wgpuMatrix.vec3.copy(this._targetVelScratch, this.velocity_);
-
-    // ← was: vec3.addScaled(position, ...)  — position was the old allocated vec3
-    _wgpuMatrix.vec3.addScaled(this._posScratch, this.velocity_, deltaTime, this._posScratch);
-    this.position = this._posScratch;
-
-    // ← was: mat4.invert(this.matrix)  — new mat4
-    _wgpuMatrix.mat4.invert(this.matrix, this._viewScratch);
-    super.view = this._viewScratch;
-    return this.view;
-  }
-  recalculateAngles(dir) {
-    this.yaw = Math.atan2(dir[0], dir[2]);
-    this.pitch = -Math.asin(dir[1]);
-  }
-}
-exports.RPGCamera = RPGCamera;
 
 },{"wgpu-matrix":27}],43:[function(require,module,exports){
 "use strict";
@@ -26826,13 +27005,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-      this.getTransformationMatrix = (camera, dt) => {
-        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
+      this.getTransformationMatrix = (camVP, dt) => {
+        // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
-        this._sceneData[32] = camera.position[0];
-        this._sceneData[33] = camera.position[1];
-        this._sceneData[34] = camera.position[2];
+        // this._sceneData[32] = camera.position[0];
+        // this._sceneData[33] = camera.position[1];
+        // this._sceneData[34] = camera.position[2];
         this._sceneData[35] = 0.0;
         // this._sceneData[36] = spotLight.position[0];
         // this._sceneData[37] = spotLight.position[1];
@@ -32141,13 +32320,8 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
-      this.getTransformationMatrix = (camera, dt) => {
-        // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        this._sceneData.set(this._camVP, 16);
-        this._sceneData[32] = camera.position[0];
-        this._sceneData[33] = camera.position[1];
-        this._sceneData[34] = camera.position[2];
+      this.getTransformationMatrix = (camVP, dt) => {
+        this._sceneData.set(camVP, 16);
         this._sceneData[35] = 0.0;
         this._sceneData[39] = 0.0;
         this._sceneData[40] = this.globalAmbient[0];
@@ -34279,17 +34453,9 @@ class ProceduralMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
     this.modelMatrix = modelMatrix;
   }
-  getTransformationMatrix(camera, dt) {
-    const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-    // this._sceneData.set(spotLight.viewProjMatrix, 0);
+  getTransformationMatrix(camVP, dt) {
     this._sceneData.set(camVP, 16);
-    this._sceneData[32] = camera.position[0];
-    this._sceneData[33] = camera.position[1];
-    this._sceneData[34] = camera.position[2];
     this._sceneData[35] = 0.0;
-    // this._sceneData[36] = spotLight.position[0];
-    // this._sceneData[37] = spotLight.position[1];
-    // this._sceneData[38] = spotLight.position[2];
     this._sceneData[39] = 0.0;
     this._sceneData[40] = this.globalAmbient[0];
     this._sceneData[41] = this.globalAmbient[1];
@@ -54613,6 +54779,8 @@ var _fontanaWgsl = require("./shaders/fontana/fontana.wgsl.js");
 var _meConfig = require("./me-config.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {createInputHandler} from "./engine/engine.js";
+
 /**
  * @description
  * Main engine root class.
@@ -54713,6 +54881,9 @@ class MatrixEngineWGPU {
       this.matrixAmmo = new _matrixAmmo.default();
     }
     // cache
+
+    this._viewScratch = new Float32Array(16);
+    this.blendQueue = [];
     this._cameraUpdateFrame = 0;
     this._viewProjMatrix = _wgpuMatrix.mat4.create();
     this._invViewProj = _wgpuMatrix.mat4.create();
@@ -54781,8 +54952,8 @@ class MatrixEngineWGPU {
     var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
     if (this.options.canvasSize == 'fullscreen') {
-      canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth + 100 : window.innerWidth;
-      canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight + 100 : window.innerHeight;
+      canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth * 0.5 : window.innerWidth;
+      canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight * 0.5 : window.innerHeight;
       console.log('TEST MOBILE DEVICES canvas.width ', canvas.width);
     } else {
       canvas.width = this.options.canvasSize.w;
@@ -54797,19 +54968,14 @@ class MatrixEngineWGPU {
       responseCoef: this.options.mainCameraParams.responseCoef
     };
     this.cameras = {
-      arcball: new _engine.ArcballCamera({
-        position: initialCameraPosition
-      }),
+      // arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new _engine.WASDCamera({
         position: initialCameraPosition,
         canvas: canvas,
         pitch: 0.18,
         yaw: -0.1
-      }),
-      RPG: new _engine.RPGCamera({
-        position: initialCameraPosition,
-        canvas: canvas
       })
+      // RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
@@ -54859,11 +55025,11 @@ class MatrixEngineWGPU {
     });
     this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
-    this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
+    this.inputHandler = null; // createInputHandler(window, canvas);
     this.createGlobalStuff(callback);
     this.shadersPack = {};
     this.lastFrameMS = 0;
-
+    this._camVP = _wgpuMatrix.mat4.create();
     // document.addEventListener('fullscreenchange', () => {
     //   // setTimeout(() => this.onResize(), 150); // small delay lets browser commit the new size
     // });
@@ -55670,13 +55836,8 @@ class MatrixEngineWGPU {
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      // if(isMobile() === false)
-      this._cameraUpdateFrame++;
-      const isMobileFrame = (0, _utils.isMobile)() && this._cameraUpdateFrame % 2 === 0;
-      if (!isMobileFrame) {
-        camera.update(dt * 2, this.inputHandler()); // dt*2 to compensate
-        // console.log('dt:', dt, 'yaw:', camera.yaw, 'pitch:', camera.pitch, 'pos:', camera.position[0].toFixed(2))
-      }
+      // camera.update();
+
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -55686,7 +55847,7 @@ class MatrixEngineWGPU {
           if (m.shadowsCast == false) continue;
           let targetShadowPipeline;
           if (m.mType == _utils.MeshType.BVHANIM) {
-            m.updateInstanceData(m.modelMatrix);
+            if (m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if (m.mType == _utils.MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -55717,14 +55878,18 @@ class MatrixEngineWGPU {
       for (let i = 0; i < len; i++) {
         const mesh = this.mainRenderBundle[i];
         if (mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        mesh.getTransformationMatrix(camera, now2);
+        // if(camera._dirty) mesh.getTransformationMatrix(camera.VP, now2);
+        mesh.getTransformationMatrix(camera.VP, now2);
         if (mesh.position.inMove == true || this.matrixAmmo) {
           mesh.updateModelUniformBuffer(i);
         }
         mesh.position.update();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
-        if (mesh.material?.useBlend) continue;
+        if (mesh.material?.useBlend) {
+          this.blendQueue.push(mesh);
+          continue;
+        }
         if (!mesh.sceneBindGroupForRender) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
           mesh.setupPipeline();
@@ -55739,19 +55904,12 @@ class MatrixEngineWGPU {
       // Blend
       for (let i = 0; i < len; i++) {
         const mesh = this.mainRenderBundle[i];
-        if (mesh.material?.useBlend !== true) continue;
-        if (!mesh.sceneBindGroupForRender) {
-          mesh.shadowDepthTextureView = this.shadowArrayView;
-          mesh.setupPipeline();
-        }
         pass.setPipeline(mesh.pipelineTransparent);
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
-      if (this.collisionSystem) this.collisionSystem.update();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, this._viewProjMatrix);
-      const viewProjMatrix = this._viewProjMatrix;
+      const viewProjMatrix = camera.VP;
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if (mesh.effects) {
@@ -55791,10 +55949,10 @@ class MatrixEngineWGPU {
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
       this.submitQueue[0] = null;
+      if (this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
     } catch (err) {
       if (this.logLoopError) console.log('%cLoop(warn):' + err + " info : " + err.stack, _utils.LOG_WARN);
-      // requestAnimationFrame(this.frame);
     }
   };
   graphUpdate = delta => {};

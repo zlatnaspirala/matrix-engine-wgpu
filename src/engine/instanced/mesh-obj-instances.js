@@ -774,13 +774,13 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
 
-      this.getTransformationMatrix = (camera, dt) => {
-        const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
+      this.getTransformationMatrix = (camVP, dt) => {
+        // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
-        this._sceneData[32] = camera.position[0];
-        this._sceneData[33] = camera.position[1];
-        this._sceneData[34] = camera.position[2];
+        // this._sceneData[32] = camera.position[0];
+        // this._sceneData[33] = camera.position[1];
+        // this._sceneData[34] = camera.position[2];
         this._sceneData[35] = 0.0;
         // this._sceneData[36] = spotLight.position[0];
         // this._sceneData[37] = spotLight.position[1];
