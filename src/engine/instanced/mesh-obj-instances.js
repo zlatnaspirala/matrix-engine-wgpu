@@ -228,6 +228,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
     }
+    // else if maybe
+    if(typeof o.isVideo !== 'undefined') {
+      this.loadVideoTexture(o.isVideo);
+      this.drawElements = this.drawVideoElements;
+    }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -984,18 +989,48 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     }
   }
 
-  drawElements = (pass, lightContainer) => {
-    if(this.isVideo) {this.updateVideoTexture()}
+  drawElements = (pass) => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if(mesh.mType == MeshType.BVHANIM) {
+    if(this.mType == MeshType.BVHANIM) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
     }
-    if(this.isVideo == false) {
-      if(this.material.type === "mirror" && this.mirrorBindGroup) {
-        pass.setBindGroup(2, this.mirrorBindGroup);
+    if(this.material.type === "mirror" && this.mirrorBindGroup) {
+      pass.setBindGroup(2, this.mirrorBindGroup);
+    }
+    pass.setBindGroup(3, this.waterBindGroup);
+
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if(this.joints) {
+      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+      } else {
+        pass.setVertexBuffer(3, this.joints.buffer);  // dummy
+        pass.setVertexBuffer(4, this.weights.buffer); // dummy
       }
+    }
+    if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
+    else pass.setPipeline(this.pipeline);
+
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    for(var ins = 1;ins < this.instanceCount;ins++) {
+      if(ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
+      else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    }
+  }
+
+  drawVideoElements = (pass) => {
+    this.updateVideoTexture();
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    if(this.mType == MeshType.BVHANIM) {
+      pass.setBindGroup(1, this.modelBindGroupInstanced);
+    } else {
+      pass.setBindGroup(1, this.modelBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);
 

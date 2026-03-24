@@ -867,23 +867,14 @@ export default class MatrixEngineWGPU {
   frameSinglePass = () => {
     const now2 = performance.now();
     this.now = now2 * 0.001;
-    // const dt = (this.now - this.lastFrameMS);
-    const rawDt = this.lastFrameMS ? (this.now - this.lastFrameMS) : 0.016;
-    const dt = Math.min(rawDt, 0.033); // never more than 2 frames worth
     this.lastFrameMS = this.now;
-
     this.autoUpdate.forEach((_) => _.update())
-
-
     requestAnimationFrame(this.frame);
-
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      // camera.update();
-
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -893,7 +884,6 @@ export default class MatrixEngineWGPU {
           if(m.shadowsCast == false) continue;
           let targetShadowPipeline;
           if(m.mType == MeshType.BVHANIM) {
-            if(m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if(m.mType == MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -926,6 +916,7 @@ export default class MatrixEngineWGPU {
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
+        if(m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
         if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
         // if(camera._dirty) mesh.getTransformationMatrix(camera.VP, now2);
         mesh.getTransformationMatrix(camera.VP, now2);

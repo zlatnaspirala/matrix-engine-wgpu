@@ -765,9 +765,9 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    // fastRender: 0.9, // < 1 // recommended
-    fastRenderAlternative: true,
-    // any values good for mobile
+    fastRender: 0.3,
+    // < 1 // recommended
+    // fastRenderAlternative: true, // not good for mobile
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -828,7 +828,7 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'power'
         },
         position: {
           x: 0,
@@ -846,25 +846,19 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.25,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 2.0,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/cube-g1.webp'],
+        // texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        // envMapParams: {
+        //   baseColorMix: 0.0,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.25,               // 25% reflection blend
+        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 2.0,                // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -874,7 +868,7 @@ var loadObjFile = function () {
       });
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'power'
         },
         position: {
           x: 0,
@@ -894,35 +888,28 @@ var loadObjFile = function () {
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.8,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.25,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 2.0,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        // envMapParams: {
+        //   baseColorMix: 0.8,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.25,               // 25% reflection blend
+        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 2.0,                // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         physics: {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          // pointer: true,
-          flameEmitter: true
-          // flameEffect: true,
         }
+        // pointerEffect: {
+        //   // enabled: true,
+        //   // pointer: true,
+        //   // flameEmitter: true,
+        //   // flameEffect: true,
+        // }
       });
 
       // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, loadObjFile.device)));
@@ -26409,6 +26396,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, _utils.LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
     }
+    // else if maybe
+    if (typeof o.isVideo !== 'undefined') {
+      this.loadVideoTexture(o.isVideo);
+      this.drawElements = this.drawVideoElements;
+    }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -27239,20 +27231,43 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       mesh.indexCount = indexCount;
     }
   }
-  drawElements = (pass, lightContainer) => {
-    if (this.isVideo) {
-      this.updateVideoTexture();
-    }
+  drawElements = pass => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (mesh.mType == _utils.MeshType.BVHANIM) {
+    if (this.mType == _utils.MeshType.BVHANIM) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
     }
-    if (this.isVideo == false) {
-      if (this.material.type === "mirror" && this.mirrorBindGroup) {
-        pass.setBindGroup(2, this.mirrorBindGroup);
+    if (this.material.type === "mirror" && this.mirrorBindGroup) {
+      pass.setBindGroup(2, this.mirrorBindGroup);
+    }
+    pass.setBindGroup(3, this.waterBindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if (this.joints) {
+      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+      } else {
+        pass.setVertexBuffer(3, this.joints.buffer); // dummy
+        pass.setVertexBuffer(4, this.weights.buffer); // dummy
       }
+    }
+    if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    if (this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent);else pass.setPipeline(this.pipeline);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    for (var ins = 1; ins < this.instanceCount; ins++) {
+      if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    }
+  };
+  drawVideoElements = pass => {
+    this.updateVideoTexture();
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    if (this.mType == _utils.MeshType.BVHANIM) {
+      pass.setBindGroup(1, this.modelBindGroupInstanced);
+    } else {
+      pass.setBindGroup(1, this.modelBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -55867,9 +55882,6 @@ class MatrixEngineWGPU {
   frameSinglePass = () => {
     const now2 = performance.now();
     this.now = now2 * 0.001;
-    // const dt = (this.now - this.lastFrameMS);
-    const rawDt = this.lastFrameMS ? this.now - this.lastFrameMS : 0.016;
-    const dt = Math.min(rawDt, 0.033); // never more than 2 frames worth
     this.lastFrameMS = this.now;
     this.autoUpdate.forEach(_ => _.update());
     requestAnimationFrame(this.frame);
@@ -55878,8 +55890,6 @@ class MatrixEngineWGPU {
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      // camera.update();
-
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -55889,7 +55899,6 @@ class MatrixEngineWGPU {
           if (m.shadowsCast == false) continue;
           let targetShadowPipeline;
           if (m.mType == _utils.MeshType.BVHANIM) {
-            if (m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if (m.mType == _utils.MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -55919,6 +55928,7 @@ class MatrixEngineWGPU {
       const len = this.mainRenderBundle.length;
       for (let i = 0; i < len; i++) {
         const mesh = this.mainRenderBundle[i];
+        if (m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
         if (mesh.vertexAnim.active == true) mesh.updateTime(this.now);
         // if(camera._dirty) mesh.getTransformationMatrix(camera.VP, now2);
         mesh.getTransformationMatrix(camera.VP, now2);
