@@ -175,9 +175,18 @@ export default class MatrixEngineWGPU {
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
+    this.canvas = canvas;
     if(this.options.canvasSize == 'fullscreen') {
-      canvas.width = isMobile() == false ? window.innerWidth * 0.5 : window.innerWidth;
-      canvas.height = isMobile() == false ? window.innerHeight *0.5 : window.innerHeight;
+      if(this.options.fastRender && !isNaN(this.options.fastRender)) {
+        this.applyCanvasSize(this.options.fastRender);
+      } else if(this.options.fastRenderAlternative) {
+        canvas.width = isMobile() == false ? window.innerWidth * 0.5 : window.innerWidth;
+        canvas.height = isMobile() == false ? window.innerHeight * 0.5 : window.innerHeight;
+        canvas.style.zoom = '200%';
+      } else {
+        canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
+        canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
+      }
       console.log('TEST MOBILE DEVICES canvas.width ', canvas.width)
     } else {
       canvas.width = this.options.canvasSize.w;
@@ -186,8 +195,6 @@ export default class MatrixEngineWGPU {
     target.append(canvas);
 
     this.submitQueue = [null];
-
-    this.canvas = canvas;
 
     const initialCameraPosition = vec3.create(0, 0, 0);
     this.mainCameraParams = {
@@ -215,6 +222,15 @@ export default class MatrixEngineWGPU {
       });
     }
     this.init({canvas, callback});
+  }
+
+  applyCanvasSize(scale) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scale;
+    this.canvas.height = screenHeight * scale;
+    this.canvas.style.width = screenWidth + "px";
+    this.canvas.style.height = screenHeight + "px";
   }
 
   getCamera() {
@@ -877,7 +893,7 @@ export default class MatrixEngineWGPU {
           if(m.shadowsCast == false) continue;
           let targetShadowPipeline;
           if(m.mType == MeshType.BVHANIM) {
-            if (m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
+            if(m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if(m.mType == MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;

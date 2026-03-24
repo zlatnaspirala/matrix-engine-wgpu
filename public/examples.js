@@ -765,6 +765,9 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
+    // fastRender: 0.9, // < 1 // recommended
+    fastRenderAlternative: true,
+    // any values good for mobile
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -778,8 +781,7 @@ var loadObjFile = function () {
     }
   }, () => {
     loadObjFile.addLight();
-    // addRaycastsAABBListener();
-
+    (0, _raycast.addRaycastsAABBListener)();
     setTimeout(() => {
       (0, _loaderObj.downloadMeshes)({
         ball: "./res/meshes/blender/sphere.obj",
@@ -826,7 +828,7 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'mirror'
         },
         position: {
           x: 0,
@@ -844,19 +846,25 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp'],
-        // texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        // envMapParams: {
-        //   baseColorMix: 0.0,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.25,               // 25% reflection blend
-        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 2.0,                // Medium-sharp edge
-        //   envLodBias: 1.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        envMapParams: {
+          baseColorMix: 0.0,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],
+          // Slight cool tint
+          reflectivity: 0.25,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0],
+          // Soft cyan
+          illuminateStrength: 0.1,
+          // Gentle rim
+          illuminatePulse: 0.01,
+          // No pulse (static)
+          fresnelPower: 2.0,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false // ✅ Env map mode
+        },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -866,7 +874,7 @@ var loadObjFile = function () {
       });
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'mirror'
         },
         position: {
           x: 0,
@@ -883,9 +891,27 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
+        envMapParams: {
+          baseColorMix: 0.8,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],
+          // Slight cool tint
+          reflectivity: 0.25,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0],
+          // Soft cyan
+          illuminateStrength: 0.1,
+          // Gentle rim
+          illuminatePulse: 0.01,
+          // No pulse (static)
+          fresnelPower: 2.0,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false // ✅ Env map mode
+        },
         physics: {
           enabled: false,
           mass: 0,
@@ -54951,9 +54977,18 @@ class MatrixEngineWGPU {
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
+    this.canvas = canvas;
     if (this.options.canvasSize == 'fullscreen') {
-      canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth * 0.5 : window.innerWidth;
-      canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight * 0.5 : window.innerHeight;
+      if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+        this.applyCanvasSize(this.options.fastRender);
+      } else if (this.options.fastRenderAlternative) {
+        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth * 0.5 : window.innerWidth;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight * 0.5 : window.innerHeight;
+        canvas.style.zoom = '200%';
+      } else {
+        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight;
+      }
       console.log('TEST MOBILE DEVICES canvas.width ', canvas.width);
     } else {
       canvas.width = this.options.canvasSize.w;
@@ -54961,7 +54996,6 @@ class MatrixEngineWGPU {
     }
     target.append(canvas);
     this.submitQueue = [null];
-    this.canvas = canvas;
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
     this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
@@ -54994,6 +55028,14 @@ class MatrixEngineWGPU {
       canvas,
       callback
     });
+  }
+  applyCanvasSize(scale) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scale;
+    this.canvas.height = screenHeight * scale;
+    this.canvas.style.width = screenWidth + "px";
+    this.canvas.style.height = screenHeight + "px";
   }
   getCamera() {
     return this.cameras[this.mainCameraParams.type];
