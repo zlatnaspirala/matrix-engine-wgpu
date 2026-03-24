@@ -4,7 +4,7 @@
 var _cameraTexture = require("./examples/camera-texture.js");
 var _fontana = require("./examples/fontana.js");
 var _glbLoader = require("./examples/glb-loader.js");
-var _lightsTest = require("./examples/lights-test.js");
+var _myLights = require("./examples/my-lights.js");
 var _loadObjFile = require("./examples/load-obj-file.js");
 var _loadObjsSequence = require("./examples/load-objs-sequence.js");
 var _physicsPlayground = require("./examples/physics-playground.js");
@@ -58,14 +58,14 @@ if (urlQ['demo'] === '1') {
 } else if (urlQ['demo'] === '8') {
   (0, _fontana.fontana)();
 } else if (urlQ['demo'] === '9') {
-  (0, _lightsTest.myLights)();
+  (0, _myLights.myLights)();
 } else if (urlQ['demo'] === '10') {
   (0, _snakeLights.snakeLights)();
 } else if (urlQ['demo'] === '11') {
   (0, _snakeLightsInstanced.snakeLightsInstanced)();
 }
 
-},{"./examples/camera-texture.js":2,"./examples/fontana.js":3,"./examples/glb-loader.js":4,"./examples/lights-test.js":5,"./examples/load-obj-file.js":6,"./examples/load-objs-sequence.js":7,"./examples/physics-playground.js":8,"./examples/procedural-mesh.js":9,"./examples/snake-lights-instanced.js":10,"./examples/snake-lights.js":11,"./examples/video-texture.js":12,"./src/engine/utils.js":63}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/fontana.js":3,"./examples/glb-loader.js":4,"./examples/load-obj-file.js":5,"./examples/load-objs-sequence.js":6,"./examples/my-lights.js":7,"./examples/physics-playground.js":8,"./examples/procedural-mesh.js":9,"./examples/snake-lights-instanced.js":10,"./examples/snake-lights.js":11,"./examples/video-texture.js":12,"./src/engine/utils.js":63}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -608,152 +608,6 @@ function loadGLBLoader() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.myLights = void 0;
-var _world = _interopRequireDefault(require("../src/world.js"));
-var _loaderObj = require("../src/engine/loader-obj.js");
-var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
-var _utils = require("../src/engine/utils.js");
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-var myLights = function () {
-  let myLights = new _world.default({
-    useSingleRenderPass: true,
-    canvasSize: 'fullscreen',
-    dontUsePhysics: true,
-    mainCameraParams: {
-      type: 'WASD',
-      responseCoef: 1000
-    },
-    clearColor: {
-      r: 0,
-      b: 0.122,
-      g: 0.122,
-      a: 1
-    }
-  }, async () => {
-    const NUM_LIGHTS = 4;
-    const ORBIT_RADIUS = 8;
-    const ORBIT_SPEED = 0.6;
-    const TARGET = {
-      x: 0,
-      y: 0,
-      z: -10
-    };
-
-    // Light colors cycling around the hue wheel
-    const LIGHT_COLORS = [[1.0, 0.2, 0.2],
-    // red
-    [1.0, 0.6, 0.1],
-    // orange
-    [0.2, 0.2, 1.0],
-    // blue
-    [1.0, 1.0, 0.1],
-    // yellow
-    [0.2, 1.0, 0.2],
-    // green
-    [0.1, 1.0, 0.6],
-    // teal
-    [0.1, 0.6, 1.0],
-    // sky
-    [0.6, 0.1, 1.0],
-    // purple
-    [1.0, 0.1, 0.8],
-    // pink
-    [1.0, 0.1, 0.4] // rose
-    ];
-    for (let i = 0; i < NUM_LIGHTS; i++) {
-      myLights.addLight();
-    }
-
-    // Ground
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
-    }, m => {
-      myLights.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: -5,
-          z: -10
-        },
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        scale: [30, 0.5, 30],
-        physics: {
-          enabled: false
-        }
-      });
-    }, {
-      scale: [30, 0.5, 30]
-    });
-
-    // GLB monster
-    const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
-    myLights.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [5, 5, 5],
-      position: {
-        x: TARGET.x,
-        y: TARGET.y - 4,
-        z: TARGET.z
-      },
-      name: 'monster',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
-    }, null, glbFile);
-
-    // Set up lights evenly spaced around the circle
-    for (let i = 0; i < NUM_LIGHTS; i++) {
-      const light = myLights.lightContainer[i];
-      const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
-      const color = LIGHT_COLORS[i];
-      light.intensity = 8;
-      light.color = color;
-
-      // Orbit height varies slightly per light for more visual interest
-      const heightOffset = Math.sin(angleOffset) * 2;
-      light.position = [TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS];
-      light.target = [TARGET.x, TARGET.y, TARGET.z];
-
-      // Each light orbits at its own phase offset
-      light.orbitAngle = angleOffset;
-      light.updater.push(light => {
-        light.orbitAngle += ORBIT_SPEED * 0.01;
-        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
-        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
-        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-        light.position = [x, height, z];
-        light.target = [TARGET.x, TARGET.y, TARGET.z];
-      });
-    }
-    myLights.activateBloomEffect();
-    // Camera setup
-    setTimeout(() => {
-      let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(7);
-      monster.updateInstances(7);
-      monster.trailAnimation.delay = 10;
-      monster.playAnimationByIndex(3);
-      myLights.cameras.WASD.yaw = -0.03;
-      myLights.cameras.WASD.pitch = -0.35;
-      myLights.cameras.WASD.position = [0, 8, 5];
-    }, 800);
-  });
-  window.app = myLights;
-};
-exports.myLights = myLights;
-
-},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/engine/utils.js":63,"../src/world.js":108}],6:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
 exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
@@ -765,7 +619,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.3,
+    fastRender: 0.4,
     // < 1 // recommended
     // fastRenderAlternative: true, // not good for mobile
     dontUsePhysics: true,
@@ -782,19 +636,17 @@ var loadObjFile = function () {
   }, () => {
     loadObjFile.addLight();
     (0, _raycast.addRaycastsAABBListener)();
-    setTimeout(() => {
-      (0, _loaderObj.downloadMeshes)({
-        ball: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj"
-      }, onLoadObj, {
-        scale: [1, 1, 1]
-      });
-      (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/blender/cube.obj"
-      }, onGround, {
-        scale: [30, 0.5, 30]
-      });
-    }, 2);
+    (0, _loaderObj.downloadMeshes)({
+      ball: "./res/meshes/blender/sphere.obj",
+      cube: "./res/meshes/blender/cube.obj"
+    }, onLoadObj, {
+      scale: [1, 1, 1]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, onGround, {
+      scale: [30, 0.5, 30]
+    });
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
@@ -828,7 +680,7 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'power'
+          type: 'mirror'
         },
         position: {
           x: 0,
@@ -846,19 +698,26 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.webp'],
-        // texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        // envMapParams: {
-        //   baseColorMix: 0.0,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.25,               // 25% reflection blend
-        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 2.0,                // Medium-sharp edge
-        //   envLodBias: 1.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
+        // texturesPaths: ['./res/textures/cube-g1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        envMapParams: {
+          baseColorMix: 0.0,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],
+          // Slight cool tint
+          reflectivity: 0.25,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0],
+          // Soft cyan
+          illuminateStrength: 0.1,
+          // Gentle rim
+          illuminatePulse: 0.01,
+          // No pulse (static)
+          fresnelPower: 2.0,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false // ✅ Env map mode
+        },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -868,7 +727,7 @@ var loadObjFile = function () {
       });
       loadObjFile.addMeshObj({
         material: {
-          type: 'power'
+          type: 'mirror'
         },
         position: {
           x: 0,
@@ -888,17 +747,24 @@ var loadObjFile = function () {
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
-        // envMapParams: {
-        //   baseColorMix: 0.8,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.25,               // 25% reflection blend
-        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 2.0,                // Medium-sharp edge
-        //   envLodBias: 1.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
+        envMapParams: {
+          baseColorMix: 0.8,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],
+          // Slight cool tint
+          reflectivity: 0.25,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0],
+          // Soft cyan
+          illuminateStrength: 0.1,
+          // Gentle rim
+          illuminatePulse: 0.01,
+          // No pulse (static)
+          fresnelPower: 2.0,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false // ✅ Env map mode
+        },
         physics: {
           enabled: false,
           mass: 0,
@@ -966,7 +832,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/engine/procedural-mesh.js":59,"../src/engine/raycast.js":62,"../src/engine/utils.js":63,"../src/world.js":108}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/engine/procedural-mesh.js":59,"../src/engine/raycast.js":62,"../src/engine/utils.js":63,"../src/world.js":108}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1099,7 +965,154 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/utils.js":63,"../src/world.js":108}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":49,"../src/engine/utils.js":63,"../src/world.js":108}],7:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.myLights = void 0;
+var _world = _interopRequireDefault(require("../src/world.js"));
+var _loaderObj = require("../src/engine/loader-obj.js");
+var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _utils = require("../src/engine/utils.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+var myLights = function () {
+  let myLights = new _world.default({
+    useSingleRenderPass: true,
+    canvasSize: 'fullscreen',
+    dontUsePhysics: true,
+    mainCameraParams: {
+      type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {
+      r: 0,
+      b: 0.122,
+      g: 0.122,
+      a: 1
+    }
+  }, async () => {
+    const NUM_LIGHTS = 4;
+    const ORBIT_RADIUS = 8;
+    const ORBIT_SPEED = 0.6;
+    const TARGET = {
+      x: 0,
+      y: 0,
+      z: -10
+    };
+
+    // Light colors cycling around the hue wheel
+    const LIGHT_COLORS = [[1.0, 0.2, 0.2],
+    // red
+    [1.0, 0.6, 0.1],
+    // orange
+    [0.2, 0.2, 1.0],
+    // blue
+    [1.0, 1.0, 0.1],
+    // yellow
+    [0.2, 1.0, 0.2],
+    // green
+    [0.1, 1.0, 0.6],
+    // teal
+    [0.1, 0.6, 1.0],
+    // sky
+    [0.6, 0.1, 1.0],
+    // purple
+    [1.0, 0.1, 0.8],
+    // pink
+    [1.0, 0.1, 0.4] // rose
+    ];
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      myLights.addLight();
+    }
+
+    // Ground
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, m => {
+      myLights.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        shadowsCast: false,
+        position: {
+          x: 0,
+          y: -5,
+          z: -10
+        },
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'floor',
+        mesh: m.cube,
+        scale: [30, 0.5, 30],
+        physics: {
+          enabled: false
+        }
+      });
+    }, {
+      scale: [30, 0.5, 30]
+    });
+
+    // GLB monster
+    const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
+    myLights.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [5, 5, 5],
+      position: {
+        x: TARGET.x,
+        y: TARGET.y - 4,
+        z: TARGET.z
+      },
+      name: 'monster',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile);
+
+    // Set up lights evenly spaced around the circle
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      const light = myLights.lightContainer[i];
+      const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
+      const color = LIGHT_COLORS[i];
+      light.intensity = 8.5;
+      light.color = color;
+      // Orbit height varies slightly per light for more visual interest
+      const heightOffset = Math.sin(angleOffset) * 2;
+      light.position = [TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS];
+      light.target = [TARGET.x, TARGET.y, TARGET.z];
+
+      // Each light orbits at its own phase offset
+      light.orbitAngle = angleOffset;
+      light.updater.push(light => {
+        light.orbitAngle += ORBIT_SPEED * 0.01;
+        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
+        light.position = [x, height, z];
+        light.target = [TARGET.x, TARGET.y, TARGET.z];
+      });
+    }
+
+    // myLights.activateBloomEffect();
+
+    setTimeout(() => {
+      let monster = app.getSceneObjectByName('monster_MutantMesh');
+      monster.updateMaxInstances(6);
+      monster.updateInstances(6);
+      monster.trailAnimation.delay = 20;
+      monster.playAnimationByIndex(3);
+      myLights.cameras.WASD.yaw = -0.03;
+      myLights.cameras.WASD.pitch = -0.35;
+      myLights.cameras.WASD.position = [0, 8, 5];
+    }, 800);
+  });
+  window.app = myLights;
+};
+exports.myLights = myLights;
+
+},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/engine/utils.js":63,"../src/world.js":108}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23296,6 +23309,7 @@ class WASDCamera {
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
+  _dirty = true;
   right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
   up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
   back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
@@ -23434,10 +23448,9 @@ class WASDCamera {
     WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
   _setupInput(canvas) {
-    // const pointerLast = this._pointerLast;
     canvas.style.touchAction = 'none';
     canvas.addEventListener('pointerdown', e => {
-      e.preventDefault();
+      // e.preventDefault();
       this._mouseDown = true;
       this._lastX = e.clientX;
       this._lastY = e.clientY;
@@ -23455,7 +23468,7 @@ class WASDCamera {
       passive: true
     });
     canvas.addEventListener('pointermove', e => {
-      e.preventDefault();
+      // e.preventDefault();
       const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       for (const ce of events) {
         let dx = 0,
@@ -23474,13 +23487,13 @@ class WASDCamera {
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._dirty = true;
         this._recalculateViewVP();
       }
     }, {
-      passive: false
+      passive: true
     });
     this._keyInterval = null;
-    // Keyboard WASD
     const setDigital = (e, value) => {
       switch (e.code) {
         case 'KeyW':
@@ -23503,7 +23516,10 @@ class WASDCamera {
           break;
       }
       if (value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
+        this._keyInterval = setInterval(() => {
+          this._dirty = true;
+          this._applyDigitalMovement();
+        }, 16);
       } else {
         const d = this._digital;
         if (!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
@@ -23570,6 +23586,7 @@ class WASDCamera {
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
     this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
     WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    // this._dirty = false;
   }
 }
 
@@ -26217,7 +26234,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
     this.mType = _utils.MeshType.BVHANIM;
-    this.shadowsCast = true;
+    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
@@ -31635,8 +31652,6 @@ var _flameEmmiter = require("./effects/flame-emmiter");
 var _literals = require("./literals");
 var _proceduralTextures = require("./procedures/procedural-textures");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {PointerEffect} from './effects/pointerEffect';
-
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device, o.material, _glbFile, o.textureCache, o.isVideo);
@@ -31680,7 +31695,7 @@ class MEMeshObj extends _materials.default {
     }
     this.useScale = o.useScale || false;
     this.material = o.material;
-    this.shadowsCast = true;
+    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     //cache
@@ -31689,9 +31704,8 @@ class MEMeshObj extends _materials.default {
     this._scaleArray = new Float32Array(3);
     addEventListener('update-pipeine', () => {
       this.setupPipeline();
-      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
     });
-    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
+    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
       if (typeof this.mesh == 'undefined') {
@@ -32126,7 +32140,6 @@ class MEMeshObj extends _materials.default {
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
         size: 192,
-        //192, // ⬅️ was 176
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -32382,12 +32395,10 @@ class MEMeshObj extends _materials.default {
         this._translateVec[2] = pos.z;
         _wgpuMatrix.mat4.translate(modelMatrix, this._translateVec, modelMatrix);
         if (this.itIsPhysicsBody) {
-          // rotation axis array also allocates: sss
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
           this._rotAxisVec[2] = this.rotation.axis.z;
           // mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-
           _wgpuMatrix.mat4.rotate(modelMatrix, [this._rotAxisVec[0], this._rotAxisVec[1], this._rotAxisVec[2]], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
           _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
@@ -32403,8 +32414,6 @@ class MEMeshObj extends _materials.default {
         this.modelMatrix = modelMatrix;
         return modelMatrix;
       };
-
-      // looks like affect on transformations for now const 0
       const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
       const modelData = modelMatrix;
       this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
@@ -32523,7 +32532,6 @@ class MEMeshObj extends _materials.default {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
-    if (!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
     this.modelMatrix = modelMatrix;
@@ -36668,12 +36676,15 @@ var _utils = require("./engine/utils.js");
  * @examples
  * MATRIX_ENGINE_WGPU CONFIG EXAMPLE WORKSPACE
  * APP can be controlled from url params in any domain/context.
+ * 
+ * Configure full render from url params - optimise render or any other stuuf...
  */
 
 window.urlQ = _utils.urlQuery;
 const MEConfig = exports.MEConfig = {
   fsManager: new _utils.FullScreenManagerElement(),
   SHADOW_RES: (0, _utils.isMobile)() ? 128.0 : 512.0,
+  MAX_BONES: (0, _utils.isMobile)() ? 80 : 100,
   construct: function () {
     if (urlQ['shadowSize']) {
       this.SHADOW_RES = parseFloat(urlQ['shadowSize']);
@@ -38622,7 +38633,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentVideoWGSL = void 0;
-let fragmentVideoWGSL = exports.fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 2.0;
+let fragmentVideoWGSL = exports.fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1.0;
 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
@@ -38907,29 +38918,29 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     var lightContribution = vec3f(0.0);
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-      let p  = sc.xyz / sc.w;
-      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-      let depthRef = p.z;
-      let lightDir = normalize(spotlights[i].position - input.fragPos);
-      let bias = spotlights[i].shadowBias;
-      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-      // Only apply shadow if fragment is inside light frustum
-      let inFrustum = p.z >= 0.0 && p.z <= 1.0 
-             && p.x >= -1.0 && p.x <= 1.0 
-             && p.y >= -1.0 && p.y <= 1.0;
-      // let shadowFactor = select(1.0, visibility, inFrustum);
-      let shadowFactor = visibility;
-      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-      lightContribution += contrib * shadowFactor;
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+        let depthRef = p.z;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let inFrustum =
+        p.z >= 0.0 && p.z <= 1.0 &&
+        p.x >= -1.5 && p.x <= 1.5 &&
+        p.y >= -1.5 && p.y <= 1.5;
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+        let shadowFactor = select(1.0, visibility, inFrustum);
+        let contrib = computeSpotLight(
+            spotlights[i],
+            norm,
+            input.fragPos,
+            viewDir,
+            materialData
+        );
+        lightContribution += contrib * shadowFactor;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-
-    // let N = normalize(input.fragNorm);
-    // let V = normalize(scene.cameraPos - input.fragPos);
-    // let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;
@@ -40039,8 +40050,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSLInstanced = void 0;
+var _meConfig = require("../../me-config");
 let fragmentWGSLInstanced = exports.fragmentWGSLInstanced = `
-override shadowDepthTextureSize: f32 = 512.0;
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -40095,14 +40107,10 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
 // PBR textures
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
-
-// RPG or any other usage [selected obj effect]
-// @group(2) @binding(0) var<uniform> uSelected : f32;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -40118,11 +40126,7 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
     let metallic = mrTex.b * material.metallicFactor;
     let roughness = mrTex.g * material.roughnessFactor;
-    
-    // ✅ Get alpha from texture and material factor
-    // let alpha = texColor.a * material.baseColorFactor.a;
     let alpha = material.baseColorFactor.a;
-    
     return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
@@ -40165,18 +40169,14 @@ fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mater
         return vec3f(0.0);
     }
     return material.baseColor * light.color * light.intensity * NdotL;
-    // return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
     let NdotL = max(dot(N, L), 0.0);
-
     let theta = dot(L, normalize(-light.direction));
     let epsilon = light.innerCutoff - light.outerCutoff;
     var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-
-    // coneAtten = 1.0;
     if (coneAtten <= 0.0 || NdotL <= 0.0) {
         return vec3f(0.0);
     }
@@ -40206,7 +40206,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let diffuse = kD * material.baseColor.rgb / PI;
 
     let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
     return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
@@ -40235,63 +40234,45 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
-
-    // ✅ now we declare materialData
     let materialData = getPBRMaterial(input.uv);
-
-    // ✅ Early discard for fully transparent pixels (alpha cutoff)
     if (materialData.alpha < 0.01) {
         discard;
     }
 
     var lightContribution = vec3f(0.0);
-
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
         let p  = sc.xyz / sc.w;
         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
         let depthRef = p.z * 0.5 + 0.5;
-
         let lightDir = normalize(spotlights[i].position - input.fragPos);
         let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        // let visibility = 1.0;
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-
     // Apply per-instance tint
     finalColor *= input.colorMult.rgb;
-
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-
-    // if (uSelected > 0.5) {
-    //     let glowColor = vec3f(0.2, 0.8, 1.0);
-    //     finalColor += glowColor * fresnel * 0.1;
-    // }
-
-    // let alpha = input.colorMult.a; // use alpha for blending
-    // return vec4f(finalColor, alpha);
-
     let alpha = materialData.alpha;
     return vec4f(finalColor, alpha);
-    // return vec4f(1.0, 0.0, 0.0, 0.1);
 }`;
 
-},{}],83:[function(require,module,exports){
+},{"../../me-config":64}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentMirrorWGSLInstanced = void 0;
+var _meConfig = require("../../me-config");
 const fragmentMirrorWGSLInstanced = exports.fragmentMirrorWGSLInstanced = `
-override shadowDepthTextureSize: f32 = 512.0;
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -40573,14 +40554,15 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],84:[function(require,module,exports){
+},{"../../me-config":64}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexWGSLInstanced = void 0;
-let vertexWGSLInstanced = exports.vertexWGSLInstanced = `const MAX_BONES = 100u;
+var _meConfig = require("../../me-config");
+let vertexWGSLInstanced = exports.vertexWGSLInstanced = `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 const MAX_INSTANCES = 10u; 
 
 struct Scene {
@@ -40835,15 +40817,16 @@ fn main(
   return output;
 }`;
 
-},{}],85:[function(require,module,exports){
+},{"../../me-config":64}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexShadowWGSLInstanced = void 0;
+var _meConfig = require("../../me-config");
 let vertexShadowWGSLInstanced = exports.vertexShadowWGSLInstanced = `
-const MAX_BONES = 100u;
+const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix:  mat4x4f,
@@ -41027,7 +41010,7 @@ fn main(
 }
 `;
 
-},{}],86:[function(require,module,exports){
+},{"../../me-config":64}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41548,7 +41531,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexMorphWGSL = exports.vertexMorphShadowWGSL = void 0;
-const vertexMorphWGSL = exports.vertexMorphWGSL = /* wgsl */`
+const vertexMorphWGSL = exports.vertexMorphWGSL = `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
@@ -41898,7 +41881,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexWGSL = void 0;
-let vertexWGSL = exports.vertexWGSL = `const MAX_BONES = 100u;
+var _meConfig = require("../me-config");
+let vertexWGSL = exports.vertexWGSL = `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -42167,7 +42151,7 @@ fn main(
   return output;
 }`;
 
-},{}],93:[function(require,module,exports){
+},{"../me-config":64}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42175,7 +42159,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexWGSL_NM = void 0;
 var _meConfig = require("../me-config");
-let vertexWGSL_NM = exports.vertexWGSL_NM = `const MAX_BONES = 100u;
+let vertexWGSL_NM = exports.vertexWGSL_NM = `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -42286,8 +42270,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexShadowWGSL = void 0;
+var _meConfig = require("../me-config");
 let vertexShadowWGSL = exports.vertexShadowWGSL = `
-const MAX_BONES = 100u;
+const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -42545,7 +42530,7 @@ fn main(
 }
 `;
 
-},{}],95:[function(require,module,exports){
+},{"../me-config":64}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -55928,10 +55913,11 @@ class MatrixEngineWGPU {
       const len = this.mainRenderBundle.length;
       for (let i = 0; i < len; i++) {
         const mesh = this.mainRenderBundle[i];
-        if (m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
+        if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if (mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        // if(camera._dirty) mesh.getTransformationMatrix(camera.VP, now2);
-        mesh.getTransformationMatrix(camera.VP, now2);
+        if (camera._dirty || mesh.position.inMove) {
+          mesh.getTransformationMatrix(camera.VP, now2);
+        }
         if (mesh.position.inMove == true || this.matrixAmmo) {
           mesh.updateModelUniformBuffer(i);
         }
@@ -55954,11 +55940,12 @@ class MatrixEngineWGPU {
         mesh.drawElements(pass, this.lightContainer);
       }
       // Blend
-      for (let i = 0; i < len; i++) {
-        const mesh = this.mainRenderBundle[i];
-        pass.setPipeline(mesh.pipelineTransparent);
-        mesh.drawElements(pass, this.lightContainer);
+      for (let i = 0; i < this.blendQueue.length; i++) {
+        const m = this.blendQueue[i];
+        pass.setPipeline(m.pipelineTransparent);
+        m.drawElements(pass, this.lightContainer);
       }
+      this.blendQueue.length = 0;
       pass.end();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = camera.VP;

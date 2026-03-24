@@ -916,10 +916,11 @@ export default class MatrixEngineWGPU {
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
-        if(m.updateInstanceData) m.updateInstanceData(m.modelMatrix);
+        if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        // if(camera._dirty) mesh.getTransformationMatrix(camera.VP, now2);
-        mesh.getTransformationMatrix(camera.VP, now2);
+        if(camera._dirty || mesh.position.inMove) {
+          mesh.getTransformationMatrix(camera.VP, now2);
+        }
         if(mesh.position.inMove == true || this.matrixAmmo) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
@@ -937,11 +938,12 @@ export default class MatrixEngineWGPU {
         mesh.drawElements(pass, this.lightContainer);
       }
       // Blend
-      for(let i = 0;i < len;i++) {
-        const mesh = this.mainRenderBundle[i];
-        pass.setPipeline(mesh.pipelineTransparent);
-        mesh.drawElements(pass, this.lightContainer);
+      for(let i = 0;i < this.blendQueue.length;i++) {
+        const m = this.blendQueue[i];
+        pass.setPipeline(m.pipelineTransparent);
+        m.drawElements(pass, this.lightContainer);
       }
+      this.blendQueue.length = 0;
       pass.end();
 
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);

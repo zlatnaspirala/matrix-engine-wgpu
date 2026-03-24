@@ -1,4 +1,5 @@
-export const vertexMorphWGSL = /* wgsl */`
+
+export const vertexMorphWGSL = `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,

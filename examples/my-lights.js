@@ -42,6 +42,7 @@ export var myLights = function() {
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
       myLights.addMeshObj({
         material: {type: 'standard'},
+        shadowsCast: false,
         position: {x: 0, y: -5, z: -10},
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
@@ -70,10 +71,8 @@ export var myLights = function() {
       const light = myLights.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-
-      light.intensity = 8;
+      light.intensity = 8.5;
       light.color = color;
-
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
       light.position = [
@@ -88,24 +87,21 @@ export var myLights = function() {
 
       light.updater.push((light) => {
         light.orbitAngle += ORBIT_SPEED * 0.01;
-
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
         const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-
         light.position = [x, height, z];
         light.target = [TARGET.x, TARGET.y, TARGET.z];
       });
     }
 
-    myLights.activateBloomEffect();
-    // Camera setup
-    setTimeout(() => {
+    // myLights.activateBloomEffect();
 
+    setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(7);
-      monster.updateInstances(7);
-      monster.trailAnimation.delay = 10;
+      monster.updateMaxInstances(6);
+      monster.updateInstances(6);
+      monster.trailAnimation.delay = 20;
       monster.playAnimationByIndex(3);
 
       myLights.cameras.WASD.yaw = -0.03;

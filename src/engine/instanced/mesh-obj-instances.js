@@ -36,7 +36,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.useScale = o.useScale || false;
 
     this.mType = MeshType.BVHANIM;
-    this.shadowsCast = true;
+    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
 
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);

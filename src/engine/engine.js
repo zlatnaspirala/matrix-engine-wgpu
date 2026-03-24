@@ -89,7 +89,7 @@ export class WASDCamera {
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
-
+  _dirty = true;
   right = vec3.fromValues(1, 0, 0);
   up = vec3.fromValues(0, 1, 0);
   back = vec3.fromValues(0, 0, 1);
@@ -183,10 +183,9 @@ export class WASDCamera {
   }
 
   _setupInput(canvas) {
-    // const pointerLast = this._pointerLast;
     canvas.style.touchAction = 'none';
     canvas.addEventListener('pointerdown', e => {
-      e.preventDefault();
+      // e.preventDefault();
       this._mouseDown = true;
       this._lastX = e.clientX;
       this._lastY = e.clientY;
@@ -196,7 +195,7 @@ export class WASDCamera {
     canvas.addEventListener('pointerup', pointerUp, {passive: true});
     canvas.addEventListener('pointercancel', pointerUp, {passive: true});
     canvas.addEventListener('pointermove', e => {
-      e.preventDefault();
+      // e.preventDefault();
       const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       for(const ce of events) {
         let dx = 0, dy = 0;
@@ -214,12 +213,12 @@ export class WASDCamera {
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._dirty = true;
         this._recalculateViewVP();
       }
-    }, {passive: false});
+    }, {passive: true});
 
     this._keyInterval = null;
-    // Keyboard WASD
     const setDigital = (e, value) => {
       switch(e.code) {
         case 'KeyW': this._digital.forward = value; break;
@@ -229,9 +228,11 @@ export class WASDCamera {
         case 'KeyV': this._digital.up = value; break;
         case 'KeyC': this._digital.down = value; break;
       }
-
       if(value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
+        this._keyInterval = setInterval(() => {
+          this._dirty = true;
+          this._applyDigitalMovement()
+        }, 16);
       } else {
         const d = this._digital;
         if(!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
@@ -269,6 +270,7 @@ export class WASDCamera {
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
     this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
     WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    // this._dirty = false;
   }
 }
 

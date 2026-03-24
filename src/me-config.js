@@ -2,14 +2,16 @@
  * @examples
  * MATRIX_ENGINE_WGPU CONFIG EXAMPLE WORKSPACE
  * APP can be controlled from url params in any domain/context.
+ * 
+ * Configure full render from url params - optimise render or any other stuuf...
  */
 import {FullScreenManagerElement, isMobile, LOG_FUNNY_ARCADE, urlQuery} from "./engine/utils.js";
 window.urlQ = urlQuery;
 
 export const MEConfig = {
-
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() ? 128.0 : 512.0,
+  MAX_BONES: isMobile() ? 80 : 100,
 
   construct: function() {
     if(urlQ['shadowSize']) {

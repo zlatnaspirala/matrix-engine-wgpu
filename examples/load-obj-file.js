@@ -8,7 +8,7 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.3, // < 1 // recommended
+    fastRender: 0.4,                // < 1 // recommended
     // fastRenderAlternative: true, // not good for mobile
     dontUsePhysics: true,
     mainCameraParams: {
@@ -19,17 +19,10 @@ export var loadObjFile = function() {
   }, () => {
     loadObjFile.addLight();
     addRaycastsAABBListener();
-    setTimeout(() => {
-      downloadMeshes({
-        ball: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj",
-      }, onLoadObj,
-        {scale: [1, 1, 1]})
-      downloadMeshes({
-        cube: "./res/meshes/blender/cube.obj",
-      }, onGround,
-        {scale: [30, 0.5, 30]})
-    }, 2)
+
+    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
+      onLoadObj, {scale: [1, 1, 1]})
+    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
 
     function onGround(m) {
       loadObjFile.addMeshObj({
@@ -50,24 +43,24 @@ export var loadObjFile = function() {
 
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'power'},
+        material: {type: 'mirror'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.webp'],
-        // texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        // envMapParams: {
-        //   baseColorMix: 0.0,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.25,               // 25% reflection blend
-        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 2.0,                // Medium-sharp edge
-        //   envLodBias: 1.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
+        // texturesPaths: ['./res/textures/cube-g1.webp'],
+        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        envMapParams: {
+          baseColorMix: 0.0,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.25,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.01,            // No pulse (static)
+          fresnelPower: 2.0,                // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,       // ✅ Env map mode
+        },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -77,24 +70,24 @@ export var loadObjFile = function() {
       });
 
       loadObjFile.addMeshObj({
-        material: {type: 'power'},
+        material: {type: 'mirror'},
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
-        // envMapParams: {
-        //   baseColorMix: 0.8,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.25,               // 25% reflection blend
-        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 2.0,                // Medium-sharp edge
-        //   envLodBias: 1.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
+        envMapParams: {
+          baseColorMix: 0.8,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.25,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.01,            // No pulse (static)
+          fresnelPower: 2.0,                // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,       // ✅ Env map mode
+        },
         physics: {
           enabled: false,
           mass: 0,

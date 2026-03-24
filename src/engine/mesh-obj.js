@@ -5,7 +5,6 @@ import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, MeshType} from './
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
-// import {PointerEffect} from './effects/pointerEffect';
 import {PointEffect} from './effects/topology-point';
 import {GizmoEffect} from './effects/gizmo';
 import {DestructionEffect} from './effects/destruction';
@@ -23,12 +22,9 @@ export default class MEMeshObj extends Materials {
     } else {
       this.raycast = o.raycast;
     }
-
     this.mType = MeshType.MESH;
-
     if(typeof o.pointerEffect === 'undefined') {this.pointerEffect = {enabled: false};}
     this.pointerEffect = o.pointerEffect;
-
     this.name = o.name;
     this.done = false;
     this.canvas = canvas;
@@ -58,7 +54,7 @@ export default class MEMeshObj extends Materials {
 
     this.useScale = o.useScale || false;
     this.material = o.material;
-    this.shadowsCast = true;
+    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     //cache
@@ -68,10 +64,9 @@ export default class MEMeshObj extends Materials {
     this._scaleArray = new Float32Array(3);
 
     addEventListener('update-pipeine', () => {
-      this.setupPipeline();
-      // console.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UIPDATE P')
+      this.setupPipeline()
     })
-    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)        
+    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
       if(typeof this.mesh == 'undefined') {
@@ -488,7 +483,7 @@ export default class MEMeshObj extends Materials {
 
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
-        size: 192,//192, // ⬅️ was 176
+        size: 192,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -716,26 +711,21 @@ export default class MEMeshObj extends Materials {
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);
-
         this._translateVec[0] = pos.x;
         this._translateVec[1] = pos.y;
         this._translateVec[2] = pos.z;
         mat4.translate(modelMatrix, this._translateVec, modelMatrix);
-
         if(this.itIsPhysicsBody) {
-          // rotation axis array also allocates: sss
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
           this._rotAxisVec[2] = this.rotation.axis.z;
           // mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-
           mat4.rotate(modelMatrix, [this._rotAxisVec[0], this._rotAxisVec[1], this._rotAxisVec[2]], degToRad(this.rotation.angle), modelMatrix);
         } else {
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-
         if(useScale == true) {
           this._scaleVec[0] = this.scale[0];
           this._scaleVec[1] = this.scale[1];
@@ -746,7 +736,6 @@ export default class MEMeshObj extends Materials {
         return modelMatrix;
       };
 
-      // looks like affect on transformations for now const 0
       const modelMatrix = mat4.translation([0, 0, 0]);
       const modelData = modelMatrix;
       this.device.queue.writeBuffer(
@@ -878,15 +867,8 @@ export default class MEMeshObj extends Materials {
   }
 
   updateModelUniformBuffer = () => {
-    if(!this.modelUniformBuffer) return;
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(
-      this.modelUniformBuffer,
-      0,
-      modelMatrix.buffer,
-      modelMatrix.byteOffset,
-      modelMatrix.byteLength
-    );
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
     this.modelMatrix = modelMatrix;
   }
 

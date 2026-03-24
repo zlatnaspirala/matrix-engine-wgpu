@@ -1,4 +1,6 @@
-export let vertexWGSLInstanced = `const MAX_BONES = 100u;
+import {MEConfig} from "../../me-config";
+
+export let vertexWGSLInstanced = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
 const MAX_INSTANCES = 10u; 
 
 struct Scene {
