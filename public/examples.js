@@ -1167,6 +1167,7 @@ var myLights = function () {
     // GLB monster
     const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
     myLights.addGlbObjInctance({
+      sharedSU: true,
       material: {
         type: 'standard',
         useTextureFromGlb: true
@@ -26311,8 +26312,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
-
-    //cache
     this._ghostScratch = new Float32Array(16);
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = _wgpuMatrix.mat4.create();
@@ -26817,14 +26816,15 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192,
-        //176,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-
-      // test MUST BE IF
+      if (this.sharedSU) {
+        this.sceneUniformBuffer = this.sharedSU;
+      } else {
+        this.sceneUniformBuffer = this.device.createBuffer({
+          label: 'sceneUniformBuffer per mesh',
+          size: 192,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+      }
       this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [instanced]',
         entries: [{
@@ -31817,6 +31817,9 @@ class MEMeshObj extends _materials.default {
     if (o.envMapParams !== null) {
       this.envMapParams = o.envMapParams;
     }
+    if (typeof o.sharedSU !== 'undefined') {
+      this.sharedSU = o.sharedSU;
+    }
     this.useScale = o.useScale || false;
     this.material = o.material;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
@@ -32261,11 +32264,15 @@ class MEMeshObj extends _materials.default {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
+      if (this.sharedSU) {
+        this.sceneUniformBuffer = this.sharedSU;
+      } else {
+        this.sceneUniformBuffer = this.device.createBuffer({
+          label: 'sceneUniformBuffer per mesh',
+          size: 192,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+      }
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh regular',
         entries: [{
@@ -32498,7 +32505,7 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
-      this.getTransformationMatrix2 = (camVP, dt) => {
+      this.getTransformationMatrix = (camVP, dt) => {
         this._sceneData.set(camVP, 16);
         this._sceneData[35] = 0.0;
         this._sceneData[39] = 0.0;
@@ -32510,20 +32517,6 @@ class MEMeshObj extends _materials.default {
         this._sceneData[45] = dt;
         this._sceneData[46] = 0;
         this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
-      this.getTransformationMatrix = (camVP, dt) => {
-        this._sceneData.set(camVP, 16);
-        // this._sceneData[35] = 0.0;
-        // this._sceneData[39] = 0.0;
-        // this._sceneData[40] = this.globalAmbient[0];
-        // this._sceneData[41] = this.globalAmbient[1];
-        // this._sceneData[42] = this.globalAmbient[2];
-        // this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        // this._sceneData[46] = 0;
-        // this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
@@ -32907,7 +32900,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.zeroPass = void 0;
-let c = 0;
 let zeroPass = function () {
   const now2 = performance.now();
   this.now = now2 * 0.001;
@@ -32923,11 +32915,10 @@ let zeroPass = function () {
     const len = this.mainRenderBundle.length;
     for (let i = 0; i < len; i++) {
       const mesh = this.mainRenderBundle[i];
-      if (camera._dirty || mesh.position.inMove) {
-        if (c % 2 == 0) mesh.getTransformationMatrix(camera.VP, now2);
+      if ((camera._dirty || mesh.position.inMove) && i == 0) {
+        mesh.getTransformationMatrix(camera.VP, now2);
         mesh.updateModelUniformBuffer(i);
       }
-      c++;
       mesh.position.update();
       if (mesh.update) mesh.update(now2);
       if (!mesh.sceneBindGroupForRender) {
@@ -34262,15 +34253,19 @@ class ProceduralMeshObj extends _materials.default {
         this.effects.flameEffect = new _flame.FlameEffect(this.device, pf, "rgba16float", 'torch');
       }
     }
-    //
     this.modelUniformBuffer = this.device.createBuffer({
       size: 16 * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.sceneUniformBuffer = this.device.createBuffer({
-      size: 192,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    if (this.sharedSU) {
+      this.sceneUniformBuffer = this.sharedSU;
+    } else {
+      this.sceneUniformBuffer = this.device.createBuffer({
+        label: 'sceneUniformBuffer per mesh',
+        size: 192,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+    }
     this.bonesBuffer = this.device.createBuffer({
       size: 6400 * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -34286,7 +34281,6 @@ class ProceduralMeshObj extends _materials.default {
     this.vertexAnimBuffer = this.device.createBuffer({
       label: "Vertex Animation Params",
       size: this.vertexAnimParams.byteLength,
-      // 128 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
@@ -56067,6 +56061,13 @@ class MatrixEngineWGPU {
       }
     });
     this.createBloomBindGroup();
+
+    // test shared
+    this.globalSceneUniformBuffer = this.device.createBuffer({
+      label: 'shared sceneUniformBuffer [meshObj]',
+      size: 192,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
       size: this.MAX_SPOTLIGHTS * 144,
@@ -56277,50 +56278,29 @@ class MatrixEngineWGPU {
         rotation: o.rotation
       };
     }
-    if (typeof o.physics.enabled === 'undefined') {
-      o.physics.enabled = true;
-    }
-    if (typeof o.physics.geometry === 'undefined') {
-      o.physics.geometry = "Cube";
-    }
-    if (typeof o.physics.radius === 'undefined') {
-      o.physics.radius = o.scale;
-    }
-    if (typeof o.physics.mass === 'undefined') {
-      o.physics.mass = 1;
-    }
-    if (typeof o.physics.name === 'undefined') {
-      o.physics.name = o.name;
-    }
-    if (typeof o.physics.scale === 'undefined') {
-      o.physics.scale = o.scale;
-    }
-    if (typeof o.physics.rotation === 'undefined') {
-      o.physics.rotation = o.rotation;
-    }
+    if (typeof o.physics.enabled === 'undefined') o.physics.enabled = true;
+    if (typeof o.physics.geometry === 'undefined') o.physics.geometry = "Cube";
+    if (typeof o.physics.radius === 'undefined') o.physics.radius = o.scale;
+    if (typeof o.physics.mass === 'undefined') o.physics.mass = 1;
+    if (typeof o.physics.name === 'undefined') o.physics.name = o.name;
+    if (typeof o.physics.scale === 'undefined') o.physics.scale = o.scale;
+    if (typeof o.physics.rotation === 'undefined') o.physics.rotation = o.rotation;
     o.physics.position = o.position;
     if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      if (typeof o.objAnim.animations !== 'undefined') {
-        o.objAnim.play = _loaderObj.play;
-      }
-      // no need for single test it in future
+      if (typeof o.objAnim.animations !== 'undefined') o.objAnim.play = _loaderObj.play;
       o.objAnim.meshList = o.objAnim.meshList;
-      if (typeof o.mesh === 'undefined') {
-        o.mesh = o.objAnim.meshList[0];
-        console.info('objSeq animation is active.');
-      }
-      // scale for all second option!
+      if (typeof o.mesh === 'undefined') o.mesh = o.objAnim.meshList[0];
       o.objAnim.scaleAll = function (s) {
         for (var k in this.meshList) {
-          // console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       };
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
+    if (typeof o.sharedSU !== 'undefined') o.sharedSU = this.globalSceneUniformBuffer;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.shadowDepthTextureView = this.shadowArrayView;
@@ -56411,6 +56391,11 @@ class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
+    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
+      o.sharedSU = null;
+    } else {
+      o.sharedSU = this.globalSceneUniformBuffer;
+    }
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh.shadowDepthTextureView = this.shadowArrayView;
@@ -56967,6 +56952,11 @@ class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
+    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
+      o.sharedSU = null;
+    } else {
+      o.sharedSU = this.globalSceneUniformBuffer;
+    }
     let r = [];
     o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
@@ -57096,7 +57086,12 @@ class MatrixEngineWGPU {
     if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      console.warn('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
+      console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
+    }
+    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
+      o.sharedSU = null;
+    } else {
+      o.sharedSU = this.globalSceneUniformBuffer;
     }
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {

@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN, MeshType} from '../utils';
+import {degToRad, genName, LOG_FUNNY_SMALL, MeshType} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
 import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
@@ -45,7 +45,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
-    //cache
     this._ghostScratch = new Float32Array(16);
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = mat4.create();
@@ -58,6 +57,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     }
 
     if(o.envMapParams !== null) {this.envMapParams = o.envMapParams;}
+
 
     this.material = o.material;
     this.time = 0;
@@ -537,13 +537,16 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192, //176,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
+      if(this.sharedSU) {
+        this.sceneUniformBuffer = this.sharedSU;
+      } else {
+        this.sceneUniformBuffer = this.device.createBuffer({
+          label: 'sceneUniformBuffer per mesh',
+          size: 192,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+      }
 
-      // test MUST BE IF
       this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [instanced]',
         entries: [

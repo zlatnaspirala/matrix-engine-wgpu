@@ -52,6 +52,10 @@ export default class MEMeshObj extends Materials {
       this.envMapParams = o.envMapParams;
     }
 
+    if(typeof o.sharedSU !== 'undefined') {
+      this.sharedSU = o.sharedSU;
+    }
+
     this.useScale = o.useScale || false;
     this.material = o.material;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
@@ -481,11 +485,15 @@ export default class MEMeshObj extends Materials {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
+      if(this.sharedSU) {
+        this.sceneUniformBuffer = this.sharedSU;
+      } else {
+        this.sceneUniformBuffer = this.device.createBuffer({
+          label: 'sceneUniformBuffer per mesh',
+          size: 192,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+      }
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh regular',
@@ -694,7 +702,7 @@ export default class MEMeshObj extends Materials {
         }
       }
 
-      this.getTransformationMatrix2 = (camVP, dt) => {
+      this.getTransformationMatrix = (camVP, dt) => {
         this._sceneData.set(camVP, 16);
         this._sceneData[35] = 0.0;
         this._sceneData[39] = 0.0;
@@ -706,21 +714,6 @@ export default class MEMeshObj extends Materials {
         this._sceneData[45] = dt;
         this._sceneData[46] = 0;
         this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
-
-      this.getTransformationMatrix = (camVP, dt) => {
-        this._sceneData.set(camVP, 16);
-        // this._sceneData[35] = 0.0;
-        // this._sceneData[39] = 0.0;
-        // this._sceneData[40] = this.globalAmbient[0];
-        // this._sceneData[41] = this.globalAmbient[1];
-        // this._sceneData[42] = this.globalAmbient[2];
-        // this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        // this._sceneData[46] = 0;
-        // this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
 

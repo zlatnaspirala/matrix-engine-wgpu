@@ -331,9 +331,16 @@ export default class ProceduralMeshObj extends Materials {
         this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", 'torch');
       }
     }
-    //
     this.modelUniformBuffer = this.device.createBuffer({size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    this.sceneUniformBuffer = this.device.createBuffer({size: 192, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
+    if(this.sharedSU) {
+      this.sceneUniformBuffer = this.sharedSU;
+    } else {
+      this.sceneUniformBuffer = this.device.createBuffer({
+        label: 'sceneUniformBuffer per mesh',
+        size: 192,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+    }
 
     this.bonesBuffer = this.device.createBuffer({size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.morphBlendBuffer = this.device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
@@ -346,7 +353,7 @@ export default class ProceduralMeshObj extends Materials {
 
     this.vertexAnimBuffer = this.device.createBuffer({
       label: "Vertex Animation Params",
-      size: this.vertexAnimParams.byteLength, // 128 bytes
+      size: this.vertexAnimParams.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 

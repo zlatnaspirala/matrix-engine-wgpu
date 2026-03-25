@@ -1,4 +1,3 @@
-let c = 0;
 
 export let zeroPass = function() {
   const now2 = performance.now();
@@ -15,11 +14,9 @@ export let zeroPass = function() {
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
-
-      if(camera._dirty || mesh.position.inMove) {
-        if (c % 2 == 0) mesh.getTransformationMatrix(camera.VP, now2); mesh.updateModelUniformBuffer(i);
+      if((camera._dirty || mesh.position.inMove) && i==0) {
+        mesh.getTransformationMatrix(camera.VP, now2); mesh.updateModelUniformBuffer(i);
       }
-      c++;
       mesh.position.update();
       if(mesh.update) mesh.update(now2);
       if(!mesh.sceneBindGroupForRender) {

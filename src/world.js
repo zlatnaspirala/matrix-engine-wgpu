@@ -393,6 +393,13 @@ export default class MatrixEngineWGPU {
 
     this.createBloomBindGroup();
 
+    // test shared
+    this.globalSceneUniformBuffer = this.device.createBuffer({
+      label: 'shared sceneUniformBuffer [meshObj]',
+      size: 192,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
       size: this.MAX_SPOTLIGHTS * 144,
@@ -572,41 +579,36 @@ export default class MatrixEngineWGPU {
         rotation: o.rotation
       }
     }
-    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
-    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Cube"}
-    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
-    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
-    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
-    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
-    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
+    if(typeof o.physics.enabled === 'undefined') o.physics.enabled = true;
+    if(typeof o.physics.geometry === 'undefined') o.physics.geometry = "Cube";
+    if(typeof o.physics.radius === 'undefined') o.physics.radius = o.scale
+    if(typeof o.physics.mass === 'undefined') o.physics.mass = 1;
+    if(typeof o.physics.name === 'undefined') o.physics.name = o.name;
+    if(typeof o.physics.scale === 'undefined') o.physics.scale = o.scale;
+    if(typeof o.physics.rotation === 'undefined') o.physics.rotation = o.rotation;
     o.physics.position = o.position;
     if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      if(typeof o.objAnim.animations !== 'undefined') {
-        o.objAnim.play = play;
-      }
-      // no need for single test it in future
+      if(typeof o.objAnim.animations !== 'undefined') o.objAnim.play = play;
       o.objAnim.meshList = o.objAnim.meshList;
-      if(typeof o.mesh === 'undefined') {
-        o.mesh = o.objAnim.meshList[0];
-        console.info('objSeq animation is active.');
-      }
-      // scale for all second option!
+      if(typeof o.mesh === 'undefined') o.mesh = o.objAnim.meshList[0];
       o.objAnim.scaleAll = function(s) {
         for(var k in this.meshList) {
-          // console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       }
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
+    if(typeof o.sharedSU !== 'undefined') o.sharedSU = this.globalSceneUniformBuffer;
+
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.shadowDepthTextureView = this.shadowArrayView;
     myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
+
     if(o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
@@ -659,6 +661,12 @@ export default class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
+    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
+      o.sharedSU = null;
+    } else {
+      o.sharedSU = this.globalSceneUniformBuffer;
+    }
+
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh.shadowDepthTextureView = this.shadowArrayView;
@@ -774,7 +782,7 @@ export default class MatrixEngineWGPU {
     // render setup
     if(this.overrideRender !== null) {
       console.log(`%cOverride render. Use zero configuraion.`, LOG_FUNNY_ARCADE);
-       this.frame = this.overrideRender;
+      this.frame = this.overrideRender;
     } else {
       this.frame = this.frameSinglePass;
     }
@@ -1029,6 +1037,12 @@ export default class MatrixEngineWGPU {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
 
+    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
+      o.sharedSU = null;
+    } else {
+      o.sharedSU = this.globalSceneUniformBuffer;
+    }
+
     let r = [];
     o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
@@ -1113,9 +1127,13 @@ export default class MatrixEngineWGPU {
     if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      console.warn('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
+      console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
     }
-
+    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
+      o.sharedSU = null;
+    } else {
+      o.sharedSU = this.globalSceneUniformBuffer;
+    }
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
