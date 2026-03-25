@@ -768,13 +768,13 @@ var loadObjFile = function () {
           enabled: false,
           mass: 0,
           geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          // pointer: true,
+          flameEmitter: true
+          // flameEffect: true,
         }
-        // pointerEffect: {
-        //   // enabled: true,
-        //   // pointer: true,
-        //   // flameEmitter: true,
-        //   // flameEffect: true,
-        // }
       });
 
       // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, loadObjFile.device)));
@@ -54899,17 +54899,21 @@ class MatrixEngineWGPU {
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = _wgpuMatrix.mat4.create();
+
     // document.addEventListener('fullscreenchange', () => {
-    //   // setTimeout(() => this.onResize(), 150); // small delay lets browser commit the new size
+    //   setTimeout(() => this.onResize(), 150);
     // });
 
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.9.10 ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.9.11 [FasterThanRabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
-    console.log("%cMatrix Engine WGPU - Gate is open.\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
-    console.log("%cMatrix Engine WGPU - Configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES, _utils.LOG_FUNNY_ARCADE);
+    console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
+    console.log("%cMatrix Engine WGPU - Configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n", _utils.LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY_ARCADE);
+    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY_ARCADE);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {

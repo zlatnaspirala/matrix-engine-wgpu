@@ -262,25 +262,29 @@ export default class MatrixEngineWGPU {
     this.createGlobalStuff(callback);
     this.shadersPack = {};
     this.lastFrameMS = 0;
-
     this._camVP = mat4.create();
+
     // document.addEventListener('fullscreenchange', () => {
-    //   // setTimeout(() => this.onResize(), 150); // small delay lets browser commit the new size
+    //   setTimeout(() => this.onResize(), 150);
     // });
 
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.9.10 ", LOG_FUNNY);
+    console.log("%c Version 1.9.11 [FasterThanRabbit] ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open.\n" +
+      "%cMatrix Engine WGPU - Gate is open...\n" +
       "Creative power with intuitive visual scripting work flow.\n" +
       "No tracking. No hype. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
       "%cMatrix Engine WGPU - Configuration :\n" +
-      " - SHADOW_RES : " + this.MEConfig.SHADOW_RES,
+      " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
+      " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n",
       LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
   };
 
