@@ -23215,86 +23215,51 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.WASDCamera = exports.RPGCamera = exports.ArcballCamera = void 0;
-exports.createInputHandler = createInputHandler;
 var _wgpuMatrix = require("wgpu-matrix");
-// The common functionality between camera implementations
 class CameraBase {
-  // The camera matrix
   matrix_ = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-
-  // The calculated view matrix readonly
   view_ = _wgpuMatrix.mat4.create();
-
-  // Aliases to column vectors of the matrix
   right_ = new Float32Array(this.matrix_.buffer, 4 * 0, 4);
   up_ = new Float32Array(this.matrix_.buffer, 4 * 4, 4);
   back_ = new Float32Array(this.matrix_.buffer, 4 * 8, 4);
   position_ = new Float32Array(this.matrix_.buffer, 4 * 12, 4);
-
-  // Returns the camera matrix
   get matrix() {
     return this.matrix_;
   }
-  // Assigns `mat` to the camera matrix
   set matrix(mat) {
     _wgpuMatrix.mat4.copy(mat, this.matrix_);
   }
-
-  // setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
-  //   this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
-  // }
-
-  // Returns the camera view matrix
   get view() {
     return this.view_;
   }
-  // Assigns `mat` to the camera view
   set view(mat) {
     _wgpuMatrix.mat4.copy(mat, this.view_);
   }
-
-  // Returns column vector 0 of the camera matrix
   get right() {
     return this.right_;
   }
-
-  // Assigns `vec` to the first 3 elements of column vector 0 of the camera matrix
   set right(vec) {
     _wgpuMatrix.vec3.copy(vec, this.right_);
   }
-
-  // Returns column vector 1 of the camera matrix
   get up() {
     return this.up_;
   }
-
-  // Assigns `vec` to the first 3 elements of column vector 1 of the camera matrix \ Vec3
   set up(vec) {
     _wgpuMatrix.vec3.copy(vec, this.up_);
   }
-
-  // Returns column vector 2 of the camera matrix
   get back() {
     return this.back_;
   }
-
-  // Assigns `vec` to the first 3 elements of column vector 2 of the camera matrix
   set back(vec) {
     _wgpuMatrix.vec3.copy(vec, this.back_);
   }
-
-  // Returns column vector 3 of the camera matrix
   get position() {
     return this.position_;
   }
-
-  // Assigns `vec` to the first 3 elements of column vector 3 of the camera matrix
   set position(vec) {
     _wgpuMatrix.vec3.copy(vec, this.position_);
   }
 }
-
-// WASDCamera is a camera implementation that behaves similar to first-person-shooter PC games.
 class WASDCamera {
   pitch = 0;
   yaw = 0;
@@ -23584,8 +23549,6 @@ class WASDCamera {
     // this._dirty = false;
   }
 }
-
-// ArcballCamera implements a basic orbiting camera around the world origin
 exports.WASDCamera = WASDCamera;
 class ArcballCamera extends CameraBase {
   // The camera distance from the target
@@ -23700,21 +23663,17 @@ class ArcballCamera extends CameraBase {
 }
 exports.ArcballCamera = ArcballCamera;
 class RPGCamera {
-  // ====== CORE ======
   pitch = -0.88;
   yaw = 0;
-  position = _wgpuMatrix.vec3.create();
-  right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
-  up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
-  back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
-  view = _wgpuMatrix.mat4.create();
-  projectionMatrix = _wgpuMatrix.mat4.create();
-  VP = _wgpuMatrix.mat4.create();
-  _viewScratch = _wgpuMatrix.mat4.create();
-  _rotYScratch = _wgpuMatrix.mat4.create();
-  _rotXScratch = _wgpuMatrix.mat4.create();
+  position = new Float32Array(3);
+  right = new Float32Array(3);
+  up = new Float32Array(3);
+  back = new Float32Array(3);
+  view = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  VP = new Float32Array(16);
 
-  // ====== RPG LOGIC ======
+  // ===== RPG =====
   followMe = null;
   followMeOffset = 150;
   scrollY = 50;
@@ -23724,14 +23683,15 @@ class RPGCamera {
   mousRollInAction = false;
   _dirty = true;
   constructor(options = {}) {
-    if (options.position) _wgpuMatrix.vec3.copy(options.position, this.position);
+    if (options.position) {
+      this.position[0] = options.position[0];
+      this.position[1] = options.position[1];
+      this.position[2] = options.position[2];
+    }
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
     this._setupEvents();
-
-    // initial build
-    this._updateOrientation();
     this._recalculateViewVP();
   }
   setProjection(fov, aspect, near, far) {
@@ -23797,18 +23757,22 @@ class RPGCamera {
       this._dirty = true;
     });
   }
+
+  // 🔥 SAME AS WASD (no matrices)
   _updateOrientation() {
-    _wgpuMatrix.mat4.rotationY(this.yaw, this._rotYScratch);
-    _wgpuMatrix.mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
-    this.right[0] = this._rotXScratch[0];
-    this.right[1] = this._rotXScratch[1];
-    this.right[2] = this._rotXScratch[2];
-    this.up[0] = this._rotXScratch[4];
-    this.up[1] = this._rotXScratch[5];
-    this.up[2] = this._rotXScratch[6];
-    this.back[0] = this._rotXScratch[8];
-    this.back[1] = this._rotXScratch[9];
-    this.back[2] = this._rotXScratch[10];
+    const cy = Math.cos(this.yaw),
+      sy = Math.sin(this.yaw);
+    const cp = Math.cos(this.pitch),
+      sp = Math.sin(this.pitch);
+    this.right[0] = cy;
+    this.right[1] = 0;
+    this.right[2] = -sy;
+    this.up[0] = sy * sp;
+    this.up[1] = cp;
+    this.up[2] = cy * sp;
+    this.back[0] = sy * cp;
+    this.back[1] = -sp;
+    this.back[2] = cy * cp;
   }
   _updateFollow() {
     if (!this.followMe) return;
@@ -23816,6 +23780,8 @@ class RPGCamera {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
+
+      // optional external coupling
       app.lightContainer[0].position[0] = this.followMe.x;
       app.lightContainer[0].position[2] = this.followMe.z;
       app.lightContainer[0].target[0] = this.followMe.x;
@@ -23823,19 +23789,22 @@ class RPGCamera {
       this.mousRollInAction = false;
       this._dirty = true;
     }
+
+    // smooth Y only (cheap)
     const smoothFactor = 0.1;
-    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+    const newY = this.position[1] + (this.scrollY - this.position[1]) * smoothFactor;
+    if (Math.abs(newY - this.position[1]) > 0.0001) {
+      this.position[1] = newY;
+      this._dirty = true;
+    }
   }
-  update() {
-    this._updateFollow();
-    if (!this._dirty) return;
+  _recalculateViewVP() {
     this._updateOrientation();
-    // build view NO INVERT
     const rx = this.right,
       uy = this.up,
       bz = this.back,
       p = this.position;
-    const vs = this._viewScratch;
+    const vs = this.view;
     vs[0] = rx[0];
     vs[4] = rx[1];
     vs[8] = rx[2];
@@ -23848,147 +23817,22 @@ class RPGCamera {
     vs[6] = bz[1];
     vs[10] = bz[2];
     vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    vs[3] = vs[7] = vs[11] = 0;
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
     vs[15] = 1;
-    this.view.set(vs);
     RPGCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+  }
+  update() {
+    this._updateFollow();
+    if (!this._dirty) return;
+    this._recalculateViewVP();
     this._dirty = false;
   }
 }
-
-// Returns `x` clamped between [`min` .. `max`]
 exports.RPGCamera = RPGCamera;
-function clamp(x, min, max) {
-  return Math.min(Math.max(x, min), max);
-}
-
-// Returns `x` float-modulo `div`
-function mod(x, div) {
-  return x - Math.floor(Math.abs(x) / div) * div * Math.sign(x);
-}
-
-// Returns `vec` rotated `angle` radians around `axis`
 function rotate(vec, axis, angle) {
   return _wgpuMatrix.vec3.transformMat4Upper3x3(vec, _wgpuMatrix.mat4.rotation(axis, angle));
-}
-
-// Returns the linear interpolation between 'a' and 'b' using 's'
-function lerp(a, b, s) {
-  return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
-}
-function createInputHandler(window, canvas) {
-  const digital = {
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-    up: false,
-    down: false
-  };
-  const analog = {
-    x: 0,
-    y: 0,
-    zoom: 0
-  };
-
-  // Track last position per pointerId for reliable delta on touch
-  const pointerLast = new Map();
-  let mouseDown = false;
-  const output = {
-    digital,
-    analog: {
-      x: 0,
-      y: 0,
-      zoom: 0,
-      touching: false
-    }
-  };
-  const setDigital = (e, value) => {
-    switch (e.code) {
-      case 'KeyW':
-        digital.forward = value;
-        break;
-      case 'KeyS':
-        digital.backward = value;
-        break;
-      case 'KeyA':
-        digital.left = value;
-        break;
-      case 'KeyD':
-        digital.right = value;
-        break;
-      case 'KeyV':
-        digital.up = value;
-        break;
-      case 'KeyC':
-        digital.down = value;
-        break;
-    }
-    e.stopPropagation();
-  };
-  window.addEventListener('keydown', e => setDigital(e, true), {
-    passive: true
-  });
-  window.addEventListener('keyup', e => setDigital(e, false), {
-    passive: true
-  });
-  canvas.style.touchAction = 'none'; // ← critical: was 'pinch-zoom', blocks pointermove on mobile
-
-  canvas.addEventListener('pointerdown', e => {
-    e.preventDefault(); // ← must prevent default to receive move events reliably
-    mouseDown = true;
-    pointerLast.set(e.pointerId, {
-      x: e.clientX,
-      y: e.clientY
-    });
-    canvas.setPointerCapture(e.pointerId); // ← capture so move fires even if finger drifts off canvas
-  }, {
-    passive: false
-  }); // ← passive: false required when calling preventDefault
-
-  canvas.addEventListener('pointerup', e => {
-    mouseDown = false;
-    pointerLast.delete(e.pointerId);
-  }, {
-    passive: true
-  });
-  canvas.addEventListener('pointercancel', e => {
-    mouseDown = false;
-    pointerLast.delete(e.pointerId);
-  }, {
-    passive: true
-  });
-  const MOUSE_SENS = 0.07;
-  const TOUCH_SENS = 0.02;
-  canvas.addEventListener('pointermove', e => {
-    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-    for (const ce of events) {
-      if (ce.pointerType === 'mouse') {
-        if ((ce.buttons & 1) === 0) continue;
-        analog.x += ce.movementX * MOUSE_SENS;
-        analog.y += ce.movementY * MOUSE_SENS;
-      } else {
-        const last = pointerLast.get(ce.pointerId);
-        if (!last) continue;
-        analog.x += (ce.clientX - last.x) * TOUCH_SENS;
-        analog.y += (ce.clientY - last.y) * TOUCH_SENS;
-        last.x = ce.clientX;
-        last.y = ce.clientY;
-      }
-    }
-  }, {
-    passive: true
-  });
-  return function getInput() {
-    output.analog.x = analog.x;
-    output.analog.y = analog.y;
-    output.analog.zoom = analog.zoom;
-    output.analog.touching = mouseDown;
-    analog.x = 0;
-    analog.y = 0;
-    analog.zoom = 0;
-    return output;
-  };
 }
 
 },{"wgpu-matrix":27}],43:[function(require,module,exports){
@@ -54788,8 +54632,6 @@ var _fontanaWgsl = require("./shaders/fontana/fontana.wgsl.js");
 var _meConfig = require("./me-config.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {createInputHandler} from "./engine/engine.js";
-
 /**
  * @description
  * Main engine root class.
@@ -54965,14 +54807,13 @@ class MatrixEngineWGPU {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
         this.applyCanvasSize(this.options.fastRender);
       } else if (this.options.fastRenderAlternative) {
-        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth * 0.5 : window.innerWidth;
-        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight * 0.5 : window.innerHeight;
-        canvas.style.zoom = '200%';
+        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth * 0.5;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight * 0.5;
+        if ((0, _utils.isMobile)() == true) canvas.style.zoom = '200%';
       } else {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight;
       }
-      console.log('TEST MOBILE DEVICES canvas.width ', canvas.width);
     } else {
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
@@ -54991,8 +54832,11 @@ class MatrixEngineWGPU {
         canvas: canvas,
         pitch: 0.18,
         yaw: -0.1
+      }),
+      RPG: new _engine.RPGCamera({
+        position: initialCameraPosition,
+        canvas: canvas
       })
-      // RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
@@ -55050,7 +54894,7 @@ class MatrixEngineWGPU {
     });
     this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
-    this.inputHandler = null; // createInputHandler(window, canvas);
+    this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.shadersPack = {};
     this.lastFrameMS = 0;
@@ -55814,34 +55658,28 @@ class MatrixEngineWGPU {
     this.adapter = null;
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
-  updateLights() {
-    // const floatsPerLight = 36;
-    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
-    //   this._lightsData.set(
-    //     i < this.lightContainer.length
-    //       ? this.lightContainer[i].getLightDataBuffer()
-    //       : this._emptyLight,
-    //     i * floatsPerLight
-    //   );
-    // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
 
+  // const floatsPerLight = 36;
+  // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+  //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
+  //   this._lightsData.set(
+  //     i < this.lightContainer.length
+  //       ? this.lightContainer[i].getLightDataBuffer()
+  //       : this._emptyLight,
+  //     i * floatsPerLight
+  //   );
+  // }
+  // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
+  updateLights() {
     const floatsPerLight = 36;
     for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
       const light = this.lightContainer[i];
       if (light?.update) {
-        const vpDirty = light.update(); // returns true if VP matrix was recomputed
-        if (vpDirty) {
-          // upload per-light VP buffer only when it actually changed
-          this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
-        }
+        const vpDirty = light.update();
+        if (vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
       }
-      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() // rebuilds only when _lightBufferDirty
-      : this._emptyLight, i * floatsPerLight);
+      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * floatsPerLight);
     }
-
-    // single upload for the full spotlight array — always needed
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
   frameSinglePass = () => {

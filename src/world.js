@@ -1,6 +1,5 @@
 import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
-// import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType} from "./engine/utils.js";
@@ -180,14 +179,13 @@ export default class MatrixEngineWGPU {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
         this.applyCanvasSize(this.options.fastRender);
       } else if(this.options.fastRenderAlternative) {
-        canvas.width = isMobile() == false ? window.innerWidth * 0.5 : window.innerWidth;
-        canvas.height = isMobile() == false ? window.innerHeight * 0.5 : window.innerHeight;
-        canvas.style.zoom = '200%';
+        canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth * 0.5;
+        canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight * 0.5;
+        if(isMobile() == true) canvas.style.zoom = '200%';
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
       }
-      console.log('TEST MOBILE DEVICES canvas.width ', canvas.width)
     } else {
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
@@ -205,7 +203,7 @@ export default class MatrixEngineWGPU {
     this.cameras = {
       // arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
-      // RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
+      RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
     if(urlQuery.lang != null) {
@@ -260,7 +258,7 @@ export default class MatrixEngineWGPU {
 
     this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
-    this.inputHandler = null;// createInputHandler(window, canvas);
+    this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.shadersPack = {};
     this.lastFrameMS = 0;
@@ -819,47 +817,28 @@ export default class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
 
+  // const floatsPerLight = 36;
+  // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+  //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
+  //   this._lightsData.set(
+  //     i < this.lightContainer.length
+  //       ? this.lightContainer[i].getLightDataBuffer()
+  //       : this._emptyLight,
+  //     i * floatsPerLight
+  //   );
+  // }
+  // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   updateLights() {
-    // const floatsPerLight = 36;
-    // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-    //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
-    //   this._lightsData.set(
-    //     i < this.lightContainer.length
-    //       ? this.lightContainer[i].getLightDataBuffer()
-    //       : this._emptyLight,
-    //     i * floatsPerLight
-    //   );
-    // }
-    // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
-
     const floatsPerLight = 36;
-
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
       const light = this.lightContainer[i];
-
       if(light?.update) {
-        const vpDirty = light.update(); // returns true if VP matrix was recomputed
-        if(vpDirty) {
-          // upload per-light VP buffer only when it actually changed
-          this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
-        }
+        const vpDirty = light.update();
+        if(vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
       }
-
-      this._lightsData.set(
-        i < this.lightContainer.length
-          ? light.getLightDataBuffer()  // rebuilds only when _lightBufferDirty
-          : this._emptyLight,
-        i * floatsPerLight
-      );
+      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * floatsPerLight);
     }
-
-    // single upload for the full spotlight array — always needed
-    this.device.queue.writeBuffer(
-      this.spotlightUniformBuffer, 0,
-      this._lightsData.buffer,
-      this._lightsData.byteOffset,
-      this._lightsData.byteLength
-    );
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
 
   frameSinglePass = () => {
@@ -893,7 +872,7 @@ export default class MatrixEngineWGPU {
             lastShadowPipeline = targetShadowPipeline;
           }
           shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-          if(m.mType == MeshType.BVHANIM|| m.mType == MeshType.INSTANCED) {
+          if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
             shadowPass.setBindGroup(1, m.modelBindGroupInstanced);
           }
           else if(m.mType == MeshType.PROCEDURAL) {

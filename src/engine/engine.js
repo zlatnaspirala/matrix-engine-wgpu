@@ -1,85 +1,29 @@
 import {mat4, vec3} from 'wgpu-matrix';
 
-// The common functionality between camera implementations
 class CameraBase {
-  // The camera matrix
   matrix_ = new Float32Array([
     1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
   ]);
-
-  // The calculated view matrix readonly
   view_ = mat4.create();
-
-  // Aliases to column vectors of the matrix
   right_ = new Float32Array(this.matrix_.buffer, 4 * 0, 4);
   up_ = new Float32Array(this.matrix_.buffer, 4 * 4, 4);
   back_ = new Float32Array(this.matrix_.buffer, 4 * 8, 4);
   position_ = new Float32Array(this.matrix_.buffer, 4 * 12, 4);
+  get matrix() {return this.matrix_}
+  set matrix(mat) {mat4.copy(mat, this.matrix_)}
+  get view() {return this.view_;}
+  set view(mat) {mat4.copy(mat, this.view_)}
+  get right() {return this.right_}
+  set right(vec) {vec3.copy(vec, this.right_)}
 
-  // Returns the camera matrix
-  get matrix() {
-    return this.matrix_;
-  }
-  // Assigns `mat` to the camera matrix
-  set matrix(mat) {
-    mat4.copy(mat, this.matrix_);
-  }
-
-  // setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
-  //   this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
-  // }
-
-  // Returns the camera view matrix
-  get view() {
-    return this.view_;
-  }
-  // Assigns `mat` to the camera view
-  set view(mat) {
-    mat4.copy(mat, this.view_);
-  }
-
-  // Returns column vector 0 of the camera matrix
-  get right() {
-    return this.right_;
-  }
-
-  // Assigns `vec` to the first 3 elements of column vector 0 of the camera matrix
-  set right(vec) {
-    vec3.copy(vec, this.right_);
-  }
-
-  // Returns column vector 1 of the camera matrix
-  get up() {
-    return this.up_;
-  }
-
-  // Assigns `vec` to the first 3 elements of column vector 1 of the camera matrix \ Vec3
-  set up(vec) {
-    vec3.copy(vec, this.up_);
-  }
-
-  // Returns column vector 2 of the camera matrix
-  get back() {
-    return this.back_;
-  }
-
-  // Assigns `vec` to the first 3 elements of column vector 2 of the camera matrix
-  set back(vec) {
-    vec3.copy(vec, this.back_);
-  }
-
-  // Returns column vector 3 of the camera matrix
-  get position() {
-    return this.position_;
-  }
-
-  // Assigns `vec` to the first 3 elements of column vector 3 of the camera matrix
-  set position(vec) {
-    vec3.copy(vec, this.position_);
-  }
+  get up() {return this.up_}
+  set up(vec) {vec3.copy(vec, this.up_)}
+  get back() {return this.back_}
+  set back(vec) {vec3.copy(vec, this.back_)}
+  get position() {return this.position_}
+  set position(vec) {vec3.copy(vec, this.position_)}
 }
 
-// WASDCamera is a camera implementation that behaves similar to first-person-shooter PC games.
 export class WASDCamera {
   pitch = 0;
   yaw = 0;
@@ -274,7 +218,6 @@ export class WASDCamera {
   }
 }
 
-// ArcballCamera implements a basic orbiting camera around the world origin
 export class ArcballCamera extends CameraBase {
   // The camera distance from the target
   distance = 0;
@@ -392,25 +335,20 @@ export class ArcballCamera extends CameraBase {
 }
 
 export class RPGCamera {
-  // ====== CORE ======
   pitch = -0.88;
   yaw = 0;
 
-  position = vec3.create();
+  position = new Float32Array(3);
 
-  right = vec3.fromValues(1, 0, 0);
-  up = vec3.fromValues(0, 1, 0);
-  back = vec3.fromValues(0, 0, 1);
+  right = new Float32Array(3);
+  up = new Float32Array(3);
+  back = new Float32Array(3);
 
-  view = mat4.create();
-  projectionMatrix = mat4.create();
-  VP = mat4.create();
+  view = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  VP = new Float32Array(16);
 
-  _viewScratch = mat4.create();
-  _rotYScratch = mat4.create();
-  _rotXScratch = mat4.create();
-
-  // ====== RPG LOGIC ======
+  // ===== RPG =====
   followMe = null;
   followMeOffset = 150;
 
@@ -420,19 +358,23 @@ export class RPGCamera {
   scrollSpeed = 1;
 
   mousRollInAction = false;
+
   _dirty = true;
 
   constructor(options = {}) {
-    if(options.position) vec3.copy(options.position, this.position);
+    if(options.position) {
+      this.position[0] = options.position[0];
+      this.position[1] = options.position[1];
+      this.position[2] = options.position[2];
+    }
 
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
+
     this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
 
     this._setupEvents();
 
-    // initial build
-    this._updateOrientation();
     this._recalculateViewVP();
   }
 
@@ -486,21 +428,14 @@ export class RPGCamera {
     });
   }
 
+  // 🔥 SAME AS WASD (no matrices)
   _updateOrientation() {
-    mat4.rotationY(this.yaw, this._rotYScratch);
-    mat4.rotateX(this._rotYScratch, this.pitch, this._rotXScratch);
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
+    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
 
-    this.right[0] = this._rotXScratch[0];
-    this.right[1] = this._rotXScratch[1];
-    this.right[2] = this._rotXScratch[2];
-
-    this.up[0] = this._rotXScratch[4];
-    this.up[1] = this._rotXScratch[5];
-    this.up[2] = this._rotXScratch[6];
-
-    this.back[0] = this._rotXScratch[8];
-    this.back[1] = this._rotXScratch[9];
-    this.back[2] = this._rotXScratch[10];
+    this.right[0] = cy; this.right[1] = 0; this.right[2] = -sy;
+    this.up[0] = sy * sp; this.up[1] = cp; this.up[2] = cy * sp;
+    this.back[0] = sy * cp; this.back[1] = -sp; this.back[2] = cy * cp;
   }
 
   _updateFollow() {
@@ -508,9 +443,11 @@ export class RPGCamera {
 
     if(this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
+
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
 
+      // optional external coupling
       app.lightContainer[0].position[0] = this.followMe.x;
       app.lightContainer[0].position[2] = this.followMe.z;
       app.lightContainer[0].target[0] = this.followMe.x;
@@ -520,129 +457,41 @@ export class RPGCamera {
       this._dirty = true;
     }
 
+    // smooth Y only (cheap)
     const smoothFactor = 0.1;
-    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+    const newY = this.position[1] + (this.scrollY - this.position[1]) * smoothFactor;
+
+    if(Math.abs(newY - this.position[1]) > 0.0001) {
+      this.position[1] = newY;
+      this._dirty = true;
+    }
+  }
+
+  _recalculateViewVP() {
+    this._updateOrientation();
+
+    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const vs = this.view;
+
+    vs[0] = rx[0]; vs[4] = rx[1]; vs[8] = rx[2]; vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0]; vs[5] = uy[1]; vs[9] = uy[2]; vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0]; vs[6] = bz[1]; vs[10] = bz[2]; vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+
+    vs[3] = 0; vs[7] = 0; vs[11] = 0; vs[15] = 1;
+
+    RPGCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
 
   update() {
     this._updateFollow();
+
     if(!this._dirty) return;
-    this._updateOrientation();
-    // build view NO INVERT
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
-    const vs = this._viewScratch;
-    vs[0] = rx[0]; vs[4] = rx[1]; vs[8] = rx[2]; vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
-    vs[1] = uy[0]; vs[5] = uy[1]; vs[9] = uy[2]; vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
-    vs[2] = bz[0]; vs[6] = bz[1]; vs[10] = bz[2]; vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    vs[3] = vs[7] = vs[11] = 0; vs[15] = 1;
-    this.view.set(vs);
-    RPGCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+
+    this._recalculateViewVP();
     this._dirty = false;
   }
 }
 
-// Returns `x` clamped between [`min` .. `max`]
-function clamp(x, min, max) {
-  return Math.min(Math.max(x, min), max);
-}
-
-// Returns `x` float-modulo `div`
-function mod(x, div) {
-  return x - Math.floor(Math.abs(x) / div) * div * Math.sign(x);
-}
-
-// Returns `vec` rotated `angle` radians around `axis`
 function rotate(vec, axis, angle) {
   return vec3.transformMat4Upper3x3(vec, mat4.rotation(axis, angle));
-}
-
-// Returns the linear interpolation between 'a' and 'b' using 's'
-function lerp(a, b, s) {
-  return vec3.addScaled(a, vec3.sub(b, a), s);
-}
-
-export function createInputHandler(window, canvas) {
-
-  const digital = {
-    forward: false, backward: false,
-    left: false, right: false,
-    up: false, down: false,
-  };
-
-  const analog = {x: 0, y: 0, zoom: 0};
-
-  // Track last position per pointerId for reliable delta on touch
-  const pointerLast = new Map();
-  let mouseDown = false;
-
-  const output = {
-    digital,
-    analog: {x: 0, y: 0, zoom: 0, touching: false}
-  };
-
-  const setDigital = (e, value) => {
-    switch(e.code) {
-      case 'KeyW': digital.forward = value; break;
-      case 'KeyS': digital.backward = value; break;
-      case 'KeyA': digital.left = value; break;
-      case 'KeyD': digital.right = value; break;
-      case 'KeyV': digital.up = value; break;
-      case 'KeyC': digital.down = value; break;
-    }
-    e.stopPropagation();
-  };
-
-  window.addEventListener('keydown', (e) => setDigital(e, true), {passive: true});
-  window.addEventListener('keyup', (e) => setDigital(e, false), {passive: true});
-
-  canvas.style.touchAction = 'none'; // ← critical: was 'pinch-zoom', blocks pointermove on mobile
-
-  canvas.addEventListener('pointerdown', (e) => {
-    e.preventDefault();              // ← must prevent default to receive move events reliably
-    mouseDown = true;
-    pointerLast.set(e.pointerId, {x: e.clientX, y: e.clientY});
-    canvas.setPointerCapture(e.pointerId); // ← capture so move fires even if finger drifts off canvas
-  }, {passive: false});            // ← passive: false required when calling preventDefault
-
-  canvas.addEventListener('pointerup', (e) => {
-    mouseDown = false;
-    pointerLast.delete(e.pointerId);
-  }, {passive: true});
-
-  canvas.addEventListener('pointercancel', (e) => {
-    mouseDown = false;
-    pointerLast.delete(e.pointerId);
-  }, {passive: true});
-
-  const MOUSE_SENS = 0.07;
-  const TOUCH_SENS = 0.02;
-
-  canvas.addEventListener('pointermove', (e) => {
-    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-    for(const ce of events) {
-      if(ce.pointerType === 'mouse') {
-        if((ce.buttons & 1) === 0) continue;
-        analog.x += ce.movementX * MOUSE_SENS;
-        analog.y += ce.movementY * MOUSE_SENS;
-      } else {
-        const last = pointerLast.get(ce.pointerId);
-        if(!last) continue;
-        analog.x += (ce.clientX - last.x) * TOUCH_SENS;
-        analog.y += (ce.clientY - last.y) * TOUCH_SENS;
-        last.x = ce.clientX;
-        last.y = ce.clientY;
-      }
-    }
-  }, {passive: true});
-
-  return function getInput() {
-    output.analog.x = analog.x;
-    output.analog.y = analog.y;
-    output.analog.zoom = analog.zoom;
-    output.analog.touching = mouseDown;
-    analog.x = 0;
-    analog.y = 0;
-    analog.zoom = 0;
-    return output;
-  };
 }
