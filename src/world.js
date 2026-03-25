@@ -2,7 +2,7 @@ import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -27,6 +27,7 @@ import ProceduralMeshObj, {MeshMorpher} from "./engine/procedural-mesh.js";
 import {FOUNTAIN_COLUMN_TOP, fountainBasinConfig, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainMeshConfig, fountainStructureConfig, fountainWaterConfig} from "./engine/procedures/fontana.js";
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
 import {MEConfig} from "./me-config.js";
+import {zeroPass} from "./engine/overrides/min-render.js";
 
 /**
  * @description
@@ -138,6 +139,13 @@ export default class MatrixEngineWGPU {
         this.editor = new Editor(this, options.projectType);
       } else {
         this.editor = new Editor(this, "infly");
+      }
+    }
+
+    this.overrideRender = null;
+    if(typeof options.render !== 'undefined') {
+      if(options.render == 'zero') {
+        this.overrideRender = zeroPass.bind(this);
       }
     }
 
@@ -282,9 +290,9 @@ export default class MatrixEngineWGPU {
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
       " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n",
       LOG_FUNNY_ARCADE);
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
-    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY);
+    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_FUNNY);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
   };
 
@@ -603,6 +611,7 @@ export default class MatrixEngineWGPU {
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
+    return myMesh1;
   }
 
   addProceduralMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -762,7 +771,13 @@ export default class MatrixEngineWGPU {
 
   async run(callback) {
     this._lastPipeline = null;
-    this.frame = this.frameSinglePass;
+    // render setup
+    if(this.overrideRender !== null) {
+      console.log(`%cOverride render. Use zero configuraion.`, LOG_FUNNY_ARCADE);
+       this.frame = this.overrideRender;
+    } else {
+      this.frame = this.frameSinglePass;
+    }
     setTimeout(() => {this.frame(); callback(this)}, 50);
   }
 
@@ -821,17 +836,6 @@ export default class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
 
-  // const floatsPerLight = 36;
-  // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-  //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
-  //   this._lightsData.set(
-  //     i < this.lightContainer.length
-  //       ? this.lightContainer[i].getLightDataBuffer()
-  //       : this._emptyLight,
-  //     i * floatsPerLight
-  //   );
-  // }
-  // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   updateLights() {
     const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
@@ -1025,6 +1029,7 @@ export default class MatrixEngineWGPU {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
 
+    let r = [];
     o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -1045,16 +1050,12 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
-        // bvhPlayer.shadowVideoView = this.shadowVideoView;
         bvhPlayer.clearColor = clearColor;
-        // if(o.physics.enabled == true) {
-        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
-        // }
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
+        r.push(bvhPlayer)
         this.sortRenderBundle();
         setTimeout(() => {
           document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
@@ -1066,6 +1067,7 @@ export default class MatrixEngineWGPU {
     if(typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
+    return r;
   }
 
   addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {

@@ -13,6 +13,7 @@ var _snakeLightsInstanced = require("./examples/snake-lights-instanced.js");
 var _snakeLights = require("./examples/snake-lights.js");
 var _videoTexture = require("./examples/video-texture.js");
 var _utils = require("./src/engine/utils.js");
+var _maze = require("./examples/maze.js");
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
@@ -41,6 +42,7 @@ const switchDemo = id => {
 (0, _utils.byId)('myLights').addEventListener("click", () => switchDemo('9'));
 (0, _utils.byId)('snake-light').addEventListener("click", () => switchDemo('10'));
 (0, _utils.byId)('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
+(0, _utils.byId)('maze').addEventListener("click", () => switchDemo('12'));
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
 } else if (urlQ['demo'] === '2') {
@@ -63,9 +65,11 @@ if (urlQ['demo'] === '1') {
   (0, _snakeLights.snakeLights)();
 } else if (urlQ['demo'] === '11') {
   (0, _snakeLightsInstanced.snakeLightsInstanced)();
+} else if (urlQ['demo'] === '12') {
+  (0, _maze.mazeGame)();
 }
 
-},{"./examples/camera-texture.js":2,"./examples/fontana.js":3,"./examples/glb-loader.js":4,"./examples/load-obj-file.js":5,"./examples/load-objs-sequence.js":6,"./examples/my-lights.js":7,"./examples/physics-playground.js":8,"./examples/procedural-mesh.js":9,"./examples/snake-lights-instanced.js":10,"./examples/snake-lights.js":11,"./examples/video-texture.js":12,"./src/engine/utils.js":63}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/fontana.js":3,"./examples/glb-loader.js":4,"./examples/load-obj-file.js":5,"./examples/load-objs-sequence.js":6,"./examples/maze.js":7,"./examples/my-lights.js":8,"./examples/physics-playground.js":9,"./examples/procedural-mesh.js":10,"./examples/snake-lights-instanced.js":11,"./examples/snake-lights.js":12,"./examples/video-texture.js":13,"./src/engine/utils.js":66}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -144,7 +148,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/raycast.js":62,"../src/engine/utils.js":63,"../src/world.js":108}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/raycast.js":65,"../src/engine/utils.js":66,"../src/world.js":117}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -345,7 +349,7 @@ var fontana = function () {
 };
 exports.fontana = fontana;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/procedural-mesh.js":59,"../src/engine/raycast.js":62,"../src/engine/utils.js":63,"../src/world.js":108}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/procedural-mesh.js":62,"../src/engine/raycast.js":65,"../src/engine/utils.js":66,"../src/world.js":117}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -601,7 +605,7 @@ function loadGLBLoader() {
 
 // loadGLBLoader()
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/world.js":108}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/loaders/webgpu-gltf.js":54,"../src/world.js":117}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -610,17 +614,12 @@ Object.defineProperty(exports, "__esModule", {
 exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
-var _utils = require("../src/engine/utils.js");
-var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _raycast = require("../src/engine/raycast.js");
-var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.4,
-    // < 1 // recommended
-    // fastRenderAlternative: true, // not good for mobile
+    fastRender: 0.6,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -679,7 +678,7 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -726,7 +725,7 @@ var loadObjFile = function () {
       });
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'minia'
         },
         position: {
           x: 0,
@@ -747,7 +746,7 @@ var loadObjFile = function () {
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.8,
+          baseColorMix: 0.99,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
@@ -799,15 +798,13 @@ var loadObjFile = function () {
       //    }, null, glbFile11);
 
       loadObjFile.lightContainer[0].intensity = 10;
-
-      // loadObjFile.activateBloomEffect();
-      // loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
-      // loadObjFile.lightContainer[0].behavior.value_ = -1;
-      // loadObjFile.lightContainer[0].updater.push((light) => {
-      //   light.position[0] = light.behavior.setPath0()
-      //   light.target[0] = light.behavior.setPath0()
-      // })
-
+      loadObjFile.activateBloomEffect();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push(light => {
+        light.position[0] = light.behavior.setPath0();
+        light.target[0] = light.behavior.setPath0();
+      });
       loadObjFile.lightContainer[0].position = [0, 17, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
@@ -824,14 +821,13 @@ var loadObjFile = function () {
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
-      // if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
     });
   });
   window.app = loadObjFile;
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/engine/procedural-mesh.js":59,"../src/engine/raycast.js":62,"../src/engine/utils.js":63,"../src/world.js":108}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/raycast.js":65,"../src/world.js":117}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -963,7 +959,124 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/utils.js":63,"../src/world.js":108}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/utils.js":66,"../src/world.js":117}],7:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.mazeGame = void 0;
+var _world = _interopRequireDefault(require("../src/world.js"));
+var _loaderObj = require("../src/engine/loader-obj.js");
+var _raycast = require("../src/engine/raycast.js");
+var _collisionSubSystem = require("../src/engine/collision-sub-system.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+var mazeGame = function () {
+  let maze = new _world.default({
+    canvasSize: 'fullscreen',
+    fastRender: 0.6,
+    render: 'zero',
+    // test
+    dontUsePhysics: true,
+    mainCameraParams: {
+      type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {
+      r: 0,
+      b: 0.122,
+      g: 0.122,
+      a: 1
+    }
+  }, () => {
+    const mazeSize = 50;
+    const spacing = 2;
+    maze.collisionSystem = new _collisionSubSystem.CollisionSystem(maze);
+    maze.addLight();
+    (0, _raycast.addRaycastsAABBListener)();
+    // 1. Load the Cube Mesh
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, m => {
+      generateMazeLogic(m);
+    }, {
+      scale: [1, 1, 1]
+    });
+    function generateMazeLogic(meshes) {
+      // Create a grid (0 = wall, 1 = path)
+      let grid = Array(mazeSize).fill().map(() => Array(mazeSize).fill(0));
+      // Basic Recursive Backtracker to ensure ONE path
+      function walk(x, y) {
+        grid[y][x] = 1;
+        let dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]].sort(() => Math.random() - 0.5);
+        for (let [dx, dy] of dirs) {
+          let nx = x + dx * 2,
+            ny = y + dy * 2;
+          if (nx >= 0 && nx < mazeSize && ny >= 0 && ny < mazeSize && grid[ny][nx] === 0) {
+            grid[y + dy][x + dx] = 1; // Break the wall
+            walk(nx, ny);
+          }
+        }
+      }
+      walk(0, 0); // Start generation
+      grid[mazeSize - 1][mazeSize - 2] = 1; // Ensure exit point
+
+      // 2. Instantiate the Maze Walls
+      for (let y = 0; y < mazeSize; y++) {
+        for (let x = 0; x < mazeSize; x++) {
+          if (grid[y][x] === 0) {
+            const wallName = `wall_${x}_${y}`;
+            let test = maze.addMeshObj({
+              shadowsCast: false,
+              material: {
+                type: 'colorb'
+              },
+              position: {
+                x: x * spacing - mazeSize * spacing / 2,
+                y: 0,
+                z: y * spacing - mazeSize * spacing / 2
+              },
+              texturesPaths: ['./res/textures/rust.jpg'],
+              name: wallName,
+              mesh: meshes.cube,
+              physics: {
+                enabled: false,
+                mass: 0,
+                geometry: "Cube"
+              }
+            });
+            maze.collisionSystem.register(test.name, test.position, 2.0, 'enemy');
+            // console.log(test.name + ">>>>>>>>>>>>>>>>>>>>>>");
+          }
+        }
+      }
+      maze.collisionSystem.registerCamera(app.cameras.WASD.position, 1.0);
+      // 3. Setup the Player (Target Logic)
+      // We can use the Position class interpolation to move a "player" sphere
+      // maze.addMeshObj({
+      //   material: {type: 'mirror'},
+      //   position: {x: -mazeSize, y: 0, z: -mazeSize},
+      //   name: 'playerBall',
+      //   mesh: meshes.ball || meshes.cube, // fallback
+      //   physics: {enabled: false}
+      // });
+
+      // let player = maze.getSceneObjectByName('playerBall');
+
+      // // Move player to end of Lavirint using your translateByXZ method
+      // player.position.setSpeed(0.5);
+      // player.position.translateByXZ((mazeSize * spacing) / 2, (mazeSize * spacing) / 2);
+
+      // player.position.onTargetPositionReach = () => {
+      //   console.log("Cestitamo! You reached the finish line!");
+      // };
+    }
+  });
+  window.app = maze;
+};
+exports.mazeGame = mazeGame;
+
+},{"../src/engine/collision-sub-system.js":31,"../src/engine/loader-obj.js":51,"../src/engine/raycast.js":65,"../src/world.js":117}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1108,7 +1221,7 @@ var myLights = function () {
 };
 exports.myLights = myLights;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/engine/utils.js":63,"../src/world.js":108}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/loaders/webgpu-gltf.js":54,"../src/engine/utils.js":66,"../src/world.js":117}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1455,7 +1568,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/raycast.js":62,"../src/engine/utils.js":63,"../src/world.js":108}],9:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/raycast.js":65,"../src/engine/utils.js":66,"../src/world.js":117}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1715,7 +1828,7 @@ var procMesh = function () {
 };
 exports.procMesh = procMesh;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/procedural-mesh.js":59,"../src/engine/raycast.js":62,"../src/engine/utils.js":63,"../src/world.js":108}],10:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/procedural-mesh.js":62,"../src/engine/raycast.js":65,"../src/engine/utils.js":66,"../src/world.js":117}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1955,7 +2068,7 @@ var snakeLightsInstanced = function () {
 };
 exports.snakeLightsInstanced = snakeLightsInstanced;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/world.js":108}],11:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/loaders/webgpu-gltf.js":54,"../src/world.js":117}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2193,7 +2306,7 @@ var snakeLights = function () {
 };
 exports.snakeLights = snakeLights;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/loaders/webgpu-gltf.js":52,"../src/world.js":108}],12:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/loaders/webgpu-gltf.js":54,"../src/world.js":117}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2352,7 +2465,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":49,"../src/engine/raycast.js":62,"../src/world.js":108}],13:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":51,"../src/engine/raycast.js":65,"../src/world.js":117}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2362,7 +2475,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":14}],14:[function(require,module,exports){
+},{"./module/bvh-loader":15}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3051,7 +3164,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":26}],15:[function(require,module,exports){
+},{"webgpu-matrix":27}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3129,7 +3242,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3158,7 +3271,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":15,"./mat2.js":17,"./mat2d.js":18,"./mat3.js":19,"./mat4.js":20,"./quat.js":21,"./quat2.js":22,"./vec2.js":23,"./vec3.js":24,"./vec4.js":25}],17:[function(require,module,exports){
+},{"./common.js":16,"./mat2.js":18,"./mat2d.js":19,"./mat3.js":20,"./mat4.js":21,"./quat.js":22,"./quat2.js":23,"./vec2.js":24,"./vec3.js":25,"./vec4.js":26}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3620,7 +3733,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":15}],18:[function(require,module,exports){
+},{"./common.js":16}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4134,7 +4247,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":15}],19:[function(require,module,exports){
+},{"./common.js":16}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4946,7 +5059,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":15}],20:[function(require,module,exports){
+},{"./common.js":16}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6966,7 +7079,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":15}],21:[function(require,module,exports){
+},{"./common.js":16}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7749,7 +7862,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":15,"./mat3.js":19,"./vec3.js":24,"./vec4.js":25}],22:[function(require,module,exports){
+},{"./common.js":16,"./mat3.js":20,"./vec3.js":25,"./vec4.js":26}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8622,7 +8735,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":15,"./mat4.js":20,"./quat.js":21}],23:[function(require,module,exports){
+},{"./common.js":16,"./mat4.js":21,"./quat.js":22}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9300,7 +9413,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":15}],24:[function(require,module,exports){
+},{"./common.js":16}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10152,7 +10265,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":15}],25:[function(require,module,exports){
+},{"./common.js":16}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10859,7 +10972,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":15}],26:[function(require,module,exports){
+},{"./common.js":16}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14792,7 +14905,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20139,7 +20252,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20210,7 +20323,7 @@ const en = exports.en = {
   "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20248,7 +20361,82 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":63}],30:[function(require,module,exports){
+},{"./utils":66}],31:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.CollisionSystem = void 0;
+var _matrixClass = require("./matrix-class");
+class CollisionSystem {
+  constructor() {
+    this.entries = [];
+    this.cameraEntry = null;
+  }
+  register(id, positionInstance, radius = 0.6, group = "default") {
+    this.entries.push({
+      id,
+      pos: positionInstance,
+      radius,
+      group
+    });
+  }
+  unregister(id) {
+    this.entries = this.entries.filter(e => e.id !== id);
+    if (this.cameraEntry && this.cameraEntry.id === id) this.cameraEntry = null;
+  }
+
+  /**
+   * Specifically register the WASD camera to the collision loop.
+   * @param {Object} cameraInstance - Must have .x, .z (and ideally targetX/targetZ)
+   */
+  registerCamera(cameraInstance, radius = 5.0) {
+    this.cameraEntry = {
+      id: "wasd_camera",
+      pos: cameraInstance,
+      radius,
+      group: "camera"
+    };
+  }
+  update() {
+    const n = this.entries.length;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const A = this.entries[i];
+        const B = this.entries[j];
+        if (A.group === B.group) continue;
+        const minDist = (A.radius + B.radius) / 1.5;
+        const testCollide = (0, _matrixClass.pairRepulsion)(A.pos, B.pos, minDist, 1.0);
+        if (testCollide) {
+          dispatchEvent(new CustomEvent('close-distance', {
+            detail: {
+              A,
+              B
+            }
+          }));
+        }
+      }
+    }
+    if (this.cameraEntry) {
+      for (let i = 0; i < n; i++) {
+        const target = this.entries[i];
+        const minCamDist = this.cameraEntry.radius + target.radius;
+        const collided = (0, _matrixClass.pairRepulsion)(this.cameraEntry.pos, target.pos, minCamDist, 0.8);
+        if (collided) {
+          dispatchEvent(new CustomEvent('camera-collision', {
+            detail: {
+              target
+            }
+          }));
+        }
+      }
+    }
+  }
+}
+exports.CollisionSystem = CollisionSystem;
+
+},{"./matrix-class":56}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20354,7 +20542,7 @@ class TextureCache {
 }
 exports.TextureCache = TextureCache;
 
-},{}],31:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20791,7 +20979,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":67,"wgpu-matrix":27}],32:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":70,"wgpu-matrix":28}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20957,7 +21145,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":68,"wgpu-matrix":27}],33:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":71,"wgpu-matrix":28}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21248,7 +21436,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":69,"../utils":63,"wgpu-matrix":27}],34:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":72,"../utils":66,"wgpu-matrix":28}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21564,7 +21752,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":70,"../geometry-factory":44,"wgpu-matrix":27}],35:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":73,"../geometry-factory":46,"wgpu-matrix":28}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21806,7 +21994,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":88,"../geometry-factory.js":44,"wgpu-matrix":27}],36:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":97,"../geometry-factory.js":46,"wgpu-matrix":28}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22065,7 +22253,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":88,"../geometry-factory.js":44,"wgpu-matrix":27}],37:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":97,"../geometry-factory.js":46,"wgpu-matrix":28}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22256,7 +22444,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":87,"../geometry-factory.js":44,"wgpu-matrix":27}],38:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":96,"../geometry-factory.js":46,"wgpu-matrix":28}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22715,7 +22903,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":81}],39:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":84}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22879,7 +23067,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":68,"wgpu-matrix":27}],40:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":71,"wgpu-matrix":28}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23026,7 +23214,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":89,"wgpu-matrix":27}],41:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":98,"wgpu-matrix":28}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23208,7 +23396,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":90}],42:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":99}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23550,115 +23738,143 @@ class WASDCamera {
   }
 }
 exports.WASDCamera = WASDCamera;
-class ArcballCamera extends CameraBase {
-  // The camera distance from the target
+class ArcballCamera {
+  position = new Float32Array(3);
+  right = new Float32Array(3);
+  up = new Float32Array(3);
+  back = new Float32Array(3);
+  view = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  VP = new Float32Array(16);
   distance = 0;
-
-  // The current angular velocity
   angularVelocity = 0;
-
-  // The current rotation axis
-  axis_ = _wgpuMatrix.vec3.create();
-
-  // Returns the rotation axis
-  get axis() {
-    return this.axis_;
-  }
-  // Assigns `vec` to the rotation axis
-  set axis(vec) {
-    _wgpuMatrix.vec3.copy(vec, this.axis_);
-  }
-
-  // Speed multiplier for camera rotation
+  axis = new Float32Array(3);
   rotationSpeed = 1;
-
-  // Speed multiplier for camera zoom
   zoomSpeed = 0.1;
-
-  // Rotation velocity drag coeffient [0 .. 1]
-  // 0: Spins forever
-  // 1: Instantly stops spinning
   frictionCoefficient = 0.999;
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
-    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+  _movement = new Float32Array(3);
+  _cross = new Float32Array(3);
+  constructor(options = {}) {
+    if (options.position) {
+      this.position.set(options.position);
+      this.distance = Math.hypot(this.position[0], this.position[1], this.position[2]);
+      const invLen = 1 / this.distance;
+      this.back[0] = this.position[0] * invLen;
+      this.back[1] = this.position[1] * invLen;
+      this.back[2] = this.position[2] * invLen;
+    }
+    this.setProjection(2 * Math.PI / 5, 1, 1, 2000);
+    this._recalculateRight();
+    this._recalculateUp();
+    this._recalculateViewVP();
   }
-  // Construtor
-  constructor(options) {
-    super();
-    if (options && options.position) {
-      this.position = options.position;
-      this.distance = _wgpuMatrix.vec3.len(this.position);
-      this.back = _wgpuMatrix.vec3.normalize(this.position);
-      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
-      this.recalcuateRight();
-      this.recalcuateUp();
+  setProjection(fov, aspect, near, far) {
+    _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+  }
+  _normalize(v) {
+    const len = Math.hypot(v[0], v[1], v[2]);
+    if (len > 0.000001) {
+      const inv = 1 / len;
+      v[0] *= inv;
+      v[1] *= inv;
+      v[2] *= inv;
     }
   }
-
-  // Returns the camera matrix
-  get matrix() {
-    return super.matrix;
+  _cross(a, b, out) {
+    const ax = a[0],
+      ay = a[1],
+      az = a[2];
+    const bx = b[0],
+      by = b[1],
+      bz = b[2];
+    out[0] = ay * bz - az * by;
+    out[1] = az * bx - ax * bz;
+    out[2] = ax * by - ay * bx;
   }
-
-  // Assigns `mat` to the camera matrix, and recalcuates the distance
-  set matrix(mat) {
-    super.matrix = mat;
-    this.distance = _wgpuMatrix.vec3.len(this.position);
+  _rotateVec(v, axis, angle, out) {
+    const x = v[0],
+      y = v[1],
+      z = v[2];
+    const u = axis[0],
+      vA = axis[1],
+      w = axis[2];
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    out[0] = u * (u * x + vA * y + w * z) * (1 - cos) + x * cos + (-w * y + vA * z) * sin;
+    out[1] = vA * (u * x + vA * y + w * z) * (1 - cos) + y * cos + (w * x - u * z) * sin;
+    out[2] = w * (u * x + vA * y + w * z) * (1 - cos) + z * cos + (-vA * x + u * y) * sin;
+  }
+  _recalculateRight() {
+    this._cross(this.up, this.back, this.right);
+    this._normalize(this.right);
+  }
+  _recalculateUp() {
+    this._cross(this.back, this.right, this.up);
+    this._normalize(this.up);
+  }
+  _recalculateViewVP() {
+    const rx = this.right,
+      uy = this.up,
+      bz = this.back,
+      p = this.position;
+    const vs = this.view;
+    vs[0] = rx[0];
+    vs[4] = rx[1];
+    vs[8] = rx[2];
+    vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0];
+    vs[5] = uy[1];
+    vs[9] = uy[2];
+    vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0];
+    vs[6] = bz[1];
+    vs[10] = bz[2];
+    vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
+    vs[15] = 1;
+    ArcballCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
   update(deltaTime, input) {
-    const epsilon = 0.0000001;
+    const epsilon = 1e-7;
     if (input.analog.touching) {
-      // Currently being dragged.
       this.angularVelocity = 0;
     } else {
-      // Dampen any existing angular velocity
       this.angularVelocity *= Math.pow(1 - this.frictionCoefficient, deltaTime);
     }
-    // Calculate the movement vector
-    const movement = _wgpuMatrix.vec3.create();
-    _wgpuMatrix.vec3.addScaled(movement, this.right, input.analog.x, movement);
-    _wgpuMatrix.vec3.addScaled(movement, this.up, -input.analog.y, movement);
-    // Cross the movement vector with the view direction to calculate the rotation axis x magnitude
-    const crossProduct = _wgpuMatrix.vec3.cross(movement, this.back);
-    // Calculate the magnitude of the drag
-    const magnitude = _wgpuMatrix.vec3.len(crossProduct);
-    if (magnitude > epsilon) {
-      // Normalize the crossProduct to get the rotation axis
-      this.axis = _wgpuMatrix.vec3.scale(crossProduct, 1 / magnitude);
-      // Remember the current angular velocity. This is used when the touch is released for a fling.
-      this.angularVelocity = magnitude * this.rotationSpeed;
+    const m = this._movement;
+    m[0] = this.right[0] * input.analog.x + this.up[0] * -input.analog.y;
+    m[1] = this.right[1] * input.analog.x + this.up[1] * -input.analog.y;
+    m[2] = this.right[2] * input.analog.x + this.up[2] * -input.analog.y;
+    const c = this._cross;
+    this._cross(m, this.back, c);
+    const mag = Math.hypot(c[0], c[1], c[2]);
+    if (mag > epsilon) {
+      const inv = 1 / mag;
+      this.axis[0] = c[0] * inv;
+      this.axis[1] = c[1] * inv;
+      this.axis[2] = c[2] * inv;
+      this.angularVelocity = mag * this.rotationSpeed;
     }
-    // The rotation around this.axis to apply to the camera matrix this update
-    const rotationAngle = this.angularVelocity * deltaTime;
-    if (rotationAngle > epsilon) {
-      // Rotate the matrix around axis
-      // Note: The rotation is not done as a matrix-matrix multiply as the repeated multiplications
-      // will quickly introduce substantial error into the matrix.
-      this.back = _wgpuMatrix.vec3.normalize(rotate(this.back, this.axis, rotationAngle));
-      this.recalcuateRight();
-      this.recalcuateUp();
+    const angle = this.angularVelocity * deltaTime;
+    if (angle > epsilon) {
+      this._rotateVec(this.back, this.axis, angle, this.back);
+      this._normalize(this.back);
+      this._recalculateRight();
+      this._recalculateUp();
     }
-
-    // recalculate `this.position` from `this.back` considering zoom
     if (input.analog.zoom !== 0) {
       this.distance *= 1 + input.analog.zoom * this.zoomSpeed;
     }
-    this.position = _wgpuMatrix.vec3.scale(this.back, this.distance);
-
-    // Invert the camera matrix to build the view matrix
-    // this.view = mat4.invert(this.matrix);
-    _wgpuMatrix.mat4.invert(this.matrix, this.view_);
-    return this.view_;
+    this.position[0] = this.back[0] * this.distance;
+    this.position[1] = this.back[1] * this.distance;
+    this.position[2] = this.back[2] * this.distance;
+    this._recalculateViewVP();
+    return this.view;
   }
-
-  // Assigns `this.right` with the cross product of `this.up` and `this.back`
-  recalcuateRight() {
-    this.right = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.cross(this.up, this.back));
-  }
-
-  // Assigns `this.up` with the cross product of `this.back` and `this.right`
-  recalcuateUp() {
-    this.up = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.cross(this.back, this.right));
+  static mat4MultiplySafe(a, b, out) {
+    return out;
   }
 }
 exports.ArcballCamera = ArcballCamera;
@@ -23835,7 +24051,7 @@ function rotate(vec, axis, angle) {
   return _wgpuMatrix.vec3.transformMat4Upper3x3(vec, _wgpuMatrix.mat4.rotation(axis, angle));
 }
 
-},{"wgpu-matrix":27}],43:[function(require,module,exports){
+},{"wgpu-matrix":28}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24250,7 +24466,7 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":104,"../loader-obj":49}],44:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":113,"../loader-obj":51}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25322,7 +25538,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25338,6 +25554,9 @@ var _fragmentWgsl4 = require("../../shaders/fragment.wgsl.pong");
 var _fragmentWgsl5 = require("../../shaders/fragment.wgsl.power");
 var _fragmentInstanced = require("../../shaders/instanced/fragment.instanced.wgsl");
 var _fragmentMirrorInstanced = require("../../shaders/instanced/fragment.mirror.instanced.wgsl");
+var _colorA = require("../../shaders/minimalist/color-a.wgsl");
+var _colorB = require("../../shaders/minimalist/color-b.wgsl");
+var _mini = require("../../shaders/minimalist/mini.wgsl");
 var _waterC = require("../../shaders/water/water-c.wgls");
 /**
  * @description
@@ -25635,6 +25854,18 @@ class MaterialsInstanced {
       return _fragmentMirrorInstanced.fragmentMirrorWGSLInstanced;
     } else if (this.material.type === "free") {
       return _fragmentWgsl2.fragmentWGSLNoCut;
+    } else if (this.material.type === "mini") {
+      return _mini.miniWGSL;
+    } else if (this.material.type === "minia") {
+      return miniaWGSL;
+    } else if (this.material.type === "mida") {
+      return midaWGSL;
+    } else if (this.material.type === "hybrid") {
+      return hybridWGSL;
+    } else if (this.material.type === "colora") {
+      return _colorA.coloraWGSL;
+    } else if (this.material.type === "colorb") {
+      return _colorB.colorbWGSL;
     }
     console.warn('Unknown material type use standard:', this.material?.type);
     return _fragment.fragmentWGSL;
@@ -26024,7 +26255,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":73,"../../shaders/fragment.wgsl":75,"../../shaders/fragment.wgsl.metal":76,"../../shaders/fragment.wgsl.noCut":77,"../../shaders/fragment.wgsl.normalmap":78,"../../shaders/fragment.wgsl.pong":79,"../../shaders/fragment.wgsl.power":80,"../../shaders/instanced/fragment.instanced.wgsl":82,"../../shaders/instanced/fragment.mirror.instanced.wgsl":83,"../../shaders/water/water-c.wgls":95}],46:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":76,"../../shaders/fragment.wgsl":78,"../../shaders/fragment.wgsl.metal":79,"../../shaders/fragment.wgsl.noCut":80,"../../shaders/fragment.wgsl.normalmap":81,"../../shaders/fragment.wgsl.pong":82,"../../shaders/fragment.wgsl.power":83,"../../shaders/instanced/fragment.instanced.wgsl":85,"../../shaders/instanced/fragment.mirror.instanced.wgsl":86,"../../shaders/minimalist/color-a.wgsl":89,"../../shaders/minimalist/color-b.wgsl":90,"../../shaders/minimalist/mini.wgsl":94,"../../shaders/water/water-c.wgls":104}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27212,7 +27443,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":74,"../../shaders/instanced/vertex.instanced.wgsl":84,"../effects/energy-bar":32,"../effects/flame":34,"../effects/flame-emmiter":33,"../effects/gen":37,"../effects/gen-tex":35,"../effects/gen-tex2":36,"../effects/mana-bar":39,"../effects/pointerEffect":40,"../literals":48,"../loaders/bvh-instaced":50,"../matrix-class":54,"../utils":63,"./materials-instanced":45,"wgpu-matrix":27}],47:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":77,"../../shaders/instanced/vertex.instanced.wgsl":87,"../effects/energy-bar":34,"../effects/flame":36,"../effects/flame-emmiter":35,"../effects/gen":39,"../effects/gen-tex":37,"../effects/gen-tex2":38,"../effects/mana-bar":41,"../effects/pointerEffect":42,"../literals":50,"../loaders/bvh-instaced":52,"../matrix-class":56,"../utils":66,"./materials-instanced":47,"wgpu-matrix":28}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27792,7 +28023,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../me-config":64,"../shaders/instanced/vertexShadow.instanced.wgsl":85,"../shaders/vertex.procedural.wgsl":91,"../shaders/vertexShadow.wgsl":94,"./behavior":29,"./utils":63,"wgpu-matrix":27}],48:[function(require,module,exports){
+},{"../me-config":67,"../shaders/instanced/vertexShadow.instanced.wgsl":88,"../shaders/vertex.procedural.wgsl":100,"../shaders/vertexShadow.wgsl":103,"./behavior":30,"./utils":66,"wgpu-matrix":28}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27816,7 +28047,7 @@ const VERTEX_ANIM_FLAGS = exports.VERTEX_ANIM_FLAGS = {
   DISPLACEMENT: 1 << 6 // 64
 };
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28284,7 +28515,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28965,7 +29196,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":46,"../utils.js":63,"./webgpu-gltf.js":52,"wgpu-matrix":27}],51:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":48,"../utils.js":66,"./webgpu-gltf.js":54,"wgpu-matrix":28}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29623,7 +29854,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":55,"../utils.js":63,"./webgpu-gltf.js":52,"bvh-loader":13,"wgpu-matrix":27}],52:[function(require,module,exports){
+},{"../mesh-obj":57,"../utils.js":66,"./webgpu-gltf.js":54,"bvh-loader":14,"wgpu-matrix":28}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30204,7 +30435,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":16}],53:[function(require,module,exports){
+},{"gl-matrix":17}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30223,6 +30454,12 @@ var _utils = require("./utils");
 var _fragmentGpt = require("../shaders/fragment.gpt.wgsl");
 var _fragmentWgsl5 = require("../shaders/fragment.wgsl.noCut");
 var _fontana = require("../shaders/fontana/fontana.wgsl");
+var _mini = require("../shaders/minimalist/mini.wgsl");
+var _miniA = require("../shaders/minimalist/mini-a.wgsl");
+var _midA = require("../shaders/minimalist/mid-a.wgsl");
+var _hybrid = require("../shaders/minimalist/hybrid.wgsl");
+var _colorA = require("../shaders/minimalist/color-a.wgsl");
+var _colorB = require("../shaders/minimalist/color-b.wgsl");
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -30320,7 +30557,6 @@ class Materials {
         });
       }
     } else {
-      // console.log('>DUMMY>normalTexture>')
       // dummy for normal map 1x1 neutral normal map
       this.normalDummyTex = device.createTexture({
         size: [1, 1, 1],
@@ -30564,6 +30800,18 @@ class Materials {
       return _fragmentWgsl5.fragmentWGSLNoCut;
     } else if (this.material.type === "fontana") {
       return _fontana.fountainFragmentWGSL;
+    } else if (this.material.type === "mini") {
+      return _mini.miniWGSL;
+    } else if (this.material.type === "minia") {
+      return _miniA.miniaWGSL;
+    } else if (this.material.type === "mida") {
+      return _midA.midaWGSL;
+    } else if (this.material.type === "hybrid") {
+      return _hybrid.hybridWGSL;
+    } else if (this.material.type === "colora") {
+      return _colorA.coloraWGSL;
+    } else if (this.material.type === "colorb") {
+      return _colorB.colorbWGSL;
     }
     console.warn('Unknown material type:', this.material?.type);
     return _fragment.fragmentWGSL;
@@ -31010,13 +31258,14 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":71,"../shaders/fragment.gpt.wgsl":72,"../shaders/fragment.mirror.wgsl":73,"../shaders/fragment.wgsl":75,"../shaders/fragment.wgsl.metal":76,"../shaders/fragment.wgsl.noCut":77,"../shaders/fragment.wgsl.normalmap":78,"../shaders/fragment.wgsl.pong":79,"../shaders/fragment.wgsl.power":80,"../shaders/mixed/fragmentMix1.wgsl":86,"../shaders/water/water-c.wgls":95,"./utils":63}],54:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":74,"../shaders/fragment.gpt.wgsl":75,"../shaders/fragment.mirror.wgsl":76,"../shaders/fragment.wgsl":78,"../shaders/fragment.wgsl.metal":79,"../shaders/fragment.wgsl.noCut":80,"../shaders/fragment.wgsl.normalmap":81,"../shaders/fragment.wgsl.pong":82,"../shaders/fragment.wgsl.power":83,"../shaders/minimalist/color-a.wgsl":89,"../shaders/minimalist/color-b.wgsl":90,"../shaders/minimalist/hybrid.wgsl":91,"../shaders/minimalist/mid-a.wgsl":92,"../shaders/minimalist/mini-a.wgsl":93,"../shaders/minimalist/mini.wgsl":94,"../shaders/mixed/fragmentMix1.wgsl":95,"../shaders/water/water-c.wgls":104,"./utils":66}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Rotation = exports.Position = void 0;
+exports.pairRepulsion = pairRepulsion;
 var _utils = require("./utils");
 /**
  * @description 
@@ -31463,9 +31712,49 @@ class Rotation {
     }
   };
 }
-exports.Rotation = Rotation;
 
-},{"./utils":63}],55:[function(require,module,exports){
+// array type of pos obj
+exports.Rotation = Rotation;
+function pairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
+  // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
+  const dx = Bpos[0] - Apos[0];
+  const dz = Bpos[2] - Apos[2];
+  const distSq = dx * dx + dz * dz;
+  const minDistSq = minDistance * minDistance;
+  if (distSq < minDistSq && distSq > 1e-8) {
+    const dist = Math.sqrt(distSq);
+    const overlap = minDistance - dist;
+    const nx = dx / dist;
+    const nz = dz / dist;
+    const totalPush = overlap * pushStrength;
+    const pushA = totalPush * 0.5;
+    const pushB = totalPush * 0.5;
+    Apos[0] -= nx * pushA;
+    Apos[2] -= nz * pushA;
+    Bpos[0] += nx * pushB;
+    Bpos[2] += nz * pushB;
+    // Apos.targetX = Apos.x;
+    // Apos.targetZ = Apos.z;
+    // Bpos.targetX = Bpos.x;
+    // Bpos.targetZ = Bpos.z;
+    return true;
+  }
+  // exact overlap (practically same point) -> small jitter to separate
+  if (distSq <= 1e-8) {
+    const jitter = 0.01;
+    Apos[0] += (Math.random() - 0.5) * jitter;
+    Apos[2] += (Math.random() - 0.5) * jitter;
+
+    // ??? test
+    // Apos.targetX = Apos.x; 
+    // Apos.targetZ = Apos.z;
+
+    return true;
+  }
+  return false;
+}
+
+},{"./utils":66}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32209,7 +32498,7 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
-      this.getTransformationMatrix = (camVP, dt) => {
+      this.getTransformationMatrix2 = (camVP, dt) => {
         this._sceneData.set(camVP, 16);
         this._sceneData[35] = 0.0;
         this._sceneData[39] = 0.0;
@@ -32221,6 +32510,20 @@ class MEMeshObj extends _materials.default {
         this._sceneData[45] = dt;
         this._sceneData[46] = 0;
         this._sceneData[47] = 0;
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+      };
+      this.getTransformationMatrix = (camVP, dt) => {
+        this._sceneData.set(camVP, 16);
+        // this._sceneData[35] = 0.0;
+        // this._sceneData[39] = 0.0;
+        // this._sceneData[40] = this.globalAmbient[0];
+        // this._sceneData[41] = this.globalAmbient[1];
+        // this._sceneData[42] = this.globalAmbient[2];
+        // this._sceneData[43] = 0.0;
+        this._sceneData[44] = this.time;
+        this._sceneData[45] = dt;
+        // this._sceneData[46] = 0;
+        // this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
       this.getModelMatrix = (pos, useScale = false) => {
@@ -32597,7 +32900,73 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":74,"../shaders/vertex.wgsl":92,"../shaders/vertex.wgsl.normalmap":93,"./effects/destruction":31,"./effects/flame":34,"./effects/flame-emmiter":33,"./effects/gizmo":38,"./effects/topology-point":41,"./literals":48,"./materials":53,"./matrix-class":54,"./procedures/procedural-textures":61,"./utils":63,"wgpu-matrix":27}],56:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":77,"../shaders/vertex.wgsl":101,"../shaders/vertex.wgsl.normalmap":102,"./effects/destruction":33,"./effects/flame":36,"./effects/flame-emmiter":35,"./effects/gizmo":40,"./effects/topology-point":43,"./literals":50,"./materials":55,"./matrix-class":56,"./procedures/procedural-textures":64,"./utils":66,"wgpu-matrix":28}],58:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.zeroPass = void 0;
+let c = 0;
+let zeroPass = function () {
+  const now2 = performance.now();
+  this.now = now2 * 0.001;
+  // this.lastFrameMS = this.now;
+  this.autoUpdate.forEach(_ => _.update());
+  requestAnimationFrame(this.frame);
+  try {
+    let commandEncoder = this.device.createCommandEncoder();
+    const camera = this.getCamera();
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    let lastPipeline = null;
+    const len = this.mainRenderBundle.length;
+    for (let i = 0; i < len; i++) {
+      const mesh = this.mainRenderBundle[i];
+      if (camera._dirty || mesh.position.inMove) {
+        if (c % 2 == 0) mesh.getTransformationMatrix(camera.VP, now2);
+        mesh.updateModelUniformBuffer(i);
+      }
+      c++;
+      mesh.position.update();
+      if (mesh.update) mesh.update(now2);
+      if (!mesh.sceneBindGroupForRender) {
+        mesh.shadowDepthTextureView = this.shadowArrayView;
+        mesh.setupPipeline();
+      }
+      const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
+      if (lastPipeline !== targetPipeline) {
+        pass.setPipeline(targetPipeline);
+        lastPipeline = targetPipeline;
+      }
+      mesh.drawElements(pass, this.lightContainer);
+    }
+    pass.end();
+    const canvasTexture = this.context.getCurrentTexture();
+    if (this._lastCanvasTex !== canvasTexture) {
+      this._lastCanvasTex = canvasTexture;
+      this._canvasView = canvasTexture.createView();
+    }
+    const canvasView = this._canvasView;
+    this.finalPS.colorAttachments[0].view = canvasView;
+    pass = commandEncoder.beginRenderPass(this.finalPS);
+    pass.setPipeline(this.presentPipeline);
+    pass.setBindGroup(0, this._activeBindGroup);
+    pass.draw(6);
+    pass.end();
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
+    this.submitQueue[0] = null;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+    this.blendQueue.length = 0;
+  } catch (err) {
+    if (this.logLoopError) console.log('Loop(warn):' + err + " Info : " + err.stack);
+  }
+};
+exports.zeroPass = zeroPass;
+
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32639,7 +33008,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],57:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33033,7 +33402,7 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],58:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33544,7 +33913,7 @@ function compositeFragWGSL() {
   `;
 }
 
-},{}],59:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34929,7 +35298,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/vertex.procedural.wgsl":91,"./effects/flame":34,"./effects/flame-emmiter":33,"./effects/gizmo":38,"./geometry-factory":44,"./literals":48,"./materials":53,"./matrix-class":54,"./utils":63,"wgpu-matrix":27}],60:[function(require,module,exports){
+},{"../shaders/vertex.procedural.wgsl":100,"./effects/flame":36,"./effects/flame-emmiter":35,"./effects/gizmo":40,"./geometry-factory":46,"./literals":50,"./materials":55,"./matrix-class":56,"./utils":66,"wgpu-matrix":28}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34988,7 +35357,7 @@ function fountainBasinWaterConfig(MeshMorpher) {
 }
 const FOUNTAIN_COLUMN_TOP = exports.FOUNTAIN_COLUMN_TOP = 1.25; // half of cylinder height 2.5
 
-},{}],61:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35027,7 +35396,7 @@ function createGroundTexture(device, size = 512) {
   return texture;
 }
 
-},{}],62:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35306,7 +35675,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":27}],63:[function(require,module,exports){
+},{"wgpu-matrix":28}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36491,7 +36860,7 @@ const geoTypesForMorph = exports.geoTypesForMorph = {
   galaxySpiral: "galaxySpiral"
 };
 
-},{}],64:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36537,7 +36906,7 @@ const MEConfig = exports.MEConfig = {
   }
 };
 
-},{"./engine/utils.js":63}],65:[function(require,module,exports){
+},{"./engine/utils.js":66}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36579,7 +36948,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":28,"../engine/utils":63}],66:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":29,"../engine/utils":66}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36872,7 +37241,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":63}],67:[function(require,module,exports){
+},{"../engine/utils":66}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37042,7 +37411,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],68:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37088,7 +37457,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],69:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37222,7 +37591,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],70:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37382,7 +37751,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],71:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37919,7 +38288,7 @@ fn main(input: VertexInput) -> VertexOutput {
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38121,7 +38490,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../me-config":64}],73:[function(require,module,exports){
+},{"../me-config":67}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38188,9 +38557,9 @@ struct MirrorIlluminateParams {
     illuminatePulse   : f32,     // pulse speed (Hz). 0 = static                  (default: 1.2)
     fresnelPower      : f32,     // Fresnel exponent for rim sharpness            (default: 4.0)
     envLodBias        : f32,     // mip bias for env sample (blur ≈ roughness)    (default: 0.0)
-    usePlanarReflection: f32,  // ✅ NEW: 0 = env map, 1 = planar/screen-space
-    baseColorMix       : f32,  // ✅ NEW: 0=pure env, 1=normal material mix
-    _pad2              : vec3f, // ✅ Padding to maintain alignment
+    usePlanarReflection: f32,    // ✅ NEW: 0 = env map, 1 = planar/screen-space
+    baseColorMix       : f32,    // ✅ NEW: 0=pure env, 1=normal material mix
+    _pad2              : vec3f,  // ✅ Padding to maintain alignment
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -38453,7 +38822,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../me-config":64}],74:[function(require,module,exports){
+},{"../me-config":67}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38541,7 +38910,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],75:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38772,7 +39141,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{"../me-config":64}],76:[function(require,module,exports){
+},{"../me-config":67}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38984,7 +39353,7 @@ let validLight = select(0.0, 1.0, NdotL > 0.0);
 }
 `;
 
-},{"../me-config":64}],77:[function(require,module,exports){
+},{"../me-config":67}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39163,7 +39532,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../me-config":64}],78:[function(require,module,exports){
+},{"../me-config":67}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39412,7 +39781,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{"../me-config":64}],79:[function(require,module,exports){
+},{"../me-config":67}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39635,7 +40004,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{"../me-config":64}],80:[function(require,module,exports){
+},{"../me-config":67}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39801,7 +40170,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../me-config":64}],81:[function(require,module,exports){
+},{"../me-config":67}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39870,7 +40239,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(input.color, 1.0);
 }`;
 
-},{}],82:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40090,7 +40459,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{"../../me-config":64}],83:[function(require,module,exports){
+},{"../../me-config":67}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40381,7 +40750,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../../me-config":64}],84:[function(require,module,exports){
+},{"../../me-config":67}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40644,7 +41013,7 @@ fn main(
   return output;
 }`;
 
-},{"../../me-config":64}],85:[function(require,module,exports){
+},{"../../me-config":67}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40837,7 +41206,693 @@ fn main(
 }
 `;
 
-},{"../../me-config":64}],86:[function(require,module,exports){
+},{"../../me-config":67}],89:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.coloraWGSL = void 0;
+let coloraWGSL = exports.coloraWGSL = `
+override shadowDepthTextureSize: f32;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+    let L = normalize(scene.lightPos - input.fragPos);
+
+    // ===== BASE COLOR =====
+    var baseColor = material.baseColorFactor.rgb;
+
+    // ===== HEIGHT GRADIENT =====
+    let heightFactor = input.fragPos.y * 0.02;
+    let gradientColor = mix(
+        baseColor * 0.5,
+        baseColor * 1.5,
+        clamp(heightFactor, 0.0, 1.0)
+    );
+
+    // ===== FAKE LIGHT =====
+    let NdotL = dot(N, L);
+    let diffuse = NdotL * 0.5 + 0.5;
+
+    // ===== FRESNEL EDGE GLOW 🔥 =====
+    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+
+    // ===== PULSE (time based) =====
+    let pulse = 0.5 + 0.5 * sin(scene.time * 2.0);
+
+    // ===== COLOR COMBINE =====
+    var color = gradientColor;
+
+    color *= (scene.globalAmbient + diffuse * 0.8);
+
+    // edge glow tint (stylized)
+    let glowColor = vec3f(0.2, 0.6, 1.0);
+    color += glowColor * fresnel * (0.5 + pulse * 0.5);
+
+    // ===== OPTIONAL: subtle spec =====
+    let H = normalize(L + V);
+    let spec = pow(max(dot(N, H), 0.0), 16.0);
+    color += spec * 0.2;
+
+    let alpha = material.baseColorFactor.a;
+
+    return vec4f(color, alpha);
+}
+`;
+
+},{}],90:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.colorbWGSL = void 0;
+let colorbWGSL = exports.colorbWGSL = `
+override shadowDepthTextureSize: f32;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+// KEEP LAYOUT
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+};
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+
+    // ===== EDGE DETECTION =====
+    let NdotV = abs(dot(N, V));
+
+    // ===== HARD EDGE MASK (THIS FIXES YOUR PROBLEM) =====
+    let edgeWidth = 0.2;     // tweak
+    let edge = smoothstep(0.0, edgeWidth, 1.0 - NdotV);
+
+    // ===== PURE COLORS =====
+    let glowColor = vec3f(0.0, 1.0, 1.0);
+    let baseColor = vec3f(0.0); // FULL BLACK CORE
+
+    let color = mix(baseColor, glowColor, edge);
+
+    return vec4f(color, material.baseColorFactor.a);
+}`;
+
+// export let colorbWGSL = `
+// override shadowDepthTextureSize: f32;
+
+// struct Scene {
+//     lightViewProjMatrix  : mat4x4f,
+//     cameraViewProjMatrix : mat4x4f,
+//     cameraPos            : vec3f,
+//     padding2             : f32,
+//     lightPos             : vec3f,
+//     padding              : f32,
+//     globalAmbient        : vec3f,
+//     padding3             : f32,
+//     time                 : f32,
+//     deltaTime            : f32,
+//     padding4             : vec2f,
+// };
+
+// struct MaterialPBR {
+//     baseColorFactor : vec4f,
+//     metallicFactor  : f32,
+//     roughnessFactor : f32,
+//     _pad1           : f32,
+//     _pad2           : f32,
+// };
+
+// struct SpotLight {
+//     position      : vec3f,
+//     _pad1         : f32,
+//     direction     : vec3f,
+//     _pad2         : f32,
+//     innerCutoff   : f32,
+//     outerCutoff   : f32,
+//     intensity     : f32,
+//     _pad3         : f32,
+//     color         : vec3f,
+//     _pad4         : f32,
+//     range         : f32,
+//     ambientFactor : f32,
+//     shadowBias    : f32,
+//     _pad5         : f32,
+//     lightViewProj : mat4x4<f32>,
+// };
+
+// const MAX_SPOTLIGHTS = 20u;
+
+// // ===== KEEP ORIGINAL BINDINGS =====
+// @group(0) @binding(0) var<uniform> scene : Scene;
+// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+// @group(0) @binding(2) var shadowSampler: sampler_comparison;
+// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
+// @group(0) @binding(4) var meshSampler: sampler;
+// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
+// @group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// struct FragmentInput {
+//     @location(1) fragPos   : vec3f,
+//     @location(2) fragNorm  : vec3f,
+// };
+
+// @fragment
+// fn main(input: FragmentInput) -> @location(0) vec4f {
+
+//     let N = normalize(input.fragNorm);
+//     let V = normalize(scene.cameraPos - input.fragPos);
+
+//     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 4.0);
+
+//     let base = material.baseColorFactor.rgb * 0.1;
+//     let glow = vec3f(0.0, 1.0, 1.0);
+
+//     let color = base + glow * fresnel * 2.0;
+
+//     return vec4f(color, material.baseColorFactor.a);
+// }
+// `;
+
+},{}],91:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.hybridWGSL = void 0;
+var _meConfig = require("../../me-config");
+let hybridWGSL = exports.hybridWGSL = `
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+    let L = normalize(scene.lightPos - input.fragPos);
+
+    // ===== DISTANCE BASED LOD =====
+    let dist = distance(scene.cameraPos, input.fragPos);
+
+    // tweak these!
+    let nearDist = 50.0;
+    let farDist  = 200.0;
+
+    let lodFactor = clamp((dist - nearDist) / (farDist - nearDist), 0.0, 1.0);
+
+    // ===== CHEAP =====
+    let cheapLighting = scene.globalAmbient;
+
+    // ===== MID QUALITY =====
+    let NdotL = dot(N, L);
+    let diffuse = NdotL * 0.5 + 0.5;
+
+    let H = normalize(L + V);
+    let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
+    let spec = pow(max(dot(N, H), 0.0), specPower);
+
+    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+
+    var midLighting = scene.globalAmbient;
+    midLighting += diffuse * 0.8;
+    midLighting += spec * 0.3;
+    midLighting += fresnel * 0.2;
+
+    // ===== FINAL BLEND =====
+    let lighting = mix(midLighting, cheapLighting, lodFactor);
+
+    let finalColor = baseColor * lighting;
+
+    // ===== DISTANCE FOG (BONUS 🔥) =====
+    let fogStart = 150.0;
+    let fogEnd   = 400.0;
+
+    let fogFactor = clamp((dist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
+    let fogColor = vec3f(0.6, 0.7, 0.8);
+
+    let colorWithFog = mix(finalColor, fogColor, fogFactor);
+
+    let alpha = texColor.a * material.baseColorFactor.a;
+    if(alpha < 0.01) {
+        discard;
+    }
+
+    return vec4f(colorWithFog, alpha);
+}
+`;
+
+},{"../../me-config":67}],92:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.midaWGSL = void 0;
+var _meConfig = require("../../me-config");
+let midaWGSL = exports.midaWGSL = `
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+
+    // ===== FAKE LIGHT (single directional from lightPos) =====
+    let L = normalize(scene.lightPos - input.fragPos);
+
+    // ===== HALF-LAMBERT (softer shading) =====
+    let NdotL = dot(N, L);
+    let diffuse = NdotL * 0.5 + 0.5; // smoother than max(dot,0)
+
+    // ===== CHEAP SPECULAR (Blinn-Phong lite) =====
+    let H = normalize(L + V);
+    let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
+    let spec = pow(max(dot(N, H), 0.0), specPower);
+
+    // ===== CHEAP FRESNEL =====
+    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+
+    // ===== COMBINE =====
+    var lighting = scene.globalAmbient;
+
+    lighting += diffuse * 0.8;      // diffuse light
+    lighting += spec * 0.3;         // highlight
+    lighting += fresnel * 0.2;      // edge glow
+
+    let finalColor = baseColor * lighting;
+
+    let alpha = texColor.a * material.baseColorFactor.a;
+    if(alpha < 0.01) {
+        discard;
+    }
+
+    return vec4f(finalColor, alpha);
+}
+`;
+
+},{"../../me-config":67}],93:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.miniaWGSL = void 0;
+var _meConfig = require("../../me-config");
+let miniaWGSL = exports.miniaWGSL = `
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,   // unused (kept for layout)
+    cameraViewProjMatrix : mat4x4f,   // unused
+    cameraPos            : vec3f,     // unused
+    padding2             : f32,
+    lightPos             : vec3f,     // unused
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+// MINIMAL MATERIAL (keep layout compatibility)
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,  // unused
+    roughnessFactor : f32,  // unused
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+// Dummy spotlight struct (not used but keeps binding valid)
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+
+// KEEP bindings to avoid pipeline changes
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// KEEP (unused)
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f, // unused
+    @location(1) fragPos   : vec3f, // unused
+    @location(2) fragNorm  : vec3f, // unused
+    @location(3) uv        : vec2f,
+};
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    // ===== TEXTURE =====
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+
+    // ===== BASIC COLOR CONTROL =====
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+
+    // ===== AMBIENT ONLY =====
+    let finalColor = baseColor * scene.globalAmbient;
+
+    // ===== ALPHA =====
+    let alpha = texColor.a * material.baseColorFactor.a;
+
+    // optional discard (keep if you use alpha cutout)
+    if(alpha < 0.01) {
+        discard;
+    }
+
+    return vec4f(finalColor, alpha);
+}
+`;
+
+},{"../../me-config":67}],94:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.miniWGSL = void 0;
+var _meConfig = require("../../me-config");
+let miniWGSL = exports.miniWGSL = `
+
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+    time                 : f32,
+    deltaTime            : f32,
+    padding4             : vec2f,
+};
+
+// minimal dummy spotlight (kept for layout compatibility)
+struct SpotLight {
+    position : vec3f,
+    _pad1    : f32,
+};
+
+// minimal material (layout compatibility)
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+
+// kept only to keep bind group layout valid
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+
+// dummy storage binding (not used)
+@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// dummy PBR bindings
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+    // texture color
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+
+    // simple ambient lighting
+    let ambient = scene.globalAmbient;
+
+    // color manipulation
+    var finalColor = texColor.rgb * ambient;
+
+    // alpha from material factor
+    let alpha = texColor.a * material.baseColorFactor.a;
+
+    if(alpha < 0.01){
+        discard;
+    }
+
+    return vec4f(finalColor, alpha);
+}
+`;
+
+},{"../../me-config":67}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41057,7 +42112,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],87:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41115,7 +42170,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],88:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41202,7 +42257,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],89:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41260,7 +42315,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],90:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41351,7 +42406,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],91:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41701,7 +42756,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
 }
 `;
 
-},{}],92:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41978,7 +43033,7 @@ fn main(
   return output;
 }`;
 
-},{"../me-config":64}],93:[function(require,module,exports){
+},{"../me-config":67}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42090,7 +43145,7 @@ fn main(
   return output;
 }`;
 
-},{"../me-config":64}],94:[function(require,module,exports){
+},{"../me-config":67}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42357,7 +43412,7 @@ fn main(
 }
 `;
 
-},{"../me-config":64}],95:[function(require,module,exports){
+},{"../me-config":67}],104:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42585,7 +43640,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(vibrantColor, alpha);
 }`;
 
-},{"../../me-config":64}],96:[function(require,module,exports){
+},{"../../me-config":67}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42672,7 +43727,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],97:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42742,7 +43797,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],98:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43079,7 +44134,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":63}],99:[function(require,module,exports){
+},{"../../engine/utils":66}],108:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43846,7 +44901,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":63}],100:[function(require,module,exports){
+},{"../../engine/utils":66}],109:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44020,7 +45075,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":56,"../../engine/utils":63,"./client":98,"./editor.provider":101,"./flexCodexShader":102,"./fluxCodexVertex":104,"./hud":106,"./methodsManager":107}],101:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":59,"../../engine/utils":66,"./client":107,"./editor.provider":110,"./flexCodexShader":111,"./fluxCodexVertex":113,"./hud":115,"./methodsManager":116}],110:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44248,7 +45303,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":49,"../../engine/loaders/webgpu-gltf":52}],102:[function(require,module,exports){
+},{"../../engine/loader-obj":51,"../../engine/loaders/webgpu-gltf":54}],111:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46442,7 +47497,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":63,"./flexCodexShaderAdapter.js":103}],103:[function(require,module,exports){
+},{"../../engine/utils.js":66,"./flexCodexShaderAdapter.js":112}],112:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46656,7 +47711,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{}],104:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52793,7 +53848,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/utils":63,"./curve-editor":99,"./generateAISchema.js":105}],105:[function(require,module,exports){
+},{"../../engine/utils":66,"./curve-editor":108,"./generateAISchema.js":114}],114:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52920,7 +53975,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],106:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54277,7 +55332,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":63,"./flexCodexShader.js":102}],107:[function(require,module,exports){
+},{"../../engine/utils.js":66,"./flexCodexShader.js":111}],116:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54594,7 +55649,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],108:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54630,6 +55685,7 @@ var _proceduralMesh = _interopRequireWildcard(require("./engine/procedural-mesh.
 var _fontana = require("./engine/procedures/fontana.js");
 var _fontanaWgsl = require("./shaders/fontana/fontana.wgsl.js");
 var _meConfig = require("./me-config.js");
+var _minRender = require("./engine/overrides/min-render.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
@@ -54768,6 +55824,12 @@ class MatrixEngineWGPU {
         this.editor = new _editor.Editor(this, options.projectType);
       } else {
         this.editor = new _editor.Editor(this, "infly");
+      }
+    }
+    this.overrideRender = null;
+    if (typeof options.render !== 'undefined') {
+      if (options.render == 'zero') {
+        this.overrideRender = _minRender.zeroPass.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -54911,9 +55973,9 @@ class MatrixEngineWGPU {
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n", _utils.LOG_FUNNY_ARCADE);
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY_ARCADE);
-    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY_ARCADE);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY);
+    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
@@ -55268,6 +56330,7 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
+    return myMesh1;
   };
   addProceduralMeshObj = (o, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
@@ -55605,7 +56668,13 @@ class MatrixEngineWGPU {
   }
   async run(callback) {
     this._lastPipeline = null;
-    this.frame = this.frameSinglePass;
+    // render setup
+    if (this.overrideRender !== null) {
+      console.log(`%cOverride render. Use zero configuraion.`, _utils.LOG_FUNNY_ARCADE);
+      this.frame = this.overrideRender;
+    } else {
+      this.frame = this.frameSinglePass;
+    }
     setTimeout(() => {
       this.frame();
       callback(this);
@@ -55662,18 +56731,6 @@ class MatrixEngineWGPU {
     this.adapter = null;
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
-
-  // const floatsPerLight = 36;
-  // for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-  //   if(this.lightContainer[i]?.update) this.lightContainer[i].update();
-  //   this._lightsData.set(
-  //     i < this.lightContainer.length
-  //       ? this.lightContainer[i].getLightDataBuffer()
-  //       : this._emptyLight,
-  //     i * floatsPerLight
-  //   );
-  // }
-  // this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   updateLights() {
     const floatsPerLight = 36;
     for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
@@ -55910,6 +56967,7 @@ class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
+    let r = [];
     o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -55920,16 +56978,12 @@ class MatrixEngineWGPU {
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
-        // bvhPlayer.shadowVideoView = this.shadowVideoView;
         bvhPlayer.clearColor = clearColor;
-        // if(o.physics.enabled == true) {
-        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
-        // }
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
+        r.push(bvhPlayer);
         this.sortRenderBundle();
         setTimeout(() => {
           document.dispatchEvent(new CustomEvent('updateSceneContainer', {
@@ -55943,6 +56997,7 @@ class MatrixEngineWGPU {
     if (typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
+    return r;
   };
   addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
@@ -56129,4 +57184,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/core-cache.js":30,"./engine/effects/energy-bar.js":32,"./engine/effects/flame-emmiter.js":33,"./engine/effects/flame.js":34,"./engine/effects/mana-bar.js":39,"./engine/effects/pointerEffect.js":40,"./engine/engine.js":42,"./engine/generators/generator.js":43,"./engine/instanced/mesh-obj-instances.js":46,"./engine/lights.js":47,"./engine/loader-obj.js":49,"./engine/loaders/bvh-instaced.js":50,"./engine/loaders/bvh.js":51,"./engine/mesh-obj.js":55,"./engine/postprocessing/bloom.js":57,"./engine/postprocessing/volumetric.js":58,"./engine/procedural-mesh.js":59,"./engine/procedures/fontana.js":60,"./engine/raycast.js":62,"./engine/utils.js":63,"./me-config.js":64,"./multilang/lang.js":65,"./physics/matrix-ammo.js":66,"./shaders/fontana/fontana.wgsl.js":71,"./sounds/audioAsset.js":96,"./sounds/sounds.js":97,"./tools/editor/editor.js":100,"./tools/editor/flexCodexShaderAdapter.js":103,"wgpu-matrix":27}]},{},[1]);
+},{"./engine/core-cache.js":32,"./engine/effects/energy-bar.js":34,"./engine/effects/flame-emmiter.js":35,"./engine/effects/flame.js":36,"./engine/effects/mana-bar.js":41,"./engine/effects/pointerEffect.js":42,"./engine/engine.js":44,"./engine/generators/generator.js":45,"./engine/instanced/mesh-obj-instances.js":48,"./engine/lights.js":49,"./engine/loader-obj.js":51,"./engine/loaders/bvh-instaced.js":52,"./engine/loaders/bvh.js":53,"./engine/mesh-obj.js":57,"./engine/overrides/min-render.js":58,"./engine/postprocessing/bloom.js":60,"./engine/postprocessing/volumetric.js":61,"./engine/procedural-mesh.js":62,"./engine/procedures/fontana.js":63,"./engine/raycast.js":65,"./engine/utils.js":66,"./me-config.js":67,"./multilang/lang.js":68,"./physics/matrix-ammo.js":69,"./shaders/fontana/fontana.wgsl.js":74,"./sounds/audioAsset.js":105,"./sounds/sounds.js":106,"./tools/editor/editor.js":109,"./tools/editor/flexCodexShaderAdapter.js":112,"wgpu-matrix":28}]},{},[1]);

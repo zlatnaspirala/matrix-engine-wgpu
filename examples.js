@@ -16,6 +16,7 @@ import {snakeLightsInstanced} from "./examples/snake-lights-instanced.js";
 import {snakeLights} from "./examples/snake-lights.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId, urlQuery} from "./src/engine/utils.js";
+import {mazeGame} from "./examples/maze.js";
 
 window.urlQ = urlQuery;
 
@@ -42,6 +43,8 @@ byId('fontana').addEventListener("click", () => switchDemo('8'));
 byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
+byId('maze').addEventListener("click", () => switchDemo('12'));
+
 
 if(urlQ['demo'] === '1') {
   loadObjFile();
@@ -65,6 +68,8 @@ if(urlQ['demo'] === '1') {
   snakeLights();
 } else if(urlQ['demo'] === '11') {
   snakeLightsInstanced();
+} else if(urlQ['demo'] === '12') {
+  mazeGame();
 }
 
 

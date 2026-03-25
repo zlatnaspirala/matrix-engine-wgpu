@@ -10,6 +10,12 @@ import {byId, LOG_FUNNY_ARCADE} from "./utils";
 import {fragmentWGSLGPT} from "../shaders/fragment.gpt.wgsl";
 import {fragmentWGSLNoCut} from "../shaders/fragment.wgsl.noCut";
 import {fountainFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
+import {miniWGSL} from "../shaders/minimalist/mini.wgsl";
+import {miniaWGSL} from "../shaders/minimalist/mini-a.wgsl";
+import {midaWGSL} from "../shaders/minimalist/mid-a.wgsl";
+import {hybridWGSL} from "../shaders/minimalist/hybrid.wgsl";
+import {coloraWGSL} from "../shaders/minimalist/color-a.wgsl";
+import {colorbWGSL} from "../shaders/minimalist/color-b.wgsl";
 
 /**
  * @description
@@ -113,7 +119,6 @@ export default class Materials {
         });
       }
     } else {
-      // console.log('>DUMMY>normalTexture>')
       // dummy for normal map 1x1 neutral normal map
       this.normalDummyTex = device.createTexture({
         size: [1, 1, 1],
@@ -353,8 +358,19 @@ export default class Materials {
       return fragmentWGSLNoCut;
     } else if(this.material.type === "fontana") {
       return fountainFragmentWGSL;
+    } else if(this.material.type === "mini") {
+      return miniWGSL;
+    } else if(this.material.type === "minia") {
+      return miniaWGSL;
+    } else if(this.material.type === "mida") {
+      return midaWGSL;
+    } else if(this.material.type === "hybrid") {
+      return hybridWGSL;
+    } else if(this.material.type === "colora") {
+      return coloraWGSL;
+    } else if(this.material.type === "colorb") {
+      return colorbWGSL;
     }
-
 
     console.warn('Unknown material type:', this.material?.type);
     return fragmentWGSL;

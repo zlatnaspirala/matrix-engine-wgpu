@@ -1,5 +1,19 @@
 ## CHANGES [Started from feb 2026]
 
+[1.9.11]
+
+
+
+- Overiride render
+```js
+this.overrideRender = null;
+if (typeof options.render !== "undefined") {
+  if (options.render == "zero") {
+    this.overrideRender = zeroPass.bind(this);
+  }
+}
+```
+
 [1.9.10] More optimisation in main loop!
 
 - Added options for sending arg to the volumetric activation func.

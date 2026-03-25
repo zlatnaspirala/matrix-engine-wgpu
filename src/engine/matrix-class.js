@@ -436,3 +436,43 @@ export class Rotation {
   }
 
 }
+
+// array type of pos obj
+export function pairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
+  // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
+  const dx = Bpos[0] - Apos[0];
+  const dz = Bpos[2] - Apos[2];
+  const distSq = dx * dx + dz * dz;
+  const minDistSq = minDistance * minDistance;
+  if(distSq < minDistSq && distSq > 1e-8) {
+    const dist = Math.sqrt(distSq);
+    const overlap = minDistance - dist;
+    const nx = dx / dist;
+    const nz = dz / dist;
+    const totalPush = overlap * pushStrength;
+    const pushA = totalPush * 0.5;
+    const pushB = totalPush * 0.5;
+    Apos[0] -= nx * pushA;
+    Apos[2] -= nz * pushA;
+    Bpos[0] += nx * pushB;
+    Bpos[2] += nz * pushB;
+    // Apos.targetX = Apos.x;
+    // Apos.targetZ = Apos.z;
+    // Bpos.targetX = Bpos.x;
+    // Bpos.targetZ = Bpos.z;
+    return true;
+  }
+  // exact overlap (practically same point) -> small jitter to separate
+  if(distSq <= 1e-8) {
+    const jitter = 0.01;
+    Apos[0] += (Math.random() - 0.5) * jitter;
+    Apos[2] += (Math.random() - 0.5) * jitter;
+
+    // ??? test
+    // Apos.targetX = Apos.x; 
+    // Apos.targetZ = Apos.z;
+
+    return true;
+  }
+  return false;
+}

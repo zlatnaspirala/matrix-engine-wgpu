@@ -7,6 +7,9 @@ import {fragmentWGSLPong} from "../../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../../shaders/fragment.wgsl.power";
 import {fragmentWGSLInstanced} from "../../shaders/instanced/fragment.instanced.wgsl";
 import {fragmentMirrorWGSLInstanced} from "../../shaders/instanced/fragment.mirror.instanced.wgsl";
+import {coloraWGSL} from "../../shaders/minimalist/color-a.wgsl";
+import {colorbWGSL} from "../../shaders/minimalist/color-b.wgsl";
+import {miniWGSL} from "../../shaders/minimalist/mini.wgsl";
 import {fragmentWaterWGSL} from "../../shaders/water/water-c.wgls";
 
 /**
@@ -298,7 +301,20 @@ export default class MaterialsInstanced {
       return fragmentMirrorWGSLInstanced;
     } else if(this.material.type === "free") {
       return fragmentWGSLNoCut;
+    } else if(this.material.type === "mini") {
+      return miniWGSL;
+    } else if(this.material.type === "minia") {
+      return miniaWGSL;
+    } else if(this.material.type === "mida") {
+      return midaWGSL;
+    } else if(this.material.type === "hybrid") {
+      return hybridWGSL;
+    } else if(this.material.type === "colora") {
+      return coloraWGSL;
+    } else if(this.material.type === "colorb") {
+      return colorbWGSL;
     }
+
     console.warn('Unknown material type use standard:', this.material?.type);
     return fragmentWGSL;
   }
@@ -604,7 +620,7 @@ export default class MaterialsInstanced {
           {
             binding: 5,
             visibility: GPUShaderStage.FRAGMENT,
-            buffer: { type: 'read-only-storage' } 
+            buffer: {type: 'read-only-storage'}
           },
           {
             binding: 6,

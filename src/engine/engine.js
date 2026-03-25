@@ -218,120 +218,144 @@ export class WASDCamera {
   }
 }
 
-export class ArcballCamera extends CameraBase {
-  // The camera distance from the target
+export class ArcballCamera {
+  position = new Float32Array(3);
+  right = new Float32Array(3);
+  up = new Float32Array(3);
+  back = new Float32Array(3);
+
+  view = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  VP = new Float32Array(16);
+
   distance = 0;
-
-  // The current angular velocity
   angularVelocity = 0;
-
-  // The current rotation axis
-  axis_ = vec3.create();
-
-  // Returns the rotation axis
-  get axis() {
-    return this.axis_;
-  }
-  // Assigns `vec` to the rotation axis
-  set axis(vec) {
-    vec3.copy(vec, this.axis_);
-  }
-
-  // Speed multiplier for camera rotation
+  axis = new Float32Array(3);
   rotationSpeed = 1;
-
-  // Speed multiplier for camera zoom
   zoomSpeed = 0.1;
-
-  // Rotation velocity drag coeffient [0 .. 1]
-  // 0: Spins forever
-  // 1: Instantly stops spinning
   frictionCoefficient = 0.999;
 
-  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
-    this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+  _movement = new Float32Array(3);
+  _cross = new Float32Array(3);
+
+  constructor(options = {}) {
+    if(options.position) {
+      this.position.set(options.position);
+      this.distance = Math.hypot(
+        this.position[0],
+        this.position[1],
+        this.position[2]
+      );
+      const invLen = 1 / this.distance;
+      this.back[0] = this.position[0] * invLen;
+      this.back[1] = this.position[1] * invLen;
+      this.back[2] = this.position[2] * invLen;
+    }
+    this.setProjection((2 * Math.PI) / 5, 1, 1, 2000);
+    this._recalculateRight();
+    this._recalculateUp();
+    this._recalculateViewVP();
   }
-  // Construtor
-  constructor(options) {
-    super();
-    if(options && options.position) {
-      this.position = options.position;
-      this.distance = vec3.len(this.position);
-      this.back = vec3.normalize(this.position);
 
-      this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
+  setProjection(fov, aspect, near, far) {
+    mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+  }
 
-      this.recalcuateRight();
-      this.recalcuateUp();
+  _normalize(v) {
+    const len = Math.hypot(v[0], v[1], v[2]);
+    if(len > 0.000001) {
+      const inv = 1 / len;
+      v[0] *= inv;
+      v[1] *= inv;
+      v[2] *= inv;
     }
   }
 
-  // Returns the camera matrix
-  get matrix() {
-    return super.matrix;
+  _cross(a, b, out) {
+    const ax = a[0], ay = a[1], az = a[2];
+    const bx = b[0], by = b[1], bz = b[2];
+    out[0] = ay * bz - az * by;
+    out[1] = az * bx - ax * bz;
+    out[2] = ax * by - ay * bx;
   }
 
-  // Assigns `mat` to the camera matrix, and recalcuates the distance
-  set matrix(mat) {
-    super.matrix = mat;
-    this.distance = vec3.len(this.position);
+  _rotateVec(v, axis, angle, out) {
+    const x = v[0], y = v[1], z = v[2];
+    const u = axis[0], vA = axis[1], w = axis[2];
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    out[0] =
+      u * (u * x + vA * y + w * z) * (1 - cos) +
+      x * cos +
+      (-w * y + vA * z) * sin;
+    out[1] =
+      vA * (u * x + vA * y + w * z) * (1 - cos) +
+      y * cos +
+      (w * x - u * z) * sin;
+    out[2] =
+      w * (u * x + vA * y + w * z) * (1 - cos) +
+      z * cos +
+      (-vA * x + u * y) * sin;
+  }
+
+  _recalculateRight() {
+    this._cross(this.up, this.back, this.right);
+    this._normalize(this.right);
+  }
+
+  _recalculateUp() {
+    this._cross(this.back, this.right, this.up);
+    this._normalize(this.up);
+  }
+
+  _recalculateViewVP() {
+    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const vs = this.view;
+    vs[0] = rx[0]; vs[4] = rx[1]; vs[8] = rx[2]; vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0]; vs[5] = uy[1]; vs[9] = uy[2]; vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0]; vs[6] = bz[1]; vs[10] = bz[2]; vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0; vs[7] = 0; vs[11] = 0; vs[15] = 1;
+    ArcballCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
 
   update(deltaTime, input) {
-    const epsilon = 0.0000001;
+    const epsilon = 1e-7;
     if(input.analog.touching) {
-      // Currently being dragged.
       this.angularVelocity = 0;
     } else {
-      // Dampen any existing angular velocity
       this.angularVelocity *= Math.pow(1 - this.frictionCoefficient, deltaTime);
     }
-    // Calculate the movement vector
-    const movement = vec3.create();
-    vec3.addScaled(movement, this.right, input.analog.x, movement);
-    vec3.addScaled(movement, this.up, -input.analog.y, movement);
-    // Cross the movement vector with the view direction to calculate the rotation axis x magnitude
-    const crossProduct = vec3.cross(movement, this.back);
-    // Calculate the magnitude of the drag
-    const magnitude = vec3.len(crossProduct);
-    if(magnitude > epsilon) {
-      // Normalize the crossProduct to get the rotation axis
-      this.axis = vec3.scale(crossProduct, 1 / magnitude);
-      // Remember the current angular velocity. This is used when the touch is released for a fling.
-      this.angularVelocity = magnitude * this.rotationSpeed;
+    const m = this._movement;
+    m[0] = this.right[0] * input.analog.x + this.up[0] * -input.analog.y;
+    m[1] = this.right[1] * input.analog.x + this.up[1] * -input.analog.y;
+    m[2] = this.right[2] * input.analog.x + this.up[2] * -input.analog.y;
+    const c = this._cross;
+    this._cross(m, this.back, c);
+    const mag = Math.hypot(c[0], c[1], c[2]);
+    if(mag > epsilon) {
+      const inv = 1 / mag;
+      this.axis[0] = c[0] * inv;
+      this.axis[1] = c[1] * inv;
+      this.axis[2] = c[2] * inv;
+      this.angularVelocity = mag * this.rotationSpeed;
     }
-    // The rotation around this.axis to apply to the camera matrix this update
-    const rotationAngle = this.angularVelocity * deltaTime;
-    if(rotationAngle > epsilon) {
-      // Rotate the matrix around axis
-      // Note: The rotation is not done as a matrix-matrix multiply as the repeated multiplications
-      // will quickly introduce substantial error into the matrix.
-      this.back = vec3.normalize(rotate(this.back, this.axis, rotationAngle));
-      this.recalcuateRight();
-      this.recalcuateUp();
+    const angle = this.angularVelocity * deltaTime;
+    if(angle > epsilon) {
+      this._rotateVec(this.back, this.axis, angle, this.back);
+      this._normalize(this.back);
+      this._recalculateRight();
+      this._recalculateUp();
     }
-
-    // recalculate `this.position` from `this.back` considering zoom
     if(input.analog.zoom !== 0) {
       this.distance *= 1 + input.analog.zoom * this.zoomSpeed;
     }
-    this.position = vec3.scale(this.back, this.distance);
-
-    // Invert the camera matrix to build the view matrix
-    // this.view = mat4.invert(this.matrix);
-    mat4.invert(this.matrix, this.view_);
-    return this.view_;
+    this.position[0] = this.back[0] * this.distance;
+    this.position[1] = this.back[1] * this.distance;
+    this.position[2] = this.back[2] * this.distance;
+    this._recalculateViewVP();
+    return this.view;
   }
-
-  // Assigns `this.right` with the cross product of `this.up` and `this.back`
-  recalcuateRight() {
-    this.right = vec3.normalize(vec3.cross(this.up, this.back));
-  }
-
-  // Assigns `this.up` with the cross product of `this.back` and `this.right`
-  recalcuateUp() {
-    this.up = vec3.normalize(vec3.cross(this.back, this.right));
-  }
+  static mat4MultiplySafe(a, b, out) {return out}
 }
 
 export class RPGCamera {
