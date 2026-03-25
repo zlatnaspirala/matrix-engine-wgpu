@@ -19,8 +19,6 @@ export var physicsPlayground = function() {
 
     addEventListener('AmmoReady', () => {
       physicsPlayground.matrixAmmo.speedUpSimulation = 4;
-
-
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
       //   {x: 0, y: 0, z: -20},

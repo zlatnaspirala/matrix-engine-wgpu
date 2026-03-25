@@ -42,7 +42,6 @@ export class BVHPlayer extends MEMeshObj {
     // bvh arg not actula at the moment
     this.bvh = {};
     this.glb = glb;
-    this.mType = MeshType.BVHANIM;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
@@ -497,27 +496,19 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-
     const animTime = time % this._animationLength;
     const skeleton = this.skeleton;
-
     for(let j = 0;j < skeleton.length;j++) {
-
       const nodeIndex = skeleton[j];
       const node = nodes[nodeIndex];
-
       const tr = node.translation;
       const sc = node.scale;
       const rot = node.rotation;
-
       const tChannels = this._translationChannels[nodeIndex];
       const sChannels = this._scaleChannels[nodeIndex];
       const rChannels = this._rotationChannels[nodeIndex];
 
-      /* TRANSLATION CHANNELS */
-
       for(let k = 0;k < tChannels.length;k++) {
-
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;

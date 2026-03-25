@@ -41,8 +41,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.bvh = {};
     this.glb = glb;
 
-    this.mType = MeshType.BVHANIM;
-
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;

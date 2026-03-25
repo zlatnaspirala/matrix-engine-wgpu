@@ -367,7 +367,6 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  **/
 function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -845,22 +844,21 @@ var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjsSequence = function () {
   let loadObjFile = new _world.default({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
     }
   }, () => {
+    loadObjFile.addLight();
     addEventListener('AmmoReady', () => {
-      // Requied now
-      loadObjFile.addLight();
-      // Light
-      app.lightContainer[0].position[2] = -20;
-      app.lightContainer[0].position[1] = 25;
-      app.lightContainer[0].intensity = 3;
-      app.activateBloomEffect();
-      app.bloomPass.setIntensity(0.25);
+      loadObjFile.lightContainer[0].position[2] = -20;
+      loadObjFile.lightContainer[0].position[1] = 35;
+      loadObjFile.lightContainer[0].intensity = 5;
+      alert('s');
+      // app.activateBloomEffect();
+      // app.bloomPass.setIntensity(0.25);
+
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
@@ -1094,14 +1092,12 @@ var myLights = function () {
         light.target = [TARGET.x, TARGET.y, TARGET.z];
       });
     }
-
-    // myLights.activateBloomEffect();
-
+    if ((0, _utils.isMobile)() == false) myLights.activateBloomEffect();
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(6);
-      monster.updateInstances(6);
-      monster.trailAnimation.delay = 20;
+      monster.updateMaxInstances(5);
+      monster.updateInstances(5);
+      monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
       myLights.cameras.WASD.yaw = -0.03;
       myLights.cameras.WASD.pitch = -0.35;
@@ -1148,7 +1144,6 @@ var physicsPlayground = function () {
     });
     addEventListener('AmmoReady', () => {
       physicsPlayground.matrixAmmo.speedUpSimulation = 4;
-
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
       //   {x: 0, y: 0, z: -20},
@@ -26233,7 +26228,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
-    this.mType = _utils.MeshType.BVHANIM;
+    this.mType = _utils.MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
@@ -27250,7 +27245,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
   }
   drawElements = pass => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this.mType == _utils.MeshType.BVHANIM) {
+    if (this.mType == _utils.MeshType.INSTANCED) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
@@ -27263,7 +27258,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if (this.joints) {
-      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      if (this.mType == _utils.MeshType.BVHANIM || this.mType == _utils.MeshType.INSTANCED) {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer);
         pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
@@ -27281,7 +27276,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
   drawVideoElements = pass => {
     this.updateVideoTexture();
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this.mType == _utils.MeshType.BVHANIM) {
+    if (this.mType == _utils.MeshType.INSTANCED) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
@@ -27291,7 +27286,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if (this.joints) {
-      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      if (this.mType == _utils.MeshType.BVHANIM || this.mType == _utils.MeshType.INSTANCED) {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer);
         pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
@@ -27358,8 +27353,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
         shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
-        shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
-        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+        // dummy
+        shadowPass.setVertexBuffer(3, this.joints.buffer);
+        shadowPass.setVertexBuffer(4, this.weights.buffer);
       }
     }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
@@ -28494,7 +28490,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     // bvh arg not actual at the moment
     this.bvh = {};
     this.glb = glb;
-    this.mType = _utils.MeshType.BVHANIM;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
@@ -29179,7 +29174,6 @@ class BVHPlayer extends _meshObj.default {
     // bvh arg not actula at the moment
     this.bvh = {};
     this.glb = glb;
-    this.mType = _utils.MeshType.BVHANIM;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
@@ -29689,9 +29683,6 @@ class BVHPlayer extends _meshObj.default {
       const tChannels = this._translationChannels[nodeIndex];
       const sChannels = this._scaleChannels[nodeIndex];
       const rChannels = this._rotationChannels[nodeIndex];
-
-      /* TRANSLATION CHANNELS */
-
       for (let k = 0; k < tChannels.length; k++) {
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
@@ -32593,14 +32584,11 @@ class MEMeshObj extends _materials.default {
       mesh.indexCount = indexCount;
     }
   }
-  drawElements = (pass, lightContainer) => {
-    // if(this.isVideo) this.updateVideoTexture()
+  drawElements = pass => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    if (this.isVideo == false) {
-      if (this.material.type === "mirror" && this.mirrorBindGroup) {
-        pass.setBindGroup(2, this.mirrorBindGroup);
-      }
+    if (this.material.type === "mirror" && this.mirrorBindGroup) {
+      pass.setBindGroup(2, this.mirrorBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -32641,10 +32629,6 @@ class MEMeshObj extends _materials.default {
     pass.drawIndexed(this.indexCount);
   };
   drawElementsAnim = renderPass => {
-    if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
-      console.log('NULL1');
-      return;
-    }
     if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
       console.log('NULL2');
       return;
@@ -32652,10 +32636,8 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.isVideo == false) {
-      if (this.material.type === "mirror" && this.mirrorBindGroup) {
-        renderPass.setBindGroup(2, this.mirrorBindGroup);
-      }
+    if (this.material.type === "mirror" && this.mirrorBindGroup) {
+      renderPass.setBindGroup(2, this.mirrorBindGroup);
     }
     renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
@@ -32687,15 +32669,15 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    // if(this.joints) {
-    if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
-      shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+    if (this.joints) {
+      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+      } else {
+        shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
+        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      }
     }
-    // }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
@@ -32705,12 +32687,13 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, mesh.vertexBuffer);
     shadowPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-    if (this.constructor.name === "BVHPlayer") {
+    if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
       shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
       shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     } else {
-      shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
-      shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      // dummy
+      shadowPass.setVertexBuffer(3, this.joints.buffer);
+      shadowPass.setVertexBuffer(4, this.weights.buffer);
     }
     shadowPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     shadowPass.drawIndexed(mesh.indexCount);
@@ -55775,13 +55758,10 @@ class MatrixEngineWGPU {
   async run(callback) {
     this._lastPipeline = null;
     this.frame = this.frameSinglePass;
-    // setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
     setTimeout(() => {
       this.frame();
-    }, 100);
-    setTimeout(() => {
       callback(this);
-    }, 500);
+    }, 50);
   }
 
   // still not perfect but works
@@ -55883,7 +55863,7 @@ class MatrixEngineWGPU {
           const m = this.mainRenderBundle[j];
           if (m.shadowsCast == false) continue;
           let targetShadowPipeline;
-          if (m.mType == _utils.MeshType.BVHANIM) {
+          if (m.mType == _utils.MeshType.BVHANIM || m.mType == _utils.MeshType.INSTANCED) {
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if (m.mType == _utils.MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -55895,7 +55875,7 @@ class MatrixEngineWGPU {
             lastShadowPipeline = targetShadowPipeline;
           }
           shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-          if (m.mType == _utils.MeshType.BVHANIM) {
+          if (m.mType == _utils.MeshType.BVHANIM || m.mType == _utils.MeshType.INSTANCED) {
             shadowPass.setBindGroup(1, m.modelBindGroupInstanced);
           } else if (m.mType == _utils.MeshType.PROCEDURAL) {
             shadowPass.setBindGroup(1, m.mainRenderBindGroup);
@@ -55945,7 +55925,6 @@ class MatrixEngineWGPU {
         pass.setPipeline(m.pipelineTransparent);
         m.drawElements(pass, this.lightContainer);
       }
-      this.blendQueue.length = 0;
       pass.end();
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
       const viewProjMatrix = camera.VP;
@@ -55990,8 +55969,9 @@ class MatrixEngineWGPU {
       this.submitQueue[0] = null;
       if (this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
+      this.blendQueue.length = 0;
     } catch (err) {
-      if (this.logLoopError) console.log('%cLoop(warn):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      if (this.logLoopError) console.log('%cLoop(warn):' + err + " Info : " + err.stack, _utils.LOG_WARN);
     }
   };
   graphUpdate = delta => {};

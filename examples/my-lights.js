@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {ORBIT} from '../src/engine/utils.js';
+import {isMobile, ORBIT} from '../src/engine/utils.js';
 
 export var myLights = function() {
   let myLights = new MatrixEngineWGPU({
@@ -95,15 +95,14 @@ export var myLights = function() {
       });
     }
 
-    // myLights.activateBloomEffect();
+    if(isMobile() == false) myLights.activateBloomEffect();
 
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(6);
-      monster.updateInstances(6);
-      monster.trailAnimation.delay = 20;
+      monster.updateMaxInstances(5);
+      monster.updateInstances(5);
+      monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
-
       myLights.cameras.WASD.yaw = -0.03;
       myLights.cameras.WASD.pitch = -0.35;
       myLights.cameras.WASD.position = [0, 8, 5];

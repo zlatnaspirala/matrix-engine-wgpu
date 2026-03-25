@@ -35,7 +35,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
 
-    this.mType = MeshType.BVHANIM;
+    this.mType = MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
 
     this._posArray = new Float32Array(3);
@@ -556,8 +556,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [regular]',
         entries: [
-          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
-          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
           {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
         ],
       });
@@ -991,7 +991,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
   drawElements = (pass) => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if(this.mType == MeshType.BVHANIM) {
+    if(this.mType == MeshType.INSTANCED) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
@@ -1005,7 +1005,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if(this.joints) {
-      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      if(this.mType == MeshType.BVHANIM || this.mType == MeshType.INSTANCED) {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer);
         pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
@@ -1027,7 +1027,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   drawVideoElements = (pass) => {
     this.updateVideoTexture();
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if(this.mType == MeshType.BVHANIM) {
+    if(this.mType == MeshType.INSTANCED) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
@@ -1038,7 +1038,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if(this.joints) {
-      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      if(this.mType == MeshType.BVHANIM || this.mType == MeshType.INSTANCED) {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer);
         pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
@@ -1111,8 +1111,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
         shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
-        shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
-        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+        // dummy
+        shadowPass.setVertexBuffer(3, this.joints.buffer);
+        shadowPass.setVertexBuffer(4, this.weights.buffer);
       }
     }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');

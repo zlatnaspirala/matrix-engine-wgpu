@@ -12,7 +12,6 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 export function loadGLBLoader() {
 
   let TEST_ANIM = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {

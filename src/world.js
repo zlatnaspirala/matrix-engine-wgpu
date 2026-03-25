@@ -761,9 +761,7 @@ export default class MatrixEngineWGPU {
   async run(callback) {
     this._lastPipeline = null;
     this.frame = this.frameSinglePass;
-    // setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
-    setTimeout(() => {this.frame()}, 100);
-    setTimeout(() => {callback(this)}, 500)
+    setTimeout(() => {this.frame(); callback(this)}, 50);
   }
 
   // still not perfect but works
@@ -883,7 +881,7 @@ export default class MatrixEngineWGPU {
           const m = this.mainRenderBundle[j];
           if(m.shadowsCast == false) continue;
           let targetShadowPipeline;
-          if(m.mType == MeshType.BVHANIM) {
+          if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
             targetShadowPipeline = light.shadowPipelineInstanced;
           } else if(m.mType == MeshType.PROCEDURAL) {
             targetShadowPipeline = light.shadowPipelineMorph;
@@ -895,7 +893,7 @@ export default class MatrixEngineWGPU {
             lastShadowPipeline = targetShadowPipeline;
           }
           shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-          if(m.mType == MeshType.BVHANIM) {
+          if(m.mType == MeshType.BVHANIM|| m.mType == MeshType.INSTANCED) {
             shadowPass.setBindGroup(1, m.modelBindGroupInstanced);
           }
           else if(m.mType == MeshType.PROCEDURAL) {
@@ -943,7 +941,6 @@ export default class MatrixEngineWGPU {
         pass.setPipeline(m.pipelineTransparent);
         m.drawElements(pass, this.lightContainer);
       }
-      this.blendQueue.length = 0;
       pass.end();
 
       const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
@@ -998,8 +995,9 @@ export default class MatrixEngineWGPU {
       this.submitQueue[0] = null;
       if(this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
+      this.blendQueue.length = 0;
     } catch(err) {
-      if(this.logLoopError) console.log('%cLoop(warn):' + err + " info : " + err.stack, LOG_WARN)
+      if(this.logLoopError) console.log('%cLoop(warn):' + err + " Info : " + err.stack, LOG_WARN)
     }
   }
 

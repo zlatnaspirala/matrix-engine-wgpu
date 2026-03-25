@@ -5,23 +5,23 @@ import {LOG_MATRIX} from "../src/engine/utils.js";
 export var loadObjsSequence = function() {
 
   let loadObjFile = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
     }
   }, () => {
-    addEventListener('AmmoReady', () => {
-      // Requied now
-      loadObjFile.addLight();
-      // Light
-      app.lightContainer[0].position[2] = -20;
-      app.lightContainer[0].position[1] = 25;
-      app.lightContainer[0].intensity = 3;
 
-      app.activateBloomEffect();
-      app.bloomPass.setIntensity(0.25);
+    loadObjFile.addLight();
+    addEventListener('AmmoReady', () => {
+ 
+      loadObjFile.lightContainer[0].position[2] = -20;
+      loadObjFile.lightContainer[0].position[1] = 35;
+      loadObjFile.lightContainer[0].intensity = 5;
+
+      alert('s')
+      // app.activateBloomEffect();
+      // app.bloomPass.setIntensity(0.25);
 
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]});
 
