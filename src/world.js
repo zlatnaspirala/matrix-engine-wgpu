@@ -203,7 +203,7 @@ export default class MatrixEngineWGPU {
     };
 
     this.cameras = {
-      arcball: new ArcballCamera({position: initialCameraPosition}),
+      arcball: new ArcballCamera({position: initialCameraPosition, canvas: canvas}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
       RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
@@ -333,9 +333,7 @@ export default class MatrixEngineWGPU {
       setThreshold: (v) => {},
     };
 
-    this.volumetricPass = {
-      enabled: false
-    };
+    this.volumetricPass = {enabled: false};
 
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -593,7 +591,7 @@ export default class MatrixEngineWGPU {
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
-    if(typeof o.sharedSU !== 'undefined') o.sharedSU = this.globalSceneUniformBuffer;
+    o.sharedSU = this.globalSceneUniformBuffer;
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;

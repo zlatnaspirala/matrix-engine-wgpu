@@ -52,7 +52,7 @@ export default class MEMeshObj extends Materials {
       this.envMapParams = o.envMapParams;
     }
 
-    if(typeof o.sharedSU !== 'undefined') {
+    if(typeof o.sharedSU !== null) {
       this.sharedSU = o.sharedSU;
     }
 

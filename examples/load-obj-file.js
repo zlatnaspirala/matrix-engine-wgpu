@@ -5,7 +5,7 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 0.9,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -66,7 +66,7 @@ export var loadObjFile = function() {
       });
 
       loadObjFile.addMeshObj({
-        material: {type: 'minia'},
+        material: {type: 'standard'},
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -74,7 +74,7 @@ export var loadObjFile = function() {
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.99,                // CLEAR SKY
+          baseColorMix: 0.99,               // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
           reflectivity: 0.25,               // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
@@ -91,12 +91,9 @@ export var loadObjFile = function() {
         },
         pointerEffect: {
           enabled: true,
-          // pointer: true,
-          flameEmitter: true,
-          // flameEffect: true,
+          flameEmitter: true
         }
       })
-
 
       // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, loadObjFile.device)));
       //    loadObjFile.addGlbObjInctance({
@@ -136,7 +133,6 @@ export var loadObjFile = function() {
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
-        // app.activateBloomEffect();
         let cube1 = app.getSceneObjectByName('cube1')
         // cube1.effects.flameEffect.intensity = 100;
         // cube1.effects.flameEffect.morphTo("pyramid", 8)

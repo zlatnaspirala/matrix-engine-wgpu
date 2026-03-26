@@ -2,7 +2,6 @@
 export let zeroPass = function() {
   const now2 = performance.now();
   this.now = now2 * 0.001;
-  // this.lastFrameMS = this.now;
   this.autoUpdate.forEach((_) => _.update())
   requestAnimationFrame(this.frame);
   try {
@@ -14,8 +13,9 @@ export let zeroPass = function() {
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
-      if((camera._dirty || mesh.position.inMove) && i==0) {
-        mesh.getTransformationMatrix(camera.VP, now2); mesh.updateModelUniformBuffer(i);
+      if((camera._dirty || mesh.position.inMove) && i == 0) {
+        mesh.getTransformationMatrix(camera.VP, now2);
+        mesh.updateModelUniformBuffer(i);
       }
       mesh.position.update();
       if(mesh.update) mesh.update(now2);

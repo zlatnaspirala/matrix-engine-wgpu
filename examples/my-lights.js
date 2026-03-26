@@ -58,7 +58,6 @@ export var myLights = function() {
       .then(buf => uploadGLBModel(buf, myLights.device));
 
     myLights.addGlbObjInctance({
-      sharedSU: true,
       material: {type: 'standard', useTextureFromGlb: true},
       useScale: true,
       scale: [5, 5, 5],

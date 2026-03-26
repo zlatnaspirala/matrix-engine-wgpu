@@ -37,6 +37,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     this.mType = MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
+    if(typeof o.sharedSU !== null) {
+      this.sharedSU = o.sharedSU;
+    }
 
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);

@@ -6,7 +6,7 @@ import {CollisionSystem} from '../src/engine/collision-sub-system.js';
 export var mazeGame = function() {
   let maze = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 0.8,
     render: 'zero', // test
     dontUsePhysics: true,
     mainCameraParams: {
@@ -52,7 +52,7 @@ export var mazeGame = function() {
               const wallName = `wall_${x}_${y}`;
               let test = maze.addMeshObj({
                 shadowsCast: false,
-                material: {type: 'colorb'},
+                material: {type: 'standard'},
                 position: {
                   x: x * spacing - (mazeSize * spacing) / 2,
                   y: 0,

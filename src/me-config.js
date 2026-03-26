@@ -10,13 +10,18 @@ window.urlQ = urlQuery;
 
 export const MEConfig = {
   fsManager: new FullScreenManagerElement(),
-  SHADOW_RES: isMobile() ? 128.0 : 512.0,
-  MAX_BONES: isMobile() ? 80 : 100,
+  SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
+  MAX_BONES: isMobile() == true ? 80 : 100,
+  MAX_LIGHTS: isMobile() == true ? 20 : 40,
 
   construct: function() {
     if(urlQ['shadowSize']) {
       this.SHADOW_RES = parseFloat(urlQ['shadowSize']);
       console.log(`%cShadowSize : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
+    }
+    if(urlQ['maxLights']) {
+      this.MAX_LIGHTS = parseFloat(urlQ['maxLights']);
+      console.log(`%cmaxLights : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);

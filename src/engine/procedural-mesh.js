@@ -39,6 +39,9 @@ export default class ProceduralMeshObj extends Materials {
     this.morphBlend = 0.0;
 
     this.shadowsCast = true;
+    if(typeof o.sharedSU !== null) {
+      this.sharedSU = o.sharedSU;
+    }
 
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly

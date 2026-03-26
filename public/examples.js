@@ -625,7 +625,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 0.9,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -731,7 +731,7 @@ var loadObjFile = function () {
       });
       loadObjFile.addMeshObj({
         material: {
-          type: 'minia'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -776,9 +776,7 @@ var loadObjFile = function () {
         },
         pointerEffect: {
           enabled: true,
-          // pointer: true,
           flameEmitter: true
-          // flameEffect: true,
         }
       });
 
@@ -815,7 +813,6 @@ var loadObjFile = function () {
       loadObjFile.lightContainer[0].target = [0, 0, -10];
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
-        // app.activateBloomEffect();
         let cube1 = app.getSceneObjectByName('cube1');
         // cube1.effects.flameEffect.intensity = 100;
         // cube1.effects.flameEffect.morphTo("pyramid", 8)
@@ -857,10 +854,6 @@ var loadObjsSequence = function () {
       loadObjFile.lightContainer[0].position[2] = -20;
       loadObjFile.lightContainer[0].position[1] = 35;
       loadObjFile.lightContainer[0].intensity = 5;
-      alert('s');
-      // app.activateBloomEffect();
-      // app.bloomPass.setIntensity(0.25);
-
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
@@ -960,6 +953,7 @@ var loadObjsSequence = function () {
         }
       });
     }
+    if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'));
   });
   window.app = loadObjFile;
 };
@@ -980,7 +974,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var mazeGame = function () {
   let maze = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 0.8,
     render: 'zero',
     // test
     dontUsePhysics: true,
@@ -1035,7 +1029,7 @@ var mazeGame = function () {
             let test = maze.addMeshObj({
               shadowsCast: false,
               material: {
-                type: 'colorb'
+                type: 'standard'
               },
               position: {
                 x: x * spacing - mazeSize * spacing / 2,
@@ -1173,7 +1167,6 @@ var myLights = function () {
     // GLB monster
     const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
     myLights.addGlbObjInctance({
-      sharedSU: true,
       material: {
         type: 'standard',
         useTextureFromGlb: true
@@ -1830,6 +1823,7 @@ var procMesh = function () {
       console.log('ray.hit.event detected');
       if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
     });
+    if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'));
   });
   window.app = procMesh;
 };
@@ -23787,7 +23781,7 @@ class ArcballCamera {
       v[2] *= inv;
     }
   }
-  _cross(a, b, out) {
+  _crossFn(a, b, out) {
     const ax = a[0],
       ay = a[1],
       az = a[2];
@@ -23812,11 +23806,11 @@ class ArcballCamera {
     out[2] = w * (u * x + vA * y + w * z) * (1 - cos) + z * cos + (-vA * x + u * y) * sin;
   }
   _recalculateRight() {
-    this._cross(this.up, this.back, this.right);
+    this._crossFn(this.up, this.back, this.right);
     this._normalize(this.right);
   }
   _recalculateUp() {
-    this._cross(this.back, this.right, this.up);
+    this._crossFn(this.back, this.right, this.up);
     this._normalize(this.up);
   }
   _recalculateViewVP() {
@@ -23855,7 +23849,7 @@ class ArcballCamera {
     m[1] = this.right[1] * input.analog.x + this.up[1] * -input.analog.y;
     m[2] = this.right[2] * input.analog.x + this.up[2] * -input.analog.y;
     const c = this._cross;
-    this._cross(m, this.back, c);
+    this._crossFn(m, this.back, c);
     const mag = Math.hypot(c[0], c[1], c[2]);
     if (mag > epsilon) {
       const inv = 1 / mag;
@@ -26312,6 +26306,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.useScale = o.useScale || false;
     this.mType = _utils.MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
+    if (typeof o.sharedSU !== null) {
+      this.sharedSU = o.sharedSU;
+    }
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
@@ -31823,7 +31820,7 @@ class MEMeshObj extends _materials.default {
     if (o.envMapParams !== null) {
       this.envMapParams = o.envMapParams;
     }
-    if (typeof o.sharedSU !== 'undefined') {
+    if (typeof o.sharedSU !== null) {
       this.sharedSU = o.sharedSU;
     }
     this.useScale = o.useScale || false;
@@ -32909,7 +32906,6 @@ exports.zeroPass = void 0;
 let zeroPass = function () {
   const now2 = performance.now();
   this.now = now2 * 0.001;
-  // this.lastFrameMS = this.now;
   this.autoUpdate.forEach(_ => _.update());
   requestAnimationFrame(this.frame);
   try {
@@ -33956,6 +33952,9 @@ class ProceduralMeshObj extends _materials.default {
     this.meshB = null;
     this.morphBlend = 0.0;
     this.shadowsCast = true;
+    if (typeof o.sharedSU !== null) {
+      this.sharedSU = o.sharedSU;
+    }
     if (o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -36850,12 +36849,17 @@ var _utils = require("./engine/utils.js");
 window.urlQ = _utils.urlQuery;
 const MEConfig = exports.MEConfig = {
   fsManager: new _utils.FullScreenManagerElement(),
-  SHADOW_RES: (0, _utils.isMobile)() ? 128.0 : 512.0,
-  MAX_BONES: (0, _utils.isMobile)() ? 80 : 100,
+  SHADOW_RES: (0, _utils.isMobile)() == true ? 128.0 : 512.0,
+  MAX_BONES: (0, _utils.isMobile)() == true ? 80 : 100,
+  MAX_LIGHTS: (0, _utils.isMobile)() == true ? 20 : 40,
   construct: function () {
     if (urlQ['shadowSize']) {
       this.SHADOW_RES = parseFloat(urlQ['shadowSize']);
       console.log(`%cShadowSize : ${this.SHADOW_RES}`, _utils.LOG_FUNNY_ARCADE);
+    }
+    if (urlQ['maxLights']) {
+      this.MAX_LIGHTS = parseFloat(urlQ['maxLights']);
+      console.log(`%cmaxLights : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
     }
     if (urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
@@ -55859,7 +55863,8 @@ class MatrixEngineWGPU {
     };
     this.cameras = {
       arcball: new _engine.ArcballCamera({
-        position: initialCameraPosition
+        position: initialCameraPosition,
+        canvas: canvas
       }),
       WASD: new _engine.WASDCamera({
         position: initialCameraPosition,
@@ -55926,7 +55931,7 @@ class MatrixEngineWGPU {
       format: presentationFormat,
       alphaMode: 'premultiplied'
     });
-    this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
+    this.globalAmbient = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = null;
     this.createGlobalStuff(callback);
@@ -56278,7 +56283,7 @@ class MatrixEngineWGPU {
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
-    if (typeof o.sharedSU !== 'undefined') o.sharedSU = this.globalSceneUniformBuffer;
+    o.sharedSU = this.globalSceneUniformBuffer;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.shadowDepthTextureView = this.shadowArrayView;

@@ -271,7 +271,7 @@ export class ArcballCamera {
     }
   }
 
-  _cross(a, b, out) {
+  _crossFn(a, b, out) {
     const ax = a[0], ay = a[1], az = a[2];
     const bx = b[0], by = b[1], bz = b[2];
     out[0] = ay * bz - az * by;
@@ -299,12 +299,12 @@ export class ArcballCamera {
   }
 
   _recalculateRight() {
-    this._cross(this.up, this.back, this.right);
+    this._crossFn(this.up, this.back, this.right);
     this._normalize(this.right);
   }
 
   _recalculateUp() {
-    this._cross(this.back, this.right, this.up);
+    this._crossFn(this.back, this.right, this.up);
     this._normalize(this.up);
   }
 
@@ -330,7 +330,7 @@ export class ArcballCamera {
     m[1] = this.right[1] * input.analog.x + this.up[1] * -input.analog.y;
     m[2] = this.right[2] * input.analog.x + this.up[2] * -input.analog.y;
     const c = this._cross;
-    this._cross(m, this.back, c);
+    this._crossFn(m, this.back, c);
     const mag = Math.hypot(c[0], c[1], c[2]);
     if(mag > epsilon) {
       const inv = 1 / mag;
