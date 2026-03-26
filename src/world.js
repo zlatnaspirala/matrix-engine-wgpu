@@ -901,10 +901,11 @@ export default class MatrixEngineWGPU {
         const mesh = this.mainRenderBundle[i];
         if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        if(camera._dirty || mesh.position.inMove) {
-          mesh.getTransformationMatrix(camera.VP, now2);
+        if((camera._dirty || mesh.position.inMove)) {
+          if (i==0)mesh.getTransformationMatrix(camera.VP, now2);
+          mesh.updateModelUniformBuffer(i);
         }
-        if(mesh.position.inMove == true || this.matrixAmmo) {mesh.updateModelUniformBuffer(i)}
+        
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);

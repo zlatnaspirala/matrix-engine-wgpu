@@ -44,8 +44,8 @@ byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 byId('maze').addEventListener("click", () => switchDemo('12'));
-byId('jamb').addEventListener("click", () => switchDemo('13'));
-byId('moba').addEventListener("click", () => switchDemo('13'));
+byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
+byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
 
 if(urlQ['demo'] === '1') {
@@ -73,9 +73,9 @@ if(urlQ['demo'] === '1') {
 } else if(urlQ['demo'] === '12') {
   mazeGame();
 } else if(urlQ['demo'] === '13') {
-  window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank');
+  //
 } else if(urlQ['demo'] === '14') {
-  window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank');
+  //
 }
 
 

@@ -43,8 +43,8 @@ const switchDemo = id => {
 (0, _utils.byId)('snake-light').addEventListener("click", () => switchDemo('10'));
 (0, _utils.byId)('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 (0, _utils.byId)('maze').addEventListener("click", () => switchDemo('12'));
-(0, _utils.byId)('jamb').addEventListener("click", () => switchDemo('13'));
-(0, _utils.byId)('moba').addEventListener("click", () => switchDemo('13'));
+(0, _utils.byId)('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
+(0, _utils.byId)('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
 } else if (urlQ['demo'] === '2') {
@@ -70,9 +70,9 @@ if (urlQ['demo'] === '1') {
 } else if (urlQ['demo'] === '12') {
   (0, _maze.mazeGame)();
 } else if (urlQ['demo'] === '13') {
-  window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank');
+  //
 } else if (urlQ['demo'] === '14') {
-  window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank');
+  //
 }
 
 },{"./examples/camera-texture.js":2,"./examples/fontana.js":3,"./examples/glb-loader.js":4,"./examples/load-obj-file.js":5,"./examples/load-objs-sequence.js":6,"./examples/maze.js":7,"./examples/my-lights.js":8,"./examples/physics-playground.js":9,"./examples/procedural-mesh.js":10,"./examples/snake-lights-instanced.js":11,"./examples/snake-lights.js":12,"./examples/video-texture.js":13,"./src/engine/utils.js":66}],2:[function(require,module,exports){
@@ -56763,9 +56763,7 @@ class MatrixEngineWGPU {
         if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if (mesh.vertexAnim.active == true) mesh.updateTime(this.now);
         if (camera._dirty || mesh.position.inMove) {
-          mesh.getTransformationMatrix(camera.VP, now2);
-        }
-        if (mesh.position.inMove == true || this.matrixAmmo) {
+          if (i == 0) mesh.getTransformationMatrix(camera.VP, now2);
           mesh.updateModelUniformBuffer(i);
         }
         mesh.position.update();
