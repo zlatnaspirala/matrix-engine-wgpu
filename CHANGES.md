@@ -2,9 +2,10 @@
 
 [1.9.11]
 
+- BIG win for performance
+   scene uniform buffer is global now.
 
-
-- Overiride render
+- Added overiride render variants
 ```js
 this.overrideRender = null;
 if (typeof options.render !== "undefined") {

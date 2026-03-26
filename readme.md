@@ -200,9 +200,12 @@ https://maximumroulette.com/apps/webgpu/api-docs/
 
 For now translation is only with `WASD` keyboard keys.
 
-Supported types: `WASD`, `arcball`
+Supported types: `WASD`, `RPGCamera`
 
 `WASD` also use 'c' and 'v' for up and down camera position.
+
+To change position dont use direct edit on position array.
+Use methods 
 
 ```js
 mainCameraParams: {
