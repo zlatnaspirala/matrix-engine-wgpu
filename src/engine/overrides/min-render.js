@@ -7,17 +7,19 @@ export let zeroPass = function() {
   try {
     let commandEncoder = this.device.createCommandEncoder();
     const camera = this.getCamera();
+    const _ = this.mainRenderBundle[0];
+    if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
+    camera.update(_);
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     let lastPipeline = null;
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
-      if((camera._dirty || mesh.position.inMove) && i == 0) {
-        mesh.getTransformationMatrix(camera.VP, now2);
-        mesh.updateModelUniformBuffer(i);
-      }
+      // if(mesh.position.inMove)
+      mesh.updateModelUniformBuffer(i);
       mesh.position.update();
+
       if(mesh.update) mesh.update(now2);
       if(!mesh.sceneBindGroupForRender) {
         mesh.shadowDepthTextureView = this.shadowArrayView;

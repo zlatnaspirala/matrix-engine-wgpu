@@ -10,7 +10,7 @@ export var mazeGame = function() {
     render: 'zero', // test
     dontUsePhysics: true,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -63,13 +63,14 @@ export var mazeGame = function() {
                 mesh: meshes.cube,
                 physics: {enabled: false, mass: 0, geometry: "Cube"}
               });
-              maze.collisionSystem.register((test.name), test.position, 2.0, 'enemy');
+              maze.collisionSystem.register((test.name), test.position, 1.0, 'enemy');
               // console.log(test.name + ">>>>>>>>>>>>>>>>>>>>>>");
             }
           }
         }
 
-        maze.collisionSystem.registerCamera(app.cameras.WASD.position, 1.0);
+        app.cameras.firstPersonCamera.movementSpeed = 0.01;
+        maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
         // 3. Setup the Player (Target Logic)
         // We can use the Position class interpolation to move a "player" sphere
         // maze.addMeshObj({

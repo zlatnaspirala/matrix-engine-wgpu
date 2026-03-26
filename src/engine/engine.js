@@ -1,29 +1,5 @@
 import {mat4, vec3} from 'wgpu-matrix';
 
-class CameraBase {
-  matrix_ = new Float32Array([
-    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
-  ]);
-  view_ = mat4.create();
-  right_ = new Float32Array(this.matrix_.buffer, 4 * 0, 4);
-  up_ = new Float32Array(this.matrix_.buffer, 4 * 4, 4);
-  back_ = new Float32Array(this.matrix_.buffer, 4 * 8, 4);
-  position_ = new Float32Array(this.matrix_.buffer, 4 * 12, 4);
-  get matrix() {return this.matrix_}
-  set matrix(mat) {mat4.copy(mat, this.matrix_)}
-  get view() {return this.view_;}
-  set view(mat) {mat4.copy(mat, this.view_)}
-  get right() {return this.right_}
-  set right(vec) {vec3.copy(vec, this.right_)}
-
-  get up() {return this.up_}
-  set up(vec) {vec3.copy(vec, this.up_)}
-  get back() {return this.back_}
-  set back(vec) {vec3.copy(vec, this.back_)}
-  get position() {return this.position_}
-  set position(vec) {vec3.copy(vec, this.position_)}
-}
-
 export class WASDCamera {
   pitch = 0;
   yaw = 0;
@@ -37,25 +13,20 @@ export class WASDCamera {
   right = vec3.fromValues(1, 0, 0);
   up = vec3.fromValues(0, 1, 0);
   back = vec3.fromValues(0, 0, 1);
-  // view = mat4.create();
-  // projectionMatrix = mat4.create();
-  // VP = mat4.create();
-  // _moveVelScratch = vec3.create()
   _rotYScratch = mat4.create();
   _rotXScratch = mat4.create();
   _viewScratch = mat4.create();
-
   _digital = {forward: false, backward: false, left: false, right: false, up: false, down: false};
   _lastX = 0;
   _lastY = 0;
   _mouseDown = false;
   _pointerLastScratch = {x: 0, y: 0};
-
   // Sensitivity
   MOUSE_SENS = 0.01;
   TOUCH_SENS = 0.03;
   movementSpeed = 0.2;
   rotationSpeed = 1;
+  _dirtyAngle = false;
 
   constructor(options = {}) {
     if(options.position) {
@@ -157,8 +128,8 @@ export class WASDCamera {
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirty = true;
-        this._recalculateViewVP();
+        this._dirtyAngle = true;
+        // this._recalculateViewVP();
       }
     }, {passive: true});
 
@@ -182,6 +153,8 @@ export class WASDCamera {
         if(!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
+          console.log
+          this._dirty = false;
         }
       }
     };
@@ -215,6 +188,12 @@ export class WASDCamera {
     this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
     WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
     // this._dirty = false;
+  }
+
+  update() {
+    if(!this._dirtyAngle) return;
+    this._recalculateViewVP();
+    this._dirtyAngle = false;
   }
 }
 
@@ -516,6 +495,190 @@ export class RPGCamera {
   }
 }
 
-function rotate(vec, axis, angle) {
-  return vec3.transformMat4Upper3x3(vec, mat4.rotation(axis, angle));
+export class FirstPersonCamera {
+  pitch = 0;
+  yaw = 0;
+  position = new Float32Array(3);
+  velocity = new Float32Array(3);
+  view = new Float32Array(16);
+  VP = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  _moveVelScratch = new Float32Array(3);
+  _dirty = true;
+  right = vec3.fromValues(1, 0, 0);
+  up = vec3.fromValues(0, 1, 0);
+  back = vec3.fromValues(0, 0, 1);
+  _rotYScratch = mat4.create();
+  _rotXScratch = mat4.create();
+  _viewScratch = mat4.create();
+  _digital = {forward: false, backward: false, left: false, right: false};
+  _lastX = 0;
+  _lastY = 0;
+  _mouseDown = false;
+  _pointerLastScratch = {x: 0, y: 0};
+  MOUSE_SENS = 0.01;
+  TOUCH_SENS = 0.03;
+  movementSpeed = 0.2;
+  rotationSpeed = 1;
+  _dirtyAngle = false;
+
+  constructor(options = {}) {
+    if(options.position) {
+      this.position[0] = options.position[0];
+      this.position[1] = options.position[1];
+      this.position[2] = options.position[2];
+    }
+    if(options.pitch) this.pitch = options.pitch;
+    if(options.yaw) this.yaw = options.yaw;
+    this.canvas = options.canvas;
+    this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
+    this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
+    if(this.canvas) this._setupInput(this.canvas);
+    this._recalculateViewVP();
+  }
+
+  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+    mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._recalculateViewVP();
+  }
+
+  static mat4MultiplySafe(a, b, out) {
+    const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
+    const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
+    const a20 = a[2], a21 = a[6], a22 = a[10], a23 = a[14];
+    const a30 = a[3], a31 = a[7], a32 = a[11], a33 = a[15];
+    const b00 = b[0], b01 = b[4], b02 = b[8], b03 = b[12];
+    const b10 = b[1], b11 = b[5], b12 = b[9], b13 = b[13];
+    const b20 = b[2], b21 = b[6], b22 = b[10], b23 = b[14];
+    const b30 = b[3], b31 = b[7], b32 = b[11], b33 = b[15];
+    out[0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
+    out[1] = a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30;
+    out[2] = a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30;
+    out[3] = a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30;
+    out[4] = a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31;
+    out[5] = a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31;
+    out[6] = a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31;
+    out[7] = a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31;
+    out[8] = a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32;
+    out[9] = a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32;
+    out[10] = a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32;
+    out[11] = a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32;
+    out[12] = a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33;
+    out[13] = a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33;
+    out[14] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
+    out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
+    return out;
+  }
+
+  _recalculateViewVP() {
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
+    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    this.right[0] = cy; this.right[1] = 0; this.right[2] = -sy;
+    this.up[0] = sy * sp; this.up[1] = cp; this.up[2] = cy * sp;
+    this.back[0] = sy * cp; this.back[1] = -sp; this.back[2] = cy * cp;
+    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const vs = this.view;
+    vs[0] = rx[0]; vs[4] = rx[1]; vs[8] = rx[2]; vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0]; vs[5] = uy[1]; vs[9] = uy[2]; vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0]; vs[6] = bz[1]; vs[10] = bz[2]; vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0; vs[7] = 0; vs[11] = 0; vs[15] = 1;
+    FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+  }
+
+  _setupInput(canvas) {
+    canvas.style.touchAction = 'none';
+    canvas.addEventListener('pointerdown', e => {
+      this._mouseDown = true;
+      this._lastX = e.clientX;
+      this._lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    }, {passive: true});
+    const pointerUp = e => {this._mouseDown = false;};
+    canvas.addEventListener('pointerup', pointerUp, {passive: true});
+    canvas.addEventListener('pointercancel', pointerUp, {passive: true});
+    canvas.addEventListener('pointermove', e => {
+      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      for(const ce of events) {
+        let dx = 0, dy = 0;
+        if(ce.pointerType === 'mouse') {
+          if((ce.buttons & 1) === 0) continue;
+          dx = ce.movementX * this.MOUSE_SENS;
+          dy = ce.movementY * this.MOUSE_SENS;
+        } else {
+          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
+          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
+          this._lastX = ce.clientX;
+          this._lastY = ce.clientY;
+        }
+        this.yaw -= dx * this.rotationSpeed;
+        this.pitch -= dy * this.rotationSpeed;
+        this.yaw %= Math.PI * 2;
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._dirtyAngle = true;
+      }
+    }, {passive: true});
+
+    this._keyInterval = null;
+    const setDigital = (e, value) => {
+      switch(e.code) {
+        case 'KeyW': this._digital.forward = value; break;
+        case 'KeyS': this._digital.backward = value; break;
+        case 'KeyA': this._digital.left = value; break;
+        case 'KeyD': this._digital.right = value; break;
+        // no V/C
+      }
+      if(value == true && this._keyInterval === null) {
+        this._keyInterval = setInterval(() => {
+          this._dirty = true;
+          this._applyDigitalMovement();
+        }, 16);
+      } else {
+        const d = this._digital;
+        if(!d.forward && !d.backward && !d.left && !d.right) {
+          clearInterval(this._keyInterval);
+          this._keyInterval = null;
+          this._dirty = false;
+        }
+      }
+    };
+    window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
+    window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+  }
+
+  _applyDigitalMovement() {
+    const d = this._digital;
+    let vx = 0, vz = 0;
+
+    // flatten back onto XZ, ignore pitch
+    const fx = -this.back[0];
+    const fz = -this.back[2];
+    const flen = Math.sqrt(fx * fx + fz * fz);
+    const fnx = flen > 0.0001 ? fx / flen : 0;
+    const fnz = flen > 0.0001 ? fz / flen : 0;
+
+    if(d.forward)  { vx += fnx; vz += fnz; }
+    if(d.backward) { vx -= fnx; vz -= fnz; }
+    if(d.right)    { vx += this.right[0]; vz += this.right[2]; }
+    if(d.left)     { vx -= this.right[0]; vz -= this.right[2]; }
+
+    const len = Math.sqrt(vx * vx + vz * vz);
+    if(len < 0.0001) return;
+
+    const s = this.movementSpeed / len;
+    this.position[0] += vx * s;
+    // position[1] never touched — stays at whatever was set in constructor
+    this.position[2] += vz * s;
+
+    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+  }
+
+  update() {
+    if(!this._dirtyAngle) return;
+    this._recalculateViewVP();
+    this._dirtyAngle = false;
+  }
 }

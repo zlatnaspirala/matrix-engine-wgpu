@@ -1,5 +1,5 @@
 import {mat4, vec3} from "wgpu-matrix";
-import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
+import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL} from "./engine/utils.js";
@@ -203,7 +203,8 @@ export default class MatrixEngineWGPU {
     };
 
     this.cameras = {
-      arcball: new ArcballCamera({position: initialCameraPosition, canvas: canvas}),
+      // arcball: new ArcballCamera({position: initialCameraPosition, canvas: canvas}),
+      firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
       RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
@@ -858,6 +859,11 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
+      const _ = this.mainRenderBundle[0];
+      
+      if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
+      camera.update(_);
+
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -901,11 +907,9 @@ export default class MatrixEngineWGPU {
         const mesh = this.mainRenderBundle[i];
         if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        if((camera._dirty || mesh.position.inMove)) {
-          if (i==0)mesh.getTransformationMatrix(camera.VP, now2);
-          mesh.updateModelUniformBuffer(i);
-        }
-        
+        // if((camera._dirty || mesh.position.inMove)) mesh.updateModelUniformBuffer(i);
+        if(mesh.position.inMove == true) mesh.updateModelUniformBuffer(i);
+
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
