@@ -1553,7 +1553,7 @@ var mazeGame = function () {
             let test = maze.addMeshObj({
               shadowsCast: false,
               material: {
-                type: 'standard'
+                type: 'colorb'
               },
               position: {
                 x: x * spacing - mazeSize * spacing / 2,
@@ -1570,31 +1570,11 @@ var mazeGame = function () {
               }
             });
             maze.collisionSystem.register(test.name, test.position, 1.0, 'enemy');
-            // console.log(test.name + ">>>>>>>>>>>>>>>>>>>>>>");
           }
         }
       }
-      app.cameras.firstPersonCamera.movementSpeed = 0.01;
+      app.cameras.firstPersonCamera.movementSpeed = 0.05;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
-      // 3. Setup the Player (Target Logic)
-      // We can use the Position class interpolation to move a "player" sphere
-      // maze.addMeshObj({
-      //   material: {type: 'mirror'},
-      //   position: {x: -mazeSize, y: 0, z: -mazeSize},
-      //   name: 'playerBall',
-      //   mesh: meshes.ball || meshes.cube, // fallback
-      //   physics: {enabled: false}
-      // });
-
-      // let player = maze.getSceneObjectByName('playerBall');
-
-      // // Move player to end of Lavirint using your translateByXZ method
-      // player.position.setSpeed(0.5);
-      // player.position.translateByXZ((mazeSize * spacing) / 2, (mazeSize * spacing) / 2);
-
-      // player.position.onTargetPositionReach = () => {
-      //   console.log("Cestitamo! You reached the finish line!");
-      // };
     }
   });
   window.app = maze;
@@ -20922,7 +20902,7 @@ class CollisionSystem {
    */
   registerCamera(cameraInstance, radius = 1.0) {
     this.cameraEntry = {
-      id: "wasd_camera",
+      id: "camera",
       pos: cameraInstance,
       radius,
       group: "camera"
@@ -20931,14 +20911,14 @@ class CollisionSystem {
   _cellKey(x, z) {
     const cx = Math.floor(x / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    return cx << 16 ^ cz; // fast int key
+    return cx << 16 ^ cz;
   }
   _buildGrid() {
     const grid = this._grid;
     grid.clear();
     for (let i = 0; i < this.entries.length; i++) {
       const e = this.entries[i];
-      const key = this._cellKey(e.pos[0], e.pos[2]);
+      const key = this._cellKey(e.pos.x, e.pos.z);
       let cell = grid.get(key);
       if (!cell) {
         cell = [];
@@ -20989,8 +20969,8 @@ class CollisionSystem {
       const neighbors = this._getNeighborCells(camX, camZ);
       for (let i = 0; i < neighbors.length; i++) {
         const target = neighbors[i];
-        const minCamDist = 1 + 1;
-        const collided = (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 0.8);
+        const minCamDist = 1 + 0.5;
+        const collided = (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 1.1);
         if (collided) {
           console.log('kinematic collision');
         }
@@ -24614,7 +24594,7 @@ class FirstPersonCamera {
     if (options.yaw) this.yaw = options.yaw;
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
   }
@@ -33701,8 +33681,7 @@ let zeroPass = function () {
     const len = this.mainRenderBundle.length;
     for (let i = 0; i < len; i++) {
       const mesh = this.mainRenderBundle[i];
-      // if(mesh.position.inMove)
-      mesh.updateModelUniformBuffer(i);
+      if (mesh.position.inMove) mesh.updateModelUniformBuffer(i);
       mesh.position.update();
       if (mesh.update) mesh.update(now2);
       if (!mesh.sceneBindGroupForRender) {
@@ -42118,28 +42097,26 @@ const MAX_SPOTLIGHTS = 20u;
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
+        @location(3) fragUV    : vec2f,  // need UV
 };
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
+let uv = fract(input.fragUV);
 
-    // ===== EDGE DETECTION =====
-    let NdotV = abs(dot(N, V));
+    // distance to nearest edge 0 or 1
+    let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
 
-    // ===== HARD EDGE MASK (THIS FIXES YOUR PROBLEM) =====
-    let edgeWidth = 0.2;     // tweak
-    let edge = smoothstep(0.0, edgeWidth, 1.0 - NdotV);
+    let edgeWidth = 0.05;  // tweak thickness
+    let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
 
-    // ===== PURE COLORS =====
-    let glowColor = vec3f(0.0, 1.0, 1.0);
-    let baseColor = vec3f(0.0); // FULL BLACK CORE
+    let neonColor = vec3f(0.0, 1.0, 1.0);
+    let coreColor = vec3f(0.0, 0.0, 0.0);
 
-    let color = mix(baseColor, glowColor, edge);
+    let color = mix(coreColor, neonColor, edgeFactor);
 
-    return vec4f(color, material.baseColorFactor.a);
+    return vec4f(color, 1);
 }`;
 
 // export let colorbWGSL = `

@@ -25,7 +25,7 @@ export class CollisionSystem {
    */
   registerCamera(cameraInstance, radius = 1.0) {
     this.cameraEntry = {
-      id: "wasd_camera",
+      id: "camera",
       pos: cameraInstance,
       radius,
       group: "camera"
@@ -34,7 +34,7 @@ export class CollisionSystem {
   _cellKey(x, z) {
     const cx = Math.floor(x / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    return (cx << 16) ^ cz; // fast int key
+    return (cx << 16) ^ cz;
   }
 
   _buildGrid() {
@@ -42,7 +42,7 @@ export class CollisionSystem {
     grid.clear();
     for(let i = 0;i < this.entries.length;i++) {
       const e = this.entries[i];
-      const key = this._cellKey(e.pos[0], e.pos[2]);
+      const key = this._cellKey(e.pos.x, e.pos.z);
       let cell = grid.get(key);
       if(!cell) {cell = []; grid.set(key, cell);}
       cell.push(e);
@@ -87,8 +87,8 @@ export class CollisionSystem {
       const neighbors = this._getNeighborCells(camX, camZ);
       for(let i = 0;i < neighbors.length;i++) {
         const target = neighbors[i];
-        const minCamDist = 1 + 1;
-        const collided = pairRepulsion(cam.pos, target.pos, minCamDist, 0.8);
+        const minCamDist = 1 + 0.5;
+        const collided = pairRepulsion(cam.pos, target.pos, minCamDist, 1.1);
         if(collided) {
           console.log('kinematic collision')
         }

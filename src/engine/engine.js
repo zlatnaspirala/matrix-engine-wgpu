@@ -532,7 +532,7 @@ export class FirstPersonCamera {
     if(options.yaw) this.yaw = options.yaw;
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
-    this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
+    this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 100);
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
   }

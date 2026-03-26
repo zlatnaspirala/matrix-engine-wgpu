@@ -860,10 +860,8 @@ export default class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       const _ = this.mainRenderBundle[0];
-      
       if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
       camera.update(_);
-
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);

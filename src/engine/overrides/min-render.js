@@ -16,10 +16,8 @@ export let zeroPass = function() {
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
-      // if(mesh.position.inMove)
-      mesh.updateModelUniformBuffer(i);
+      if(mesh.position.inMove) mesh.updateModelUniformBuffer(i);
       mesh.position.update();
-
       if(mesh.update) mesh.update(now2);
       if(!mesh.sceneBindGroupForRender) {
         mesh.shadowDepthTextureView = this.shadowArrayView;

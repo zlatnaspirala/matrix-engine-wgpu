@@ -57,28 +57,26 @@ const MAX_SPOTLIGHTS = 20u;
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
+        @location(3) fragUV    : vec2f,  // need UV
 };
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
+let uv = fract(input.fragUV);
 
-    // ===== EDGE DETECTION =====
-    let NdotV = abs(dot(N, V));
+    // distance to nearest edge 0 or 1
+    let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
 
-    // ===== HARD EDGE MASK (THIS FIXES YOUR PROBLEM) =====
-    let edgeWidth = 0.2;     // tweak
-    let edge = smoothstep(0.0, edgeWidth, 1.0 - NdotV);
+    let edgeWidth = 0.05;  // tweak thickness
+    let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
 
-    // ===== PURE COLORS =====
-    let glowColor = vec3f(0.0, 1.0, 1.0);
-    let baseColor = vec3f(0.0); // FULL BLACK CORE
+    let neonColor = vec3f(0.0, 1.0, 1.0);
+    let coreColor = vec3f(0.0, 0.0, 0.0);
 
-    let color = mix(baseColor, glowColor, edge);
+    let color = mix(coreColor, neonColor, edgeFactor);
 
-    return vec4f(color, material.baseColorFactor.a);
+    return vec4f(color, 1);
 }`;
 
 // export let colorbWGSL = `
