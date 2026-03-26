@@ -609,22 +609,12 @@ export default class ProceduralMeshObj extends Materials {
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend))
     this.morphAnimation.duration = Math.max(duration, 100)
     this.morphAnimation.elapsed = 0;
-    // this.morphAnimation = {
-    //   active: true,
-    //   startBlend: this.morphBlend,
-    //   targetBlend: Math.max(0, Math.min(1, targetBlend)),
-    //   duration: Math.max(duration, 100),
-    //   elapsed: 0,
-    //   debug: this.morphAnimation.debug
-    // };
     if(onComplete) this.morphAnimation.onComplete = onComplete;
-
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
     this.morphAnimation.duration = safeDuration;
     this.morphAnimation.elapsed = 0;
-    // this.morphAnimation.onComplete = onComplete;
     if(this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }

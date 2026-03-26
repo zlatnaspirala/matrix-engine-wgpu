@@ -94,7 +94,6 @@ export default class MatrixEngineWGPU {
       this.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower.bind(this);
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
-
     this.editorAddOBJ = addOBJ.bind(this);
     this.MEConfig = MEConfig;
     this.MEConfig.construct();
@@ -111,11 +110,8 @@ export default class MatrixEngineWGPU {
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {this.matrixAmmo = new MatrixAmmo()}
     // cache
-
     this._viewScratch = new Float32Array(16);
     this.blendQueue = [];
-
-
     this._cameraUpdateFrame = 0;
     this._viewProjMatrix = mat4.create();
     this._invViewProj = mat4.create();
@@ -141,14 +137,12 @@ export default class MatrixEngineWGPU {
         this.editor = new Editor(this, "infly");
       }
     }
-
     this.overrideRender = null;
     if(typeof options.render !== 'undefined') {
       if(options.render == 'zero') {
         this.overrideRender = zeroPass.bind(this);
       }
     }
-
     window.addEventListener('keydown', e => {
       if(e.code == "F4") {
         e.preventDefault();
@@ -209,7 +203,7 @@ export default class MatrixEngineWGPU {
     };
 
     this.cameras = {
-      // arcball: new ArcballCamera({position: initialCameraPosition}),
+      arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
       RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
@@ -239,9 +233,7 @@ export default class MatrixEngineWGPU {
     this.canvas.style.height = screenHeight + "px";
   }
 
-  getCamera() {
-    return this.cameras[this.mainCameraParams.type];
-  }
+  getCamera() {return this.cameras[this.mainCameraParams.type]}
 
   init = async ({canvas, callback}) => {
     this.adapter = await navigator.gpu.requestAdapter();
@@ -264,7 +256,7 @@ export default class MatrixEngineWGPU {
       alphaMode: 'premultiplied',
     });
 
-    this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
+    this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = null;
     this.createGlobalStuff(callback);
@@ -291,8 +283,8 @@ export default class MatrixEngineWGPU {
       " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n",
       LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY);
-    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_FUNNY);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY);
+    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_WARN);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY_SMALL);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
   };
 
@@ -786,7 +778,7 @@ export default class MatrixEngineWGPU {
     } else {
       this.frame = this.frameSinglePass;
     }
-    setTimeout(() => {this.frame(); callback(this)}, 50);
+    setTimeout(() => {this.frame(); callback(this)}, 500);
   }
 
   // still not perfect but works

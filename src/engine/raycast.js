@@ -99,38 +99,17 @@ export function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
 }
 
 export function computeWorldVertsAndAABB(object) {
-  // const modelMatrix = object.getModelMatrix(object.position, true);
-  // const worldVerts = [];
-  // if(object.meshA) {
-  //   for(let i = 0;i < object.meshA.vertices.length;i += 3) {
-  //     const local = [object.meshA.vertices[i], object.meshA.vertices[i + 1], object.meshA.vertices[i + 2]];
-  //     const world = vec3.transformMat4(local, modelMatrix);
-  //     worldVerts.push(...world);
-  //   }
-  // } else {
-  //   for(let i = 0;i < object.mesh.vertices.length;i += 3) {
-  //     const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
-  //     const world = vec3.transformMat4(local, modelMatrix);
-  //     worldVerts.push(...world);
-  //   }
-  // }
-  // const [boxMin, boxMax] = computeAABB(worldVerts);
-  // return {modelMatrix, worldVerts, boxMin, boxMax};
-
-  // Return cached AABB if object hasn't moved
   if(object._aabbCache &&
     object._aabbCache.x === object.position.x &&
     object._aabbCache.y === object.position.y &&
     object._aabbCache.z === object.position.z) {
     return object._aabbCache;
   }
-
-  console.log('tay compute call')
+  // console.log('ray')
   const modelMatrix = object.getModelMatrix(object.position, true);
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
   const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
-
   // Compute AABB directly without building worldVerts array
   for(let i = 0;i < verts.length;i += 3) {
     const world = vec3.transformMat4(

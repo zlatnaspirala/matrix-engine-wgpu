@@ -43,6 +43,8 @@ const switchDemo = id => {
 (0, _utils.byId)('snake-light').addEventListener("click", () => switchDemo('10'));
 (0, _utils.byId)('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 (0, _utils.byId)('maze').addEventListener("click", () => switchDemo('12'));
+(0, _utils.byId)('jamb').addEventListener("click", () => switchDemo('13'));
+(0, _utils.byId)('moba').addEventListener("click", () => switchDemo('13'));
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
 } else if (urlQ['demo'] === '2') {
@@ -67,6 +69,10 @@ if (urlQ['demo'] === '1') {
   (0, _snakeLightsInstanced.snakeLightsInstanced)();
 } else if (urlQ['demo'] === '12') {
   (0, _maze.mazeGame)();
+} else if (urlQ['demo'] === '13') {
+  window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank');
+} else if (urlQ['demo'] === '14') {
+  window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank');
 }
 
 },{"./examples/camera-texture.js":2,"./examples/fontana.js":3,"./examples/glb-loader.js":4,"./examples/load-obj-file.js":5,"./examples/load-objs-sequence.js":6,"./examples/maze.js":7,"./examples/my-lights.js":8,"./examples/physics-playground.js":9,"./examples/procedural-mesh.js":10,"./examples/snake-lights-instanced.js":11,"./examples/snake-lights.js":12,"./examples/video-texture.js":13,"./src/engine/utils.js":66}],2:[function(require,module,exports){
@@ -34623,21 +34629,12 @@ class ProceduralMeshObj extends _materials.default {
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
     this.morphAnimation.duration = Math.max(duration, 100);
     this.morphAnimation.elapsed = 0;
-    // this.morphAnimation = {
-    //   active: true,
-    //   startBlend: this.morphBlend,
-    //   targetBlend: Math.max(0, Math.min(1, targetBlend)),
-    //   duration: Math.max(duration, 100),
-    //   elapsed: 0,
-    //   debug: this.morphAnimation.debug
-    // };
     if (onComplete) this.morphAnimation.onComplete = onComplete;
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
     this.morphAnimation.duration = safeDuration;
     this.morphAnimation.elapsed = 0;
-    // this.morphAnimation.onComplete = onComplete;
     if (this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
@@ -35504,34 +35501,14 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   };
 }
 function computeWorldVertsAndAABB(object) {
-  // const modelMatrix = object.getModelMatrix(object.position, true);
-  // const worldVerts = [];
-  // if(object.meshA) {
-  //   for(let i = 0;i < object.meshA.vertices.length;i += 3) {
-  //     const local = [object.meshA.vertices[i], object.meshA.vertices[i + 1], object.meshA.vertices[i + 2]];
-  //     const world = vec3.transformMat4(local, modelMatrix);
-  //     worldVerts.push(...world);
-  //   }
-  // } else {
-  //   for(let i = 0;i < object.mesh.vertices.length;i += 3) {
-  //     const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
-  //     const world = vec3.transformMat4(local, modelMatrix);
-  //     worldVerts.push(...world);
-  //   }
-  // }
-  // const [boxMin, boxMax] = computeAABB(worldVerts);
-  // return {modelMatrix, worldVerts, boxMin, boxMax};
-
-  // Return cached AABB if object hasn't moved
   if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
     return object._aabbCache;
   }
-  console.log('tay compute call');
+  // console.log('ray')
   const modelMatrix = object.getModelMatrix(object.position, true);
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
   const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
-
   // Compute AABB directly without building worldVerts array
   for (let i = 0; i < verts.length; i += 3) {
     const world = _wgpuMatrix.vec3.transformMat4([verts[i], verts[i + 1], verts[i + 2]], modelMatrix);
@@ -55782,7 +55759,6 @@ class MatrixEngineWGPU {
       this.matrixAmmo = new _matrixAmmo.default();
     }
     // cache
-
     this._viewScratch = new Float32Array(16);
     this.blendQueue = [];
     this._cameraUpdateFrame = 0;
@@ -55882,7 +55858,9 @@ class MatrixEngineWGPU {
       responseCoef: this.options.mainCameraParams.responseCoef
     };
     this.cameras = {
-      // arcball: new ArcballCamera({position: initialCameraPosition}),
+      arcball: new _engine.ArcballCamera({
+        position: initialCameraPosition
+      }),
       WASD: new _engine.WASDCamera({
         position: initialCameraPosition,
         canvas: canvas,
@@ -55968,8 +55946,8 @@ class MatrixEngineWGPU {
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n", _utils.LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY);
-    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY);
+    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", _utils.LOG_WARN);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY_SMALL);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
@@ -56663,7 +56641,7 @@ class MatrixEngineWGPU {
     setTimeout(() => {
       this.frame();
       callback(this);
-    }, 50);
+    }, 500);
   }
 
   // still not perfect but works
