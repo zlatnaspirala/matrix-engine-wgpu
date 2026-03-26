@@ -1553,14 +1553,14 @@ var mazeGame = function () {
             let test = maze.addMeshObj({
               shadowsCast: false,
               material: {
-                type: 'colorb'
+                type: 'minia'
               },
               position: {
                 x: x * spacing - mazeSize * spacing / 2,
                 y: 0,
                 z: y * spacing - mazeSize * spacing / 2
               },
-              texturesPaths: ['./res/textures/rust.jpg'],
+              texturesPaths: ['./res/textures/tex02.webp'],
               name: wallName,
               mesh: meshes.cube,
               physics: {
@@ -1569,7 +1569,7 @@ var mazeGame = function () {
                 geometry: "Cube"
               }
             });
-            maze.collisionSystem.register(test.name, test.position, 1.0, 'enemy');
+            maze.collisionSystem.register(test.name, test.position, 1.1, 'enemy');
           }
         }
       }
