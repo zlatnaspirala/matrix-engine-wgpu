@@ -1,8 +1,8 @@
-import {LOG_FUNNY, LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
+import {LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
+import {MEConfig} from "../me-config";
 
 export default class MatrixAmmo {
   constructor(options = {roundDimension: 100, gravity: 10}) {
-    // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
     this.options = options;
     // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
     scriptManager.LOAD("ammojs/ammo.js", "ammojs",
@@ -23,22 +23,18 @@ export default class MatrixAmmo {
 
   init = () => {
     Ammo().then(Ammo => {
-      // Physics 
       this.initPhysicsScratch();
       this.dynamicsWorld = null;
       this.rigidBodies = [];
       this.Ammo = Ammo;
-      this.lastUpdate = 0
+      this.lastUpdate = 0;
       console.log("%c Ammo core loaded.", LOG_FUNNY_ARCADE);
-      this.initPhysics();
-      // simulate async
-      setTimeout(() => {
-        dispatchEvent(new CustomEvent('AmmoReady', {}))
-      }, 250);
+      this.initPhysics(MEConfig.PHYSICS_GROUND_Y);
+      setTimeout(() => {dispatchEvent(new CustomEvent('AmmoReady', {}))}, 200);
     });
   };
 
-  initPhysics() {
+  initPhysics(GROUND_Y = -4) {
     let Ammo = this.Ammo;
     // Physics configuration
     var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration(),
@@ -52,7 +48,7 @@ export default class MatrixAmmo {
     var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(this.options.roundDimension, 1, this.options.roundDimension)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
-    groundTransform.setOrigin(new Ammo.btVector3(0, -4.45, 0));
+    groundTransform.setOrigin(new Ammo.btVector3(0, GROUND_Y, 0));
     var mass = 0,
       isDynamic = (mass !== 0),
       localInertia = new Ammo.btVector3(0, 0, 0);
@@ -144,7 +140,7 @@ export default class MatrixAmmo {
     if(pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
       body.setActivationState(2)
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-      // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
+      console.log('pOptions.mass is 0 and state is 2', pOptions.mass)
     } else if(typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
       // idea not work for now - eliminate collide effect
       body.setActivationState(4)
@@ -158,6 +154,99 @@ export default class MatrixAmmo {
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
     return body;
+  }
+
+  addHingeConstraint(MEObjectA, MEObjectB, pOptions) {
+
+    let Ammo = this.Ammo;
+
+    if(!this.constraints) this.constraints = [];
+
+    // =========================
+    // FIND BODIES VIA MEObject
+    // =========================
+    let bodyA = null;
+    let bodyB = null;
+
+    for(let i = 0;i < this.rigidBodies.length;i++) {
+      if(this.rigidBodies[i].MEObject === MEObjectA) {
+        bodyA = this.rigidBodies[i];
+      }
+      if(this.rigidBodies[i].MEObject === MEObjectB) {
+        bodyB = this.rigidBodies[i];
+      }
+    }
+
+    if(!bodyA || !bodyB) {
+      console.warn("addHingeConstraint: bodies not found for MEObjects");
+      return null;
+    }
+
+    // PIVOTS & AXIS
+    const pivotA = pOptions.pivotA || [0, 0, 0];
+    const pivotB = pOptions.pivotB || [0, 0, 0];
+    const axis = pOptions.axis || [0, 1, 0];
+
+    const ammoPivotA = new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2]);
+    const ammoPivotB = new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]);
+
+    const frameA = new Ammo.btTransform();
+    frameA.setIdentity();
+    frameA.setOrigin(new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2])); // offset here
+
+    const frameB = new Ammo.btTransform();
+    frameB.setIdentity();
+    frameB.setOrigin(new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]));
+
+
+    const ammoAxisA = new Ammo.btVector3(axis[0], axis[1], axis[2]);
+    const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
+    // const ammoAxis = new Ammo.btVector3(axis[0], axis[1], axis[2]);
+
+    // =========================
+    // CREATE HINGE
+    // =========================
+
+    console.log('FFFFFFFFFFFFFFFFF')
+    const hinge = new Ammo.btHingeConstraint(
+      bodyA,
+      bodyB,
+      // frameA,
+      // frameB,
+      ammoPivotA,
+      ammoPivotB,
+      ammoAxisA,
+      ammoAxisB,
+      true
+    );
+
+    console.log("bodyA:", bodyA);
+    console.log("bodyB:", bodyB);
+    console.log("pivotA:", pivotA);
+    console.log("pivotB:", pivotB);
+    console.log("axis:", axis);
+    console.log("ammoPivotA:", ammoPivotA.x(), ammoPivotA.y(), ammoPivotA.z());
+
+    // =========================
+    // LIMITS
+    // =========================
+    if(pOptions.limits) {
+      hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
+    }
+
+    // =========================
+    // ADD TO WORLD
+    // =========================
+    this.dynamicsWorld.addConstraint(hinge, true);
+
+    // =========================
+    // STORE ONLY (NO FAKE LINKS)
+    // =========================
+    hinge.name = pOptions.name;
+
+    this.constraints.push(hinge);
+
+    return hinge;
   }
 
   setBodyVelocity = (body, x, y, z) => {

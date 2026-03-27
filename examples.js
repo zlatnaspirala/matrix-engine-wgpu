@@ -17,6 +17,7 @@ import {snakeLights} from "./examples/snake-lights.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId, urlQuery} from "./src/engine/utils.js";
 import {mazeGame} from "./examples/maze.js";
+import {flipper} from "./examples/flipper.js";
 
 window.urlQ = urlQuery;
 
@@ -44,6 +45,7 @@ byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 byId('maze').addEventListener("click", () => switchDemo('12'));
+byId('flipper').addEventListener("click", () => switchDemo('13'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
@@ -73,7 +75,7 @@ if(urlQ['demo'] === '1') {
 } else if(urlQ['demo'] === '12') {
   mazeGame();
 } else if(urlQ['demo'] === '13') {
-  //
+  flipper();
 } else if(urlQ['demo'] === '14') {
   //
 }

@@ -777,7 +777,8 @@ export default class MatrixEngineWGPU {
     } else {
       this.frame = this.frameSinglePass;
     }
-    setTimeout(() => {this.frame(); callback(this)}, 500);
+    setTimeout(() => {this.frame()}, 200);
+    callback(this);
   }
 
   // still not perfect but works
@@ -860,6 +861,7 @@ export default class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       const _ = this.mainRenderBundle[0];
+      if (!_) return;
       if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
       camera.update(_);
       for(let i = 0;i < this.lightContainer.length;i++) {

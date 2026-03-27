@@ -14,13 +14,15 @@ export const MEConfig = {
   MAX_BONES: isMobile() == true ? 80 : 100,
   MAX_LIGHTS: isMobile() == true ? 20 : 40,
 
+  PHYSICS_GROUND_Y: -4,
+
   construct: function() {
     if(urlQ['shadowSize']) {
-      this.SHADOW_RES = parseFloat(urlQ['shadowSize']);
+      this.SHADOW_RES = parseInt(urlQ['shadowSize']);
       console.log(`%cShadowSize : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['maxLights']) {
-      this.MAX_LIGHTS = parseFloat(urlQ['maxLights']);
+      this.MAX_LIGHTS = parseInt(urlQ['maxLights']);
       console.log(`%cmaxLights : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['fs']) {
@@ -32,6 +34,12 @@ export const MEConfig = {
         window.removeEventListener('click', this._fs);
       }
       window.addEventListener('click', this._fs);
+    }
+
+
+    if(urlQ['PHYSICS_GROUND_Y']) {
+      this.PHYSICS_GROUND_Y = parseFloat(urlQ['PHYSICS_GROUND_Y']);
+      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }
 
   },
