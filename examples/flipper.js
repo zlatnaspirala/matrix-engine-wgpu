@@ -11,11 +11,9 @@ export var flipper = function() {
     PHYSICS_GROUND_BYX: 5,
     clearColor: {r: 0, g: 1, b: 1, a: 1}
   }, () => {
-
     addEventListener('AmmoReady', () => {
       flipper.addLight();
       addRaycastsAABBListener();
-
       downloadMeshes({cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/shapes/sphere.obj"},
         onGround,
         {scale: [1, 1, 1]}
@@ -27,14 +25,12 @@ export var flipper = function() {
       // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
       //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
       //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
-
       setTimeout(() => {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
       }, 1000);
-
       // ball
       flipper.addMeshObj({
         material: {type: 'standard'},
@@ -53,7 +49,7 @@ export var flipper = function() {
 
       // GROUND
       flipper.addMeshObj({
-        position: {x: 0, y: 0, z: -21},
+        position: {x: 0, y: -0.1, z: -21},
         scale: [6, 0.1, 15],
         texturesPaths: ['res/textures/cube-g1.webp'],
         name: 'ground',
@@ -66,7 +62,7 @@ export var flipper = function() {
       });
 
       const LAnchor = flipper.addMeshObj({
-        position: {x: -5, y: 0.5, z: -9},
+        position: {x: -5, y: 1, z: -9},
         scale: [0.02, 0.02, 0.02],
         mesh: m.cube,
         physics: {
@@ -79,7 +75,7 @@ export var flipper = function() {
       });
 
       const RAnchor = flipper.addMeshObj({
-        position: {x: 5, y: 0.5, z: -9},
+        position: {x: 5, y: 1, z: -9},
         scale: [0.02, 0.02, 0.02],
         mesh: m.cube,
         physics: {
@@ -101,8 +97,8 @@ export var flipper = function() {
 
       const L = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: -5, y: 0.5, z: -9},
-        scale: [2, 0.3, 0.5],
+        position: {x: -3, y: 0.5, z: -9},
+        scale: [1.1, 0.1, 0.3],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'flipperLeft',
         mesh: m.cube,
@@ -115,10 +111,10 @@ export var flipper = function() {
 
       const R = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 4, y: 0.5, z: -9},
-        scale: [2, 0.3, 0.5],
+        position: {x: 3, y: 0.5, z: -9},
+        scale: [1.1, 0.1, 0.3],
         texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'flipperRigth',
+        name: 'flipperRight',
         mesh: m.cube,
         physics: {
           enabled: true,
@@ -128,7 +124,7 @@ export var flipper = function() {
       });
 
       const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
-      const rightBody = flipper.matrixAmmo.getBodyByName('flipperRigth');
+      const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
       if(leftBody) {
         leftBody.setActivationState(4);
         leftBody.activate(true);
@@ -140,9 +136,9 @@ export var flipper = function() {
 
       // BUMPERS
       const bumperPositions = [
-        {x: 0, y: 0.5, z: -12},
-        {x: 2, y: 0.5, z: -14},
-        {x: -2, y: 0.5, z: -16}
+        {x: 0, y: 0.5, z: -22},
+        {x: 2, y: 0.5, z: -24},
+        {x: -2, y: 0.5, z: -26}
       ];
 
       bumperPositions.forEach((p, i) => {
@@ -162,7 +158,76 @@ export var flipper = function() {
         });
       });
 
+      // edges
+      const TEdge = flipper.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 1, z: -36},
+        scale: [6.5, 1, 0.5],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'edgeTop',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
 
+      const REdge = flipper.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 6, y: 1, z: -21},
+        scale: [0.5, 1, 15],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'edgeRigth',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+
+      const LEdge = flipper.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: -6, y: 1, z: -21},
+        scale: [0.5, 1, 15],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'edgeLeft',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+
+      flipper.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 4.9, y: 32, z: -32},
+        scale: [0.5, 0.5, 0.5],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball2',
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          mass: 1,
+          geometry: "Sphere"
+        },
+        raycast: {enabled: true, radius: 1}
+      });
+
+      const checker2 = REdge.createCheckerboardTexture(256, 64, [0, 50, 50, 255], [20, 200, 200, 255]);
+      let samplerTest = flipper.device.createSampler({
+        magFilter: 'nearest',
+        minFilter: 'nearest',
+        addressModeU: 'repeat',
+        addressModeV: 'repeat',
+      });
+      setTimeout(() => {
+        REdge.changeTexture(checker2, samplerTest)
+        REdge.setUVScale(4,16);
+        LEdge.changeTexture(checker2, samplerTest)
+      }, 500)
 
       flipper.canvas.addEventListener("ray.hit.event", (e) => {
         //
@@ -207,7 +272,7 @@ export var flipper = function() {
       // FLIPPER SETUP
       const hingeLeft = app.matrixAmmo.addHingeConstraint(L, LAnchor, {
         name: "flipperLeftHinge",
-        pivotA: [-2, 0, 0],
+        pivotA: [-1, 0, 0],
         pivotB: [0, 0, 0],
         axis: [0, 1, 0],
         limits: [-0.8, 0.5]
@@ -215,10 +280,11 @@ export var flipper = function() {
 
       const hingeRight = app.matrixAmmo.addHingeConstraint(R, RAnchor, {
         name: "flipperRightHinge",
-        pivotA: [0, 0, 0],
+        pivotA: [1, 0, 0],
         pivotB: [0, 0, 0],
-        axis: [0, 1, 0],
+        axis: [0, -1, 0],
         limits: [-0.8, 0.5]
+        // limits: [0.5, -0.8]
       });
 
       let leftBodycurrPos = 'unpressed';
@@ -234,10 +300,10 @@ export var flipper = function() {
         }
         if(e.code === "KeyM") {
           console.log('right presseed')
-          const rightBody = flipper.matrixAmmo.getBodyByName('flipperRigth');
+          const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
           rightBody.activate(true);
           rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, 25, 200);
+          hingeRight.enableAngularMotor(true, -25, 200);
         }
       });
 
@@ -251,10 +317,10 @@ export var flipper = function() {
           hingeLeft.enableAngularMotor(true, 10, 50);
         }
         if(e.code === "KeyM") {
-          // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRigth');
+          // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
           // rightBody.activate(true);
           // rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, -10, 50);
+          hingeRight.enableAngularMotor(true, 10, 50);
         }
       });
     }

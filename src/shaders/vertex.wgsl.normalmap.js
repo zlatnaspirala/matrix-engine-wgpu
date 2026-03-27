@@ -24,6 +24,7 @@ struct SkinResult {
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
 @group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(3) var<uniform> uvScale: vec2f;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -98,8 +99,8 @@ fn main(
   output.fragPos = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
-  output.uv = uv;
-  output.tangent = vec4(normalize(skinnedTangent), tangent.w);  // OUTPUT tangent
+  output.uv = uv * uvScale;
+  output.tangent = vec4(normalize(skinnedTangent), tangent.w);
 
   return output;
 }`;

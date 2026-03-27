@@ -2,6 +2,11 @@
 
 [1.9.11]
 
+- setUVScale (new in vertex shaders)
+
+- New func:
+  createCheckerboardTexture(device, size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255])
+
 - added MEConfig with default values and checking url params.
   Engine in future will be fully scaled from url params.
   For now working params:

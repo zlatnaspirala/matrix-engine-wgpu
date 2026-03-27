@@ -182,7 +182,8 @@ export class SpotLight {
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ]
     });
 
@@ -191,7 +192,8 @@ export class SpotLight {
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ],
     });
 

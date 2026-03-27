@@ -57,6 +57,14 @@ export default class MEMeshObj extends Materials {
     }
 
     this.useScale = o.useScale || false;
+
+    this.uvScaleBuffer = this.device.createBuffer({
+      size: 8, // vec2f
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    // Default = no scale
+    this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
+
     this.material = o.material;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
     this.time = 0;
@@ -500,7 +508,8 @@ export default class MEMeshObj extends Materials {
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
           {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         ],
       });
 
@@ -662,7 +671,8 @@ export default class MEMeshObj extends Materials {
         entries: [
           {binding: 0, resource: {buffer: this.modelUniformBuffer}},
           {binding: 1, resource: {buffer: this.bonesBuffer}},
-          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
         ],
       });
 
@@ -773,6 +783,12 @@ export default class MEMeshObj extends Materials {
         this.updateMeshListBuffers();
       }
     })
+  }
+
+
+  // Helper to set it
+  setUVScale(x, y = x) {
+    this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
   setupPipeline = () => {

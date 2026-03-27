@@ -226,7 +226,7 @@ export default class Materials {
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/
-  changeTexture(newTexture) {
+  changeTexture(newTexture, sampler) {
     // Accept GPUTexture OR GPUTextureView
     if(newTexture instanceof GPUTexture) {
       this.texture0 = newTexture;
@@ -234,14 +234,74 @@ export default class Materials {
       this.texture0 = {createView: () => newTexture};
     }
     this.isVideo = false;
+    if(sampler) this.imageSampler = sampler;
     // Recreate bind group only
     this.createBindGroupForRender();
+
+  //     console.log('=== changeTexture called ===');
+  // console.log('newTexture:', newTexture);
+  // console.log('instanceof GPUTexture:', newTexture instanceof GPUTexture);
+  
+  // if(newTexture instanceof GPUTexture) {
+  //   this.texture0 = newTexture;
+  // } else {
+  //   this.texture0 = {createView: () => newTexture};
+  // }
+  
+  // this.isVideo = false;
+  // if(sampler) this.imageSampler = sampler;
+  
+  // console.log('this.texture0 after set:', this.texture0);
+  // console.log('this.sceneUniformBuffer:', this.sceneUniformBuffer);
+  // console.log('this.shadowDepthTextureView:', this.shadowDepthTextureView);
+  // console.log('this.bglForRender:', this.bglForRender);
+  
+  // this.createBindGroupForRender();
+  
+  // console.log('this.sceneBindGroupForRender after rebuild:', this.sceneBindGroupForRender);
+
   }
 
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
     this.setupPipeline();
+  }
+
+  createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
+
+    const mipLevelCount = Math.floor(Math.log2(size)) + 1;
+
+    const texture = this.device.createTexture({
+      size: [size, size, 1],
+      format: 'rgba8unorm',
+      // mipLevelCount,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+
+    const data = new Uint8Array(size * size * 4);
+
+    for(let y = 0;y < size;y++) {
+      for(let x = 0;x < size;x++) {
+        const tileX = Math.floor(x / tileSize);
+        const tileY = Math.floor(y / tileSize);
+        const color = (tileX + tileY) % 2 === 0 ? colorA : colorB;
+        const i = (y * size + x) * 4;
+        data[i] = color[0];
+        data[i + 1] = color[1];
+        data[i + 2] = color[2];
+        data[i + 3] = color[3];
+      }
+    }
+
+    this.device.queue.writeTexture(
+      {texture},
+      data,
+      {bytesPerRow: size * 4},
+      [size, size, 1]
+    );
+
+    return texture;
   }
 
   setBlend = (alpha) => {

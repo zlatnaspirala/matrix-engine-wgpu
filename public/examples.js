@@ -199,14 +199,12 @@ var flipper = function () {
       // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
       //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
       //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
-
       setTimeout(() => {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
       }, 1000);
-
       // ball
       flipper.addMeshObj({
         material: {
@@ -236,7 +234,7 @@ var flipper = function () {
       flipper.addMeshObj({
         position: {
           x: 0,
-          y: 0,
+          y: -0.1,
           z: -21
         },
         scale: [6, 0.1, 15],
@@ -252,7 +250,7 @@ var flipper = function () {
       const LAnchor = flipper.addMeshObj({
         position: {
           x: -5,
-          y: 0.5,
+          y: 1,
           z: -9
         },
         scale: [0.02, 0.02, 0.02],
@@ -268,7 +266,7 @@ var flipper = function () {
       const RAnchor = flipper.addMeshObj({
         position: {
           x: 5,
-          y: 0.5,
+          y: 1,
           z: -9
         },
         scale: [0.02, 0.02, 0.02],
@@ -292,11 +290,11 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: -5,
+          x: -3,
           y: 0.5,
           z: -9
         },
-        scale: [2, 0.3, 0.5],
+        scale: [1.1, 0.1, 0.3],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'flipperLeft',
         mesh: m.cube,
@@ -311,13 +309,13 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: 4,
+          x: 3,
           y: 0.5,
           z: -9
         },
-        scale: [2, 0.3, 0.5],
+        scale: [1.1, 0.1, 0.3],
         texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'flipperRigth',
+        name: 'flipperRight',
         mesh: m.cube,
         physics: {
           enabled: true,
@@ -326,7 +324,7 @@ var flipper = function () {
         }
       });
       const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
-      const rightBody = flipper.matrixAmmo.getBodyByName('flipperRigth');
+      const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
       if (leftBody) {
         leftBody.setActivationState(4);
         leftBody.activate(true);
@@ -340,15 +338,15 @@ var flipper = function () {
       const bumperPositions = [{
         x: 0,
         y: 0.5,
-        z: -12
+        z: -22
       }, {
         x: 2,
         y: 0.5,
-        z: -14
+        z: -24
       }, {
         x: -2,
         y: 0.5,
-        z: -16
+        z: -26
       }];
       bumperPositions.forEach((p, i) => {
         flipper.addMeshObj({
@@ -371,6 +369,100 @@ var flipper = function () {
           }
         });
       });
+
+      // edges
+      const TEdge = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 1,
+          z: -36
+        },
+        scale: [6.5, 1, 0.5],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'edgeTop',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      const REdge = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 6,
+          y: 1,
+          z: -21
+        },
+        scale: [0.5, 1, 15],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'edgeRigth',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      const LEdge = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -6,
+          y: 1,
+          z: -21
+        },
+        scale: [0.5, 1, 15],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'edgeLeft',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 4.9,
+          y: 32,
+          z: -32
+        },
+        scale: [0.5, 0.5, 0.5],
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball2',
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          mass: 1,
+          geometry: "Sphere"
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const checker2 = REdge.createCheckerboardTexture(256, 64, [0, 50, 50, 255], [20, 200, 200, 255]);
+      let samplerTest = flipper.device.createSampler({
+        magFilter: 'nearest',
+        minFilter: 'nearest',
+        addressModeU: 'repeat',
+        addressModeV: 'repeat'
+      });
+      setTimeout(() => {
+        REdge.changeTexture(checker2, samplerTest);
+        REdge.setUVScale(4, 16);
+        LEdge.changeTexture(checker2, samplerTest);
+      }, 500);
       flipper.canvas.addEventListener("ray.hit.event", e => {
         //
       });
@@ -406,17 +498,18 @@ var flipper = function () {
       // FLIPPER SETUP
       const hingeLeft = app.matrixAmmo.addHingeConstraint(L, LAnchor, {
         name: "flipperLeftHinge",
-        pivotA: [-2, 0, 0],
+        pivotA: [-1, 0, 0],
         pivotB: [0, 0, 0],
         axis: [0, 1, 0],
         limits: [-0.8, 0.5]
       });
       const hingeRight = app.matrixAmmo.addHingeConstraint(R, RAnchor, {
         name: "flipperRightHinge",
-        pivotA: [0, 0, 0],
+        pivotA: [1, 0, 0],
         pivotB: [0, 0, 0],
-        axis: [0, 1, 0],
+        axis: [0, -1, 0],
         limits: [-0.8, 0.5]
+        // limits: [0.5, -0.8]
       });
       let leftBodycurrPos = 'unpressed';
       window.addEventListener("keydown", e => {
@@ -431,10 +524,10 @@ var flipper = function () {
         }
         if (e.code === "KeyM") {
           console.log('right presseed');
-          const rightBody = flipper.matrixAmmo.getBodyByName('flipperRigth');
+          const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
           rightBody.activate(true);
           rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, 25, 200);
+          hingeRight.enableAngularMotor(true, -25, 200);
         }
       });
       hingeLeft.enableAngularMotor(true, 10, 50);
@@ -447,10 +540,10 @@ var flipper = function () {
           hingeLeft.enableAngularMotor(true, 10, 50);
         }
         if (e.code === "KeyM") {
-          // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRigth');
+          // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
           // rightBody.activate(true);
           // rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, -10, 50);
+          hingeRight.enableAngularMotor(true, 10, 50);
         }
       });
     }
@@ -28706,6 +28799,12 @@ class SpotLight {
         buffer: {
           type: 'uniform'
         }
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
       }]
     });
     this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
@@ -28724,6 +28823,12 @@ class SpotLight {
         }
       }, {
         binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 3,
         visibility: GPUShaderStage.VERTEX,
         buffer: {
           type: 'uniform'
@@ -31733,7 +31838,7 @@ class Materials {
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/
-  changeTexture(newTexture) {
+  changeTexture(newTexture, sampler) {
     // Accept GPUTexture OR GPUTextureView
     if (newTexture instanceof GPUTexture) {
       this.texture0 = newTexture;
@@ -31743,13 +31848,64 @@ class Materials {
       };
     }
     this.isVideo = false;
+    if (sampler) this.imageSampler = sampler;
     // Recreate bind group only
     this.createBindGroupForRender();
+
+    //     console.log('=== changeTexture called ===');
+    // console.log('newTexture:', newTexture);
+    // console.log('instanceof GPUTexture:', newTexture instanceof GPUTexture);
+
+    // if(newTexture instanceof GPUTexture) {
+    //   this.texture0 = newTexture;
+    // } else {
+    //   this.texture0 = {createView: () => newTexture};
+    // }
+
+    // this.isVideo = false;
+    // if(sampler) this.imageSampler = sampler;
+
+    // console.log('this.texture0 after set:', this.texture0);
+    // console.log('this.sceneUniformBuffer:', this.sceneUniformBuffer);
+    // console.log('this.shadowDepthTextureView:', this.shadowDepthTextureView);
+    // console.log('this.bglForRender:', this.bglForRender);
+
+    // this.createBindGroupForRender();
+
+    // console.log('this.sceneBindGroupForRender after rebuild:', this.sceneBindGroupForRender);
   }
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
     this.setupPipeline();
+  }
+  createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
+    const mipLevelCount = Math.floor(Math.log2(size)) + 1;
+    const texture = this.device.createTexture({
+      size: [size, size, 1],
+      format: 'rgba8unorm',
+      // mipLevelCount,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    const data = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const tileX = Math.floor(x / tileSize);
+        const tileY = Math.floor(y / tileSize);
+        const color = (tileX + tileY) % 2 === 0 ? colorA : colorB;
+        const i = (y * size + x) * 4;
+        data[i] = color[0];
+        data[i + 1] = color[1];
+        data[i + 2] = color[2];
+        data[i + 3] = color[3];
+      }
+    }
+    this.device.queue.writeTexture({
+      texture
+    }, data, {
+      bytesPerRow: size * 4
+    }, [size, size, 1]);
+    return texture;
   }
   setBlend = alpha => {
     this.material.useBlend = true;
@@ -32890,6 +33046,13 @@ class MEMeshObj extends _materials.default {
       this.sharedSU = o.sharedSU;
     }
     this.useScale = o.useScale || false;
+    this.uvScaleBuffer = this.device.createBuffer({
+      size: 8,
+      // vec2f
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    // Default = no scale
+    this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
     this.material = o.material;
     this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
     this.time = 0;
@@ -33362,6 +33525,12 @@ class MEMeshObj extends _materials.default {
           buffer: {
             type: 'uniform'
           }
+        }, {
+          binding: 3,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
         }]
       });
       function alignTo256(n) {
@@ -33532,6 +33701,11 @@ class MEMeshObj extends _materials.default {
           resource: {
             buffer: this.vertexAnimBuffer
           }
+        }, {
+          binding: 3,
+          resource: {
+            buffer: this.uvScaleBuffer
+          }
         }]
       });
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
@@ -33647,6 +33821,11 @@ class MEMeshObj extends _materials.default {
         this.updateMeshListBuffers();
       }
     });
+  }
+
+  // Helper to set it
+  setUVScale(x, y = x) {
+    this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
@@ -40270,6 +40449,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         lightContribution += contrib * shadowFactor;
     }
 
+    // 
+    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
@@ -43920,6 +44101,7 @@ struct SkinResult {
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
 @group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(3) var<uniform> uvScale: vec2f;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -44162,7 +44344,7 @@ fn main(
   output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm  = normalize(normalMatrix * finalNorm);
-  output.uv        = uv;
+  output.uv        = uv * uvScale;
   return output;
 }`;
 
@@ -44198,6 +44380,7 @@ struct SkinResult {
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
 @group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(3) var<uniform> uvScale: vec2f;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -44272,8 +44455,8 @@ fn main(
   output.fragPos = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
-  output.uv = uv;
-  output.tangent = vec4(normalize(skinnedTangent), tangent.w);  // OUTPUT tangent
+  output.uv = uv * uvScale;
+  output.tangent = vec4(normalize(skinnedTangent), tangent.w);
 
   return output;
 }`;
