@@ -265,10 +265,6 @@ export default class MatrixEngineWGPU {
     this.lastFrameMS = 0;
     this._camVP = mat4.create();
 
-    // document.addEventListener('fullscreenchange', () => {
-    //   setTimeout(() => this.onResize(), 150);
-    // });
-
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
@@ -384,7 +380,6 @@ export default class MatrixEngineWGPU {
 
     this.createBloomBindGroup();
 
-    // test shared
     this.globalSceneUniformBuffer = this.device.createBuffer({
       label: 'shared sceneUniformBuffer [meshObj]',
       size: 192,
@@ -412,7 +407,7 @@ export default class MatrixEngineWGPU {
         view: undefined,
         loadOp: 'clear',
         storeOp: 'store',
-        clearValue: [0.02, 0.02, 0.02, 1],
+        clearValue: [0.0, 0.0, 0.0, 1],
       }],
       depthStencilAttachment: {
         view: this.mainDepthView,
@@ -426,7 +421,7 @@ export default class MatrixEngineWGPU {
         view: this.sceneTextureView,
         loadOp: 'load',
         storeOp: 'store',
-        clearValue: {r: 0, g: 1, b: 0, a: 1},
+        clearValue: {r: 0, g: 0, b: 0, a: 1},
       }],
       depthStencilAttachment: {
         view: this.mainDepthView,

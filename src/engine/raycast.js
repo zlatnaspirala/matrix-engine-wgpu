@@ -105,7 +105,6 @@ export function computeWorldVertsAndAABB(object) {
     object._aabbCache.z === object.position.z) {
     return object._aabbCache;
   }
-  // console.log('ray')
   const modelMatrix = object.getModelMatrix(object.position, true);
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];

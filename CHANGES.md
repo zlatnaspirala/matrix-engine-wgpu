@@ -2,8 +2,18 @@
 
 [1.9.11]
 
-- BIG win for performance
+- added MEConfig with default values and checking url params.
+  Engine in future will be fully scaled from url params.
+  For now working params:
+
+  - PHYSICS_GROUND_Y
+  - fs                  (force fullscreen only on first click/touch)
+  - shadowSize
+
+- BIG win for performance, from now all examples will be worked also on mobile devices.
    scene uniform buffer is global now.
+   adding new input arg for main instance:
+
 
 - Added overiride render variants
 ```js
@@ -14,6 +24,8 @@ if (typeof options.render !== "undefined") {
   }
 }
 ```
+
+
 
 [1.9.10] More optimisation in main loop!
 

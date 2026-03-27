@@ -157,14 +157,9 @@ export default class MatrixAmmo {
   }
 
   addHingeConstraint(MEObjectA, MEObjectB, pOptions) {
-
     let Ammo = this.Ammo;
-
     if(!this.constraints) this.constraints = [];
-
-    // =========================
     // FIND BODIES VIA MEObject
-    // =========================
     let bodyA = null;
     let bodyB = null;
 
@@ -198,16 +193,10 @@ export default class MatrixAmmo {
     frameB.setIdentity();
     frameB.setOrigin(new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]));
 
-
     const ammoAxisA = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
-    // const ammoAxis = new Ammo.btVector3(axis[0], axis[1], axis[2]);
 
-    // =========================
     // CREATE HINGE
-    // =========================
-
-    console.log('FFFFFFFFFFFFFFFFF')
     const hinge = new Ammo.btHingeConstraint(
       bodyA,
       bodyB,
@@ -219,33 +208,15 @@ export default class MatrixAmmo {
       ammoAxisB,
       true
     );
-
-    console.log("bodyA:", bodyA);
-    console.log("bodyB:", bodyB);
-    console.log("pivotA:", pivotA);
-    console.log("pivotB:", pivotB);
-    console.log("axis:", axis);
-    console.log("ammoPivotA:", ammoPivotA.x(), ammoPivotA.y(), ammoPivotA.z());
-
-    // =========================
     // LIMITS
-    // =========================
     if(pOptions.limits) {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
-
-    // =========================
     // ADD TO WORLD
-    // =========================
     this.dynamicsWorld.addConstraint(hinge, true);
-
-    // =========================
     // STORE ONLY (NO FAKE LINKS)
-    // =========================
     hinge.name = pOptions.name;
-
     this.constraints.push(hinge);
-
     return hinge;
   }
 

@@ -3,7 +3,11 @@
  * MATRIX_ENGINE_WGPU CONFIG EXAMPLE WORKSPACE
  * APP can be controlled from url params in any domain/context.
  * 
- * Configure full render from url params - optimise render or any other stuuf...
+ * Configure full render from url params - optimise render or any other stuff...
+ * DONE:
+ *  - shadowSize
+ *  - fs
+ *  - PHYSICS_GROUND_Y
  */
 import {FullScreenManagerElement, isMobile, LOG_FUNNY_ARCADE, urlQuery} from "./engine/utils.js";
 window.urlQ = urlQuery;
@@ -35,13 +39,10 @@ export const MEConfig = {
       }
       window.addEventListener('click', this._fs);
     }
-
-
     if(urlQ['PHYSICS_GROUND_Y']) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ['PHYSICS_GROUND_Y']);
       console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }
-
   },
 
   checkOffScreen: function() {
