@@ -2,8 +2,10 @@ import {LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, script
 import {MEConfig} from "../me-config";
 
 export default class MatrixAmmo {
-  constructor(options = {roundDimension: 100, gravity: 10}) {
+  constructor(options = {roundDimensionX: 10, roundDimensionY: 10, gravity: -10}) {
     this.options = options;
+    if(!this.options.gravity) this.options.gravity = -10;
+    console.log('this.options.gravity::::::', this.options.gravity)
     // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
     scriptManager.LOAD("ammojs/ammo.js", "ammojs",
       undefined, undefined, this.init,
@@ -11,6 +13,11 @@ export default class MatrixAmmo {
     this.lastRoll = '';
     this.presentScore = '';
     this.speedUpSimulation = 1;
+
+    this.collisionEvent = new CustomEvent('pCollision', {
+      detail: {body0Name: null, body1Name: null, contactCount: 0}
+    });
+    this.lastCollisionState = new Map();
   }
 
   initPhysicsScratch() {
@@ -28,7 +35,7 @@ export default class MatrixAmmo {
       this.rigidBodies = [];
       this.Ammo = Ammo;
       this.lastUpdate = 0;
-      console.log("%c Ammo core loaded.", LOG_FUNNY_ARCADE);
+      console.log("%cAmmo core loaded.", LOG_FUNNY_ARCADE);
       this.initPhysics(MEConfig.PHYSICS_GROUND_Y);
       setTimeout(() => {dispatchEvent(new CustomEvent('AmmoReady', {}))}, 200);
     });
@@ -41,11 +48,10 @@ export default class MatrixAmmo {
       dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration),
       overlappingPairCache = new Ammo.btDbvtBroadphase(),
       solver = new Ammo.btSequentialImpulseConstraintSolver();
-
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
+    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, this.options.gravity, 0));
 
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(this.options.roundDimension, 1, this.options.roundDimension)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(this.options.roundDimensionX, 1, this.options.roundDimensionY)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
     groundTransform.setOrigin(new Ammo.btVector3(0, GROUND_Y, 0));
@@ -54,14 +60,12 @@ export default class MatrixAmmo {
       localInertia = new Ammo.btVector3(0, 0, 0);
 
     if(isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
-
     var myMotionState = new Ammo.btDefaultMotionState(groundTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
     body.name = 'ground';
     this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
-    this.detectCollision()
   }
 
   addPhysics(MEObject, pOptions) {
@@ -295,29 +299,55 @@ export default class MatrixAmmo {
     body.isKinematic = true;
   }
 
+  raycastToTarget(fromBody, toBody) {
+    let from = fromBody.getWorldTransform().getOrigin();
+    let to = toBody.getWorldTransform().getOrigin();
+
+    let rayDirection = [
+      to.x() - from.x(),
+      to.y() - from.y(),
+      to.z() - from.z()
+    ];
+
+    let length = Math.sqrt(
+      rayDirection[0] ** 2 + rayDirection[1] ** 2 + rayDirection[2] ** 2
+    );
+
+    return [
+      rayDirection[0] / length,
+      rayDirection[1] / length,
+      rayDirection[2] / length
+    ];
+  }
+
   detectCollision() {
-    // console.log('override this')
-    return;
-    this.lastRoll = '';
-    this.presentScore = '';
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
+    let currentCollisions = new Set();
     for(let i = 0;i < numManifolds;i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      // let numContacts = contactManifold.getNumContacts();
-      // this.rigidBodies.forEach((item) => {
-      //   if(item.kB == contactManifold.getBody0().kB) {
-      //     // console.log('Detected body0 =', item.name)
-      //   }
-      if(this.ground.kB == contactManifold.getBody0().kB &&
-        this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
-        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
-        // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
-        // CHECK ROTATION
-        var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore)
+      let numContacts = contactManifold.getNumContacts();
+      if(numContacts > 0) {
+        let body0 = contactManifold.getBody0();
+        let body1 = contactManifold.getBody1();
+        let name0 = this.getNameByBody(body0);
+        let name1 = this.getNameByBody(body1);
+        let collisionKey = `${name0}|${name1}`;
+        currentCollisions.add(collisionKey);
+        if(!this.lastCollisionState.has(collisionKey)) {
+          // Get contact normal
+          let contact = contactManifold.getContactPoint();
+          let normal = contact.get_m_normalWorldOnB();
+          let rayDirection = [normal.x(), normal.y(), normal.z()];
+          this.collisionEvent.detail.body0Name = name0;
+          this.collisionEvent.detail.body1Name = name1;
+          this.collisionEvent.detail.rayDirection = rayDirection;
+          document.dispatchEvent(this.collisionEvent);
+        }
       }
     }
+
+    this.lastCollisionState = currentCollisions;
   }
 
   updatePhysics() {

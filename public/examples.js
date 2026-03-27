@@ -166,6 +166,7 @@ exports.flipper = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
+var _generator = require("../src/engine/generators/generator.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var flipper = function () {
   let flipper = new _world.default({
@@ -174,6 +175,8 @@ var flipper = function () {
       type: 'WASD',
       responseCoef: 1000
     },
+    PHYSICS_GROUND_BYZ: 35,
+    PHYSICS_GROUND_BYX: 5,
     clearColor: {
       r: 0,
       g: 1,
@@ -193,6 +196,10 @@ var flipper = function () {
       flipper.matrixAmmo.speedUpSimulation = 4;
     });
     function onGround(m) {
+      // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
+      //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
+      //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
+
       setTimeout(() => {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
@@ -207,8 +214,8 @@ var flipper = function () {
         },
         position: {
           x: 0,
-          y: 2,
-          z: -35
+          y: 32,
+          z: -32
         },
         scale: [0.5, 0.5, 0.5],
         texturesPaths: ['./res/meshes/blender/cube.png'],
@@ -222,6 +229,24 @@ var flipper = function () {
         raycast: {
           enabled: true,
           radius: 1
+        }
+      });
+
+      // GROUND
+      flipper.addMeshObj({
+        position: {
+          x: 0,
+          y: 0,
+          z: -21
+        },
+        scale: [6, 0.1, 15],
+        texturesPaths: ['res/textures/cube-g1.webp'],
+        name: 'ground',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
         }
       });
       const LAnchor = flipper.addMeshObj({
@@ -346,40 +371,28 @@ var flipper = function () {
           }
         });
       });
-
-      // GROUND
-      flipper.addMeshObj({
-        position: {
-          x: 0,
-          y: 0,
-          z: -10
-        },
-        scale: [3, 0.1, 5],
-        texturesPaths: ['res/textures/cube-g1.webp'],
-        name: 'ground',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
-
-      // BUMPER IMPULSE SYSTEM
       flipper.canvas.addEventListener("ray.hit.event", e => {
-        const name = e.detail.hitObject.name;
-        if (name.startsWith("bumper")) {
+        //
+      });
+      document.addEventListener("pCollision", e => {
+        console.log('pCollision::', e);
+        const body0Name = e.detail.body0Name;
+        const body1Name = e.detail.body1Name;
+        const rayDirection = e.detail.rayDirection;
+        if (body1Name.startsWith("bumper")) {
           const ball = app.matrixAmmo.getBodyByName('ball1');
-          const dir = e.detail.rayDirection;
-          const strength = 25;
-          const impulse = new Ammo.btVector3(dir[0] * strength, Math.abs(dir[1]) * strength + 8, dir[2] * strength);
-          ball.activate(true);
-          ball.applyCentralImpulse(impulse);
+          const bumperBody = app.matrixAmmo.getBodyByName(body1Name);
+          if (ball && bumperBody) {
+            const strength = 25;
+            const impulse = new Ammo.btVector3(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength);
+            ball.activate(true);
+            ball.applyCentralImpulse(impulse);
+          }
         }
       });
 
       // GRAVITY TILT (PINBALL FEEL)
-      flipper.matrixAmmo.dynamicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 1));
+      flipper.matrixAmmo.dynamicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 0));
 
       // BALL PHYSICS TUNING
       const ball = flipper.matrixAmmo.getBodyByName('ball1');
@@ -446,7 +459,7 @@ var flipper = function () {
 };
 exports.flipper = flipper;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/world.js":119}],4:[function(require,module,exports){
+},{"../src/engine/generators/generator.js":47,"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/world.js":119}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36556,7 +36569,6 @@ function computeWorldVertsAndAABB(object) {
   if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
     return object._aabbCache;
   }
-  // console.log('ray')
   const modelMatrix = object.getModelMatrix(object.position, true);
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
@@ -37896,7 +37908,11 @@ var _utils = require("./engine/utils.js");
  * MATRIX_ENGINE_WGPU CONFIG EXAMPLE WORKSPACE
  * APP can be controlled from url params in any domain/context.
  * 
- * Configure full render from url params - optimise render or any other stuuf...
+ * Configure full render from url params - optimise render or any other stuff...
+ * DONE:
+ *  - shadowSize
+ *  - fs
+ *  - PHYSICS_GROUND_Y
  */
 
 window.urlQ = _utils.urlQuery;
@@ -37905,8 +37921,23 @@ const MEConfig = exports.MEConfig = {
   SHADOW_RES: (0, _utils.isMobile)() == true ? 128.0 : 512.0,
   MAX_BONES: (0, _utils.isMobile)() == true ? 80 : 100,
   MAX_LIGHTS: (0, _utils.isMobile)() == true ? 20 : 40,
-  PHYSICS_GROUND_Y: -4,
+  PHYSICS_GROUND_Y: -1,
+  PHYSICS_GROUND_BYX: 100,
+  PHYSICS_GROUND_BYZ: 100,
+  GRAVITY_Y_AXIS: -10,
   construct: function () {
+    if (urlQ['GRAVITY_Y_AXIS']) {
+      this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
+      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, _utils.LOG_FUNNY_ARCADE);
+    }
+    if (urlQ['PHYSICS_GROUND_BYX']) {
+      this.PHYSICS_GROUND_BYX = parseInt(urlQ['PHYSICS_GROUND_BYX']);
+      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, _utils.LOG_FUNNY_ARCADE);
+    }
+    if (urlQ['PHYSICS_GROUND_BYZ']) {
+      this.PHYSICS_GROUND_BYZ = parseInt(urlQ['PHYSICS_GROUND_BYZ']);
+      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, _utils.LOG_FUNNY_ARCADE);
+    }
     if (urlQ['shadowSize']) {
       this.SHADOW_RES = parseInt(urlQ['shadowSize']);
       console.log(`%cShadowSize : ${this.SHADOW_RES}`, _utils.LOG_FUNNY_ARCADE);
@@ -37925,7 +37956,7 @@ const MEConfig = exports.MEConfig = {
       };
       window.addEventListener('click', this._fs);
     }
-    if (urlQ['PHYSICS_GROUND_Y']) {
+    if (urlQ['PHYSICS_GROUND_Y'] != null) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ['PHYSICS_GROUND_Y']);
       console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, _utils.LOG_FUNNY_ARCADE);
     }
@@ -37992,15 +38023,26 @@ var _utils = require("../engine/utils");
 var _meConfig = require("../me-config");
 class MatrixAmmo {
   constructor(options = {
-    roundDimension: 100,
-    gravity: 10
+    roundDimensionX: 10,
+    roundDimensionY: 10,
+    gravity: -10
   }) {
     this.options = options;
+    if (!this.options.gravity) this.options.gravity = -10;
+    console.log('this.options.gravity::::::', this.options.gravity);
     // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
     _utils.scriptManager.LOAD("ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
     this.speedUpSimulation = 1;
+    this.collisionEvent = new CustomEvent('pCollision', {
+      detail: {
+        body0Name: null,
+        body1Name: null,
+        contactCount: 0
+      }
+    });
+    this.lastCollisionState = new Map();
   }
   initPhysicsScratch() {
     this._trans = new Ammo.btTransform();
@@ -38016,7 +38058,7 @@ class MatrixAmmo {
       this.rigidBodies = [];
       this.Ammo = Ammo;
       this.lastUpdate = 0;
-      console.log("%c Ammo core loaded.", _utils.LOG_FUNNY_ARCADE);
+      console.log("%cAmmo core loaded.", _utils.LOG_FUNNY_ARCADE);
       this.initPhysics(_meConfig.MEConfig.PHYSICS_GROUND_Y);
       setTimeout(() => {
         dispatchEvent(new CustomEvent('AmmoReady', {}));
@@ -38031,8 +38073,8 @@ class MatrixAmmo {
       overlappingPairCache = new Ammo.btDbvtBroadphase(),
       solver = new Ammo.btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(this.options.roundDimension, 1, this.options.roundDimension)),
+    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, this.options.gravity, 0));
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(this.options.roundDimensionX, 1, this.options.roundDimensionY)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
     groundTransform.setOrigin(new Ammo.btVector3(0, GROUND_Y, 0));
@@ -38046,7 +38088,6 @@ class MatrixAmmo {
     body.name = 'ground';
     this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
-    this.detectCollision();
   }
   addPhysics(MEObject, pOptions) {
     if (pOptions.geometry == "Sphere") {
@@ -38133,10 +38174,7 @@ class MatrixAmmo {
   addHingeConstraint(MEObjectA, MEObjectB, pOptions) {
     let Ammo = this.Ammo;
     if (!this.constraints) this.constraints = [];
-
-    // =========================
     // FIND BODIES VIA MEObject
-    // =========================
     let bodyA = null;
     let bodyB = null;
     for (let i = 0; i < this.rigidBodies.length; i++) {
@@ -38167,39 +38205,19 @@ class MatrixAmmo {
     frameB.setOrigin(new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]));
     const ammoAxisA = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
-    // const ammoAxis = new Ammo.btVector3(axis[0], axis[1], axis[2]);
 
-    // =========================
     // CREATE HINGE
-    // =========================
-
-    console.log('FFFFFFFFFFFFFFFFF');
     const hinge = new Ammo.btHingeConstraint(bodyA, bodyB,
     // frameA,
     // frameB,
     ammoPivotA, ammoPivotB, ammoAxisA, ammoAxisB, true);
-    console.log("bodyA:", bodyA);
-    console.log("bodyB:", bodyB);
-    console.log("pivotA:", pivotA);
-    console.log("pivotB:", pivotB);
-    console.log("axis:", axis);
-    console.log("ammoPivotA:", ammoPivotA.x(), ammoPivotA.y(), ammoPivotA.z());
-
-    // =========================
     // LIMITS
-    // =========================
     if (pOptions.limits) {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
-
-    // =========================
     // ADD TO WORLD
-    // =========================
     this.dynamicsWorld.addConstraint(hinge, true);
-
-    // =========================
     // STORE ONLY (NO FAKE LINKS)
-    // =========================
     hinge.name = pOptions.name;
     this.constraints.push(hinge);
     return hinge;
@@ -38280,28 +38298,40 @@ class MatrixAmmo {
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   };
+  raycastToTarget(fromBody, toBody) {
+    let from = fromBody.getWorldTransform().getOrigin();
+    let to = toBody.getWorldTransform().getOrigin();
+    let rayDirection = [to.x() - from.x(), to.y() - from.y(), to.z() - from.z()];
+    let length = Math.sqrt(rayDirection[0] ** 2 + rayDirection[1] ** 2 + rayDirection[2] ** 2);
+    return [rayDirection[0] / length, rayDirection[1] / length, rayDirection[2] / length];
+  }
   detectCollision() {
-    // console.log('override this')
-    return;
-    this.lastRoll = '';
-    this.presentScore = '';
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
+    let currentCollisions = new Set();
     for (let i = 0; i < numManifolds; i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      // let numContacts = contactManifold.getNumContacts();
-      // this.rigidBodies.forEach((item) => {
-      //   if(item.kB == contactManifold.getBody0().kB) {
-      //     // console.log('Detected body0 =', item.name)
-      //   }
-      if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
-        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
-        // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
-        // CHECK ROTATION
-        var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore);
+      let numContacts = contactManifold.getNumContacts();
+      if (numContacts > 0) {
+        let body0 = contactManifold.getBody0();
+        let body1 = contactManifold.getBody1();
+        let name0 = this.getNameByBody(body0);
+        let name1 = this.getNameByBody(body1);
+        let collisionKey = `${name0}|${name1}`;
+        currentCollisions.add(collisionKey);
+        if (!this.lastCollisionState.has(collisionKey)) {
+          // Get contact normal
+          let contact = contactManifold.getContactPoint();
+          let normal = contact.get_m_normalWorldOnB();
+          let rayDirection = [normal.x(), normal.y(), normal.z()];
+          this.collisionEvent.detail.body0Name = name0;
+          this.collisionEvent.detail.body1Name = name1;
+          this.collisionEvent.detail.rayDirection = rayDirection;
+          document.dispatchEvent(this.collisionEvent);
+        }
       }
     }
+    this.lastCollisionState = currentCollisions;
   }
   updatePhysics() {
     if (typeof Ammo === 'undefined') return;
@@ -56888,7 +56918,19 @@ class MatrixEngineWGPU {
     }
     if (typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if (typeof options.dontUsePhysics === 'undefined') {
-      this.matrixAmmo = new _matrixAmmo.default();
+      if (typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
+        this.matrixAmmo = new _matrixAmmo.default({
+          gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS,
+          roundDimensionX: options.PHYSICS_GROUND_BYX,
+          roundDimensionY: options.PHYSICS_GROUND_BYZ
+        });
+      } else {
+        this.matrixAmmo = new _matrixAmmo.default({
+          gravity: _meConfig.MEConfig.GRAVITY_Y_AXIS,
+          roundDimensionX: _meConfig.MEConfig.PHYSICS_GROUND_BYX,
+          roundDimensionY: _meConfig.MEConfig.PHYSICS_GROUND_BYZ
+        });
+      }
     }
     // cache
     this._viewScratch = new Float32Array(16);
@@ -57069,11 +57111,6 @@ class MatrixEngineWGPU {
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = _wgpuMatrix.mat4.create();
-
-    // document.addEventListener('fullscreenchange', () => {
-    //   setTimeout(() => this.onResize(), 150);
-    // });
-
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
@@ -57175,8 +57212,6 @@ class MatrixEngineWGPU {
       }
     });
     this.createBloomBindGroup();
-
-    // test shared
     this.globalSceneUniformBuffer = this.device.createBuffer({
       label: 'shared sceneUniformBuffer [meshObj]',
       size: 192,
@@ -57202,7 +57237,7 @@ class MatrixEngineWGPU {
         view: undefined,
         loadOp: 'clear',
         storeOp: 'store',
-        clearValue: [0.02, 0.02, 0.02, 1]
+        clearValue: [0.0, 0.0, 0.0, 1]
       }],
       depthStencilAttachment: {
         view: this.mainDepthView,
@@ -57218,7 +57253,7 @@ class MatrixEngineWGPU {
         storeOp: 'store',
         clearValue: {
           r: 0,
-          g: 1,
+          g: 0,
           b: 0,
           a: 1
         }

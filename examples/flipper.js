@@ -1,11 +1,14 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from "../src/engine/loader-obj.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
 
 export var flipper = function() {
   let flipper = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
+    PHYSICS_GROUND_BYZ: 35,
+    PHYSICS_GROUND_BYX: 5,
     clearColor: {r: 0, g: 1, b: 1, a: 1}
   }, () => {
 
@@ -21,6 +24,10 @@ export var flipper = function() {
     });
 
     function onGround(m) {
+      // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
+      //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
+      //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
+
       setTimeout(() => {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
@@ -31,7 +38,7 @@ export var flipper = function() {
       // ball
       flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 2, z: -35},
+        position: {x: 0, y: 32, z: -32},
         scale: [0.5, 0.5, 0.5],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
@@ -42,6 +49,20 @@ export var flipper = function() {
           geometry: "Sphere"
         },
         raycast: {enabled: true, radius: 1}
+      });
+
+      // GROUND
+      flipper.addMeshObj({
+        position: {x: 0, y: 0, z: -21},
+        scale: [6, 0.1, 15],
+        texturesPaths: ['res/textures/cube-g1.webp'],
+        name: 'ground',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
       });
 
       const LAnchor = flipper.addMeshObj({
@@ -77,7 +98,6 @@ export var flipper = function() {
       let getRA = flipper.matrixAmmo.getBodyByName('flipperRightAnchor');
       getRA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
       getRA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
-
 
       const L = flipper.addMeshObj({
         material: {type: 'standard'},
@@ -142,45 +162,37 @@ export var flipper = function() {
         });
       });
 
-      // GROUND
-      flipper.addMeshObj({
-        position: {x: 0, y: 0, z: -10},
-        scale: [3, 0.1, 5],
-        texturesPaths: ['res/textures/cube-g1.webp'],
-        name: 'ground',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
 
-      // BUMPER IMPULSE SYSTEM
+
       flipper.canvas.addEventListener("ray.hit.event", (e) => {
-        const name = e.detail.hitObject.name;
-
-        if(name.startsWith("bumper")) {
-
-          const ball = app.matrixAmmo.getBodyByName('ball1');
-
-          const dir = e.detail.rayDirection;
-          const strength = 25;
-
-          const impulse = new Ammo.btVector3(
-            dir[0] * strength,
-            Math.abs(dir[1]) * strength + 8,
-            dir[2] * strength
-          );
-
-          ball.activate(true);
-          ball.applyCentralImpulse(impulse);
-        }
+        //
       });
+
+      document.addEventListener("pCollision", (e) => {
+        console.log('pCollision::', e);
+        const body0Name = e.detail.body0Name;
+        const body1Name = e.detail.body1Name;
+        const rayDirection = e.detail.rayDirection;
+        if(body1Name.startsWith("bumper")) {
+          const ball = app.matrixAmmo.getBodyByName('ball1');
+          const bumperBody = app.matrixAmmo.getBodyByName(body1Name);
+          if(ball && bumperBody) {
+            const strength = 25;
+            const impulse = new Ammo.btVector3(
+              rayDirection[0] * strength,
+              Math.abs(rayDirection[1]) * strength + 8,
+              rayDirection[2] * strength
+            );
+            ball.activate(true);
+            ball.applyCentralImpulse(impulse);
+          }
+        }
+
+      })
 
       // GRAVITY TILT (PINBALL FEEL)
       flipper.matrixAmmo.dynamicsWorld.setGravity(
-        new Ammo.btVector3(0, -9.8, 1)
+        new Ammo.btVector3(0, -9.8, 0)
       );
 
       // BALL PHYSICS TUNING
@@ -245,7 +257,6 @@ export var flipper = function() {
           hingeRight.enableAngularMotor(true, -10, 50);
         }
       });
-
     }
 
   });

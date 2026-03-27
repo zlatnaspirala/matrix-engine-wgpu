@@ -13,14 +13,29 @@ import {FullScreenManagerElement, isMobile, LOG_FUNNY_ARCADE, urlQuery} from "./
 window.urlQ = urlQuery;
 
 export const MEConfig = {
+
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
   MAX_BONES: isMobile() == true ? 80 : 100,
   MAX_LIGHTS: isMobile() == true ? 20 : 40,
-
-  PHYSICS_GROUND_Y: -4,
+  PHYSICS_GROUND_Y: -1,
+  PHYSICS_GROUND_BYX: 100,
+  PHYSICS_GROUND_BYZ: 100,
+  GRAVITY_Y_AXIS: -10,
 
   construct: function() {
+    if(urlQ['GRAVITY_Y_AXIS']) {
+      this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
+      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
+    }
+    if(urlQ['PHYSICS_GROUND_BYX']) {
+      this.PHYSICS_GROUND_BYX = parseInt(urlQ['PHYSICS_GROUND_BYX']);
+      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
+    }
+    if(urlQ['PHYSICS_GROUND_BYZ']) {
+      this.PHYSICS_GROUND_BYZ = parseInt(urlQ['PHYSICS_GROUND_BYZ']);
+      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
+    }
     if(urlQ['shadowSize']) {
       this.SHADOW_RES = parseInt(urlQ['shadowSize']);
       console.log(`%cShadowSize : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
@@ -39,7 +54,7 @@ export const MEConfig = {
       }
       window.addEventListener('click', this._fs);
     }
-    if(urlQ['PHYSICS_GROUND_Y']) {
+    if(urlQ['PHYSICS_GROUND_Y'] != null) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ['PHYSICS_GROUND_Y']);
       console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }

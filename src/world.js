@@ -108,7 +108,21 @@ export default class MatrixEngineWGPU {
       return;
     }
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
-    if(typeof options.dontUsePhysics === 'undefined') {this.matrixAmmo = new MatrixAmmo()}
+    if(typeof options.dontUsePhysics === 'undefined') {
+      if(typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
+        this.matrixAmmo = new MatrixAmmo({
+          gravity : options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
+          roundDimensionX: options.PHYSICS_GROUND_BYX,
+          roundDimensionY: options.PHYSICS_GROUND_BYZ
+        });
+      } else {
+        this.matrixAmmo = new MatrixAmmo({
+          gravity: MEConfig.GRAVITY_Y_AXIS,
+          roundDimensionX: MEConfig.PHYSICS_GROUND_BYX,
+          roundDimensionY: MEConfig.PHYSICS_GROUND_BYZ
+        });
+      }
+    }
     // cache
     this._viewScratch = new Float32Array(16);
     this.blendQueue = [];
@@ -856,7 +870,7 @@ export default class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       const _ = this.mainRenderBundle[0];
-      if (!_) return;
+      if(!_) return;
       if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
       camera.update(_);
       for(let i = 0;i < this.lightContainer.length;i++) {
