@@ -93,7 +93,7 @@ async function buildAllProjectsOnStartup() {
         sourcemap: true,
         platform: "browser",
         minify: false,
-        external: ["typedoc"], 
+        external: ["typedoc"],
         logOverride: {
           'direct-eval': 'silent',
         }
@@ -356,8 +356,10 @@ async function buildProject(projectName, ws, payload) {
     return;
   }
 
-  const entry = `${PROJECTS_DIR}\\${projectName}\\app-gen.js`;
-  const outfile = `${PUBLIC_DIR}\\${projectName}.js`;
+  // const entry = `${PROJECTS_DIR}\\${projectName}\\app-gen.js`;
+  const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
+  // const outfile = `${PUBLIC_DIR}\\${projectName}.js`;
+  const outfile = path.join(PUBLIC_DIR, `${projectName}.js`);
   const context = await esbuild.context({
     entryPoints: [entry],
     bundle: true,
@@ -366,7 +368,7 @@ async function buildProject(projectName, ws, payload) {
     sourcemap: true,
     platform: "browser",
     minify: false,
-    external: ["typedoc"], 
+    external: ["typedoc"],
     logOverride: {
       'direct-eval': 'silent',
     }
@@ -379,7 +381,8 @@ async function buildProject(projectName, ws, payload) {
 
   const htmldoc = new CodeBuilder();
   htmldoc.addLine(createHTMLProjectDocument(projectName));
-  const outHtmlFile = `${PUBLIC_DIR}\\${projectName}.html`;
+  // const outHtmlFile = `${PUBLIC_DIR}\\${projectName}.html`;
+  const outHtmlFile = path.join(PUBLIC_DIR, `${projectName}.html`);
   htmldoc.saveTo(outHtmlFile);
 
   await buildAllProjectsOnStartup();
@@ -519,7 +522,7 @@ async function saveScript(path, text, ws) {
 async function saveMethods(msg, ws) {
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
-  const file = path.join(folderPerProject, "\\methods.js");
+  const file = path.join(folderPerProject, "methods.js");
   const content =
     "export default " +
     JSON.stringify(msg.methodsContainer, null, 2) +
@@ -541,7 +544,7 @@ async function saveMethods(msg, ws) {
 async function saveGraph(msg, ws) {
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
-  const file = path.join(folderPerProject, "\\graph.js");
+  const file = path.join(folderPerProject, "graph.js");
   const content =
     "export default " +
     msg.graphData +
@@ -721,7 +724,7 @@ async function addObj(msg, ws) {
   content.addLine(` }, {scale: [1, 1, 1]});  `);
   content.addLine(` // ME END ${msg.options.index}`);
 
-  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+  const objScript = path.join(PROJECTS_DIR, msg.projectName, "app-gen.js");
   fs.readFile(objScript).then((b) => {
     let text = b.toString("utf8");
     text = text.replace('// [MAIN_REPLACE2]',
@@ -838,7 +841,7 @@ async function useScale(msg, ws) {
 }
 
 async function deleteSceneObject(n, ws) {
-  const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
+  const objScript = path.join(PROJECTS_DIR, PROJECT_NAME, "app-gen.js");
   fs.readFile(objScript).then((b) => {
     let text = b.toString("utf8");
     text = removeSceneBlock(text, n.action, n.name);
@@ -917,14 +920,14 @@ async function internal_navFolder(data, ws) {
 
 export async function getAllFilenamesFrom(dirPath, ext) {
   let results = [];
-  const list = await fs.readdir(dirPath, { withFileTypes: true });
-  for (const dirent of list) {
+  const list = await fs.readdir(dirPath, {withFileTypes: true});
+  for(const dirent of list) {
     const fullPath = path.join(dirPath, dirent.name);
-    if (dirent.isDirectory()) {
+    if(dirent.isDirectory()) {
       const recursiveResults = await getAllFilenamesFrom(fullPath, ext);
       results = results.concat(recursiveResults);
     } else {
-      if (path.extname(dirent.name).toLowerCase() === ext.toLowerCase()) {
+      if(path.extname(dirent.name).toLowerCase() === ext.toLowerCase()) {
         results.push({
           filename: dirent.name,
           fullpath: fullPath,
