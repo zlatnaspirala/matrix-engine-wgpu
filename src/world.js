@@ -279,6 +279,7 @@ export default class MatrixEngineWGPU {
     this.lastFrameMS = 0;
     this._camVP = mat4.create();
 
+    // console.clear();
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
@@ -289,10 +290,11 @@ export default class MatrixEngineWGPU {
       "Creative power with intuitive visual scripting work flow.\n" +
       "No tracking. No hype. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
-      "%cMatrix Engine WGPU - Configuration :\n" +
+      "%cMatrix Engine WGPU - Initial configuration :\n" +
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
-      " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n",
-      " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n",
+      " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" +
+      " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
+      " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY);
     console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_WARN);
@@ -959,7 +961,7 @@ export default class MatrixEngineWGPU {
       transPass.end();
 
       if(this.volumetricPass.enabled === true) {
-        mat4.invert(this._viewProjMatrix, this._invViewProj);
+        mat4.invert(camera.VP, this._invViewProj);
         const light = this.lightContainer[0];
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
         this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;

@@ -14,6 +14,7 @@ import {FlameEmitter} from '../effects/flame-emmiter';
 import {GenGeoTexture} from '../effects/gen-tex';
 import {GenGeoTexture2} from '../effects/gen-tex2';
 import {VERTEX_ANIM_FLAGS} from '../literals';
+import {MEConfig} from '../../me-config';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -572,7 +573,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      this.MAX_BONES = 100;
+      this.MAX_BONES = MEConfig.MAX_BONES;
       // your total instance count
       const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);

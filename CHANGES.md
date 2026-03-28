@@ -2,6 +2,27 @@
 
 [1.9.11]
 
+- Added full capacibility of ammojs shapes combined with matrix-engine proceduralMesh class.
+
+```js
+      case "Sphere": return this.addPhysicsSphere(MEObject, pOptions);
+      case "Cube": return this.addPhysicsBox(MEObject, pOptions);
+      case "Capsule": return this.addPhysicsCapsule(MEObject, pOptions);
+      case "CapsuleX": return this.addPhysicsCapsuleX(MEObject, pOptions);
+      case "CapsuleZ": return this.addPhysicsCapsuleZ(MEObject, pOptions);
+      case "Cylinder": return this.addPhysicsCylinder(MEObject, pOptions);
+      case "CylinderX": return this.addPhysicsCylinderX(MEObject, pOptions);
+      case "CylinderZ": return this.addPhysicsCylinderZ(MEObject, pOptions);
+      case "Cone": return this.addPhysicsCone(MEObject, pOptions);
+      case "ConeX": return this.addPhysicsConeX(MEObject, pOptions);
+      case "ConeZ": return this.addPhysicsConeZ(MEObject, pOptions);
+      case "StaticPlane": return this.addPhysicsStaticPlane(MEObject, pOptions);
+      case "ConvexHull": return this.addPhysicsConvexHull(MEObject, pOptions);
+      case "BvhMesh": return this.addPhysicsBvhMesh(MEObject, pOptions);
+      case "Compound": return this.addPhysicsCompound(MEObject, pOptions);
+      case "Heightfield": return this.addPhysicsHeightfield(MEObject, pOptions);
+```
+
 - setUVScale (new in vertex shaders)
 
 - New func:

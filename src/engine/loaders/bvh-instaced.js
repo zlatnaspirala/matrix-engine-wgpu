@@ -3,6 +3,7 @@ import {mat4, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
 import {alignTo256, MeshType} from "../utils.js";
+import {MEConfig} from "../../me-config.js";
 
 // export var animBVH = new MEBvh();
 // export let loadBVH = (path) => {
@@ -67,7 +68,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       });
     });
     this._emptyChannels = [];
-    this.MAX_BONES = 100;
+    this.MAX_BONES = MEConfig.MAX_BONES;
     // cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();

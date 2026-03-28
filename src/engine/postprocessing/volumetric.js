@@ -20,10 +20,7 @@ export class VolumetricPass {
     this.device = device;
     this.width = width;
     this.height = height;
-
     this.volumetricTex = this._createTexture(width, height);
-
-    
     // Linear sampler — composite pass
     this.sampler = device.createSampler({
       label: 'VolumetricPass.linearSampler',
@@ -32,7 +29,6 @@ export class VolumetricPass {
       addressModeU: 'clamp-to-edge',
       addressModeV: 'clamp-to-edge',
     });
-
     // Comparison sampler — ALL THREE must agree:
     //   device sampler:  { compare: 'less-equal' }
     //   layout entry:    { type: 'comparison' }

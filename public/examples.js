@@ -190,7 +190,9 @@ var flipper = function () {
       (0, _raycast.addRaycastsAABBListener)();
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
-        ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj"
+        ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
+        pin: "./res/meshes/blender/pin-for-pinball.obj",
+        pinR: "./res/meshes/blender/pin-for-pinball_right.obj"
       }, onGround, {
         scale: [1, 1, 1]
       });
@@ -301,9 +303,9 @@ var flipper = function () {
           z: -9
         },
         scale: [1, 0.1, 0.3],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'flipperLeft',
-        mesh: m.cube,
+        mesh: m.pin,
         physics: {
           enabled: true,
           mass: 5,
@@ -320,9 +322,9 @@ var flipper = function () {
           z: -9
         },
         scale: [1, 0.1, 0.3],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'flipperRight',
-        mesh: m.cube,
+        mesh: m.pinR,
         physics: {
           enabled: true,
           mass: 5,
@@ -396,7 +398,7 @@ var flipper = function () {
           z: -36
         },
         scale: [6.2, 1, 0.5],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'edgeTop',
         mesh: m.cube,
         physics: {
@@ -414,8 +416,13 @@ var flipper = function () {
           y: 1,
           z: -6
         },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0.1
+        },
         scale: [6.2, 0.5, 0.2],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'edgeTop',
         mesh: m.cube,
         physics: {
@@ -424,6 +431,7 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
+      BEdge.setBlend(0.2);
       const REdge = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -2221,6 +2229,7 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
+var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
@@ -2241,11 +2250,13 @@ var physicsPlayground = function () {
     addEventListener('AmmoReady', () => {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
-        ball: "./res/meshes/shapes/sphere.obj"
+        ball: "./res/meshes/shapes/sphere.obj",
+        reel: "./res/meshes/obj/reel.obj"
       }, onGround, {
         scale: [1, 1, 1]
       });
       physicsPlayground.matrixAmmo.speedUpSimulation = 4;
+
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
       //   {x: 0, y: 0, z: -20},
@@ -2283,7 +2294,7 @@ var physicsPlayground = function () {
       //   2
       // );
 
-      // 
+      // Buildin options
       // app.physicsBodiesGeneratorWall(
       //   "standard",
       //   {x: -4.5, y: 0, z: -10},
@@ -2299,12 +2310,57 @@ var physicsPlayground = function () {
         b.applyCentralImpulse(i);
       });
     });
-    function onGround(m) {
+    async function onGround(m) {
+      // Not tested
+      // var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, physicsPlayground.device)));
+      // let myComplexGeometry2 = physicsPlayground.addGlbObj({
+      //   material: {type: 'pong', useTextureFromGlb: true},
+      //   useScale: true,
+      //   scale: [10, 10, 10],
+      //   position: {x: -10, y: 6, z: -10},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+      //   physics: {
+      //     enabled: true,
+      //     mass: 2,
+      //     geometry: "Cube",
+      //     vertices: m.reel.vertices
+      //   }
+      // }, null, glbFile01);
+      // console.log('1myComplexGeometry', myComplexGeometry2)
+
+      // Test complex geometry with ConvexHull
+      const myComplexGeometry = physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -12,
+          y: 3,
+          z: -6
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0.02
+        },
+        scale: [2, 2, 2],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'edgeTop',
+        mesh: m.reel,
+        physics: {
+          enabled: true,
+          mass: 2,
+          geometry: "ConvexHull",
+          vertices: m.reel.vertices
+        }
+      });
       setTimeout(() => {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
+        app.cameras.WASD._dirtyAngle = true;
       }, 1000);
       physicsPlayground.addMeshObj({
         material: {
@@ -2340,7 +2396,7 @@ var physicsPlayground = function () {
       physicsPlayground.addMeshObj({
         position: {
           x: 0,
-          y: -1,
+          y: 0,
           z: -10
         },
         rotation: {
@@ -2364,20 +2420,17 @@ var physicsPlayground = function () {
         }
       });
 
-      // test new features
-      let test = _proceduralMesh.MeshMorpher.compose({
-        shape: _proceduralMesh.MeshMorpher.capsule(1),
-        offset: [0, 0, 0]
-      }, {
-        shape: _proceduralMesh.MeshMorpher.cube(1),
-        offset: [0, 0, 0]
-      });
+      // let test = MeshMorpher.compose(
+      //   {shape: MeshMorpher.capsule(1), offset: [0, 0, 0]},
+      //   {shape: MeshMorpher.cube(1), offset: [0, 0, 0]},
+      // );
+
       physicsPlayground.addProceduralMeshObj({
         material: {
           type: 'standard'
         },
         position: {
-          x: 0,
+          x: 10,
           y: 5,
           z: -7
         },
@@ -2393,33 +2446,130 @@ var physicsPlayground = function () {
           z: 0
         },
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: test,
-        meshB: test,
+        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
         name: `morph_1`,
         physics: {
           enabled: true,
           geometry: "Capsule",
-          enabled: true,
           mass: 5,
-          radius: 0.5,
-          height: 1.0
+          radius: 1.0,
+          height: 2.0
+        }
+      });
+      physicsPlayground.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 6,
+          y: 5,
+          z: -7
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: _proceduralMesh.MeshMorpher.cylinder(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        name: `morph_cylinder`,
+        physics: {
+          enabled: true,
+          geometry: "Cylinder",
+          mass: 5,
+          radius: 1.0,
+          height: 2.0
+        }
+      });
+      physicsPlayground.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 1,
+          y: 3,
+          z: -7
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: _proceduralMesh.MeshMorpher.cone(1, 5, false),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        name: `morph_cone`,
+        physics: {
+          enabled: true,
+          geometry: "Cone",
+          mass: 5,
+          radius: 1,
+          height: 5
+        }
+      });
+      physicsPlayground.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -4,
+          y: 3,
+          z: -7
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: _proceduralMesh.MeshMorpher.coneX(1, 4, false),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        name: `morph_ConeX`,
+        physics: {
+          enabled: true,
+          geometry: "ConeX",
+          mass: 5,
+          radius: 1,
+          height: 4
         }
       });
       app.physicsBodiesGeneratorWall("standard", {
         x: -5,
-        y: 1,
+        y: 3,
         z: -20
       }, {
         x: 0,
         y: 0,
         z: 0
       }, ["./res/textures/rust.jpg"], 'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
+      app.activateBloomEffect();
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
       });
       physicsPlayground.lightContainer[0].position[1] = 14;
+      physicsPlayground.lightContainer[0].intesity = 24;
     }
     function onLoadObj(m) {
       physicsPlayground.myLoadedMeshes = m;
@@ -2487,35 +2637,9 @@ var physicsPlayground = function () {
       });
       var TEST = physicsPlayground.getSceneObjectByName('cube1');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
-      let mybodycube = app.matrixAmmo.getBodyByName('cube1');
-      let mybodycube2 = app.matrixAmmo.getBodyByName('cube2');
-
-      // const pivotA = new Ammo.btVector3(0, 0, 0); // door local pivot
-      // const pivotB = new Ammo.btVector3(0, 0, 0); // frame local pivot
-
-      // const axisA = new Ammo.btVector3(0, 1, 0); // Y axis
-      // const axisB = new Ammo.btVector3(0, 1, 0);
-
-      // const hinge = new Ammo.btHingeConstraint(
-      //   mybodycube,
-      //   mybodycube2,
-      //   pivotA,
-      //   pivotB,
-      //   axisA,
-      //   axisB,
-      //   true
-      // );
-
-      // hinge.setLimit(-Math.PI / 2, Math.PI / 2); // 90° open
-      // physicsPlayground.matrixAmmo.dynamicsWorld.addConstraint(hinge, true);
-      //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
-      //      randomFloatFromTo(3, 12), 9, 9
-      // ))
-
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected', e.detail);
         const body = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
-
         // ------------------------------------------------------
         // body.setAngularVelocity(new Ammo.btVector3(0, 9, 9));
         // ------------------------------------------------------
@@ -2576,12 +2700,11 @@ var physicsPlayground = function () {
       });
     }
   });
-  // just for dev
   window.app = physicsPlayground;
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/procedural-mesh.js":64,"../src/engine/raycast.js":67,"../src/engine/utils.js":68,"../src/world.js":119}],12:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/procedural-mesh.js":64,"../src/engine/raycast.js":67,"../src/engine/utils.js":68,"../src/world.js":119}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27582,6 +27705,7 @@ var _flameEmmiter = require("../effects/flame-emmiter");
 var _genTex = require("../effects/gen-tex");
 var _genTex2 = require("../effects/gen-tex2");
 var _literals = require("../literals");
+var _meConfig = require("../../me-config");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -28180,7 +28304,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      this.MAX_BONES = 100;
+      this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
       // your total instance count
       const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
@@ -28749,7 +28873,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":79,"../../shaders/instanced/vertex.instanced.wgsl":89,"../effects/energy-bar":37,"../effects/flame":39,"../effects/flame-emmiter":38,"../effects/gen":42,"../effects/gen-tex":40,"../effects/gen-tex2":41,"../effects/mana-bar":44,"../effects/pointerEffect":45,"../literals":52,"../loaders/bvh-instaced":54,"../matrix-class":58,"../utils":68,"./materials-instanced":49,"wgpu-matrix":30}],51:[function(require,module,exports){
+},{"../../me-config":69,"../../shaders/fragment.video.wgsl":79,"../../shaders/instanced/vertex.instanced.wgsl":89,"../effects/energy-bar":37,"../effects/flame":39,"../effects/flame-emmiter":38,"../effects/gen":42,"../effects/gen-tex":40,"../effects/gen-tex2":41,"../effects/mana-bar":44,"../effects/pointerEffect":45,"../literals":52,"../loaders/bvh-instaced":54,"../matrix-class":58,"../utils":68,"./materials-instanced":49,"wgpu-matrix":30}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29844,6 +29968,7 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 var _meshObjInstances = _interopRequireDefault(require("../instanced/mesh-obj-instances.js"));
 var _utils = require("../utils.js");
+var _meConfig = require("../../me-config.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import MEBvh from "bvh-loader";
 
@@ -29910,7 +30035,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       });
     });
     this._emptyChannels = [];
-    this.MAX_BONES = 100;
+    this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
     // cache
     this._boneMatrices = new Float32Array(this.MAX_BONES * 16);
     this._nodeChannels = new Map();
@@ -30514,7 +30639,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":50,"../utils.js":68,"./webgpu-gltf.js":56,"wgpu-matrix":30}],55:[function(require,module,exports){
+},{"../../me-config.js":69,"../instanced/mesh-obj-instances.js":50,"../utils.js":68,"./webgpu-gltf.js":56,"wgpu-matrix":30}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30526,6 +30651,7 @@ var _meshObj = _interopRequireDefault(require("../mesh-obj"));
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 var _utils = require("../utils.js");
+var _meConfig = require("../../me-config.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
@@ -30592,7 +30718,7 @@ class BVHPlayer extends _meshObj.default {
     }));
     this._emptyChannels = [];
     this.startTime = performance.now() / 1000;
-    this.MAX_BONES = 100;
+    this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
     this.skeleton = [];
     this.animationSpeed = 1000;
     this.inverseBindMatrices = [];
@@ -31172,7 +31298,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":59,"../utils.js":68,"./webgpu-gltf.js":56,"bvh-loader":16,"wgpu-matrix":30}],56:[function(require,module,exports){
+},{"../../me-config.js":69,"../mesh-obj":59,"../utils.js":68,"./webgpu-gltf.js":56,"bvh-loader":16,"wgpu-matrix":30}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33136,6 +33262,7 @@ var _flame = require("./effects/flame");
 var _flameEmmiter = require("./effects/flame-emmiter");
 var _literals = require("./literals");
 var _proceduralTextures = require("./procedures/procedural-textures");
+var _meConfig = require("../me-config");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -33672,7 +33799,7 @@ class MEMeshObj extends _materials.default {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-      let MAX_BONES = 100;
+      let MAX_BONES = _meConfig.MEConfig.MAX_BONES;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
@@ -34276,7 +34403,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":79,"../shaders/vertex.wgsl":103,"../shaders/vertex.wgsl.normalmap":104,"./effects/destruction":36,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./effects/topology-point":46,"./literals":52,"./materials":57,"./matrix-class":58,"./procedures/procedural-textures":66,"./utils":68,"wgpu-matrix":30}],60:[function(require,module,exports){
+},{"../me-config":69,"../shaders/fragment.video.wgsl":79,"../shaders/vertex.wgsl":103,"../shaders/vertex.wgsl.normalmap":104,"./effects/destruction":36,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./effects/topology-point":46,"./literals":52,"./materials":57,"./matrix-class":58,"./procedures/procedural-textures":66,"./utils":68,"wgpu-matrix":30}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34806,7 +34933,6 @@ class VolumetricPass {
     this.width = width;
     this.height = height;
     this.volumetricTex = this._createTexture(width, height);
-
     // Linear sampler — composite pass
     this.sampler = device.createSampler({
       label: 'VolumetricPass.linearSampler',
@@ -34815,7 +34941,6 @@ class VolumetricPass {
       addressModeU: 'clamp-to-edge',
       addressModeV: 'clamp-to-edge'
     });
-
     // Comparison sampler — ALL THREE must agree:
     //   device sampler:  { compare: 'less-equal' }
     //   layout entry:    { type: 'comparison' }
@@ -36411,15 +36536,35 @@ class MeshMorpher {
       return [r * Math.cos(theta), minorRadius * Math.sin(phi), r * Math.sin(theta)];
     };
   }
-  static cone(baseRadius = 1, height = 2) {
-    return (u, v) => {
+  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
+    if (fromZeroY == true) return (u, v) => {
       const theta = u * Math.PI * 2;
       const h = v * height;
       const r = baseRadius * (1 - v);
       return [r * Math.cos(theta), h, r * Math.sin(theta)];
     };
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2; // <-- centre at y=0
+      const r = baseRadius * (1 - v);
+      return [r * Math.cos(theta), h, r * Math.sin(theta)];
+    };
   }
-  static capsule(radius = 0.5, height = 2) {
+  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
+    if (fromZeroX == true) return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r = baseRadius * (1 - v);
+      return [h, r * Math.cos(theta), r * Math.sin(theta)];
+    };
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;
+      const r = baseRadius * (1 - v);
+      return [h, r * Math.cos(theta), r * Math.sin(theta)];
+    };
+  }
+  static capsule(radius = 0.5, height = 1) {
     const halfH = height / 2;
     return (u, v) => {
       if (v < 0.25) {
@@ -38347,7 +38492,6 @@ class MatrixAmmo {
   }) {
     this.options = options;
     if (!this.options.gravity) this.options.gravity = -10;
-    console.log('this.options.gravity::::::', this.options.gravity);
     // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
     _utils.scriptManager.LOAD("ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
@@ -38481,6 +38625,9 @@ class MatrixAmmo {
     colShape.calculateLocalInertia(mass, localInertia);
     const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia);
     const body = new Ammo.btRigidBody(rbInfo);
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -38532,7 +38679,7 @@ class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    // console.log('startTransform.setRotation', startTransform.setRotation)
+    // console.log('pOptions.rotation : ', pOptions.rotation)
     var t = startTransform.getRotation();
     t.setX((0, _utils.degToRad)(pOptions.rotation.x));
     t.setY((0, _utils.degToRad)(pOptions.rotation.y));
@@ -38611,7 +38758,7 @@ class MatrixAmmo {
   // ─── capsule on X axis ────────────────────────────────────────
   addPhysicsCapsuleX(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btCapsuleShapeX(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
@@ -38619,6 +38766,9 @@ class MatrixAmmo {
     const localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -38626,7 +38776,7 @@ class MatrixAmmo {
   // ─── capsule on Z axis ────────────────────────────────────────
   addPhysicsCapsuleZ(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btCapsuleShapeZ(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
@@ -38634,6 +38784,9 @@ class MatrixAmmo {
     const localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -38658,6 +38811,9 @@ class MatrixAmmo {
     const localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    // body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    // body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    // body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -38673,6 +38829,9 @@ class MatrixAmmo {
     const localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -38688,6 +38847,9 @@ class MatrixAmmo {
     const localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -38698,14 +38860,20 @@ class MatrixAmmo {
   // ─────────────────────────────────────────────────────────────
   addPhysicsCone(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btConeShape(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btConeShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y,
+    // pOptions.height*0.5,
+    pOptions.position.z));
     const mass = pOptions.mass;
     const localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    // body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 0.8);
+    // body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    // body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -38713,7 +38881,7 @@ class MatrixAmmo {
   // ─── cone on X axis ───────────────────────────────────────────
   addPhysicsConeX(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btConeShapeX(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btConeShapeX(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
@@ -38771,8 +38939,11 @@ class MatrixAmmo {
     const Ammo = this.Ammo;
     const colShape = new Ammo.btConvexHullShape();
     const verts = pOptions.vertices;
+    const sx = pOptions.scale?.[0] ?? 1;
+    const sy = pOptions.scale?.[1] ?? 1;
+    const sz = pOptions.scale?.[2] ?? 1;
     for (let i = 0; i < verts.length; i += 3) {
-      colShape.addPoint(new Ammo.btVector3(verts[i], verts[i + 1], verts[i + 2]), true);
+      colShape.addPoint(new Ammo.btVector3(verts[i] * sx, verts[i + 1] * sy, verts[i + 2] * sz), true);
     }
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
@@ -57801,13 +57972,15 @@ class MatrixEngineWGPU {
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = _wgpuMatrix.mat4.create();
+
+    // console.clear();
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c Version 1.9.11 [FasterThanRabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
-    console.log("%cMatrix Engine WGPU - Configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n", " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n", _utils.LOG_FUNNY_ARCADE);
+    console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY);
     console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", _utils.LOG_WARN);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY_SMALL);
@@ -58664,7 +58837,7 @@ class MatrixEngineWGPU {
       }
       transPass.end();
       if (this.volumetricPass.enabled === true) {
-        _wgpuMatrix.mat4.invert(this._viewProjMatrix, this._invViewProj);
+        _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
         const light = this.lightContainer[0];
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
         this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;

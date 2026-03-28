@@ -14,7 +14,12 @@ export var flipper = function() {
     addEventListener('AmmoReady', () => {
       flipper.addLight();
       addRaycastsAABBListener();
-      downloadMeshes({cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj"},
+      downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj",
+        ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
+        pin: "./res/meshes/blender/pin-for-pinball.obj",
+        pinR: "./res/meshes/blender/pin-for-pinball_right.obj"
+      },
         onGround,
         {scale: [1, 1, 1]}
       );
@@ -104,9 +109,9 @@ export var flipper = function() {
         material: {type: 'standard'},
         position: {x: -commomBODYX, y: 0.5, z: -9},
         scale: [1, 0.1, 0.3],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'flipperLeft',
-        mesh: m.cube,
+        mesh: m.pin,
         physics: {
           enabled: true,
           mass: 5,
@@ -118,9 +123,9 @@ export var flipper = function() {
         material: {type: 'standard'},
         position: {x: commomBODYX, y: 0.5, z: -9},
         scale: [1, 0.1, 0.3],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'flipperRight',
-        mesh: m.cube,
+        mesh: m.pinR,
         physics: {
           enabled: true,
           mass: 5,
@@ -180,7 +185,7 @@ export var flipper = function() {
         material: {type: 'standard'},
         position: {x: 0, y: 1, z: -36},
         scale: [6.2, 1, 0.5],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'edgeTop',
         mesh: m.cube,
         physics: {
@@ -193,8 +198,9 @@ export var flipper = function() {
       const BEdge = flipper.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 1, z: -6},
+        rotation: {x: 0, y: 0, z: 0.1},
         scale: [6.2, 0.5, 0.2],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'edgeTop',
         mesh: m.cube,
         physics: {
@@ -203,6 +209,8 @@ export var flipper = function() {
           geometry: "Cube"
         }
       });
+
+      BEdge.setBlend(0.2);
 
       const REdge = flipper.addMeshObj({
         material: {type: 'standard'},

@@ -5,7 +5,6 @@ export default class MatrixAmmo {
   constructor(options = {roundDimensionX: 10, roundDimensionY: 10, gravity: -10}) {
     this.options = options;
     if(!this.options.gravity) this.options.gravity = -10;
-    console.log('this.options.gravity::::::', this.options.gravity)
     // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
     scriptManager.LOAD("ammojs/ammo.js", "ammojs",
       undefined, undefined, this.init,
@@ -132,6 +131,11 @@ export default class MatrixAmmo {
       mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia
     );
     const body = new Ammo.btRigidBody(rbInfo);
+
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
+
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -180,7 +184,6 @@ export default class MatrixAmmo {
       TEST_NIDZA: 3,
       CF_KINEMATIC_OBJECT: 2
     }
-
     let Ammo = this.Ammo;
     // improve this - scale by comp
     var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])),
@@ -190,7 +193,7 @@ export default class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    // console.log('startTransform.setRotation', startTransform.setRotation)
+    // console.log('pOptions.rotation : ', pOptions.rotation)
     var t = startTransform.getRotation()
     t.setX(degToRad(pOptions.rotation.x))
     t.setY(degToRad(pOptions.rotation.y))
@@ -285,7 +288,7 @@ export default class MatrixAmmo {
   // ─── capsule on X axis ────────────────────────────────────────
   addPhysicsCapsuleX(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btCapsuleShapeX(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(
@@ -297,6 +300,9 @@ export default class MatrixAmmo {
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(
       mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia
     ));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -304,7 +310,7 @@ export default class MatrixAmmo {
   // ─── capsule on Z axis ────────────────────────────────────────
   addPhysicsCapsuleZ(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btCapsuleShapeZ(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(
@@ -316,6 +322,9 @@ export default class MatrixAmmo {
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(
       mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia
     ));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -346,6 +355,9 @@ export default class MatrixAmmo {
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(
       mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia
     ));
+    // body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    // body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    // body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -367,6 +379,9 @@ export default class MatrixAmmo {
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(
       mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia
     ));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -388,6 +403,9 @@ export default class MatrixAmmo {
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(
       mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia
     ));
+    body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
+    body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -398,11 +416,16 @@ export default class MatrixAmmo {
   // ─────────────────────────────────────────────────────────────
   addPhysicsCone(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btConeShape(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btConeShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(
       pOptions.position.x, pOptions.position.y, pOptions.position.z
+    ));
+    startTransform.setOrigin(new Ammo.btVector3(
+      pOptions.position.x,
+      pOptions.position.y, // pOptions.height*0.5,
+      pOptions.position.z
     ));
     const mass = pOptions.mass;
     const localInertia = new Ammo.btVector3(0, 0, 0);
@@ -410,6 +433,9 @@ export default class MatrixAmmo {
     const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(
       mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia
     ));
+    // body.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 0.8);
+    // body.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
+    // body.setFriction(pOptions.fiction ? pOptions.fiction : 1.0);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, MEObject, pOptions);
   }
@@ -417,7 +443,7 @@ export default class MatrixAmmo {
   // ─── cone on X axis ───────────────────────────────────────────
   addPhysicsConeX(MEObject, pOptions) {
     const Ammo = this.Ammo;
-    const colShape = new Ammo.btConeShapeX(pOptions.radius, pOptions.height);
+    const colShape = new Ammo.btConeShapeX(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     startTransform.setOrigin(new Ammo.btVector3(
@@ -492,8 +518,15 @@ export default class MatrixAmmo {
     const Ammo = this.Ammo;
     const colShape = new Ammo.btConvexHullShape();
     const verts = pOptions.vertices;
+    const sx = pOptions.scale?.[0] ?? 1;
+    const sy = pOptions.scale?.[1] ?? 1;
+    const sz = pOptions.scale?.[2] ?? 1;
     for(let i = 0;i < verts.length;i += 3) {
-      colShape.addPoint(new Ammo.btVector3(verts[i], verts[i + 1], verts[i + 2]), true);
+      colShape.addPoint(new Ammo.btVector3(
+        verts[i] * sx,
+        verts[i + 1] * sy,
+        verts[i + 2] * sz
+      ), true);
     }
     const startTransform = new Ammo.btTransform();
     startTransform.setIdentity();

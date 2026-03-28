@@ -12,6 +12,7 @@ import {FlameEffect} from './effects/flame';
 import {FlameEmitter} from './effects/flame-emmiter';
 import {VERTEX_ANIM_FLAGS} from './literals';
 import {createGroundTexture} from './procedures/procedural-textures';
+import {MEConfig} from '../me-config';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -515,7 +516,7 @@ export default class MEMeshObj extends Materials {
 
       function alignTo256(n) {return Math.ceil(n / 256) * 256;}
 
-      let MAX_BONES = 100;
+      let MAX_BONES = MEConfig.MAX_BONES;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",

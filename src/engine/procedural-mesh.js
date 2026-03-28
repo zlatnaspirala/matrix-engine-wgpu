@@ -1029,16 +1029,39 @@ export class MeshMorpher {
     };
   }
 
-  static cone(baseRadius = 1, height = 2) {
-    return (u, v) => {
+  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
+    if(fromZeroY == true) return (u, v) => {
       const theta = u * Math.PI * 2;
       const h = v * height;
       const r = baseRadius * (1 - v);
       return [r * Math.cos(theta), h, r * Math.sin(theta)];
     };
+
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;  // <-- centre at y=0
+      const r = baseRadius * (1 - v);
+      return [r * Math.cos(theta), h, r * Math.sin(theta)];
+    };
   }
 
-  static capsule(radius = 0.5, height = 2) {
+  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
+    if(fromZeroX == true) return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r = baseRadius * (1 - v);
+      return [h, r * Math.cos(theta), r * Math.sin(theta)];
+    };
+
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;
+      const r = baseRadius * (1 - v);
+      return [h, r * Math.cos(theta), r * Math.sin(theta)];
+    };
+  }
+
+  static capsule(radius = 0.5, height = 1) {
     const halfH = height / 2;
     return (u, v) => {
       if(v < 0.25) {
