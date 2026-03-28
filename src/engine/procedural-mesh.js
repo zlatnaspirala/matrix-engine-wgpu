@@ -1,5 +1,5 @@
 import {vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN} from './utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN, MeshType} from './utils';
 import Materials from './materials';
 import {GeometryFactory} from './geometry-factory';
 import {mat4} from 'wgpu-matrix';
@@ -30,11 +30,19 @@ export default class ProceduralMeshObj extends Materials {
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
+
+    this.mType = MeshType.PROCEDURAL;
     //cache
     this._camVP = mat4.create();
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
+
+    this.shadowsCast = true;
+    if(typeof o.sharedSU !== null) {
+      this.sharedSU = o.sharedSU;
+    }
+
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -66,6 +74,7 @@ export default class ProceduralMeshObj extends Materials {
     this._modelMatrix = mat4.create();
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -326,9 +335,16 @@ export default class ProceduralMeshObj extends Materials {
         this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", 'torch');
       }
     }
-    //
     this.modelUniformBuffer = this.device.createBuffer({size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    this.sceneUniformBuffer = this.device.createBuffer({size: 192, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
+    if(this.sharedSU) {
+      this.sceneUniformBuffer = this.sharedSU;
+    } else {
+      this.sceneUniformBuffer = this.device.createBuffer({
+        label: 'sceneUniformBuffer per mesh',
+        size: 192,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+    }
 
     this.bonesBuffer = this.device.createBuffer({size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.morphBlendBuffer = this.device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
@@ -341,7 +357,7 @@ export default class ProceduralMeshObj extends Materials {
 
     this.vertexAnimBuffer = this.device.createBuffer({
       label: "Vertex Animation Params",
-      size: this.vertexAnimParams.byteLength, // 128 bytes
+      size: this.vertexAnimParams.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -388,6 +404,7 @@ export default class ProceduralMeshObj extends Materials {
     this._sceneData = new Float32Array(48);
 
     this.vertexAnim = {
+      active: false,
       enableWave: () => {
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
         this.updateVertexAnimBuffer();
@@ -596,22 +613,12 @@ export default class ProceduralMeshObj extends Materials {
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend))
     this.morphAnimation.duration = Math.max(duration, 100)
     this.morphAnimation.elapsed = 0;
-    // this.morphAnimation = {
-    //   active: true,
-    //   startBlend: this.morphBlend,
-    //   targetBlend: Math.max(0, Math.min(1, targetBlend)),
-    //   duration: Math.max(duration, 100),
-    //   elapsed: 0,
-    //   debug: this.morphAnimation.debug
-    // };
     if(onComplete) this.morphAnimation.onComplete = onComplete;
-
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
     this.morphAnimation.duration = safeDuration;
     this.morphAnimation.elapsed = 0;
-    // this.morphAnimation.onComplete = onComplete;
     if(this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
@@ -654,19 +661,18 @@ export default class ProceduralMeshObj extends Materials {
     let modelMatrix = mat4.identity(this._modelMatrix);
     this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
     mat4.translate(modelMatrix, this._posArray, modelMatrix);
-    // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
     if(this.itIsPhysicsBody) {
-      mat4.rotate(modelMatrix,
-        [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-        degToRad(this.rotation.angle),
-        modelMatrix
-      );
+      this._rotAxisVec[0] = this.rotation.axis.x;
+      this._rotAxisVec[1] = this.rotation.axis.y;
+      this._rotAxisVec[2] = this.rotation.axis.z;
+      mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
     } else {
       mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
     }
     if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
+    this.modelMatrix = modelMatrix;
     return modelMatrix;
   }
 
@@ -682,22 +688,9 @@ export default class ProceduralMeshObj extends Materials {
     this.modelMatrix = modelMatrix;
   }
 
-  getTransformationMatrix(index) {
-    const now = Date.now();
-    const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-    this.lastFrameMS = now;
-    const camera = this.cameras[this.mainCameraParams.type];
-    if(index === 0) camera.update(dt, this.inputHandler());
-    const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-    // this._sceneData.set(spotLight.viewProjMatrix, 0);
+  getTransformationMatrix(camVP, dt) {
     this._sceneData.set(camVP, 16);
-    this._sceneData[32] = camera.position[0];
-    this._sceneData[33] = camera.position[1];
-    this._sceneData[34] = camera.position[2];
     this._sceneData[35] = 0.0;
-    // this._sceneData[36] = spotLight.position[0];
-    // this._sceneData[37] = spotLight.position[1];
-    // this._sceneData[38] = spotLight.position[2];
     this._sceneData[39] = 0.0;
     this._sceneData[40] = this.globalAmbient[0];
     this._sceneData[41] = this.globalAmbient[1];
@@ -707,7 +700,6 @@ export default class ProceduralMeshObj extends Materials {
     this._sceneData[45] = dt;
     this._sceneData[46] = 0;
     this._sceneData[47] = 0;
-
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
   }
 
@@ -1037,16 +1029,39 @@ export class MeshMorpher {
     };
   }
 
-  static cone(baseRadius = 1, height = 2) {
-    return (u, v) => {
+  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
+    if(fromZeroY == true) return (u, v) => {
       const theta = u * Math.PI * 2;
       const h = v * height;
       const r = baseRadius * (1 - v);
       return [r * Math.cos(theta), h, r * Math.sin(theta)];
     };
+
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;  // <-- centre at y=0
+      const r = baseRadius * (1 - v);
+      return [r * Math.cos(theta), h, r * Math.sin(theta)];
+    };
   }
 
-  static capsule(radius = 0.5, height = 2) {
+  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
+    if(fromZeroX == true) return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r = baseRadius * (1 - v);
+      return [h, r * Math.cos(theta), r * Math.sin(theta)];
+    };
+
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;
+      const r = baseRadius * (1 - v);
+      return [h, r * Math.cos(theta), r * Math.sin(theta)];
+    };
+  }
+
+  static capsule(radius = 0.5, height = 1) {
     const halfH = height / 2;
     return (u, v) => {
       if(v < 0.25) {

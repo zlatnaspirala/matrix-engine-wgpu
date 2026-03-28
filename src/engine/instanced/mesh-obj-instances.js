@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN} from '../utils';
+import {degToRad, genName, LOG_FUNNY_SMALL, MeshType} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
 import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
@@ -14,6 +14,7 @@ import {FlameEmitter} from '../effects/flame-emmiter';
 import {GenGeoTexture} from '../effects/gen-tex';
 import {GenGeoTexture2} from '../effects/gen-tex2';
 import {VERTEX_ANIM_FLAGS} from '../literals';
+import {MEConfig} from '../../me-config';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -35,6 +36,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
 
+    this.mType = MeshType.INSTANCED;
+    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
+    if(typeof o.sharedSU !== null) {
+      this.sharedSU = o.sharedSU;
+    }
+
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4.create();
@@ -42,7 +49,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
-    //cache
+    this._ghostScratch = new Float32Array(16);
+    this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = mat4.create();
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
@@ -53,6 +61,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     }
 
     if(o.envMapParams !== null) {this.envMapParams = o.envMapParams;}
+
 
     this.material = o.material;
     this.time = 0;
@@ -223,13 +232,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
     }
+    // else if maybe
+    if(typeof o.isVideo !== 'undefined') {
+      this.loadVideoTexture(o.isVideo);
+      this.drawElements = this.drawVideoElements;
+    }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -439,14 +452,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.updateInstanceData = (modelMatrix) => {
-        // original (base instance)
         this.instanceData.set(modelMatrix, 0);
-        this.instanceData.set([1, 1, 1, 1], 16);
-
-        // instanced clones
+        this.instanceData.set(this._defaultColor, 16);
         for(let i = 1;i < this.instanceCount;i++) {
           const t = this.instanceTargets[i];
-          const ghost = new Float32Array(modelMatrix);
+          this._ghostScratch.set(modelMatrix);
+          const ghost = this._ghostScratch;
           // --- Smooth interpolate position
           for(let j = 0;j < 3;j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
@@ -456,7 +467,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
               t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          // Apply smoothed transforms
           ghost[0] *= t.currentScale[0];
           ghost[5] *= t.currentScale[1];
           ghost[10] *= t.currentScale[2];
@@ -464,12 +474,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           ghost[12] += t.currentPosition[0]; // X
           ghost[13] += t.currentPosition[1]; // Y
           ghost[14] += t.currentPosition[2]; // Z
-
           // t.color[0] += t.currentColor[0]//r;
           // t.color[1] += t.currentColor[1]//r;
           // t.color[2] += t.currentColor[2]//r;
           // t.color[3] += t.currentColor[3]//r;
-          // Write instance matrix + color
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
           this.instanceData.set(t.currentColor, offset + 16);
@@ -492,13 +500,21 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
 
+        this.uvScaleBuffer = this.device.createBuffer({
+          size: 8, // vec2f
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        // Default = no scale
+        this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
+
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
-          entries: [ //
+          entries: [
             {binding: 0, resource: {buffer: this.instanceBuffer, }},
             {binding: 1, resource: {buffer: this.bonesBuffer}},
-            {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
+            {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+            {binding: 3, resource: {buffer: this.uvScaleBuffer}}
           ],
         });
       };
@@ -533,27 +549,31 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192, //176,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
+      if(this.sharedSU) {
+        this.sceneUniformBuffer = this.sharedSU;
+      } else {
+        this.sceneUniformBuffer = this.device.createBuffer({
+          label: 'sceneUniformBuffer per mesh',
+          size: 192,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+      }
 
-      // test MUST BE IF
       this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [instanced]',
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },
-          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         ],
       });
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [regular]',
         entries: [
-          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
-          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }, },
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
           {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
         ],
       });
@@ -562,8 +582,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
-
-      this.MAX_BONES = 100;
+      this.MAX_BONES = MEConfig.MAX_BONES;
       // your total instance count
       const TRAIL_INSTANCES = 10;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
@@ -573,13 +592,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      // identity init for all slots
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for(let i = 0;i < this.MAX_BONES * TRAIL_INSTANCES;i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
       // vertex Anim
       this.vertexAnimParams = new Float32Array([
         0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
@@ -592,6 +609,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.vertexAnim = {
+        active: false,
         enableWave: () => {
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
@@ -725,15 +743,16 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      this.modelBindGroupInstanced = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh [instanced]',
-        layout: this.uniformBufferBindGroupLayoutInstanced,
-        entries: [
-          {binding: 0, resource: {buffer: this.instanceBuffer, }},
-          {binding: 1, resource: {buffer: this.bonesBuffer}},
-          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
-        ],
-      });
+      // this.modelBindGroupInstanced = this.device.createBindGroup({
+      //   label: 'modelBindGroup in mesh [instanced]',
+      //   layout: this.uniformBufferBindGroupLayoutInstanced,
+      //   entries: [
+      //     {binding: 0, resource: {buffer: this.instanceBuffer, }},
+      //     {binding: 1, resource: {buffer: this.bonesBuffer}},
+      //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+
+      //   ],
+      // });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mainPassBindGroupLayout mesh [instaced]',
@@ -777,18 +796,13 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
 
-      this.getTransformationMatrix = (index) => {
-        const now = Date.now();
-        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = now;
-        const camera = this.cameras[this.mainCameraParams.type];
-        if(index == 0) camera.update(dt, inputHandler());
-        const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
+      this.getTransformationMatrix = (camVP, dt) => {
+        // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
         // this._sceneData.set(spotLight.viewProjMatrix, 0);
         this._sceneData.set(camVP, 16);
-        this._sceneData[32] = camera.position[0];
-        this._sceneData[33] = camera.position[1];
-        this._sceneData[34] = camera.position[2];
+        // this._sceneData[32] = camera.position[0];
+        // this._sceneData[33] = camera.position[1];
+        // this._sceneData[34] = camera.position[2];
         this._sceneData[35] = 0.0;
         // this._sceneData[36] = spotLight.position[0];
         // this._sceneData[37] = spotLight.position[1];
@@ -849,6 +863,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         this.updateMeshListBuffers();
       }
     })
+  }
+
+  setUVScale(x, y = x) {
+    this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
   setupPipeline = () => {
@@ -992,18 +1010,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     }
   }
 
-  drawElements = (pass, lightContainer) => {
-    if(this.isVideo) {this.updateVideoTexture()}
+  drawElements = (pass) => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if(this instanceof BVHPlayerInstances) {
+    if(this.mType == MeshType.INSTANCED) {
       pass.setBindGroup(1, this.modelBindGroupInstanced);
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
     }
-    if(this.isVideo == false) {
-      if(this.material.type === "mirror" && this.mirrorBindGroup) {
-        pass.setBindGroup(2, this.mirrorBindGroup);
-      }
+    if(this.material.type === "mirror" && this.mirrorBindGroup) {
+      pass.setBindGroup(2, this.mirrorBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);
 
@@ -1011,7 +1026,40 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if(this.joints) {
-      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+      if(this.mType == MeshType.BVHANIM || this.mType == MeshType.INSTANCED) {
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+      } else {
+        pass.setVertexBuffer(3, this.joints.buffer);  // dummy
+        pass.setVertexBuffer(4, this.weights.buffer); // dummy
+      }
+    }
+    if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
+    else pass.setPipeline(this.pipeline);
+
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    for(var ins = 1;ins < this.instanceCount;ins++) {
+      if(ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
+      else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    }
+  }
+
+  drawVideoElements = (pass) => {
+    this.updateVideoTexture();
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    if(this.mType == MeshType.INSTANCED) {
+      pass.setBindGroup(1, this.modelBindGroupInstanced);
+    } else {
+      pass.setBindGroup(1, this.modelBindGroup);
+    }
+    pass.setBindGroup(3, this.waterBindGroup);
+
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if(this.joints) {
+      if(this.mType == MeshType.BVHANIM || this.mType == MeshType.INSTANCED) {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer);
         pass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
@@ -1084,8 +1132,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
         shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
       } else {
-        shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
-        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
+        // dummy
+        shadowPass.setVertexBuffer(3, this.joints.buffer);
+        shadowPass.setVertexBuffer(4, this.weights.buffer);
       }
     }
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');

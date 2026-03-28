@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.9.9 2026
+📅 Version: 1.9.11 2026
 
 ---
 
@@ -200,9 +200,12 @@ https://maximumroulette.com/apps/webgpu/api-docs/
 
 For now translation is only with `WASD` keyboard keys.
 
-Supported types: `WASD`, `arcball`
+Supported types: `WASD`, `RPGCamera`
 
 `WASD` also use 'c' and 'v' for up and down camera position.
+
+To change position dont use direct edit on position array.
+Use methods 
 
 ```js
 mainCameraParams: {
@@ -479,9 +482,20 @@ Fancy results:
 
 ### Volumetric effect
 
-Call from app `activateVolumetricEffect()`
+Call from app `app.activateVolumetricEffect()`
 !Note volumetric works only if bloom is activated. Bloom can work alone.
-!To avoid createing bind group in loop.
+
+Passing arguments:
+```js
+app.activateVolumetricEffect(
+{
+  density: 0.03,
+  steps: 32,
+  scatterStrength: 1.2,
+  heightFalloff: 0.08,
+  lightColor: [1.0, 0.88, 0.65],
+});
+```
 
 ### Object Interaction (Raycasting)
 

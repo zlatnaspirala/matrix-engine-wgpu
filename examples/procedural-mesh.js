@@ -173,6 +173,7 @@ export var procMesh = function() {
 
     });
 
+    if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'))
   })
   window.app = procMesh;
 }

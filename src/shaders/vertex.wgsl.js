@@ -1,4 +1,6 @@
-export let vertexWGSL = `const MAX_BONES = 100u;
+import {MEConfig} from "../me-config";
+
+export let vertexWGSL = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -21,6 +23,7 @@ struct SkinResult {
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
 @group(1) @binding(1) var<uniform> bones : Bones;
+@group(1) @binding(3) var<uniform> uvScale: vec2f;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -263,6 +266,6 @@ fn main(
   output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm  = normalize(normalMatrix * finalNorm);
-  output.uv        = uv;
+  output.uv        = uv * uvScale;
   return output;
 }`;

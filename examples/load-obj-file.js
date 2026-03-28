@@ -1,14 +1,11 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
-import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
+    fastRender: 0.9,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -16,26 +13,12 @@ export var loadObjFile = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-
     loadObjFile.addLight();
     addRaycastsAABBListener();
-    // addEventListener('AmmoReady', () => {
 
-    // })
-
-    setTimeout(() => {
-      downloadMeshes({
-        ball: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj",
-      }, onLoadObj,
-        {scale: [1, 1, 1]})
-
-      downloadMeshes({
-        cube: "./res/meshes/blender/cube.obj",
-      }, onGround,
-        {scale: [30, 0.5, 30]})
-
-    }, 2)
+    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
+      onLoadObj, {scale: [1, 1, 1]})
+    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
 
     function onGround(m) {
       loadObjFile.addMeshObj({
@@ -55,13 +38,13 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
-      loadObjFile.myLoadedMeshes = m;
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
+        // texturesPaths: ['./res/textures/cube-g1.webp'],
         texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         envMapParams: {
           baseColorMix: 0.0,                // CLEAR SKY
@@ -87,9 +70,20 @@ export var loadObjFile = function() {
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
+        envMapParams: {
+          baseColorMix: 0.99,               // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.25,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.01,            // No pulse (static)
+          fresnelPower: 2.0,                // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,       // ✅ Env map mode
+        },
         physics: {
           enabled: false,
           mass: 0,
@@ -97,12 +91,9 @@ export var loadObjFile = function() {
         },
         pointerEffect: {
           enabled: true,
-          pointer: true,
-          flameEmitter: true,
-          flameEffect: true,
+          flameEmitter: true
         }
       })
-
 
       // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, loadObjFile.device)));
       //    loadObjFile.addGlbObjInctance({
@@ -129,20 +120,19 @@ export var loadObjFile = function() {
 
       loadObjFile.lightContainer[0].intensity = 10;
 
-      // loadObjFile.activateBloomEffect();
-      // loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
-      // loadObjFile.lightContainer[0].behavior.value_ = -1;
-      // loadObjFile.lightContainer[0].updater.push((light) => {
-      //   light.position[0] = light.behavior.setPath0()
-      //   light.target[0] = light.behavior.setPath0()
-      // })
+      loadObjFile.activateBloomEffect();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push((light) => {
+        light.position[0] = light.behavior.setPath0()
+        light.target[0] = light.behavior.setPath0()
+      })
 
       loadObjFile.lightContainer[0].position = [0, 17, -10];
       loadObjFile.lightContainer[0].target = [0, 0, -10];
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       setTimeout(() => {
-        // app.activateBloomEffect();
         let cube1 = app.getSceneObjectByName('cube1')
         // cube1.effects.flameEffect.intensity = 100;
         // cube1.effects.flameEffect.morphTo("pyramid", 8)
@@ -155,8 +145,6 @@ export var loadObjFile = function() {
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
-      if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
-
     });
 
   })

@@ -7,6 +7,7 @@
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
     "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
     "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
+    "demo1": "watchify demo1.js -p [esmify --noImplicitAny] -o public/app.js",
     "empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
     "build.jamb": "browserify main.js -p esmify > public/app.js",
     "glb-loader": "watchify ./examples/glb-loader.js -p [esmify --noImplicitAny] -o public/app.js",

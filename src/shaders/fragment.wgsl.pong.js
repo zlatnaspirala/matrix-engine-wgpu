@@ -1,5 +1,6 @@
-export let fragmentWGSLPong = `
-override shadowDepthTextureSize: f32 = 512.0;
+import {MEConfig} from "../me-config";
+
+export let fragmentWGSLPong = `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {

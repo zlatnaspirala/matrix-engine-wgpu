@@ -2,6 +2,8 @@ import MEBvh from "bvh-loader";
 import MEMeshObj from "../mesh-obj";
 import {mat4, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
+import {MeshType} from "../utils.js";
+import {MEConfig} from "../../me-config.js";
 
 export var animBVH = new MEBvh();
 
@@ -61,7 +63,7 @@ export class BVHPlayer extends MEMeshObj {
     }));
     this._emptyChannels = [];
     this.startTime = performance.now() / 1000;
-    this.MAX_BONES = 100;
+    this.MAX_BONES = MEConfig.MAX_BONES;
     this.skeleton = [];
     this.animationSpeed = 1000;
     this.inverseBindMatrices = [];
@@ -74,7 +76,6 @@ export class BVHPlayer extends MEMeshObj {
     this.buildNodeChannelMap();
     this.buildSortedNodes();
     this.initNodeOriginals();
-
   }
 
   initNodeOriginals() {
@@ -495,27 +496,19 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-
     const animTime = time % this._animationLength;
     const skeleton = this.skeleton;
-
     for(let j = 0;j < skeleton.length;j++) {
-
       const nodeIndex = skeleton[j];
       const node = nodes[nodeIndex];
-
       const tr = node.translation;
       const sc = node.scale;
       const rot = node.rotation;
-
       const tChannels = this._translationChannels[nodeIndex];
       const sChannels = this._scaleChannels[nodeIndex];
       const rChannels = this._rotationChannels[nodeIndex];
 
-      /* TRANSLATION CHANNELS */
-
       for(let k = 0;k < tChannels.length;k++) {
-
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;

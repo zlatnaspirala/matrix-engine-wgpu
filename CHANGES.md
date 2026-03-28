@@ -1,44 +1,111 @@
 ## CHANGES [Started from feb 2026]
 
+[1.9.11]
+
+- Added full capacibility of ammojs shapes combined with matrix-engine proceduralMesh class.
+
+```js
+      case "Sphere": return this.addPhysicsSphere(MEObject, pOptions);
+      case "Cube": return this.addPhysicsBox(MEObject, pOptions);
+      case "Capsule": return this.addPhysicsCapsule(MEObject, pOptions);
+      case "CapsuleX": return this.addPhysicsCapsuleX(MEObject, pOptions);
+      case "CapsuleZ": return this.addPhysicsCapsuleZ(MEObject, pOptions);
+      case "Cylinder": return this.addPhysicsCylinder(MEObject, pOptions);
+      case "CylinderX": return this.addPhysicsCylinderX(MEObject, pOptions);
+      case "CylinderZ": return this.addPhysicsCylinderZ(MEObject, pOptions);
+      case "Cone": return this.addPhysicsCone(MEObject, pOptions);
+      case "ConeX": return this.addPhysicsConeX(MEObject, pOptions);
+      case "ConeZ": return this.addPhysicsConeZ(MEObject, pOptions);
+      case "StaticPlane": return this.addPhysicsStaticPlane(MEObject, pOptions);
+      case "ConvexHull": return this.addPhysicsConvexHull(MEObject, pOptions);
+      case "BvhMesh": return this.addPhysicsBvhMesh(MEObject, pOptions);
+      case "Compound": return this.addPhysicsCompound(MEObject, pOptions);
+      case "Heightfield": return this.addPhysicsHeightfield(MEObject, pOptions);
+```
+
+- setUVScale (new in vertex shaders)
+
+- New func:
+  createCheckerboardTexture(device, size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255])
+
+- added MEConfig with default values and checking url params.
+  Engine in future will be fully scaled from url params.
+  For now working params:
+
+  - PHYSICS_GROUND_Y
+  - fs                  (force fullscreen only on first click/touch)
+  - shadowSize
+
+- BIG win for performance, from now all examples will be worked also on mobile devices.
+   scene uniform buffer is global now.
+   adding new input arg for main instance:
+
+
+- Added overiride render variants
+```js
+this.overrideRender = null;
+if (typeof options.render !== "undefined") {
+  if (options.render == "zero") {
+    this.overrideRender = zeroPass.bind(this);
+  }
+}
+```
+
+
+
+[1.9.10] More optimisation in main loop!
+
+- Added options for sending arg to the volumetric activation func.
+
+````js
+{
+  density: 0.03,
+  steps: 32,
+  scatterStrength: 1.2,
+  heightFalloff: 0.08,
+  lightColor: [1.0, 0.88, 0.65],
+}
+```
+
 [1.9.9]  More optimises main loop
 Multi light casting shadows on each other hot fix.
 
 
 [1.9.6] Mobile render back HOT FIX
-        Clear allocations from loop
+       Clear allocations from loop
 
 [1.9.5]
 ### ProceduralMesh
 
 ```js
 export const geoTypesForMorph = {
-  cube: "cube",
-  sphere: "sphere",
-  mobius: "mobius",
-  plane: "plane",
-  capsule: "capsule",
-  cone: "cone",
-  torus: "torus",
-  cylinder: "cylinder",
-  wavePlane: "wavePlane",
-  supershape: "supershape",
-  pyramid: "pyramid",
-  diamond: "diamond",
-  icosahedron: "icosahedron",
-  circlePlane: "circlePlane",
-  rock: "rock",
-  star: "star",
-  star3d: "star3d",
-  littleStar: "littleStar",
-  flatStar: "flatStar",
-  klein: "klein",
-  shell: "shell",
-  rippleSphere: "rippleSphere",
-  twistedTorus: "twistedTorus",
-  tornado: "tornado",
-  galaxySpiral: "galaxySpiral",
+ cube: "cube",
+ sphere: "sphere",
+ mobius: "mobius",
+ plane: "plane",
+ capsule: "capsule",
+ cone: "cone",
+ torus: "torus",
+ cylinder: "cylinder",
+ wavePlane: "wavePlane",
+ supershape: "supershape",
+ pyramid: "pyramid",
+ diamond: "diamond",
+ icosahedron: "icosahedron",
+ circlePlane: "circlePlane",
+ rock: "rock",
+ star: "star",
+ star3d: "star3d",
+ littleStar: "littleStar",
+ flatStar: "flatStar",
+ klein: "klein",
+ shell: "shell",
+ rippleSphere: "rippleSphere",
+ twistedTorus: "twistedTorus",
+ tornado: "tornado",
+ galaxySpiral: "galaxySpiral",
 };
-```
+````
 
 Draw all buildin proceduralMesh shapes:
 
@@ -97,6 +164,7 @@ for (let i = 0; i < keys.length - 1; i++) {
 ```
 
 Morph between two shapes
+
 ```js
 sceneObject.morphTo(1.0, 2000, () => {
   /*callback*/

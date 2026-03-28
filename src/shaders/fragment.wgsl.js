@@ -1,5 +1,7 @@
+import {MEConfig} from "../me-config";
+
 export let fragmentWGSL = `
-override shadowDepthTextureSize: f32 = 512.0;
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -194,29 +196,31 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     var lightContribution = vec3f(0.0);
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-      let p  = sc.xyz / sc.w;
-      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-      let depthRef = p.z;
-      let lightDir = normalize(spotlights[i].position - input.fragPos);
-      let bias = spotlights[i].shadowBias;
-      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-      // Only apply shadow if fragment is inside light frustum
-      let inFrustum = p.z >= 0.0 && p.z <= 1.0 
-             && p.x >= -1.0 && p.x <= 1.0 
-             && p.y >= -1.0 && p.y <= 1.0;
-      // let shadowFactor = select(1.0, visibility, inFrustum);
-      let shadowFactor = visibility;
-      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-      lightContribution += contrib * shadowFactor;
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+        let depthRef = p.z;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let inFrustum =
+        p.z >= 0.0 && p.z <= 1.0 &&
+        p.x >= -1.5 && p.x <= 1.5 &&
+        p.y >= -1.5 && p.y <= 1.5;
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+        let shadowFactor = select(1.0, visibility, inFrustum);
+        let contrib = computeSpotLight(
+            spotlights[i],
+            norm,
+            input.fragPos,
+            viewDir,
+            materialData
+        );
+        lightContribution += contrib * shadowFactor;
     }
 
+    // 
+    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-
-    // let N = normalize(input.fragNorm);
-    // let V = normalize(scene.cameraPos - input.fragPos);
-    // let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;

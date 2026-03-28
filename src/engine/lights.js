@@ -3,9 +3,14 @@ import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import Behavior from './behavior';
 import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.instanced.wgsl';
 import {vertexMorphShadowWGSL, vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
+import {isMobile} from './utils';
+import {MEConfig} from '../me-config';
+
 /**
  * @description
  * Spot light with shadow cast.
+ * Optimized: dirty-flag pattern for VP matrix and light buffer.
+ * writeBuffer for lightVPBuffer is deferred — called from updateLights only when dirty.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
@@ -13,9 +18,9 @@ export class SpotLight {
   name;
   camera;
   inputHandler;
-
-  position;
-  target;
+  // Backing fields for dirty-tracked properties
+  _position;
+  _target;
   up;
   direction;
 
@@ -33,6 +38,25 @@ export class SpotLight {
 
   spotlightUniformBuffer;
 
+  // Dirty flags
+  _dirty = true;            // VP matrix needs recompute (position/target changed)
+  _lightBufferDirty = true; // _lightBuffer array needs rebuild before next upload
+
+  // ─── Getters / Setters ────────────────────────────────────────────────────
+  get position() {return this._position;}
+  set position(v) {
+    vec3.copy(v, this._position);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  get target() {return this._target;}
+  set target(v) {
+    vec3.copy(v, this._target);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
   constructor(
     camera,
     inputHandler,
@@ -44,7 +68,7 @@ export class SpotLight {
 
     aspect = 1;
     this.name = "light" + indexx;
-    this.getName = () => {return "light" + indexx};
+    this.getName = () => {return "light" + indexx;};
     this.fov = fov;
     this.aspect = 1;
     this.near = near;
@@ -55,16 +79,18 @@ export class SpotLight {
 
     this.camera = camera;
     this.inputHandler = inputHandler;
-    this.position = vec3.create(0, 10, -20);
-    this.target = vec3.create(0, 0, -20);
+
+    // Use backing fields directly in constructor to avoid setter overhead
+    // before scratch buffers exist
+    this._position = vec3.create(0, 10, -20);
+    this._target = vec3.create(0, 0, -20);
     this.up = vec3.create(0, 0, -1);
 
     this.direction = vec3.create();
-    // this.direction = vec3.normalize(vec3.subtract(target, position));
     this.intensity = 1.0;
     this.color = vec3.create(1.0, 1.0, 1.0);
 
-    this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
+    this.viewMatrix = mat4.lookAt(this._position, this._target, this.up);
     this.projectionMatrix = mat4.perspective(
       (this.fov * Math.PI) / 180,
       this.aspect,
@@ -72,13 +98,15 @@ export class SpotLight {
       this.far
     );
 
-    this._lightBuffer = new Float32Array(36);     // matches floatsPerLight = 36
-
+    this._lightBuffer = new Float32Array(36);
     this._diffScratch = vec3.create();
     this._dirScratch = vec3.create();
     this._viewMatrix = mat4.create();
     this._viewProjMatrix = mat4.create();
 
+    // Start dirty so first frame always uploads
+    this._dirty = true;
+    this._lightBufferDirty = true;
 
     this.lightVPBuffer = device.createBuffer({
       label: 'lightVPBuffer_' + indexx,
@@ -88,11 +116,13 @@ export class SpotLight {
 
     this.setProjection = function(fov = (2 * Math.PI) / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
-    }
+      this._dirty = true;
+    };
 
     this.updateProjection = function() {
       this.projectionMatrix = mat4.perspective(this.fov, this.aspect, this.near, this.far);
-    }
+      this._dirty = true;
+    };
 
     this.device = device;
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -109,13 +139,13 @@ export class SpotLight {
     this.range = 20.0;
     this.shadowBias = 0.01;
 
-    this.SHADOW_RES = 512;
+    this.SHADOW_RES = MEConfig.SHADOW_RES;
     this.primitive = {
       topology: 'triangle-list',
-      cullMode: 'back', // 'back', // for front interest border drawen shadows !
+      cullMode: 'back',
       frontFace: 'ccw'
-    }
-    // global
+    };
+
     this.shadowTextureView = shadowPassView;
     this.shadowSampler = shadowSampler;
 
@@ -128,39 +158,32 @@ export class SpotLight {
         depthLoadOp: "clear",
         depthStoreOp: "store",
       },
-    }
+    };
 
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout light',
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform',
-          },
-        },
-      ],
+      entries: [{binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}],
     });
 
     this.shadowBindGroupContainer = {};
     this.shadowBindGroup = [];
-    this.getShadowBindGroup = (mesh, index) => {
+    this.getShadowBindGroup = (mesh) => {
       if(this.shadowBindGroupContainer[mesh.name]) return this.shadowBindGroupContainer[mesh.name];
       this.shadowBindGroupContainer[mesh.name] = this.device.createBindGroup({
         label: 'sceneBindGroupForShadow light',
         layout: this.uniformBufferBindGroupLayout,
-        entries: [{binding: 0, resource: {buffer: this.lightVPBuffer}}], // ← per-light buffer
+        entries: [{binding: 0, resource: {buffer: this.lightVPBuffer}}],
       });
       return this.shadowBindGroupContainer[mesh.name];
-    }
+    };
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
       label: 'modelBindGroupLayout light',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ]
     });
 
@@ -169,7 +192,8 @@ export class SpotLight {
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ],
     });
 
@@ -193,72 +217,21 @@ export class SpotLight {
         ],
       }),
       vertex: {
-        module: this.device.createShaderModule({
-          code: vertexShadowWGSL,
-        }),
+        module: this.device.createShaderModule({code: vertexShadowWGSL}),
         buffers: [
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 0,
-                offset: 0,
-                format: "float32x3",
-              },
-            ],
-          },
-          // ✅ ADD @location(1) - normal
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 1,
-                offset: 0,
-                format: "float32x3",
-              },
-            ],
-          },
-          // ✅ ADD @location(2) - uv
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 2,
-                offset: 0,
-                format: "float32x2",
-              },
-            ],
-          },
-          // ✅ ADD @location(3) - joints
-          {
-            arrayStride: 16,
-            attributes: [
-              {
-                shaderLocation: 3,
-                offset: 0,
-                format: "uint32x4",
-              },
-            ],
-          },
-          // ✅ ADD @location(4) - weights
-          {
-            arrayStride: 16,
-            attributes: [
-              {
-                shaderLocation: 4,
-                offset: 0,
-                format: "float32x4",
-              },
-            ],
-          },
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]}, // pos
+          {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}, // normal
+          {arrayStride: 8, attributes: [{shaderLocation: 2, offset: 0, format: "float32x2"}]},  // uv
+          {arrayStride: 16, attributes: [{shaderLocation: 3, offset: 0, format: "uint32x4"}]},  // joints
+          {arrayStride: 16, attributes: [{shaderLocation: 4, offset: 0, format: "float32x4"}]}, // weights
         ]
       },
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
-        depthBias: 2,
-        depthBiasSlopeScale: 2,
+        depthBias: 1,
+        depthBiasSlopeScale: 1,
         depthBiasClamp: 0
       },
       primitive: this.primitive,
@@ -274,70 +247,19 @@ export class SpotLight {
         ],
       }),
       vertex: {
-        module: this.device.createShaderModule({
-          code: vertexShadowWGSLInstanced,
-        }),
+        module: this.device.createShaderModule({code: vertexShadowWGSLInstanced}),
         buffers: [
-          {
-            arrayStride: 12, // 3 * 4 bytes (vec3f)
-            attributes: [
-              {
-                shaderLocation: 0, // must match @location(0) in vertex shader
-                offset: 0,
-                format: "float32x3",
-              },
-            ],
-          },
-          // ✅ ADD @location(1) - normal
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 1,
-                offset: 0,
-                format: "float32x3",
-              },
-            ],
-          },
-          // ✅ ADD @location(2) - uv
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 2,
-                offset: 0,
-                format: "float32x2",
-              },
-            ],
-          },
-          // ✅ ADD @location(3) - joints
-          {
-            arrayStride: 16,
-            attributes: [
-              {
-                shaderLocation: 3,
-                offset: 0,
-                format: "uint32x4",
-              },
-            ],
-          },
-          // ✅ ADD @location(4) - weights
-          {
-            arrayStride: 16,
-            attributes: [
-              {
-                shaderLocation: 4,
-                offset: 0,
-                format: "float32x4",
-              },
-            ],
-          },
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]}, // pos
+          {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}, // normal
+          {arrayStride: 8, attributes: [{shaderLocation: 2, offset: 0, format: "float32x2"}]}, // uv
+          {arrayStride: 16, attributes: [{shaderLocation: 3, offset: 0, format: "uint32x4"}]}, // joints
+          {arrayStride: 16, attributes: [{shaderLocation: 4, offset: 0, format: "float32x4"}]}, // weights
         ]
       },
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
-        depthBias: 2,              // Constant bias (try 1-4)
+        depthBias: 2,
         depthBiasSlopeScale: 2.0,
         format: 'depth32float',
         depthBiasClamp: 0
@@ -345,7 +267,6 @@ export class SpotLight {
       primitive: this.primitive,
     });
 
-    // 4. NEW MORPH PIPELINE - Added to handle procedural mesh shadows
     this.shadowPipelineMorph = this.device.createRenderPipeline({
       label: 'shadowPipeline light [MORPH]',
       layout: this.device.createPipelineLayout({
@@ -356,10 +277,7 @@ export class SpotLight {
         ],
       }),
       vertex: {
-        module: this.device.createShaderModule({
-          code: vertexMorphShadowWGSL, // Use the morphing shader logic
-        }),
-        // IMPORTANT: Use the 5-buffer layout defined in your ProceduralMeshObj
+        module: this.device.createShaderModule({code: vertexMorphShadowWGSL}),
         buffers: [
           {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]}, // posA
           {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}, // nrmA
@@ -372,11 +290,8 @@ export class SpotLight {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
-        // depthBias: 10,
-        // depthBiasSlopeScale: 5.0,
-        // depthBiasClamp: 0.05
-        depthBias: 0,           // ← zero
-        depthBiasSlopeScale: 0, // ← zero
+        depthBias: 0,
+        depthBiasSlopeScale: 0,
         depthBiasClamp: 0
       },
       primitive: this.primitive,
@@ -386,7 +301,7 @@ export class SpotLight {
       const key = mesh.name;
       if(this.mainPassBindGroupContainer[key]) return this.mainPassBindGroupContainer[key];
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
-        label: `mainPassBindGroup for mesh`,
+        label: 'mainPassBindGroup for mesh',
         layout: mesh.mainPassBindGroupLayout,
         entries: [
           {binding: 0, resource: this.shadowTextureView},
@@ -394,48 +309,44 @@ export class SpotLight {
         ],
       });
       return this.mainPassBindGroupContainer[key];
+    };
 
-    }
-    // Only osc values +-
     this.behavior = new Behavior();
     this.updater = [];
   }
 
-  update() {
+  // ─── Update ───────────────────────────────────────────────────────────────
 
-    this.updater.forEach((func) => {
-      func(this);
-    })
-    vec3.subtract(this.target, this.position, this._diffScratch);
+  /**
+   * Recomputes VP matrix only when dirty.
+   * Does NOT call writeBuffer — that is batched in updateLights().
+   * Returns true if the VP matrix was recomputed (caller should re-upload lightVPBuffer).
+   */
+  update() {
+    // Run behavior animators — these call setters which mark _dirty
+    this.updater.forEach((func) => {func(this);});
+    if(!this._dirty) return false;
+    vec3.subtract(this._target, this._position, this._diffScratch);
     vec3.normalize(this._diffScratch, this.direction);
-    mat4.lookAt(this.position, this.target, this.up, this._viewMatrix);
+    mat4.lookAt(this._position, this._target, this.up, this._viewMatrix);
     mat4.multiply(this.projectionMatrix, this._viewMatrix, this.viewProjMatrix);
-    this.device.queue.writeBuffer(this.lightVPBuffer, 0, this.viewProjMatrix);
+    this._dirty = false;
+    this._lightBufferDirty = true;
+    return true;
   }
 
+  // ─── Light data buffer ────────────────────────────────────────────────────
+
+  /**
+   * Returns the packed Float32Array for the spotlight uniform array.
+   * Rebuilds only when _lightBufferDirty is true.
+   */
   getLightDataBuffer() {
-    // const m = this.viewProjMatrix;
-    // const b = this._lightBuffer;
-    // b.set(this.position, 0);
-    // b[3] = 0.0;
-    // b.set(this.direction, 4);
-    // b[7] = 0.0;
-    // b[8] = this.innerCutoff;
-    // b[9] = this.outerCutoff;
-    // b[10] = this.intensity;
-    // b[11] = 0.0;
-    // b.set(this.color, 12);
-    // b[15] = 0.0;
-    // b[16] = this.range;
-    // b[17] = this.ambientFactor;
-    // b[18] = this.shadowBias;
-    // b[19] = 0.0;
-    // b.set(m, 20);
-    // // return b.slice();
-    // return b;
+    if(!this._lightBufferDirty) return this._lightBuffer;
+
     const m = this.viewProjMatrix;
     const b = this._lightBuffer;
-    b.set(this.position, 0);
+    b.set(this._position, 0);
     b[3] = 0.0;
     b.set(this.direction, 4);
     b[7] = 0.0;
@@ -450,47 +361,72 @@ export class SpotLight {
     b[18] = this.shadowBias;
     b[19] = 0.0;
     b.set(m, 20);
+
+    this._lightBufferDirty = false;
     return b;
   }
 
-  // Setters
+  // ─── Setters ──────────────────────────────────────────────────────────────
+  // Position components — mutate vec3 in place, mark both dirty flags
+
   setPosX = (x) => {
-    this.position[0] = x;
-  }
+    if (this._position[0] === x) return;
+    this._position[0] = x;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  };
   setPosY = (y) => {
-    this.position[1] = y;
-  }
+    if (this._position[1] === y) return; 
+    this._position[1] = y;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  };
   setPosZ = (z) => {
-    this.position[2] = z;
-  }
+    if (this._position[1] === y) return; 
+    this._position[2] = z;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  };
+
+  // These only affect the light buffer, not the VP matrix
   setInnerCutoff = (innerCutoff) => {
     this.innerCutoff = innerCutoff;
-  }
+    this._lightBufferDirty = true;
+  };
   setOuterCutoff = (outerCutoff) => {
     this.outerCutoff = outerCutoff;
-  }
+    this._lightBufferDirty = true;
+  };
   setIntensity = (intensity) => {
     this.intensity = intensity;
-  }
+    this._lightBufferDirty = true;
+  };
   setColor = (color) => {
     this.color = color;
-  }
+    this._lightBufferDirty = true;
+  };
   setColorR = (colorR) => {
     this.color[0] = colorR;
-  }
+    this._lightBufferDirty = true;
+  };
   setColorB = (colorB) => {
     this.color[1] = colorB;
-  }
+    this._lightBufferDirty = true;
+  };
   setColorG = (colorG) => {
     this.color[2] = colorG;
-  }
+    this._lightBufferDirty = true;
+  };
   setRange = (range) => {
     this.range = range;
-  }
+    this._lightBufferDirty = true;
+  };
   setAmbientFactor = (ambientFactor) => {
     this.ambientFactor = ambientFactor;
-  }
+    this._lightBufferDirty = true;
+  };
   setShadowBias = (shadowBias) => {
     this.shadowBias = shadowBias;
-  }
+    this._lightBufferDirty = true;
+  };
 }

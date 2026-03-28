@@ -217,7 +217,7 @@ export class Position {
     this.targetX = newx;
     this.targetY = newy;
     this.targetZ = newz;
-    this.inMove = false;
+    this.inMove = true;
   }
 }
 
@@ -435,4 +435,39 @@ export class Rotation {
     }
   }
 
+}
+
+// array type of pos obj
+export function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0) {
+  const dx = Apos[0] - Bpos.x;  
+  const dz = Apos[2] - Bpos.z;
+  const distSq = dx * dx + dz * dz;
+  const minDistSq = minDistance * minDistance;
+
+  if(distSq < minDistSq && distSq > 1e-8) {
+    const dist = Math.sqrt(distSq);
+    const overlap = minDistance - dist;
+    const nx = dx / dist;
+    const nz = dz / dist;
+
+    // push camera 100% out — walls are immovable
+    Apos[0] += nx * overlap * pushStrength;
+    Apos[2] += nz * overlap * pushStrength;
+
+    // sync target so WASD doesn't snap back next frame
+ 
+    return true;
+  }
+
+  if(distSq <= 1e-8) {
+    Apos[0] += (Math.random() - 0.5) * 0.1;
+    Apos[2] += (Math.random() - 0.5) * 0.1;
+    if(Apos.targetX !== undefined) {
+      Apos.targetX = Apos[0];
+      Apos.targetZ = Apos[2];
+    }
+    return true;
+  }
+
+  return false;
 }

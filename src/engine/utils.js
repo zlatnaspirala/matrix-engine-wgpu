@@ -1,6 +1,8 @@
 
 export var supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
 
+export const MeshType = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2 , BVHANIM: 3};
+
 export function isMobile() {
   if(supportsTouch == true) return true;
   const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
@@ -1116,7 +1118,7 @@ export function isOdd(n) {
   return n % 2 !== 0;
 }
 
-export class FullscreenManagerElement {
+export class FullScreenManagerElement {
   constructor(targetElement = document.documentElement) {
     this.target = targetElement;
   }

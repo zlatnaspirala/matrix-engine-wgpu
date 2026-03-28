@@ -1,5 +1,7 @@
+import {MEConfig} from "../me-config";
+
 export const mirrorIlluminateFragmentWGSL = `
-override shadowDepthTextureSize: f32 = 512.0;
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -57,9 +59,9 @@ struct MirrorIlluminateParams {
     illuminatePulse   : f32,     // pulse speed (Hz). 0 = static                  (default: 1.2)
     fresnelPower      : f32,     // Fresnel exponent for rim sharpness            (default: 4.0)
     envLodBias        : f32,     // mip bias for env sample (blur ≈ roughness)    (default: 0.0)
-    usePlanarReflection: f32,  // ✅ NEW: 0 = env map, 1 = planar/screen-space
-    baseColorMix       : f32,  // ✅ NEW: 0=pure env, 1=normal material mix
-    _pad2              : vec3f, // ✅ Padding to maintain alignment
+    usePlanarReflection: f32,    // ✅ NEW: 0 = env map, 1 = planar/screen-space
+    baseColorMix       : f32,    // ✅ NEW: 0=pure env, 1=normal material mix
+    _pad2              : vec3f,  // ✅ Padding to maintain alignment
 };
 
 const MAX_SPOTLIGHTS = 20u;
