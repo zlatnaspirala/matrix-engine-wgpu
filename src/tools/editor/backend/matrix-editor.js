@@ -1,28 +1,8 @@
-/**
- * @description
- * Web editor backend node application.
- * @author Nikola Lukic
- * @email zlatnaspirala@gmail.com
- * @www https://maximumroulette.com
- */
-import esbuild from "esbuild";
-import fs from "fs/promises";
-import path from "path";
-import {WebSocketServer} from "ws";
-import {DEFAULT_GRAPH_JS} from "./graph.js";
-import {DEFAUL_METHODS} from "./methods.js";
-import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
-import {AiGroq} from "./groq/groq.js";
-import {AiOllama} from "./ollama/ollama.js";
-import {AvailableResources} from "./ollama/get-available-resources.js";
-import {SYSTEM_PROMPT} from "./ollama/test-prompt1.js";
+// Required imports
+const path = require('path');
 
-// matrix-engine-wgpu repo root reference
-const ENGINE_PATH = path.resolve("../../../../");
-const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
-const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
-const PROJECTS_DIR = path.join(ENGINE_PATH, "projects");
-let PROJECT_NAME = "";
+// Function that uses path.join for cross-platform compatibility
+const filePath = path.join('src', 'tools', 'editor', 'backend', 'matrix-editor.js');
 
 await fs.mkdir(PROJECTS_DIR, {recursive: true});
 const watchers = new Map();
