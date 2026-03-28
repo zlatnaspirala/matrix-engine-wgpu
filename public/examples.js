@@ -28193,12 +28193,17 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
+        this.uvScaleBuffer = this.device.createBuffer({
+          size: 8,
+          // vec2f
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        // Default = no scale
+        this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
         this.modelBindGroupInstanced = this.device.createBindGroup({
           label: 'modelBindGroup in mesh [instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
-          entries: [
-          //
-          {
+          entries: [{
             binding: 0,
             resource: {
               buffer: this.instanceBuffer
@@ -28212,6 +28217,11 @@ class MEMeshObjInstances extends _materialsInstanced.default {
             binding: 2,
             resource: {
               buffer: this.vertexAnimBuffer
+            }
+          }, {
+            binding: 3,
+            resource: {
+              buffer: this.uvScaleBuffer
             }
           }]
         });
@@ -28271,6 +28281,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           }
         }, {
           binding: 2,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
+        }, {
+          binding: 3,
           visibility: GPUShaderStage.VERTEX,
           buffer: {
             type: 'uniform'
@@ -28471,26 +28487,18 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           }
         }]
       });
-      this.modelBindGroupInstanced = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh [instanced]',
-        layout: this.uniformBufferBindGroupLayoutInstanced,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.instanceBuffer
-          }
-        }, {
-          binding: 1,
-          resource: {
-            buffer: this.bonesBuffer
-          }
-        }, {
-          binding: 2,
-          resource: {
-            buffer: this.vertexAnimBuffer
-          }
-        }]
-      });
+
+      // this.modelBindGroupInstanced = this.device.createBindGroup({
+      //   label: 'modelBindGroup in mesh [instanced]',
+      //   layout: this.uniformBufferBindGroupLayoutInstanced,
+      //   entries: [
+      //     {binding: 0, resource: {buffer: this.instanceBuffer, }},
+      //     {binding: 1, resource: {buffer: this.bonesBuffer}},
+      //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+
+      //   ],
+      // });
+
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mainPassBindGroupLayout mesh [instaced]',
         entries: [{
@@ -28612,6 +28620,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.updateMeshListBuffers();
       }
     });
+  }
+  setUVScale(x, y = x) {
+    this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
