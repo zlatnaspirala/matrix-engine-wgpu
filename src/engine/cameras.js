@@ -195,6 +195,38 @@ export class WASDCamera {
     this._recalculateViewVP();
     this._dirtyAngle = false;
   }
+
+  setX (x) {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  }
+
+  setY (y) {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  }
+
+  setX (z) {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+
+  setPitch(p) {
+    this.pitch = p;
+    this._dirtyAngle = true;
+  }
+
+  setYaw(y) {
+    this.yaw = y;
+    this._dirtyAngle = true;
+  }
+
+  setTarget (x,y,z) {
+    this.target[0] = x;
+    this.target[1] = y;
+    this.target[2] = z;
+    this._dirtyAngle = true;
+  }
 }
 
 export class ArcballCamera {

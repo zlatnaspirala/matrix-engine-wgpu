@@ -201,11 +201,13 @@ var flipper = function () {
       //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
       //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
       setTimeout(() => {
+        // you cna call setters for each but bettter
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
-      }, 1000);
+        app.cameras.WASD.position[1] = 10;
+        app.cameras.WASD._dirtyAngle = true;
+      }, 500);
 
       // ball
       flipper.addMeshObj({
@@ -304,7 +306,7 @@ var flipper = function () {
         mesh: m.cube,
         physics: {
           enabled: true,
-          mass: 10,
+          mass: 5,
           geometry: "Cube"
         }
       });
@@ -323,7 +325,7 @@ var flipper = function () {
         mesh: m.cube,
         physics: {
           enabled: true,
-          mass: 10,
+          mass: 5,
           geometry: "Cube"
         }
       });
@@ -332,11 +334,19 @@ var flipper = function () {
       if (leftBody) {
         leftBody.setActivationState(4);
         leftBody.activate(true);
+        leftBody.setDamping(0.8, 0.8);
       }
       if (rightBody) {
         rightBody.setActivationState(4);
         rightBody.activate(true);
+        rightBody.setDamping(0.8, 0.8);
       }
+      leftBody.setDamping(0.95, 0.95);
+      rightBody.setDamping(0.95, 0.95);
+      leftBody.setRestitution(0.1);
+      rightBody.setRestitution(0.1);
+      leftBody.setFriction(1.5);
+      rightBody.setFriction(1.5);
 
       // BUMPERS
       const bumperPositions = [{
@@ -577,6 +587,8 @@ var flipper = function () {
         limits: [-0.8, 0.5]
         // limits: [0.5, -0.8]
       });
+      hingeLeft.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
+      hingeRight.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
       let leftBodycurrPos = 'unpressed';
       window.addEventListener("keydown", e => {
         e.preventDefault();
@@ -596,21 +608,27 @@ var flipper = function () {
           hingeRight.enableAngularMotor(true, -25, 200);
         }
       });
-      hingeLeft.enableAngularMotor(true, 10, 50);
-      hingeRight.enableAngularMotor(true, 10, 50);
+      hingeLeft.enableAngularMotor(true, 10, 500);
+      hingeRight.enableAngularMotor(true, 10, 500);
+      flipper.autoUpdate.push({
+        update: () => {
+          leftBody.activate(true);
+          rightBody.activate(true);
+        }
+      });
       window.addEventListener("keyup", e => {
         if (e.code === "KeyZ") {
           leftBodycurrPos = 'unpressed';
           // const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
           // leftBody.activate(true);
           // leftBody.setActivationState(4);
-          hingeLeft.enableAngularMotor(true, 10, 50);
+          hingeLeft.enableAngularMotor(true, 10, 500);
         }
         if (e.code === "KeyM") {
           // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
           // rightBody.activate(true);
           // rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, 10, 50);
+          hingeRight.enableAngularMotor(true, 10, 500);
         }
       });
     }
@@ -2046,7 +2064,7 @@ var mazeGame = function () {
 };
 exports.mazeGame = mazeGame;
 
-},{"../src/engine/collision-sub-system.js":33,"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/world.js":119}],10:[function(require,module,exports){
+},{"../src/engine/collision-sub-system.js":34,"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/world.js":119}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2202,6 +2220,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
@@ -2219,13 +2238,13 @@ var physicsPlayground = function () {
   }, () => {
     physicsPlayground.addLight();
     (0, _raycast.addRaycastsListener)();
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj",
-      ball: "./res/meshes/shapes/sphere.obj"
-    }, onGround, {
-      scale: [1, 1, 1]
-    });
     addEventListener('AmmoReady', () => {
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj",
+        ball: "./res/meshes/shapes/sphere.obj"
+      }, onGround, {
+        scale: [1, 1, 1]
+      });
       physicsPlayground.matrixAmmo.speedUpSimulation = 4;
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -2321,7 +2340,7 @@ var physicsPlayground = function () {
       physicsPlayground.addMeshObj({
         position: {
           x: 0,
-          y: -3.5,
+          y: -1,
           z: -10
         },
         rotation: {
@@ -2345,26 +2364,50 @@ var physicsPlayground = function () {
         }
       });
 
-      // physicsPlayground.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 2, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   scale: [2, 2, 2],
-      //   texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
-      //   name: 'TEST1',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: true,
-      //     mass: 10,
-      //     geometry: "Cube"
-      //   },
-      //   // raycast: { enabled: true , radius: 2 }
-      // });
-
+      // test new features
+      let test = _proceduralMesh.MeshMorpher.compose({
+        shape: _proceduralMesh.MeshMorpher.capsule(1),
+        offset: [0, 0, 0]
+      }, {
+        shape: _proceduralMesh.MeshMorpher.cube(1),
+        offset: [0, 0, 0]
+      });
+      physicsPlayground.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 5,
+          z: -7
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: test,
+        meshB: test,
+        name: `morph_1`,
+        physics: {
+          enabled: true,
+          geometry: "Capsule",
+          enabled: true,
+          mass: 5,
+          radius: 0.5,
+          height: 1.0
+        }
+      });
       app.physicsBodiesGeneratorWall("standard", {
         x: -5,
-        y: 0,
+        y: 1,
         z: -20
       }, {
         x: 0,
@@ -2538,7 +2581,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/engine/utils.js":68,"../src/world.js":119}],12:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/procedural-mesh.js":64,"../src/engine/raycast.js":67,"../src/engine/utils.js":68,"../src/world.js":119}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21338,3079 +21381,6 @@ exports.default = Behavior;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.CollisionSystem = void 0;
-var _navMesh = require("../../examples/games/rpg/nav-mesh");
-var _matrixClass = require("./matrix-class");
-class CollisionSystem {
-  constructor() {
-    this.entries = [];
-    this.cameraEntry = null;
-    this.cellSize = 100;
-    this._grid = new Map();
-  }
-  register(id, positionInstance, radius = 0.6, group = "default") {
-    this.entries.push({
-      id,
-      pos: positionInstance,
-      radius,
-      group
-    });
-  }
-  unregister(id) {
-    this.entries = this.entries.filter(e => e.id !== id);
-    if (this.cameraEntry && this.cameraEntry.id === id) this.cameraEntry = null;
-  }
-
-  /**
-   * Specifically register the WASD camera to the collision loop.
-   * @param {Object} cameraInstance - Must have .x, .z (and ideally targetX/targetZ)
-   */
-  registerCamera(cameraInstance, radius = 1.0) {
-    this.cameraEntry = {
-      id: "camera",
-      pos: cameraInstance,
-      radius,
-      group: "camera"
-    };
-  }
-  _cellKey(x, z) {
-    const cx = Math.floor(x / this.cellSize);
-    const cz = Math.floor(z / this.cellSize);
-    return cx << 16 ^ cz;
-  }
-  _buildGrid() {
-    const grid = this._grid;
-    grid.clear();
-    for (let i = 0; i < this.entries.length; i++) {
-      const e = this.entries[i];
-      const key = this._cellKey(e.pos.x, e.pos.z);
-      let cell = grid.get(key);
-      if (!cell) {
-        cell = [];
-        grid.set(key, cell);
-      }
-      cell.push(e);
-    }
-  }
-  _getNeighborCells(x, z) {
-    const cx = Math.floor(x / this.cellSize);
-    const cz = Math.floor(z / this.cellSize);
-    const result = [];
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
-        const key = cx + dx << 16 ^ cz + dz;
-        const cell = this._grid.get(key);
-        if (cell) result.push(...cell);
-      }
-    }
-    return result;
-  }
-  update() {
-    this._buildGrid();
-    const n = this.entries.length;
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const A = this.entries[i];
-        const B = this.entries[j];
-        if (A.group === B.group) continue;
-        const minDist = (A.radius + B.radius) / 1.5;
-        const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
-        if (testCollide) {
-          dispatchEvent(new CustomEvent('close-distance', {
-            detail: {
-              A,
-              B
-            }
-          }));
-        }
-      }
-    }
-
-    // --- camera vs entities (only neighbor cells) ---
-    if (this.cameraEntry) {
-      const cam = this.cameraEntry;
-      const camX = cam.pos[0];
-      const camZ = cam.pos[2];
-      const neighbors = this._getNeighborCells(camX, camZ);
-      for (let i = 0; i < neighbors.length; i++) {
-        const target = neighbors[i];
-        const minCamDist = 1 + 0.5;
-        const collided = (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 1.1);
-        if (collided) {
-          console.log('kinematic collision');
-        }
-      }
-    }
-  }
-}
-exports.CollisionSystem = CollisionSystem;
-
-},{"../../examples/games/rpg/nav-mesh":5,"./matrix-class":58}],34:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.TextureCache = void 0;
-class TextureCache {
-  constructor(device) {
-    this.device = device;
-    this.cache = new Map(); // path -> Promise<TextureEntry>
-  }
-  async get(path, format, isEnvMap = false) {
-    if (this.cache.has(path)) {
-      return this.cache.get(path); // reuse promise
-    }
-    let promise;
-    if (isEnvMap == true) {
-      promise = this.#loadEnvMap(path, format);
-      this.cache.set(path, promise);
-    } else {
-      promise = this.#load(path, format);
-      this.cache.set(path, promise);
-    }
-    return promise;
-  }
-  async loadEnvMap(path) {
-    // Use a special cache key for env maps
-    const envKey = `env:${path}`;
-    if (this.cache.has(envKey)) {
-      return this.cache.get(envKey);
-    }
-    const promise = this.#loadEnvMap(path);
-    this.cache.set(envKey, promise);
-    return promise;
-  }
-  async #load(path, format) {
-    const response = await fetch(path);
-    const blob = await response.blob();
-    const imageBitmap = await createImageBitmap(blob);
-    const texture = this.device.createTexture({
-      size: [imageBitmap.width, imageBitmap.height, 1],
-      format,
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.device.queue.copyExternalImageToTexture({
-      source: imageBitmap
-    }, {
-      texture
-    }, [imageBitmap.width, imageBitmap.height]);
-    const sampler = this.device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear',
-      addressModeU: "repeat",
-      addressModeV: "repeat",
-      addressModeW: "repeat"
-    });
-    return {
-      texture,
-      sampler
-    };
-  }
-  async #loadEnvMap(path) {
-    const response = await fetch(path);
-    const blob = await response.blob();
-    const imageBitmap = await createImageBitmap(blob);
-    const width = imageBitmap.width;
-    const height = imageBitmap.height;
-    // Calculate mip levels for better quality
-    // const mipLevelCount = Math.floor(Math.log2(Math.max(width, height))) + 1;
-    const mipLevelCount = 1;
-    const texture = this.device.createTexture({
-      label: `EnvMap: ${path}`,
-      size: [width, height],
-      format: 'rgba16float',
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-      mipLevelCount // ✅ Enable mipmaps for smooth sampling
-    });
-    this.device.queue.copyExternalImageToTexture({
-      source: imageBitmap
-    }, {
-      texture
-    }, [width, height]);
-
-    // TODO: Generate mipmaps here if you have a mipmap generator
-    // For now, base level (level 0) will work fine
-
-    // Sampler optimized for environment maps
-    const sampler = this.device.createSampler({
-      label: 'EnvMap Sampler',
-      magFilter: 'linear',
-      minFilter: 'linear',
-      mipmapFilter: 'linear',
-      // ✅ Smooth between mip levels
-      addressModeU: 'repeat',
-      // ✅ Wrap horizontally (360°)
-      addressModeV: 'clamp-to-edge' // ✅ Clamp at poles (top/bottom)
-    });
-    return {
-      texture,
-      sampler
-    };
-  }
-}
-exports.TextureCache = TextureCache;
-
-},{}],35:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.DestructionEffect = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _dustShaderWgsl = require("../../shaders/desctruction/dust-shader.wgsl.js");
-/**
- * @class DestructionEffect
- * @description Complete destruction effect with particle smoke/dust for MOBA
- * Matches Matrix-Engine-WGPU effect interface (like FlameEffect)
- * 
- * Features:
- * - Particle-based smoke/dust system
- * - GPU instancing for performance
- * - Inherits parent transform via baseModelMatrix
- * - Own pipeline, shares draw pass
- * 
- * @note Based on Matrix-Engine-WGPU architecture
- * but can be isolatted.Effects are standalone sub
- * system in matrix-engine-wgpu.
- */
-
-class DestructionEffect {
-  constructor(device, format, config = {}) {
-    this.device = device;
-    this.format = format;
-
-    // Configuration
-    this.particleCount = config.particleCount || 100;
-    this.duration = config.duration || 2.5;
-    this.spread = config.spread || 5.0;
-
-    // State
-    this.time = 0;
-    this.enabled = false;
-    this.particles = [];
-
-    // Visual properties
-    this.color = config.color || [0.6, 0.5, 0.4, 1.0]; // Brownish dust
-    this.intensity = 1.0;
-    this._initPipeline();
-    this._initParticles();
-  }
-  _initPipeline() {
-    // Single quad for billboarded particles
-    const S = 1.0; // Base particle size
-    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0,
-    // Top-left
-    0.5 * S, 0.5 * S, 0,
-    // Top-right
-    -0.5 * S, -0.5 * S, 0,
-    // Bottom-left
-    0.5 * S, -0.5 * S, 0 // Bottom-right
-    ]);
-    const uvData = new Float32Array([0, 0,
-    // Top-left
-    1, 0,
-    // Top-right
-    0, 1,
-    // Bottom-left
-    1, 1 // Bottom-right
-    ]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-
-    // Vertex buffer (shared quad geometry)
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-
-    // UV buffer
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-
-    // Index buffer
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-
-    // Instance buffer (per-particle data: position, velocity, life, size)
-    // Format: vec4(pos.xyz, size) + vec4(vel.xyz, life) + vec4(color.rgba)
-    const maxParticles = this.particleCount;
-    const instanceDataSize = maxParticles * (4 + 4 + 4) * 4; // 3 vec4s per particle
-
-    this.instanceBuffer = this.device.createBuffer({
-      size: instanceDataSize,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-
-    // Uniform buffers
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      // mat4x4
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
-      // model matrix + time + intensity (padded)
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // Bind group layout
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      },
-      // camera
-      {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {}
-      } // model + time
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-
-    // Shader module
-    const shaderModule = this.device.createShaderModule({
-      code: _dustShaderWgsl.dustShader
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-
-    // Render pipeline with alpha blending
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'destruction Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-        // Vertex positions (per-vertex, shared quad)
-        {
-          arrayStride: 3 * 4,
-          stepMode: "vertex",
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: "float32x3"
-          }]
-        },
-        // UVs (per-vertex, shared quad)
-        {
-          arrayStride: 2 * 4,
-          stepMode: "vertex",
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: "float32x2"
-          }]
-        },
-        // Instance data (per-particle)
-        {
-          arrayStride: 12 * 4,
-          // 3 vec4s = 12 floats
-          stepMode: "instance",
-          attributes: [{
-            shaderLocation: 2,
-            offset: 0,
-            format: "float32x4"
-          },
-          // position + size
-          {
-            shaderLocation: 3,
-            offset: 16,
-            format: "float32x4"
-          },
-          // velocity + life
-          {
-            shaderLocation: 4,
-            offset: 32,
-            format: "float32x4"
-          } // color
-          ]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "none"
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        // Particles don't write depth
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
-  }
-  _initParticles() {
-    // Initialize particle data
-    for (let i = 0; i < this.particleCount; i++) {
-      this.particles.push({
-        // Local position offset from parent
-        position: [0, 0, 0],
-        velocity: [0, 0, 0],
-        life: 0,
-        maxLife: 0,
-        size: 0,
-        color: [...this.color]
-      });
-    }
-  }
-
-  /**
-   * Trigger the destruction effect
-   * Spawns all particles with random velocities
-   */
-  trigger() {
-    this.enabled = true;
-    this.time = 0;
-
-    // Spawn particles
-    for (let i = 0; i < this.particleCount; i++) {
-      const particle = this.particles[i];
-
-      // Random position in small sphere
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const r = Math.random() * 0.5;
-      particle.position = [r * Math.sin(phi) * Math.cos(theta), Math.random() * 1.0,
-      // Slightly upward bias
-      r * Math.sin(phi) * Math.sin(theta)];
-
-      // Random velocity (explosion pattern)
-      const speed = 2.0 + Math.random() * 3.0;
-      const vTheta = Math.random() * Math.PI * 2;
-      const vPhi = Math.acos(2 * Math.random() - 1);
-      particle.velocity = [speed * Math.sin(vPhi) * Math.cos(vTheta), speed * Math.abs(Math.sin(vPhi)) * 2.0,
-      // Upward bias
-      speed * Math.sin(vPhi) * Math.sin(vTheta)];
-
-      // Random lifetime
-      particle.maxLife = 1.0 + Math.random() * 1.5;
-      particle.life = particle.maxLife;
-
-      // Random size
-      particle.size = 0.5 + Math.random() * 1.5;
-
-      // Color with slight variation
-      particle.color = [this.color[0] + (Math.random() - 0.5) * 0.2, this.color[1] + (Math.random() - 0.5) * 0.2, this.color[2] + (Math.random() - 0.5) * 0.2, 1.0];
-    }
-  }
-
-  /**
-   * Update particle simulation
-   */
-  update(dt) {
-    if (!this.enabled) return;
-    this.time += dt;
-    let aliveCount = 0;
-
-    // Update each particle
-    for (let i = 0; i < this.particleCount; i++) {
-      const p = this.particles[i];
-      if (p.life <= 0) continue;
-
-      // Physics update
-      p.velocity[1] -= 2.0 * dt; // Gravity
-
-      // Damping (air resistance)
-      p.velocity[0] *= 0.98;
-      p.velocity[1] *= 0.98;
-      p.velocity[2] *= 0.98;
-
-      // Position update
-      p.position[0] += p.velocity[0] * dt;
-      p.position[1] += p.velocity[1] * dt;
-      p.position[2] += p.velocity[2] * dt;
-
-      // Life update
-      p.life -= dt;
-
-      // Fade out
-      const lifeRatio = p.life / p.maxLife;
-      p.color[3] = lifeRatio * this.intensity;
-
-      // Size grows over time (smoke expansion)
-      p.size = (0.5 + Math.random() * 1.5) * (1.0 + (1.0 - lifeRatio) * 2.0);
-      aliveCount++;
-    }
-
-    // Disable if all particles dead
-    if (aliveCount === 0 && this.time > this.duration) {
-      this.enabled = false;
-    }
-
-    // Update instance buffer
-    this._updateInstanceBuffer();
-  }
-  _updateInstanceBuffer() {
-    // Pack particle data into instance buffer
-    const instanceData = new Float32Array(this.particleCount * 12);
-    for (let i = 0; i < this.particleCount; i++) {
-      const p = this.particles[i];
-      const offset = i * 12;
-
-      // vec4: position + size
-      instanceData[offset + 0] = p.position[0];
-      instanceData[offset + 1] = p.position[1];
-      instanceData[offset + 2] = p.position[2];
-      instanceData[offset + 3] = p.size;
-
-      // vec4: velocity + life
-      instanceData[offset + 4] = p.velocity[0];
-      instanceData[offset + 5] = p.velocity[1];
-      instanceData[offset + 6] = p.velocity[2];
-      instanceData[offset + 7] = p.life;
-
-      // vec4: color
-      instanceData[offset + 8] = p.color[0];
-      instanceData[offset + 9] = p.color[1];
-      instanceData[offset + 10] = p.color[2];
-      instanceData[offset + 11] = p.color[3];
-    }
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, instanceData);
-  }
-
-  /**
-   * Update instance data with parent transform
-   * Called by parent object before rendering
-   */
-  updateInstanceData(baseModelMatrix) {
-    const local = _wgpuMatrix.mat4.identity();
-
-    // Local offset (if needed)
-    // mat4.translate(local, [0, 2, 0], local); // Offset upward slightly
-
-    // Multiply with baseModelMatrix to inherit world transform
-    const finalMat = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-
-    // Update GPU buffer
-    const timeBuffer = new Float32Array([this.time]);
-    const intensityBuffer = new Float32Array([this.intensity]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
-  }
-
-  /**
-   * Draw particles
-   */
-  draw(pass, cameraMatrix) {
-    if (!this.enabled) return;
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setVertexBuffer(2, this.instanceBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-
-    // Draw instanced (one quad per particle)
-    pass.drawIndexed(this.indexCount, this.particleCount);
-  }
-
-  /**
-   * Main render method (called by parent)
-   */
-  render(pass, mesh, viewProjMatrix, dt = 0.016) {
-    if (!this.enabled) return;
-    this.update(dt);
-    this.draw(pass, viewProjMatrix);
-  }
-
-  /**
-   * Set effect intensity
-   */
-  setIntensity(v) {
-    this.intensity = v;
-  }
-
-  /**
-   * Check if effect is still active
-   */
-  isActive() {
-    return this.enabled;
-  }
-
-  /**
-   * Reset effect
-   */
-  reset() {
-    this.enabled = false;
-    this.time = 0;
-    for (let p of this.particles) {
-      p.life = 0;
-    }
-  }
-}
-exports.DestructionEffect = DestructionEffect;
-
-},{"../../shaders/desctruction/dust-shader.wgsl.js":72,"wgpu-matrix":30}],36:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.HPBarEffect = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
-class HPBarEffect {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.progress = 1.0;
-    this.color = [0.1, 0.9, 0.1, 1.0];
-    this.offsetY = 48;
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    // Simple flat bar (width 100, height 10)
-    const W = 40;
-    const H = 3;
-    const vertexData = new Float32Array([-0.5 * W, 0.5 * H, 0.0, 0.5 * W, 0.5 * H, 0.0, -0.5 * W, -0.5 * H, 0.0, 0.5 * W, -0.5 * H, 0.0]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-
-    // Buffers
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-
-    // Uniforms
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // model + color + progress (64 + 16 + 4)
-    this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // BindGroup
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'energy-bar bindGroupLayout',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      label: 'energy-bar bindGroup',
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-
-    // Pipeline
-    const shaderModule = this.device.createShaderModule({
-      code: _energyBarShader.hpBarEffectShaders
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'energy-bar pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3'
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x2'
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{
-          format: this.format
-        }]
-      },
-      primitive: {
-        topology: 'triangle-list'
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'always',
-        format: 'depth24plus'
-      }
-    });
-  }
-  setProgress(value) {
-    this.progress = Math.max(0.0, Math.min(1.0, value));
-  }
-  setColor(r, g, b, a = 1.0) {
-    this.color = [r, g, b, a];
-  }
-  draw(pass, cameraMatrix, modelMatrix) {
-    const color = new Float32Array(this.color);
-    const progressData = new Float32Array([this.progress]);
-
-    // Pack uniforms manually
-    const buffer = new ArrayBuffer(64 + 16 + 4);
-    const f32 = new Float32Array(buffer);
-    f32.set(cameraMatrix, 0); // not needed here
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
-    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
-  }
-  render(pass, mesh, viewProjMatrix) {
-    const pos = mesh.position;
-    const modelMatrix = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
-  }
-}
-exports.HPBarEffect = HPBarEffect;
-
-},{"../../shaders/energy-bars/energy-bar-shader.js":73,"wgpu-matrix":30}],37:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.FlameEmitter = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _flameInstanced = require("../../shaders/flame-effect/flame-instanced");
-var _utils = require("../utils");
-/**
- * @description
- * FlameEmitter
- */
-class FlameEmitter {
-  constructor(device, format, maxParticles = 20) {
-    this.device = device;
-    this.format = format;
-    this.time = 0;
-    this.intensity = 1.0;
-    this.enabled = true;
-    this.maxParticles = maxParticles;
-    this.instanceTargets = [];
-    this.floatsPerInstance = 28;
-    this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
-    this.smoothFlickeringScale = 0.1;
-    this.minBound = 0;
-    this.maxBound = 1.9;
-    this.swap0 = 0;
-    this.swap1 = 1;
-    this.swap2 = 2;
-    this.riseDirection = 1;
-    this.baseRotation = [0, 0, 0];
-    this.scaleCoeficient = 0.12;
-
-    // cache
-    this._localMatrix = _wgpuMatrix.mat4.create();
-    this._finalMatrix = _wgpuMatrix.mat4.create();
-    for (let i = 0; i < maxParticles; i++) {
-      this.instanceTargets.push({
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        rotation: 0.1,
-        color: [1, 0.3, 0, 0.1],
-        time: 1,
-        intensity: 1,
-        riseSpeed: 1,
-        tintStrength: 1
-      });
-    }
-    this._initPipeline();
-  }
-  recreateVertexData(S) {
-    const vertexData = new Float32Array([-0.4 * S, 0.5 * S, 0.0 * S, 0.4 * S, 0.5 * S, 0.0 * S, -0.2 * S, -0.5 * S, 0.0 * S, 0.2 * S, -0.5 * S, 0.0 * S]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-  }
-  recreateVertexDataRND(S) {
-    const vertexData = new Float32Array([-(0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, -(0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
-  }
-
-  // not tested
-  recreateVertexDataCrazzy(S) {
-    const memory1 = -(0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
-    const memory11 = (0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
-    const memory12 = (0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
-    const memory13 = (0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
-    const memory2 = (0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
-    const memory21 = (0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
-    const memory22 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
-    const memory23 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
-    this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info('crazzy flame emitter case data:', this.memoryCrazzyCase);
-    const vertexData = new Float32Array([memory1, memory2, 0.0, memory11, memory21, 0.0, memory12, memory22, 0.0, memory13, memory23, 0.0]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
-  }
-  _initPipeline() {
-    const S = 2;
-    const vertexData = this.recreateVertexDataRND(1);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      label: 'flame-emmiter modeBuffer',
-      size: this.maxParticles * this.floatsPerInstance * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'flame-emmiter bindGroupLayout',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: "read-only-storage"
-        }
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      label: 'flame-emmiter bindGroup',
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _flameInstanced.flameEffectInstance
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'flame-emmiter pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: "float32x3"
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: "float32x2"
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one',
-              operation: 'add'
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: "triangle-list"
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
-  }
-  updateInstanceData = baseModelMatrix => {
-    const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    const floatsPerInstance = 28;
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
-      }
-      const local = this._localMatrix;
-      _wgpuMatrix.mat4.identity(local);
-      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
-      _wgpuMatrix.mat4.rotateY(local, t.rotation, local);
-      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
-      _wgpuMatrix.mat4.identity(this._finalMatrix);
-      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, this._finalMatrix);
-      const offset = i * floatsPerInstance;
-      this.instanceData.set(this._finalMatrix, offset);
-      this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
-      this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
-    }
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
-  };
-  render(pass, mesh, viewProjMatrix, dt = 0.1) {
-    this.time += dt;
-    for (const p of this.instanceTargets) {
-      p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
-      // Reset check
-      const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxBound : p.position[this.swap1] < this.minBound;
-      if (resetCondition) {
-        p.position[this.swap1] = this.riseDirection > 0 ? this.minBound + Math.random() * 0.5 : this.maxBound - Math.random() * 0.5;
-        p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2;
-        p.riseSpeed = 0.2 + Math.random() * 1.0;
-      }
-      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * (0, _utils.randomIntFromTo)(1, 4);
-    }
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceTargets.length);
-  }
-  setIntensity(v) {
-    this.intensity = v;
-  }
-  setDirection(direction) {
-    this.riseDirection = 1;
-    this.baseRotation = [0, 0, 0]; // Reset
-    switch (direction) {
-      case 'up':
-        this.swap0 = 0;
-        this.swap1 = 1;
-        this.swap2 = 2;
-        break;
-      case 'down':
-        this.swap0 = 0;
-        this.swap1 = 1;
-        this.swap2 = 2;
-        this.riseDirection = -1;
-        break;
-      case 'forward':
-        this.swap0 = 0;
-        this.swap1 = 2;
-        this.swap2 = 1;
-        this.baseRotation = [Math.PI / 2, 0, 0];
-        break;
-      case 'back':
-        this.swap0 = 0;
-        this.swap1 = 2;
-        this.swap2 = 1;
-        this.riseDirection = -1;
-        this.baseRotation = [-Math.PI / 2, 0, 0]; // Tilt -90 on X
-        break;
-      case 'right':
-        this.swap0 = 1;
-        this.swap1 = 0;
-        this.swap2 = 2;
-        this.baseRotation = [0, 0, -Math.PI / 2]; // Tilt -90 on Z
-        break;
-      case 'left':
-        this.swap0 = 1;
-        this.swap1 = 0;
-        this.swap2 = 2;
-        this.riseDirection = -1;
-        this.baseRotation = [0, 0, Math.PI / 2]; // Tilt 90 on Z
-        break;
-    }
-  }
-}
-exports.FlameEmitter = FlameEmitter;
-
-},{"../../shaders/flame-effect/flame-instanced":74,"../utils":68,"wgpu-matrix":30}],38:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.FlamePresets = exports.FlameEffect = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _flameEffect = require("../../shaders/flame-effect/flameEffect");
-var _geometryFactory = require("../geometry-factory");
-const FlamePresets = exports.FlamePresets = {
-  // Natural campfire / torch
-  natural: {
-    intensity: 12.0,
-    speed: 1.0,
-    turbulence: 0.5,
-    stretch: 1.0,
-    tint: [1.0, 1.0, 1.0],
-    tintStrength: 0.0,
-    scale: 2,
-    localOffset: [0, 0, 0],
-    localRotation: [0, 0, 0],
-    activeRotate: [0, 0, 0]
-  },
-  // Tall torch / pillar of fire
-  torch: {
-    intensity: 14.0,
-    speed: 1.2,
-    turbulence: 0.35,
-    stretch: 2.0,
-    tint: [1.0, 1.0, 1.0],
-    tintStrength: 0.0,
-    scale: 2,
-    localOffset: [0, 0, 0],
-    localRotation: [0, 0, 0],
-    activeRotate: [0, 0, 0]
-  },
-  // Wide, low bonfire
-  bonfire: {
-    intensity: 10.0,
-    speed: 0.8,
-    turbulence: 0.9,
-    stretch: 0.5,
-    tint: [1.0, 1.0, 1.0],
-    tintStrength: 0.0,
-    scale: 2,
-    localOffset: [0, 0, 0],
-    localRotation: [0, 0, 0],
-    activeRotate: [0, 0, 0]
-  },
-  // Magical blue flame
-  magic: {
-    intensity: 8.0,
-    speed: 1.4,
-    turbulence: 0.6,
-    stretch: 1.3,
-    tint: [0.1, 0.4, 1.0],
-    tintStrength: 0.85,
-    scale: 2,
-    localOffset: [0, 0, 0],
-    localRotation: [0, 0, 0],
-    activeRotate: [0, 0, 0]
-  },
-  // Hellfire — dark purple/red
-  hell: {
-    intensity: 16.0,
-    speed: 0.9,
-    turbulence: 0.8,
-    stretch: 1.6,
-    tint: [0.6, 0.0, 0.8],
-    tintStrength: 0.7,
-    scale: 2,
-    localOffset: [0, 0, 0],
-    localRotation: [0, 0, 0],
-    activeRotate: [0, 0, 0]
-  },
-  // Poison green
-  poison: {
-    intensity: 9.0,
-    speed: 1.1,
-    turbulence: 0.7,
-    stretch: 1.1,
-    tint: [0.1, 1.0, 0.15],
-    tintStrength: 0.9,
-    scale: 2,
-    localOffset: [0, 0, 0],
-    localRotation: [0, 0, 0],
-    activeRotate: [0, 0, 0]
-  }
-};
-
-// FlameEffect
-class FlameEffect {
-  constructor(device, format, colorFormat, params = {}) {
-    this.device = device;
-    this.format = format;
-    this.colorFormat = colorFormat ?? format;
-    const config = typeof params === 'string' ? FlamePresets[params] : params;
-    const defaults = FlamePresets.natural;
-    this.intensity = config.intensity ?? defaults.intensity;
-    this.speed = config.speed ?? defaults.speed;
-    this.turbulence = config.turbulence ?? defaults.turbulence;
-    this.stretch = config.stretch ?? defaults.stretch;
-    this.tint = config.tint ?? defaults.tint;
-    this.tintStrength = config.tintStrength ?? defaults.tintStrength;
-    this.scale = config.scale ?? defaults.scale;
-    this.time = 0;
-    this.enabled = true;
-    this.localOffset = config.localOffset ?? defaults.localOffset;
-    this.localRotation = config.localRotation ?? defaults.localRotation;
-    this.activeRotate = config.activeRotate ?? defaults.activeRotate;
-    this._initPipeline();
-    this.setGeometry("quad", this.scale);
-    this._localMatrix = _wgpuMatrix.mat4.create();
-    this._finalMatrix = _wgpuMatrix.mat4.create();
-    this._timeSpeed = new Float32Array(4);
-    this._params = new Float32Array(4);
-    this._tint = new Float32Array(4);
-    this._uniformData = new Float32Array(28);
-  }
-  setGeometry(type, size = 1, segments = 32) {
-    const geo = _geometryFactory.GeometryFactory.create(type, size, segments);
-    this.vertexBuffer = this._uploadVertex(geo.positions);
-    this.uvBuffer = this._uploadVertex(geo.uvs);
-    const byteLen = geo.indices.byteLength;
-    const paddedByteLen = Math.ceil(byteLen / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
-      size: paddedByteLen,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    if (byteLen % 4 !== 0) {
-      const paddedData = new Uint8Array(paddedByteLen);
-      paddedData.set(new Uint8Array(geo.indices.buffer, geo.indices.byteOffset, byteLen));
-      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedData);
-    } else {
-      this.device.queue.writeBuffer(this.indexBuffer, 0, geo.indices);
-    }
-    this.indexCount = geo.indices.length;
-    this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
-  }
-  _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 112,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {
-          type: "uniform"
-        }
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: "uniform"
-        }
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _flameEffect.flameEffect
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout]
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [{
-          arrayStride: 12,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: "float32x3"
-          }]
-        }, {
-          arrayStride: 8,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: "float32x2"
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.colorFormat,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: "triangle-list"
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
-  }
-  async morphTo(type, size = 40, duration = 200) {
-    const originalIntensity = this.intensity;
-    const steps = 10;
-    const stepTime = duration / (steps * 2);
-    for (let i = 0; i < steps; i++) {
-      this.intensity *= 0.5;
-      await new Promise(r => setTimeout(r, stepTime));
-    }
-    this.setGeometry(type, size);
-    for (let i = 0; i < steps; i++) {
-      this.intensity = originalIntensity * (i / steps);
-      await new Promise(r => setTimeout(r, stepTime));
-    }
-    this.intensity = originalIntensity;
-  }
-  _uploadVertex(data) {
-    const buf = this.device.createBuffer({
-      size: data.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(buf, 0, data);
-    return buf;
-  }
-  updateInstanceData(baseModelMatrix) {
-    const local = this._localMatrix;
-    const finalMat = this._finalMatrix;
-    _wgpuMatrix.mat4.identity(local);
-    _wgpuMatrix.mat4.identity(finalMat);
-    _wgpuMatrix.mat4.translate(local, this.localOffset, local);
-    _wgpuMatrix.mat4.rotateX(local, this.localRotation[0], local);
-    _wgpuMatrix.mat4.rotateY(local, this.localRotation[1], local);
-    _wgpuMatrix.mat4.rotateZ(local, this.localRotation[2], local);
-    if (this.activeRotate[0] !== 0) {
-      _wgpuMatrix.mat4.rotateX(local, this.activeRotate[0] * this.time, local);
-    }
-    if (this.activeRotate[1] !== 0) {
-      _wgpuMatrix.mat4.rotateY(local, this.activeRotate[1] * this.time, local);
-    }
-    if (this.activeRotate[2] !== 0) {
-      _wgpuMatrix.mat4.rotateZ(local, this.activeRotate[2] * this.time, local);
-    }
-    _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-    const ts = this._timeSpeed;
-    ts[0] = this.time;
-    ts[1] = this.speed;
-    ts[2] = 0;
-    ts[3] = 0;
-    const p = this._params;
-    p[0] = this.intensity;
-    p[1] = this.turbulence;
-    p[2] = this.stretch;
-    p[3] = 0;
-    const t = this._tint;
-    t[0] = this.tint[0];
-    t[1] = this.tint[1];
-    t[2] = this.tint[2];
-    t[3] = this.tintStrength;
-    // const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
-    // const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
-    // const tint = new Float32Array([...this.tint, this.tintStrength]);
-    this._uniformData.set(finalMat, 0);
-    this._uniformData.set(ts, 16);
-    this._uniformData.set(p, 20);
-    this._uniformData.set(t, 24);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
-  }
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
-    pass.drawIndexed(this.indexCount);
-  }
-  // Interface for effect -> (pass, mesh, viewProj)
-  render(pass, mesh, viewProjMatrix) {
-    this.time += 0.016;
-    this.draw(pass, viewProjMatrix);
-  }
-}
-exports.FlameEffect = FlameEffect;
-
-},{"../../shaders/flame-effect/flameEffect":75,"../geometry-factory":48,"wgpu-matrix":30}],39:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.GenGeoTexture = void 0;
-var _geoTex = require("../../shaders/standalone/geo.tex.js");
-var _geometryFactory = require("../geometry-factory.js");
-var _wgpuMatrix = require("wgpu-matrix");
-class GenGeoTexture {
-  constructor(device, format, type = "sphere", path, scale = 1) {
-    this.device = device;
-    this.format = format;
-    const geom = _geometryFactory.GeometryFactory.create(type, scale);
-    this.vertexData = geom.positions;
-    this.uvData = geom.uvs;
-    this.indexData = geom.indices;
-    this.enabled = true;
-    this.rotateEffect = true;
-    this.rotateEffectSpeed = 10;
-    this.rotateAngle = 0;
-    this.loadTexture(path).then(() => {
-      this._initPipeline();
-    });
-  }
-  async loadTexture(url) {
-    return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
-      const texture = this.device.createTexture({
-        size: [img.width, img.height, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture({
-        source: img
-      }, {
-        texture
-      }, [img.width, img.height]);
-      const sampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-        addressModeU: "repeat",
-        addressModeV: "repeat"
-      });
-      this.texture = texture;
-      this.sampler = sampler;
-      resolve();
-    });
-  }
-  _initPipeline() {
-    const {
-      vertexData,
-      uvData,
-      indexData
-    } = this;
-    // GPU buffers
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4]
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
-      size: this.instanceData.byteLength,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: "read-only-storage"
-        }
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {}
-      }, {
-        binding: 3,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }, {
-        binding: 2,
-        resource: this.sampler
-      }, {
-        binding: 3,
-        resource: this.texture.createView()
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _geoTex.geoInstancedTexEffect
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'gen-geo-tex pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3'
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x2'
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: 'triangle-list'
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less-equal',
-        format: 'depth24plus'
-      }
-    });
-  }
-  updateInstanceData = baseModelMatrix => {
-    if (this.rotateEffect) {
-      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
-      if (this.rotateAngle >= 360) {
-        this.rotateAngle = 0;
-      }
-    }
-    const count = Math.min(this.instanceCount, this.maxInstances);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      // smooth interpolation of position & scale
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
-      }
-      const local = _wgpuMatrix.mat4.identity();
-      if (this.rotateEffect == true) {
-        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
-      }
-      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
-      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
-      const finalMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
-    }
-    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
-  };
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount, this.instanceCount);
-  }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
-  }
-}
-exports.GenGeoTexture = GenGeoTexture;
-
-},{"../../shaders/standalone/geo.tex.js":99,"../geometry-factory.js":48,"wgpu-matrix":30}],40:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.GenGeoTexture2 = void 0;
-var _geoTex = require("../../shaders/standalone/geo.tex.js");
-var _geometryFactory = require("../geometry-factory.js");
-var _wgpuMatrix = require("wgpu-matrix");
-class GenGeoTexture2 {
-  constructor(device, format, type = "sphere", path, scale = 1) {
-    this.device = device;
-    this.format = format;
-    const geom = _geometryFactory.GeometryFactory.create(type, scale);
-    this.vertexData = geom.positions;
-    this.uvData = geom.uvs;
-    this.indexData = geom.indices;
-    this.enabled = true;
-    this.rotateEffect = true;
-    this.rotateEffectSpeed = 10;
-    this.rotateAngle = 0;
-    this.loadTexture(path).then(() => {
-      this._initPipeline();
-    });
-  }
-  async loadTexture(url) {
-    return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
-      const texture = this.device.createTexture({
-        size: [img.width, img.height, 1],
-        format: 'rgba16float',
-        // "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture({
-        source: img
-      }, {
-        texture
-      }, [img.width, img.height]);
-      const sampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-        addressModeU: "repeat",
-        addressModeV: "repeat"
-      });
-      this.texture = texture;
-      this.sampler = sampler;
-      resolve();
-    });
-  }
-  _initPipeline() {
-    const {
-      vertexData,
-      uvData,
-      indexData
-    } = this;
-
-    // --- POSITION BUFFER (aligned)
-    this.vertexBuffer = this.device.createBuffer({
-      size: Math.ceil(vertexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-
-    // --- UV BUFFER (aligned)
-    this.uvBuffer = this.device.createBuffer({
-      size: Math.ceil(uvData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-
-    // --- INDEX BUFFER (aligned)
-    const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
-      size: alignedIndexSize,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-
-    // Create a temporary padded buffer if necessary
-    if (indexData.byteLength !== alignedIndexSize) {
-      const tmp = new Uint8Array(alignedIndexSize);
-      tmp.set(new Uint8Array(indexData.buffer));
-      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
-    } else {
-      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    }
-    this.indexCount = indexData.length;
-
-    // --- rest of your setup (no change)
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4]
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
-      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: "read-only-storage"
-        }
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {}
-      }, {
-        binding: 3,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }, {
-        binding: 2,
-        resource: this.sampler
-      }, {
-        binding: 3,
-        resource: this.texture.createView()
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _geoTex.geoInstancedTexEffect
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'geo tex 2 Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3'
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x2'
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: 'triangle-list'
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less-equal',
-        format: 'depth24plus'
-      }
-    });
-  }
-  updateInstanceData = baseModelMatrix => {
-    if (this.rotateEffect) {
-      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
-      if (this.rotateAngle >= 360) {
-        this.rotateAngle = 0;
-      }
-    }
-    const count = Math.min(this.instanceCount, this.maxInstances);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      // smooth interpolation of position & scale
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
-      }
-      const local = _wgpuMatrix.mat4.identity();
-      if (this.rotateEffect == true) {
-        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
-      }
-      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
-      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
-      const finalMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
-    }
-    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
-  };
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount, this.instanceCount);
-  }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
-  }
-}
-exports.GenGeoTexture2 = GenGeoTexture2;
-
-},{"../../shaders/standalone/geo.tex.js":99,"../geometry-factory.js":48,"wgpu-matrix":30}],41:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.GenGeo = void 0;
-var _geometryFactory = require("../geometry-factory.js");
-var _wgpuMatrix = require("wgpu-matrix");
-var _geoInstanced = require("../../shaders/standalone/geo.instanced.js");
-class GenGeo {
-  constructor(device, format, type = "sphere", scale = 1) {
-    this.device = device;
-    this.format = format;
-    const geom = _geometryFactory.GeometryFactory.create(type, scale);
-    this.vertexData = geom.positions;
-    this.uvData = geom.uvs;
-    this.indexData = geom.indices;
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    const {
-      vertexData,
-      uvData,
-      indexData
-    } = this;
-    // GPU buffers
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4]
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
-      size: this.instanceData.byteLength,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: "read-only-storage"
-        }
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _geoInstanced.geoInstancedEffect
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'geo gen Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3'
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x2'
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: 'triangle-list'
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less-equal',
-        format: 'depth24plus'
-      }
-    });
-  }
-  updateInstanceData = baseModelMatrix => {
-    const count = Math.min(this.instanceCount, this.maxInstances);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      // smooth interpolation of position & scale
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
-      }
-      const local = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
-      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
-      const finalMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
-    }
-    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    // .subarray(0, activeFloatCount) ensures we don't upload garbage beyond instanceCount
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
-  };
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount, this.instanceCount);
-  }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
-  }
-}
-exports.GenGeo = GenGeo;
-
-},{"../../shaders/standalone/geo.instanced.js":98,"../geometry-factory.js":48,"wgpu-matrix":30}],42:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.GizmoEffect = void 0;
-var _gimzoShader = require("../../shaders/gizmo/gimzoShader");
-class GizmoEffect {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.enabled = true;
-    // 0=translate, 1=rotate, 2=scale
-    this.mode = 0;
-    this.size = 3;
-    this.selectedAxis = 0;
-    this.movementScale = 0.01;
-    this.isDragging = false;
-    this.dragStartPoint = null;
-    this.dragAxis = 0;
-    this.parentMesh = null;
-    this.initialPosition = null;
-    this._initPipeline();
-    this._setupEventListeners();
-    addEventListener("editor-set-gizmo-mode", e => {
-      console.log("MODE:", e.detail.mode);
-      this.setMode(e.detail.mode);
-    });
-  }
-  _initPipeline() {
-    this._createTranslateGizmo();
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.gizmoSettingsBuffer = this.device.createBuffer({
-      size: 32,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this._updateGizmoSettings();
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }, {
-        binding: 2,
-        resource: {
-          buffer: this.gizmoSettingsBuffer
-        }
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _gimzoShader.gizmoEffect
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'gizmo Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: "float32x3"
-          }]
-        }, {
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: "float32x3"
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: "line-list"
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "always",
-        format: "depth24plus"
-      }
-    });
-  }
-  _createTranslateGizmo() {
-    const axisLength = 2.0;
-    const arrowSize = 0.15;
-    const positions = new Float32Array([0, 0, 0, axisLength, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, 0, arrowSize, axisLength, 0, 0, axisLength - arrowSize, 0, -arrowSize, 0, 0, 0, 0, axisLength, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, 0, 0, 0, 0, axisLength, 0, 0, axisLength, arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, -arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize]);
-    const colors = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0,
-    // Y axis (green)
-    0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
-    // Z axis (blue)
-    0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: positions.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, positions);
-    this.colorBuffer = this.device.createBuffer({
-      size: colors.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.colorBuffer, 0, colors);
-    this.vertexCount = positions.length / 3;
-  }
-  _setupEventListeners() {
-    app.canvas.addEventListener("ray.hit.mousedown", e => {
-      const detail = e.detail;
-      if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
-        this._handleRayHit(detail);
-      } else {
-        e.detail.hitObject.effects.gizmoEffect = this;
-        this.parentMesh.effects.gizmoEffect = null;
-        this.parentMesh = e.detail.hitObject;
-        app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
-        // console.log('Gizmo: ray.hit.mousedown :FINLA   ', this.parentMesh.name);
-      }
-    });
-    app.canvas.addEventListener("mousemove", e => {
-      if (this.isDragging && e.buttons === 1) {
-        this._handleDrag(e);
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
-      } else if (this.isDragging && e.buttons === 0) {
-        this.isDragging = false;
-        this.selectedAxis = 0;
-        this._updateGizmoSettings();
-      } else {
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
-      }
-    });
-    app.canvas.addEventListener("mouseup", () => {
-      if (this.isDragging) {
-        // console.log('Gizmo: Stopped dragging:', this.parentMesh.name);
-        // console.log('What is selectedAxis: ', this.selectedAxis)
-        // console.log('What is operation: ', this.mode)
-        if (this.parentMesh._GRAPH_CACHE) return;
-        if (this.mode == 0) {
-          // 1 x  2 y  3 z
-          // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-          document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "position",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z
-            }
-          }));
-        } else if (this.mode == 1) {
-          document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "rotation",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
-        } else if (this.mode == 2) {
-          // if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
-          document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "scale",
-              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
-        }
-        // finish job
-        this.isDragging = false;
-        this.selectedAxis = 0;
-        this._updateGizmoSettings();
-      }
-    });
-  }
-  _handleRayHit(detail) {
-    const {
-      rayOrigin,
-      rayDirection,
-      hitPoint
-    } = detail;
-    const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
-    if (axis > 0) {
-      this.selectedAxis = axis;
-      this.dragStartPoint = [...hitPoint];
-      this.initialPosition = {
-        x: this.parentMesh.position.x,
-        y: this.parentMesh.position.y,
-        z: this.parentMesh.position.z
-      };
-      this.dragAxis = axis;
-      this._updateGizmoSettings();
-      this.isDragging = true;
-    }
-  }
-
-  /**
-  * Get the screen-space direction of a world axis
-  * @param {number} axisIndex - 0=X, 1=Y, 2=Z
-  * @returns {{x: number, y: number}} - Normalized 2D screen direction
-  */
-  _getAxisScreenDirection(axisIndex) {
-    // Get world axis vector
-    const worldAxis = [[1, 0, 0],
-    // X
-    [0, 1, 0],
-    // Y
-    [0, 0, 1] // Z
-    ][axisIndex];
-    // Transform axis to camera space
-    const viewMatrix = app.cameras.WASD.matrix_;
-    const projMatrix = app.cameras.WASD.projectionMatrix;
-    const p1 = this.parentMesh.position;
-    // Point 2: Object position + axis direction
-    const p2 = {
-      x: p1.x + worldAxis[0],
-      y: p1.y + worldAxis[1],
-      z: p1.z + worldAxis[2]
-    };
-
-    // Project both points to screen space
-    const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
-    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
-
-    // Get screen-space direction
-    const dx = screen2.x - screen1.x;
-    const dy = screen2.y - screen1.y;
-    const length = Math.sqrt(dx * dx + dy * dy);
-
-    // Return normalized direction
-    return {
-      x: length > 0.001 ? dx / length : 0,
-      y: length > 0.001 ? dy / length : 0
-    };
-  }
-  _worldToScreen(worldPos, viewMatrix, projMatrix) {
-    // Transform to clip space
-    const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
-
-    // Perspective divide
-    const ndcX = clipPos.x / clipPos.w;
-    const ndcY = clipPos.y / clipPos.w;
-
-    // Convert to screen coordinates (assuming viewport)
-    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
-    const screenY = (1 - ndcY) * 0.5 * app.canvas.height; // Flip Y
-
-    return {
-      x: screenX,
-      y: screenY
-    };
-  }
-  _transformPoint(point, viewMatrix, projMatrix) {
-    // Combine view * projection
-    const vp = this._multiplyMatrices(projMatrix, viewMatrix);
-
-    // Transform point
-    const x = vp[0] * point.x + vp[4] * point.y + vp[8] * point.z + vp[12];
-    const y = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
-    const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
-    const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
-    return {
-      x,
-      y,
-      z,
-      w
-    };
-  }
-  _multiplyMatrices(a, b) {
-    const result = new Array(16);
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        result[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
-      }
-    }
-    return result;
-  }
-  _handleDrag(mouseEvent) {
-    if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
-    const deltaX = mouseEvent.movementX;
-    const deltaY = mouseEvent.movementY;
-    const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
-    switch (this.mode) {
-      case 0:
-        switch (this.dragAxis) {
-          case 1:
-            this.parentMesh.position.x += deltaX * this.movementScale;
-            break;
-          case 2:
-            this.parentMesh.position.y -= deltaY * this.movementScale;
-            break;
-          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
-          case 3:
-            const zAxisScreenDir = this._getAxisScreenDirection(2); // Z = axis index 2
-            const mouseDelta = {
-              x: deltaX,
-              y: -deltaY
-            }; // Flip Y for screen coords
-            // Dot product: how much does mouse movement align with Z-axis on screen?
-            const movement = mouseDelta.x * zAxisScreenDir.x + mouseDelta.y * zAxisScreenDir.y;
-            this.parentMesh.position.z += movement * this.movementScale;
-        }
-        break;
-      case 1:
-        const rotSpeed = 0.1;
-        switch (this.dragAxis) {
-          case 1:
-            this.parentMesh.rotation.x += deltaY * rotSpeed;
-            break;
-          case 2:
-            this.parentMesh.rotation.y += deltaX * rotSpeed;
-            break;
-          case 3:
-            this.parentMesh.rotation.z += direction * rotSpeed;
-            break;
-        }
-        break;
-      case 2:
-        const scaleSpeed = 0.01;
-        switch (this.dragAxis) {
-          case 1:
-            this.parentMesh.scale[0] += deltaX * scaleSpeed;
-            break;
-          case 2:
-            this.parentMesh.scale[1] += -deltaY * scaleSpeed;
-            break;
-          case 3:
-            this.parentMesh.scale[2] += -direction * scaleSpeed;
-            break;
-        }
-        break;
-    }
-  }
-  _raycastAxis(rayOrigin, rayDirection, mesh) {
-    const gizmoPos = [mesh.position.x, mesh.position.y, mesh.position.z];
-    const threshold = 0.1 * this.size;
-    const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
-    const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
-    if (xHit) return 1;
-    const yEnd = [gizmoPos[0], gizmoPos[1] + 2 * this.size, gizmoPos[2]];
-    const yHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, yEnd, threshold);
-    if (yHit) return 2;
-    const zEnd = [gizmoPos[0], gizmoPos[1], gizmoPos[2] + 2 * this.size];
-    const zHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, zEnd, threshold);
-    if (zHit) return 3;
-    return 0;
-  }
-  _rayIntersectsLine(rayOrigin, rayDir, lineStart, lineEnd, threshold) {
-    const ro = Array.isArray(rayOrigin) ? rayOrigin : [rayOrigin[0], rayOrigin[1], rayOrigin[2]];
-    const rd = [rayDir[0], rayDir[1], rayDir[2]];
-    const rdLen = Math.sqrt(rd[0] ** 2 + rd[1] ** 2 + rd[2] ** 2);
-    const ray = [rd[0] / rdLen, rd[1] / rdLen, rd[2] / rdLen];
-    const line = [lineEnd[0] - lineStart[0], lineEnd[1] - lineStart[1], lineEnd[2] - lineStart[2]];
-    const w = [ro[0] - lineStart[0], ro[1] - lineStart[1], ro[2] - lineStart[2]];
-    const a = ray[0] ** 2 + ray[1] ** 2 + ray[2] ** 2;
-    const b = ray[0] * line[0] + ray[1] * line[1] + ray[2] * line[2];
-    const c = line[0] ** 2 + line[1] ** 2 + line[2] ** 2;
-    const d = ray[0] * w[0] + ray[1] * w[1] + ray[2] * w[2];
-    const e = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
-    const denom = a * c - b * b;
-    if (Math.abs(denom) < 0.0001) return false;
-    const sc = (b * e - c * d) / denom;
-    const tc = (a * e - b * d) / denom;
-    if (tc < 0 || tc > 1) return false;
-    const closestOnRay = [ro[0] + sc * ray[0], ro[1] + sc * ray[1], ro[2] + sc * ray[2]];
-    const closestOnLine = [lineStart[0] + tc * line[0], lineStart[1] + tc * line[1], lineStart[2] + tc * line[2]];
-    const dist = Math.sqrt((closestOnRay[0] - closestOnLine[0]) ** 2 + (closestOnRay[1] - closestOnLine[1]) ** 2 + (closestOnRay[2] - closestOnLine[2]) ** 2);
-    // console.log('Distance to line:', dist, 'threshold:', threshold);
-    return dist < threshold;
-  }
-  _updateGizmoSettings() {
-    const data = new Float32Array([this.mode, this.size, this.selectedAxis, 1.0]);
-    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
-  }
-  updateInstanceData(baseModelMatrix) {
-    this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
-  }
-  draw(pass, cameraMatrix) {
-    if (!this.enabled) return;
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.colorBuffer);
-    pass.draw(this.vertexCount);
-  }
-  render(pass, mesh, viewProjMatrix) {
-    this.parentMesh = mesh;
-    this.draw(pass, viewProjMatrix);
-  }
-  setMode(mode) {
-    this.mode = mode;
-    this._updateGizmoSettings();
-  }
-  setSize(size) {
-    this.size = size;
-    this._updateGizmoSettings();
-  }
-  setSelectedAxis(axis) {
-    this.selectedAxis = axis;
-    this._updateGizmoSettings();
-  }
-  setEnabled(enabled) {
-    this.enabled = enabled;
-  }
-}
-exports.GizmoEffect = GizmoEffect;
-
-},{"../../shaders/gizmo/gimzoShader":86}],43:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.MANABarEffect = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
-class MANABarEffect {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.progress = 1.0;
-    this.color = [0.1, 0.1, 0.9, 1.0];
-    this.offsetY = 45;
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    // Simple flat bar (width 100, height 10)
-    const W = 40;
-    const H = 3;
-    const vertexData = new Float32Array([-0.5 * W, 0.5 * H, 0.0, 0.5 * W, 0.5 * H, 0.0, -0.5 * W, -0.5 * H, 0.0, 0.5 * W, -0.5 * H, 0.0]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-
-    // Buffers
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-
-    // Uniforms
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // model + color + progress (64 + 16 + 4)
-    this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // BindGroup
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-
-    // Pipeline
-    const shaderModule = this.device.createShaderModule({
-      code: _energyBarShader.hpBarEffectShaders
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'mana Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3'
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x2'
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{
-          format: this.format
-        }]
-      },
-      primitive: {
-        topology: 'triangle-list'
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'always',
-        format: 'depth24plus'
-      }
-    });
-  }
-  setProgress(value) {
-    this.progress = Math.max(0.0, Math.min(1.0, value));
-  }
-  setColor(r, g, b, a = 1.0) {
-    this.color = [r, g, b, a];
-  }
-  draw(pass, cameraMatrix, modelMatrix) {
-    const color = new Float32Array(this.color);
-    const progressData = new Float32Array([this.progress]);
-
-    // Pack uniforms manually
-    const buffer = new ArrayBuffer(64 + 16 + 4);
-    const f32 = new Float32Array(buffer);
-    f32.set(cameraMatrix, 0); // not needed here
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
-    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
-  }
-  render(pass, mesh, viewProjMatrix) {
-    const pos = mesh.position;
-    const modelMatrix = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
-  }
-}
-exports.MANABarEffect = MANABarEffect;
-
-},{"../../shaders/energy-bars/energy-bar-shader.js":73,"wgpu-matrix":30}],44:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.PointerEffect = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
-class PointerEffect {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this._tempModelMatrix = _wgpuMatrix.mat4.identity();
-    this._tempTranslation = new Float32Array(3);
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    // Vertex data: simple quad
-    let S = 10;
-    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
-    // top-left
-    0.5 * S, 0.5 * S, 0.0 * S,
-    // top-right
-    -0.1 * S, -0.1 * S, 0.0 * S,
-    // bottom-left
-    0.1 * S, -0.1 * S, 0.0 * S // bottom-right
-    ]);
-    const uvData = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _pointerEffect.pointerEffect
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'pointEffect Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3'
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x2'
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{
-          format: this.format
-        }]
-      },
-      primitive: {
-        topology: 'triangle-list'
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'always',
-        format: 'depth24plus'
-      }
-    });
-  }
-  draw(pass, cameraMatrix, modelMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
-  }
-  render(transPass, mesh, viewProjMatrix) {
-    const objPos = mesh.position;
-    _wgpuMatrix.mat4.identity(this._tempModelMatrix);
-    this._tempTranslation[0] = objPos.x;
-    this._tempTranslation[1] = objPos.y + 60;
-    this._tempTranslation[2] = objPos.z;
-    _wgpuMatrix.mat4.translate(this._tempModelMatrix, this._tempTranslation, this._tempModelMatrix);
-    this.draw(transPass, viewProjMatrix, modelMatrix);
-  }
-}
-exports.PointerEffect = PointerEffect;
-
-},{"../../shaders/standalone/pointer.effect.js":100,"wgpu-matrix":30}],45:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.PointEffect = void 0;
-var _pointEffect = require("../../shaders/topology-point/pointEffect");
-class PointEffect {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.pointSize = 8.0;
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    // Camera uniform buffer
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // Model buffer
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      // mat4x4
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // Point settings buffer
-    this.pointSettingsBuffer = this.device.createBuffer({
-      size: 32,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, new Float32Array([this.pointSize, 0, 0, 0]));
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }, {
-        binding: 2,
-        resource: {
-          buffer: this.pointSettingsBuffer
-        }
-      }]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: _pointEffect.pointEffectShader
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Topology Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [{
-          arrayStride: 3 * 4,
-          stepMode: 'instance',
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: "float32x3"
-          }]
-        }, {
-          arrayStride: 3 * 4,
-          stepMode: 'instance',
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: "float32x3"
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }]
-      },
-      primitive: {
-        topology: "triangle-strip"
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less-equal",
-        format: "depth24plus"
-      }
-    });
-  }
-
-  // ✅ THIS MATCHES FlameEffect PATTERN
-  updateInstanceData(baseModelMatrix) {
-    // You can apply additional transforms here if needed
-    // For now, just use the parent's model matrix directly
-    this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
-  }
-  draw(pass, cameraMatrix, vertexBuffer, colorBuffer, vertexCount) {
-    if (!this.enabled) return;
-    if (!vertexCount || typeof vertexCount !== 'number' || vertexCount <= 0) {
-      console.warn('PointEffect: invalid vertexCount', vertexCount);
-      return;
-    }
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, vertexBuffer);
-    pass.setVertexBuffer(1, colorBuffer);
-    pass.draw(4, vertexCount, 0, 0);
-  }
-  render(pass, mesh, viewProjMatrix) {
-    if (!mesh.vertexBuffer) {
-      console.warn('PointEffect: mesh has no vertexBuffer');
-      return;
-    }
-    let vertexCount = mesh.vertexCount;
-    if (!vertexCount && mesh.vertexBuffer.size) {
-      vertexCount = mesh.vertexBuffer.size / (3 * 4);
-    }
-    if (!vertexCount && mesh.geometry?.positions) {
-      vertexCount = mesh.geometry.positions.length / 3;
-    }
-    if (!vertexCount || vertexCount <= 0) {
-      console.warn('PointEffect: could not determine vertexCount', mesh);
-      return;
-    }
-    const colorBuffer = mesh.vertexNormalsBuffer;
-    if (!colorBuffer) {
-      console.warn('PointEffect: mesh has no vertexNormalsBuffer');
-      return;
-    }
-    this.draw(pass, viewProjMatrix, mesh.vertexBuffer, colorBuffer, vertexCount);
-  }
-  setPointSize(size) {
-    this.pointSize = size;
-    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, new Float32Array([this.pointSize, 0, 0, 0]));
-  }
-  setEnabled(enabled) {
-    this.enabled = enabled;
-  }
-}
-exports.PointEffect = PointEffect;
-
-},{"../../shaders/topology-point/pointEffect":101}],46:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
 exports.WASDCamera = exports.RPGCamera = exports.FirstPersonCamera = exports.ArcballCamera = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 class WASDCamera {
@@ -24703,6 +21673,32 @@ class WASDCamera {
     if (!this._dirtyAngle) return;
     this._recalculateViewVP();
     this._dirtyAngle = false;
+  }
+  setX(x) {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  }
+  setY(y) {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  }
+  setX(z) {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+  setPitch(p) {
+    this.pitch = p;
+    this._dirtyAngle = true;
+  }
+  setYaw(y) {
+    this.yaw = y;
+    this._dirtyAngle = true;
+  }
+  setTarget(x, y, z) {
+    this.target[0] = x;
+    this.target[1] = y;
+    this.target[2] = z;
+    this._dirtyAngle = true;
   }
 }
 exports.WASDCamera = WASDCamera;
@@ -25286,7 +22282,3080 @@ class FirstPersonCamera {
 }
 exports.FirstPersonCamera = FirstPersonCamera;
 
-},{"wgpu-matrix":30}],47:[function(require,module,exports){
+},{"wgpu-matrix":30}],34:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.CollisionSystem = void 0;
+var _navMesh = require("../../examples/games/rpg/nav-mesh");
+var _matrixClass = require("./matrix-class");
+class CollisionSystem {
+  constructor() {
+    this.entries = [];
+    this.cameraEntry = null;
+    this.cellSize = 100;
+    this._grid = new Map();
+  }
+  register(id, positionInstance, radius = 0.6, group = "default") {
+    this.entries.push({
+      id,
+      pos: positionInstance,
+      radius,
+      group
+    });
+  }
+  unregister(id) {
+    this.entries = this.entries.filter(e => e.id !== id);
+    if (this.cameraEntry && this.cameraEntry.id === id) this.cameraEntry = null;
+  }
+
+  /**
+   * Specifically register the WASD camera to the collision loop.
+   * @param {Object} cameraInstance - Must have .x, .z (and ideally targetX/targetZ)
+   */
+  registerCamera(cameraInstance, radius = 1.0) {
+    this.cameraEntry = {
+      id: "camera",
+      pos: cameraInstance,
+      radius,
+      group: "camera"
+    };
+  }
+  _cellKey(x, z) {
+    const cx = Math.floor(x / this.cellSize);
+    const cz = Math.floor(z / this.cellSize);
+    return cx << 16 ^ cz;
+  }
+  _buildGrid() {
+    const grid = this._grid;
+    grid.clear();
+    for (let i = 0; i < this.entries.length; i++) {
+      const e = this.entries[i];
+      const key = this._cellKey(e.pos.x, e.pos.z);
+      let cell = grid.get(key);
+      if (!cell) {
+        cell = [];
+        grid.set(key, cell);
+      }
+      cell.push(e);
+    }
+  }
+  _getNeighborCells(x, z) {
+    const cx = Math.floor(x / this.cellSize);
+    const cz = Math.floor(z / this.cellSize);
+    const result = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const key = cx + dx << 16 ^ cz + dz;
+        const cell = this._grid.get(key);
+        if (cell) result.push(...cell);
+      }
+    }
+    return result;
+  }
+  update() {
+    this._buildGrid();
+    const n = this.entries.length;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const A = this.entries[i];
+        const B = this.entries[j];
+        if (A.group === B.group) continue;
+        const minDist = (A.radius + B.radius) / 1.5;
+        const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
+        if (testCollide) {
+          dispatchEvent(new CustomEvent('close-distance', {
+            detail: {
+              A,
+              B
+            }
+          }));
+        }
+      }
+    }
+
+    // --- camera vs entities (only neighbor cells) ---
+    if (this.cameraEntry) {
+      const cam = this.cameraEntry;
+      const camX = cam.pos[0];
+      const camZ = cam.pos[2];
+      const neighbors = this._getNeighborCells(camX, camZ);
+      for (let i = 0; i < neighbors.length; i++) {
+        const target = neighbors[i];
+        const minCamDist = 1 + 0.5;
+        const collided = (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 1.1);
+        if (collided) {
+          console.log('kinematic collision');
+        }
+      }
+    }
+  }
+}
+exports.CollisionSystem = CollisionSystem;
+
+},{"../../examples/games/rpg/nav-mesh":5,"./matrix-class":58}],35:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TextureCache = void 0;
+class TextureCache {
+  constructor(device) {
+    this.device = device;
+    this.cache = new Map(); // path -> Promise<TextureEntry>
+  }
+  async get(path, format, isEnvMap = false) {
+    if (this.cache.has(path)) {
+      return this.cache.get(path); // reuse promise
+    }
+    let promise;
+    if (isEnvMap == true) {
+      promise = this.#loadEnvMap(path, format);
+      this.cache.set(path, promise);
+    } else {
+      promise = this.#load(path, format);
+      this.cache.set(path, promise);
+    }
+    return promise;
+  }
+  async loadEnvMap(path) {
+    // Use a special cache key for env maps
+    const envKey = `env:${path}`;
+    if (this.cache.has(envKey)) {
+      return this.cache.get(envKey);
+    }
+    const promise = this.#loadEnvMap(path);
+    this.cache.set(envKey, promise);
+    return promise;
+  }
+  async #load(path, format) {
+    const response = await fetch(path);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+    const texture = this.device.createTexture({
+      size: [imageBitmap.width, imageBitmap.height, 1],
+      format,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.device.queue.copyExternalImageToTexture({
+      source: imageBitmap
+    }, {
+      texture
+    }, [imageBitmap.width, imageBitmap.height]);
+    const sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+      addressModeU: "repeat",
+      addressModeV: "repeat",
+      addressModeW: "repeat"
+    });
+    return {
+      texture,
+      sampler
+    };
+  }
+  async #loadEnvMap(path) {
+    const response = await fetch(path);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+    const width = imageBitmap.width;
+    const height = imageBitmap.height;
+    // Calculate mip levels for better quality
+    // const mipLevelCount = Math.floor(Math.log2(Math.max(width, height))) + 1;
+    const mipLevelCount = 1;
+    const texture = this.device.createTexture({
+      label: `EnvMap: ${path}`,
+      size: [width, height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      mipLevelCount // ✅ Enable mipmaps for smooth sampling
+    });
+    this.device.queue.copyExternalImageToTexture({
+      source: imageBitmap
+    }, {
+      texture
+    }, [width, height]);
+
+    // TODO: Generate mipmaps here if you have a mipmap generator
+    // For now, base level (level 0) will work fine
+
+    // Sampler optimized for environment maps
+    const sampler = this.device.createSampler({
+      label: 'EnvMap Sampler',
+      magFilter: 'linear',
+      minFilter: 'linear',
+      mipmapFilter: 'linear',
+      // ✅ Smooth between mip levels
+      addressModeU: 'repeat',
+      // ✅ Wrap horizontally (360°)
+      addressModeV: 'clamp-to-edge' // ✅ Clamp at poles (top/bottom)
+    });
+    return {
+      texture,
+      sampler
+    };
+  }
+}
+exports.TextureCache = TextureCache;
+
+},{}],36:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.DestructionEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _dustShaderWgsl = require("../../shaders/desctruction/dust-shader.wgsl.js");
+/**
+ * @class DestructionEffect
+ * @description Complete destruction effect with particle smoke/dust for MOBA
+ * Matches Matrix-Engine-WGPU effect interface (like FlameEffect)
+ * 
+ * Features:
+ * - Particle-based smoke/dust system
+ * - GPU instancing for performance
+ * - Inherits parent transform via baseModelMatrix
+ * - Own pipeline, shares draw pass
+ * 
+ * @note Based on Matrix-Engine-WGPU architecture
+ * but can be isolatted.Effects are standalone sub
+ * system in matrix-engine-wgpu.
+ */
+
+class DestructionEffect {
+  constructor(device, format, config = {}) {
+    this.device = device;
+    this.format = format;
+
+    // Configuration
+    this.particleCount = config.particleCount || 100;
+    this.duration = config.duration || 2.5;
+    this.spread = config.spread || 5.0;
+
+    // State
+    this.time = 0;
+    this.enabled = false;
+    this.particles = [];
+
+    // Visual properties
+    this.color = config.color || [0.6, 0.5, 0.4, 1.0]; // Brownish dust
+    this.intensity = 1.0;
+    this._initPipeline();
+    this._initParticles();
+  }
+  _initPipeline() {
+    // Single quad for billboarded particles
+    const S = 1.0; // Base particle size
+    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0,
+    // Top-left
+    0.5 * S, 0.5 * S, 0,
+    // Top-right
+    -0.5 * S, -0.5 * S, 0,
+    // Bottom-left
+    0.5 * S, -0.5 * S, 0 // Bottom-right
+    ]);
+    const uvData = new Float32Array([0, 0,
+    // Top-left
+    1, 0,
+    // Top-right
+    0, 1,
+    // Bottom-left
+    1, 1 // Bottom-right
+    ]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+
+    // Vertex buffer (shared quad geometry)
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+    // UV buffer
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+    // Index buffer
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+
+    // Instance buffer (per-particle data: position, velocity, life, size)
+    // Format: vec4(pos.xyz, size) + vec4(vel.xyz, life) + vec4(color.rgba)
+    const maxParticles = this.particleCount;
+    const instanceDataSize = maxParticles * (4 + 4 + 4) * 4; // 3 vec4s per particle
+
+    this.instanceBuffer = this.device.createBuffer({
+      size: instanceDataSize,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+
+    // Uniform buffers
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      // mat4x4
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 64 + 16 + 16,
+      // model matrix + time + intensity (padded)
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Bind group layout
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      },
+      // camera
+      {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {}
+      } // model + time
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+
+    // Shader module
+    const shaderModule = this.device.createShaderModule({
+      code: _dustShaderWgsl.dustShader
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+
+    // Render pipeline with alpha blending
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'destruction Pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+        // Vertex positions (per-vertex, shared quad)
+        {
+          arrayStride: 3 * 4,
+          stepMode: "vertex",
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        },
+        // UVs (per-vertex, shared quad)
+        {
+          arrayStride: 2 * 4,
+          stepMode: "vertex",
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x2"
+          }]
+        },
+        // Instance data (per-particle)
+        {
+          arrayStride: 12 * 4,
+          // 3 vec4s = 12 floats
+          stepMode: "instance",
+          attributes: [{
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32x4"
+          },
+          // position + size
+          {
+            shaderLocation: 3,
+            offset: 16,
+            format: "float32x4"
+          },
+          // velocity + life
+          {
+            shaderLocation: 4,
+            offset: 32,
+            format: "float32x4"
+          } // color
+          ]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "none"
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        // Particles don't write depth
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    });
+  }
+  _initParticles() {
+    // Initialize particle data
+    for (let i = 0; i < this.particleCount; i++) {
+      this.particles.push({
+        // Local position offset from parent
+        position: [0, 0, 0],
+        velocity: [0, 0, 0],
+        life: 0,
+        maxLife: 0,
+        size: 0,
+        color: [...this.color]
+      });
+    }
+  }
+
+  /**
+   * Trigger the destruction effect
+   * Spawns all particles with random velocities
+   */
+  trigger() {
+    this.enabled = true;
+    this.time = 0;
+
+    // Spawn particles
+    for (let i = 0; i < this.particleCount; i++) {
+      const particle = this.particles[i];
+
+      // Random position in small sphere
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = Math.random() * 0.5;
+      particle.position = [r * Math.sin(phi) * Math.cos(theta), Math.random() * 1.0,
+      // Slightly upward bias
+      r * Math.sin(phi) * Math.sin(theta)];
+
+      // Random velocity (explosion pattern)
+      const speed = 2.0 + Math.random() * 3.0;
+      const vTheta = Math.random() * Math.PI * 2;
+      const vPhi = Math.acos(2 * Math.random() - 1);
+      particle.velocity = [speed * Math.sin(vPhi) * Math.cos(vTheta), speed * Math.abs(Math.sin(vPhi)) * 2.0,
+      // Upward bias
+      speed * Math.sin(vPhi) * Math.sin(vTheta)];
+
+      // Random lifetime
+      particle.maxLife = 1.0 + Math.random() * 1.5;
+      particle.life = particle.maxLife;
+
+      // Random size
+      particle.size = 0.5 + Math.random() * 1.5;
+
+      // Color with slight variation
+      particle.color = [this.color[0] + (Math.random() - 0.5) * 0.2, this.color[1] + (Math.random() - 0.5) * 0.2, this.color[2] + (Math.random() - 0.5) * 0.2, 1.0];
+    }
+  }
+
+  /**
+   * Update particle simulation
+   */
+  update(dt) {
+    if (!this.enabled) return;
+    this.time += dt;
+    let aliveCount = 0;
+
+    // Update each particle
+    for (let i = 0; i < this.particleCount; i++) {
+      const p = this.particles[i];
+      if (p.life <= 0) continue;
+
+      // Physics update
+      p.velocity[1] -= 2.0 * dt; // Gravity
+
+      // Damping (air resistance)
+      p.velocity[0] *= 0.98;
+      p.velocity[1] *= 0.98;
+      p.velocity[2] *= 0.98;
+
+      // Position update
+      p.position[0] += p.velocity[0] * dt;
+      p.position[1] += p.velocity[1] * dt;
+      p.position[2] += p.velocity[2] * dt;
+
+      // Life update
+      p.life -= dt;
+
+      // Fade out
+      const lifeRatio = p.life / p.maxLife;
+      p.color[3] = lifeRatio * this.intensity;
+
+      // Size grows over time (smoke expansion)
+      p.size = (0.5 + Math.random() * 1.5) * (1.0 + (1.0 - lifeRatio) * 2.0);
+      aliveCount++;
+    }
+
+    // Disable if all particles dead
+    if (aliveCount === 0 && this.time > this.duration) {
+      this.enabled = false;
+    }
+
+    // Update instance buffer
+    this._updateInstanceBuffer();
+  }
+  _updateInstanceBuffer() {
+    // Pack particle data into instance buffer
+    const instanceData = new Float32Array(this.particleCount * 12);
+    for (let i = 0; i < this.particleCount; i++) {
+      const p = this.particles[i];
+      const offset = i * 12;
+
+      // vec4: position + size
+      instanceData[offset + 0] = p.position[0];
+      instanceData[offset + 1] = p.position[1];
+      instanceData[offset + 2] = p.position[2];
+      instanceData[offset + 3] = p.size;
+
+      // vec4: velocity + life
+      instanceData[offset + 4] = p.velocity[0];
+      instanceData[offset + 5] = p.velocity[1];
+      instanceData[offset + 6] = p.velocity[2];
+      instanceData[offset + 7] = p.life;
+
+      // vec4: color
+      instanceData[offset + 8] = p.color[0];
+      instanceData[offset + 9] = p.color[1];
+      instanceData[offset + 10] = p.color[2];
+      instanceData[offset + 11] = p.color[3];
+    }
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, instanceData);
+  }
+
+  /**
+   * Update instance data with parent transform
+   * Called by parent object before rendering
+   */
+  updateInstanceData(baseModelMatrix) {
+    const local = _wgpuMatrix.mat4.identity();
+
+    // Local offset (if needed)
+    // mat4.translate(local, [0, 2, 0], local); // Offset upward slightly
+
+    // Multiply with baseModelMatrix to inherit world transform
+    const finalMat = _wgpuMatrix.mat4.identity();
+    _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+
+    // Update GPU buffer
+    const timeBuffer = new Float32Array([this.time]);
+    const intensityBuffer = new Float32Array([this.intensity]);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
+    this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
+  }
+
+  /**
+   * Draw particles
+   */
+  draw(pass, cameraMatrix) {
+    if (!this.enabled) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setVertexBuffer(2, this.instanceBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+
+    // Draw instanced (one quad per particle)
+    pass.drawIndexed(this.indexCount, this.particleCount);
+  }
+
+  /**
+   * Main render method (called by parent)
+   */
+  render(pass, mesh, viewProjMatrix, dt = 0.016) {
+    if (!this.enabled) return;
+    this.update(dt);
+    this.draw(pass, viewProjMatrix);
+  }
+
+  /**
+   * Set effect intensity
+   */
+  setIntensity(v) {
+    this.intensity = v;
+  }
+
+  /**
+   * Check if effect is still active
+   */
+  isActive() {
+    return this.enabled;
+  }
+
+  /**
+   * Reset effect
+   */
+  reset() {
+    this.enabled = false;
+    this.time = 0;
+    for (let p of this.particles) {
+      p.life = 0;
+    }
+  }
+}
+exports.DestructionEffect = DestructionEffect;
+
+},{"../../shaders/desctruction/dust-shader.wgsl.js":72,"wgpu-matrix":30}],37:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.HPBarEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
+class HPBarEffect {
+  constructor(device, format) {
+    this.device = device;
+    this.format = format;
+    this.progress = 1.0;
+    this.color = [0.1, 0.9, 0.1, 1.0];
+    this.offsetY = 48;
+    this.enabled = true;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    // Simple flat bar (width 100, height 10)
+    const W = 40;
+    const H = 3;
+    const vertexData = new Float32Array([-0.5 * W, 0.5 * H, 0.0, 0.5 * W, 0.5 * H, 0.0, -0.5 * W, -0.5 * H, 0.0, 0.5 * W, -0.5 * H, 0.0]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+
+    // Buffers
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+
+    // Uniforms
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // model + color + progress (64 + 16 + 4)
+    this.modelBuffer = this.device.createBuffer({
+      size: 64 + 16 + 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // BindGroup
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'energy-bar bindGroupLayout',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      label: 'energy-bar bindGroup',
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+
+    // Pipeline
+    const shaderModule = this.device.createShaderModule({
+      code: _energyBarShader.hpBarEffectShaders
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'energy-bar pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'always',
+        format: 'depth24plus'
+      }
+    });
+  }
+  setProgress(value) {
+    this.progress = Math.max(0.0, Math.min(1.0, value));
+  }
+  setColor(r, g, b, a = 1.0) {
+    this.color = [r, g, b, a];
+  }
+  draw(pass, cameraMatrix, modelMatrix) {
+    const color = new Float32Array(this.color);
+    const progressData = new Float32Array([this.progress]);
+
+    // Pack uniforms manually
+    const buffer = new ArrayBuffer(64 + 16 + 4);
+    const f32 = new Float32Array(buffer);
+    f32.set(cameraMatrix, 0); // not needed here
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
+    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  }
+  render(pass, mesh, viewProjMatrix) {
+    const pos = mesh.position;
+    const modelMatrix = _wgpuMatrix.mat4.identity();
+    _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
+    this.draw(pass, viewProjMatrix, modelMatrix);
+  }
+}
+exports.HPBarEffect = HPBarEffect;
+
+},{"../../shaders/energy-bars/energy-bar-shader.js":73,"wgpu-matrix":30}],38:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.FlameEmitter = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _flameInstanced = require("../../shaders/flame-effect/flame-instanced");
+var _utils = require("../utils");
+/**
+ * @description
+ * FlameEmitter
+ */
+class FlameEmitter {
+  constructor(device, format, maxParticles = 20) {
+    this.device = device;
+    this.format = format;
+    this.time = 0;
+    this.intensity = 1.0;
+    this.enabled = true;
+    this.maxParticles = maxParticles;
+    this.instanceTargets = [];
+    this.floatsPerInstance = 28;
+    this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
+    this.smoothFlickeringScale = 0.1;
+    this.minBound = 0;
+    this.maxBound = 1.9;
+    this.swap0 = 0;
+    this.swap1 = 1;
+    this.swap2 = 2;
+    this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0];
+    this.scaleCoeficient = 0.12;
+
+    // cache
+    this._localMatrix = _wgpuMatrix.mat4.create();
+    this._finalMatrix = _wgpuMatrix.mat4.create();
+    for (let i = 0; i < maxParticles; i++) {
+      this.instanceTargets.push({
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        rotation: 0.1,
+        color: [1, 0.3, 0, 0.1],
+        time: 1,
+        intensity: 1,
+        riseSpeed: 1,
+        tintStrength: 1
+      });
+    }
+    this._initPipeline();
+  }
+  recreateVertexData(S) {
+    const vertexData = new Float32Array([-0.4 * S, 0.5 * S, 0.0 * S, 0.4 * S, 0.5 * S, 0.0 * S, -0.2 * S, -0.5 * S, 0.0 * S, 0.2 * S, -0.5 * S, 0.0 * S]);
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+  }
+  recreateVertexDataRND(S) {
+    const vertexData = new Float32Array([-(0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, -(0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S]);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+
+  // not tested
+  recreateVertexDataCrazzy(S) {
+    const memory1 = -(0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
+    const memory11 = (0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
+    const memory12 = (0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
+    const memory13 = (0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
+    const memory2 = (0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
+    const memory21 = (0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
+    const memory22 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
+    const memory23 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
+    this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
+    console.info('crazzy flame emitter case data:', this.memoryCrazzyCase);
+    const vertexData = new Float32Array([memory1, memory2, 0.0, memory11, memory21, 0.0, memory12, memory22, 0.0, memory13, memory23, 0.0]);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+  _initPipeline() {
+    const S = 2;
+    const vertexData = this.recreateVertexDataRND(1);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      label: 'flame-emmiter modeBuffer',
+      size: this.maxParticles * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'flame-emmiter bindGroupLayout',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      label: 'flame-emmiter bindGroup',
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _flameInstanced.flameEffectInstance
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'flame-emmiter pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x2"
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: "triangle-list"
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    });
+  }
+  updateInstanceData = baseModelMatrix => {
+    const count = Math.min(this.instanceTargets.length, this.maxParticles);
+    const floatsPerInstance = 28;
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
+      }
+      const local = this._localMatrix;
+      _wgpuMatrix.mat4.identity(local);
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.rotateY(local, t.rotation, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      _wgpuMatrix.mat4.identity(this._finalMatrix);
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, this._finalMatrix);
+      const offset = i * floatsPerInstance;
+      this.instanceData.set(this._finalMatrix, offset);
+      this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
+      this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
+    }
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
+  };
+  render(pass, mesh, viewProjMatrix, dt = 0.1) {
+    this.time += dt;
+    for (const p of this.instanceTargets) {
+      p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
+      // Reset check
+      const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxBound : p.position[this.swap1] < this.minBound;
+      if (resetCondition) {
+        p.position[this.swap1] = this.riseDirection > 0 ? this.minBound + Math.random() * 0.5 : this.maxBound - Math.random() * 0.5;
+        p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2;
+        p.riseSpeed = 0.2 + Math.random() * 1.0;
+      }
+      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
+      p.rotation += dt * (0, _utils.randomIntFromTo)(1, 4);
+    }
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.instanceTargets.length);
+  }
+  setIntensity(v) {
+    this.intensity = v;
+  }
+  setDirection(direction) {
+    this.riseDirection = 1;
+    this.baseRotation = [0, 0, 0]; // Reset
+    switch (direction) {
+      case 'up':
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        break;
+      case 'down':
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        break;
+      case 'forward':
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.baseRotation = [Math.PI / 2, 0, 0];
+        break;
+      case 'back':
+        this.swap0 = 0;
+        this.swap1 = 2;
+        this.swap2 = 1;
+        this.riseDirection = -1;
+        this.baseRotation = [-Math.PI / 2, 0, 0]; // Tilt -90 on X
+        break;
+      case 'right':
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.baseRotation = [0, 0, -Math.PI / 2]; // Tilt -90 on Z
+        break;
+      case 'left':
+        this.swap0 = 1;
+        this.swap1 = 0;
+        this.swap2 = 2;
+        this.riseDirection = -1;
+        this.baseRotation = [0, 0, Math.PI / 2]; // Tilt 90 on Z
+        break;
+    }
+  }
+}
+exports.FlameEmitter = FlameEmitter;
+
+},{"../../shaders/flame-effect/flame-instanced":74,"../utils":68,"wgpu-matrix":30}],39:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.FlamePresets = exports.FlameEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _flameEffect = require("../../shaders/flame-effect/flameEffect");
+var _geometryFactory = require("../geometry-factory");
+const FlamePresets = exports.FlamePresets = {
+  // Natural campfire / torch
+  natural: {
+    intensity: 12.0,
+    speed: 1.0,
+    turbulence: 0.5,
+    stretch: 1.0,
+    tint: [1.0, 1.0, 1.0],
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Tall torch / pillar of fire
+  torch: {
+    intensity: 14.0,
+    speed: 1.2,
+    turbulence: 0.35,
+    stretch: 2.0,
+    tint: [1.0, 1.0, 1.0],
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Wide, low bonfire
+  bonfire: {
+    intensity: 10.0,
+    speed: 0.8,
+    turbulence: 0.9,
+    stretch: 0.5,
+    tint: [1.0, 1.0, 1.0],
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Magical blue flame
+  magic: {
+    intensity: 8.0,
+    speed: 1.4,
+    turbulence: 0.6,
+    stretch: 1.3,
+    tint: [0.1, 0.4, 1.0],
+    tintStrength: 0.85,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Hellfire — dark purple/red
+  hell: {
+    intensity: 16.0,
+    speed: 0.9,
+    turbulence: 0.8,
+    stretch: 1.6,
+    tint: [0.6, 0.0, 0.8],
+    tintStrength: 0.7,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Poison green
+  poison: {
+    intensity: 9.0,
+    speed: 1.1,
+    turbulence: 0.7,
+    stretch: 1.1,
+    tint: [0.1, 1.0, 0.15],
+    tintStrength: 0.9,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  }
+};
+
+// FlameEffect
+class FlameEffect {
+  constructor(device, format, colorFormat, params = {}) {
+    this.device = device;
+    this.format = format;
+    this.colorFormat = colorFormat ?? format;
+    const config = typeof params === 'string' ? FlamePresets[params] : params;
+    const defaults = FlamePresets.natural;
+    this.intensity = config.intensity ?? defaults.intensity;
+    this.speed = config.speed ?? defaults.speed;
+    this.turbulence = config.turbulence ?? defaults.turbulence;
+    this.stretch = config.stretch ?? defaults.stretch;
+    this.tint = config.tint ?? defaults.tint;
+    this.tintStrength = config.tintStrength ?? defaults.tintStrength;
+    this.scale = config.scale ?? defaults.scale;
+    this.time = 0;
+    this.enabled = true;
+    this.localOffset = config.localOffset ?? defaults.localOffset;
+    this.localRotation = config.localRotation ?? defaults.localRotation;
+    this.activeRotate = config.activeRotate ?? defaults.activeRotate;
+    this._initPipeline();
+    this.setGeometry("quad", this.scale);
+    this._localMatrix = _wgpuMatrix.mat4.create();
+    this._finalMatrix = _wgpuMatrix.mat4.create();
+    this._timeSpeed = new Float32Array(4);
+    this._params = new Float32Array(4);
+    this._tint = new Float32Array(4);
+    this._uniformData = new Float32Array(28);
+  }
+  setGeometry(type, size = 1, segments = 32) {
+    const geo = _geometryFactory.GeometryFactory.create(type, size, segments);
+    this.vertexBuffer = this._uploadVertex(geo.positions);
+    this.uvBuffer = this._uploadVertex(geo.uvs);
+    const byteLen = geo.indices.byteLength;
+    const paddedByteLen = Math.ceil(byteLen / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({
+      size: paddedByteLen,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    if (byteLen % 4 !== 0) {
+      const paddedData = new Uint8Array(paddedByteLen);
+      paddedData.set(new Uint8Array(geo.indices.buffer, geo.indices.byteOffset, byteLen));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedData);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, geo.indices);
+    }
+    this.indexCount = geo.indices.length;
+    this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
+  }
+  _initPipeline() {
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: "uniform"
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "uniform"
+        }
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _flameEffect.flameEffect
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [bindGroupLayout]
+      }),
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [{
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }, {
+          arrayStride: 8,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x2"
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.colorFormat,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: "triangle-list"
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    });
+  }
+  async morphTo(type, size = 40, duration = 200) {
+    const originalIntensity = this.intensity;
+    const steps = 10;
+    const stepTime = duration / (steps * 2);
+    for (let i = 0; i < steps; i++) {
+      this.intensity *= 0.5;
+      await new Promise(r => setTimeout(r, stepTime));
+    }
+    this.setGeometry(type, size);
+    for (let i = 0; i < steps; i++) {
+      this.intensity = originalIntensity * (i / steps);
+      await new Promise(r => setTimeout(r, stepTime));
+    }
+    this.intensity = originalIntensity;
+  }
+  _uploadVertex(data) {
+    const buf = this.device.createBuffer({
+      size: data.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buf, 0, data);
+    return buf;
+  }
+  updateInstanceData(baseModelMatrix) {
+    const local = this._localMatrix;
+    const finalMat = this._finalMatrix;
+    _wgpuMatrix.mat4.identity(local);
+    _wgpuMatrix.mat4.identity(finalMat);
+    _wgpuMatrix.mat4.translate(local, this.localOffset, local);
+    _wgpuMatrix.mat4.rotateX(local, this.localRotation[0], local);
+    _wgpuMatrix.mat4.rotateY(local, this.localRotation[1], local);
+    _wgpuMatrix.mat4.rotateZ(local, this.localRotation[2], local);
+    if (this.activeRotate[0] !== 0) {
+      _wgpuMatrix.mat4.rotateX(local, this.activeRotate[0] * this.time, local);
+    }
+    if (this.activeRotate[1] !== 0) {
+      _wgpuMatrix.mat4.rotateY(local, this.activeRotate[1] * this.time, local);
+    }
+    if (this.activeRotate[2] !== 0) {
+      _wgpuMatrix.mat4.rotateZ(local, this.activeRotate[2] * this.time, local);
+    }
+    _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+    const ts = this._timeSpeed;
+    ts[0] = this.time;
+    ts[1] = this.speed;
+    ts[2] = 0;
+    ts[3] = 0;
+    const p = this._params;
+    p[0] = this.intensity;
+    p[1] = this.turbulence;
+    p[2] = this.stretch;
+    p[3] = 0;
+    const t = this._tint;
+    t[0] = this.tint[0];
+    t[1] = this.tint[1];
+    t[2] = this.tint[2];
+    t[3] = this.tintStrength;
+    // const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
+    // const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
+    // const tint = new Float32Array([...this.tint, this.tintStrength]);
+    this._uniformData.set(finalMat, 0);
+    this._uniformData.set(ts, 16);
+    this._uniformData.set(p, 20);
+    this._uniformData.set(t, 24);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
+  }
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
+    pass.drawIndexed(this.indexCount);
+  }
+  // Interface for effect -> (pass, mesh, viewProj)
+  render(pass, mesh, viewProjMatrix) {
+    this.time += 0.016;
+    this.draw(pass, viewProjMatrix);
+  }
+}
+exports.FlameEffect = FlameEffect;
+
+},{"../../shaders/flame-effect/flameEffect":75,"../geometry-factory":48,"wgpu-matrix":30}],40:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GenGeoTexture = void 0;
+var _geoTex = require("../../shaders/standalone/geo.tex.js");
+var _geometryFactory = require("../geometry-factory.js");
+var _wgpuMatrix = require("wgpu-matrix");
+class GenGeoTexture {
+  constructor(device, format, type = "sphere", path, scale = 1) {
+    this.device = device;
+    this.format = format;
+    const geom = _geometryFactory.GeometryFactory.create(type, scale);
+    this.vertexData = geom.positions;
+    this.uvData = geom.uvs;
+    this.indexData = geom.indices;
+    this.enabled = true;
+    this.rotateEffect = true;
+    this.rotateEffectSpeed = 10;
+    this.rotateAngle = 0;
+    this.loadTexture(path).then(() => {
+      this._initPipeline();
+    });
+  }
+  async loadTexture(url) {
+    return new Promise(async (resolve, reject) => {
+      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
+      const texture = this.device.createTexture({
+        size: [img.width, img.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.device.queue.copyExternalImageToTexture({
+        source: img
+      }, {
+        texture
+      }, [img.width, img.height]);
+      const sampler = this.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        addressModeU: "repeat",
+        addressModeV: "repeat"
+      });
+      this.texture = texture;
+      this.sampler = sampler;
+      resolve();
+    });
+  }
+  _initPipeline() {
+    const {
+      vertexData,
+      uvData,
+      indexData
+    } = this;
+    // GPU buffers
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 2;
+    this.floatsPerInstance = 16 + 4;
+    for (let x = 0; x < this.maxInstances; x++) {
+      this.instanceTargets.push({
+        index: x,
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        color: [0.6, 0.8, 1.0, 0.4]
+      });
+    }
+    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.modelBuffer = this.device.createBuffer({
+      size: this.instanceData.byteLength,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {}
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: this.sampler
+      }, {
+        binding: 3,
+        resource: this.texture.createView()
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _geoTex.geoInstancedTexEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'gen-geo-tex pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less-equal',
+        format: 'depth24plus'
+      }
+    });
+  }
+  updateInstanceData = baseModelMatrix => {
+    if (this.rotateEffect) {
+      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
+    }
+    const count = Math.min(this.instanceCount, this.maxInstances);
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      // smooth interpolation of position & scale
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+      }
+      const local = _wgpuMatrix.mat4.identity();
+      if (this.rotateEffect == true) {
+        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      }
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      const finalMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(t.color, offset + 16);
+    }
+    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
+    const activeFloatCount = count * this.floatsPerInstance;
+    const activeBytes = activeFloatCount * 4;
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+  };
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount, this.instanceCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    this.draw(transPass, viewProjMatrix);
+  }
+}
+exports.GenGeoTexture = GenGeoTexture;
+
+},{"../../shaders/standalone/geo.tex.js":99,"../geometry-factory.js":48,"wgpu-matrix":30}],41:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GenGeoTexture2 = void 0;
+var _geoTex = require("../../shaders/standalone/geo.tex.js");
+var _geometryFactory = require("../geometry-factory.js");
+var _wgpuMatrix = require("wgpu-matrix");
+class GenGeoTexture2 {
+  constructor(device, format, type = "sphere", path, scale = 1) {
+    this.device = device;
+    this.format = format;
+    const geom = _geometryFactory.GeometryFactory.create(type, scale);
+    this.vertexData = geom.positions;
+    this.uvData = geom.uvs;
+    this.indexData = geom.indices;
+    this.enabled = true;
+    this.rotateEffect = true;
+    this.rotateEffectSpeed = 10;
+    this.rotateAngle = 0;
+    this.loadTexture(path).then(() => {
+      this._initPipeline();
+    });
+  }
+  async loadTexture(url) {
+    return new Promise(async (resolve, reject) => {
+      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
+      const texture = this.device.createTexture({
+        size: [img.width, img.height, 1],
+        format: 'rgba16float',
+        // "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.device.queue.copyExternalImageToTexture({
+        source: img
+      }, {
+        texture
+      }, [img.width, img.height]);
+      const sampler = this.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        addressModeU: "repeat",
+        addressModeV: "repeat"
+      });
+      this.texture = texture;
+      this.sampler = sampler;
+      resolve();
+    });
+  }
+  _initPipeline() {
+    const {
+      vertexData,
+      uvData,
+      indexData
+    } = this;
+
+    // --- POSITION BUFFER (aligned)
+    this.vertexBuffer = this.device.createBuffer({
+      size: Math.ceil(vertexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+    // --- UV BUFFER (aligned)
+    this.uvBuffer = this.device.createBuffer({
+      size: Math.ceil(uvData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+    // --- INDEX BUFFER (aligned)
+    const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({
+      size: alignedIndexSize,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+
+    // Create a temporary padded buffer if necessary
+    if (indexData.byteLength !== alignedIndexSize) {
+      const tmp = new Uint8Array(alignedIndexSize);
+      tmp.set(new Uint8Array(indexData.buffer));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    }
+    this.indexCount = indexData.length;
+
+    // --- rest of your setup (no change)
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 2;
+    this.floatsPerInstance = 16 + 4;
+    for (let x = 0; x < this.maxInstances; x++) {
+      this.instanceTargets.push({
+        index: x,
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        color: [0.6, 0.8, 1.0, 0.4]
+      });
+    }
+    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.modelBuffer = this.device.createBuffer({
+      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {}
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: this.sampler
+      }, {
+        binding: 3,
+        resource: this.texture.createView()
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _geoTex.geoInstancedTexEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'geo tex 2 Pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less-equal',
+        format: 'depth24plus'
+      }
+    });
+  }
+  updateInstanceData = baseModelMatrix => {
+    if (this.rotateEffect) {
+      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
+    }
+    const count = Math.min(this.instanceCount, this.maxInstances);
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      // smooth interpolation of position & scale
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+      }
+      const local = _wgpuMatrix.mat4.identity();
+      if (this.rotateEffect == true) {
+        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      }
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      const finalMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(t.color, offset + 16);
+    }
+    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
+    const activeFloatCount = count * this.floatsPerInstance;
+    const activeBytes = activeFloatCount * 4;
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+  };
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount, this.instanceCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    this.draw(transPass, viewProjMatrix);
+  }
+}
+exports.GenGeoTexture2 = GenGeoTexture2;
+
+},{"../../shaders/standalone/geo.tex.js":99,"../geometry-factory.js":48,"wgpu-matrix":30}],42:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GenGeo = void 0;
+var _geometryFactory = require("../geometry-factory.js");
+var _wgpuMatrix = require("wgpu-matrix");
+var _geoInstanced = require("../../shaders/standalone/geo.instanced.js");
+class GenGeo {
+  constructor(device, format, type = "sphere", scale = 1) {
+    this.device = device;
+    this.format = format;
+    const geom = _geometryFactory.GeometryFactory.create(type, scale);
+    this.vertexData = geom.positions;
+    this.uvData = geom.uvs;
+    this.indexData = geom.indices;
+    this.enabled = true;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    const {
+      vertexData,
+      uvData,
+      indexData
+    } = this;
+    // GPU buffers
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 2;
+    this.floatsPerInstance = 16 + 4;
+    for (let x = 0; x < this.maxInstances; x++) {
+      this.instanceTargets.push({
+        index: x,
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        color: [0.6, 0.8, 1.0, 0.4]
+      });
+    }
+    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.modelBuffer = this.device.createBuffer({
+      size: this.instanceData.byteLength,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _geoInstanced.geoInstancedEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'geo gen Pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less-equal',
+        format: 'depth24plus'
+      }
+    });
+  }
+  updateInstanceData = baseModelMatrix => {
+    const count = Math.min(this.instanceCount, this.maxInstances);
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      // smooth interpolation of position & scale
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+      }
+      const local = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      const finalMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(t.color, offset + 16);
+    }
+    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
+    const activeFloatCount = count * this.floatsPerInstance;
+    const activeBytes = activeFloatCount * 4;
+    // .subarray(0, activeFloatCount) ensures we don't upload garbage beyond instanceCount
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+  };
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount, this.instanceCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    this.draw(transPass, viewProjMatrix);
+  }
+}
+exports.GenGeo = GenGeo;
+
+},{"../../shaders/standalone/geo.instanced.js":98,"../geometry-factory.js":48,"wgpu-matrix":30}],43:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GizmoEffect = void 0;
+var _gimzoShader = require("../../shaders/gizmo/gimzoShader");
+class GizmoEffect {
+  constructor(device, format) {
+    this.device = device;
+    this.format = format;
+    this.enabled = true;
+    // 0=translate, 1=rotate, 2=scale
+    this.mode = 0;
+    this.size = 3;
+    this.selectedAxis = 0;
+    this.movementScale = 0.01;
+    this.isDragging = false;
+    this.dragStartPoint = null;
+    this.dragAxis = 0;
+    this.parentMesh = null;
+    this.initialPosition = null;
+    this._initPipeline();
+    this._setupEventListeners();
+    addEventListener("editor-set-gizmo-mode", e => {
+      console.log("MODE:", e.detail.mode);
+      this.setMode(e.detail.mode);
+    });
+  }
+  _initPipeline() {
+    this._createTranslateGizmo();
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.gizmoSettingsBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateGizmoSettings();
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: {
+          buffer: this.gizmoSettingsBuffer
+        }
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _gimzoShader.gizmoEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'gizmo Pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }, {
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: "line-list"
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "always",
+        format: "depth24plus"
+      }
+    });
+  }
+  _createTranslateGizmo() {
+    const axisLength = 2.0;
+    const arrowSize = 0.15;
+    const positions = new Float32Array([0, 0, 0, axisLength, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, 0, arrowSize, axisLength, 0, 0, axisLength - arrowSize, 0, -arrowSize, 0, 0, 0, 0, axisLength, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, 0, 0, 0, 0, axisLength, 0, 0, axisLength, arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, -arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize]);
+    const colors = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0,
+    // Y axis (green)
+    0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
+    // Z axis (blue)
+    0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: positions.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, positions);
+    this.colorBuffer = this.device.createBuffer({
+      size: colors.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.colorBuffer, 0, colors);
+    this.vertexCount = positions.length / 3;
+  }
+  _setupEventListeners() {
+    app.canvas.addEventListener("ray.hit.mousedown", e => {
+      const detail = e.detail;
+      if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        this._handleRayHit(detail);
+      } else {
+        e.detail.hitObject.effects.gizmoEffect = this;
+        this.parentMesh.effects.gizmoEffect = null;
+        this.parentMesh = e.detail.hitObject;
+        app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
+        // console.log('Gizmo: ray.hit.mousedown :FINLA   ', this.parentMesh.name);
+      }
+    });
+    app.canvas.addEventListener("mousemove", e => {
+      if (this.isDragging && e.buttons === 1) {
+        this._handleDrag(e);
+        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
+      } else if (this.isDragging && e.buttons === 0) {
+        this.isDragging = false;
+        this.selectedAxis = 0;
+        this._updateGizmoSettings();
+      } else {
+        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
+      }
+    });
+    app.canvas.addEventListener("mouseup", () => {
+      if (this.isDragging) {
+        // console.log('Gizmo: Stopped dragging:', this.parentMesh.name);
+        // console.log('What is selectedAxis: ', this.selectedAxis)
+        // console.log('What is operation: ', this.mode)
+        if (this.parentMesh._GRAPH_CACHE) return;
+        if (this.mode == 0) {
+          // 1 x  2 y  3 z
+          // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
+          document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "position",
+              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
+              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z
+            }
+          }));
+        } else if (this.mode == 1) {
+          document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "rotation",
+              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
+              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
+            }
+          }));
+        } else if (this.mode == 2) {
+          // if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
+          document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "scale",
+              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2",
+              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
+            }
+          }));
+        }
+        // finish job
+        this.isDragging = false;
+        this.selectedAxis = 0;
+        this._updateGizmoSettings();
+      }
+    });
+  }
+  _handleRayHit(detail) {
+    const {
+      rayOrigin,
+      rayDirection,
+      hitPoint
+    } = detail;
+    const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
+    if (axis > 0) {
+      this.selectedAxis = axis;
+      this.dragStartPoint = [...hitPoint];
+      this.initialPosition = {
+        x: this.parentMesh.position.x,
+        y: this.parentMesh.position.y,
+        z: this.parentMesh.position.z
+      };
+      this.dragAxis = axis;
+      this._updateGizmoSettings();
+      this.isDragging = true;
+    }
+  }
+
+  /**
+  * Get the screen-space direction of a world axis
+  * @param {number} axisIndex - 0=X, 1=Y, 2=Z
+  * @returns {{x: number, y: number}} - Normalized 2D screen direction
+  */
+  _getAxisScreenDirection(axisIndex) {
+    // Get world axis vector
+    const worldAxis = [[1, 0, 0],
+    // X
+    [0, 1, 0],
+    // Y
+    [0, 0, 1] // Z
+    ][axisIndex];
+    // Transform axis to camera space
+    const viewMatrix = app.cameras.WASD.matrix_;
+    const projMatrix = app.cameras.WASD.projectionMatrix;
+    const p1 = this.parentMesh.position;
+    // Point 2: Object position + axis direction
+    const p2 = {
+      x: p1.x + worldAxis[0],
+      y: p1.y + worldAxis[1],
+      z: p1.z + worldAxis[2]
+    };
+
+    // Project both points to screen space
+    const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
+    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
+
+    // Get screen-space direction
+    const dx = screen2.x - screen1.x;
+    const dy = screen2.y - screen1.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    // Return normalized direction
+    return {
+      x: length > 0.001 ? dx / length : 0,
+      y: length > 0.001 ? dy / length : 0
+    };
+  }
+  _worldToScreen(worldPos, viewMatrix, projMatrix) {
+    // Transform to clip space
+    const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+
+    // Perspective divide
+    const ndcX = clipPos.x / clipPos.w;
+    const ndcY = clipPos.y / clipPos.w;
+
+    // Convert to screen coordinates (assuming viewport)
+    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
+    const screenY = (1 - ndcY) * 0.5 * app.canvas.height; // Flip Y
+
+    return {
+      x: screenX,
+      y: screenY
+    };
+  }
+  _transformPoint(point, viewMatrix, projMatrix) {
+    // Combine view * projection
+    const vp = this._multiplyMatrices(projMatrix, viewMatrix);
+
+    // Transform point
+    const x = vp[0] * point.x + vp[4] * point.y + vp[8] * point.z + vp[12];
+    const y = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
+    const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
+    const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
+    return {
+      x,
+      y,
+      z,
+      w
+    };
+  }
+  _multiplyMatrices(a, b) {
+    const result = new Array(16);
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        result[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
+      }
+    }
+    return result;
+  }
+  _handleDrag(mouseEvent) {
+    if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
+    const deltaX = mouseEvent.movementX;
+    const deltaY = mouseEvent.movementY;
+    const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
+    switch (this.mode) {
+      case 0:
+        switch (this.dragAxis) {
+          case 1:
+            this.parentMesh.position.x += deltaX * this.movementScale;
+            break;
+          case 2:
+            this.parentMesh.position.y -= deltaY * this.movementScale;
+            break;
+          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
+          case 3:
+            const zAxisScreenDir = this._getAxisScreenDirection(2); // Z = axis index 2
+            const mouseDelta = {
+              x: deltaX,
+              y: -deltaY
+            }; // Flip Y for screen coords
+            // Dot product: how much does mouse movement align with Z-axis on screen?
+            const movement = mouseDelta.x * zAxisScreenDir.x + mouseDelta.y * zAxisScreenDir.y;
+            this.parentMesh.position.z += movement * this.movementScale;
+        }
+        break;
+      case 1:
+        const rotSpeed = 0.1;
+        switch (this.dragAxis) {
+          case 1:
+            this.parentMesh.rotation.x += deltaY * rotSpeed;
+            break;
+          case 2:
+            this.parentMesh.rotation.y += deltaX * rotSpeed;
+            break;
+          case 3:
+            this.parentMesh.rotation.z += direction * rotSpeed;
+            break;
+        }
+        break;
+      case 2:
+        const scaleSpeed = 0.01;
+        switch (this.dragAxis) {
+          case 1:
+            this.parentMesh.scale[0] += deltaX * scaleSpeed;
+            break;
+          case 2:
+            this.parentMesh.scale[1] += -deltaY * scaleSpeed;
+            break;
+          case 3:
+            this.parentMesh.scale[2] += -direction * scaleSpeed;
+            break;
+        }
+        break;
+    }
+  }
+  _raycastAxis(rayOrigin, rayDirection, mesh) {
+    const gizmoPos = [mesh.position.x, mesh.position.y, mesh.position.z];
+    const threshold = 0.1 * this.size;
+    const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
+    const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
+    if (xHit) return 1;
+    const yEnd = [gizmoPos[0], gizmoPos[1] + 2 * this.size, gizmoPos[2]];
+    const yHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, yEnd, threshold);
+    if (yHit) return 2;
+    const zEnd = [gizmoPos[0], gizmoPos[1], gizmoPos[2] + 2 * this.size];
+    const zHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, zEnd, threshold);
+    if (zHit) return 3;
+    return 0;
+  }
+  _rayIntersectsLine(rayOrigin, rayDir, lineStart, lineEnd, threshold) {
+    const ro = Array.isArray(rayOrigin) ? rayOrigin : [rayOrigin[0], rayOrigin[1], rayOrigin[2]];
+    const rd = [rayDir[0], rayDir[1], rayDir[2]];
+    const rdLen = Math.sqrt(rd[0] ** 2 + rd[1] ** 2 + rd[2] ** 2);
+    const ray = [rd[0] / rdLen, rd[1] / rdLen, rd[2] / rdLen];
+    const line = [lineEnd[0] - lineStart[0], lineEnd[1] - lineStart[1], lineEnd[2] - lineStart[2]];
+    const w = [ro[0] - lineStart[0], ro[1] - lineStart[1], ro[2] - lineStart[2]];
+    const a = ray[0] ** 2 + ray[1] ** 2 + ray[2] ** 2;
+    const b = ray[0] * line[0] + ray[1] * line[1] + ray[2] * line[2];
+    const c = line[0] ** 2 + line[1] ** 2 + line[2] ** 2;
+    const d = ray[0] * w[0] + ray[1] * w[1] + ray[2] * w[2];
+    const e = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
+    const denom = a * c - b * b;
+    if (Math.abs(denom) < 0.0001) return false;
+    const sc = (b * e - c * d) / denom;
+    const tc = (a * e - b * d) / denom;
+    if (tc < 0 || tc > 1) return false;
+    const closestOnRay = [ro[0] + sc * ray[0], ro[1] + sc * ray[1], ro[2] + sc * ray[2]];
+    const closestOnLine = [lineStart[0] + tc * line[0], lineStart[1] + tc * line[1], lineStart[2] + tc * line[2]];
+    const dist = Math.sqrt((closestOnRay[0] - closestOnLine[0]) ** 2 + (closestOnRay[1] - closestOnLine[1]) ** 2 + (closestOnRay[2] - closestOnLine[2]) ** 2);
+    // console.log('Distance to line:', dist, 'threshold:', threshold);
+    return dist < threshold;
+  }
+  _updateGizmoSettings() {
+    const data = new Float32Array([this.mode, this.size, this.selectedAxis, 1.0]);
+    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
+  }
+  updateInstanceData(baseModelMatrix) {
+    this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
+  }
+  draw(pass, cameraMatrix) {
+    if (!this.enabled) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.colorBuffer);
+    pass.draw(this.vertexCount);
+  }
+  render(pass, mesh, viewProjMatrix) {
+    this.parentMesh = mesh;
+    this.draw(pass, viewProjMatrix);
+  }
+  setMode(mode) {
+    this.mode = mode;
+    this._updateGizmoSettings();
+  }
+  setSize(size) {
+    this.size = size;
+    this._updateGizmoSettings();
+  }
+  setSelectedAxis(axis) {
+    this.selectedAxis = axis;
+    this._updateGizmoSettings();
+  }
+  setEnabled(enabled) {
+    this.enabled = enabled;
+  }
+}
+exports.GizmoEffect = GizmoEffect;
+
+},{"../../shaders/gizmo/gimzoShader":86}],44:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MANABarEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
+class MANABarEffect {
+  constructor(device, format) {
+    this.device = device;
+    this.format = format;
+    this.progress = 1.0;
+    this.color = [0.1, 0.1, 0.9, 1.0];
+    this.offsetY = 45;
+    this.enabled = true;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    // Simple flat bar (width 100, height 10)
+    const W = 40;
+    const H = 3;
+    const vertexData = new Float32Array([-0.5 * W, 0.5 * H, 0.0, 0.5 * W, 0.5 * H, 0.0, -0.5 * W, -0.5 * H, 0.0, 0.5 * W, -0.5 * H, 0.0]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+
+    // Buffers
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+
+    // Uniforms
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // model + color + progress (64 + 16 + 4)
+    this.modelBuffer = this.device.createBuffer({
+      size: 64 + 16 + 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // BindGroup
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+
+    // Pipeline
+    const shaderModule = this.device.createShaderModule({
+      code: _energyBarShader.hpBarEffectShaders
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'mana Pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'always',
+        format: 'depth24plus'
+      }
+    });
+  }
+  setProgress(value) {
+    this.progress = Math.max(0.0, Math.min(1.0, value));
+  }
+  setColor(r, g, b, a = 1.0) {
+    this.color = [r, g, b, a];
+  }
+  draw(pass, cameraMatrix, modelMatrix) {
+    const color = new Float32Array(this.color);
+    const progressData = new Float32Array([this.progress]);
+
+    // Pack uniforms manually
+    const buffer = new ArrayBuffer(64 + 16 + 4);
+    const f32 = new Float32Array(buffer);
+    f32.set(cameraMatrix, 0); // not needed here
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
+    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  }
+  render(pass, mesh, viewProjMatrix) {
+    const pos = mesh.position;
+    const modelMatrix = _wgpuMatrix.mat4.identity();
+    _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
+    this.draw(pass, viewProjMatrix, modelMatrix);
+  }
+}
+exports.MANABarEffect = MANABarEffect;
+
+},{"../../shaders/energy-bars/energy-bar-shader.js":73,"wgpu-matrix":30}],45:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.PointerEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
+class PointerEffect {
+  constructor(device, format) {
+    this.device = device;
+    this.format = format;
+    this._tempModelMatrix = _wgpuMatrix.mat4.identity();
+    this._tempTranslation = new Float32Array(3);
+    this.enabled = true;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    // Vertex data: simple quad
+    let S = 10;
+    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
+    // top-left
+    0.5 * S, 0.5 * S, 0.0 * S,
+    // top-right
+    -0.1 * S, -0.1 * S, 0.0 * S,
+    // bottom-left
+    0.1 * S, -0.1 * S, 0.0 * S // bottom-right
+    ]);
+    const uvData = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _pointerEffect.pointerEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'pointEffect Pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'always',
+        format: 'depth24plus'
+      }
+    });
+  }
+  draw(pass, cameraMatrix, modelMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    const objPos = mesh.position;
+    _wgpuMatrix.mat4.identity(this._tempModelMatrix);
+    this._tempTranslation[0] = objPos.x;
+    this._tempTranslation[1] = objPos.y + 60;
+    this._tempTranslation[2] = objPos.z;
+    _wgpuMatrix.mat4.translate(this._tempModelMatrix, this._tempTranslation, this._tempModelMatrix);
+    this.draw(transPass, viewProjMatrix, modelMatrix);
+  }
+}
+exports.PointerEffect = PointerEffect;
+
+},{"../../shaders/standalone/pointer.effect.js":100,"wgpu-matrix":30}],46:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.PointEffect = void 0;
+var _pointEffect = require("../../shaders/topology-point/pointEffect");
+class PointEffect {
+  constructor(device, format) {
+    this.device = device;
+    this.format = format;
+    this.pointSize = 8.0;
+    this.enabled = true;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    // Camera uniform buffer
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Model buffer
+    this.modelBuffer = this.device.createBuffer({
+      size: 64,
+      // mat4x4
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Point settings buffer
+    this.pointSettingsBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, new Float32Array([this.pointSize, 0, 0, 0]));
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: {
+          buffer: this.pointSettingsBuffer
+        }
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _pointEffect.pointEffectShader
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'Topology Pipeline',
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [{
+          arrayStride: 3 * 4,
+          stepMode: 'instance',
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }, {
+          arrayStride: 3 * 4,
+          stepMode: 'instance',
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: "triangle-strip"
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less-equal",
+        format: "depth24plus"
+      }
+    });
+  }
+
+  // ✅ THIS MATCHES FlameEffect PATTERN
+  updateInstanceData(baseModelMatrix) {
+    // You can apply additional transforms here if needed
+    // For now, just use the parent's model matrix directly
+    this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
+  }
+  draw(pass, cameraMatrix, vertexBuffer, colorBuffer, vertexCount) {
+    if (!this.enabled) return;
+    if (!vertexCount || typeof vertexCount !== 'number' || vertexCount <= 0) {
+      console.warn('PointEffect: invalid vertexCount', vertexCount);
+      return;
+    }
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, vertexBuffer);
+    pass.setVertexBuffer(1, colorBuffer);
+    pass.draw(4, vertexCount, 0, 0);
+  }
+  render(pass, mesh, viewProjMatrix) {
+    if (!mesh.vertexBuffer) {
+      console.warn('PointEffect: mesh has no vertexBuffer');
+      return;
+    }
+    let vertexCount = mesh.vertexCount;
+    if (!vertexCount && mesh.vertexBuffer.size) {
+      vertexCount = mesh.vertexBuffer.size / (3 * 4);
+    }
+    if (!vertexCount && mesh.geometry?.positions) {
+      vertexCount = mesh.geometry.positions.length / 3;
+    }
+    if (!vertexCount || vertexCount <= 0) {
+      console.warn('PointEffect: could not determine vertexCount', mesh);
+      return;
+    }
+    const colorBuffer = mesh.vertexNormalsBuffer;
+    if (!colorBuffer) {
+      console.warn('PointEffect: mesh has no vertexNormalsBuffer');
+      return;
+    }
+    this.draw(pass, viewProjMatrix, mesh.vertexBuffer, colorBuffer, vertexCount);
+  }
+  setPointSize(size) {
+    this.pointSize = size;
+    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, new Float32Array([this.pointSize, 0, 0, 0]));
+  }
+  setEnabled(enabled) {
+    this.enabled = enabled;
+  }
+}
+exports.PointEffect = PointEffect;
+
+},{"../../shaders/topology-point/pointEffect":101}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28680,7 +28749,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":79,"../../shaders/instanced/vertex.instanced.wgsl":89,"../effects/energy-bar":36,"../effects/flame":38,"../effects/flame-emmiter":37,"../effects/gen":41,"../effects/gen-tex":39,"../effects/gen-tex2":40,"../effects/mana-bar":43,"../effects/pointerEffect":44,"../literals":52,"../loaders/bvh-instaced":54,"../matrix-class":58,"../utils":68,"./materials-instanced":49,"wgpu-matrix":30}],51:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":79,"../../shaders/instanced/vertex.instanced.wgsl":89,"../effects/energy-bar":37,"../effects/flame":39,"../effects/flame-emmiter":38,"../effects/gen":42,"../effects/gen-tex":40,"../effects/gen-tex2":41,"../effects/mana-bar":44,"../effects/pointerEffect":45,"../literals":52,"../loaders/bvh-instaced":54,"../matrix-class":58,"../utils":68,"./materials-instanced":49,"wgpu-matrix":30}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33839,8 +33908,7 @@ class MEMeshObj extends _materials.default {
           this._rotAxisVec[0] = this.rotation.axis.x;
           this._rotAxisVec[1] = this.rotation.axis.y;
           this._rotAxisVec[2] = this.rotation.axis.z;
-          // mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-          _wgpuMatrix.mat4.rotate(modelMatrix, [this._rotAxisVec[0], this._rotAxisVec[1], this._rotAxisVec[2]], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+          _wgpuMatrix.mat4.rotate(modelMatrix, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
         } else {
           _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
@@ -34208,7 +34276,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":79,"../shaders/vertex.wgsl":103,"../shaders/vertex.wgsl.normalmap":104,"./effects/destruction":35,"./effects/flame":38,"./effects/flame-emmiter":37,"./effects/gizmo":42,"./effects/topology-point":45,"./literals":52,"./materials":57,"./matrix-class":58,"./procedures/procedural-textures":66,"./utils":68,"wgpu-matrix":30}],60:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":79,"../shaders/vertex.wgsl":103,"../shaders/vertex.wgsl.normalmap":104,"./effects/destruction":36,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./effects/topology-point":46,"./literals":52,"./materials":57,"./matrix-class":58,"./procedures/procedural-textures":66,"./utils":68,"wgpu-matrix":30}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35294,6 +35362,7 @@ class ProceduralMeshObj extends _materials.default {
     this._modelMatrix = _wgpuMatrix.mat4.create();
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -35984,15 +36053,18 @@ class ProceduralMeshObj extends _materials.default {
     this._posArray[1] = pos.y;
     this._posArray[2] = pos.z;
     _wgpuMatrix.mat4.translate(modelMatrix, this._posArray, modelMatrix);
-    // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
     if (this.itIsPhysicsBody) {
-      _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+      this._rotAxisVec[0] = this.rotation.axis.x;
+      this._rotAxisVec[1] = this.rotation.axis.y;
+      this._rotAxisVec[2] = this.rotation.axis.z;
+      _wgpuMatrix.mat4.rotate(modelMatrix, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
     } else {
       _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
     }
     if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+    this.modelMatrix = modelMatrix;
     return modelMatrix;
   }
   updateModelUniformBuffer() {
@@ -36600,7 +36672,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/vertex.procedural.wgsl":102,"./effects/flame":38,"./effects/flame-emmiter":37,"./effects/gizmo":42,"./geometry-factory":48,"./literals":52,"./materials":57,"./matrix-class":58,"./utils":68,"wgpu-matrix":30}],65:[function(require,module,exports){
+},{"../shaders/vertex.procedural.wgsl":102,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./geometry-factory":48,"./literals":52,"./materials":57,"./matrix-class":58,"./utils":68,"wgpu-matrix":30}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38336,11 +38408,81 @@ class MatrixAmmo {
     this.dynamicsWorld.addRigidBody(body);
   }
   addPhysics(MEObject, pOptions) {
-    if (pOptions.geometry == "Sphere") {
-      this.addPhysicsSphere(MEObject, pOptions);
-    } else if (pOptions.geometry == "Cube") {
-      this.addPhysicsBox(MEObject, pOptions);
+    switch (pOptions.geometry) {
+      case "Sphere":
+        return this.addPhysicsSphere(MEObject, pOptions);
+      case "Cube":
+        return this.addPhysicsBox(MEObject, pOptions);
+      case "Capsule":
+        return this.addPhysicsCapsule(MEObject, pOptions);
+      case "CapsuleX":
+        return this.addPhysicsCapsuleX(MEObject, pOptions);
+      case "CapsuleZ":
+        return this.addPhysicsCapsuleZ(MEObject, pOptions);
+      case "Cylinder":
+        return this.addPhysicsCylinder(MEObject, pOptions);
+      case "CylinderX":
+        return this.addPhysicsCylinderX(MEObject, pOptions);
+      case "CylinderZ":
+        return this.addPhysicsCylinderZ(MEObject, pOptions);
+      case "Cone":
+        return this.addPhysicsCone(MEObject, pOptions);
+      case "ConeX":
+        return this.addPhysicsConeX(MEObject, pOptions);
+      case "ConeZ":
+        return this.addPhysicsConeZ(MEObject, pOptions);
+      case "StaticPlane":
+        return this.addPhysicsStaticPlane(MEObject, pOptions);
+      case "ConvexHull":
+        return this.addPhysicsConvexHull(MEObject, pOptions);
+      case "BvhMesh":
+        return this.addPhysicsBvhMesh(MEObject, pOptions);
+      case "Compound":
+        return this.addPhysicsCompound(MEObject, pOptions);
+      case "Heightfield":
+        return this.addPhysicsHeightfield(MEObject, pOptions);
+      default:
+        console.warn("addPhysics: unknown geometry type:", pOptions.geometry);
+        return null;
     }
+  }
+  _applyBodyFlags(body, pOptions) {
+    const CF_KINEMATIC = 2;
+    const CF_NO_RESPONSE = 3;
+    if (pOptions.mass === 0 && pOptions.state === undefined && pOptions.collide === undefined) {
+      body.setCollisionFlags(CF_KINEMATIC);
+      body.setActivationState(2);
+    } else if (pOptions.collide === false) {
+      body.setCollisionFlags(CF_NO_RESPONSE);
+      body.setActivationState(4);
+    } else {
+      body.setActivationState(4);
+    }
+  }
+
+  // ─── shared helper ────────────────────────────────────────────
+  // Registers body in world + rigidBodies list.
+  _registerBody(body, MEObject, pOptions) {
+    body.name = pOptions.name;
+    MEObject.itIsPhysicsBody = true;
+    body.MEObject = MEObject;
+    this.dynamicsWorld.addRigidBody(body);
+    this.rigidBodies.push(body);
+    return body;
+  }
+  addPhysicsCapsule(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia);
+    const body = new Ammo.btRigidBody(rbInfo);
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
   }
   addPhysicsSphere(MEObject, pOptions) {
     const FLAGS = {
@@ -38453,10 +38595,7 @@ class MatrixAmmo {
     const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
 
     // CREATE HINGE
-    const hinge = new Ammo.btHingeConstraint(bodyA, bodyB,
-    // frameA,
-    // frameB,
-    ammoPivotA, ammoPivotB, ammoAxisA, ammoAxisB, true);
+    const hinge = new Ammo.btHingeConstraint(bodyA, bodyB, ammoPivotA, ammoPivotB, ammoAxisA, ammoAxisB, true);
     // LIMITS
     if (pOptions.limits) {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
@@ -38467,6 +38606,307 @@ class MatrixAmmo {
     hinge.name = pOptions.name;
     this.constraints.push(hinge);
     return hinge;
+  }
+
+  // ─── capsule on X axis ────────────────────────────────────────
+  addPhysicsCapsuleX(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btCapsuleShapeX(pOptions.radius, pOptions.height);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─── capsule on Z axis ────────────────────────────────────────
+  addPhysicsCapsuleZ(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btCapsuleShapeZ(pOptions.radius, pOptions.height);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. CYLINDER  (Y axis — barrels, pillars, wheels)
+  //    pOptions: { scale: [rx, hy, rz], mass, position, rotation, name }
+  //    scale[0] = radius X, scale[1] = half-height, scale[2] = radius Z
+  // ─────────────────────────────────────────────────────────────
+  addPhysicsCylinder(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btCylinderShape(new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2]));
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const rot = startTransform.getRotation();
+    rot.setX((0, _utils.degToRad)(pOptions.rotation?.x ?? 0));
+    rot.setY((0, _utils.degToRad)(pOptions.rotation?.y ?? 0));
+    rot.setZ((0, _utils.degToRad)(pOptions.rotation?.z ?? 0));
+    startTransform.setRotation(rot);
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─── cylinder on X axis ───────────────────────────────────────
+  addPhysicsCylinderX(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btCylinderShapeX(new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2]));
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─── cylinder on Z axis ───────────────────────────────────────
+  addPhysicsCylinderZ(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btCylinderShapeZ(new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2]));
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. CONE  (Y axis)
+  //    pOptions: { radius, height, mass, position, name }
+  // ─────────────────────────────────────────────────────────────
+  addPhysicsCone(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btConeShape(pOptions.radius, pOptions.height);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─── cone on X axis ───────────────────────────────────────────
+  addPhysicsConeX(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btConeShapeX(pOptions.radius, pOptions.height);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─── cone on Z axis ───────────────────────────────────────────
+  addPhysicsConeZ(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btConeShapeZ(pOptions.radius, pOptions.height);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. STATIC PLANE  (mass = 0 always, infinite flat surface)
+  //    pOptions: { normal: [nx,ny,nz], constant, position, name }
+  //    normal  = surface normal, e.g. [0,1,0] = horizontal floor
+  //    constant = signed distance from origin, e.g. 0 = floor at y=0
+  // ─────────────────────────────────────────────────────────────
+  addPhysicsStaticPlane(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const n = pOptions.normal ?? [0, 1, 0];
+    const colShape = new Ammo.btStaticPlaneShape(new Ammo.btVector3(n[0], n[1], n[2]), pOptions.constant ?? 0);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    // plane has no meaningful origin but setOrigin keeps the API consistent
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position?.x ?? 0, pOptions.position?.y ?? 0, pOptions.position?.z ?? 0));
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(0, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    // planes are always static kinematic
+    body.setCollisionFlags(2);
+    body.setActivationState(2);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. CONVEX HULL  (dynamic-safe approximate mesh shape)
+  //    pOptions: { vertices: Float32Array|Array, mass, position, rotation, name }
+  //    vertices = flat [x,y,z, x,y,z, ...] — all points, no indices needed
+  // ─────────────────────────────────────────────────────────────
+  addPhysicsConvexHull(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const colShape = new Ammo.btConvexHullShape();
+    const verts = pOptions.vertices;
+    for (let i = 0; i < verts.length; i += 3) {
+      colShape.addPoint(new Ammo.btVector3(verts[i], verts[i + 1], verts[i + 2]), true);
+    }
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const rot = startTransform.getRotation();
+    rot.setX((0, _utils.degToRad)(pOptions.rotation?.x ?? 0));
+    rot.setY((0, _utils.degToRad)(pOptions.rotation?.y ?? 0));
+    rot.setZ((0, _utils.degToRad)(pOptions.rotation?.z ?? 0));
+    startTransform.setRotation(rot);
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 6. BVH TRIANGLE MESH  (exact mesh shape — static / mass=0 only)
+  //    pOptions: { vertices: Float32Array, indices: Uint16Array|Uint32Array,
+  //                position, rotation, name }
+  //    vertices = flat [x,y,z, ...], indices = triangle index triples
+  // ─────────────────────────────────────────────────────────────
+  addPhysicsBvhMesh(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const triMesh = new Ammo.btTriangleMesh(true, true);
+    const v = pOptions.vertices;
+    const idx = pOptions.indices;
+    for (let i = 0; i < idx.length; i += 3) {
+      const i0 = idx[i] * 3,
+        i1 = idx[i + 1] * 3,
+        i2 = idx[i + 2] * 3;
+      triMesh.addTriangle(new Ammo.btVector3(v[i0], v[i0 + 1], v[i0 + 2]), new Ammo.btVector3(v[i1], v[i1 + 1], v[i1 + 2]), new Ammo.btVector3(v[i2], v[i2 + 1], v[i2 + 2]), false);
+    }
+    const colShape = new Ammo.btBvhTriangleMeshShape(triMesh, true, true);
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const rot = startTransform.getRotation();
+    rot.setX((0, _utils.degToRad)(pOptions.rotation?.x ?? 0));
+    rot.setY((0, _utils.degToRad)(pOptions.rotation?.y ?? 0));
+    rot.setZ((0, _utils.degToRad)(pOptions.rotation?.z ?? 0));
+    startTransform.setRotation(rot);
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    // mass must be 0 — BVH is static only
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(0, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    body.setCollisionFlags(2);
+    body.setActivationState(2);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 7. COMPOUND  (combine multiple child shapes at offsets)
+  //    pOptions: {
+  //      children: [
+  //        { shape: Ammo.btCollisionShape, offset: {x,y,z}, rotation: {x,y,z} },
+  //        ...
+  //      ],
+  //      mass, position, rotation, name
+  //    }
+  //    Build each child shape first (btBoxShape, btSphereShape, etc.)
+  //    then pass them in as pOptions.children.
+  // ─────────────────────────────────────────────────────────────
+  addPhysicsCompound(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const compound = new Ammo.btCompoundShape();
+    for (const child of pOptions.children) {
+      const childTransform = new Ammo.btTransform();
+      childTransform.setIdentity();
+      childTransform.setOrigin(new Ammo.btVector3(child.offset?.x ?? 0, child.offset?.y ?? 0, child.offset?.z ?? 0));
+      const cRot = childTransform.getRotation();
+      cRot.setX((0, _utils.degToRad)(child.rotation?.x ?? 0));
+      cRot.setY((0, _utils.degToRad)(child.rotation?.y ?? 0));
+      cRot.setZ((0, _utils.degToRad)(child.rotation?.z ?? 0));
+      childTransform.setRotation(cRot);
+      compound.addChildShape(childTransform, child.shape);
+    }
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    const rot = startTransform.getRotation();
+    rot.setX((0, _utils.degToRad)(pOptions.rotation?.x ?? 0));
+    rot.setY((0, _utils.degToRad)(pOptions.rotation?.y ?? 0));
+    rot.setZ((0, _utils.degToRad)(pOptions.rotation?.z ?? 0));
+    startTransform.setRotation(rot);
+    const mass = pOptions.mass;
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    compound.calculateLocalInertia(mass, localInertia);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(startTransform), compound, localInertia));
+    this._applyBodyFlags(body, pOptions);
+    return this._registerBody(body, MEObject, pOptions);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 8. HEIGHTFIELD  (terrain — static, mass=0 always)
+  //    pOptions: {
+  //      data: Float32Array,       // row-major height values
+  //      widthSamples: number,     // samples along X
+  //      heightSamples: number,    // samples along Z
+  //      minHeight: number,
+  //      maxHeight: number,
+  //      heightScale: number,      // usually 1
+  //      position, name
+  //    }
+  //    The Float32Array must be kept alive (don't let it be GC'd).
+  //    Store it on pOptions or on the MEObject if you need to access it later.
+  // ─────────────────────────────────────────────────────────────
+  addPhysicsHeightfield(MEObject, pOptions) {
+    const Ammo = this.Ammo;
+    const data = pOptions.data; // Float32Array
+    // Copy into Ammo's heap so Bullet can read it
+    const nBytes = data.length * 4;
+    const ptr = Ammo._malloc(nBytes);
+    Ammo.HEAPF32.set(data, ptr >> 2);
+    // Store ptr on MEObject so caller can free it later with Ammo._free(ptr)
+    MEObject._heightfieldPtr = ptr;
+    const colShape = new Ammo.btHeightfieldTerrainShape(pOptions.widthSamples, pOptions.heightSamples, ptr, pOptions.heightScale ?? 1, pOptions.minHeight, pOptions.maxHeight, 1,
+    // upAxis: 1 = Y
+    'PHY_FLOAT', false // flipQuadEdges
+    );
+    // Scale the shape to match world units if needed
+    if (pOptions.worldScale) {
+      colShape.setLocalScaling(new Ammo.btVector3(pOptions.worldScale.x ?? 1, pOptions.worldScale.y ?? 1, pOptions.worldScale.z ?? 1));
+    }
+    const startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    // Bullet centres the heightfield at origin — offset Y by mid-height
+    const midY = (pOptions.minHeight + pOptions.maxHeight) / 2;
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position?.x ?? 0, (pOptions.position?.y ?? 0) + midY, pOptions.position?.z ?? 0));
+    const localInertia = new Ammo.btVector3(0, 0, 0);
+    const body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(0, new Ammo.btDefaultMotionState(startTransform), colShape, localInertia));
+    body.setCollisionFlags(2);
+    body.setActivationState(2);
+    return this._registerBody(body, MEObject, pOptions);
   }
   setBodyVelocity = (body, x, y, z) => {
     var tbv30 = new Ammo.btVector3();
@@ -57040,7 +57480,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
-var _engine = require("./engine/engine.js");
+var _cameras = require("./engine/cameras.js");
 var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
 var _matrixAmmo = _interopRequireDefault(require("./physics/matrix-ammo.js"));
 var _utils = require("./engine/utils.js");
@@ -57283,19 +57723,19 @@ class MatrixEngineWGPU {
     };
     this.cameras = {
       // arcball: new ArcballCamera({position: initialCameraPosition, canvas: canvas}),
-      firstPersonCamera: new _engine.FirstPersonCamera({
+      firstPersonCamera: new _cameras.FirstPersonCamera({
         position: initialCameraPosition,
         canvas: canvas,
         pitch: 0.18,
         yaw: -0.1
       }),
-      WASD: new _engine.WASDCamera({
+      WASD: new _cameras.WASDCamera({
         position: initialCameraPosition,
         canvas: canvas,
         pitch: 0.18,
         yaw: -0.1
       }),
-      RPG: new _engine.RPGCamera({
+      RPG: new _cameras.RPGCamera({
         position: initialCameraPosition,
         canvas: canvas
       })
@@ -57367,7 +57807,7 @@ class MatrixEngineWGPU {
     console.log("%c Version 1.9.11 [FasterThanRabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
-    console.log("%cMatrix Engine WGPU - Configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n", _utils.LOG_FUNNY_ARCADE);
+    console.log("%cMatrix Engine WGPU - Configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n", " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n", _utils.LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY);
     console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", _utils.LOG_WARN);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY_SMALL);
@@ -58578,4 +59018,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/core-cache.js":34,"./engine/effects/energy-bar.js":36,"./engine/effects/flame-emmiter.js":37,"./engine/effects/flame.js":38,"./engine/effects/mana-bar.js":43,"./engine/effects/pointerEffect.js":44,"./engine/engine.js":46,"./engine/generators/generator.js":47,"./engine/instanced/mesh-obj-instances.js":50,"./engine/lights.js":51,"./engine/loader-obj.js":53,"./engine/loaders/bvh-instaced.js":54,"./engine/loaders/bvh.js":55,"./engine/mesh-obj.js":59,"./engine/overrides/min-render.js":60,"./engine/postprocessing/bloom.js":62,"./engine/postprocessing/volumetric.js":63,"./engine/procedural-mesh.js":64,"./engine/procedures/fontana.js":65,"./engine/raycast.js":67,"./engine/utils.js":68,"./me-config.js":69,"./multilang/lang.js":70,"./physics/matrix-ammo.js":71,"./shaders/fontana/fontana.wgsl.js":76,"./sounds/audioAsset.js":107,"./sounds/sounds.js":108,"./tools/editor/editor.js":111,"./tools/editor/flexCodexShaderAdapter.js":114,"wgpu-matrix":30}]},{},[1]);
+},{"./engine/cameras.js":33,"./engine/core-cache.js":35,"./engine/effects/energy-bar.js":37,"./engine/effects/flame-emmiter.js":38,"./engine/effects/flame.js":39,"./engine/effects/mana-bar.js":44,"./engine/effects/pointerEffect.js":45,"./engine/generators/generator.js":47,"./engine/instanced/mesh-obj-instances.js":50,"./engine/lights.js":51,"./engine/loader-obj.js":53,"./engine/loaders/bvh-instaced.js":54,"./engine/loaders/bvh.js":55,"./engine/mesh-obj.js":59,"./engine/overrides/min-render.js":60,"./engine/postprocessing/bloom.js":62,"./engine/postprocessing/volumetric.js":63,"./engine/procedural-mesh.js":64,"./engine/procedures/fontana.js":65,"./engine/raycast.js":67,"./engine/utils.js":68,"./me-config.js":69,"./multilang/lang.js":70,"./physics/matrix-ammo.js":71,"./shaders/fontana/fontana.wgsl.js":76,"./sounds/audioAsset.js":107,"./sounds/sounds.js":108,"./tools/editor/editor.js":111,"./tools/editor/flexCodexShaderAdapter.js":114,"wgpu-matrix":30}]},{},[1]);

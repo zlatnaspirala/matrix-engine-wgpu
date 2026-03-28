@@ -1,5 +1,5 @@
 import {mat4, vec3} from "wgpu-matrix";
-import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
+import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL} from "./engine/utils.js";
@@ -292,6 +292,7 @@ export default class MatrixEngineWGPU {
       "%cMatrix Engine WGPU - Configuration :\n" +
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
       " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n",
+      " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n",
       LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY);
     console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_WARN);

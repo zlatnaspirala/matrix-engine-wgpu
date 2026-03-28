@@ -26,11 +26,13 @@ export var flipper = function() {
       //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
       //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
       setTimeout(() => {
+        // you cna call setters for each but bettter
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
-      }, 1000);
+        app.cameras.WASD.position[1] = 10;
+        app.cameras.WASD._dirtyAngle = true;
+      }, 500);
 
       // ball
       flipper.addMeshObj({
@@ -107,7 +109,7 @@ export var flipper = function() {
         mesh: m.cube,
         physics: {
           enabled: true,
-          mass: 10,
+          mass: 5,
           geometry: "Cube"
         }
       });
@@ -121,7 +123,7 @@ export var flipper = function() {
         mesh: m.cube,
         physics: {
           enabled: true,
-          mass: 10,
+          mass: 5,
           geometry: "Cube"
         }
       });
@@ -131,11 +133,22 @@ export var flipper = function() {
       if(leftBody) {
         leftBody.setActivationState(4);
         leftBody.activate(true);
+        leftBody.setDamping(0.8, 0.8);
       }
       if(rightBody) {
         rightBody.setActivationState(4);
         rightBody.activate(true);
+        rightBody.setDamping(0.8, 0.8);
       }
+
+      leftBody.setDamping(0.95, 0.95);
+      rightBody.setDamping(0.95, 0.95);
+
+      leftBody.setRestitution(0.1);
+      rightBody.setRestitution(0.1);
+
+      leftBody.setFriction(1.5);
+      rightBody.setFriction(1.5);
 
       // BUMPERS
       const bumperPositions = [
@@ -334,6 +347,9 @@ export var flipper = function() {
         // limits: [0.5, -0.8]
       });
 
+      hingeLeft.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
+      hingeRight.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
+
       let leftBodycurrPos = 'unpressed';
       window.addEventListener("keydown", (e) => {
         e.preventDefault();
@@ -354,8 +370,15 @@ export var flipper = function() {
         }
       });
 
-      hingeLeft.enableAngularMotor(true, 10, 50);
-      hingeRight.enableAngularMotor(true, 10, 50);
+      hingeLeft.enableAngularMotor(true, 10, 500);
+      hingeRight.enableAngularMotor(true, 10, 500);
+
+      flipper.autoUpdate.push({
+        update: () => {
+          leftBody.activate(true);
+          rightBody.activate(true);
+        }
+      })
 
       window.addEventListener("keyup", (e) => {
         if(e.code === "KeyZ") {
@@ -363,13 +386,13 @@ export var flipper = function() {
           // const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
           // leftBody.activate(true);
           // leftBody.setActivationState(4);
-          hingeLeft.enableAngularMotor(true, 10, 50);
+          hingeLeft.enableAngularMotor(true, 10, 500);
         }
         if(e.code === "KeyM") {
           // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
           // rightBody.activate(true);
           // rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, 10, 50);
+          hingeRight.enableAngularMotor(true, 10, 500);
         }
       });
     }

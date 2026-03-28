@@ -74,6 +74,7 @@ export default class ProceduralMeshObj extends Materials {
     this._modelMatrix = mat4.create();
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -660,19 +661,18 @@ export default class ProceduralMeshObj extends Materials {
     let modelMatrix = mat4.identity(this._modelMatrix);
     this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
     mat4.translate(modelMatrix, this._posArray, modelMatrix);
-    // mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
     if(this.itIsPhysicsBody) {
-      mat4.rotate(modelMatrix,
-        [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-        degToRad(this.rotation.angle),
-        modelMatrix
-      );
+      this._rotAxisVec[0] = this.rotation.axis.x;
+      this._rotAxisVec[1] = this.rotation.axis.y;
+      this._rotAxisVec[2] = this.rotation.axis.z;
+      mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
     } else {
       mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
     }
     if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
+    this.modelMatrix = modelMatrix;
     return modelMatrix;
   }
 

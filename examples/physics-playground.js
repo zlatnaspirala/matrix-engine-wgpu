@@ -2,6 +2,7 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsListener} from "../src/engine/raycast.js";
+import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
@@ -15,9 +16,11 @@ export var physicsPlayground = function() {
 
     physicsPlayground.addLight();
     addRaycastsListener();
-    downloadMeshes({cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/shapes/sphere.obj" }, onGround, {scale: [1, 1, 1]})
+
 
     addEventListener('AmmoReady', () => {
+
+      downloadMeshes({cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/shapes/sphere.obj"}, onGround, {scale: [1, 1, 1]})
       physicsPlayground.matrixAmmo.speedUpSimulation = 4;
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -101,7 +104,7 @@ export var physicsPlayground = function() {
       })
 
       physicsPlayground.addMeshObj({
-        position: {x: 0, y: -3.5, z: -10},
+        position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [25, 0.01, 25],
@@ -115,26 +118,36 @@ export var physicsPlayground = function() {
         }
       });
 
-      // physicsPlayground.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 2, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   scale: [2, 2, 2],
-      //   texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
-      //   name: 'TEST1',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: true,
-      //     mass: 10,
-      //     geometry: "Cube"
-      //   },
-      //   // raycast: { enabled: true , radius: 2 }
-      // });
+
+      // test new features
+      let test = MeshMorpher.compose(
+        {shape: MeshMorpher.capsule(1), offset: [0, 0, 0]},
+        {shape: MeshMorpher.cube(1), offset: [0, 0, 0]},
+      );
+
+      physicsPlayground.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 5, z: -7},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [1, 1, 1],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: test,
+        meshB: test,
+        name: `morph_1`,
+        physics: {
+          enabled: true,
+          geometry: "Capsule",
+          enabled: true,
+          mass: 5,
+          radius: 0.5,
+          height: 1.0
+        }
+      });
 
       app.physicsBodiesGeneratorWall(
         "standard",
-        {x: -5, y: 0, z: -20},
+        {x: -5, y: 1, z: -20},
         {x: 0, y: 0, z: 0},
         ["./res/textures/rust.jpg",],
         'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
