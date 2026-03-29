@@ -24,12 +24,8 @@ It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle
 Published on npm as: **`matrix-engine-wgpu`**
 
 Backend editor support list:
-Only for windows (linux must be adapted paths rule)
 
-- Chrome - desktop [windows]
-- Firefox - desktop [windows]
-- Edge - desktop [windows]
-- Opera - desktop [windows]
+- Chrome, Firefox, Edge, Opera 
 
 ---
 
