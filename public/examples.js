@@ -1165,7 +1165,7 @@ var fontana = function () {
         light.target[0] = light.behavior.setPath0();
       });
       fontana.lightContainer[0].position = [0, 17, -10];
-      fontana.lightContainer[0].target = [0, 0, -10];
+      fontana.lightContainer[0].setTarget(0, 0, -10);
       var TEST = fontana.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();
@@ -1981,19 +1981,19 @@ var loadObjFile = function () {
           type: 'mirror'
         },
         envMapParams: {
-          baseColorMix: 0.5,
+          baseColorMix: 0.65,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
-          reflectivity: 0.55,
+          reflectivity: 0.5,
           // 25% reflection blend
-          illuminateColor: [0.2, 0.2, 0.2],
+          illuminateColor: [0.5, 0.5, 0.2],
           // Soft cyan
           illuminateStrength: 0.1,
           // Gentle rim
           illuminatePulse: 0.01,
           // No pulse (static)
-          fresnelPower: 1.0,
+          fresnelPower: 10.0,
           // Medium-sharp edge
           envLodBias: 1.5,
           usePlanarReflection: false // ✅ Env map mode
@@ -2013,7 +2013,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -2120,7 +2120,7 @@ var loadObjFile = function () {
           flameEmitter: true
         }
       });
-      loadObjFile.lightContainer[0].intensity = 1;
+      loadObjFile.lightContainer[0].setIntensity(5);
       loadObjFile.activateBloomEffect();
       loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       loadObjFile.lightContainer[0].behavior.value_ = -1;
@@ -3248,8 +3248,8 @@ var procMesh = function () {
         light.position[0] = light.behavior.setPath0();
         light.target[0] = light.behavior.setPath0();
       });
-      procMesh.lightContainer[0].position = [0, 17, -10];
-      procMesh.lightContainer[0].target = [0, 0, -10];
+      procMesh.lightContainer[0].setPosition(0, 17, -10);
+      procMesh.lightContainer[0].setTarget(0, 0, -10);
       var TEST = procMesh.getSceneObjectByName('cube2');
       setTimeout(() => {
         let cube1 = app.getSceneObjectByName('cube1');
@@ -22389,12 +22389,10 @@ class RPGCamera {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
-
-      // optional external coupling
       app.lightContainer[0].position[0] = this.followMe.x;
       app.lightContainer[0].position[2] = this.followMe.z;
-      app.lightContainer[0].target[0] = this.followMe.x;
-      app.lightContainer[0].target[2] = this.followMe.z;
+      app.lightContainer[0].setTargetX(this.followMe.x);
+      app.lightContainer[0].setTargetZ(this.followMe.z);
       this.mousRollInAction = false;
       this._dirty = true;
     }
@@ -29266,12 +29264,21 @@ class SpotLight {
   get position() {
     return this._position;
   }
-  set position(v) {
-    _wgpuMatrix.vec3.copy(v, this._position);
+
+  // set position(v) {
+  //   vec3.copy(v, this._position);
+  //   this._dirty = true;
+  //   this._lightBufferDirty = true;
+  // }
+
+  setPosition(x, y, z) {
+    this._position[0] = x;
+    this._position[1] = y;
+    this._position[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
-  setPosition(v) {
+  setPositionVec(v) {
     _wgpuMatrix.vec3.copy(v, this._position);
     this._dirty = true;
     this._lightBufferDirty = true;
@@ -29279,8 +29286,15 @@ class SpotLight {
   get target() {
     return this._target;
   }
-  setTarget(v) {
+  setTargetVec(v) {
     _wgpuMatrix.vec3.copy(v, this._target);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+  setTarget(x, y, z) {
+    this._target[0] = x;
+    this._target[1] = y;
+    this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }

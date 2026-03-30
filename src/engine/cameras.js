@@ -478,15 +478,13 @@ export class RPGCamera {
 
     if(this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
-
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
 
-      // optional external coupling
       app.lightContainer[0].position[0] = this.followMe.x;
       app.lightContainer[0].position[2] = this.followMe.z;
-      app.lightContainer[0].target[0] = this.followMe.x;
-      app.lightContainer[0].target[2] = this.followMe.z;
+      app.lightContainer[0].setTargetX(this.followMe.x);
+      app.lightContainer[0].setTargetZ(this.followMe.z);
 
       this.mousRollInAction = false;
       this._dirty = true;

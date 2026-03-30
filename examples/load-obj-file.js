@@ -24,20 +24,20 @@ export var loadObjFile = function() {
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
         envMapParams: {
-          baseColorMix: 0.5,                // CLEAR SKY
+          baseColorMix: 0.65,               // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.55,               // 25% reflection blend
-          illuminateColor: [0.2, 0.2, 0.2], // Soft cyan
+          reflectivity: 0.5,               // 25% reflection blend
+          illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
           illuminateStrength: 0.1,          // Gentle rim
           illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 1.0,                // Medium-sharp edge
+          fresnelPower: 10.0,               // Medium-sharp edge
           envLodBias: 1.5,
           usePlanarReflection: false,       // ✅ Env map mode
         },
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -105,9 +105,7 @@ export var loadObjFile = function() {
         }
       })
 
-
-
-      loadObjFile.lightContainer[0].intensity = 1;
+      loadObjFile.lightContainer[0].setIntensity(5);
       loadObjFile.activateBloomEffect();
       loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       loadObjFile.lightContainer[0].behavior.value_ = -1;

@@ -571,11 +571,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   // })
   forestOfHollowBloodStartSceen.addLight();
 
-  app.lightContainer[0].position[2] = 1;
-  app.lightContainer[0].position[1] = 50;
-  app.lightContainer[0].position[0] = 0;
-  app.lightContainer[0].target = [0, 0, -10]
-  app.lightContainer[0].intensity = 40;
+  // app.lightContainer[0].position[2] = 1;
+  // app.lightContainer[0].position[1] = 50;
+  // app.lightContainer[0].position[0] = 0;
+  app.lightContainer[0].setPosition(0, 50, 1);
+  app.lightContainer[0].setTarget(0, 0, -10);
+  app.lightContainer[0].setIntesity(40);
 
   app.activateBloomEffect();
   app.bloomPass.setBlurRadius(3);

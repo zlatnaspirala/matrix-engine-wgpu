@@ -45,13 +45,21 @@ export class SpotLight {
   // ─── Getters / Setters ────────────────────────────────────────────────────
   get position() {return this._position;}
 
-  set position(v) {
-    vec3.copy(v, this._position);
+  // set position(v) {
+  //   vec3.copy(v, this._position);
+  //   this._dirty = true;
+  //   this._lightBufferDirty = true;
+  // }
+
+  setPosition(x, y, z) {
+    this._position[0] = x;
+    this._position[1] = y;
+    this._position[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
 
-  setPosition(v) {
+  setPositionVec(v) {
     vec3.copy(v, this._position);
     this._dirty = true;
     this._lightBufferDirty = true;
@@ -59,8 +67,16 @@ export class SpotLight {
 
   get target() {return this._target;}
 
-  setTarget(v) {
+  setTargetVec(v) {
     vec3.copy(v, this._target);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTarget(x, y, z) {
+    this._target[0] = x;
+    this._target[1] = y;
+    this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }

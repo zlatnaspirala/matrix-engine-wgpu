@@ -152,8 +152,8 @@ export var procMesh = function() {
         light.target[0] = light.behavior.setPath0()
       })
 
-      procMesh.lightContainer[0].position = [0, 17, -10];
-      procMesh.lightContainer[0].target = [0, 0, -10];
+      procMesh.lightContainer[0].setPosition(0, 17, -10);
+      procMesh.lightContainer[0].setTarget(0, 0, -10);
 
       var TEST = procMesh.getSceneObjectByName('cube2');
       setTimeout(() => {
