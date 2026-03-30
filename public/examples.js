@@ -205,8 +205,8 @@ var flipper = function () {
     const ORBIT_SPEED = 0.6;
     const TARGET = {
       x: 0,
-      y: 0,
-      z: -10
+      y: 4,
+      z: -15
     };
 
     // Light colors cycling around the hue wheel
@@ -407,9 +407,10 @@ var flipper = function () {
           z: -20.5
         },
         scale: [6, 0.05, 15],
-        texturesPaths: ['./res/textures/default.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
-        name: 'ground',
+        texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+        name: 'glass',
         mesh: m.glass,
+        shadowsCast: false,
         envMapParams: envMapParams,
         physics: {
           enabled: true,

@@ -32,7 +32,7 @@ export var flipper = function() {
     const NUM_LIGHTS = isMobile() == true ? 2 : 4;
     const ORBIT_RADIUS = 8;
     const ORBIT_SPEED = 0.6;
-    const TARGET = {x: 0, y: 0, z: -10};
+    const TARGET = {x: 0, y: 4, z: -15};
 
     // Light colors cycling around the hue wheel
     const LIGHT_COLORS = [
@@ -198,9 +198,10 @@ export var flipper = function() {
         material: {type: 'mirror'},
         position: {x: 0, y: 2.4, z: -20.5},
         scale: [6, 0.05, 15],
-        texturesPaths: ['./res/textures/default.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
-        name: 'ground',
+        texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+        name: 'glass',
         mesh: m.glass,
+        shadowsCast: false,
         envMapParams: envMapParams,
         physics: {
           enabled: true,
