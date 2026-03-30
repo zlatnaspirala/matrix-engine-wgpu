@@ -423,7 +423,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
+
+
       this.createLayoutForRender();
+
+
+
 
       // EDIT INSTANCED PART
       this.instanceTargets = [];
@@ -499,24 +504,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
-
-        this.uvScaleBuffer = this.device.createBuffer({
-          size: 8, // vec2f
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-        // Default = no scale
-        this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
-
-        this.modelBindGroupInstanced = this.device.createBindGroup({
-          label: 'modelBindGroup in mesh [instanced]',
-          layout: this.uniformBufferBindGroupLayoutInstanced,
-          entries: [
-            {binding: 0, resource: {buffer: this.instanceBuffer, }},
-            {binding: 1, resource: {buffer: this.bonesBuffer}},
-            {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-            {binding: 3, resource: {buffer: this.uvScaleBuffer}}
-          ],
-        });
       };
 
       this.updateMaxInstances = (newMax) => {
@@ -743,16 +730,23 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      // this.modelBindGroupInstanced = this.device.createBindGroup({
-      //   label: 'modelBindGroup in mesh [instanced]',
-      //   layout: this.uniformBufferBindGroupLayoutInstanced,
-      //   entries: [
-      //     {binding: 0, resource: {buffer: this.instanceBuffer, }},
-      //     {binding: 1, resource: {buffer: this.bonesBuffer}},
-      //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+      this.uvScaleBuffer = this.device.createBuffer({
+        size: 8, // vec2f
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      // Default = no scale
+      this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
 
-      //   ],
-      // });
+      this.modelBindGroupInstanced = this.device.createBindGroup({
+        label: 'modelBindGroup in mesh [instanced]',
+        layout: this.uniformBufferBindGroupLayoutInstanced,
+        entries: [
+          {binding: 0, resource: {buffer: this.instanceBuffer, }},
+          {binding: 1, resource: {buffer: this.bonesBuffer}},
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+        ],
+      });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mainPassBindGroupLayout mesh [instaced]',

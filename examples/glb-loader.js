@@ -63,57 +63,44 @@ export function loadGLBLoader() {
     }, null, glbFile01);
 
     // woman
-    var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    var glbFile11 = await fetch("./res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObjInctance({
-      material: {type: 'mirror', useTextureFromGlb: true},
-      envMapParams: {
-        baseColorMix: 0.75,
-        mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
-        reflectivity: 0.5,               // 25% reflection blend
-        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        illuminateStrength: 0.1,          // Gentle rim
-        illuminatePulse: 0.001,             // No pulse (static)
-        fresnelPower: 5.0,                // Medium-sharp edge
-        envLodBias: 2.5,
-        usePlanarReflection: false,  // ✅ Env map mode
-      },
+      material: {type: 'standard', useTextureFromGlb: true},
+      // envMapParams: {
+      //   baseColorMix: 0.75,
+      //   mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
+      //   reflectivity: 0.5,               // 25% reflection blend
+      //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //   illuminateStrength: 0.1,          // Gentle rim
+      //   illuminatePulse: 0.001,             // No pulse (static)
+      //   fresnelPower: 5.0,                // Medium-sharp edge
+      //   envLodBias: 2.5,
+      //   usePlanarReflection: false,  // ✅ Env map mode
+      // },
       useScale: true,
       scale: [20, 20, 20],
       position: {x: 0, y: -4, z: -20},
       name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'], // , './res/textures/env-maps/sky1.webp'],
     }, null, glbFile11);
 
-    // var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {type: 'power', useTextureFromGlb: true},
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {x: -40, y: -4, z: -20},
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    }, null, glbFile11);
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'power', useTextureFromGlb: true},
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: -40, y: -4, z: -20},
+    //   name: 'woman1',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+    // }, null, glbFile11);
 
-    // var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {type: 'pong', useTextureFromGlb: true},
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {x: 40, y: -4, z: -20},
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    }, null, glbFile11);
-
-
-    // var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
     // TEST_ANIM.addGlbObj({
     //   material: {type: 'pong', useTextureFromGlb: true},
     //   useScale: true,
     //   scale: [20, 20, 20],
     //   position: {x: 40, y: -4, z: -20},
-    //   name: 'glbFileWhouse',
+    //   name: 'woman1',
     //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFileWhouse);
+    // }, null, glbFile11);
 
     // this is future load and replace skeletal anim.
     // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
