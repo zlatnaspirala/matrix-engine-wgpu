@@ -329,7 +329,8 @@ loadObjFile.addLight();
 loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.01);
 loadObjFile.lightContainer[0].behavior.value_ = -1;
 loadObjFile.lightContainer[0].updater.push(light => {
-  light.position[0] = light.behavior.setPath0();
+  light.setPosX(light.behavior.setPath0());
+  // setTargetX ...
 });
 ```
 

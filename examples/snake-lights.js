@@ -155,8 +155,8 @@ export var snakeLights = function() {
       light._phase = phaseOffset;
 
       const initialPos = PATHS[currentPathKey](0);
-      light.position = [initialPos.x, LIGHT_HEIGHT, initialPos.z];
-      light.target = [initialPos.x, 0, initialPos.z];
+      light.setPosition(initialPos.x, LIGHT_HEIGHT, initialPos.z);
+      light.setTarget(initialPos.x, 0, initialPos.z);
 
       light.updater.push((light) => {
         const t = app.now * SNAKE_SPEED - light._phase;

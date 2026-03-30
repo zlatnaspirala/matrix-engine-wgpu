@@ -771,14 +771,16 @@ export default class MEMeshObj extends Materials {
       );
       this.done = true;
       this.updateModelUniformBuffer();
-      if(this.texturesPaths.length > 1) {
+      if(this.texturesPaths.length > 1 && this.material.type == "mirror") {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
           try {this.envMapParams.envTexture = envTexture;} catch(err) {
             console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE);
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
+          try {
+          //  this.setupPipeline()
+          } catch(err) {console.log('Err[create pipeline]:', err)}
         });
       } else {
         try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
@@ -968,7 +970,7 @@ export default class MEMeshObj extends Materials {
   drawElements = (pass) => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    if(this.material.type === "mirror" && this.mirrorBindGroup) {
+    if(this.mirrorBindGroup) {
       pass.setBindGroup(2, this.mirrorBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);

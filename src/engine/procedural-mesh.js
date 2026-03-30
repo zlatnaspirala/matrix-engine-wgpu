@@ -685,7 +685,7 @@ export default class ProceduralMeshObj extends Materials {
       modelMatrix.byteOffset,
       modelMatrix.byteLength
     );
-    this.modelMatrix = modelMatrix;
+    // this.modelMatrix = modelMatrix;
   }
 
   getTransformationMatrix(camVP, dt) {
@@ -712,6 +712,10 @@ export default class ProceduralMeshObj extends Materials {
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.mainRenderBindGroup);
+
+    if(this.material.type === "mirror" && this.mirrorBindGroup) {
+      pass.setBindGroup(2, this.mirrorBindGroup);
+    }
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);

@@ -55,16 +55,16 @@ export var flipper = function() {
       const light = flipper.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-      light.intensity = 8.5;
+      light.setIntensity = 8.5;
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
-      light.position = [
+      light.setPosition (
         TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
         4 + heightOffset,
         TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
-      ];
-      light.target = [TARGET.x, TARGET.y, TARGET.z];
+      );
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
 
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
@@ -74,8 +74,8 @@ export var flipper = function() {
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
         const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-        light.position = [x, height, z];
-        light.target = [TARGET.x, TARGET.y, TARGET.z];
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
 

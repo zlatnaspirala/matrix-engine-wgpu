@@ -148,8 +148,8 @@ export var procMesh = function() {
       procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1)
       procMesh.lightContainer[0].behavior.value_ = -1;
       procMesh.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
-        light.target[0] = light.behavior.setPath0()
+        light.setPosX(light.behavior.setPath0())
+        light.setTargetX(light.behavior.setPath0())
       })
 
       procMesh.lightContainer[0].setPosition(0, 17, -10);

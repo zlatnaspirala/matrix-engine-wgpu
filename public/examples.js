@@ -237,12 +237,12 @@ var flipper = function () {
       const light = flipper.lightContainer[i];
       const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-      light.intensity = 8.5;
+      light.setIntensity = 8.5;
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
-      light.position = [TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS];
-      light.target = [TARGET.x, TARGET.y, TARGET.z];
+      light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
 
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
@@ -251,8 +251,8 @@ var flipper = function () {
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
         const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-        light.position = [x, height, z];
-        light.target = [TARGET.x, TARGET.y, TARGET.z];
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
     addEventListener('AmmoReady', () => {
@@ -1138,7 +1138,7 @@ var fontana = function () {
           y: 0,
           z: 0
         },
-        scale: [1, 1, 1],
+        scale: [10, 10, 10],
         rotationSpeed: {
           x: 0,
           y: 0,
@@ -1156,22 +1156,20 @@ var fontana = function () {
         }
       });
       fontana.addLight();
-      fontana.lightContainer[0].intensity = 10;
+      fontana.lightContainer[0].setIntensity(10);
       fontana.activateBloomEffect();
       fontana.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
       fontana.lightContainer[0].behavior.value_ = -1;
       fontana.lightContainer[0].updater.push(light => {
-        light.position[0] = light.behavior.setPath0();
-        light.target[0] = light.behavior.setPath0();
+        light.setPosX(light.behavior.setPath0());
+        light.setTargetX(light.behavior.setPath0());
       });
       fontana.lightContainer[0].setPosition(0, 17, -10);
       fontana.lightContainer[0].setTarget(0, 0, -10);
-      var TEST = fontana.getSceneObjectByName('cube2');
+
+      // var TEST = fontana.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();
-        let cube1 = app.getSceneObjectByName('cube1');
-        // cube1.effects.flameEffect.intensity = 100;
-        // cube1.effects.flameEffect.morphTo("pyramid", 8)
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
@@ -1815,20 +1813,26 @@ function loadGLBLoader() {
     var glbFile11 = await fetch("./res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObjInctance({
       material: {
-        type: 'standard',
+        type: 'mirror',
         useTextureFromGlb: true
       },
-      // envMapParams: {
-      //   baseColorMix: 0.75,
-      //   mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
-      //   reflectivity: 0.5,               // 25% reflection blend
-      //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //   illuminateStrength: 0.1,          // Gentle rim
-      //   illuminatePulse: 0.001,             // No pulse (static)
-      //   fresnelPower: 5.0,                // Medium-sharp edge
-      //   envLodBias: 2.5,
-      //   usePlanarReflection: false,  // ✅ Env map mode
-      // },
+      envMapParams: {
+        baseColorMix: 0.75,
+        mirrorTint: [0.9, 0.5, 1.0],
+        // Slight cool tint
+        reflectivity: 0.5,
+        // 25% reflection blend
+        illuminateColor: [0.3, 0.7, 1.0],
+        // Soft cyan
+        illuminateStrength: 0.1,
+        // Gentle rim
+        illuminatePulse: 0.001,
+        // No pulse (static)
+        fresnelPower: 5.0,
+        // Medium-sharp edge
+        envLodBias: 2.5,
+        usePlanarReflection: false // ✅ Env map mode
+      },
       useScale: true,
       scale: [20, 20, 20],
       position: {
@@ -1837,26 +1841,38 @@ function loadGLBLoader() {
         z: -20
       },
       name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'] // , './res/textures/env-maps/sky1.webp'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp']
     }, null, glbFile11);
-
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'power', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: -40, y: -4, z: -20},
-    //   name: 'woman1',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFile11);
-
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'pong', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: 40, y: -4, z: -20},
-    //   name: 'woman1',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFile11);
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'power',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: -40,
+        y: -4,
+        z: -20
+      },
+      name: 'woman1',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile11);
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'pong',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 40,
+        y: -4,
+        z: -20
+      },
+      name: 'woman1',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile11);
 
     // this is future load and replace skeletal anim.
     // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
@@ -1923,8 +1939,7 @@ function loadGLBLoader() {
       });
       app.lightContainer[0].setPosY(35);
       app.lightContainer[0].setIntensity(6);
-
-      // app.activateBloomEffect();
+      app.activateBloomEffect();
       // app.activateVolumetricEffect();
       // app.bloomPass.setIntensity(0.25);
     }
@@ -2241,10 +2256,11 @@ var loadObjsSequence = function () {
         objAnim: objAnim
       });
       setTimeout(() => {
-        app.cameras.WASD.pitch = -0.2605728267949113;
-        app.cameras.WASD.yaw = -0.0580;
+        app.cameras.WASD.pitch = -0.26;
+        app.cameras.WASD.yaw = -0.06;
         app.cameras.WASD.position[1] = 15;
         app.cameras.WASD.position[2] = 11;
+        app.cameras.WASD._dirtyAngle = true;
         app.getSceneObjectByName('swat').objAnim.play('walk');
       }, 200);
     }
@@ -2275,7 +2291,6 @@ var loadObjsSequence = function () {
         }
       });
     }
-    dispatchEvent(new CustomEvent('AmmoReady'));
   });
   window.app = loadObjFile;
 };
@@ -2493,8 +2508,8 @@ var myLights = function () {
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
-      light.position = [TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS];
-      light.target = [TARGET.x, TARGET.y, TARGET.z];
+      light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
 
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
@@ -2503,8 +2518,8 @@ var myLights = function () {
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
         const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-        light.position = [x, height, z];
-        light.target = [TARGET.x, TARGET.y, TARGET.z];
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
     if ((0, _utils.isMobile)() == false) myLights.activateBloomEffect();
@@ -2874,7 +2889,7 @@ var physicsPlayground = function () {
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push(light => {
-        light.position[0] = light.behavior.setPath0();
+        light.setPosX(light.behavior.setPath0());
       });
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
@@ -3247,8 +3262,8 @@ var procMesh = function () {
       procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1);
       procMesh.lightContainer[0].behavior.value_ = -1;
       procMesh.lightContainer[0].updater.push(light => {
-        light.position[0] = light.behavior.setPath0();
-        light.target[0] = light.behavior.setPath0();
+        light.setPosX(light.behavior.setPath0());
+        light.setTargetX(light.behavior.setPath0());
       });
       procMesh.lightContainer[0].setPosition(0, 17, -10);
       procMesh.lightContainer[0].setTarget(0, 0, -10);
@@ -3425,8 +3440,8 @@ var snakeLightsInstanced = function () {
       light.intensity = 18 * fade;
       light._phase = phaseOffset;
       const initialPos = PATHS[currentPathKey](0);
-      light.position = [initialPos.x, LIGHT_HEIGHT, initialPos.z];
-      light.target = [initialPos.x, 0, initialPos.z];
+      light.setPosition(initialPos.x, LIGHT_HEIGHT, initialPos.z);
+      light.setTarget(initialPos.x, 0, initialPos.z);
       light.updater.push(light => {
         const t = app.now * SNAKE_SPEED - light._phase;
         const cur = PATHS[currentPathKey](t);
@@ -3445,8 +3460,8 @@ var snakeLightsInstanced = function () {
           x = cur.x;
           z = cur.z;
         }
-        light.position = [x, LIGHT_HEIGHT, z];
-        light.target = [x, 0, z];
+        light.setPosition(x, LIGHT_HEIGHT, z);
+        light.setTarget(x, 0, z);
       });
     }
 
@@ -3667,8 +3682,8 @@ var snakeLights = function () {
       light.intensity = 18 * fade;
       light._phase = phaseOffset;
       const initialPos = PATHS[currentPathKey](0);
-      light.position = [initialPos.x, LIGHT_HEIGHT, initialPos.z];
-      light.target = [initialPos.x, 0, initialPos.z];
+      light.setPosition(initialPos.x, LIGHT_HEIGHT, initialPos.z);
+      light.setTarget(initialPos.x, 0, initialPos.z);
       light.updater.push(light => {
         const t = app.now * SNAKE_SPEED - light._phase;
         const cur = PATHS[currentPathKey](t);
@@ -34471,7 +34486,7 @@ class MEMeshObj extends _materials.default {
       this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
       this.done = true;
       this.updateModelUniformBuffer();
-      if (this.texturesPaths.length > 1) {
+      if (this.texturesPaths.length > 1 && this.material.type == "mirror") {
         this.loadEnvMap(this.texturesPaths, true).then(envTexture => {
           try {
             this.envMapParams.envTexture = envTexture;
@@ -34481,7 +34496,7 @@ class MEMeshObj extends _materials.default {
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
           try {
-            this.setupPipeline();
+            //  this.setupPipeline()
           } catch (err) {
             console.log('Err[create pipeline]:', err);
           }
@@ -34653,7 +34668,7 @@ class MEMeshObj extends _materials.default {
   drawElements = pass => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    if (this.material.type === "mirror" && this.mirrorBindGroup) {
+    if (this.mirrorBindGroup) {
       pass.setBindGroup(2, this.mirrorBindGroup);
     }
     pass.setBindGroup(3, this.waterBindGroup);
@@ -36612,7 +36627,7 @@ class ProceduralMeshObj extends _materials.default {
   updateModelUniformBuffer() {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    this.modelMatrix = modelMatrix;
+    // this.modelMatrix = modelMatrix;
   }
   getTransformationMatrix(camVP, dt) {
     this._sceneData.set(camVP, 16);
@@ -36636,6 +36651,9 @@ class ProceduralMeshObj extends _materials.default {
   drawElements(pass, lightContainer) {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.mainRenderBindGroup);
+    if (this.material.type === "mirror" && this.mirrorBindGroup) {
+      pass.setBindGroup(2, this.mirrorBindGroup);
+    }
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);
@@ -40196,7 +40214,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1 : f32, _pad2 : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 struct PBRMaterialData {
     baseColor : vec3f,
@@ -58892,7 +58913,7 @@ class MatrixEngineWGPU {
         y: 0,
         z: 0
       },
-      scale: [1, 1, 1],
+      scale: [o.scale[0], o.scale[1], o.scale[2]],
       rotationSpeed: {
         x: 0,
         y: 0,
@@ -58935,7 +58956,7 @@ class MatrixEngineWGPU {
         y: 0,
         z: 0
       },
-      scale: [1, 1, 1],
+      scale: [o.scale[0], o.scale[1], o.scale[2]],
       rotationSpeed: {
         x: 0,
         y: 0,
@@ -58974,7 +58995,7 @@ class MatrixEngineWGPU {
         y: 0,
         z: 0
       },
-      scale: [1, 1, 1],
+      scale: [o.scale[0], o.scale[1], o.scale[2]],
       rotationSpeed: {
         x: 0,
         y: 0,
@@ -59013,7 +59034,7 @@ class MatrixEngineWGPU {
         y: 0,
         z: 0
       },
-      scale: [1, 1, 1],
+      scale: [o.scale[0], o.scale[1], o.scale[2]],
       rotationSpeed: {
         x: 0,
         y: 0,
@@ -59057,7 +59078,7 @@ class MatrixEngineWGPU {
         y: 0,
         z: 0
       },
-      scale: [1, 1, 1],
+      scale: [o.scale[0], o.scale[1], o.scale[2]],
       rotationSpeed: {
         x: 0,
         y: 0,
@@ -59127,8 +59148,10 @@ class MatrixEngineWGPU {
     }
     setTimeout(() => {
       this.frame();
-    }, 200);
-    callback(this);
+    }, 500);
+    setTimeout(() => {
+      callback(this);
+    }, 1);
   }
 
   // still not perfect but works

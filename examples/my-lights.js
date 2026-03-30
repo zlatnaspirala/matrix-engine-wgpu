@@ -74,12 +74,12 @@ export var myLights = function() {
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
-      light.position = [
+      light.setPosition (
         TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
         4 + heightOffset,
         TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
-      ];
-      light.target = [TARGET.x, TARGET.y, TARGET.z];
+      );
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
 
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
@@ -89,8 +89,8 @@ export var myLights = function() {
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
         const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-        light.position = [x, height, z];
-        light.target = [TARGET.x, TARGET.y, TARGET.z];
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
 

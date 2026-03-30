@@ -71,10 +71,11 @@ export var loadObjsSequence = function() {
       })
 
       setTimeout(() => {
-        app.cameras.WASD.pitch = -0.2605728267949113;
-        app.cameras.WASD.yaw = -0.0580;
+        app.cameras.WASD.pitch = -0.26;
+        app.cameras.WASD.yaw = -0.06;
         app.cameras.WASD.position[1] = 15
         app.cameras.WASD.position[2] = 11;
+        app.cameras.WASD._dirtyAngle = true;
         app.getSceneObjectByName('swat').objAnim.play('walk')
       }, 200);
     }
@@ -94,11 +95,6 @@ export var loadObjsSequence = function() {
         }
       })
     }
-
-    dispatchEvent(new CustomEvent('AmmoReady'))
-
-
   })
-
   window.app = loadObjFile;
 }

@@ -253,7 +253,7 @@ export var physicsPlayground = function() {
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
+        light.setPosX(light.behavior.setPath0())
       })
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
