@@ -89,24 +89,28 @@ export default class Materials {
       minFilter: 'linear',
     });
     // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
-    const materialPBRSize = 8 * 4; // 32 bytes
+    const materialPBRSize = 52; // 32 bytes
     this.materialPBRBuffer = this.device.createBuffer({
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const metallicFactor = 0.1;
+    const metallicFactor = 0.5;
     const roughnessFactor = 0.5;
     const effectMix = 0.0;            // NEW: 0.0 = normal PBR, 1.0 = full effect
     const lightingEnabled = 1.0;      // NEW: 1.0 = lighting on, 0.0 = effect only
+    const ambientColor = [0.5, 0.5, 0.5];
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
       effectMix,
-      lightingEnabled
+      lightingEnabled,
+      ...ambientColor,
+      0.0
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled, ambientColor};
 
     if(this.material.type == 'normalmap') {
       const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
@@ -238,27 +242,27 @@ export default class Materials {
     // Recreate bind group only
     this.createBindGroupForRender();
 
-  //     console.log('=== changeTexture called ===');
-  // console.log('newTexture:', newTexture);
-  // console.log('instanceof GPUTexture:', newTexture instanceof GPUTexture);
-  
-  // if(newTexture instanceof GPUTexture) {
-  //   this.texture0 = newTexture;
-  // } else {
-  //   this.texture0 = {createView: () => newTexture};
-  // }
-  
-  // this.isVideo = false;
-  // if(sampler) this.imageSampler = sampler;
-  
-  // console.log('this.texture0 after set:', this.texture0);
-  // console.log('this.sceneUniformBuffer:', this.sceneUniformBuffer);
-  // console.log('this.shadowDepthTextureView:', this.shadowDepthTextureView);
-  // console.log('this.bglForRender:', this.bglForRender);
-  
-  // this.createBindGroupForRender();
-  
-  // console.log('this.sceneBindGroupForRender after rebuild:', this.sceneBindGroupForRender);
+    //     console.log('=== changeTexture called ===');
+    // console.log('newTexture:', newTexture);
+    // console.log('instanceof GPUTexture:', newTexture instanceof GPUTexture);
+
+    // if(newTexture instanceof GPUTexture) {
+    //   this.texture0 = newTexture;
+    // } else {
+    //   this.texture0 = {createView: () => newTexture};
+    // }
+
+    // this.isVideo = false;
+    // if(sampler) this.imageSampler = sampler;
+
+    // console.log('this.texture0 after set:', this.texture0);
+    // console.log('this.sceneUniformBuffer:', this.sceneUniformBuffer);
+    // console.log('this.shadowDepthTextureView:', this.shadowDepthTextureView);
+    // console.log('this.bglForRender:', this.bglForRender);
+
+    // this.createBindGroupForRender();
+
+    // console.log('this.sceneBindGroupForRender after rebuild:', this.sceneBindGroupForRender);
 
   }
 
@@ -446,18 +450,27 @@ export default class Materials {
     }
   }
 
-  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0) {
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0, ambientColor = [1.0, 1.0, 1.0]) {
     if(!metallicFactor) metallicFactor = 0.5;
-    if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
+    if(!baseColorFactor) baseColorFactor = [0.5, 0.5, 0.5, 1.0];
     if(!roughnessFactor) roughnessFactor = 0.5;
     const materialArray = new Float32Array([
-      ...baseColorFactor,
-      metallicFactor,
-      roughnessFactor,
-      effectMix,
-      lightingEnabled
+      ...baseColorFactor,       // 4 floats
+      metallicFactor,           // 1
+      roughnessFactor,          // 1
+      effectMix,                // 1
+      lightingEnabled,          // 1
+      ...ambientColor,          // 3 floats
+      0.0,                      // padding
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled, ambientColor};
+  }
+
+  setAmbient(r, g, b) {
+    if(!this._materialParams) return;
+    this._materialParams.ambientColor = [r, g, b];
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 32, new Float32Array([r, g, b, 0.0]));
   }
 
   setMixEffectMode(mode = 'normal') {

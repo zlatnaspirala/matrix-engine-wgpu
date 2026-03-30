@@ -60,6 +60,8 @@ export default class MEMeshObj extends Materials {
 
     this.useScale = o.useScale || false;
 
+
+
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8, // vec2f
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -674,7 +676,8 @@ export default class MEMeshObj extends Materials {
           {binding: 0, resource: {buffer: this.modelUniformBuffer}},
           {binding: 1, resource: {buffer: this.bonesBuffer}},
           {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+          {binding: 3, resource: {buffer: this.uvScaleBuffer}},
+          
         ],
       });
 
@@ -787,7 +790,6 @@ export default class MEMeshObj extends Materials {
       }
     })
   }
-
 
   // Helper to set it
   setUVScale(x, y = x) {

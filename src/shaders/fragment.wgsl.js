@@ -40,8 +40,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -217,10 +219,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         lightContribution += contrib * shadowFactor;
     }
 
-    // 
     // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+    // -- from dark next feature
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    // like fog interest
+    // var ambientTerm = material.ambientColor + scene.globalAmbient;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;

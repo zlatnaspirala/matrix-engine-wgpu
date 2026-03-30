@@ -76,24 +76,29 @@ export default class MaterialsInstanced {
       minFilter: 'linear',
     });
     // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
-    const materialPBRSize = 8 * 4; // 32 bytes
+    const materialPBRSize = 52; // 32 bytes
     this.materialPBRBuffer = this.device.createBuffer({
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     // Dummy values
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const metallicFactor = 0.1;    // diffuse like plastic
-    const roughnessFactor = 0.5;   // some gloss
-    const pad = [0.0, 0.0];
-    // Pack into Float32Array
+    const metallicFactor = 0.5;
+    const roughnessFactor = 0.5;
+    const effectMix = 0.0;            // NEW: 0.0 = normal PBR, 1.0 = full effect
+    const lightingEnabled = 1.0;      // NEW: 1.0 = lighting on, 0.0 = effect only
+    const ambientColor = [0.5, 0.5, 0.5];
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
-      ...pad
+      effectMix,
+      lightingEnabled,
+      ...ambientColor,
+      0.0
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled, ambientColor};
 
     if(this.material.type == 'normalmap') {
       const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
@@ -329,19 +334,27 @@ export default class MaterialsInstanced {
     }
   }
 
-  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
-    if(!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
-    if(!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0, ambientColor = [1.0, 1.0, 1.0]) {
+    if(!metallicFactor) metallicFactor = 0.5;
+    if(!baseColorFactor) baseColorFactor = [0.5, 0.5, 0.5, 1.0];
     if(!roughnessFactor) roughnessFactor = 0.5;
-    const pad = [0.0];
     const materialArray = new Float32Array([
-      ...baseColorFactor,
-      metallicFactor,
-      roughnessFactor,
-      0.5,
-      ...pad
+      ...baseColorFactor,       // 4 floats
+      metallicFactor,           // 1
+      roughnessFactor,          // 1
+      effectMix,                // 1
+      lightingEnabled,          // 1
+      ...ambientColor,          // 3 floats
+      0.0,                      // padding
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled, ambientColor};
+  }
+
+  setAmbient(r, g, b) {
+    if(!this._materialParams) return;
+    this._materialParams.ambientColor = [r, g, b];
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 32, new Float32Array([r, g, b, 0.0]));
   }
 
   updatePostFXMode(mode) {

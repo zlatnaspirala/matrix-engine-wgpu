@@ -1978,7 +1978,25 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'mirror'
+        },
+        envMapParams: {
+          baseColorMix: 0.5,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],
+          // Slight cool tint
+          reflectivity: 0.55,
+          // 25% reflection blend
+          illuminateColor: [0.2, 0.2, 0.2],
+          // Soft cyan
+          illuminateStrength: 0.1,
+          // Gentle rim
+          illuminatePulse: 0.01,
+          // No pulse (static)
+          fresnelPower: 1.0,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false // ✅ Env map mode
         },
         position: {
           x: 0,
@@ -2008,7 +2026,7 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'mirror'
         },
         position: {
           x: 0,
@@ -2026,22 +2044,21 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        // texturesPaths: ['./res/textures/cube-g1.webp'],
         texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         envMapParams: {
           baseColorMix: 0.0,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
-          reflectivity: 0.25,
+          reflectivity: 0.95,
           // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
+          illuminateColor: [0.2, 0.2, 0.2],
           // Soft cyan
           illuminateStrength: 0.1,
           // Gentle rim
           illuminatePulse: 0.01,
           // No pulse (static)
-          fresnelPower: 2.0,
+          fresnelPower: 1.0,
           // Medium-sharp edge
           envLodBias: 1.5,
           usePlanarReflection: false // ✅ Env map mode
@@ -2053,7 +2070,7 @@ var loadObjFile = function () {
           geometry: "Sphere"
         }
       });
-      loadObjFile.addMeshObj({
+      let MYCUBE = loadObjFile.addMeshObj({
         material: {
           type: 'standard'
         },
@@ -2103,51 +2120,32 @@ var loadObjFile = function () {
           flameEmitter: true
         }
       });
-
-      // var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, loadObjFile.device)));
-      //    loadObjFile.addGlbObjInctance({
-      //      material: {type: 'mirror', useTextureFromGlb: true},
-      //      envMapParams: {
-      //        baseColorMix: 0.75,
-      //        mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
-      //        reflectivity: 0.5,               // 25% reflection blend
-      //        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //        illuminateStrength: 0.1,          // Gentle rim
-      //        illuminatePulse: 0.001,             // No pulse (static)
-      //        fresnelPower: 5.0,                // Medium-sharp edge
-      //        envLodBias: 2.5,
-      //        usePlanarReflection: false,  // ✅ Env map mode
-      //      },
-      //      useScale: true,
-      //      scale: [20, 20, 20],
-      //      position: {x: 0, y: -4, z: -20},
-      //      name: 'woman1',
-      //      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
-      //    }, null, glbFile11);
-
-      loadObjFile.lightContainer[0].intensity = 10;
+      loadObjFile.lightContainer[0].intensity = 1;
       loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push(light => {
-        light.position[0] = light.behavior.setPath0();
-        light.target[0] = light.behavior.setPath0();
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
       });
-      loadObjFile.lightContainer[0].position = [0, 17, -10];
-      loadObjFile.lightContainer[0].target = [0, 0, -10];
-      var TEST = loadObjFile.getSceneObjectByName('cube2');
+      loadObjFile.lightContainer[0].setPosition([0, 15, -10]);
+      loadObjFile.lightContainer[0].setTarget([0, 0, -10]);
       setTimeout(() => {
-        let cube1 = app.getSceneObjectByName('cube1');
-        // cube1.effects.flameEffect.intensity = 100;
-        // cube1.effects.flameEffect.morphTo("pyramid", 8)
+        MYCUBE.effects.flameEmitter.setIntensity(100);
+        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
+        MYCUBE.setAmbient(10, 1, 0);
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 5;
-      }, 800);
+        app.cameras.WASD.position[1] = 10;
+        app.cameras.WASD._dirtyAngle = true;
+      }, 400);
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
+      if (e.detail.hitObject.name.startWith('cube')) {
+        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4);
+      }
     });
   });
   window.app = loadObjFile;
@@ -27363,19 +27361,28 @@ class MaterialsInstanced {
       minFilter: 'linear'
     });
     // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
-    const materialPBRSize = 8 * 4; // 32 bytes
+    const materialPBRSize = 52; // 32 bytes
     this.materialPBRBuffer = this.device.createBuffer({
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     // Dummy values
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const metallicFactor = 0.1; // diffuse like plastic
-    const roughnessFactor = 0.5; // some gloss
-    const pad = [0.0, 0.0];
-    // Pack into Float32Array
-    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
+    const metallicFactor = 0.5;
+    const roughnessFactor = 0.5;
+    const effectMix = 0.0; // NEW: 0.0 = normal PBR, 1.0 = full effect
+    const lightingEnabled = 1.0; // NEW: 1.0 = lighting on, 0.0 = effect only
+    const ambientColor = [0.5, 0.5, 0.5];
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled, ...ambientColor, 0.0]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {
+      baseColorFactor,
+      metallicFactor,
+      roughnessFactor,
+      effectMix,
+      lightingEnabled,
+      ambientColor
+    };
     if (this.material.type == 'normalmap') {
       const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
       if (normalTexInfo) {
@@ -27616,13 +27623,38 @@ class MaterialsInstanced {
       return 'rgba8unorm';
     }
   }
-  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor) {
-    if (!metallicFactor) metallicFactor = [0.5, 0.5, 0.5];
-    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0, ambientColor = [1.0, 1.0, 1.0]) {
+    if (!metallicFactor) metallicFactor = 0.5;
+    if (!baseColorFactor) baseColorFactor = [0.5, 0.5, 0.5, 1.0];
     if (!roughnessFactor) roughnessFactor = 0.5;
-    const pad = [0.0];
-    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, 0.5, ...pad]);
+    const materialArray = new Float32Array([...baseColorFactor,
+    // 4 floats
+    metallicFactor,
+    // 1
+    roughnessFactor,
+    // 1
+    effectMix,
+    // 1
+    lightingEnabled,
+    // 1
+    ...ambientColor,
+    // 3 floats
+    0.0 // padding
+    ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {
+      baseColorFactor,
+      metallicFactor,
+      roughnessFactor,
+      effectMix,
+      lightingEnabled,
+      ambientColor
+    };
+  }
+  setAmbient(r, g, b) {
+    if (!this._materialParams) return;
+    this._materialParams.ambientColor = [r, g, b];
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 32, new Float32Array([r, g, b, 0.0]));
   }
   updatePostFXMode(mode) {
     const arrayBuffer = new Uint32Array([mode]);
@@ -29239,11 +29271,31 @@ class SpotLight {
     this._dirty = true;
     this._lightBufferDirty = true;
   }
+  setPosition(v) {
+    _wgpuMatrix.vec3.copy(v, this._position);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
   get target() {
     return this._target;
   }
-  set target(v) {
+  setTarget(v) {
     _wgpuMatrix.vec3.copy(v, this._target);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+  setTargetX(x) {
+    this._target[0] = x;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+  setTargetY(y) {
+    this._target[1] = y;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+  setTargetZ(z) {
+    this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
@@ -32288,18 +32340,27 @@ class Materials {
       minFilter: 'linear'
     });
     // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
-    const materialPBRSize = 8 * 4; // 32 bytes
+    const materialPBRSize = 52; // 32 bytes
     this.materialPBRBuffer = this.device.createBuffer({
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const metallicFactor = 0.1;
+    const metallicFactor = 0.5;
     const roughnessFactor = 0.5;
     const effectMix = 0.0; // NEW: 0.0 = normal PBR, 1.0 = full effect
     const lightingEnabled = 1.0; // NEW: 1.0 = lighting on, 0.0 = effect only
-    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled]);
+    const ambientColor = [0.5, 0.5, 0.5];
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled, ...ambientColor, 0.0]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {
+      baseColorFactor,
+      metallicFactor,
+      roughnessFactor,
+      effectMix,
+      lightingEnabled,
+      ambientColor
+    };
     if (this.material.type == 'normalmap') {
       const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
       if (normalTexInfo) {
@@ -32630,12 +32691,38 @@ class Materials {
       return 'rgba8unorm';
     }
   }
-  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0) {
+  setupMaterialPBR(baseColorFactor, metallicFactor, roughnessFactor, effectMix = 0.0, lightingEnabled = 1.0, ambientColor = [1.0, 1.0, 1.0]) {
     if (!metallicFactor) metallicFactor = 0.5;
-    if (!baseColorFactor) baseColorFactor = [1.0, 1.0, 1.0, 0.5];
+    if (!baseColorFactor) baseColorFactor = [0.5, 0.5, 0.5, 1.0];
     if (!roughnessFactor) roughnessFactor = 0.5;
-    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, effectMix, lightingEnabled]);
+    const materialArray = new Float32Array([...baseColorFactor,
+    // 4 floats
+    metallicFactor,
+    // 1
+    roughnessFactor,
+    // 1
+    effectMix,
+    // 1
+    lightingEnabled,
+    // 1
+    ...ambientColor,
+    // 3 floats
+    0.0 // padding
+    ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this._materialParams = {
+      baseColorFactor,
+      metallicFactor,
+      roughnessFactor,
+      effectMix,
+      lightingEnabled,
+      ambientColor
+    };
+  }
+  setAmbient(r, g, b) {
+    if (!this._materialParams) return;
+    this._materialParams.ambientColor = [r, g, b];
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 32, new Float32Array([r, g, b, 0.0]));
   }
   setMixEffectMode(mode = 'normal') {
     let effectMix = 0.0;
@@ -40643,8 +40730,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -40845,8 +40934,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -41045,8 +41136,9 @@ fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f)
     let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
     let NdotL   = max(dot(N, lightDir), 0.0);
     let NdotV   = max(dot(N, V),        0.0);
-    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
-    return spec * lightColor * NdotL * mirrorParams.reflectivity;
+    let spec = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    let result = spec * lightColor * NdotL * mirrorParams.reflectivity;
+    return clamp(result, vec3f(0.0), vec3f(64.0));
 }
 
 fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
@@ -41114,7 +41206,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
                    mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     finalColor = mix(
         envColor,
         finalColor,
@@ -41265,8 +41358,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -41442,10 +41537,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         lightContribution += contrib * shadowFactor;
     }
 
-    // 
     // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+    // -- from dark next feature
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    // like fog interest
+    // var ambientTerm = material.ambientColor + scene.globalAmbient;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;
@@ -41497,8 +41599,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -41709,8 +41813,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -41889,8 +41995,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -42137,8 +42245,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -42360,8 +42470,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -42593,8 +42705,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -42758,7 +42872,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     // Apply per-instance tint
     finalColor *= input.colorMult.rgb;
     let N = normalize(input.fragNorm);
@@ -42816,8 +42931,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -42939,8 +43056,9 @@ fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f)
     let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
     let NdotL   = max(dot(N, lightDir), 0.0);
     let NdotV   = max(dot(N, V), 0.0);
-    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
-    return spec * lightColor * NdotL * mirrorParams.reflectivity;
+    let spec = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    let result = spec * lightColor * NdotL * mirrorParams.reflectivity;
+    return clamp(result, vec3f(0.0), vec3f(64.0));
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -43044,7 +43162,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
                      mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
     let texColor   = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
 
     finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
     finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
@@ -43543,8 +43662,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -43632,8 +43753,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct SpotLight {
@@ -43799,8 +43922,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct SpotLight {
@@ -43923,8 +44048,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct SpotLight {
@@ -44146,8 +44273,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -44178,23 +44307,13 @@ struct FragmentInput {
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-
-    // texture color
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-
-    // simple ambient lighting
-    let ambient = scene.globalAmbient;
-
-    // color manipulation
-    var finalColor = texColor.rgb * ambient;
-
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient);
     // alpha from material factor
     let alpha = texColor.a * material.baseColorFactor.a;
-
     if(alpha < 0.01){
         discard;
     }
-
     return vec4f(finalColor, alpha);
 }
 `;
@@ -45769,8 +45888,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -49955,8 +50076,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 // PREDEFINED

@@ -44,15 +44,41 @@ export class SpotLight {
 
   // ─── Getters / Setters ────────────────────────────────────────────────────
   get position() {return this._position;}
+
   set position(v) {
     vec3.copy(v, this._position);
     this._dirty = true;
     this._lightBufferDirty = true;
   }
 
+  setPosition(v) {
+    vec3.copy(v, this._position);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
   get target() {return this._target;}
-  set target(v) {
+
+  setTarget(v) {
     vec3.copy(v, this._target);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTargetX(x) {
+    this._target[0] = x;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTargetY(y) {
+    this._target[1] = y;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTargetZ(z) {
+    this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
@@ -370,23 +396,25 @@ export class SpotLight {
   // Position components — mutate vec3 in place, mark both dirty flags
 
   setPosX = (x) => {
-    if (this._position[0] === x) return;
+    if(this._position[0] === x) return;
     this._position[0] = x;
     this._dirty = true;
     this._lightBufferDirty = true;
-  };
+  }
+
   setPosY = (y) => {
-    if (this._position[1] === y) return; 
+    if(this._position[1] === y) return;
     this._position[1] = y;
     this._dirty = true;
     this._lightBufferDirty = true;
-  };
+  }
+
   setPosZ = (z) => {
-    if (this._position[1] === y) return; 
+    if(this._position[1] === y) return;
     this._position[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
-  };
+  }
 
   // These only affect the light buffer, not the VP matrix
   setInnerCutoff = (innerCutoff) => {

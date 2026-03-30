@@ -29,8 +29,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -61,23 +63,13 @@ struct FragmentInput {
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-
-    // texture color
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-
-    // simple ambient lighting
-    let ambient = scene.globalAmbient;
-
-    // color manipulation
-    var finalColor = texColor.rgb * ambient;
-
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient);
     // alpha from material factor
     let alpha = texColor.a * material.baseColorFactor.a;
-
     if(alpha < 0.01){
         discard;
     }
-
     return vec4f(finalColor, alpha);
 }
 `;

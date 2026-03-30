@@ -40,8 +40,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -163,8 +165,9 @@ fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f)
     let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
     let NdotL   = max(dot(N, lightDir), 0.0);
     let NdotV   = max(dot(N, V), 0.0);
-    let spec    = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
-    return spec * lightColor * NdotL * mirrorParams.reflectivity;
+    let spec = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+    let result = spec * lightColor * NdotL * mirrorParams.reflectivity;
+    return clamp(result, vec3f(0.0), vec3f(64.0));
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -268,7 +271,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
                      mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
     let texColor   = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
 
     finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
     finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);

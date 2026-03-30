@@ -1,5 +1,11 @@
 ## CHANGES [Started from feb 2026]
 
+
+
+[1.9.12]
+ Ambient per mesh uniform added:
+   app.mainRenderBundle[1].setAmbient(0,10,10)
+
 [1.9.11]
 
 - Added full capacibility of ammojs shapes combined with matrix-engine proceduralMesh class.
