@@ -999,7 +999,7 @@ export default class MatrixEngineWGPU {
       this.graphUpdate(this.now);
       this.blendQueue.length = 0;
     } catch(err) {
-      if(this.logLoopError) console.log('%cLoop(warn):' + err + " Info : " + err.stack, LOG_WARN)
+      if(this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
     }
   }
 

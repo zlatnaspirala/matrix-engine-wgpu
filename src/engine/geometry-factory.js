@@ -646,10 +646,10 @@ export class GeometryFactory {
   static sphere(R = 0.1, seg = 16) {
     const p = [], uv = [], ind = [];
     for(let y = 0;y <= seg;y++) {
-      const v = y / seg, θ = v * Math.PI;
+      const v = y / seg, te = v * Math.PI;
       for(let x = 0;x <= seg;x++) {
-        const u = x / seg, φ = u * Math.PI * 2;
-        p.push(R * Math.sin(θ) * Math.cos(φ), R * Math.cos(θ), R * Math.sin(θ) * Math.sin(φ));
+        const u = x / seg, teta = u * Math.PI * 2;
+        p.push(R * Math.sin(te) * Math.cos(teta), R * Math.cos(te), R * Math.sin(te) * Math.sin(teta));
         uv.push(u, v);
       }
     }

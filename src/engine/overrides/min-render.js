@@ -1,3 +1,4 @@
+import {LOG_WARN} from "../utils";
 
 export let zeroPass = function() {
   const now2 = performance.now();
@@ -50,6 +51,6 @@ export let zeroPass = function() {
     this.graphUpdate(this.now);
     this.blendQueue.length = 0;
   } catch(err) {
-    if(this.logLoopError) console.log('Loop(warn):' + err + " Info : " + err.stack);
+    if(this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
   }
 }

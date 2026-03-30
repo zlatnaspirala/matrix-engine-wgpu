@@ -13,6 +13,7 @@ import {FlameEmitter} from './effects/flame-emmiter';
 import {VERTEX_ANIM_FLAGS} from './literals';
 import {createGroundTexture} from './procedures/procedural-textures';
 import {MEConfig} from '../me-config';
+import {PointerEffect} from './effects/pointerEffect';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -690,6 +691,9 @@ export default class MEMeshObj extends Materials {
       this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
+        if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
+          this.effects.pointer = new PointerEffect(device, 'rgba16float', 1);
+        }
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect(device, 'rgba16float');
         }
@@ -703,7 +707,6 @@ export default class MEMeshObj extends Materials {
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
         }
-
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {
             particleCount: 100,

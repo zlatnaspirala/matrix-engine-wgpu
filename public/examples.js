@@ -166,18 +166,22 @@ exports.flipper = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
 
 var flipper = function () {
+  let MYFLIPPER = {
+    STATUS_PUSH: 'wait'
+  };
   let flipper = new _world.default({
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
     },
-    PHYSICS_GROUND_BYZ: 35,
-    PHYSICS_GROUND_BYX: 5,
+    PHYSICS_GROUND_BYZ: 40,
+    PHYSICS_GROUND_BYX: 12,
     clearColor: {
       r: 0,
       g: 1,
@@ -185,6 +189,13 @@ var flipper = function () {
       a: 1
     }
   }, () => {
+    flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+    flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1);
+    flipper.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+    flipper.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
+    flipper.matrixSounds.audios.click1.volume = 0.8;
+    flipper.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
+    flipper.matrixSounds.audios.music.loop = true;
     addEventListener('AmmoReady', () => {
       flipper.addLight();
       (0, _raycast.addRaycastsAABBListener)();
@@ -192,7 +203,11 @@ var flipper = function () {
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
         pin: "./res/meshes/blender/pin-for-pinball.obj",
-        pinR: "./res/meshes/blender/pin-for-pinball_right.obj"
+        pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
+        pushBtn: "./res/meshes/shapes/pushBtn.obj",
+        vrcLeft: "./res/meshes/blender/vrc-left.obj",
+        jumper: "./res/meshes/blender/jumper-up.obj",
+        bottomLeft: "./res/meshes/blender/bottom-left.obj"
       }, onGround, {
         scale: [1, 1, 1]
       });
@@ -212,16 +227,16 @@ var flipper = function () {
       }, 500);
 
       // ball
-      flipper.addMeshObj({
+      const ball1 = flipper.addMeshObj({
         material: {
           type: 'standard'
         },
         position: {
-          x: 1,
-          y: 2,
-          z: -32
+          x: 0,
+          y: 5,
+          z: -10
         },
-        scale: [0.3, 0.3, 0.3],
+        scale: [0.2, 0.2, 0.2],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
         mesh: m.ball,
@@ -231,10 +246,60 @@ var flipper = function () {
           geometry: "Sphere"
         },
         raycast: {
+          enabled: false,
+          radius: 1
+        },
+        pointerEffect: {
+          enabled: true,
+          pointEffect: true,
+          pointer: true
+        }
+      });
+      flipper.ball1 = ball1;
+
+      // ball1.effects.pointer.yOffset = 3;
+      // flipper.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 1, y: 102, z: -22},
+      //   scale: [0.2, 0.2, 0.2],
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'ball2',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: true,
+      //     mass: 1,
+      //     geometry: "Sphere"
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+
+      // Shooter ball
+      let pushBtn = flipper.addMeshObj({
+        position: {
+          x: 5,
+          y: 0.7,
+          z: -5.7
+        },
+        scale: [0.3, 0.3, 0.3],
+        rotation: {
+          x: 90,
+          y: -90,
+          z: 0
+        },
+        texturesPaths: ['res/textures/pushBtn.webp'],
+        name: 'pushBtn',
+        mesh: m.pushBtn,
+        physics: {
+          enabled: false,
+          mass: 5,
+          geometry: "Cube"
+        },
+        raycast: {
           enabled: true,
           radius: 1
         }
       });
+      pushBtn.setUVScale(-1, -1);
 
       // GROUND
       flipper.addMeshObj({
@@ -257,7 +322,7 @@ var flipper = function () {
       const LAnchor = flipper.addMeshObj({
         position: {
           x: -commonAchorX,
-          y: 0.4,
+          y: 0.2,
           z: -9
         },
         scale: [0.2, 0.2, 0.2],
@@ -273,7 +338,7 @@ var flipper = function () {
       const RAnchor = flipper.addMeshObj({
         position: {
           x: commonAchorX,
-          y: 0.4,
+          y: 0.2,
           z: -9
         },
         scale: [0.2, 0.2, 0.2],
@@ -333,16 +398,12 @@ var flipper = function () {
       });
       const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
       const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
-      if (leftBody) {
-        leftBody.setActivationState(4);
-        leftBody.activate(true);
-        leftBody.setDamping(0.8, 0.8);
-      }
-      if (rightBody) {
-        rightBody.setActivationState(4);
-        rightBody.activate(true);
-        rightBody.setDamping(0.8, 0.8);
-      }
+      leftBody.setActivationState(4);
+      leftBody.activate(true);
+      leftBody.setDamping(0.8, 0.8);
+      rightBody.setActivationState(4);
+      rightBody.activate(true);
+      rightBody.setDamping(0.8, 0.8);
       leftBody.setDamping(0.95, 0.95);
       rightBody.setDamping(0.95, 0.95);
       leftBody.setRestitution(0.1);
@@ -363,6 +424,10 @@ var flipper = function () {
         x: -2,
         y: 0.5,
         z: -26
+      }, {
+        x: -4,
+        y: 0.5,
+        z: -32
       }];
       bumperPositions.forEach((p, i) => {
         flipper.addMeshObj({
@@ -407,6 +472,96 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
+
+      // inside flipper 
+      const topCurveInLeft = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 5.2,
+          y: 0.9,
+          z: -36
+        },
+        scale: [1, 0.8, 1],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'vrc-left',
+        mesh: m.vrcLeft,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "ConvexHull",
+          vertices: m.vrcLeft.vertices
+        }
+      });
+      const jumper1 = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -4.5,
+          y: 0.4,
+          z: -25
+        },
+        scale: [1, 1, 1],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'jumper1',
+        mesh: m.jumper,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "ConvexHull",
+          vertices: m.jumper.vertices
+        }
+      });
+      const bottomLeft = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -3.3,
+          y: 0.3,
+          z: -10
+        },
+        scale: [1, 1.2, 1],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'bottomLeft',
+        mesh: m.bottomLeft,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "ConvexHull",
+          vertices: m.bottomLeft.vertices
+        }
+      });
+      const bottomRight = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 3.3,
+          y: 0.3,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [-1, 1.2, 1],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'bottomRight',
+        mesh: m.bottomLeft,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "ConvexHull",
+          vertices: m.bottomLeft.vertices
+        }
+      });
+      flipper.bottomRight = bottomRight;
+      // bottomRight.rotation.setRotationY(180)
+
       const BEdge = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -419,11 +574,11 @@ var flipper = function () {
         rotation: {
           x: 0,
           y: 0,
-          z: 0.1
+          z: 0
         },
-        scale: [6.2, 0.5, 0.2],
+        scale: [6, 1.02, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'edgeTop',
+        name: 'bottomEdge',
         mesh: m.cube,
         physics: {
           enabled: true,
@@ -431,7 +586,30 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
-      BEdge.setBlend(0.2);
+      const BEdgeYAngle = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 0.5,
+          z: -6.5
+        },
+        rotation: {
+          x: 0,
+          y: -1.9,
+          z: 0
+        },
+        scale: [5.95, 0.4, 0.1],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'bottomEdge2',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
       const REdge = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -458,16 +636,16 @@ var flipper = function () {
           type: 'mirror'
         },
         position: {
-          x: 5,
+          x: 4.5,
           y: 1,
-          z: -21.5
+          z: -19.5
         },
-        scale: [0.05, 1, 14],
-        texturesPaths: ['./res/textures/cube-test.png', './res/textures/env-maps/sky1_lod_mid.webp'],
+        scale: [0.05, 1, 12.5],
+        texturesPaths: ['./res/textures/cube-test.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeRigth',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.7,
+          baseColorMix: 0.4,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
@@ -509,29 +687,6 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
-      flipper.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 4.9,
-          y: 32,
-          z: -32
-        },
-        scale: [0.5, 0.5, 0.5],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'ball2',
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          mass: 1,
-          geometry: "Sphere"
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
       const checker2 = REdge.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
       let samplerTest = flipper.device.createSampler({
         magFilter: 'nearest',
@@ -545,9 +700,18 @@ var flipper = function () {
         LEdge.changeTexture(checker2, samplerTest);
         LEdge.setUVScale(2, 1);
         REdge2.setUVScale(1, 1);
+        ball1.effects.pointer.yOffset = 3;
       }, 500);
       flipper.canvas.addEventListener("ray.hit.event", e => {
-        //
+        app.matrixSounds.play('click1');
+        console.log('e.detail', e.detail);
+        if (e.detail.hitObject.name == "pushBtn" && MYFLIPPER.STATUS_PUSH == 'free') {
+          console.log('e.detail pushBtn123 ', e.detail);
+          MYFLIPPER.STATUS_PUSH = 'in action';
+          let ball = app.matrixAmmo.getBodyByName(ball1.name);
+          const impulse = new Ammo.btVector3(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20));
+          ball.applyCentralImpulse(impulse);
+        }
       });
       const strength = 1;
       document.addEventListener("pCollision", e => {
@@ -555,6 +719,7 @@ var flipper = function () {
         const body0Name = e.detail.body0Name;
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
+        console.log('collision : ', body1Name);
         if (body1Name.startsWith("bumper")) {
           const ball = app.matrixAmmo.getBodyByName('ball1');
           const bumperBody = app.matrixAmmo.getBodyByName(body1Name);
@@ -563,6 +728,13 @@ var flipper = function () {
             ball.activate(true);
             ball.applyCentralImpulse(impulse);
           }
+        } else if (body1Name.startsWith("edgeRigth") && MYFLIPPER.STATUS_PUSH == 'wait') {
+          MYFLIPPER.STATUS_PUSH = 'free';
+        } else if (body1Name.startsWith('bottomEdge2')) {
+          console.log('collision XXXXX : ', MYFLIPPER.STATUS_PUSH);
+          setTimeout(() => {
+            MYFLIPPER.STATUS_PUSH = 'free';
+          }, 3000);
         }
       });
 
@@ -578,7 +750,7 @@ var flipper = function () {
         ball.setDamping(0.05, 0.05);
       }
 
-      // FLIPPER SETUP\
+      // FLIPPER SETUP
       const commonX = 0.5;
       const hingeLeft = app.matrixAmmo.addHingeConstraint(L, LAnchor, {
         name: "flipperLeftHinge",
@@ -593,7 +765,6 @@ var flipper = function () {
         pivotB: [0, 0, 0],
         axis: [0, -1, 0],
         limits: [-0.8, 0.5]
-        // limits: [0.5, -0.8]
       });
       hingeLeft.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
       hingeRight.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
@@ -638,6 +809,92 @@ var flipper = function () {
           // rightBody.setActivationState(4);
           hingeRight.enableAngularMotor(true, 10, 500);
         }
+        if (e.code == "Space") {
+          if (MYFLIPPER.STATUS_PUSH == 'free') {
+            MYFLIPPER.STATUS_PUSH = 'in action';
+            let ball = app.matrixAmmo.getBodyByName(ball1.name);
+            const impulse = new Ammo.btVector3(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20));
+            ball.applyCentralImpulse(impulse);
+          }
+        }
+      });
+
+      // only render objs
+      const leg1 = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -5.5,
+          y: -5,
+          z: -6
+        },
+        scale: [0.2, 7, 0.2],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'edgeTop',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      const leg2 = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 5.5,
+          y: -5,
+          z: -6
+        },
+        scale: [0.2, 7, 0.2],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'edgeTop',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      const leg3 = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -5.5,
+          y: -5,
+          z: -36
+        },
+        scale: [0.2, 7, 0.2],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'edgeTop',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      const leg4 = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 5.5,
+          y: -5,
+          z: -36
+        },
+        scale: [0.2, 7, 0.2],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        name: 'edgeTop',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
       });
     }
   });
@@ -645,7 +902,7 @@ var flipper = function () {
 };
 exports.flipper = flipper;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/world.js":119}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/engine/utils.js":68,"../src/world.js":119}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25159,17 +25416,19 @@ exports.PointerEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
 class PointerEffect {
-  constructor(device, format) {
+  constructor(device, format, initialScale = 10) {
+    this.initialScale = initialScale;
     this.device = device;
     this.format = format;
     this._tempModelMatrix = _wgpuMatrix.mat4.identity();
     this._tempTranslation = new Float32Array(3);
     this.enabled = true;
+    this.yOffset = 60;
     this._initPipeline();
   }
   _initPipeline() {
     // Vertex data: simple quad
-    let S = 10;
+    let S = this.initialScale;
     const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
     // top-left
     0.5 * S, 0.5 * S, 0.0 * S,
@@ -25288,10 +25547,10 @@ class PointerEffect {
     const objPos = mesh.position;
     _wgpuMatrix.mat4.identity(this._tempModelMatrix);
     this._tempTranslation[0] = objPos.x;
-    this._tempTranslation[1] = objPos.y + 60;
+    this._tempTranslation[1] = objPos.y + this.yOffset;
     this._tempTranslation[2] = objPos.z;
     _wgpuMatrix.mat4.translate(this._tempModelMatrix, this._tempTranslation, this._tempModelMatrix);
-    this.draw(transPass, viewProjMatrix, modelMatrix);
+    this.draw(transPass, viewProjMatrix, this._tempModelMatrix);
   }
 }
 exports.PointerEffect = PointerEffect;
@@ -26588,11 +26847,11 @@ class GeometryFactory {
       ind = [];
     for (let y = 0; y <= seg; y++) {
       const v = y / seg,
-        θ = v * Math.PI;
+        te = v * Math.PI;
       for (let x = 0; x <= seg; x++) {
         const u = x / seg,
-          φ = u * Math.PI * 2;
-        p.push(R * Math.sin(θ) * Math.cos(φ), R * Math.cos(θ), R * Math.sin(θ) * Math.sin(φ));
+          teta = u * Math.PI * 2;
+        p.push(R * Math.sin(te) * Math.cos(teta), R * Math.cos(te), R * Math.sin(te) * Math.sin(teta));
         uv.push(u, v);
       }
     }
@@ -33274,6 +33533,7 @@ var _flameEmmiter = require("./effects/flame-emmiter");
 var _literals = require("./literals");
 var _proceduralTextures = require("./procedures/procedural-textures");
 var _meConfig = require("../me-config");
+var _pointerEffect = require("./effects/pointerEffect");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -34002,6 +34262,9 @@ class MEMeshObj extends _materials.default {
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
+        if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
+          this.effects.pointer = new _pointerEffect.PointerEffect(device, 'rgba16float', 1);
+        }
         if (typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new _topologyPoint.PointEffect(device, 'rgba16float');
         }
@@ -34414,13 +34677,14 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../me-config":69,"../shaders/fragment.video.wgsl":79,"../shaders/vertex.wgsl":103,"../shaders/vertex.wgsl.normalmap":104,"./effects/destruction":36,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./effects/topology-point":46,"./literals":52,"./materials":57,"./matrix-class":58,"./procedures/procedural-textures":66,"./utils":68,"wgpu-matrix":30}],60:[function(require,module,exports){
+},{"../me-config":69,"../shaders/fragment.video.wgsl":79,"../shaders/vertex.wgsl":103,"../shaders/vertex.wgsl.normalmap":104,"./effects/destruction":36,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./effects/pointerEffect":45,"./effects/topology-point":46,"./literals":52,"./materials":57,"./matrix-class":58,"./procedures/procedural-textures":66,"./utils":68,"wgpu-matrix":30}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.zeroPass = void 0;
+var _utils = require("../utils");
 let zeroPass = function () {
   const now2 = performance.now();
   this.now = now2 * 0.001;
@@ -34472,12 +34736,12 @@ let zeroPass = function () {
     this.graphUpdate(this.now);
     this.blendQueue.length = 0;
   } catch (err) {
-    if (this.logLoopError) console.log('Loop(warn):' + err + " Info : " + err.stack);
+    if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, _utils.LOG_WARN);
   }
 };
 exports.zeroPass = zeroPass;
 
-},{}],61:[function(require,module,exports){
+},{"../utils":68}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -58878,7 +59142,7 @@ class MatrixEngineWGPU {
       this.graphUpdate(this.now);
       this.blendQueue.length = 0;
     } catch (err) {
-      if (this.logLoopError) console.log('%cLoop(warn):' + err + " Info : " + err.stack, _utils.LOG_WARN);
+      if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, _utils.LOG_WARN);
     }
   };
   graphUpdate = delta => {};
