@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from "../src/engine/loader-obj.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {randomIntFromTo} from "../src/engine/utils.js";
+import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 // import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
 
 export var flipper = function() {
@@ -18,6 +18,7 @@ export var flipper = function() {
     clearColor: {r: 0, g: 1, b: 1, a: 1}
   }, () => {
 
+    // Audios 
     flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
     flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
     flipper.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
@@ -25,9 +26,63 @@ export var flipper = function() {
     flipper.matrixSounds.audios.click1.volume = 0.8;
     flipper.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
     flipper.matrixSounds.audios.music.loop = true;
+    flipper.matrixSounds.play('music');
+
+    // Lights
+    const NUM_LIGHTS = isMobile() == true ? 2 : 4;
+    const ORBIT_RADIUS = 8;
+    const ORBIT_SPEED = 0.6;
+    const TARGET = {x: 0, y: 0, z: -10};
+
+    // Light colors cycling around the hue wheel
+    const LIGHT_COLORS = [
+      [1.0, 0.2, 0.2],  // red
+      [1.0, 0.6, 0.1],  // orange
+      [0.2, 0.2, 1.0],  // blue
+      [1.0, 1.0, 0.1],  // yellow
+      [0.2, 1.0, 0.2],  // green
+      [0.1, 1.0, 0.6],  // teal
+      [0.1, 0.6, 1.0],  // sky
+      [0.6, 0.1, 1.0],  // purple
+      [1.0, 0.1, 0.8],  // pink
+      [1.0, 0.1, 0.4],  // rose
+    ];
+
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      flipper.addLight();
+    }
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      const light = flipper.lightContainer[i];
+      const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
+      const color = LIGHT_COLORS[i];
+      light.intensity = 8.5;
+      light.color = color;
+      // Orbit height varies slightly per light for more visual interest
+      const heightOffset = Math.sin(angleOffset) * 2;
+      light.position = [
+        TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
+        4 + heightOffset,
+        TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
+      ];
+      light.target = [TARGET.x, TARGET.y, TARGET.z];
+
+      // Each light orbits at its own phase offset
+      light.orbitAngle = angleOffset;
+
+      light.updater.push((light) => {
+        light.orbitAngle += ORBIT_SPEED * 0.01;
+        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
+        light.position = [x, height, z];
+        light.target = [TARGET.x, TARGET.y, TARGET.z];
+      });
+    }
+
+
 
     addEventListener('AmmoReady', () => {
-      flipper.addLight();
+      // flipper.addLight();
       addRaycastsAABBListener();
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
@@ -38,6 +93,8 @@ export var flipper = function() {
         vrcLeft: "./res/meshes/blender/vrc-left.obj",
         jumper: "./res/meshes/blender/jumper-up.obj",
         bottomLeft: "./res/meshes/blender/bottom-left.obj",
+        glass: "./res/meshes/shapes/plane-subdivine-16.obj",
+        bigBox: "./res/meshes/shapes/flipperBigBox.obj"
       },
         onGround,
         {scale: [1, 1, 1]}
@@ -58,10 +115,22 @@ export var flipper = function() {
         app.cameras.WASD._dirtyAngle = true;
       }, 500);
 
+      let envMapParams = {
+        baseColorMix: 0.4,               // CLEAR SKY
+        mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        reflectivity: 0.25,               // 25% reflection blend
+        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        illuminateStrength: 0.1,          // Gentle rim
+        illuminatePulse: 0.01,            // No pulse (static)
+        fresnelPower: 2.0,                // Medium-sharp edge
+        envLodBias: 1.5,
+        usePlanarReflection: false,       // ✅ Env map mode
+      }
+
       // ball
       const ball1 = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 5, z: -10},
+        position: {x: 0, y: 2, z: -10},
         scale: [0.2, 0.2, 0.2],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
@@ -78,24 +147,7 @@ export var flipper = function() {
           pointer: true
         }
       });
-
       flipper.ball1 = ball1;
-
-      // ball1.effects.pointer.yOffset = 3;
-      // flipper.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 1, y: 102, z: -22},
-      //   scale: [0.2, 0.2, 0.2],
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'ball2',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: true,
-      //     mass: 1,
-      //     geometry: "Sphere"
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // });
 
       // Shooter ball
       let pushBtn = flipper.addMeshObj({
@@ -115,12 +167,11 @@ export var flipper = function() {
 
       pushBtn.setUVScale(-1, -1);
 
-
       // GROUND
       flipper.addMeshObj({
         position: {x: 0, y: -0.1, z: -21},
         scale: [6, 0.1, 15],
-        texturesPaths: ['res/textures/cube-g1.webp'],
+        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -129,6 +180,35 @@ export var flipper = function() {
           geometry: "Cube"
         }
       });
+
+      let bigBoxFlipper = flipper.addMeshObj({
+        position: {x: 0, y: 6, z: -36},
+        scale: [2.95, 3, 1],
+        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        name: 'bigBox',
+        mesh: m.bigBox,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+
+      let glass = flipper.addMeshObj({
+        material: {type: 'mirror'},
+        position: {x: 0, y: 2.4, z: -20.5},
+        scale: [6, 0.05, 15],
+        texturesPaths: ['./res/textures/default.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+        name: 'ground',
+        mesh: m.glass,
+        envMapParams: envMapParams,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      glass.setBlend(0.01);
 
       const commonAchorX = 2;
       const LAnchor = flipper.addMeshObj({
@@ -214,8 +294,7 @@ export var flipper = function() {
         {x: 0, y: 0.5, z: -22},
         {x: 2, y: 0.5, z: -24},
         {x: -2, y: 0.5, z: -26},
-
-        {x: -4, y: 0.5, z: -32}
+        {x: -3, y: 0.5, z: -32}
       ];
 
       bumperPositions.forEach((p, i) => {
@@ -269,7 +348,7 @@ export var flipper = function() {
 
       const jumper1 = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: -4.5, y: 0.4, z: -25},
+        position: {x: -4.5, y: 0.4, z: -29.5},
         scale: [1, 1, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'jumper1',
@@ -348,12 +427,13 @@ export var flipper = function() {
 
 
       const REdge = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: 5.8, y: 1, z: -21},
         scale: [0.2, 1, 15],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeRigth',
         mesh: m.cube,
+        envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -369,17 +449,7 @@ export var flipper = function() {
         texturesPaths: ['./res/textures/cube-test.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeRigth',
         mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.4,               // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 2.0,                // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -388,12 +458,13 @@ export var flipper = function() {
       });
 
       const LEdge = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: -5.7, y: 1, z: -21},
         scale: [0.3, 1, 15],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeLeft',
         mesh: m.cube,
+        envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -409,10 +480,11 @@ export var flipper = function() {
         addressModeV: 'repeat',
       });
       setTimeout(() => {
-        REdge.changeTexture(checker2, samplerTest)
-        REdge.setUVScale(2, 2);
-        LEdge.changeTexture(checker2, samplerTest)
-        LEdge.setUVScale(2, 1);
+        // REdge.changeTexture(checker2, samplerTest)
+        REdge.setUVScale(1, 1);
+        // LEdge.changeTexture(checker2, samplerTest)
+        LEdge.setUVScale(1, 1);
+
         REdge2.setUVScale(1, 1);
 
         ball1.effects.pointer.yOffset = 3;
@@ -500,19 +572,17 @@ export var flipper = function() {
       window.addEventListener("keydown", (e) => {
         e.preventDefault();
         if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
-          console.log('left presseed')
           leftBodycurrPos = 'pressed';
           const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
           leftBody.activate(true);
           leftBody.setActivationState(4);
-          hingeLeft.enableAngularMotor(true, -25, 200);
+          hingeLeft.enableAngularMotor(true, -25, 500);
         }
         if(e.code === "KeyM") {
-          console.log('right presseed')
           const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
           rightBody.activate(true);
           rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, -25, 200);
+          hingeRight.enableAngularMotor(true, -25, 500);
         }
       });
 
@@ -555,7 +625,7 @@ export var flipper = function() {
       // only render objs
       const leg1 = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: -5.5, y: -5, z: -6},
+        position: {x: -5.5, y: -5, z: -6.1},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'edgeTop',
@@ -569,7 +639,7 @@ export var flipper = function() {
 
       const leg2 = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 5.5, y: -5, z: -6},
+        position: {x: 5.5, y: -5, z: -6.1},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'edgeTop',
