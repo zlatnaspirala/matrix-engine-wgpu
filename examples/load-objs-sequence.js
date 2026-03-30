@@ -15,9 +15,9 @@ export var loadObjsSequence = function() {
     loadObjFile.addLight();
 
     addEventListener('AmmoReady', () => {
-      loadObjFile.lightContainer[0].position[2] = -20;
-      loadObjFile.lightContainer[0].position[1] = 35;
-      loadObjFile.lightContainer[0].intensity = 5;
+      loadObjFile.lightContainer[0].setPosZ(-20);
+      loadObjFile.lightContainer[0].setPosY(35);
+      loadObjFile.lightContainer[0].setIntensity(5);
 
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]});
 
@@ -95,7 +95,7 @@ export var loadObjsSequence = function() {
       })
     }
 
-    if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'))
+    dispatchEvent(new CustomEvent('AmmoReady'))
 
 
   })

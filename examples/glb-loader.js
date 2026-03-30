@@ -145,8 +145,8 @@ export function loadGLBLoader() {
           geometry: "Cube"
         },
       });
-      app.lightContainer[0].position[1] = 35;
-      app.lightContainer[0].intensity = 6;
+      app.lightContainer[0].setPosY(35);
+      app.lightContainer[0].setIntensity(6);
 
       // app.activateBloomEffect();
       // app.activateVolumetricEffect();

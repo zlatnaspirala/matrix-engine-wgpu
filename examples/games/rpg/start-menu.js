@@ -568,21 +568,15 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
   loadHeros();
   createHUDMenu();
-  // })
-  forestOfHollowBloodStartSceen.addLight();
 
-  // app.lightContainer[0].position[2] = 1;
-  // app.lightContainer[0].position[1] = 50;
-  // app.lightContainer[0].position[0] = 0;
+  forestOfHollowBloodStartSceen.addLight();
   app.lightContainer[0].setPosition(0, 50, 1);
   app.lightContainer[0].setTarget(0, 0, -10);
-  app.lightContainer[0].setIntesity(40);
-
+  app.lightContainer[0].setIntensity(40);
   app.activateBloomEffect();
   app.bloomPass.setBlurRadius(3);
 
   function createHUDMenu() {
-
     // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
     //   path: "./res/icons/seq1/",
     //   frameCount: 7,
@@ -655,8 +649,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50)
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
-            // app.lightContainer[0].position[0] = heroBodie.position.x;
-
           }
 
           if(heroBodie.effects.circlePlane) {
@@ -727,7 +719,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50)
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
-            // app.lightContainer[0].position[0] = heroBodie.position.x - 20;
           };
 
           if(heroBodie.effects.circlePlane) {

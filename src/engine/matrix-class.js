@@ -327,7 +327,7 @@ export class Rotation {
       }
       return this._cachedRadX;
     } else {
-      this.x = this.x + this.rotationSpeed.x * 0.001;
+      this.x = this.x + this.rotationSpeed.x * 0.01;
       this._cachedRadX = degToRad(this.x);
       this._lastX = this.x;
       return this._cachedRadX;
@@ -405,7 +405,7 @@ export class Rotation {
       }
       return this._cachedRotY;
     } else {
-      this.y = this.y + this.rotationSpeed.y * 0.001;
+      this.y = this.y + this.rotationSpeed.y * 0.01;
       this._cachedRotY = degToRad(this.y);
       this._lastY = this.y;
       return this._cachedRotY;
@@ -428,7 +428,7 @@ export class Rotation {
       }
       return this._cachedRotZ;
     } else {
-      this.z = this.z + this.rotationSpeed.z * 0.001;
+      this.z = this.z + this.rotationSpeed.z * 0.01;
       this._cachedRotZ = degToRad(this.z);
       this._lastZ = this.z;
       return this._cachedRotZ;

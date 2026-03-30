@@ -426,7 +426,7 @@ export class SpotLight {
   }
 
   setPosZ = (z) => {
-    if(this._position[1] === y) return;
+    if(this._position[2] === z) return;
     this._position[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;

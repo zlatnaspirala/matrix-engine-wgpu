@@ -106,7 +106,7 @@ export var fontana = function() {
         light.target[0] = light.behavior.setPath0()
       })
 
-      fontana.lightContainer[0].position = [0, 17, -10];
+      fontana.lightContainer[0].setPosition(0, 17, -10);
       fontana.lightContainer[0].setTarget(0, 0, -10);
 
       var TEST = fontana.getSceneObjectByName('cube2');

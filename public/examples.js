@@ -1164,7 +1164,7 @@ var fontana = function () {
         light.position[0] = light.behavior.setPath0();
         light.target[0] = light.behavior.setPath0();
       });
-      fontana.lightContainer[0].position = [0, 17, -10];
+      fontana.lightContainer[0].setPosition(0, 17, -10);
       fontana.lightContainer[0].setTarget(0, 0, -10);
       var TEST = fontana.getSceneObjectByName('cube2');
       setTimeout(() => {
@@ -1921,8 +1921,8 @@ function loadGLBLoader() {
           geometry: "Cube"
         }
       });
-      app.lightContainer[0].position[1] = 35;
-      app.lightContainer[0].intensity = 6;
+      app.lightContainer[0].setPosY(35);
+      app.lightContainer[0].setIntensity(6);
 
       // app.activateBloomEffect();
       // app.activateVolumetricEffect();
@@ -1981,7 +1981,7 @@ var loadObjFile = function () {
           type: 'mirror'
         },
         envMapParams: {
-          baseColorMix: 0.65,
+          baseColorMix: 0.5,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
@@ -1993,9 +1993,9 @@ var loadObjFile = function () {
           // Gentle rim
           illuminatePulse: 0.01,
           // No pulse (static)
-          fresnelPower: 10.0,
+          fresnelPower: 0.1,
           // Medium-sharp edge
-          envLodBias: 1.5,
+          envLodBias: 2.5,
           usePlanarReflection: false // ✅ Env map mode
         },
         position: {
@@ -2041,7 +2041,7 @@ var loadObjFile = function () {
         scale: [100, 100, 100],
         rotationSpeed: {
           x: 0,
-          y: 0,
+          y: 110.5,
           z: 0
         },
         texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
@@ -2128,8 +2128,8 @@ var loadObjFile = function () {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      loadObjFile.lightContainer[0].setPosition([0, 15, -10]);
-      loadObjFile.lightContainer[0].setTarget([0, 0, -10]);
+      loadObjFile.lightContainer[0].setPosition(0, 15, -10);
+      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         MYCUBE.effects.flameEmitter.setIntensity(100);
         MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
@@ -2173,9 +2173,9 @@ var loadObjsSequence = function () {
   }, () => {
     loadObjFile.addLight();
     addEventListener('AmmoReady', () => {
-      loadObjFile.lightContainer[0].position[2] = -20;
-      loadObjFile.lightContainer[0].position[1] = 35;
-      loadObjFile.lightContainer[0].intensity = 5;
+      loadObjFile.lightContainer[0].setPosZ(-20);
+      loadObjFile.lightContainer[0].setPosY(35);
+      loadObjFile.lightContainer[0].setIntensity(5);
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
@@ -2275,7 +2275,7 @@ var loadObjsSequence = function () {
         }
       });
     }
-    if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'));
+    dispatchEvent(new CustomEvent('AmmoReady'));
   });
   window.app = loadObjFile;
 };
@@ -2661,13 +2661,15 @@ var physicsPlayground = function () {
           vertices: m.reel.vertices
         }
       });
-      setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
-        app.cameras.WASD._dirtyAngle = true;
-      }, 1000);
+
+      // setTimeout(() => {
+      app.cameras.WASD.yaw = -0.03;
+      app.cameras.WASD.pitch = -0.49;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
+      app.cameras.WASD._dirtyAngle = true;
+      // }, 1000);
+
       physicsPlayground.addMeshObj({
         material: {
           type: 'standard'
@@ -2874,8 +2876,8 @@ var physicsPlayground = function () {
       physicsPlayground.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
       });
-      physicsPlayground.lightContainer[0].position[1] = 14;
-      physicsPlayground.lightContainer[0].intesity = 24;
+      physicsPlayground.lightContainer[0].setPosY(14);
+      physicsPlayground.lightContainer[0].setIntensity(24);
     }
     function onLoadObj(m) {
       physicsPlayground.myLoadedMeshes = m;
@@ -22389,14 +22391,13 @@ class RPGCamera {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
-      app.lightContainer[0].position[0] = this.followMe.x;
-      app.lightContainer[0].position[2] = this.followMe.z;
+      app.lightContainer[0].setPosX(this.followMe.x);
+      app.lightContainer[0].setPosZ(this.followMe.z);
       app.lightContainer[0].setTargetX(this.followMe.x);
       app.lightContainer[0].setTargetZ(this.followMe.z);
       this.mousRollInAction = false;
       this._dirty = true;
     }
-
     // smooth Y only (cheap)
     const smoothFactor = 0.1;
     const newY = this.position[1] + (this.scrollY - this.position[1]) * smoothFactor;
@@ -29791,7 +29792,7 @@ class SpotLight {
     this._lightBufferDirty = true;
   };
   setPosZ = z => {
-    if (this._position[1] === y) return;
+    if (this._position[2] === z) return;
     this._position[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
@@ -33513,7 +33514,7 @@ class Rotation {
       }
       return this._cachedRadX;
     } else {
-      this.x = this.x + this.rotationSpeed.x * 0.001;
+      this.x = this.x + this.rotationSpeed.x * 0.01;
       this._cachedRadX = (0, _utils.degToRad)(this.x);
       this._lastX = this.x;
       return this._cachedRadX;
@@ -33589,7 +33590,7 @@ class Rotation {
       }
       return this._cachedRotY;
     } else {
-      this.y = this.y + this.rotationSpeed.y * 0.001;
+      this.y = this.y + this.rotationSpeed.y * 0.01;
       this._cachedRotY = (0, _utils.degToRad)(this.y);
       this._lastY = this.y;
       return this._cachedRotY;
@@ -33611,7 +33612,7 @@ class Rotation {
       }
       return this._cachedRotZ;
     } else {
-      this.z = this.z + this.rotationSpeed.z * 0.001;
+      this.z = this.z + this.rotationSpeed.z * 0.01;
       this._cachedRotZ = (0, _utils.degToRad)(this.z);
       this._lastZ = this.z;
       return this._cachedRotZ;
