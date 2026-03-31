@@ -5,17 +5,18 @@ export class MANABarEffect {
   constructor(device, format) {
     this.device = device;
     this.format = format;
-
     this.progress = 1.0;
     this.color = [0.1, 0.1, 0.9, 1.0];
     this.offsetY = 45;
     this.enabled = true;
-
+    this._modelMatrix = new Float32Array(16);
+    this._colorScratch = new Float32Array(4);
+    this._progressScratch = new Float32Array(1);
+    this._translateVec = new Float32Array(3);
     this._initPipeline();
   }
 
   _initPipeline() {
-    // Simple flat bar (width 100, height 10)
     const W = 40;
     const H = 3;
 
@@ -117,17 +118,16 @@ export class MANABarEffect {
   }
 
   draw(pass, cameraMatrix, modelMatrix) {
-    const color = new Float32Array(this.color);
-    const progressData = new Float32Array([this.progress]);
+    this._colorScratch[0] = this.color[0];
+    this._colorScratch[1] = this.color[1];
+    this._colorScratch[2] = this.color[2];
+    this._colorScratch[3] = this.color[3];
+    this._progressScratch[0] = this.progress;
 
-    // Pack uniforms manually
-    const buffer = new ArrayBuffer(64 + 16 + 4);
-    const f32 = new Float32Array(buffer);
-    f32.set(cameraMatrix, 0); // not needed here
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
-    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
+    this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
 
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
@@ -137,10 +137,13 @@ export class MANABarEffect {
     pass.drawIndexed(this.indexCount);
   }
 
-  render(pass, mesh, viewProjMatrix, ) {
+  render(pass, mesh, viewProjMatrix) {
     const pos = mesh.position;
-    const modelMatrix = mat4.identity();
-    mat4.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
+    this._translateVec[0] = pos.x;
+    this._translateVec[1] = pos.y + this.offsetY;
+    this._translateVec[2] = pos.z;
+    mat4.identity(this._modelMatrix);
+    mat4.translate(this._modelMatrix, this._translateVec, this._modelMatrix);
+    this.draw(pass, viewProjMatrix, this._modelMatrix);
   }
 }

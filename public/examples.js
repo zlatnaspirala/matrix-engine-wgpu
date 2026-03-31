@@ -23803,7 +23803,7 @@ class FlameEmitter {
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * Math.random() * this.rotSpeed;
+      p.rotation += dt * this.rotSpeed;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass.setPipeline(this.pipeline);
@@ -24152,23 +24152,15 @@ class FlameEffect {
     t[1] = this.tint[1];
     t[2] = this.tint[2];
     t[3] = this.tintStrength;
-    // const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
-    // const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
-    // const tint = new Float32Array([...this.tint, this.tintStrength]);
     this._uniformData.set(finalMat, 0);
-    // this._uniformData.set(ts, 16);
     this._uniformData[16] = this.time;
     this._uniformData[17] = this.speed;
     this._uniformData[18] = 0;
     this._uniformData[19] = 0;
-
-    // this._uniformData.set(p, 20);
     this._uniformData[20] = this.intensity;
     this._uniformData[21] = this.turbulence;
     this._uniformData[22] = this.stretch;
     this._uniformData[23] = 0;
-
-    // this._uniformData.set(t, 24);
     this._uniformData[24] = this.tint[0];
     this._uniformData[25] = this.tint[1];
     this._uniformData[26] = this.tint[2];
@@ -24211,6 +24203,8 @@ class GenGeoTexture {
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
     this.enabled = true;
+    this._localMatrix = new Float32Array(16);
+    this._finalMatrix = new Float32Array(16);
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
@@ -24397,26 +24391,27 @@ class GenGeoTexture {
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
-      // smooth interpolation of position & scale
       for (let j = 0; j < 3; j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
-      const local = _wgpuMatrix.mat4.identity();
-      if (this.rotateEffect == true) {
-        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      _wgpuMatrix.mat4.identity(this._localMatrix);
+      if (this.rotateEffect) {
+        _wgpuMatrix.mat4.rotateY(this._localMatrix, this.rotateAngle, this._localMatrix);
       }
-      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
-      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
-      const finalMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      _wgpuMatrix.mat4.translate(this._localMatrix, t.currentPosition, this._localMatrix);
+      _wgpuMatrix.mat4.scale(this._localMatrix, t.currentScale, this._localMatrix);
+      _wgpuMatrix.mat4.identity(this._finalMatrix);
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
       const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
+      this.instanceData.set(this._finalMatrix, offset);
+      this.instanceData[offset + 16] = t.color[0];
+      this.instanceData[offset + 17] = t.color[1];
+      this.instanceData[offset + 18] = t.color[2];
+      this.instanceData[offset + 19] = t.color[3];
     }
     // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
     const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
   };
   draw(pass, cameraMatrix) {
@@ -24897,7 +24892,6 @@ class GizmoEffect {
     this.device = device;
     this.format = format;
     this.enabled = true;
-    // 0=translate, 1=rotate, 2=scale
     this.mode = 0;
     this.size = 3;
     this.selectedAxis = 0;
@@ -25360,10 +25354,13 @@ class MANABarEffect {
     this.color = [0.1, 0.1, 0.9, 1.0];
     this.offsetY = 45;
     this.enabled = true;
+    this._modelMatrix = new Float32Array(16);
+    this._colorScratch = new Float32Array(4);
+    this._progressScratch = new Float32Array(1);
+    this._translateVec = new Float32Array(3);
     this._initPipeline();
   }
   _initPipeline() {
-    // Simple flat bar (width 100, height 10)
     const W = 40;
     const H = 3;
     const vertexData = new Float32Array([-0.5 * W, 0.5 * H, 0.0, 0.5 * W, 0.5 * H, 0.0, -0.5 * W, -0.5 * H, 0.0, 0.5 * W, -0.5 * H, 0.0]);
@@ -25480,17 +25477,15 @@ class MANABarEffect {
     this.color = [r, g, b, a];
   }
   draw(pass, cameraMatrix, modelMatrix) {
-    const color = new Float32Array(this.color);
-    const progressData = new Float32Array([this.progress]);
-
-    // Pack uniforms manually
-    const buffer = new ArrayBuffer(64 + 16 + 4);
-    const f32 = new Float32Array(buffer);
-    f32.set(cameraMatrix, 0); // not needed here
+    this._colorScratch[0] = this.color[0];
+    this._colorScratch[1] = this.color[1];
+    this._colorScratch[2] = this.color[2];
+    this._colorScratch[3] = this.color[3];
+    this._progressScratch[0] = this.progress;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
-    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
+    this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -25500,9 +25495,12 @@ class MANABarEffect {
   }
   render(pass, mesh, viewProjMatrix) {
     const pos = mesh.position;
-    const modelMatrix = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
+    this._translateVec[0] = pos.x;
+    this._translateVec[1] = pos.y + this.offsetY;
+    this._translateVec[2] = pos.z;
+    _wgpuMatrix.mat4.identity(this._modelMatrix);
+    _wgpuMatrix.mat4.translate(this._modelMatrix, this._translateVec, this._modelMatrix);
+    this.draw(pass, viewProjMatrix, this._modelMatrix);
   }
 }
 exports.MANABarEffect = MANABarEffect;
@@ -25670,6 +25668,7 @@ class PointEffect {
     this.format = format;
     this.pointSize = 8.0;
     this.enabled = true;
+    this._pointSettingsScratch = new Float32Array(4);
     this._initPipeline();
   }
   _initPipeline() {
@@ -25691,7 +25690,8 @@ class PointEffect {
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, new Float32Array([this.pointSize, 0, 0, 0]));
+    this._pointSettingsScratch[0] = this.pointSize;
+    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -25830,7 +25830,11 @@ class PointEffect {
   }
   setPointSize(size) {
     this.pointSize = size;
-    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, new Float32Array([this.pointSize, 0, 0, 0]));
+    this._pointSettingsScratch[0] = size;
+    this._pointSettingsScratch[1] = 0;
+    this._pointSettingsScratch[2] = 0;
+    this._pointSettingsScratch[3] = 0;
+    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
   }
   setEnabled(enabled) {
     this.enabled = enabled;

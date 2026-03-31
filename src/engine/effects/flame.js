@@ -230,23 +230,15 @@ export class FlameEffect {
     t[1] = this.tint[1];
     t[2] = this.tint[2];
     t[3] = this.tintStrength;
-    // const timeSpeed = new Float32Array([this.time, this.speed, 0, 0]);
-    // const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
-    // const tint = new Float32Array([...this.tint, this.tintStrength]);
     this._uniformData.set(finalMat, 0);
-    // this._uniformData.set(ts, 16);
     this._uniformData[16] = this.time;
     this._uniformData[17] = this.speed;
     this._uniformData[18] = 0;
     this._uniformData[19] = 0;
-
-    // this._uniformData.set(p, 20);
     this._uniformData[20] = this.intensity;
     this._uniformData[21] = this.turbulence;
     this._uniformData[22] = this.stretch;
     this._uniformData[23] = 0;
-
-    // this._uniformData.set(t, 24);
     this._uniformData[24] = this.tint[0];
     this._uniformData[25] = this.tint[1];
     this._uniformData[26] = this.tint[2];
