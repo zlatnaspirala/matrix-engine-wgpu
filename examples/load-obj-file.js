@@ -1,6 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+import {isMobile} from "../src/engine/utils.js";
 
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
@@ -14,23 +15,24 @@ export var loadObjFile = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
     loadObjFile.addLight();
-    addRaycastsAABBListener();
 
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
 
+    addRaycastsAABBListener('canvas1', 'click');
+
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
         envMapParams: {
-          baseColorMix: 0.5,               // CLEAR SKY
+          baseColorMix: 0.5,                // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.5,               // 25% reflection blend
+          reflectivity: 0.5,                // 25% reflection blend
           illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
           illuminateStrength: 0.1,          // Gentle rim
           illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 0.1,               // Medium-sharp edge
+          fresnelPower: 0.1,                // Medium-sharp edge
           envLodBias: 2.5,
           usePlanarReflection: false,       // ✅ Env map mode
         },
@@ -94,6 +96,7 @@ export var loadObjFile = function() {
           envLodBias: 1.5,
           usePlanarReflection: false,       // ✅ Env map mode
         },
+        raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
           mass: 0,
@@ -106,16 +109,18 @@ export var loadObjFile = function() {
       })
 
       loadObjFile.lightContainer[0].setIntensity(5);
-      loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      })
 
-      loadObjFile.lightContainer[0].setPosition(0, 15, -10);
-      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      if(isMobile() == false) {
+        loadObjFile.activateBloomEffect();
+        loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
+        loadObjFile.lightContainer[0].behavior.value_ = -1;
+        loadObjFile.lightContainer[0].updater.push((light) => {
+          light.setTargetX(light.behavior.setPath0());
+          light.setPosX(light.behavior.setPath0());
+        })
+        loadObjFile.lightContainer[0].setPosition(0, 15, -10);
+        loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      }
 
       setTimeout(() => {
         MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -126,17 +131,14 @@ export var loadObjFile = function() {
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 10;
         app.cameras.WASD._dirtyAngle = true;
-
       }, 400);
     }
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
-
-      if(e.detail.hitObject.name.startWith('cube')) {
+      // console.log('ray.hit.event detected');
+      if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
       }
-
     });
 
   })

@@ -111,7 +111,7 @@ export default class MatrixEngineWGPU {
     if(typeof options.dontUsePhysics === 'undefined') {
       if(typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
         this.matrixAmmo = new MatrixAmmo({
-          gravity : options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
+          gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
           roundDimensionX: options.PHYSICS_GROUND_BYX,
           roundDimensionY: options.PHYSICS_GROUND_BYZ
         });
@@ -791,7 +791,7 @@ export default class MatrixEngineWGPU {
     }
     setTimeout(() => {this.frame()}, 500);
     setTimeout(() => {callback(this)}, 1);
-    
+
   }
 
   // still not perfect but works
@@ -881,33 +881,38 @@ export default class MatrixEngineWGPU {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
         let lastShadowPipeline = null;
+        let lastBG1 = null;
+
         for(let j = 0;j < this.mainRenderBundle.length;j++) {
           const m = this.mainRenderBundle[j];
           if(m.shadowsCast == false) continue;
-          let targetShadowPipeline;
+
+          let targetPipeline;
+          let targetBG1;
           if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
-            targetShadowPipeline = light.shadowPipelineInstanced;
+            targetPipeline = light.shadowPipelineInstanced;
+            targetBG1 = m.modelBindGroupInstanced;
           } else if(m.mType == MeshType.PROCEDURAL) {
-            targetShadowPipeline = light.shadowPipelineMorph;
+            targetPipeline = light.shadowPipelineMorph;
+            targetBG1 = m.mainRenderBindGroup;
           } else {
-            targetShadowPipeline = light.shadowPipeline;
+            targetPipeline = light.shadowPipeline;
+            targetBG1 = m.modelBindGroup;
           }
-          if(lastShadowPipeline !== targetShadowPipeline) {
-            shadowPass.setPipeline(targetShadowPipeline);
-            lastShadowPipeline = targetShadowPipeline;
+
+          if(lastShadowPipeline !== targetPipeline) {
+            shadowPass.setPipeline(targetPipeline);
+            lastShadowPipeline = targetPipeline;
           }
+          if(lastBG1 !== targetBG1) {
+            shadowPass.setBindGroup(1, targetBG1);
+            lastBG1 = targetBG1;
+          }
+
           shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-          if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
-            shadowPass.setBindGroup(1, m.modelBindGroupInstanced);
-          }
-          else if(m.mType == MeshType.PROCEDURAL) {
-            shadowPass.setBindGroup(1, m.mainRenderBindGroup);
-          }
-          else {
-            shadowPass.setBindGroup(1, m.modelBindGroup);
-          }
           m.drawShadows(shadowPass, light);
         }
+
         shadowPass.end();
       }
       // Main
@@ -1190,18 +1195,25 @@ export default class MatrixEngineWGPU {
   }
 
   sortRenderBundle() {
-    this.mainRenderBundle.sort((a, b) => {
-      // blend meshes always go last (you already have a second loop for them)
-      const aBlend = a.material?.useBlend ? 1 : 0;
-      const bBlend = b.material?.useBlend ? 1 : 0;
-      if(aBlend !== bBlend) return aBlend - bBlend;
-      // group by pipeline reference
-      const aPipe = a.pipeline || this.mainRenderBundle[0].pipeline;
-      const bPipe = b.pipeline || this.mainRenderBundle[0].pipeline;
-      if(aPipe < bPipe) return -1;
-      if(aPipe > bPipe) return 1;
-      return 0;
-    });
+    const typeOrder = {
+      [MeshType.BVHANIM]: 0,
+      [MeshType.INSTANCED]: 0,
+      [MeshType.PROCEDURAL]: 1,
+    };
+    this.mainRenderBundle.sort((a, b) => (typeOrder[a.mType] ?? 2) - (typeOrder[b.mType] ?? 2));
+
+    // this.mainRenderBundle.sort((a, b) => {
+    //   // blend meshes always go last (you already have a second loop for them)
+    //   const aBlend = a.material?.useBlend ? 1 : 0;
+    //   const bBlend = b.material?.useBlend ? 1 : 0;
+    //   if(aBlend !== bBlend) return aBlend - bBlend;
+    //   // group by pipeline reference
+    //   const aPipe = a.pipeline || this.mainRenderBundle[0].pipeline;
+    //   const bPipe = b.pipeline || this.mainRenderBundle[0].pipeline;
+    //   if(aPipe < bPipe) return -1;
+    //   if(aPipe > bPipe) return 1;
+    //   return 0;
+    // });
   }
 
   activateBloomEffect = () => {

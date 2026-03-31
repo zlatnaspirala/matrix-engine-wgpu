@@ -1960,6 +1960,7 @@ exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
@@ -1978,7 +1979,6 @@ var loadObjFile = function () {
     }
   }, () => {
     loadObjFile.addLight();
-    (0, _raycast.addRaycastsAABBListener)();
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj"
@@ -1990,6 +1990,7 @@ var loadObjFile = function () {
     }, onGround, {
       scale: [30, 0.5, 30]
     });
+    (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
@@ -2125,6 +2126,10 @@ var loadObjFile = function () {
           envLodBias: 1.5,
           usePlanarReflection: false // ✅ Env map mode
         },
+        raycast: {
+          enabled: true,
+          radius: 1
+        },
         physics: {
           enabled: false,
           mass: 0,
@@ -2136,15 +2141,17 @@ var loadObjFile = function () {
         }
       });
       loadObjFile.lightContainer[0].setIntensity(5);
-      loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push(light => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      });
-      loadObjFile.lightContainer[0].setPosition(0, 15, -10);
-      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      if ((0, _utils.isMobile)() == false) {
+        loadObjFile.activateBloomEffect();
+        loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+        loadObjFile.lightContainer[0].behavior.value_ = -1;
+        loadObjFile.lightContainer[0].updater.push(light => {
+          light.setTargetX(light.behavior.setPath0());
+          light.setPosX(light.behavior.setPath0());
+        });
+        loadObjFile.lightContainer[0].setPosition(0, 15, -10);
+        loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      }
       setTimeout(() => {
         MYCUBE.effects.flameEmitter.setIntensity(100);
         MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
@@ -2157,8 +2164,8 @@ var loadObjFile = function () {
       }, 400);
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
-      console.log('ray.hit.event detected');
-      if (e.detail.hitObject.name.startWith('cube')) {
+      // console.log('ray.hit.event detected');
+      if (e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4);
       }
     });
@@ -2167,7 +2174,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/world.js":119}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":67,"../src/engine/utils.js":68,"../src/world.js":119}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2179,31 +2186,33 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjsSequence = function () {
+  // THIS EXAMPLE GIVE EXSTRIME GOOD PERFOMANCE (ALSO ON MOBILE)
+  // IST IS EXSPECTED OPOSITY
+  // PROBABLY SWICTHING PIPELINE COST IN WEBGPU
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
+    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
     }
   }, () => {
     loadObjFile.addLight();
-    addEventListener('AmmoReady', () => {
-      loadObjFile.lightContainer[0].setPosZ(-20);
-      loadObjFile.lightContainer[0].setPosY(35);
-      loadObjFile.lightContainer[0].setIntensity(5);
-      (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/blender/cube.obj"
-      }, onGround, {
-        scale: [20, 1, 20]
-      });
-      (0, _loaderObj.downloadMeshes)((0, _loaderObj.makeObjSeqArg)({
-        id: "swat-walk-pistol",
-        path: "res/meshes/objs-sequence/swat-walk-pistol",
-        from: 1,
-        to: 20
-      }), onLoadObj, {
-        scale: [0.1, 0.1, 0.1]
-      });
+    loadObjFile.lightContainer[0].setPosZ(-20);
+    loadObjFile.lightContainer[0].setPosY(35);
+    loadObjFile.lightContainer[0].setIntensity(5);
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, onGround, {
+      scale: [20, 1, 20]
+    });
+    (0, _loaderObj.downloadMeshes)((0, _loaderObj.makeObjSeqArg)({
+      id: "swat-walk-pistol",
+      path: "res/meshes/objs-sequence/swat-walk-pistol",
+      from: 1,
+      to: 20
+    }), onLoadObj, {
+      scale: [0.1, 0.1, 0.1]
     });
     function onLoadObj(m) {
       console.log(`%c Loaded objs: ${m} `, _utils.LOG_MATRIX);
@@ -23398,6 +23407,12 @@ class HPBarEffect {
     this.color = [0.1, 0.9, 0.1, 1.0];
     this.offsetY = 48;
     this.enabled = true;
+
+    // scratch buffers — no allocs per frame
+    this._modelMatrix = new Float32Array(16);
+    this._colorScratch = new Float32Array(4);
+    this._progressScratch = new Float32Array(1);
+    this._translateVec = new Float32Array(3);
     this._initPipeline();
   }
   _initPipeline() {
@@ -23520,17 +23535,15 @@ class HPBarEffect {
     this.color = [r, g, b, a];
   }
   draw(pass, cameraMatrix, modelMatrix) {
-    const color = new Float32Array(this.color);
-    const progressData = new Float32Array([this.progress]);
-
-    // Pack uniforms manually
-    const buffer = new ArrayBuffer(64 + 16 + 4);
-    const f32 = new Float32Array(buffer);
-    f32.set(cameraMatrix, 0); // not needed here
+    this._colorScratch[0] = this.color[0];
+    this._colorScratch[1] = this.color[1];
+    this._colorScratch[2] = this.color[2];
+    this._colorScratch[3] = this.color[3];
+    this._progressScratch[0] = this.progress;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
-    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
+    this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -23540,9 +23553,12 @@ class HPBarEffect {
   }
   render(pass, mesh, viewProjMatrix) {
     const pos = mesh.position;
-    const modelMatrix = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
+    this._translateVec[0] = pos.x;
+    this._translateVec[1] = pos.y + this.offsetY;
+    this._translateVec[2] = pos.z;
+    _wgpuMatrix.mat4.identity(this._modelMatrix);
+    _wgpuMatrix.mat4.translate(this._modelMatrix, this._translateVec, this._modelMatrix);
+    this.draw(pass, viewProjMatrix, this._modelMatrix);
   }
 }
 exports.HPBarEffect = HPBarEffect;
@@ -23560,6 +23576,7 @@ var _utils = require("../utils");
 /**
  * @description
  * FlameEmitter
+ * transformed vertex particle, posible to choose dir also...
  */
 class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
@@ -23581,10 +23598,11 @@ class FlameEmitter {
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
-
+    this.rotSpeed = 4;
     // cache
     this._localMatrix = _wgpuMatrix.mat4.create();
     this._finalMatrix = _wgpuMatrix.mat4.create();
+    this._scratch4 = new Float32Array(4);
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -23610,8 +23628,6 @@ class FlameEmitter {
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
   }
-
-  // not tested
   recreateVertexDataCrazzy(S) {
     const memory1 = -(0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
     const memory11 = (0, _utils.randomFloatFromTo)(0.1, 0.1 + S);
@@ -23622,7 +23638,7 @@ class FlameEmitter {
     const memory22 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
     const memory23 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
     this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info('crazzy flame emitter case data:', this.memoryCrazzyCase);
+    console.info(`Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, _utils.LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([memory1, memory2, 0.0, memory11, memory21, 0.0, memory12, memory22, 0.0, memory13, memory23, 0.0]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
@@ -23760,9 +23776,18 @@ class FlameEmitter {
       _wgpuMatrix.mat4.multiply(baseModelMatrix, local, this._finalMatrix);
       const offset = i * floatsPerInstance;
       this.instanceData.set(this._finalMatrix, offset);
-      this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
-      this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
+      this.instanceData[offset + 16] = t.time;
+      this.instanceData[offset + 17] = t.speed ?? 1.0;
+      this.instanceData[offset + 18] = 0;
+      this.instanceData[offset + 19] = 0;
+      this.instanceData[offset + 20] = (t.intensity ?? 1.0) * this.intensity;
+      this.instanceData[offset + 21] = t.turbulence ?? 0.5;
+      this.instanceData[offset + 22] = t.stretch ?? 1.0;
+      this.instanceData[offset + 23] = 0;
+      this.instanceData[offset + 24] = t.color[0];
+      this.instanceData[offset + 25] = t.color[1];
+      this.instanceData[offset + 26] = t.color[2];
+      this.instanceData[offset + 27] = t.tintStrength ?? 0.0;
     }
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
   };
@@ -23770,7 +23795,6 @@ class FlameEmitter {
     this.time += dt;
     for (const p of this.instanceTargets) {
       p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
-      // Reset check
       const resetCondition = this.riseDirection > 0 ? p.position[this.swap1] > this.maxBound : p.position[this.swap1] < this.minBound;
       if (resetCondition) {
         p.position[this.swap1] = this.riseDirection > 0 ? this.minBound + Math.random() * 0.5 : this.maxBound - Math.random() * 0.5;
@@ -23779,7 +23803,7 @@ class FlameEmitter {
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * (0, _utils.randomIntFromTo)(1, 4);
+      p.rotation += dt * Math.random() * this.rotSpeed;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass.setPipeline(this.pipeline);
@@ -24132,9 +24156,23 @@ class FlameEffect {
     // const params = new Float32Array([this.intensity, this.turbulence, this.stretch, 0]);
     // const tint = new Float32Array([...this.tint, this.tintStrength]);
     this._uniformData.set(finalMat, 0);
-    this._uniformData.set(ts, 16);
-    this._uniformData.set(p, 20);
-    this._uniformData.set(t, 24);
+    // this._uniformData.set(ts, 16);
+    this._uniformData[16] = this.time;
+    this._uniformData[17] = this.speed;
+    this._uniformData[18] = 0;
+    this._uniformData[19] = 0;
+
+    // this._uniformData.set(p, 20);
+    this._uniformData[20] = this.intensity;
+    this._uniformData[21] = this.turbulence;
+    this._uniformData[22] = this.stretch;
+    this._uniformData[23] = 0;
+
+    // this._uniformData.set(t, 24);
+    this._uniformData[24] = this.tint[0];
+    this._uniformData[25] = this.tint[1];
+    this._uniformData[26] = this.tint[2];
+    this._uniformData[27] = this.tintStrength;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
   }
   draw(pass, cameraMatrix) {
@@ -59235,29 +59273,31 @@ class MatrixEngineWGPU {
         const light = this.lightContainer[i];
         const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
         let lastShadowPipeline = null;
+        let lastBG1 = null;
         for (let j = 0; j < this.mainRenderBundle.length; j++) {
           const m = this.mainRenderBundle[j];
           if (m.shadowsCast == false) continue;
-          let targetShadowPipeline;
+          let targetPipeline;
+          let targetBG1;
           if (m.mType == _utils.MeshType.BVHANIM || m.mType == _utils.MeshType.INSTANCED) {
-            targetShadowPipeline = light.shadowPipelineInstanced;
+            targetPipeline = light.shadowPipelineInstanced;
+            targetBG1 = m.modelBindGroupInstanced;
           } else if (m.mType == _utils.MeshType.PROCEDURAL) {
-            targetShadowPipeline = light.shadowPipelineMorph;
+            targetPipeline = light.shadowPipelineMorph;
+            targetBG1 = m.mainRenderBindGroup;
           } else {
-            targetShadowPipeline = light.shadowPipeline;
+            targetPipeline = light.shadowPipeline;
+            targetBG1 = m.modelBindGroup;
           }
-          if (lastShadowPipeline !== targetShadowPipeline) {
-            shadowPass.setPipeline(targetShadowPipeline);
-            lastShadowPipeline = targetShadowPipeline;
+          if (lastShadowPipeline !== targetPipeline) {
+            shadowPass.setPipeline(targetPipeline);
+            lastShadowPipeline = targetPipeline;
+          }
+          if (lastBG1 !== targetBG1) {
+            shadowPass.setBindGroup(1, targetBG1);
+            lastBG1 = targetBG1;
           }
           shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-          if (m.mType == _utils.MeshType.BVHANIM || m.mType == _utils.MeshType.INSTANCED) {
-            shadowPass.setBindGroup(1, m.modelBindGroupInstanced);
-          } else if (m.mType == _utils.MeshType.PROCEDURAL) {
-            shadowPass.setBindGroup(1, m.mainRenderBindGroup);
-          } else {
-            shadowPass.setBindGroup(1, m.modelBindGroup);
-          }
           m.drawShadows(shadowPass, light);
         }
         shadowPass.end();
@@ -59622,18 +59662,25 @@ class MatrixEngineWGPU {
     }
   };
   sortRenderBundle() {
-    this.mainRenderBundle.sort((a, b) => {
-      // blend meshes always go last (you already have a second loop for them)
-      const aBlend = a.material?.useBlend ? 1 : 0;
-      const bBlend = b.material?.useBlend ? 1 : 0;
-      if (aBlend !== bBlend) return aBlend - bBlend;
-      // group by pipeline reference
-      const aPipe = a.pipeline || this.mainRenderBundle[0].pipeline;
-      const bPipe = b.pipeline || this.mainRenderBundle[0].pipeline;
-      if (aPipe < bPipe) return -1;
-      if (aPipe > bPipe) return 1;
-      return 0;
-    });
+    const typeOrder = {
+      [_utils.MeshType.BVHANIM]: 0,
+      [_utils.MeshType.INSTANCED]: 0,
+      [_utils.MeshType.PROCEDURAL]: 1
+    };
+    this.mainRenderBundle.sort((a, b) => (typeOrder[a.mType] ?? 2) - (typeOrder[b.mType] ?? 2));
+
+    // this.mainRenderBundle.sort((a, b) => {
+    //   // blend meshes always go last (you already have a second loop for them)
+    //   const aBlend = a.material?.useBlend ? 1 : 0;
+    //   const bBlend = b.material?.useBlend ? 1 : 0;
+    //   if(aBlend !== bBlend) return aBlend - bBlend;
+    //   // group by pipeline reference
+    //   const aPipe = a.pipeline || this.mainRenderBundle[0].pipeline;
+    //   const bPipe = b.pipeline || this.mainRenderBundle[0].pipeline;
+    //   if(aPipe < bPipe) return -1;
+    //   if(aPipe > bPipe) return 1;
+    //   return 0;
+    // });
   }
   activateBloomEffect = () => {
     if (this.bloomPass.enabled != true) {
