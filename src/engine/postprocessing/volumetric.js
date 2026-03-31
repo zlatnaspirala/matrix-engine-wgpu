@@ -22,9 +22,7 @@ export class VolumetricPass {
     this.height = height;
     this.volumetricTex = this._createTexture(width, height);
     this.volumetricTexView = this.volumetricTex.createView();
-
     this.sceneView = sceneView;
-
     // Linear sampler — composite pass
     this.sampler = device.createSampler({
       label: 'VolumetricPass.linearSampler',
@@ -80,23 +78,17 @@ export class VolumetricPass {
     this._lightDir = new Float32Array(4);
     this._marchBG = null;
     this._compositeBG = null;
-
     this._updateParams();
     this._updateLightColor();
-
     this.marchPipeline = this._createMarchPipeline();
     this.compositePipeline = this._createCompositePipeline();
-
     this.setCompositeInput(sceneView);
   }
-
-  // ─── Public setters ────────────────────────────────────────────────────────
 
   setDensity = (v) => {this.params.density = v; this._updateParams();}
   setSteps = (v) => {this.params.steps = v; this._updateParams();}
   setScatterStrength = (v) => {this.params.scatterStrength = v; this._updateParams();}
   setHeightFalloff = (v) => {this.params.heightFalloff = v; this._updateParams();}
-
   setLightColor = (r, g, b) => {
     this.lightParams.color = [r, g, b];
     this._updateLightColor();

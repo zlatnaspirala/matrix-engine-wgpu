@@ -28,6 +28,7 @@ import {FOUNTAIN_COLUMN_TOP, fountainBasinConfig, fountainBasinStoneConfig, foun
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
 import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
+import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 
 /**
  * @description
@@ -155,6 +156,8 @@ export default class MatrixEngineWGPU {
     if(typeof options.render !== 'undefined') {
       if(options.render == 'zero') {
         this.overrideRender = zeroPass.bind(this);
+      } else if (options.render == 'no-shadows') {
+        this.overrideRender = noShadowPass.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -946,7 +949,7 @@ export default class MatrixEngineWGPU {
           mesh.shadowDepthTextureView = this.shadowArrayView;
           mesh.setupPipeline();
         }
-        const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
+        const targetPipeline = mesh.pipeline;// || this.mainRenderBundle[0].pipeline;
         if(lastPipeline !== targetPipeline) {
           pass.setPipeline(targetPipeline);
           lastPipeline = targetPipeline;

@@ -25,6 +25,8 @@ export default class MatrixAmmo {
     this._origin = new Ammo.btVector3(0, 0, 0);
     this._quat = new Ammo.btQuaternion();
     this._axis = new Ammo.btVector3(0, 0, 0);
+
+    this.maxSubSteps = 4;
   }
 
   init = () => {
@@ -826,8 +828,6 @@ export default class MatrixAmmo {
   }
 
   updatePhysics() {
-    // if(typeof Ammo === 'undefined') return;
-
     this.rigidBodies.forEach((body) => {
       if(body.isKinematic) {
         this._transform.setIdentity();
@@ -837,7 +837,6 @@ export default class MatrixAmmo {
           body.MEObject.position.z
         );
         this._transform.setOrigin(this._origin);
-
         this._axis.setValue(
           body.MEObject.rotation.axis.x,
           body.MEObject.rotation.axis.y,
@@ -845,17 +844,14 @@ export default class MatrixAmmo {
         );
         this._quat.setRotation(this._axis, degToRad(body.MEObject.rotation.angle));
         this._transform.setRotation(this._quat);
-
         body.setWorldTransform(this._transform);
         const ms = body.getMotionState();
         if(ms) ms.setWorldTransform(this._transform);
       }
     });
 
-    const timeStep = 1 / 60;
-    const maxSubSteps = 4;
     for(let i = 0;i < this.speedUpSimulation;i++) {
-      this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
+      this.dynamicsWorld.stepSimulation(1 / 30, this.maxSubSteps);
     }
 
     this.rigidBodies.forEach((body) => {

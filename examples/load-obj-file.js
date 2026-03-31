@@ -7,6 +7,7 @@ export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
+    render: 'no-shadows', // test
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -102,11 +103,11 @@ export var loadObjFile = function() {
           mass: 0,
           geometry: "Cube"
         },
-        // pointerEffect: {
-        //   enabled: true,
-        //   // flameEmitter: true
-        //   // flameEffect: true
-        // }
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+          // flameEffect: true
+        }
       })
 
       loadObjFile.lightContainer[0].setIntensity(5);
