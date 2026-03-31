@@ -15,12 +15,16 @@
  */
 
 export class VolumetricPass {
-  constructor(width, height, device, options = {}) {
+  constructor(width, height, device, options = {}, sceneView) {
     this.enabled = false;
     this.device = device;
     this.width = width;
     this.height = height;
     this.volumetricTex = this._createTexture(width, height);
+    this.volumetricTexView = this.volumetricTex.createView();
+
+    this.sceneView = sceneView;
+
     // Linear sampler — composite pass
     this.sampler = device.createSampler({
       label: 'VolumetricPass.linearSampler',
@@ -29,24 +33,21 @@ export class VolumetricPass {
       addressModeU: 'clamp-to-edge',
       addressModeV: 'clamp-to-edge',
     });
-    // Comparison sampler — ALL THREE must agree:
-    //   device sampler:  { compare: 'less-equal' }
-    //   layout entry:    { type: 'comparison' }
-    //   WGSL type:       sampler_comparison
+
     this.depthSampler = device.createSampler({
       label: 'VolumetricPass.comparisonSampler',
       compare: 'less-equal',
     });
 
     this.params = {
-      density:         options.density         ?? 0.03,
-      steps:           options.steps           ?? 32,
-      scatterStrength: options.scatterStrength  ?? 1.0,
-      heightFalloff:   options.heightFalloff   ?? 0.1,
+      density: options.density ?? 0.03,
+      steps: options.steps ?? 32,
+      scatterStrength: options.scatterStrength ?? 1.0,
+      heightFalloff: options.heightFalloff ?? 0.1,
     };
 
     this.lightParams = {
-      color:     options.lightColor ?? [1.0, 0.85, 0.6],
+      color: options.lightColor ?? [1.0, 0.85, 0.6],
       direction: [0.0, -1.0, 0.5],
     };
 
@@ -76,31 +77,76 @@ export class VolumetricPass {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
+    this._lightDir = new Float32Array(4);
+    this._marchBG = null;
+    this._compositeBG = null;
+
     this._updateParams();
     this._updateLightColor();
 
-    this.marchPipeline     = this._createMarchPipeline();
+    this.marchPipeline = this._createMarchPipeline();
     this.compositePipeline = this._createCompositePipeline();
+
+    this.setCompositeInput(sceneView);
   }
 
   // ─── Public setters ────────────────────────────────────────────────────────
 
-  setDensity         = (v) => { this.params.density = v;         this._updateParams(); }
-  setSteps           = (v) => { this.params.steps = v;           this._updateParams(); }
-  setScatterStrength = (v) => { this.params.scatterStrength = v; this._updateParams(); }
-  setHeightFalloff   = (v) => { this.params.heightFalloff = v;   this._updateParams(); }
+  setDensity = (v) => {this.params.density = v; this._updateParams();}
+  setSteps = (v) => {this.params.steps = v; this._updateParams();}
+  setScatterStrength = (v) => {this.params.scatterStrength = v; this._updateParams();}
+  setHeightFalloff = (v) => {this.params.heightFalloff = v; this._updateParams();}
 
   setLightColor = (r, g, b) => {
     this.lightParams.color = [r, g, b];
     this._updateLightColor();
   }
 
-  setLightDirection = (x, y, z) => {
-    this.lightParams.direction = [x, y, z];
-    this.device.queue.writeBuffer(this.lightDirBuffer, 0, new Float32Array([x, y, z, 0.0]));
+  setCompositeInput(sceneView) {
+    this._compositeBG = this.device.createBindGroup({
+      layout: this.compositePipeline.getBindGroupLayout(0),
+      entries: [
+        {binding: 0, resource: sceneView},
+        {binding: 1, resource: this.volumetricTexView},
+        {binding: 2, resource: this.sampler},
+        {binding: 3, resource: {buffer: this.paramsBuffer}},
+      ]
+    });
   }
 
-  // ─── Internal ─────────────────────────────────────────────────────────────
+  setMarchInputs(depthView, shadowArrayView) {
+    if(
+      this._depthView !== depthView ||
+      this._shadowView !== shadowArrayView ||
+      !this._marchBG
+    ) {
+      this._depthView = depthView;
+      this._shadowView = shadowArrayView;
+
+      this._marchBG = this.device.createBindGroup({
+        layout: this.marchPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: depthView},
+          {binding: 1, resource: shadowArrayView},
+          {binding: 2, resource: this.depthSampler},
+          {binding: 3, resource: {buffer: this.invViewProjBuffer}},
+          {binding: 4, resource: {buffer: this.lightViewProjBuffer}},
+          {binding: 5, resource: {buffer: this.lightDirBuffer}},
+          {binding: 6, resource: {buffer: this.lightColorBuffer}},
+          {binding: 7, resource: {buffer: this.paramsBuffer}},
+        ]
+      });
+    }
+  }
+
+  setLightDirection = (x, y, z) => {
+    this.lightParams.direction = [x, y, z];
+    this._lightDir[0] = x;
+    this._lightDir[1] = y;
+    this._lightDir[2] = z;
+    this._lightDir[3] = 0.0;
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
+  }
 
   _updateParams() {
     this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([
@@ -132,25 +178,23 @@ export class VolumetricPass {
         view: targetView,
         loadOp: 'clear',
         storeOp: 'store',
-        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+        clearValue: {r: 0, g: 0, b: 0, a: 0}
       }]
     });
   }
-
-  // ─── Pipelines ─────────────────────────────────────────────────────────────
 
   _createMarchPipeline() {
     const bgl = this.device.createBindGroupLayout({
       label: 'VolumetricPass.marchBGL',
       entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth' } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth', viewDimension: '2d-array' } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'comparison' } },  // ← must be 'comparison'
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
-        { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
-        { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
-        { binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
-        { binding: 7, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth'}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth', viewDimension: '2d-array'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},  // ← must be 'comparison'
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 7, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
       ]
     });
     return this.device.createRenderPipeline({
@@ -160,15 +204,15 @@ export class VolumetricPass {
         bindGroupLayouts: [bgl]
       }),
       vertex: {
-        module: this.device.createShaderModule({ label: 'VolumetricPass.vert', code: fullscreenVertWGSL() }),
+        module: this.device.createShaderModule({label: 'VolumetricPass.vert', code: fullscreenVertWGSL()}),
         entryPoint: 'vert'
       },
       fragment: {
-        module: this.device.createShaderModule({ label: 'VolumetricPass.marchFrag', code: marchFragWGSL() }),
+        module: this.device.createShaderModule({label: 'VolumetricPass.marchFrag', code: marchFragWGSL()}),
         entryPoint: 'main',
-        targets: [{ format: 'rgba16float' }]
+        targets: [{format: 'rgba16float'}]
       },
-      primitive: { topology: 'triangle-list' }
+      primitive: {topology: 'triangle-list'}
     });
   }
 
@@ -176,10 +220,10 @@ export class VolumetricPass {
     const bgl = this.device.createBindGroupLayout({
       label: 'VolumetricPass.compositeBGL',
       entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
       ]
     });
     return this.device.createRenderPipeline({
@@ -189,33 +233,31 @@ export class VolumetricPass {
         bindGroupLayouts: [bgl]
       }),
       vertex: {
-        module: this.device.createShaderModule({ label: 'VolumetricPass.compositeVert', code: fullscreenVertWGSL() }),
+        module: this.device.createShaderModule({label: 'VolumetricPass.compositeVert', code: fullscreenVertWGSL()}),
         entryPoint: 'vert'
       },
       fragment: {
-        module: this.device.createShaderModule({ label: 'VolumetricPass.compositeFrag', code: compositeFragWGSL() }),
+        module: this.device.createShaderModule({label: 'VolumetricPass.compositeFrag', code: compositeFragWGSL()}),
         entryPoint: 'main',
-        targets: [{ format: 'rgba16float' }]
+        targets: [{format: 'rgba16float'}]
       },
-      primitive: { topology: 'triangle-list' }
+      primitive: {topology: 'triangle-list'}
     });
   }
-
-  // ─── Bind Groups ───────────────────────────────────────────────────────────
 
   _marchBindGroup(depthView, shadowArrayView) {
     return this.device.createBindGroup({
       label: 'VolumetricPass.marchBindGroup',
       layout: this.marchPipeline.getBindGroupLayout(0),
       entries: [
-        { binding: 0, resource: depthView },
-        { binding: 1, resource: shadowArrayView },
-        { binding: 2, resource: this.depthSampler },        // comparison sampler
-        { binding: 3, resource: { buffer: this.invViewProjBuffer } },
-        { binding: 4, resource: { buffer: this.lightViewProjBuffer } },
-        { binding: 5, resource: { buffer: this.lightDirBuffer } },
-        { binding: 6, resource: { buffer: this.lightColorBuffer } },
-        { binding: 7, resource: { buffer: this.paramsBuffer } },
+        {binding: 0, resource: depthView},
+        {binding: 1, resource: shadowArrayView},
+        {binding: 2, resource: this.depthSampler},
+        {binding: 3, resource: {buffer: this.invViewProjBuffer}},
+        {binding: 4, resource: {buffer: this.lightViewProjBuffer}},
+        {binding: 5, resource: {buffer: this.lightDirBuffer}},
+        {binding: 6, resource: {buffer: this.lightColorBuffer}},
+        {binding: 7, resource: {buffer: this.paramsBuffer}},
       ]
     });
   }
@@ -225,15 +267,14 @@ export class VolumetricPass {
       label: 'VolumetricPass.compositeBindGroup',
       layout: this.compositePipeline.getBindGroupLayout(0),
       entries: [
-        { binding: 0, resource: sceneView },
-        { binding: 1, resource: this.volumetricTex.createView() },
-        { binding: 2, resource: this.sampler },
-        { binding: 3, resource: { buffer: this.paramsBuffer } },
+        {binding: 0, resource: sceneView},
+        {binding: 1, resource: this.volumetricTexView},
+        {binding: 2, resource: this.sampler},
+        {binding: 3, resource: {buffer: this.paramsBuffer}},
       ]
     });
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   /**
    * @param {GPUCommandEncoder} encoder
    * @param {GPUTextureView} sceneView        — your sceneTextureView
@@ -243,48 +284,45 @@ export class VolumetricPass {
    * @param {object} light   — { viewProjectionMatrix: Float32Array(16), direction: [x,y,z] }
    */
   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
-    this.device.queue.writeBuffer(this.invViewProjBuffer,   0, camera.invViewProjectionMatrix);
+    this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
     this.device.queue.writeBuffer(this.lightViewProjBuffer, 0, light.viewProjectionMatrix);
-    this.device.queue.writeBuffer(this.lightDirBuffer,      0, new Float32Array([...light.direction, 0.0]));
-
-    // Pass 1 — ray march → volumetricTex
+    this._lightDir[0] = light.direction[0];
+    this._lightDir[1] = light.direction[1];
+    this._lightDir[2] = light.direction[2];
+    this._lightDir[3] = 0.0;
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
     {
-      const pass = this._beginPass(encoder, this.volumetricTex.createView(), 'VolumetricPass.marchPass');
+      const pass = this._beginPass(encoder, this.volumetricTexView, 'march');
       pass.setPipeline(this.marchPipeline);
-      pass.setBindGroup(0, this._marchBindGroup(depthView, shadowArrayView));
+      this.setMarchInputs(depthView, shadowArrayView);
+      pass.setBindGroup(0, this._marchBG);
       pass.draw(6);
       pass.end();
     }
-
-    // Pass 2 — composite → compositeOutputTex (feed this to bloomPass instead of sceneTextureView)
     {
-      const pass = this._beginPass(encoder, this.compositeOutputTex.createView(), 'VolumetricPass.compositePass');
+      const pass = this._beginPass(encoder, this.compositeOutputTexView, 'composite');
       pass.setPipeline(this.compositePipeline);
-      pass.setBindGroup(0, this._compositeBindGroup(sceneView));
+      pass.setBindGroup(0, this._compositeBG);
       pass.draw(6);
       pass.end();
     }
   }
 
-  /** Call once after constructor. Chainable: new VolumetricPass(...).init() */
   init() {
     this.compositeOutputTex = this._createTexture(this.width, this.height);
     this.compositeOutputTexView = this.compositeOutputTex.createView();
     return this;
   }
 
-  /** Call on canvas resize */
   resize(width, height) {
     this.width = width;
     this.height = height;
-    this.volumetricTex      = this._createTexture(width, height);
+    this.volumetricTex = this._createTexture(width, height);
     this.compositeOutputTex = this._createTexture(width, height);
+    this.volumetricTexView = this.volumetricTex.createView();
     this.compositeOutputTexView = this.compositeOutputTex.createView();
   }
 }
-
-
-// ─── WGSL Shaders ─────────────────────────────────────────────────────────────
 
 export function fullscreenVertWGSL() {
   return /* wgsl */`
@@ -301,7 +339,6 @@ export function fullscreenVertWGSL() {
 
 function marchFragWGSL() {
   return /* wgsl */`
-
   @group(0) @binding(0) var depthTex:   texture_depth_2d;
   @group(0) @binding(1) var shadowTex:  texture_depth_2d_array;
   @group(0) @binding(2) var cmpSamp:    sampler_comparison;

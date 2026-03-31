@@ -1994,26 +1994,19 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
-        envMapParams: {
-          baseColorMix: 0.5,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.5,
-          // 25% reflection blend
-          illuminateColor: [0.5, 0.5, 0.2],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 0.1,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        // envMapParams: {
+        //   baseColorMix: 0.5,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.5,                // 25% reflection blend
+        //   illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 0.1,                // Medium-sharp edge
+        //   envLodBias: 2.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         position: {
           x: 0,
           y: -5,
@@ -2042,7 +2035,7 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -2060,25 +2053,18 @@ var loadObjFile = function () {
           y: 110.5,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.95,
-          // 25% reflection blend
-          illuminateColor: [0.2, 0.2, 0.2],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 1.0,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        // envMapParams: {
+        //   baseColorMix: 0.0,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.95,               // 25% reflection blend
+        //   illuminateColor: [0.2, 0.2, 0.2], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 1.0,                // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -2134,11 +2120,12 @@ var loadObjFile = function () {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
         }
+        // pointerEffect: {
+        //   enabled: true,
+        //   // flameEmitter: true
+        //   // flameEffect: true
+        // }
       });
       loadObjFile.lightContainer[0].setIntensity(5);
       if ((0, _utils.isMobile)() == false) {
@@ -2585,7 +2572,7 @@ var physicsPlayground = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      physicsPlayground.matrixAmmo.speedUpSimulation = 4;
+      // physicsPlayground.matrixAmmo.speedUpSimulation = 4;
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -35002,7 +34989,7 @@ exports.fullscreenQuadWGSL = fullscreenQuadWGSL;
  */
 
 class BloomPass {
-  constructor(width, height, device, intensity = 1.5) {
+  constructor(width, height, device, sceneView, intensity = 1.5) {
     this.enabled = false;
     this.device = device;
     this.width = width;
@@ -35017,6 +35004,11 @@ class BloomPass {
     this.intensityBuffer = this._createUniformBuffer([intensity]);
     this.blurDirX = this._createUniformBuffer([1, 0]);
     this.blurDirY = this._createUniformBuffer([0, 1]);
+
+    // ── Pre-create all stable views ──────────────────────────────────────
+    this._brightView = this.brightTex.createView();
+    this._blurAView = this.blurTexA.createView();
+    this._blurBView = this.blurTexB.createView();
     this.params = {
       intensity: intensity,
       threshold: 0.6,
@@ -35027,6 +35019,7 @@ class BloomPass {
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
+    this._paramScratch = new Float32Array(4);
     this._updateParams();
     this.brightPipeline = this._createPipeline(brightPassWGSL(), [{
       binding: 0,
@@ -35097,11 +35090,8 @@ class BloomPass {
         type: 'uniform'
       }
     }]);
-
-    // ── Pre-create all stable views ──────────────────────────────────────
-    this._brightView = this.brightTex.createView();
-    this._blurAView = this.blurTexA.createView();
-    this._blurBView = this.blurTexB.createView();
+    this._brightBG = this._brightBindGroup(sceneView);
+    this._combineBG = this._combineBindGroup(sceneView, this._blurBView);
 
     // ── Pre-create all stable bind groups ───────────────────────────────
     // brightBindGroup depends on sceneView (changes each frame) → stays dynamic
@@ -35146,7 +35136,15 @@ class BloomPass {
     });
   }
   _updateParams() {
-    this.device.queue.writeBuffer(this.paramBuffer, 0, new Float32Array([this.params.intensity, this.params.threshold, this.params.knee, this.params.blurRadius]));
+    this._paramScratch[0] = this.params.intensity;
+    this._paramScratch[1] = this.params.threshold;
+    this._paramScratch[2] = this.params.knee;
+    this._paramScratch[3] = this.params.blurRadius;
+    this.device.queue.writeBuffer(this.paramBuffer, 0, this._paramScratch);
+  }
+  _invalidateSceneBindGroups(sceneView) {
+    this._brightBG = this._brightBindGroup(sceneView);
+    this._combineBG = this._combineBindGroup(sceneView, this._blurBView);
   }
   setIntensity = v => {
     this.params.intensity = v;
@@ -35247,36 +35245,32 @@ class BloomPass {
       }]
     });
   }
-  render(encoder, sceneView, finalTargetView) {
-    // ----- Bright pass -----
+  render(encoder, finalTargetView) {
     {
       const pass = this._beginFullscreenPass(encoder, this._brightView);
       pass.setPipeline(this.brightPipeline);
-      pass.setBindGroup(0, this._brightBindGroup(sceneView)); // sceneView changes → dynamic
+      pass.setBindGroup(0, this._brightBG);
       pass.draw(6);
       pass.end();
     }
-    // ----- Blur X -----
     {
       const pass = this._beginFullscreenPass(encoder, this._blurAView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurXBindGroup); // ← cached
+      pass.setBindGroup(0, this._blurXBindGroup);
       pass.draw(6);
       pass.end();
     }
-    // ----- Blur Y -----
     {
       const pass = this._beginFullscreenPass(encoder, this._blurBView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurYBindGroup); // ← cached
+      pass.setBindGroup(0, this._blurYBindGroup);
       pass.draw(6);
       pass.end();
     }
-    // ----- Combine -----
     {
       const pass = this._beginFullscreenPass(encoder, finalTargetView);
       pass.setPipeline(this.combinePipeline);
-      pass.setBindGroup(0, this._combineBindGroup(sceneView, this._blurBView)); // sceneView changes → dynamic
+      pass.setBindGroup(0, this._combineBG);
       pass.draw(6);
       pass.end();
     }
@@ -35401,12 +35395,15 @@ exports.fullscreenVertWGSL = fullscreenVertWGSL;
  */
 
 class VolumetricPass {
-  constructor(width, height, device, options = {}) {
+  constructor(width, height, device, options = {}, sceneView) {
     this.enabled = false;
     this.device = device;
     this.width = width;
     this.height = height;
     this.volumetricTex = this._createTexture(width, height);
+    this.volumetricTexView = this.volumetricTex.createView();
+    this.sceneView = sceneView;
+
     // Linear sampler — composite pass
     this.sampler = device.createSampler({
       label: 'VolumetricPass.linearSampler',
@@ -35415,10 +35412,6 @@ class VolumetricPass {
       addressModeU: 'clamp-to-edge',
       addressModeV: 'clamp-to-edge'
     });
-    // Comparison sampler — ALL THREE must agree:
-    //   device sampler:  { compare: 'less-equal' }
-    //   layout entry:    { type: 'comparison' }
-    //   WGSL type:       sampler_comparison
     this.depthSampler = device.createSampler({
       label: 'VolumetricPass.comparisonSampler',
       compare: 'less-equal'
@@ -35458,10 +35451,14 @@ class VolumetricPass {
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
+    this._lightDir = new Float32Array(4);
+    this._marchBG = null;
+    this._compositeBG = null;
     this._updateParams();
     this._updateLightColor();
     this.marchPipeline = this._createMarchPipeline();
     this.compositePipeline = this._createCompositePipeline();
+    this.setCompositeInput(sceneView);
   }
 
   // ─── Public setters ────────────────────────────────────────────────────────
@@ -35486,13 +35483,78 @@ class VolumetricPass {
     this.lightParams.color = [r, g, b];
     this._updateLightColor();
   };
+  setCompositeInput(sceneView) {
+    this._compositeBG = this.device.createBindGroup({
+      layout: this.compositePipeline.getBindGroupLayout(0),
+      entries: [{
+        binding: 0,
+        resource: sceneView
+      }, {
+        binding: 1,
+        resource: this.volumetricTexView
+      }, {
+        binding: 2,
+        resource: this.sampler
+      }, {
+        binding: 3,
+        resource: {
+          buffer: this.paramsBuffer
+        }
+      }]
+    });
+  }
+  setMarchInputs(depthView, shadowArrayView) {
+    if (this._depthView !== depthView || this._shadowView !== shadowArrayView || !this._marchBG) {
+      this._depthView = depthView;
+      this._shadowView = shadowArrayView;
+      this._marchBG = this.device.createBindGroup({
+        layout: this.marchPipeline.getBindGroupLayout(0),
+        entries: [{
+          binding: 0,
+          resource: depthView
+        }, {
+          binding: 1,
+          resource: shadowArrayView
+        }, {
+          binding: 2,
+          resource: this.depthSampler
+        }, {
+          binding: 3,
+          resource: {
+            buffer: this.invViewProjBuffer
+          }
+        }, {
+          binding: 4,
+          resource: {
+            buffer: this.lightViewProjBuffer
+          }
+        }, {
+          binding: 5,
+          resource: {
+            buffer: this.lightDirBuffer
+          }
+        }, {
+          binding: 6,
+          resource: {
+            buffer: this.lightColorBuffer
+          }
+        }, {
+          binding: 7,
+          resource: {
+            buffer: this.paramsBuffer
+          }
+        }]
+      });
+    }
+  }
   setLightDirection = (x, y, z) => {
     this.lightParams.direction = [x, y, z];
-    this.device.queue.writeBuffer(this.lightDirBuffer, 0, new Float32Array([x, y, z, 0.0]));
+    this._lightDir[0] = x;
+    this._lightDir[1] = y;
+    this._lightDir[2] = z;
+    this._lightDir[3] = 0.0;
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
   };
-
-  // ─── Internal ─────────────────────────────────────────────────────────────
-
   _updateParams() {
     this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([this.params.density, this.params.steps, this.params.scatterStrength, this.params.heightFalloff]));
   }
@@ -35523,9 +35585,6 @@ class VolumetricPass {
       }]
     });
   }
-
-  // ─── Pipelines ─────────────────────────────────────────────────────────────
-
   _createMarchPipeline() {
     const bgl = this.device.createBindGroupLayout({
       label: 'VolumetricPass.marchBGL',
@@ -35667,9 +35726,6 @@ class VolumetricPass {
       }
     });
   }
-
-  // ─── Bind Groups ───────────────────────────────────────────────────────────
-
   _marchBindGroup(depthView, shadowArrayView) {
     return this.device.createBindGroup({
       label: 'VolumetricPass.marchBindGroup',
@@ -35683,9 +35739,7 @@ class VolumetricPass {
       }, {
         binding: 2,
         resource: this.depthSampler
-      },
-      // comparison sampler
-      {
+      }, {
         binding: 3,
         resource: {
           buffer: this.invViewProjBuffer
@@ -35722,7 +35776,7 @@ class VolumetricPass {
         resource: sceneView
       }, {
         binding: 1,
-        resource: this.volumetricTex.createView()
+        resource: this.volumetricTexView
       }, {
         binding: 2,
         resource: this.sampler
@@ -35735,7 +35789,6 @@ class VolumetricPass {
     });
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   /**
    * @param {GPUCommandEncoder} encoder
    * @param {GPUTextureView} sceneView        — your sceneTextureView
@@ -35747,45 +35800,41 @@ class VolumetricPass {
   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
     this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
     this.device.queue.writeBuffer(this.lightViewProjBuffer, 0, light.viewProjectionMatrix);
-    this.device.queue.writeBuffer(this.lightDirBuffer, 0, new Float32Array([...light.direction, 0.0]));
-
-    // Pass 1 — ray march → volumetricTex
+    this._lightDir[0] = light.direction[0];
+    this._lightDir[1] = light.direction[1];
+    this._lightDir[2] = light.direction[2];
+    this._lightDir[3] = 0.0;
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
     {
-      const pass = this._beginPass(encoder, this.volumetricTex.createView(), 'VolumetricPass.marchPass');
+      const pass = this._beginPass(encoder, this.volumetricTexView, 'march');
       pass.setPipeline(this.marchPipeline);
-      pass.setBindGroup(0, this._marchBindGroup(depthView, shadowArrayView));
+      this.setMarchInputs(depthView, shadowArrayView);
+      pass.setBindGroup(0, this._marchBG);
       pass.draw(6);
       pass.end();
     }
-
-    // Pass 2 — composite → compositeOutputTex (feed this to bloomPass instead of sceneTextureView)
     {
-      const pass = this._beginPass(encoder, this.compositeOutputTex.createView(), 'VolumetricPass.compositePass');
+      const pass = this._beginPass(encoder, this.compositeOutputTexView, 'composite');
       pass.setPipeline(this.compositePipeline);
-      pass.setBindGroup(0, this._compositeBindGroup(sceneView));
+      pass.setBindGroup(0, this._compositeBG);
       pass.draw(6);
       pass.end();
     }
   }
-
-  /** Call once after constructor. Chainable: new VolumetricPass(...).init() */
   init() {
     this.compositeOutputTex = this._createTexture(this.width, this.height);
     this.compositeOutputTexView = this.compositeOutputTex.createView();
     return this;
   }
-
-  /** Call on canvas resize */
   resize(width, height) {
     this.width = width;
     this.height = height;
     this.volumetricTex = this._createTexture(width, height);
     this.compositeOutputTex = this._createTexture(width, height);
+    this.volumetricTexView = this.volumetricTex.createView();
     this.compositeOutputTexView = this.compositeOutputTex.createView();
   }
 }
-
-// ─── WGSL Shaders ─────────────────────────────────────────────────────────────
 exports.VolumetricPass = VolumetricPass;
 function fullscreenVertWGSL() {
   return /* wgsl */`
@@ -35801,7 +35850,6 @@ function fullscreenVertWGSL() {
 }
 function marchFragWGSL() {
   return /* wgsl */`
-
   @group(0) @binding(0) var depthTex:   texture_depth_2d;
   @group(0) @binding(1) var shadowTex:  texture_depth_2d_array;
   @group(0) @binding(2) var cmpSamp:    sampler_comparison;
@@ -39668,7 +39716,8 @@ class MatrixAmmo {
     this.lastCollisionState = currentCollisions;
   }
   updatePhysics() {
-    if (typeof Ammo === 'undefined') return;
+    // if(typeof Ammo === 'undefined') return;
+
     this.rigidBodies.forEach(body => {
       if (body.isKinematic) {
         this._transform.setIdentity();
@@ -58560,6 +58609,12 @@ class MatrixEngineWGPU {
       magFilter: 'linear',
       minFilter: 'linear'
     });
+    this.postProcessInputTex = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.postProcessInputView = this.postProcessInputTex.createView();
     this.presentPipeline = this.device.createRenderPipeline({
       label: "final pipeline",
       layout: 'auto',
@@ -59369,12 +59424,11 @@ class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      const canvasView = this._canvasView;
       if (this.bloomPass.enabled == true) {
-        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
-        this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+        // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       }
-      this.finalPS.colorAttachments[0].view = canvasView;
+      this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
       pass.setBindGroup(0, this._activeBindGroup);
@@ -59688,7 +59742,7 @@ class MatrixEngineWGPU {
   }
   activateBloomEffect = () => {
     if (this.bloomPass.enabled != true) {
-      this.bloomPass = new _bloom.BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+      this.bloomPass = new _bloom.BloomPass(this.canvas.width, this.canvas.height, this.device, this.sceneTextureView, 1.5);
       this.bloomPass.enabled = true;
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
     }
@@ -59711,8 +59765,9 @@ class MatrixEngineWGPU {
       p = arg;
     }
     if (this.volumetricPass.enabled != true) {
-      this.volumetricPass = new _volumetric.VolumetricPass(this.canvas.width, this.canvas.height, this.device, p).init();
+      this.volumetricPass = new _volumetric.VolumetricPass(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
+      this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   };
 }

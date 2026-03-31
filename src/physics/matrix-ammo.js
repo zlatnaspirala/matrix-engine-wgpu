@@ -826,7 +826,7 @@ export default class MatrixAmmo {
   }
 
   updatePhysics() {
-    if(typeof Ammo === 'undefined') return;
+    // if(typeof Ammo === 'undefined') return;
 
     this.rigidBodies.forEach((body) => {
       if(body.isKinematic) {

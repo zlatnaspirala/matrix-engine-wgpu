@@ -368,6 +368,16 @@ export default class MatrixEngineWGPU {
       minFilter: 'linear'
     });
 
+    this.postProcessInputTex = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage:
+        GPUTextureUsage.RENDER_ATTACHMENT |
+        GPUTextureUsage.TEXTURE_BINDING
+    });
+
+    this.postProcessInputView = this.postProcessInputTex.createView();
+
     this.presentPipeline = this.device.createRenderPipeline({
       label: "final pipeline",
       layout: 'auto',
@@ -986,12 +996,11 @@ export default class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      const canvasView = this._canvasView;
       if(this.bloomPass.enabled == true) {
-        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
-        this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+        // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       }
-      this.finalPS.colorAttachments[0].view = canvasView;
+      this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
       pass.setBindGroup(0, this._activeBindGroup);
@@ -1218,7 +1227,7 @@ export default class MatrixEngineWGPU {
 
   activateBloomEffect = () => {
     if(this.bloomPass.enabled != true) {
-      this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+      this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, this.sceneTextureView, 1.5);
       this.bloomPass.enabled = true;
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
     }
@@ -1237,8 +1246,9 @@ export default class MatrixEngineWGPU {
       }
     } else {p = arg}
     if(this.volumetricPass.enabled != true) {
-      this.volumetricPass = new VolumetricPass(this.canvas.width, this.canvas.height, this.device, p).init();
+      this.volumetricPass = new VolumetricPass(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
+      this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   }
 }

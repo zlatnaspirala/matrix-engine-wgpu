@@ -24,18 +24,18 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
-        envMapParams: {
-          baseColorMix: 0.5,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.5,                // 25% reflection blend
-          illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 0.1,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        material: {type: 'standard'},
+        // envMapParams: {
+        //   baseColorMix: 0.5,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.5,                // 25% reflection blend
+        //   illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 0.1,                // Medium-sharp edge
+        //   envLodBias: 2.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -52,23 +52,23 @@ export var loadObjFile = function() {
 
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 110.5, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.95,               // 25% reflection blend
-          illuminateColor: [0.2, 0.2, 0.2], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 1.0,                // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        // envMapParams: {
+        //   baseColorMix: 0.0,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.95,               // 25% reflection blend
+        //   illuminateColor: [0.2, 0.2, 0.2], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 1.0,                // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -102,10 +102,11 @@ export var loadObjFile = function() {
           mass: 0,
           geometry: "Cube"
         },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-        }
+        // pointerEffect: {
+        //   enabled: true,
+        //   // flameEmitter: true
+        //   // flameEffect: true
+        // }
       })
 
       loadObjFile.lightContainer[0].setIntensity(5);

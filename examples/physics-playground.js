@@ -23,7 +23,7 @@ export var physicsPlayground = function() {
         ball: "./res/meshes/shapes/sphere.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
-      physicsPlayground.matrixAmmo.speedUpSimulation = 4;
+      // physicsPlayground.matrixAmmo.speedUpSimulation = 4;
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",

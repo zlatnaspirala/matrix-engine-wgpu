@@ -10,7 +10,7 @@
  */
 
 export class BloomPass {
-  constructor(width, height, device, intensity = 1.5) {
+  constructor(width, height, device, sceneView, intensity = 1.5) {
     this.enabled = false;
     this.device = device;
     this.width = width;
@@ -29,6 +29,11 @@ export class BloomPass {
     this.blurDirX = this._createUniformBuffer([1, 0]);
     this.blurDirY = this._createUniformBuffer([0, 1]);
 
+    // ── Pre-create all stable views ──────────────────────────────────────
+    this._brightView = this.brightTex.createView();
+    this._blurAView = this.blurTexA.createView();
+    this._blurBView = this.blurTexB.createView();
+
     this.params = {
       intensity: intensity,
       threshold: 0.6,
@@ -40,6 +45,8 @@ export class BloomPass {
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+
+    this._paramScratch = new Float32Array(4);
 
     this._updateParams();
 
@@ -66,10 +73,11 @@ export class BloomPass {
       {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}]
     );
 
-    // ── Pre-create all stable views ──────────────────────────────────────
-    this._brightView = this.brightTex.createView();
-    this._blurAView = this.blurTexA.createView();
-    this._blurBView = this.blurTexB.createView();
+    this._brightBG = this._brightBindGroup(sceneView);
+    this._combineBG = this._combineBindGroup(
+      sceneView,
+      this._blurBView
+    );
 
     // ── Pre-create all stable bind groups ───────────────────────────────
     // brightBindGroup depends on sceneView (changes each frame) → stays dynamic
@@ -110,14 +118,16 @@ export class BloomPass {
   }
 
   _updateParams() {
-    this.device.queue.writeBuffer(this.paramBuffer, 0,
-      new Float32Array([
-        this.params.intensity,
-        this.params.threshold,
-        this.params.knee,
-        this.params.blurRadius,
-      ])
-    );
+    this._paramScratch[0] = this.params.intensity;
+    this._paramScratch[1] = this.params.threshold;
+    this._paramScratch[2] = this.params.knee;
+    this._paramScratch[3] = this.params.blurRadius;
+    this.device.queue.writeBuffer(this.paramBuffer, 0, this._paramScratch);
+  }
+
+  _invalidateSceneBindGroups(sceneView) {
+    this._brightBG = this._brightBindGroup(sceneView);
+    this._combineBG = this._combineBindGroup(sceneView, this._blurBView);
   }
 
   setIntensity = (v) => {
@@ -195,36 +205,32 @@ export class BloomPass {
     });
   }
 
-  render(encoder, sceneView, finalTargetView) {
-    // ----- Bright pass -----
+  render(encoder, finalTargetView) {
     {
       const pass = this._beginFullscreenPass(encoder, this._brightView);
       pass.setPipeline(this.brightPipeline);
-      pass.setBindGroup(0, this._brightBindGroup(sceneView));  // sceneView changes → dynamic
+      pass.setBindGroup(0, this._brightBG);
       pass.draw(6);
       pass.end();
     }
-    // ----- Blur X -----
     {
       const pass = this._beginFullscreenPass(encoder, this._blurAView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurXBindGroup);              // ← cached
+      pass.setBindGroup(0, this._blurXBindGroup);
       pass.draw(6);
       pass.end();
     }
-    // ----- Blur Y -----
     {
       const pass = this._beginFullscreenPass(encoder, this._blurBView);
       pass.setPipeline(this.blurPipeline);
-      pass.setBindGroup(0, this._blurYBindGroup);              // ← cached
+      pass.setBindGroup(0, this._blurYBindGroup);
       pass.draw(6);
       pass.end();
     }
-    // ----- Combine -----
     {
       const pass = this._beginFullscreenPass(encoder, finalTargetView);
       pass.setPipeline(this.combinePipeline);
-      pass.setBindGroup(0, this._combineBindGroup(sceneView, this._blurBView)); // sceneView changes → dynamic
+      pass.setBindGroup(0, this._combineBG);
       pass.draw(6);
       pass.end();
     }
