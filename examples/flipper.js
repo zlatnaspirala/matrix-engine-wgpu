@@ -79,9 +79,9 @@ export var flipper = function() {
       });
     }
 
-
-
     addEventListener('AmmoReady', () => {
+ 
+      //
       // flipper.addLight();
       addRaycastsAABBListener();
       downloadMeshes({
@@ -108,11 +108,11 @@ export var flipper = function() {
       //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
       setTimeout(() => {
         // you cna call setters for each but bettter
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 10;
-        app.cameras.WASD._dirtyAngle = true;
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(10);
+        // app.cameras.WASD._dirtyAngle = true;
       }, 500);
 
       let envMapParams = {
@@ -485,10 +485,7 @@ export var flipper = function() {
         REdge.setUVScale(1, 1);
         // LEdge.changeTexture(checker2, samplerTest)
         LEdge.setUVScale(1, 1);
-
         REdge2.setUVScale(1, 1);
-
-        ball1.effects.pointer.yOffset = 3;
       }, 500)
 
       flipper.canvas.addEventListener("ray.hit.event", (e) => {
@@ -680,6 +677,8 @@ export var flipper = function() {
         }
       });
 
+      flipper.buildRenderBuckets(flipper.mainRenderBundle);
+      // ball1.effects.pointer.yOffset = 3;
     }
 
   });

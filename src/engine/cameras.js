@@ -208,7 +208,7 @@ export class WASDCamera {
     this._dirtyAngle = true;
   }
 
-  setX (z) {
+  setZ (z) {
     this.position[2] = z;
     this._dirtyAngle = true;
   }

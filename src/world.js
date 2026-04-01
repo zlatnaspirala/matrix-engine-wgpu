@@ -75,6 +75,11 @@ export default class MatrixEngineWGPU {
   flagPreventRebuildMap = false;
   opaqueBuckets = new Map();
   transparentBuckets = new Map();
+  shadowBuckets = {
+    default: [],
+    instanced: [],
+    procedural: []
+  };
 
   constructor(options, callback) {
     if(typeof options == 'undefined' || typeof options == "function") {
@@ -303,9 +308,9 @@ export default class MatrixEngineWGPU {
       " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
       " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY);
-    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_WARN);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY_SMALL);
+    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
   };
 
@@ -569,16 +574,12 @@ export default class MatrixEngineWGPU {
   buildRenderBuckets(sceneMeshes) {
     this.opaqueBuckets.clear();
     this.transparentBuckets.clear();
-
     for(const mesh of sceneMeshes) {
       if(!mesh.pipeline) {
-        // console.log("NO PIPELINE YET");
         if(this.flagPreventRebuildMap == false) setTimeout(() => {
           this.buildRenderBuckets(this.mainRenderBundle);
           this.flagPreventRebuildMap = false;
-          console.warn("NO PIPELINE YET EXEC");
         }, 100)
-
         this.flagPreventRebuildMap = true;
       }
       const isTransparent = mesh.material?.useBlend === true;
@@ -588,19 +589,32 @@ export default class MatrixEngineWGPU {
         // console.warn("❌ Pipeline undefined:", mesh);
         continue;
       }
-
-      const buckets = isTransparent
-        ? this.transparentBuckets
-        : this.opaqueBuckets;
-
+      const buckets = isTransparent ? this.transparentBuckets : this.opaqueBuckets;
       let bucket = buckets.get(pipeline);
-
       if(!bucket) {
         bucket = [];
         buckets.set(pipeline, bucket);
       }
-
       bucket.push(mesh);
+    }
+
+    this.buildLightShadowBuckets()
+  }
+
+  buildLightShadowBuckets() {
+    this.shadowBuckets.default.length = 0;
+    this.shadowBuckets.instanced.length = 0;
+    this.shadowBuckets.procedural.length = 0;
+    for(let i = 0;i < this.mainRenderBundle.length;i++) {
+      const m = this.mainRenderBundle[i];
+      if(!m.shadowsCast) continue;
+      if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
+        this.shadowBuckets.instanced.push(m);
+      } else if(m.mType == MeshType.PROCEDURAL) {
+        this.shadowBuckets.procedural.push(m);
+      } else {
+        this.shadowBuckets.default.push(m);
+      }
     }
   }
 
@@ -937,45 +951,37 @@ export default class MatrixEngineWGPU {
       if(!_) return;
       if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
       camera.update(_);
+
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
-        let lastShadowPipeline = null;
-        let lastBG1 = null;
-
-        for(let j = 0;j < this.mainRenderBundle.length;j++) {
-          const m = this.mainRenderBundle[j];
-          if(m.shadowsCast == false) continue;
-
-          let targetPipeline;
-          let targetBG1;
-          if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
-            targetPipeline = light.shadowPipelineInstanced;
-            targetBG1 = m.modelBindGroupInstanced;
-          } else if(m.mType == MeshType.PROCEDURAL) {
-            targetPipeline = light.shadowPipelineMorph;
-            targetBG1 = m.mainRenderBindGroup;
-          } else {
-            targetPipeline = light.shadowPipeline;
-            targetBG1 = m.modelBindGroup;
+        const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+        if(this.shadowBuckets.default.length) {
+          pass.setPipeline(light.shadowPipeline);
+          for(let m of this.shadowBuckets.default) {
+            pass.setBindGroup(0, light.getShadowBindGroup(m));
+            pass.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(pass, light);
           }
-
-          if(lastShadowPipeline !== targetPipeline) {
-            shadowPass.setPipeline(targetPipeline);
-            lastShadowPipeline = targetPipeline;
+        }
+        if(this.shadowBuckets.instanced.length) {
+          pass.setPipeline(light.shadowPipelineInstanced);
+          for(let m of this.shadowBuckets.instanced) {
+            pass.setBindGroup(0, light.getShadowBindGroup(m));
+            pass.setBindGroup(1, m.modelBindGroupInstanced);
+            m.drawShadows(pass, light);
           }
-          if(lastBG1 !== targetBG1) {
-            shadowPass.setBindGroup(1, targetBG1);
-            lastBG1 = targetBG1;
+        }
+        if(this.shadowBuckets.procedural.length) {
+          pass.setPipeline(light.shadowPipelineMorph);
+          for(let m of this.shadowBuckets.procedural) {
+            pass.setBindGroup(0, light.getShadowBindGroup(m));
+            pass.setBindGroup(1, m.mainRenderBindGroup);
+            m.drawShadows(pass, light);
           }
-
-          shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-          m.drawShadows(shadowPass, light);
         }
 
-        shadowPass.end();
+        pass.end();
       }
-
       // -------- UPDATE PHASE --------
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
@@ -1255,28 +1261,7 @@ export default class MatrixEngineWGPU {
   }
 
   sortRenderBundle() {
-
-    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 100);
-
-    // const typeOrder = {
-    //   [MeshType.BVHANIM]: 0,
-    //   [MeshType.INSTANCED]: 0,
-    //   [MeshType.PROCEDURAL]: 1,
-    // };
-    // this.mainRenderBundle.sort((a, b) => (typeOrder[a.mType] ?? 2) - (typeOrder[b.mType] ?? 2));
-
-    // this.mainRenderBundle.sort((a, b) => {
-    //   // blend meshes always go last (you already have a second loop for them)
-    //   const aBlend = a.material?.useBlend ? 1 : 0;
-    //   const bBlend = b.material?.useBlend ? 1 : 0;
-    //   if(aBlend !== bBlend) return aBlend - bBlend;
-    //   // group by pipeline reference
-    //   const aPipe = a.pipeline || this.mainRenderBundle[0].pipeline;
-    //   const bPipe = b.pipeline || this.mainRenderBundle[0].pipeline;
-    //   if(aPipe < bPipe) return -1;
-    //   if(aPipe > bPipe) return 1;
-    //   return 0;
-    // });
+    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 150);
   }
 
   activateBloomEffect = () => {

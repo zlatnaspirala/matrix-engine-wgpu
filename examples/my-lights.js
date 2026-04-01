@@ -14,7 +14,7 @@ export var myLights = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 1;
+    const NUM_LIGHTS = 4;
     const ORBIT_RADIUS = 8;
     const ORBIT_SPEED = 0.6;
     const TARGET = {x: 0, y: 0, z: -10};

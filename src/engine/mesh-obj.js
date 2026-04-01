@@ -235,7 +235,7 @@ export default class MEMeshObj extends Materials {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
       }
 
       // if(this.material.useTextureFromGlb == true) {
@@ -285,7 +285,6 @@ export default class MEMeshObj extends Materials {
     this.scale = o.scale;
 
     // new dummy for skin mesh
-    console.log(">>>>>>>>>>>>>>>>>>>>>>this.mesh", this.mesh.jointsBuffer);
     if(!this.mesh.jointsBuffer) {
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
@@ -296,11 +295,12 @@ export default class MEMeshObj extends Materials {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      this.mesh.jointsBuffer = {
-        data: jointsData,
-        buffer: jointsBuffer,
-        stride: 16, // vec4<u32>
-      };
+      this.mesh.jointsBuffer = jointsBuffer;
+      // = {
+      //   data: jointsData,
+      //   buffer: jointsBuffer,
+      //   stride: 16, // vec4<u32>
+      // };
       const numVerts = this.mesh.vertices.length / 3;
       // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
@@ -320,11 +320,12 @@ export default class MEMeshObj extends Materials {
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
       // this.weights = {
-      this.mesh.weightsBuffer = {
-        data: weightsData,
-        buffer: weightsBuffer,
-        stride: 16
-      };
+      this.mesh.weightsBuffer = weightsBuffer;
+      //  {
+      //   data: weightsData,
+      //   buffer: weightsBuffer,
+      //   stride: 16
+      // };
 
       this._modelMatrix = mat4.create();
     }
@@ -1124,8 +1125,8 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    pass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer); // real
-    pass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
@@ -1141,8 +1142,8 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    pass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
-    pass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -1157,8 +1158,8 @@ export default class MEMeshObj extends Materials {
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-    renderPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
-    renderPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
+    renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
 
     if(this.mesh.tangentsBuffer) renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
 
@@ -1181,8 +1182,8 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
-    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
@@ -1193,8 +1194,8 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, mesh.vertexBuffer);
     shadowPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
-    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     shadowPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     shadowPass.drawIndexed(mesh.indexCount);
   }

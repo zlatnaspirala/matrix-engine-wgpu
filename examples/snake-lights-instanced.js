@@ -4,7 +4,6 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var snakeLightsInstanced = function() {
   let app = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -14,10 +13,10 @@ export var snakeLightsInstanced = function() {
     clearColor: {r: 0.01, b: 0.01, g: 0.01, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 1;
+    const NUM_LIGHTS = 4;
     const SNAKE_SPEED = 0.8;
-    const SNAKE_SPACING = 0.35;
-    const LIGHT_HEIGHT = 20;
+    const SNAKE_SPACING = 0.55;
+    const LIGHT_HEIGHT = 30;
     const CENTER = {x: 0, z: -10};
 
     const LIGHT_COLORS = [

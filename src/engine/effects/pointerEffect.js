@@ -11,6 +11,7 @@ export class PointerEffect {
     this.enabled = true;
     this.yOffset = 60;
     this._initPipeline();
+    alert('pointer');
   }
 
   _initPipeline() {
