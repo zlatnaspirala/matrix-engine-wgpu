@@ -23587,7 +23587,7 @@ class FlameEmitter {
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
-    this.rotSpeed = 4;
+    this.rotSpeed = 0.1;
     // cache
     this._localMatrix = _wgpuMatrix.mat4.create();
     this._finalMatrix = _wgpuMatrix.mat4.create();
@@ -23598,7 +23598,7 @@ class FlameEmitter {
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        rotation: 0.1,
+        rotation: (0, _utils.randomFloatFromTo)(10, 20),
         color: [1, 0.3, 0, 0.1],
         time: 1,
         intensity: 1,
@@ -34947,49 +34947,45 @@ let noShadowPass = function () {
   try {
     let commandEncoder = this.device.createCommandEncoder();
     if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
-    // this.updateLights();
+    this.updateLights();
     const camera = this.getCamera();
     const _ = this.mainRenderBundle[0];
     if (!_) return;
     if (camera._dirty || camera._dirtyAngle) _.getTransformationMatrix(camera.VP, now2);
     camera.update(_);
-    // for(let i = 0;i < this.lightContainer.length;i++) {
-    //   const light = this.lightContainer[i];
-    //   const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
-    //   let lastShadowPipeline = null;
-    //   let lastBG1 = null;
-
-    //   for(let j = 0;j < this.mainRenderBundle.length;j++) {
-    //     const m = this.mainRenderBundle[j];
-    //     if(m.shadowsCast == false) continue;
-    //     let targetPipeline;
-    //     let targetBG1;
-    //     if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
-    //       targetPipeline = light.shadowPipelineInstanced;
-    //       targetBG1 = m.modelBindGroupInstanced;
-    //     } else if(m.mType == MeshType.PROCEDURAL) {
-    //       targetPipeline = light.shadowPipelineMorph;
-    //       targetBG1 = m.mainRenderBindGroup;
-    //     } else {
-    //       targetPipeline = light.shadowPipeline;
-    //       targetBG1 = m.modelBindGroup;
-    //     }
-
-    //     if(lastShadowPipeline !== targetPipeline) {
-    //       shadowPass.setPipeline(targetPipeline);
-    //       lastShadowPipeline = targetPipeline;
-    //     }
-    //     if(lastBG1 !== targetBG1) {
-    //       shadowPass.setBindGroup(1, targetBG1);
-    //       lastBG1 = targetBG1;
-    //     }
-
-    //     shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-    //     m.drawShadows(shadowPass, light);
-    //   }
-
-    //   shadowPass.end();
-    // }
+    for (let i = 0; i < this.lightContainer.length; i++) {
+      const light = this.lightContainer[i];
+      const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+      let lastShadowPipeline = null;
+      let lastBG1 = null;
+      for (let j = 0; j < this.mainRenderBundle.length; j++) {
+        const m = this.mainRenderBundle[j];
+        if (m.shadowsCast == false) continue;
+        let targetPipeline;
+        let targetBG1;
+        if (m.mType == _utils.MeshType.BVHANIM || m.mType == _utils.MeshType.INSTANCED) {
+          targetPipeline = light.shadowPipelineInstanced;
+          targetBG1 = m.modelBindGroupInstanced;
+        } else if (m.mType == _utils.MeshType.PROCEDURAL) {
+          targetPipeline = light.shadowPipelineMorph;
+          targetBG1 = m.mainRenderBindGroup;
+        } else {
+          targetPipeline = light.shadowPipeline;
+          targetBG1 = m.modelBindGroup;
+        }
+        if (lastShadowPipeline !== targetPipeline) {
+          shadowPass.setPipeline(targetPipeline);
+          lastShadowPipeline = targetPipeline;
+        }
+        if (lastBG1 !== targetBG1) {
+          shadowPass.setBindGroup(1, targetBG1);
+          lastBG1 = targetBG1;
+        }
+        shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
+        m.drawShadows(shadowPass, light);
+      }
+      shadowPass.end();
+    }
     // Main
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -34999,6 +34995,7 @@ let noShadowPass = function () {
       const mesh = this.mainRenderBundle[i];
       if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
       if (mesh.vertexAnim.active == true) mesh.updateTime(this.now);
+      // if((camera._dirty || mesh.position.inMove)) mesh.updateModelUniformBuffer(i);
       if (mesh.position.inMove == true) mesh.updateModelUniformBuffer(i);
       mesh.position.update();
       if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
@@ -35011,7 +35008,7 @@ let noShadowPass = function () {
         mesh.shadowDepthTextureView = this.shadowArrayView;
         mesh.setupPipeline();
       }
-      const targetPipeline = mesh.pipeline;
+      const targetPipeline = mesh.pipeline; // || this.mainRenderBundle[0].pipeline;
       if (lastPipeline !== targetPipeline) {
         pass.setPipeline(targetPipeline);
         lastPipeline = targetPipeline;
@@ -35034,7 +35031,7 @@ let noShadowPass = function () {
           const effect = mesh.effects[effectName];
           if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-          effect.render(transPass, mesh, viewProjMatrix);
+          effect.render(transPass, mesh, viewProjMatrix, this.now2);
         }
       }
     }
@@ -35053,6 +35050,7 @@ let noShadowPass = function () {
       this._canvasView = canvasTexture.createView();
     }
     if (this.bloomPass.enabled == true) {
+      // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
       this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
     }
     this.finalPS.colorAttachments[0].view = this._canvasView;

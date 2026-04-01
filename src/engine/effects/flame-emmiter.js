@@ -27,7 +27,7 @@ export class FlameEmitter {
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
-    this.rotSpeed = 4;
+    this.rotSpeed = 0.1;
     // cache
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
@@ -39,7 +39,7 @@ export class FlameEmitter {
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        rotation: 0.1,
+        rotation: randomFloatFromTo(10 , 20),
         color: [1, 0.3, 0, 0.1],
         time: 1,
         intensity: 1,
