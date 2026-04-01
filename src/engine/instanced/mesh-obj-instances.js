@@ -63,11 +63,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     if(o.envMapParams !== null) {this.envMapParams = o.envMapParams;}
 
-
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
-    this._sceneData = new Float32Array(48);
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -792,29 +790,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-
-      this.getTransformationMatrix = (camVP, dt) => {
-        // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        // this._sceneData.set(spotLight.viewProjMatrix, 0);
-        this._sceneData.set(camVP, 16);
-        // this._sceneData[32] = camera.position[0];
-        // this._sceneData[33] = camera.position[1];
-        // this._sceneData[34] = camera.position[2];
-        this._sceneData[35] = 0.0;
-        // this._sceneData[36] = spotLight.position[0];
-        // this._sceneData[37] = spotLight.position[1];
-        // this._sceneData[38] = spotLight.position[2];
-        this._sceneData[39] = 0.0;
-        this._sceneData[40] = this.globalAmbient[0];
-        this._sceneData[41] = this.globalAmbient[1];
-        this._sceneData[42] = this.globalAmbient[2];
-        this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        this._sceneData[46] = 0;
-        this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);

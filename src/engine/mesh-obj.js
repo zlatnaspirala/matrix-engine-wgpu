@@ -693,7 +693,7 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      this._sceneData = new Float32Array(48);
+      
 
       this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
@@ -722,21 +722,6 @@ export default class MEMeshObj extends Materials {
           });
         }
       }
-
-      this.getTransformationMatrix = (camVP, dt) => {
-        this._sceneData.set(camVP, 16);
-        this._sceneData[35] = 0.0;
-        this._sceneData[39] = 0.0;
-        this._sceneData[40] = this.globalAmbient[0];
-        this._sceneData[41] = this.globalAmbient[1];
-        this._sceneData[42] = this.globalAmbient[2];
-        this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        this._sceneData[46] = 0;
-        this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);

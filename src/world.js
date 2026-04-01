@@ -134,6 +134,7 @@ export default class MatrixEngineWGPU {
       }
     }
     // cache
+    this._sceneData = new Float32Array(48);
     this._viewScratch = new Float32Array(16);
     this.blendQueue = [];
     this._cameraUpdateFrame = 0;
@@ -318,6 +319,21 @@ export default class MatrixEngineWGPU {
 
     // singleton
     PipelineManager.init(this.device);
+
+    this.getTransformationMatrix = (camVP, dt) => {
+      this._sceneData.set(camVP, 16);
+      this._sceneData[35] = 0.0;
+      this._sceneData[39] = 0.0;
+      this._sceneData[40] = this.globalAmbient[0];
+      this._sceneData[41] = this.globalAmbient[1];
+      this._sceneData[42] = this.globalAmbient[2];
+      this._sceneData[43] = 0.0;
+      this._sceneData[44] = this.time;
+      this._sceneData[45] = dt;
+      this._sceneData[46] = 0;
+      this._sceneData[47] = 0;
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    };
 
     this.SHADOW_RES = this.MEConfig.SHADOW_RES;
     this._bufferUpdates = [];
@@ -947,10 +963,8 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      const _ = this.mainRenderBundle[0];
-      if(!_) return;
-      if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
-      camera.update(_);
+      if(camera._dirtyAngle) this.getTransformationMatrix(camera.VP, now2);
+      camera.update();
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];

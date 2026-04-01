@@ -3368,8 +3368,14 @@ var snakeLightsInstanced = function () {
 
       // light.intensity = 15 * fade;
       light.color = LIGHT_COLORS[i];
-      light.innerCutoff = 0.97 - i / NUM_LIGHTS * 0.05; // 0.97 → 0.92
-      light.outerCutoff = 0.92 - i / NUM_LIGHTS * 0.05; // 0.92 → 0.87
+
+      // light.innerCutoff = //0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
+      // light.outerCutoff = //0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
+      // light.innerCutoff = 0.92;
+      // light.outerCutoff = 0.75;
+
+      light.innerCutoff = 0.87;
+      light.outerCutoff = 0.62;
       light.setIntensity(18 * fade);
       light._phase = phaseOffset;
       const initialPos = PATHS[currentPathKey](0);
@@ -28087,7 +28093,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
-    this._sceneData = new Float32Array(48);
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
@@ -28865,28 +28870,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-      this.getTransformationMatrix = (camVP, dt) => {
-        // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        // this._sceneData.set(spotLight.viewProjMatrix, 0);
-        this._sceneData.set(camVP, 16);
-        // this._sceneData[32] = camera.position[0];
-        // this._sceneData[33] = camera.position[1];
-        // this._sceneData[34] = camera.position[2];
-        this._sceneData[35] = 0.0;
-        // this._sceneData[36] = spotLight.position[0];
-        // this._sceneData[37] = spotLight.position[1];
-        // this._sceneData[38] = spotLight.position[2];
-        this._sceneData[39] = 0.0;
-        this._sceneData[40] = this.globalAmbient[0];
-        this._sceneData[41] = this.globalAmbient[1];
-        this._sceneData[42] = this.globalAmbient[2];
-        this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        this._sceneData[46] = 0;
-        this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
         this._translateVec[0] = pos.x;
@@ -34469,7 +34452,6 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
-      this._sceneData = new Float32Array(48);
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -34496,20 +34478,6 @@ class MEMeshObj extends _materials.default {
           });
         }
       }
-      this.getTransformationMatrix = (camVP, dt) => {
-        this._sceneData.set(camVP, 16);
-        this._sceneData[35] = 0.0;
-        this._sceneData[39] = 0.0;
-        this._sceneData[40] = this.globalAmbient[0];
-        this._sceneData[41] = this.globalAmbient[1];
-        this._sceneData[42] = this.globalAmbient[2];
-        this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        this._sceneData[46] = 0;
-        this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
         this._translateVec[0] = pos.x;
@@ -34980,9 +34948,8 @@ let zeroPass = function () {
   try {
     let commandEncoder = this.device.createCommandEncoder();
     const camera = this.getCamera();
-    const _ = this.mainRenderBundle[0];
-    if (camera._dirty || camera._dirtyAngle) _.getTransformationMatrix(camera.VP, now2);
-    camera.update(_);
+    if (camera._dirty || camera._dirtyAngle) this.getTransformationMatrix(camera.VP, now2);
+    camera.update();
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     let lastPipeline = null;
@@ -36618,7 +36585,6 @@ class ProceduralMeshObj extends _materials.default {
         }
       }]
     });
-    this._sceneData = new Float32Array(48);
     this.vertexAnim = {
       active: false,
       enableWave: () => {
@@ -37008,20 +36974,6 @@ class ProceduralMeshObj extends _materials.default {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
     // this.modelMatrix = modelMatrix;
-  }
-  getTransformationMatrix(camVP, dt) {
-    this._sceneData.set(camVP, 16);
-    this._sceneData[35] = 0.0;
-    this._sceneData[39] = 0.0;
-    this._sceneData[40] = this.globalAmbient[0];
-    this._sceneData[41] = this.globalAmbient[1];
-    this._sceneData[42] = this.globalAmbient[2];
-    this._sceneData[43] = 0.0;
-    this._sceneData[44] = this.time;
-    this._sceneData[45] = dt;
-    this._sceneData[46] = 0;
-    this._sceneData[47] = 0;
-    this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
   }
   updateTime(time) {
     this.time += time * this.deltaTimeAdapter;
@@ -58656,6 +58608,7 @@ class MatrixEngineWGPU {
       }
     }
     // cache
+    this._sceneData = new Float32Array(48);
     this._viewScratch = new Float32Array(16);
     this.blendQueue = [];
     this._cameraUpdateFrame = 0;
@@ -58853,6 +58806,20 @@ class MatrixEngineWGPU {
   createGlobalStuff(callback) {
     // singleton
     _pipelineManager.PipelineManager.init(this.device);
+    this.getTransformationMatrix = (camVP, dt) => {
+      this._sceneData.set(camVP, 16);
+      this._sceneData[35] = 0.0;
+      this._sceneData[39] = 0.0;
+      this._sceneData[40] = this.globalAmbient[0];
+      this._sceneData[41] = this.globalAmbient[1];
+      this._sceneData[42] = this.globalAmbient[2];
+      this._sceneData[43] = 0.0;
+      this._sceneData[44] = this.time;
+      this._sceneData[45] = dt;
+      this._sceneData[46] = 0;
+      this._sceneData[47] = 0;
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    };
     this.SHADOW_RES = this.MEConfig.SHADOW_RES;
     this._bufferUpdates = [];
     this.textureCache = new _coreCache.TextureCache(this.device);
@@ -59668,10 +59635,8 @@ class MatrixEngineWGPU {
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      const _ = this.mainRenderBundle[0];
-      if (!_) return;
-      if (camera._dirty || camera._dirtyAngle) _.getTransformationMatrix(camera.VP, now2);
-      camera.update(_);
+      if (camera._dirtyAngle) this.getTransformationMatrix(camera.VP, now2);
+      camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);

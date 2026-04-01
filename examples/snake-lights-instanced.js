@@ -146,8 +146,14 @@ export var snakeLightsInstanced = function() {
       // light.intensity = 15 * fade;
       light.color = LIGHT_COLORS[i];
 
-      light.innerCutoff = 0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
-      light.outerCutoff = 0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
+      // light.innerCutoff = //0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
+      // light.outerCutoff = //0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
+      // light.innerCutoff = 0.92;
+      // light.outerCutoff = 0.75;
+
+      light.innerCutoff = 0.87
+      light.outerCutoff = 0.62
+
       light.setIntensity(18 * fade);
       light._phase = phaseOffset;
 
