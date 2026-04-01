@@ -146,6 +146,7 @@ export class WASDCamera {
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
+          this._dirtyAngle = true;
           this._applyDigitalMovement()
         }, 16);
       } else {
@@ -155,6 +156,7 @@ export class WASDCamera {
           this._keyInterval = null;
           console.log
           this._dirty = false;
+          this._dirtyAngle = false;
         }
       }
     };

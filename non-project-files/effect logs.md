@@ -1,0 +1,2 @@
+Crazzy flame emitter case data [use random input and choose best configuration for your effect]: -1.4031995511024664,3.665647460083061,3.9318793190539902,2.970318988056521,2.542377245407175,1.0683861438429862,-1.529562688762656,-1.019220268194518 font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;
+
