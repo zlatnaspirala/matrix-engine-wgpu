@@ -29,7 +29,7 @@ import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragm
 import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
-
+import {PipelineManager} from './engine/pipelineManager.js';
 /**
  * @description
  * Main engine root class.
@@ -71,6 +71,10 @@ export default class MatrixEngineWGPU {
   autoUpdate = [];
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
+
+  flagPreventRebuildMap = false;
+  opaqueBuckets = new Map();
+  transparentBuckets = new Map();
 
   constructor(options, callback) {
     if(typeof options == 'undefined' || typeof options == "function") {
@@ -156,7 +160,7 @@ export default class MatrixEngineWGPU {
     if(typeof options.render !== 'undefined') {
       if(options.render == 'zero') {
         this.overrideRender = zeroPass.bind(this);
-      } else if (options.render == 'no-shadows') {
+      } else if(options.render == 'no-shadows') {
         this.overrideRender = noShadowPass.bind(this);
       }
     }
@@ -306,6 +310,10 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff(callback) {
+
+    // singleton
+    PipelineManager.init(this.device);
+
     this.SHADOW_RES = this.MEConfig.SHADOW_RES;
     this._bufferUpdates = [];
 
@@ -556,6 +564,44 @@ export default class MatrixEngineWGPU {
     }
     this.mainRenderBundle.splice(index, 1);
     return true;
+  }
+
+  buildRenderBuckets(sceneMeshes) {
+    this.opaqueBuckets.clear();
+    this.transparentBuckets.clear();
+
+    for(const mesh of sceneMeshes) {
+      if(!mesh.pipeline) {
+        // console.log("NO PIPELINE YET");
+        if(this.flagPreventRebuildMap == false) setTimeout(() => {
+          this.buildRenderBuckets(this.mainRenderBundle);
+          this.flagPreventRebuildMap = false;
+          console.warn("NO PIPELINE YET EXEC");
+        }, 100)
+
+        this.flagPreventRebuildMap = true;
+      }
+      const isTransparent = mesh.material?.useBlend === true;
+      const pipeline = isTransparent ? mesh.pipelineTransparent : mesh.pipeline;
+
+      if(!pipeline) {
+        // console.warn("❌ Pipeline undefined:", mesh);
+        continue;
+      }
+
+      const buckets = isTransparent
+        ? this.transparentBuckets
+        : this.opaqueBuckets;
+
+      let bucket = buckets.get(pipeline);
+
+      if(!bucket) {
+        bucket = [];
+        buckets.set(pipeline, bucket);
+      }
+
+      bucket.push(mesh);
+    }
   }
 
   addLight(o) {
@@ -928,39 +974,39 @@ export default class MatrixEngineWGPU {
 
         shadowPass.end();
       }
-      // Main
-      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      let lastPipeline = null;
 
+      // -------- UPDATE PHASE --------
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
         if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
-        if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        // if((camera._dirty || mesh.position.inMove)) mesh.updateModelUniformBuffer(i);
-        if(mesh.position.inMove == true) mesh.updateModelUniformBuffer(i);
-
+        if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
+        if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
-        if(mesh.material?.useBlend) {this.blendQueue.push(mesh); continue;}
-        if(!mesh.sceneBindGroupForRender) {
+        // lazy pipeline init
+        if(!mesh.pipeline || !mesh.pipelineTransparent) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
           mesh.setupPipeline();
         }
-        const targetPipeline = mesh.pipeline;// || this.mainRenderBundle[0].pipeline;
-        if(lastPipeline !== targetPipeline) {
-          pass.setPipeline(targetPipeline);
-          lastPipeline = targetPipeline;
-        }
-        mesh.drawElements(pass, this.lightContainer);
       }
-      // Blend
-      for(let i = 0;i < this.blendQueue.length;i++) {
-        const m = this.blendQueue[i];
-        pass.setPipeline(m.pipelineTransparent);
-        m.drawElements(pass, this.lightContainer);
+      // -------- MAIN PASS --------
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      // -------- OPAQUE --------
+      for(const [pipeline, meshes] of this.opaqueBuckets) {
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
+      }
+      // -------- TRANSPARENT --------
+      for(const [pipeline, meshes] of this.transparentBuckets) {
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
       }
       pass.end();
 
@@ -1096,6 +1142,7 @@ export default class MatrixEngineWGPU {
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
+
         setTimeout(() => {
           document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
         }, 50);
@@ -1207,12 +1254,15 @@ export default class MatrixEngineWGPU {
   }
 
   sortRenderBundle() {
-    const typeOrder = {
-      [MeshType.BVHANIM]: 0,
-      [MeshType.INSTANCED]: 0,
-      [MeshType.PROCEDURAL]: 1,
-    };
-    this.mainRenderBundle.sort((a, b) => (typeOrder[a.mType] ?? 2) - (typeOrder[b.mType] ?? 2));
+
+    this.buildRenderBuckets(this.mainRenderBundle);
+
+    // const typeOrder = {
+    //   [MeshType.BVHANIM]: 0,
+    //   [MeshType.INSTANCED]: 0,
+    //   [MeshType.PROCEDURAL]: 1,
+    // };
+    // this.mainRenderBundle.sort((a, b) => (typeOrder[a.mType] ?? 2) - (typeOrder[b.mType] ?? 2));
 
     // this.mainRenderBundle.sort((a, b) => {
     //   // blend meshes always go last (you already have a second loop for them)

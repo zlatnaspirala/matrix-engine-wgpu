@@ -15,6 +15,7 @@ import {GenGeoTexture} from '../effects/gen-tex';
 import {GenGeoTexture2} from '../effects/gen-tex2';
 import {VERTEX_ANIM_FLAGS} from '../literals';
 import {MEConfig} from '../../me-config';
+import {buildPipelineKey, PipelineManager} from '../pipelineManager';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -863,7 +864,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
-  setupPipeline = () => {
+  setupPipeline2 = () => {
     this.createBindGroupForRender();
     const pipelineLayout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
@@ -946,6 +947,146 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         format: 'depth24plus',
       },
       primitive: this.primitive,
+    });
+  };
+
+  setupPipeline = () => {
+    this.createBindGroupForRender();
+
+    const pm = PipelineManager.get();
+
+    const isMirror = this.material.type === 'mirror';
+    const isVideo = this.isVideo === true;
+
+    const vertexCode = vertexWGSLInstanced;
+
+    const fragmentCode =
+      isVideo
+        ? fragmentVideoWGSL
+        : this.getMaterial();
+
+    const vertexId = 'instanced_basic';
+
+    const fragmentId =
+      isVideo
+        ? 'video'
+        : this.material.type;
+
+    const layout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Instanced Mesh',
+      bindGroupLayouts: [
+        this.bglForRender,
+        this.uniformBufferBindGroupLayoutInstanced,
+        ...(isMirror ? [this.mirrorBindGroupLayout] : []),
+      ],
+    });
+
+    const vertexState = {
+      entryPoint: 'main',
+      module: this.device.createShaderModule({code: vertexCode}),
+      buffers: this.vertexBuffers,
+    };
+
+    const fragmentConstants = {
+      shadowDepthTextureSize: this.shadowDepthTextureSize,
+    };
+
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "instanced",
+      primitive: this.primitive,
+      format: 'rgba16float',
+      layoutFlags: {
+        mirror: isMirror,
+        instanced: true,
+      }
+    };
+
+    // -------------------------
+    // OPAQUE
+    // -------------------------
+    this.pipeline = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: false,
+        depthWrite: true,
+      }),
+
+      pipeline: {
+        label: 'Instanced Pipeline Opaque Cached',
+        layout,
+
+        vertex: vertexState,
+
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+            },
+          ],
+        },
+
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+
+        primitive: this.primitive,
+      }
+    });
+
+    // -------------------------
+    // TRANSPARENT
+    // -------------------------
+    this.pipelineTransparent = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: true,
+        depthWrite: false,
+      }),
+
+      pipeline: {
+        label: 'Instanced Pipeline Transparent Cached',
+        layout,
+
+        vertex: vertexState,
+
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+              blend: {
+                color: {
+                  srcFactor: 'src-alpha',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
+                alpha: {
+                  srcFactor: 'one',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
+              },
+            },
+          ],
+        },
+
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+
+        primitive: this.primitive,
+      }
     });
   };
 

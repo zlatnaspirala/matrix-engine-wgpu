@@ -544,7 +544,7 @@ export default class Materials {
       this.video.style.position = 'absolute';
       this.video.style.width = '640px';
       this.video.style.height = '480px';
-      this.video.style.top = '-470px';
+      this.video.style.top = '-420px';
       this.video.style.left = '50%';
 
       await this.video.play();

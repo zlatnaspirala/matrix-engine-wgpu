@@ -10,85 +10,87 @@ export let noShadowPass = function() {
   try {
     let commandEncoder = this.device.createCommandEncoder();
     if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
-    this.updateLights();
+    // this.updateLights();
     const camera = this.getCamera();
     const _ = this.mainRenderBundle[0];
     if(!_) return;
-    if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
+    // if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
+    if(camera._dirtyAngle) _.getTransformationMatrix(camera.VP, now2);
     camera.update(_);
-    for(let i = 0;i < this.lightContainer.length;i++) {
-      const light = this.lightContainer[i];
-      const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
-      let lastShadowPipeline = null;
-      let lastBG1 = null;
+    // for(let i = 0;i < this.lightContainer.length;i++) {
+    //   const light = this.lightContainer[i];
+    //   const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+    //   let lastShadowPipeline = null;
+    //   let lastBG1 = null;
 
-      for(let j = 0;j < this.mainRenderBundle.length;j++) {
-        const m = this.mainRenderBundle[j];
-        if(m.shadowsCast == false) continue;
+    //   for(let j = 0;j < this.mainRenderBundle.length;j++) {
+    //     const m = this.mainRenderBundle[j];
+    //     if(m.shadowsCast == false) continue;
 
-        let targetPipeline;
-        let targetBG1;
-        if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
-          targetPipeline = light.shadowPipelineInstanced;
-          targetBG1 = m.modelBindGroupInstanced;
-        } else if(m.mType == MeshType.PROCEDURAL) {
-          targetPipeline = light.shadowPipelineMorph;
-          targetBG1 = m.mainRenderBindGroup;
-        } else {
-          targetPipeline = light.shadowPipeline;
-          targetBG1 = m.modelBindGroup;
-        }
+    //     let targetPipeline;
+    //     let targetBG1;
+    //     if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
+    //       targetPipeline = light.shadowPipelineInstanced;
+    //       targetBG1 = m.modelBindGroupInstanced;
+    //     } else if(m.mType == MeshType.PROCEDURAL) {
+    //       targetPipeline = light.shadowPipelineMorph;
+    //       targetBG1 = m.mainRenderBindGroup;
+    //     } else {
+    //       targetPipeline = light.shadowPipeline;
+    //       targetBG1 = m.modelBindGroup;
+    //     }
 
-        if(lastShadowPipeline !== targetPipeline) {
-          shadowPass.setPipeline(targetPipeline);
-          lastShadowPipeline = targetPipeline;
-        }
-        if(lastBG1 !== targetBG1) {
-          shadowPass.setBindGroup(1, targetBG1);
-          lastBG1 = targetBG1;
-        }
+    //     if(lastShadowPipeline !== targetPipeline) {
+    //       shadowPass.setPipeline(targetPipeline);
+    //       lastShadowPipeline = targetPipeline;
+    //     }
+    //     if(lastBG1 !== targetBG1) {
+    //       shadowPass.setBindGroup(1, targetBG1);
+    //       lastBG1 = targetBG1;
+    //     }
 
-        shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-        m.drawShadows(shadowPass, light);
-      }
+    //     shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
+    //     m.drawShadows(shadowPass, light);
+    //   }
 
-      shadowPass.end();
-    }
+    //   shadowPass.end();
+    // }
     // Main
-    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-    let lastPipeline = null;
-
-    const len = this.mainRenderBundle.length;
-    for(let i = 0;i < len;i++) {
-      const mesh = this.mainRenderBundle[i];
-      if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
-      if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-      // if((camera._dirty || mesh.position.inMove)) mesh.updateModelUniformBuffer(i);
-      if(mesh.position.inMove == true) mesh.updateModelUniformBuffer(i);
-
-      mesh.position.update();
-      if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-      if(mesh.update) mesh.update(now2);
-      if(mesh.material?.useBlend) {this.blendQueue.push(mesh); continue;}
-      if(!mesh.sceneBindGroupForRender) {
-        mesh.shadowDepthTextureView = this.shadowArrayView;
-        mesh.setupPipeline();
+ 
+   // -------- UPDATE PHASE --------
+      const len = this.mainRenderBundle.length;
+      for(let i = 0;i < len;i++) {
+        const mesh = this.mainRenderBundle[i];
+        if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+        if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
+        if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
+        mesh.position.update();
+        if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+        if(mesh.update) mesh.update(now2);
+        // lazy pipeline init
+        if(!mesh.pipeline) { //  || !mesh.pipelineTransparent
+          mesh.shadowDepthTextureView = this.shadowArrayView;
+          mesh.setupPipeline();
+        }
       }
-      const targetPipeline = mesh.pipeline;// || this.mainRenderBundle[0].pipeline;
-      if(lastPipeline !== targetPipeline) {
-        pass.setPipeline(targetPipeline);
-        lastPipeline = targetPipeline;
+      // -------- MAIN PASS --------
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      // -------- OPAQUE --------
+      for(const [pipeline, meshes] of this.opaqueBuckets) {
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
       }
-      mesh.drawElements(pass, this.lightContainer);
-    }
-    // Blend
-    for(let i = 0;i < this.blendQueue.length;i++) {
-      const m = this.blendQueue[i];
-      pass.setPipeline(m.pipelineTransparent);
-      m.drawElements(pass, this.lightContainer);
-    }
-    pass.end();
+      // -------- TRANSPARENT --------
+      for(const [pipeline, meshes] of this.transparentBuckets) {
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
+      }
+      pass.end();
 
     const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
     const viewProjMatrix = camera.VP;

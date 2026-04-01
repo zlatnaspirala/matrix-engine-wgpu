@@ -14,6 +14,7 @@ import {VERTEX_ANIM_FLAGS} from './literals';
 import {createGroundTexture} from './procedures/procedural-textures';
 import {MEConfig} from '../me-config';
 import {PointerEffect} from './effects/pointerEffect';
+import {buildPipelineKey, PipelineManager} from './pipelineManager';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -677,7 +678,7 @@ export default class MEMeshObj extends Materials {
           {binding: 1, resource: {buffer: this.bonesBuffer}},
           {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
           {binding: 3, resource: {buffer: this.uvScaleBuffer}},
-          
+
         ],
       });
 
@@ -779,7 +780,7 @@ export default class MEMeshObj extends Materials {
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
           try {
-          //  this.setupPipeline()
+            //  this.setupPipeline()
           } catch(err) {console.log('Err[create pipeline]:', err)}
         });
       } else {
@@ -798,7 +799,7 @@ export default class MEMeshObj extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
-  setupPipeline = () => {
+  setupPipeline2 = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
       label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
@@ -892,6 +893,152 @@ export default class MEMeshObj extends Materials {
       primitive: this.primitive,
     });
   }
+
+  setupPipeline = () => {
+    this.createBindGroupForRender();
+
+    const pm = PipelineManager.get();
+
+    const isMirror = this.material.type === 'mirror';
+    const isVideo = this.isVideo === true;
+
+    const vertexCode =
+      this.material.type === 'normalmap'
+        ? vertexWGSL_NM
+        : vertexWGSL;
+
+    const fragmentCode =
+      isVideo
+        ? fragmentVideoWGSL
+        : this.getMaterial();
+
+    const vertexId =
+      this.material.type === 'normalmap'
+        ? 'mesh_nm'
+        : 'mesh_basic';
+
+    const fragmentId =
+      isVideo
+        ? 'video'
+        : this.material.type;
+
+    const layout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Mesh',
+      bindGroupLayouts: [
+        this.bglForRender,
+        this.uniformBufferBindGroupLayout,
+        ...(isMirror ? [this.mirrorBindGroupLayout] : []),
+      ],
+    });
+
+    const vertexState = {
+      entryPoint: 'main',
+      module: this.device.createShaderModule({code: vertexCode}),
+      buffers: this.vertexBuffers,
+    };
+
+    const fragmentConstants = {
+      shadowDepthTextureSize: this.shadowDepthTextureSize,
+    };
+
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "mesh",
+      primitive: this.primitive,
+      format: 'rgba16float',
+      layoutFlags: {
+        mirror: isMirror,
+        normalMap: this.material.type === 'normalmap',
+      }
+    };
+
+    // -------------------------
+    // OPAQUE
+    // -------------------------
+    this.pipeline = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: false,
+        depthWrite: true,
+      }),
+
+      pipeline: {
+        label: 'Mesh Pipeline Opaque Cached',
+        layout,
+
+        vertex: vertexState,
+
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+            },
+          ],
+        },
+
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+
+        primitive: this.primitive,
+      }
+    });
+
+    // -------------------------
+    // TRANSPARENT
+    // -------------------------
+    this.pipelineTransparent = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: true,
+        depthWrite: false,
+      }),
+
+      pipeline: {
+        label: 'Mesh Pipeline Transparent Cached',
+        layout,
+
+        vertex: vertexState,
+
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+              blend: {
+                color: {
+                  srcFactor: 'src-alpha',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
+                alpha: {
+                  srcFactor: 'one',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
+              },
+            },
+          ],
+        },
+
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+
+        primitive: this.primitive,
+      }
+    });
+  };
 
   getMainPipeline = () => {
     return this.pipeline;

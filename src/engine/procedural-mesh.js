@@ -8,6 +8,7 @@ import {VERTEX_ANIM_FLAGS} from './literals';
 import {FlameEmitter} from './effects/flame-emmiter';
 import {GizmoEffect} from './effects/gizmo';
 import {FlameEffect} from './effects/flame';
+import {buildPipelineKey, PipelineManager} from './pipelineManager';
 
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -524,7 +525,7 @@ export default class ProceduralMeshObj extends Materials {
 
   }
 
-  _setupPipeline() {
+  _setupPipeline2() {
     this.createLayoutForRender();
     this.createBindGroupForRender();
 
@@ -594,6 +595,127 @@ export default class ProceduralMeshObj extends Materials {
         format: 'depth24plus',
       },
       primitive: this.primitive,
+    });
+  }
+
+  _setupPipeline() {
+    this.createLayoutForRender();
+    this.createBindGroupForRender();
+
+    const pm = PipelineManager.get();
+
+    const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
+
+    const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
+    const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
+
+    const layout = this.device.createPipelineLayout({
+      bindGroupLayouts: [
+        this.bglForRender,
+        this.uniformBufferBindGroupLayout,
+      ],
+    });
+
+    const vertexState = {
+      entryPoint: 'main',
+      module: this.device.createShaderModule({code: vertexCode}),
+      buffers: this.vertexBuffers,
+    };
+
+    const fragmentConstants = {
+      shadowDepthTextureSize: this.shadowDepthTextureSize,
+    };
+
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "procedural",
+      primitive: this.primitive,
+      format: 'rgba16float',
+      layoutFlags: {
+        morph: !this.vertexWGSL, // using morph fallback
+      }
+    };
+
+    // -------------------------
+    // OPAQUE
+    // -------------------------
+    this.pipeline = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: false,
+        depthWrite: true,
+      }),
+
+      pipeline: {
+        label: 'Procedural Opaque Cached',
+        layout,
+
+        vertex: vertexState,
+
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          targets: [{format: 'rgba16float'}],
+          constants: fragmentConstants,
+        },
+
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+
+        primitive: this.primitive,
+      }
+    });
+
+    // -------------------------
+    // TRANSPARENT
+    // -------------------------
+    this.pipelineTransparent = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: true,
+        depthWrite: false,
+      }),
+
+      pipeline: {
+        label: 'Procedural Transparent Cached',
+        layout,
+
+        vertex: vertexState,
+
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          targets: [{
+            format: 'rgba16float',
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              },
+            },
+          }],
+          constants: fragmentConstants,
+        },
+
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+
+        primitive: this.primitive,
+      }
     });
   }
 

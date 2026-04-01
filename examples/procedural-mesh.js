@@ -31,60 +31,60 @@ export var procMesh = function() {
     })
 
     function onGround(m) {
-      procMesh.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: -5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
-        envMapParams: {
-          baseColorMix: 0.5,
-          mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-          reflectivity: 0.4,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.001,             // No pulse (static)
-          fresnelPower: 5.0,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,  // ✅ Env map mode
-        },
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
+      // procMesh.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
+      //   envMapParams: {
+      //     baseColorMix: 0.5,
+      //     mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+      //     reflectivity: 0.4,               // 25% reflection blend
+      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //     illuminateStrength: 0.1,          // Gentle rim
+      //     illuminatePulse: 0.001,             // No pulse (static)
+      //     fresnelPower: 5.0,                // Medium-sharp edge
+      //     envLodBias: 2.5,
+      //     usePlanarReflection: false,  // ✅ Env map mode
+      //   },
+      //   name: 'floor',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
     }
 
     function onLoadObj(m) {
       procMesh.myLoadedMeshes = m;
-      procMesh.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 2.0,                // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      // procMesh.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: -1, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [100, 100, 100],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+      //   envMapParams: {
+      //     baseColorMix: 0.0,                // CLEAR SKY
+      //     mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+      //     reflectivity: 0.25,               // 25% reflection blend
+      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //     illuminateStrength: 0.1,          // Gentle rim
+      //     illuminatePulse: 0.01,            // No pulse (static)
+      //     fresnelPower: 2.0,                // Medium-sharp edge
+      //     envLodBias: 1.5,
+      //     usePlanarReflection: false,       // ✅ Env map mode
+      //   },
+      //   name: 'sky',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
       let test = MeshMorpher.compose(
         {shape: MeshMorpher.cube(1), offset: [-2, 0, 0]},
@@ -173,7 +173,7 @@ export var procMesh = function() {
 
     });
 
-    if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'))
+    // if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'))
   })
   window.app = procMesh;
 }
