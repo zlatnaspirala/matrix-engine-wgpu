@@ -518,9 +518,6 @@ export default class MaterialsInstanced {
   }
 
   createBindGroupForRender() {
-
-    console.warn("❗i Missing texture TEST TETS : ", textureResource);
-
     let textureResource = this.isVideo
       ? this.externalTexture
       : this.texture0.createView();
@@ -533,11 +530,9 @@ export default class MaterialsInstanced {
       if(!textureResource) console.warn("❗i Missing texture: ", textureResource);
       if(!this.sceneUniformBuffer) console.warn("❗Missing sceneUniformBuffer: ", this.sceneUniformBuffer);
       if(typeof textureResource === 'undefined') this.updateVideoTexture();
-
       if(typeof this.shadowDepthTextureView === 'undefined') {
         this.shadowDepthTextureView = app.shadowArrayView;
       }
-
       // return;
     }
     if(this.isVideo == true) {

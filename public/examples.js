@@ -3027,7 +3027,7 @@ var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var procMesh = function () {
   let procMesh = new _world.default({
-    useSingleRenderPass: true,
+    dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -3041,75 +3041,61 @@ var procMesh = function () {
     }
   }, () => {
     procMesh.addLight();
-    addEventListener('AmmoReady', () => {
-      (0, _raycast.addRaycastsAABBListener)();
-      (0, _loaderObj.downloadMeshes)({
-        ball: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj"
-      }, onLoadObj, {
-        scale: [2, 2, 2]
-      });
-      (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/blender/cube.obj"
-      }, onGround, {
-        scale: [30, 0.5, 30]
-      });
+    (0, _raycast.addRaycastsAABBListener)();
+    (0, _loaderObj.downloadMeshes)({
+      ball: "./res/meshes/blender/sphere.obj",
+      cube: "./res/meshes/blender/cube.obj"
+    }, onLoadObj, {
+      scale: [2, 2, 2]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, onGround, {
+      scale: [30, 0.5, 30]
     });
     function onGround(m) {
-      // procMesh.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: -5, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
-      //   envMapParams: {
-      //     baseColorMix: 0.5,
-      //     mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
-      //     reflectivity: 0.4,               // 25% reflection blend
-      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //     illuminateStrength: 0.1,          // Gentle rim
-      //     illuminatePulse: 0.001,             // No pulse (static)
-      //     fresnelPower: 5.0,                // Medium-sharp edge
-      //     envLodBias: 2.5,
-      //     usePlanarReflection: false,  // ✅ Env map mode
-      //   },
-      //   name: 'floor',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: false,
-      //     mass: 0,
-      //     geometry: "Cube"
-      //   }
-      // })
+      procMesh.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: -5,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
+        // envMapParams: {
+        //   baseColorMix: 0.5,
+        //   mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+        //   reflectivity: 0.4,               // 25% reflection blend
+        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.001,             // No pulse (static)
+        //   fresnelPower: 5.0,                // Medium-sharp edge
+        //   envLodBias: 2.5,
+        //   usePlanarReflection: false,  // ✅ Env map mode
+        // },
+        name: 'floor',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
     }
     function onLoadObj(m) {
       procMesh.myLoadedMeshes = m;
-      // procMesh.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [100, 100, 100],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-      //   envMapParams: {
-      //     baseColorMix: 0.0,                // CLEAR SKY
-      //     mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-      //     reflectivity: 0.25,               // 25% reflection blend
-      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-      //     illuminateStrength: 0.1,          // Gentle rim
-      //     illuminatePulse: 0.01,            // No pulse (static)
-      //     fresnelPower: 2.0,                // Medium-sharp edge
-      //     envLodBias: 1.5,
-      //     usePlanarReflection: false,       // ✅ Env map mode
-      //   },
-      //   name: 'sky',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
-
       let test = _proceduralMesh.MeshMorpher.compose({
         shape: _proceduralMesh.MeshMorpher.cube(1),
         offset: [-2, 0, 0]
@@ -3202,7 +3188,6 @@ var procMesh = function () {
       };
       runChain(0);
       procMesh.lightContainer[0].intensity = 10;
-
       // procMesh.activateBloomEffect();
       procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1);
       procMesh.lightContainer[0].behavior.value_ = -1;
@@ -3212,23 +3197,18 @@ var procMesh = function () {
       });
       procMesh.lightContainer[0].setPosition(0, 17, -10);
       procMesh.lightContainer[0].setTarget(0, 0, -10);
-      var TEST = procMesh.getSceneObjectByName('cube2');
       setTimeout(() => {
-        let cube1 = app.getSceneObjectByName('cube1');
-        // cube1.effects.flameEffect.intensity = 100;
-        // cube1.effects.flameEffect.morphTo("pyramid", 8)
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 5;
+        app.cameras.WASD._dirtyAngle = true;
       }, 800);
     }
     procMesh.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
       if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
     });
-
-    // if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'))
   });
   window.app = procMesh;
 };
@@ -27823,7 +27803,6 @@ class MaterialsInstanced {
     return this.glb.glbTextures[texIndex].createView();
   }
   createBindGroupForRender() {
-    console.warn("❗i Missing texture TEST TETS : ", textureResource);
     let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
     if (this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
@@ -27837,7 +27816,6 @@ class MaterialsInstanced {
       if (typeof this.shadowDepthTextureView === 'undefined') {
         this.shadowDepthTextureView = app.shadowArrayView;
       }
-
       // return;
     }
     if (this.isVideo == true) {
@@ -34049,7 +34027,8 @@ class MEMeshObj extends _materials.default {
     this.scale = o.scale;
 
     // new dummy for skin mesh
-    if (!this.joints) {
+    console.log(">>>>>>>>>>>>>>>>>>>>>>this.mesh", this.mesh.jointsBuffer);
+    if (!this.mesh.jointsBuffer) {
       const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -34059,7 +34038,7 @@ class MEMeshObj extends _materials.default {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      this.joints = {
+      this.mesh.jointsBuffer = {
         data: jointsData,
         buffer: jointsBuffer,
         stride: 16 // vec4<u32>
@@ -34082,10 +34061,11 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      this.weights = {
+      // this.weights = {
+      this.mesh.weightsBuffer = {
         data: weightsData,
         buffer: weightsBuffer,
-        stride: 16 // vec4<f32>
+        stride: 16
       };
       this._modelMatrix = _wgpuMatrix.mat4.create();
     }
@@ -34880,26 +34860,14 @@ class MEMeshObj extends _materials.default {
   drawElements = pass => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    if (this.mirrorBindGroup) {
-      pass.setBindGroup(2, this.mirrorBindGroup);
-    }
-    pass.setBindGroup(3, this.waterBindGroup);
+    if (this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
+    // pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if (this.joints) {
-      if (this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        // dummy
-        pass.setVertexBuffer(3, this.joints.buffer);
-        pass.setVertexBuffer(4, this.weights.buffer);
-      }
-    }
-    if (this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer); // real
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
+    if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -34910,14 +34878,11 @@ class MEMeshObj extends _materials.default {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     pass.setBindGroup(3, this.waterBindGroup); // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
-
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if (this.joints) {
-      pass.setVertexBuffer(3, this.joints.buffer);
-      pass.setVertexBuffer(4, this.weights.buffer);
-    }
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -34929,20 +34894,13 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.material.type === "mirror" && this.mirrorBindGroup) {
-      renderPass.setBindGroup(2, this.mirrorBindGroup);
-    }
+    if (this.material.type === "mirror") renderPass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-    if (this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      renderPass.setVertexBuffer(3, this.joints.buffer);
-      renderPass.setVertexBuffer(4, this.weights.buffer);
-    }
+    renderPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    renderPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
     if (this.mesh.tangentsBuffer) renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
@@ -34962,15 +34920,8 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if (this.joints) {
-      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        shadowPass.setVertexBuffer(3, this.joints.buffer); // dummy
-        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
-      }
-    }
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
@@ -34980,14 +34931,8 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, mesh.vertexBuffer);
     shadowPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-    if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      // dummy
-      shadowPass.setVertexBuffer(3, this.joints.buffer);
-      shadowPass.setVertexBuffer(4, this.weights.buffer);
-    }
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
     shadowPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     shadowPass.drawIndexed(mesh.indexCount);
   };
@@ -60232,7 +60177,7 @@ class MatrixEngineWGPU {
     }
   };
   sortRenderBundle() {
-    this.buildRenderBuckets(this.mainRenderBundle);
+    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 100);
 
     // const typeOrder = {
     //   [MeshType.BVHANIM]: 0,

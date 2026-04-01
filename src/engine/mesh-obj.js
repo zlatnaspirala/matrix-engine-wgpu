@@ -285,7 +285,8 @@ export default class MEMeshObj extends Materials {
     this.scale = o.scale;
 
     // new dummy for skin mesh
-    if(!this.joints) {
+    console.log(">>>>>>>>>>>>>>>>>>>>>>this.mesh", this.mesh.jointsBuffer);
+    if(!this.mesh.jointsBuffer) {
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -295,7 +296,7 @@ export default class MEMeshObj extends Materials {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      this.joints = {
+      this.mesh.jointsBuffer = {
         data: jointsData,
         buffer: jointsBuffer,
         stride: 16, // vec4<u32>
@@ -318,10 +319,11 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      this.weights = {
+      // this.weights = {
+      this.mesh.weightsBuffer = {
         data: weightsData,
         buffer: weightsBuffer,
-        stride: 16, // vec4<f32>
+        stride: 16
       };
 
       this._modelMatrix = mat4.create();
@@ -1117,29 +1119,14 @@ export default class MEMeshObj extends Materials {
   drawElements = (pass) => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    if(this.mirrorBindGroup) {
-      pass.setBindGroup(2, this.mirrorBindGroup);
-    }
-    pass.setBindGroup(3, this.waterBindGroup);
-
+    if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
+    // pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      if(this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        // dummy
-        pass.setVertexBuffer(3, this.joints.buffer);
-        pass.setVertexBuffer(4, this.weights.buffer);
-      }
-    }
-
-    if(this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
-
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer); // real
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
+    if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
@@ -1151,42 +1138,27 @@ export default class MEMeshObj extends Materials {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     pass.setBindGroup(3, this.waterBindGroup);  // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
-
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      pass.setVertexBuffer(3, this.joints.buffer);
-      pass.setVertexBuffer(4, this.weights.buffer);
-    }
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
 
   drawElementsAnim = (renderPass) => {
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
-
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-
-    if(this.material.type === "mirror" && this.mirrorBindGroup) {
-      renderPass.setBindGroup(2, this.mirrorBindGroup);
-    }
-
+    if(this.material.type === "mirror") renderPass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
-
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-
-    if(this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      renderPass.setVertexBuffer(3, this.joints.buffer);
-      renderPass.setVertexBuffer(4, this.weights.buffer);
-    }
+    renderPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    renderPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
 
     if(this.mesh.tangentsBuffer) renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
 
@@ -1209,37 +1181,20 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
-        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
-      }
-    }
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
 
   drawShadowsAnim = (shadowPass) => {
     if(!this.objAnim?.meshList[this.objAnim.id + this.objAnim.currentAni]) return;
-
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-
     shadowPass.setVertexBuffer(0, mesh.vertexBuffer);
     shadowPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-
-    if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      // dummy
-      shadowPass.setVertexBuffer(3, this.joints.buffer);
-      shadowPass.setVertexBuffer(4, this.weights.buffer);
-    }
-
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer.buffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer.buffer);
     shadowPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     shadowPass.drawIndexed(mesh.indexCount);
   }

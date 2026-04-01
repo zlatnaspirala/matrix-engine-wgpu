@@ -611,7 +611,7 @@ export default class MatrixEngineWGPU {
       this.shadowPassViews[this.lightContainer.length], this.shadowSampler
     );
     this.lightContainer.push(newLight);
-    
+
     for(const mesh of this.mainRenderBundle) {
       mesh.shadowDepthTextureView = this.shadowArrayView;
     }
@@ -1256,7 +1256,7 @@ export default class MatrixEngineWGPU {
 
   sortRenderBundle() {
 
-    this.buildRenderBuckets(this.mainRenderBundle);
+    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 100);
 
     // const typeOrder = {
     //   [MeshType.BVHANIM]: 0,
