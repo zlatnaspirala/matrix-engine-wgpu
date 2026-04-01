@@ -14,7 +14,7 @@ export var snakeLightsInstanced = function() {
     clearColor: {r: 0.01, b: 0.01, g: 0.01, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 20;
+    const NUM_LIGHTS = 1;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
     const LIGHT_HEIGHT = 20;
@@ -110,7 +110,6 @@ export var snakeLightsInstanced = function() {
         z: CENTER.z + 7 * Math.sin(t * 2.5),
       }),
 
-
     };
 
     // ─── PATH SWITCHER ───────────────────────────────────────────────────────
@@ -145,12 +144,12 @@ export var snakeLightsInstanced = function() {
       const phaseOffset = i * SNAKE_SPACING;
       const fade = 1.0 - (i / NUM_LIGHTS) * 0.4;
 
-      light.intensity = 15 * fade;
+      // light.intensity = 15 * fade;
       light.color = LIGHT_COLORS[i];
 
       light.innerCutoff = 0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
       light.outerCutoff = 0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
-      light.intensity = 18 * fade;
+      light.setIntensity(18 * fade);
       light._phase = phaseOffset;
 
       const initialPos = PATHS[currentPathKey](0);

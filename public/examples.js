@@ -1811,38 +1811,26 @@ function loadGLBLoader() {
 
     // woman
     var glbFile11 = await fetch("./res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObjInctance({
-      material: {
-        type: 'mirror',
-        useTextureFromGlb: true
-      },
-      envMapParams: {
-        baseColorMix: 0.75,
-        mirrorTint: [0.9, 0.5, 1.0],
-        // Slight cool tint
-        reflectivity: 0.5,
-        // 25% reflection blend
-        illuminateColor: [0.3, 0.7, 1.0],
-        // Soft cyan
-        illuminateStrength: 0.1,
-        // Gentle rim
-        illuminatePulse: 0.001,
-        // No pulse (static)
-        fresnelPower: 5.0,
-        // Medium-sharp edge
-        envLodBias: 2.5,
-        usePlanarReflection: false // ✅ Env map mode
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 0,
-        y: -4,
-        z: -20
-      },
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp']
-    }, null, glbFile11);
+    // TEST_ANIM.addGlbObjInctance({
+    //   material: {type: 'mirror', useTextureFromGlb: true},
+    //   envMapParams: {
+    //     baseColorMix: 0.75,
+    //     mirrorTint: [0.9, 0.5, 1.0],    // Slight cool tint
+    //     reflectivity: 0.5,               // 25% reflection blend
+    //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+    //     illuminateStrength: 0.1,          // Gentle rim
+    //     illuminatePulse: 0.001,             // No pulse (static)
+    //     fresnelPower: 5.0,                // Medium-sharp edge
+    //     envLodBias: 2.5,
+    //     usePlanarReflection: false,  // ✅ Env map mode
+    //   },
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: 0, y: -4, z: -20},
+    //   name: 'woman1',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp' , './res/textures/env-maps/sky1.webp'],
+    // }, null, glbFile11);
+
     TEST_ANIM.addGlbObj({
       material: {
         type: 'power',
@@ -2418,7 +2406,7 @@ var myLights = function () {
       a: 1
     }
   }, async () => {
-    const NUM_LIGHTS = 4;
+    const NUM_LIGHTS = 1;
     const ORBIT_RADIUS = 8;
     const ORBIT_SPEED = 0.6;
     const TARGET = {
@@ -2448,9 +2436,6 @@ var myLights = function () {
     // pink
     [1.0, 0.1, 0.4] // rose
     ];
-    for (let i = 0; i < NUM_LIGHTS; i++) {
-      myLights.addLight();
-    }
 
     // Ground
     (0, _loaderObj.downloadMeshes)({
@@ -2495,6 +2480,9 @@ var myLights = function () {
       name: 'monster',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
     }, null, glbFile);
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      myLights.addLight();
+    }
 
     // Set up lights evenly spaced around the circle
     for (let i = 0; i < NUM_LIGHTS; i++) {
@@ -3273,7 +3261,7 @@ var snakeLightsInstanced = function () {
       a: 1
     }
   }, async () => {
-    const NUM_LIGHTS = 20;
+    const NUM_LIGHTS = 1;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
     const LIGHT_HEIGHT = 20;
@@ -3391,11 +3379,12 @@ var snakeLightsInstanced = function () {
       const light = app.lightContainer[i];
       const phaseOffset = i * SNAKE_SPACING;
       const fade = 1.0 - i / NUM_LIGHTS * 0.4;
-      light.intensity = 15 * fade;
+
+      // light.intensity = 15 * fade;
       light.color = LIGHT_COLORS[i];
       light.innerCutoff = 0.97 - i / NUM_LIGHTS * 0.05; // 0.97 → 0.92
       light.outerCutoff = 0.92 - i / NUM_LIGHTS * 0.05; // 0.92 → 0.87
-      light.intensity = 18 * fade;
+      light.setIntensity(18 * fade);
       light._phase = phaseOffset;
       const initialPos = PATHS[currentPathKey](0);
       light.setPosition(initialPos.x, LIGHT_HEIGHT, initialPos.z);
@@ -3660,8 +3649,8 @@ var snakeLights = function () {
           x = cur.x;
           z = cur.z;
         }
-        light.position = [x, LIGHT_HEIGHT, z];
-        light.target = [x, 0, z];
+        light.setPosition(x, LIGHT_HEIGHT, z);
+        light.setTarget(x, 0, z);
       });
     }
 
@@ -27834,6 +27823,7 @@ class MaterialsInstanced {
     return this.glb.glbTextures[texIndex].createView();
   }
   createBindGroupForRender() {
+    console.warn("❗i Missing texture TEST TETS : ", textureResource);
     let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
     if (this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
@@ -27844,7 +27834,11 @@ class MaterialsInstanced {
       if (!textureResource) console.warn("❗i Missing texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing sceneUniformBuffer: ", this.sceneUniformBuffer);
       if (typeof textureResource === 'undefined') this.updateVideoTexture();
-      return;
+      if (typeof this.shadowDepthTextureView === 'undefined') {
+        this.shadowDepthTextureView = app.shadowArrayView;
+      }
+
+      // return;
     }
     if (this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({

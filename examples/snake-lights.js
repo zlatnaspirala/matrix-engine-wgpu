@@ -178,8 +178,8 @@ export var snakeLights = function() {
           z = cur.z;
         }
 
-        light.position = [x, LIGHT_HEIGHT, z];
-        light.target = [x, 0, z];
+        light.setPosition(x, LIGHT_HEIGHT, z);
+        light.setTarget(x, 0, z);
       });
     }
 

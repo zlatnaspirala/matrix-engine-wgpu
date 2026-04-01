@@ -611,6 +611,7 @@ export default class MatrixEngineWGPU {
       this.shadowPassViews[this.lightContainer.length], this.shadowSampler
     );
     this.lightContainer.push(newLight);
+    
     for(const mesh of this.mainRenderBundle) {
       mesh.shadowDepthTextureView = this.shadowArrayView;
     }

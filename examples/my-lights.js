@@ -14,7 +14,7 @@ export var myLights = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 4;
+    const NUM_LIGHTS = 1;
     const ORBIT_RADIUS = 8;
     const ORBIT_SPEED = 0.6;
     const TARGET = {x: 0, y: 0, z: -10};
@@ -32,10 +32,6 @@ export var myLights = function() {
       [1.0, 0.1, 0.8],  // pink
       [1.0, 0.1, 0.4],  // rose
     ];
-
-    for(let i = 0;i < NUM_LIGHTS;i++) {
-      myLights.addLight();
-    }
 
     // Ground
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
@@ -65,6 +61,10 @@ export var myLights = function() {
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile);
 
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      myLights.addLight();
+    }
+
     // Set up lights evenly spaced around the circle
     for(let i = 0;i < NUM_LIGHTS;i++) {
       const light = myLights.lightContainer[i];
@@ -74,7 +74,7 @@ export var myLights = function() {
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
-      light.setPosition (
+      light.setPosition(
         TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
         4 + heightOffset,
         TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
