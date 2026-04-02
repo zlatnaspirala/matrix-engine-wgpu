@@ -213,6 +213,13 @@ export class WASDCamera {
     this._dirtyAngle = true;
   }
 
+  setPosition (x,y,z) {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+
   setPitch(p) {
     this.pitch = p;
     this._dirtyAngle = true;

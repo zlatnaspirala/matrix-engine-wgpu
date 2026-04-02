@@ -78,6 +78,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
 @group(0) @binding(8) var<uniform> material               : MaterialPBR;
 
+@group(0) @binding(9) var normalTexture : texture_2d<f32>;
+@group(0) @binding(10) var normalSampler : sampler;
+
 @group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
 @group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
 @group(2) @binding(2) var          mirrorEnvSampler: sampler;
@@ -214,21 +217,20 @@ fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32)
 
 // Animated illuminate rim — pulsing Fresnel edge glow
 fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-    // Fresnel rim
-    let NdotV = max(dot(N, V), 0.0);
+ let NdotV = max(dot(N, V), 0.0);
     let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
 
-    // Pulse: smoothly oscillate between [0.3, 1.0] so it never fully dies
     let pulse = mix(0.3, 1.0,
         (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
     );
 
-    // Spatial shimmer along Y: gives a "light sweep" feel on the surface
     let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
 
-    return mirrorParams.illuminateColor
+    let result = mirrorParams.illuminateColor
         * mirrorParams.illuminateStrength
         * rim * pulse * shimmer;
+
+    return clamp(result, vec3f(0.0), vec3f(1.0)); // ← ADD THIS
 }
 
 // Mirror specular: sharp GGX lobe biased toward near-zero roughness
@@ -260,8 +262,6 @@ fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-
-   
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
 
@@ -273,7 +273,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
         let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
         let p        = sc.xyz / sc.w;
-
         // ✅ FIX 1: Y-flip to match working shader
         // let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
         let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
@@ -312,7 +311,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
                    mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     finalColor = mix(
         envColor,

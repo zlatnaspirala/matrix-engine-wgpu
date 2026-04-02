@@ -25,18 +25,18 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'standard'},
-        // envMapParams: {
-        //   baseColorMix: 0.5,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.5,                // 25% reflection blend
-        //   illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 0.1,                // Medium-sharp edge
-        //   envLodBias: 2.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
+        material: {type: 'mirror'},
+        envMapParams: {
+          baseColorMix: 0.5,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.5,                // 25% reflection blend
+          illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
+          illuminateStrength: 0.1,          // Gentle rim
+          illuminatePulse: 0.01,            // No pulse (static)
+          fresnelPower: 0.1,                // Medium-sharp edge
+          envLodBias: 2.5,
+          usePlanarReflection: false,       // ✅ Env map mode
+        },
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},

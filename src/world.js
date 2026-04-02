@@ -595,14 +595,14 @@ export default class MatrixEngineWGPU {
         if(this.flagPreventRebuildMap == false) setTimeout(() => {
           this.buildRenderBuckets(this.mainRenderBundle);
           this.flagPreventRebuildMap = false;
-        }, 100)
+        }, 200)
         this.flagPreventRebuildMap = true;
       }
-      const isTransparent = mesh.material?.useBlend === true;
+      const isTransparent = mesh.material.useBlend == true;
       const pipeline = isTransparent ? mesh.pipelineTransparent : mesh.pipeline;
 
       if(!pipeline) {
-        // console.warn("❌ Pipeline undefined:", mesh);
+        console.warn("❌ Pipeline undefined:", mesh.name);
         continue;
       }
       const buckets = isTransparent ? this.transparentBuckets : this.opaqueBuckets;
@@ -1009,7 +1009,7 @@ export default class MatrixEngineWGPU {
         // lazy pipeline init
         if(!mesh.pipeline || !mesh.pipelineTransparent) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
-          mesh.setupPipeline();
+          // mesh.setupPipeline();
         }
       }
       // -------- MAIN PASS --------
@@ -1024,6 +1024,14 @@ export default class MatrixEngineWGPU {
       }
       // -------- TRANSPARENT --------
       for(const [pipeline, meshes] of this.transparentBuckets) {
+
+        meshes.sort((a, b) => {
+          const cam = this.getCamera();
+          const da = vec3.distance(cam.position, a.position);
+          const db = vec3.distance(cam.position, b.position);
+          return db - da; // back-to-front
+        });
+
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
           mesh.drawElements(pass, this.lightContainer);
@@ -1275,7 +1283,7 @@ export default class MatrixEngineWGPU {
   }
 
   sortRenderBundle() {
-    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 150);
+    // setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 250);
   }
 
   activateBloomEffect = () => {

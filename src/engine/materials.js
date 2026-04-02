@@ -269,7 +269,7 @@ export default class Materials {
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
-    this.setupPipeline();
+    // this.setupPipeline();
   }
 
   createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
@@ -310,7 +310,9 @@ export default class Materials {
 
   setBlend = (alpha) => {
     this.material.useBlend = true;
-    this.setupMaterialPBR([1, 1, 1, alpha]);
+    // this.setupMaterialPBR([1, 1, 1, alpha]);
+    this.setupMaterialPBR([1, 0, 0, alpha]);
+    // this.setupPipeline()
   }
 
   createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {

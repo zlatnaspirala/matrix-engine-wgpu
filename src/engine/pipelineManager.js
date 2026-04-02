@@ -2,21 +2,27 @@
 export function buildPipelineKey({
   vertexId,
   fragmentId,
-  type,          // mesh | instanced | procedural
+  type,
   transparent,
   depthWrite,
-  primitive,
-  layoutFlags,   // mirror, morph, etc
-  format
+  format,
+  topology,
+  cullMode,
+  frontFace,
+  mirror,
+  normalMap,
 }) {
-  // console.log('debug: ', vertexId,
-  //   fragmentId,
-  //   type,
-  //   transparent,
-  //   depthWrite,
-  //   primitive,
-  //   layoutFlags,
-  //   format);
+  console.log('debug: ', vertexId,
+    fragmentId,
+    type,
+    transparent,
+    depthWrite,
+    format,
+    topology,
+    cullMode,
+    frontFace,
+    mirror,
+    normalMap);
   return JSON.stringify({
     v: vertexId,
     f: fragmentId,
@@ -24,12 +30,11 @@ export function buildPipelineKey({
     tr: transparent,
     dw: depthWrite,
     fmt: format,
-    prim: {
-      topology: primitive.topology,
-      cullMode: primitive.cullMode,
-      frontFace: primitive.frontFace,
-    },
-    flags: layoutFlags
+    topo: topology,
+    cull: cullMode,
+    face: frontFace,
+    mirror: mirror,
+    normalMap: normalMap,
   });
 }
 
@@ -40,13 +45,15 @@ export class PipelineManager {
   }
 
   getPipeline({key, pipeline}) {
-    const k = JSON.stringify(key);
-    if(this.cache.has(k)) {return this.cache.get(k)}
+    
+    if(this.cache.has(key)) {return this.cache.get(key);}
     const p = this.device.createRenderPipeline(pipeline);
-    this.cache.set(k, p);
+
+    console.log('get pipeline cache system [SET] key: ', key)
+
+    this.cache.set(key, p);
     return p;
   }
-
   // static singleton access
   static instance;
 
@@ -56,5 +63,13 @@ export class PipelineManager {
 
   static get() {
     return this.instance;
+  }
+
+  invalidate(key) {
+    this.cache.delete(key);
+  }
+
+  static invalidateAll() {
+    this.instance.cache.clear();
   }
 }

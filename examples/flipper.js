@@ -209,7 +209,8 @@ export var flipper = function() {
           geometry: "Cube"
         }
       });
-      glass.setBlend(0.01);
+      // glass.setBlend(0.01);
+      app.glass = glass;
 
       const commonAchorX = 2;
       const LAnchor = flipper.addMeshObj({
@@ -428,13 +429,13 @@ export var flipper = function() {
 
 
       const REdge = flipper.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 5.8, y: 1, z: -21},
         scale: [0.2, 1, 15],
         texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeRigth',
         mesh: m.cube,
-        envMapParams: envMapParams,
+        // envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -444,13 +445,13 @@ export var flipper = function() {
 
       //
       const REdge2 = flipper.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 4.5, y: 1, z: -19.5},
         scale: [0.05, 1, 12.5],
         texturesPaths: ['./res/textures/cube-test.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
-        name: 'edgeRigth',
+        name: 'edgeRigth2',
         mesh: m.cube,
-        envMapParams: envMapParams,
+        // envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -459,13 +460,13 @@ export var flipper = function() {
       });
 
       const LEdge = flipper.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: -5.7, y: 1, z: -21},
         scale: [0.3, 1, 15],
         texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeLeft',
         mesh: m.cube,
-        envMapParams: envMapParams,
+        // envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -626,7 +627,7 @@ export var flipper = function() {
         position: {x: -5.5, y: -5, z: -6.1},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'edgeTop',
+        name: 'leg1',
         mesh: m.cube,
         physics: {
           enabled: false,
@@ -640,7 +641,7 @@ export var flipper = function() {
         position: {x: 5.5, y: -5, z: -6.1},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'edgeTop',
+        name: 'leg2',
         mesh: m.cube,
         physics: {
           enabled: false,
@@ -654,7 +655,7 @@ export var flipper = function() {
         position: {x: -5.5, y: -5, z: -36},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'edgeTop',
+        name: 'leg3',
         mesh: m.cube,
         physics: {
           enabled: false,
@@ -668,7 +669,7 @@ export var flipper = function() {
         position: {x: 5.5, y: -5, z: -36},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'edgeTop',
+        name: 'leg4',
         mesh: m.cube,
         physics: {
           enabled: false,

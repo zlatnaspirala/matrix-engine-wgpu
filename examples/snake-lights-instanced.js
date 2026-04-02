@@ -13,10 +13,10 @@ export var snakeLightsInstanced = function() {
     clearColor: {r: 0.01, b: 0.01, g: 0.01, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 4;
+    const NUM_LIGHTS = 2;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.55;
-    const LIGHT_HEIGHT = 30;
+    const LIGHT_HEIGHT = 5;
     const CENTER = {x: 0, z: -10};
 
     const LIGHT_COLORS = [
@@ -182,7 +182,7 @@ export var snakeLightsInstanced = function() {
         }
 
         light.setPosition(x, LIGHT_HEIGHT, z);
-        light.setTarget(x, 0, z);
+        light.setTarget(x + 1, 0, z + 1);
       });
     }
 
@@ -203,7 +203,8 @@ export var snakeLightsInstanced = function() {
         name: 'floor',
         mesh: m.cube,
         scale: [50, 0.5, 50],
-        physics: {enabled: false}
+        physics: {enabled: false},
+        shadowsCast: false
       });
     }, {scale: [20, 0.5, 20]});
 
@@ -211,7 +212,8 @@ export var snakeLightsInstanced = function() {
       .then(r => r.arrayBuffer())
       .then(buf => uploadGLBModel(buf, app.device));
 
-    app.addGlbObjInctance({
+    // app.addGlbObjInctance({
+    app.addGlbObj({
       material: {type: 'standard', useTextureFromGlb: true},
       useScale: true,
       scale: [5, 5, 5],
@@ -225,13 +227,12 @@ export var snakeLightsInstanced = function() {
     setTimeout(() => {
 
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(7);
-      monster.updateInstances(7);
-      monster.trailAnimation.delay = 15;
-
-      app.cameras.WASD.yaw = 0;
-      app.cameras.WASD.pitch = -0.55;
-      app.cameras.WASD.position = [CENTER.x, 22, CENTER.z + 26];
+      // monster.updateMaxInstances(7);
+      // monster.updateInstances(7);
+      // monster.trailAnimation.delay = 15;
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(-0.55);
+      app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
     }, 1200);
 
   });

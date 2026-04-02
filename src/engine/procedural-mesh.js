@@ -32,6 +32,11 @@ export default class ProceduralMeshObj extends Materials {
     this.context = context;
     this.globalAmbient = [...globalAmbient];
 
+    if(typeof o.material.useBlend === 'undefined' ||
+      typeof o.material.useBlend !== "boolean") {
+      o.material.useBlend = false;
+    }
+
     this.mType = MeshType.PROCEDURAL;
     //cache
     this._camVP = mat4.create();

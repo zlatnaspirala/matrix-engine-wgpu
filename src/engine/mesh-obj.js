@@ -71,7 +71,7 @@ export default class MEMeshObj extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
 
     this.material = o.material;
-    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
+    this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     //cache
@@ -472,28 +472,6 @@ export default class MEMeshObj extends Materials {
         ]
       });
 
-      // Selected effect
-      // this.selectedBuffer = device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-      // this.selectedBindGroupLayout = device.createBindGroupLayout({
-      //   label: 'selectedBindGroupLayout mesh',
-      //   entries: [
-      //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
-      //   ],
-      // });
-      // this.selectedBindGroup = device.createBindGroup({
-      //   label: 'selectedBindGroup mesh',
-      //   layout: this.selectedBindGroupLayout,
-      //   entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
-      // });
-      // this.setSelectedEffect = (selected = false) => {
-      //   this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
-      // };
-      // // 0 default
-      // this.setSelectedEffect();
-
-      // Create a bind group layout which holds the scene uniforms and
-      // the texture+sampler for depth. We create it manually because the WebPU
-      // implementation doesn't infer this from the shader (yet).
       this.createLayoutForRender();
 
       this.modelUniformBuffer = this.device.createBuffer({
@@ -693,8 +671,6 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      
-
       this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -766,11 +742,15 @@ export default class MEMeshObj extends Materials {
             console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE);
             return;
           }
+
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          console.log('mirrorBindGroup created: this.shadowDepthTextureView', this.shadowDepthTextureView);  // ← is it null/undefined?
+          // console.log('mirrorBindGroupLayout:', this.mirrorBindGroupLayout);
           try {
-            //  this.setupPipeline()
+            // this.setupPipeline();
           } catch(err) {console.log('Err[create pipeline]:', err)}
         });
+        this.setupPipeline()
       } else {
         try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
       }
@@ -787,7 +767,7 @@ export default class MEMeshObj extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
-  setupPipeline2 = () => {
+  setupPipelineOLD = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
       label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
@@ -883,45 +863,51 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline = () => {
+
+    this.createLayoutForRender();
+
     this.createBindGroupForRender();
-
     const pm = PipelineManager.get();
-
     const isMirror = this.material.type === 'mirror';
     const isVideo = this.isVideo === true;
+    const isNormalMap = this.material.type === 'normalmap';
+    // -------------------------
+    // SHADERS (CACHE SAFE)
+    // -------------------------
+    const vertexCode = isNormalMap
+      ? vertexWGSL_NM
+      : vertexWGSL;
 
-    const vertexCode =
-      this.material.type === 'normalmap'
-        ? vertexWGSL_NM
-        : vertexWGSL;
+    const fragmentCode = isVideo
+      ? fragmentVideoWGSL
+      : this.getMaterial();
 
-    const fragmentCode =
-      isVideo
-        ? fragmentVideoWGSL
-        : this.getMaterial();
+    const vertexModule = this.device.createShaderModule({
+      code: vertexCode,
+    });
 
-    const vertexId =
-      this.material.type === 'normalmap'
-        ? 'mesh_nm'
-        : 'mesh_basic';
+    const fragmentModule = this.device.createShaderModule({
+      code: fragmentCode,
+    });
 
-    const fragmentId =
-      isVideo
-        ? 'video'
-        : this.material.type;
-
+    // -------------------------
+    // PIPELINE LAYOUT (STATIC PER MESH)
+    // -------------------------
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
       bindGroupLayouts: [
         this.bglForRender,
         this.uniformBufferBindGroupLayout,
-        ...(isMirror ? [this.mirrorBindGroupLayout] : []),
+        (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
       ],
     });
 
+    // -------------------------
+    // VERTEX STATE (SHARED)
+    // -------------------------
     const vertexState = {
       entryPoint: 'main',
-      module: this.device.createShaderModule({code: vertexCode}),
+      module: vertexModule,
       buffers: this.vertexBuffers,
     };
 
@@ -929,37 +915,79 @@ export default class MEMeshObj extends Materials {
       shadowDepthTextureSize: this.shadowDepthTextureSize,
     };
 
+    // -------------------------
+    // BASE KEY (STABLE + FLAT)
+    // -------------------------
     const baseKey = {
-      vertexId,
-      fragmentId,
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
+
       type: "mesh",
-      primitive: this.primitive,
+
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+
       format: 'rgba16float',
-      layoutFlags: {
-        mirror: isMirror,
-        normalMap: this.material.type === 'normalmap',
-      }
+
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
     };
 
+
+    // pm.invalidate(buildPipelineKey({...baseKey, transparent: 0, depthWrite: 1}));
+    // pm.invalidate(buildPipelineKey({...baseKey, transparent: 1, depthWrite: 0}));
+    // this.setupPipeline();
     // -------------------------
-    // OPAQUE
+    // DEBUG (SAFE)
     // -------------------------
+    if(this.name === 'glass') {
+
+      pm.invalidate(baseKey)
+      const testOpaque = buildPipelineKey({
+        ...baseKey,
+        transparent: 0,
+        depthWrite: 1,
+      });
+
+      const testTransparent = buildPipelineKey({
+        ...baseKey,
+        transparent: 1,
+        depthWrite: 0,
+      });
+
+      console.log(
+        'PIPE DIFFERENCE:',
+        testOpaque === testTransparent
+      );
+    }
+
+    // =========================================================
+    // OPAQUE PIPELINE (OLD BEHAVIOR)
+    // =========================================================
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
-        transparent: false,
-        depthWrite: true,
+        transparent: 0,
+        depthWrite: 1,
       }),
 
       pipeline: {
-        label: 'Mesh Pipeline Opaque Cached',
-        layout,
+        label: 'Mesh Pipeline Opaque',
 
+        layout: this.device.createPipelineLayout({
+          label: 'PipelineLayout Mesh',
+          bindGroupLayouts: [
+            this.bglForRender,
+            this.uniformBufferBindGroupLayout,
+            (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
+          ],
+        }),
         vertex: vertexState,
 
         fragment: {
           entryPoint: 'main',
-          module: this.device.createShaderModule({code: fragmentCode}),
+          module: fragmentModule,
           constants: fragmentConstants,
           targets: [
             {
@@ -975,32 +1003,40 @@ export default class MEMeshObj extends Materials {
         },
 
         primitive: this.primitive,
-      }
+      },
     });
 
-    // -------------------------
-    // TRANSPARENT
-    // -------------------------
+    // =========================================================
+    // TRANSPARENT PIPELINE (ONLY DIFFERENCE = BLEND + DEPTH)
+    // =========================================================
     this.pipelineTransparent = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
-        transparent: true,
-        depthWrite: false,
+        transparent: 1,
+        depthWrite: 0,
       }),
 
       pipeline: {
-        label: 'Mesh Pipeline Transparent Cached',
-        layout,
+        label: 'Mesh Pipeline Transparent',
 
+        layout: this.device.createPipelineLayout({
+          label: 'PipelineLayout Mesh',
+          bindGroupLayouts: [
+            this.bglForRender,
+            this.uniformBufferBindGroupLayout,
+            (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
+          ],
+        }),
         vertex: vertexState,
 
         fragment: {
           entryPoint: 'main',
-          module: this.device.createShaderModule({code: fragmentCode}),
+          module: fragmentModule,
           constants: fragmentConstants,
           targets: [
             {
               format: 'rgba16float',
+
               blend: {
                 color: {
                   srcFactor: 'src-alpha',
@@ -1020,11 +1056,12 @@ export default class MEMeshObj extends Materials {
         depthStencil: {
           depthWriteEnabled: false,
           depthCompare: 'less',
+          // depthCompare: 'always',
           format: 'depth24plus',
         },
 
         primitive: this.primitive,
-      }
+      },
     });
   };
 
@@ -1103,10 +1140,12 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElements = (pass) => {
+
+
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
     if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    // pass.setBindGroup(3, this.waterBindGroup);
+    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);

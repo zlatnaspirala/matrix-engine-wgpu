@@ -38,7 +38,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.useScale = o.useScale || false;
 
     this.mType = MeshType.INSTANCED;
-    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
+    this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
     if(typeof o.sharedSU !== null) {
       this.sharedSU = o.sharedSU;
     }
@@ -1138,8 +1138,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
-    else pass.setPipeline(this.pipeline);
+    // if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
+    // else pass.setPipeline(this.pipeline);
 
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for(var ins = 1;ins < this.instanceCount;ins++) {
