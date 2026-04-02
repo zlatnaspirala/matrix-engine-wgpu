@@ -226,7 +226,7 @@ export default class Materials {
   }
 
   /**
-   * @description 
+   * @description
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/

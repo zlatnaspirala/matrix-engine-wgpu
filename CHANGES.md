@@ -1,6 +1,35 @@
 ## CHANGES [Started from feb 2026]
 
 
+[1.10.0]
+  New main loop logic
+  Not any more per mesh operation.
+
+```js
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      for(const [pipeline, meshes] of this.opaqueBuckets) {
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
+      }
+      for(const [pipeline, meshes] of this.transparentBuckets) {
+        meshes.sort((a, b) => {
+          const cam = this.getCamera();
+          const da = vec3.distance(cam.position, a.position);
+          const db = vec3.distance(cam.position, b.position);
+          return db - da;
+        });
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
+      }
+      pass.end();
+
+```
+
 
 [1.9.12]
  Ambient per mesh uniform added:

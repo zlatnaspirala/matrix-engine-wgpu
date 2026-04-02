@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.9.11 2026
+📅 Version: 1.10.0 2026
 
 ---
 
@@ -23,18 +23,16 @@ It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle
 
 Published on npm as: **`matrix-engine-wgpu`**
 
-Backend editor support list:
-Only for windows (linux must be adapted paths rule)
+Backend editor (works in local env - desktop browsers) support list:
+- Chrome, Edge, Opera
 
-- Chrome - desktop [windows]
-- Firefox - desktop [windows]
-- Edge - desktop [windows]
-- Opera - desktop [windows]
+For 1.10.0 Firefox not FIXED Render
 
 ---
 
 ## Done list []
 
+- ✔️ Draw loop per pipeline not per mesh (PipelineManager) Power optimisation.
 - ✔️ Support for 3D objects and scene transformations
 - ✔️ Ammo.js physics integration
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
@@ -309,15 +307,15 @@ engine.addLight();
 ```
 
 Access lights with array lightContainer:
-
 ```js
-app.lightContainer[0];
+app.lightContainer[0]
+app.getSceneLightByName('light1')
 ```
 
 Small behavior object.
 
 - For now just one ocs0 object
-  Everytime if called than updated (light.position[0] = light.behavior.setPath0())
+  Everytime if called than updated (light.setPosX(light.behavior.setPath0()))
   behavior.setOsc0(min, max, step);
   app.lightContainer[0].behavior.osc0.on*maximum_value = function() {/* what ever*/};
   app.lightContainer[0].behavior.osc0.on_minimum_value = function() {/* what ever\_/};
@@ -515,6 +513,7 @@ Manual raycast example:
 window.addEventListener("click", event => {
   let canvas = document.querySelector("canvas");
   let camera = app.cameras.WASD;
+  // let camera = app.getCamera();
   const {rayOrigin, rayDirection} = getRayFromMouse(event, canvas, camera);
 
   for (const object of app.mainRenderBundle) {
@@ -585,7 +584,6 @@ export let application = new MatrixEngineWGPU(
       for (const key in meshes) {
         console.log(`%c Loaded obj: ${key} `, LOG_MATRIX);
       }
-
       application.addMeshObj({
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -1096,11 +1094,12 @@ saves.
 
 ### Usage Note
 
-You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).
+You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph - but you can always remove assets -> remove asset back link).
 
 - Most important is reference on matrix-engine-wgpu.
 - You need just to copy paste this text to about form on your web page or any other type of app.
 - You can remove almost all licence for assets if you remove current assest from your project
+  (Fork this repo - remove all required link back assets - remove assets licence)
 
 ### Attribution & Credits
 

@@ -296,7 +296,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.9.11 [FasterThanRabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.10.0 [FasterThanRabbit] ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
@@ -311,7 +311,7 @@ export default class MatrixEngineWGPU {
       LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY_ARCADE);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
   };
 
@@ -994,7 +994,7 @@ export default class MatrixEngineWGPU {
         }
         pass.end();
       }
-      // -------- UPDATE PHASE --------
+
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
@@ -1010,26 +1010,22 @@ export default class MatrixEngineWGPU {
           // mesh.setupPipeline();
         }
       }
-      // -------- MAIN PASS --------
+
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      // -------- OPAQUE --------
       for(const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      // -------- TRANSPARENT --------
       for(const [pipeline, meshes] of this.transparentBuckets) {
-
         meshes.sort((a, b) => {
           const cam = this.getCamera();
           const da = vec3.distance(cam.position, a.position);
           const db = vec3.distance(cam.position, b.position);
-          return db - da; // back-to-front
+          return db - da;
         });
-
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
           mesh.drawElements(pass, this.lightContainer);

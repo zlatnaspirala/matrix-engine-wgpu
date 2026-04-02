@@ -201,22 +201,22 @@ var flipper = function () {
 
     // Lights
     const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 2 : 4;
-    const ORBIT_RADIUS = 8;
+    const ORBIT_RADIUS = 12;
     const ORBIT_SPEED = 0.6;
     const TARGET = {
       x: 0,
-      y: 4,
+      y: 1,
       z: -15
     };
 
     // Light colors cycling around the hue wheel
-    const LIGHT_COLORS = [[1.0, 0.2, 0.2],
+    const LIGHT_COLORS = [[2.0, 0.2, 0.2],
     // red
-    [1.0, 0.6, 0.1],
+    [2.0, 0.8, 0.1],
     // orange
-    [0.2, 0.2, 1.0],
+    [0.2, 0.2, 2.0],
     // blue
-    [1.0, 1.0, 0.1],
+    [2.0, 2.0, 0.1],
     // yellow
     [0.2, 1.0, 0.2],
     // green
@@ -281,25 +281,6 @@ var flipper = function () {
 
       //   // app.cameras.WASD._dirtyAngle = true;
       // }, 500);
-
-      let envMapParams = {
-        baseColorMix: 0.4,
-        // CLEAR SKY
-        mirrorTint: [0.9, 0.95, 1.0],
-        // Slight cool tint
-        reflectivity: 0.25,
-        // 25% reflection blend
-        illuminateColor: [0.3, 0.7, 1.0],
-        // Soft cyan
-        illuminateStrength: 0.1,
-        // Gentle rim
-        illuminatePulse: 0.01,
-        // No pulse (static)
-        fresnelPower: 2.0,
-        // Medium-sharp edge
-        envLodBias: 1.5,
-        usePlanarReflection: false // ✅ Env map mode
-      };
 
       // ball
       const ball1 = flipper.addMeshObj({
@@ -394,13 +375,31 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
+      let envMapParams = {
+        baseColorMix: 0.1,
+        // CLEAR SKY
+        mirrorTint: [0.9, 0.95, 1.0],
+        // Slight cool tint
+        reflectivity: 0.45,
+        // 25% reflection blend
+        illuminateColor: [0.3, 0.7, 1.0],
+        // Soft cyan
+        illuminateStrength: 0.5,
+        // Gentle rim
+        illuminatePulse: 0.01,
+        // No pulse (static)
+        fresnelPower: 2.0,
+        // Medium-sharp edge
+        envLodBias: 1.5,
+        usePlanarReflection: false // ✅ Env map mode
+      };
       let glass = flipper.addMeshObj({
         material: {
           type: 'mirror'
         },
         position: {
           x: 0,
-          y: 2.4,
+          y: 2.1,
           z: -20.5
         },
         scale: [6, 0.05, 15],
@@ -473,7 +472,8 @@ var flipper = function () {
         physics: {
           enabled: true,
           mass: 5,
-          geometry: "Cube"
+          geometry: "ConvexHull",
+          vertices: m.pin.vertices
         }
       });
       const R = flipper.addMeshObj({
@@ -492,7 +492,8 @@ var flipper = function () {
         physics: {
           enabled: true,
           mass: 5,
-          geometry: "Cube"
+          geometry: "ConvexHull",
+          vertices: m.pinR.vertices
         }
       });
       const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
@@ -984,6 +985,7 @@ var flipper = function () {
 
       // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
+        app.activateBloomEffect();
         app.cameras.WASD.setYaw(-0.03);
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
@@ -32474,7 +32476,7 @@ class Materials {
   }
 
   /**
-   * @description 
+   * @description
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/
@@ -38906,6 +38908,7 @@ const MEConfig = exports.MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  FORCE_FULL_SCREEN: false,
   construct: function () {
     if (urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
@@ -38919,13 +38922,13 @@ const MEConfig = exports.MEConfig = {
       this.PHYSICS_GROUND_BYZ = parseInt(urlQ['PHYSICS_GROUND_BYZ']);
       console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, _utils.LOG_FUNNY_ARCADE);
     }
-    if (urlQ['shadowSize']) {
-      this.SHADOW_RES = parseInt(urlQ['shadowSize']);
-      console.log(`%cShadowSize : ${this.SHADOW_RES}`, _utils.LOG_FUNNY_ARCADE);
+    if (urlQ['SHADOW_RES']) {
+      this.SHADOW_RES = parseInt(urlQ['SHADOW_RES']);
+      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, _utils.LOG_FUNNY_ARCADE);
     }
-    if (urlQ['maxLights']) {
-      this.MAX_LIGHTS = parseInt(urlQ['maxLights']);
-      console.log(`%cmaxLights : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
+    if (urlQ['MAX_LIGHTS']) {
+      this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
+      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
     }
     if (urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
@@ -58518,13 +58521,13 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.9.11 [FasterThanRabbit] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.10.0 [FasterThanRabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY_ARCADE);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", _utils.LOG_FUNNY_ARCADE);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", _utils.LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
@@ -59392,7 +59395,6 @@ class MatrixEngineWGPU {
         }
         pass.end();
       }
-      // -------- UPDATE PHASE --------
       const len = this.mainRenderBundle.length;
       for (let i = 0; i < len; i++) {
         const mesh = this.mainRenderBundle[i];
@@ -59410,23 +59412,20 @@ class MatrixEngineWGPU {
           // mesh.setupPipeline();
         }
       }
-      // -------- MAIN PASS --------
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      // -------- OPAQUE --------
       for (const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      // -------- TRANSPARENT --------
       for (const [pipeline, meshes] of this.transparentBuckets) {
         meshes.sort((a, b) => {
           const cam = this.getCamera();
           const da = _wgpuMatrix.vec3.distance(cam.position, a.position);
           const db = _wgpuMatrix.vec3.distance(cam.position, b.position);
-          return db - da; // back-to-front
+          return db - da;
         });
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {

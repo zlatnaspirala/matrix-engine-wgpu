@@ -30,16 +30,16 @@ export var flipper = function() {
 
     // Lights
     const NUM_LIGHTS = isMobile() == true ? 2 : 4;
-    const ORBIT_RADIUS = 8;
+    const ORBIT_RADIUS = 12;
     const ORBIT_SPEED = 0.6;
-    const TARGET = {x: 0, y: 4, z: -15};
+    const TARGET = {x: 0, y: 1, z: -15};
 
     // Light colors cycling around the hue wheel
     const LIGHT_COLORS = [
-      [1.0, 0.2, 0.2],  // red
-      [1.0, 0.6, 0.1],  // orange
-      [0.2, 0.2, 1.0],  // blue
-      [1.0, 1.0, 0.1],  // yellow
+      [2.0, 0.2, 0.2],  // red
+      [2.0, 0.8, 0.1],  // orange
+      [0.2, 0.2, 2.0],  // blue
+      [2.0, 2.0, 0.1],  // yellow
       [0.2, 1.0, 0.2],  // green
       [0.1, 1.0, 0.6],  // teal
       [0.1, 0.6, 1.0],  // sky
@@ -106,18 +106,6 @@ export var flipper = function() {
 
       //   // app.cameras.WASD._dirtyAngle = true;
       // }, 500);
-
-      let envMapParams = {
-        baseColorMix: 0.4,               // CLEAR SKY
-        mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        reflectivity: 0.25,               // 25% reflection blend
-        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        illuminateStrength: 0.1,          // Gentle rim
-        illuminatePulse: 0.01,            // No pulse (static)
-        fresnelPower: 2.0,                // Medium-sharp edge
-        envLodBias: 1.5,
-        usePlanarReflection: false,       // ✅ Env map mode
-      }
 
       // ball
       const ball1 = flipper.addMeshObj({
@@ -187,9 +175,21 @@ export var flipper = function() {
         }
       });
 
+      let envMapParams = {
+        baseColorMix: 0.1,               // CLEAR SKY
+        mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        reflectivity: 0.45,               // 25% reflection blend
+        illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        illuminateStrength: 0.5,          // Gentle rim
+        illuminatePulse: 0.01,            // No pulse (static)
+        fresnelPower: 2.0,                // Medium-sharp edge
+        envLodBias: 1.5,
+        usePlanarReflection: false,       // ✅ Env map mode
+      }
+
       let glass = flipper.addMeshObj({
         material: {type: 'mirror'},
-        position: {x: 0, y: 2.4, z: -20.5},
+        position: {x: 0, y: 2.1, z: -20.5},
         scale: [6, 0.05, 15],
         texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'glass',
@@ -251,7 +251,8 @@ export var flipper = function() {
         physics: {
           enabled: true,
           mass: 5,
-          geometry: "Cube"
+          geometry: "ConvexHull",
+          vertices: m.pin.vertices
         }
       });
 
@@ -265,7 +266,8 @@ export var flipper = function() {
         physics: {
           enabled: true,
           mass: 5,
-          geometry: "Cube"
+          geometry: "ConvexHull",
+          vertices: m.pinR.vertices
         }
       });
 
@@ -677,6 +679,7 @@ export var flipper = function() {
 
       // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
+        app.activateBloomEffect();
         app.cameras.WASD.setYaw(-0.03);
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
