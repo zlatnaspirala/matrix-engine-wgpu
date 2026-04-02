@@ -958,6 +958,21 @@ Access from code:
 urlQuery.lang;
 ```
 
+### [From 1.10.0] Configure render from url link
+
+  // URL PARAMS ----------- defaults
+  SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
+  MAX_BONES: isMobile() == true ? 80 : 100,
+  PHYSICS_GROUND_Y: -1,
+  PHYSICS_GROUND_BYX: 100,
+  PHYSICS_GROUND_BYZ: 100,
+  GRAVITY_Y_AXIS: -10,
+  FORCE_FULL_SCREEN: false,
+
+   Use it :
+   `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
+
+
 ---
 
 ## About `main.js`
