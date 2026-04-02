@@ -22,6 +22,7 @@ export const MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  FORCE_FULL_SCREEN: false,
 
   construct: function() {
     if(urlQ['GRAVITY_Y_AXIS']) {
@@ -36,13 +37,13 @@ export const MEConfig = {
       this.PHYSICS_GROUND_BYZ = parseInt(urlQ['PHYSICS_GROUND_BYZ']);
       console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
     }
-    if(urlQ['shadowSize']) {
-      this.SHADOW_RES = parseInt(urlQ['shadowSize']);
-      console.log(`%cShadowSize : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
+    if(urlQ['SHADOW_RES']) {
+      this.SHADOW_RES = parseInt(urlQ['SHADOW_RES']);
+      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
-    if(urlQ['maxLights']) {
-      this.MAX_LIGHTS = parseInt(urlQ['maxLights']);
-      console.log(`%cmaxLights : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+    if(urlQ['MAX_LIGHTS']) {
+      this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
+      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);

@@ -4,7 +4,6 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var snakeLightsInstanced = function() {
   let app = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -14,10 +13,10 @@ export var snakeLightsInstanced = function() {
     clearColor: {r: 0.01, b: 0.01, g: 0.01, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 20;
+    const NUM_LIGHTS = 2;
     const SNAKE_SPEED = 0.8;
-    const SNAKE_SPACING = 0.35;
-    const LIGHT_HEIGHT = 20;
+    const SNAKE_SPACING = 0.55;
+    const LIGHT_HEIGHT = 5;
     const CENTER = {x: 0, z: -10};
 
     const LIGHT_COLORS = [
@@ -110,7 +109,6 @@ export var snakeLightsInstanced = function() {
         z: CENTER.z + 7 * Math.sin(t * 2.5),
       }),
 
-
     };
 
     // ─── PATH SWITCHER ───────────────────────────────────────────────────────
@@ -145,17 +143,23 @@ export var snakeLightsInstanced = function() {
       const phaseOffset = i * SNAKE_SPACING;
       const fade = 1.0 - (i / NUM_LIGHTS) * 0.4;
 
-      light.intensity = 15 * fade;
+      // light.intensity = 15 * fade;
       light.color = LIGHT_COLORS[i];
 
-      light.innerCutoff = 0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
-      light.outerCutoff = 0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
-      light.intensity = 18 * fade;
+      // light.innerCutoff = //0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
+      // light.outerCutoff = //0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
+      // light.innerCutoff = 0.92;
+      // light.outerCutoff = 0.75;
+
+      light.innerCutoff = 0.87
+      light.outerCutoff = 0.62
+
+      light.setIntensity(18 * fade);
       light._phase = phaseOffset;
 
       const initialPos = PATHS[currentPathKey](0);
-      light.position = [initialPos.x, LIGHT_HEIGHT, initialPos.z];
-      light.target = [initialPos.x, 0, initialPos.z];
+      light.setPosition(initialPos.x, LIGHT_HEIGHT, initialPos.z);
+      light.setTarget(initialPos.x, 0, initialPos.z);
 
       light.updater.push((light) => {
         const t = app.now * SNAKE_SPEED - light._phase;
@@ -177,8 +181,8 @@ export var snakeLightsInstanced = function() {
           z = cur.z;
         }
 
-        light.position = [x, LIGHT_HEIGHT, z];
-        light.target = [x, 0, z];
+        light.setPosition(x, LIGHT_HEIGHT, z);
+        light.setTarget(x + 1, 0, z + 1);
       });
     }
 
@@ -199,7 +203,8 @@ export var snakeLightsInstanced = function() {
         name: 'floor',
         mesh: m.cube,
         scale: [50, 0.5, 50],
-        physics: {enabled: false}
+        physics: {enabled: false},
+        shadowsCast: false
       });
     }, {scale: [20, 0.5, 20]});
 
@@ -207,7 +212,8 @@ export var snakeLightsInstanced = function() {
       .then(r => r.arrayBuffer())
       .then(buf => uploadGLBModel(buf, app.device));
 
-    app.addGlbObjInctance({
+    // app.addGlbObjInctance({
+    app.addGlbObj({
       material: {type: 'standard', useTextureFromGlb: true},
       useScale: true,
       scale: [5, 5, 5],
@@ -221,13 +227,12 @@ export var snakeLightsInstanced = function() {
     setTimeout(() => {
 
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(7);
-      monster.updateInstances(7);
-      monster.trailAnimation.delay = 15;
-
-      app.cameras.WASD.yaw = 0;
-      app.cameras.WASD.pitch = -0.55;
-      app.cameras.WASD.position = [CENTER.x, 22, CENTER.z + 26];
+      // monster.updateMaxInstances(7);
+      // monster.updateInstances(7);
+      // monster.trailAnimation.delay = 15;
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(-0.55);
+      app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
     }, 1200);
 
   });

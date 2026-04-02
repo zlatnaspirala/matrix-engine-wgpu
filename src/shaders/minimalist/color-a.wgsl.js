@@ -19,8 +19,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;

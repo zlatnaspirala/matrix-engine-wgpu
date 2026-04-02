@@ -98,6 +98,7 @@ export var loadVideoTexture = function() {
         videoTexture.cameras.WASD.pitch = -0.49;
         videoTexture.cameras.WASD.position[2] = 10;
         videoTexture.cameras.WASD.position[1] = 5;
+        videoTexture.buildRenderBuckets(videoTexture.mainRenderBundle)
       }, 1000)
     }
   })

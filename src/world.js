@@ -28,7 +28,8 @@ import {FOUNTAIN_COLUMN_TOP, fountainBasinConfig, fountainBasinStoneConfig, foun
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
 import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
-
+import {noShadowPass} from "./engine/overrides/noshadow-render.js";
+import {PipelineManager} from './engine/pipelineManager.js';
 /**
  * @description
  * Main engine root class.
@@ -71,6 +72,15 @@ export default class MatrixEngineWGPU {
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
 
+  flagPreventRebuildMap = false;
+  opaqueBuckets = new Map();
+  transparentBuckets = new Map();
+  shadowBuckets = {
+    default: [],
+    instanced: [],
+    procedural: []
+  };
+
   constructor(options, callback) {
     if(typeof options == 'undefined' || typeof options == "function") {
       this.options = {
@@ -111,7 +121,7 @@ export default class MatrixEngineWGPU {
     if(typeof options.dontUsePhysics === 'undefined') {
       if(typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
         this.matrixAmmo = new MatrixAmmo({
-          gravity : options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
+          gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
           roundDimensionX: options.PHYSICS_GROUND_BYX,
           roundDimensionY: options.PHYSICS_GROUND_BYZ
         });
@@ -124,6 +134,7 @@ export default class MatrixEngineWGPU {
       }
     }
     // cache
+    this._sceneData = new Float32Array(48);
     this._viewScratch = new Float32Array(16);
     this.blendQueue = [];
     this._cameraUpdateFrame = 0;
@@ -155,6 +166,8 @@ export default class MatrixEngineWGPU {
     if(typeof options.render !== 'undefined') {
       if(options.render == 'zero') {
         this.overrideRender = zeroPass.bind(this);
+      } else if(options.render == 'no-shadows') {
+        this.overrideRender = noShadowPass.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -283,7 +296,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.9.11 [FasterThanRabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.10.0 [FasterThanRabbit] ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
@@ -296,13 +309,32 @@ export default class MatrixEngineWGPU {
       " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
       " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY);
-    console.log("%c fs (fullscreen) ----  /examples?demo=1&fs=true  \n", LOG_WARN);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&shadowSize=128  \n", LOG_FUNNY_SMALL);
+    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
   };
 
   createGlobalStuff(callback) {
+    PipelineManager.init(this.device);
+    this.getTransformationMatrix = (camera, dt) => {
+      this._sceneData.set(camera.VP, 16);
+      this._sceneData[32] = camera.position[0];
+      this._sceneData[33] = camera.position[1];
+      this._sceneData[34] = camera.position[2];
+      this._sceneData[35] = 0.0;
+      this._sceneData[39] = 0.0;
+      this._sceneData[40] = this.globalAmbient[0];
+      this._sceneData[41] = this.globalAmbient[1];
+      this._sceneData[42] = this.globalAmbient[2];
+      this._sceneData[43] = 0.0;
+      this._sceneData[44] = this.time;
+      this._sceneData[45] = dt;
+      this._sceneData[46] = 0;
+      this._sceneData[47] = 0;
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    };
+
     this.SHADOW_RES = this.MEConfig.SHADOW_RES;
     this._bufferUpdates = [];
 
@@ -367,6 +399,16 @@ export default class MatrixEngineWGPU {
       magFilter: 'linear',
       minFilter: 'linear'
     });
+
+    this.postProcessInputTex = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage:
+        GPUTextureUsage.RENDER_ATTACHMENT |
+        GPUTextureUsage.TEXTURE_BINDING
+    });
+
+    this.postProcessInputView = this.postProcessInputTex.createView();
 
     this.presentPipeline = this.device.createRenderPipeline({
       label: "final pipeline",
@@ -545,6 +587,52 @@ export default class MatrixEngineWGPU {
     return true;
   }
 
+  buildRenderBuckets(sceneMeshes) {
+    this.opaqueBuckets.clear();
+    this.transparentBuckets.clear();
+    for(const mesh of sceneMeshes) {
+      if(!mesh.pipeline) {
+        if(this.flagPreventRebuildMap == false) setTimeout(() => {
+          this.buildRenderBuckets(this.mainRenderBundle);
+          this.flagPreventRebuildMap = false;
+        }, 200)
+        this.flagPreventRebuildMap = true;
+      }
+      const isTransparent = mesh.material.useBlend == true;
+      const pipeline = isTransparent ? mesh.pipelineTransparent : mesh.pipeline;
+
+      if(!pipeline) {
+        // console.warn("❌ Pipeline undefined:", mesh.name);
+        continue;
+      }
+      const buckets = isTransparent ? this.transparentBuckets : this.opaqueBuckets;
+      let bucket = buckets.get(pipeline);
+      if(!bucket) {
+        bucket = [];
+        buckets.set(pipeline, bucket);
+      }
+      bucket.push(mesh);
+    }
+    this.buildLightShadowBuckets()
+  }
+
+  buildLightShadowBuckets() {
+    this.shadowBuckets.default.length = 0;
+    this.shadowBuckets.instanced.length = 0;
+    this.shadowBuckets.procedural.length = 0;
+    for(let i = 0;i < this.mainRenderBundle.length;i++) {
+      const m = this.mainRenderBundle[i];
+      if(!m.shadowsCast) continue;
+      if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
+        this.shadowBuckets.instanced.push(m);
+      } else if(m.mType == MeshType.PROCEDURAL) {
+        this.shadowBuckets.procedural.push(m);
+      } else {
+        this.shadowBuckets.default.push(m);
+      }
+    }
+  }
+
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new SpotLight(camera,
@@ -552,6 +640,7 @@ export default class MatrixEngineWGPU {
       this.shadowPassViews[this.lightContainer.length], this.shadowSampler
     );
     this.lightContainer.push(newLight);
+
     for(const mesh of this.mainRenderBundle) {
       mesh.shadowDepthTextureView = this.shadowArrayView;
     }
@@ -690,7 +779,7 @@ export default class MatrixEngineWGPU {
     const geo1 = fountainStructureConfig(MeshMorpher);
     let m1 = this.addProceduralMeshObj({
       material: {type: 'free'}, name: 'fontana_column',
-      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [1, 1, 1], rotationSpeed: {x: 0, y: 0, z: 0},
+      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo1.meshA, meshB: geo1.meshB, resolutionU: geo1.resolutionU, resolutionV: geo1.resolutionV,
       fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
@@ -704,7 +793,7 @@ export default class MatrixEngineWGPU {
     const geo2 = fountainBasinStoneConfig(MeshMorpher);
     let m2 = this.addProceduralMeshObj({
       material: {type: 'free'}, name: 'fontana_basin_stone',
-      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [1, 1, 1], rotationSpeed: {x: 0, y: 0, z: 0},
+      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo2.meshA, meshB: geo2.meshB, resolutionU: geo2.resolutionU, resolutionV: geo2.resolutionV,
       fragmentWGSL: fountainCapFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
@@ -714,7 +803,7 @@ export default class MatrixEngineWGPU {
     let m3 = this.addProceduralMeshObj({
       material: {type: 'fontana'}, name: 'fontana_cap',
       globalAmbient: [0.15, 0.72, 0.96, 1.0],
-      position: {x: px, y: py + TOP * 0.8, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [1, 1, 1], rotationSpeed: {x: 0, y: 0, z: 0},
+      position: {x: px, y: py + TOP * 0.8, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo3.meshA, meshB: geo3.meshB, resolutionU: geo3.resolutionU, resolutionV: geo3.resolutionV,
       fragmentWGSL: fountainCapFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
@@ -724,7 +813,7 @@ export default class MatrixEngineWGPU {
     let m4 = this.addProceduralMeshObj({
       material: {type: 'fontana'}, name: 'fontana_curtain',
       globalAmbient: [0.12, 0.68, 0.94, 1.0],
-      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [1, 1, 1], rotationSpeed: {x: 0, y: 0, z: 0},
+      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo4.meshA, meshB: geo4.meshB, resolutionU: geo4.resolutionU, resolutionV: geo4.resolutionV,
       fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
@@ -739,7 +828,7 @@ export default class MatrixEngineWGPU {
     let m5 = this.addProceduralMeshObj({
       material: {type: 'fontana'}, name: 'fontana_basin_water',
       globalAmbient: [0.08, 0.55, 0.90, 1.0],
-      position: {x: px, y: py + 0.01, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [1, 1, 1], rotationSpeed: {x: 0, y: 0, z: 0},
+      position: {x: px, y: py + 0.01, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo5.meshA, meshB: geo5.meshB, resolutionU: geo5.resolutionU, resolutionV: geo5.resolutionV,
       fragmentWGSL: fountainBasinFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
@@ -789,8 +878,9 @@ export default class MatrixEngineWGPU {
     } else {
       this.frame = this.frameSinglePass;
     }
-    setTimeout(() => {this.frame()}, 200);
-    callback(this);
+    setTimeout(() => {this.frame()}, 500);
+    setTimeout(() => {callback(this)}, 1);
+
   }
 
   // still not perfect but works
@@ -872,76 +962,74 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      const _ = this.mainRenderBundle[0];
-      if(!_) return;
-      if((camera._dirty || camera._dirtyAngle)) _.getTransformationMatrix(camera.VP, now2);
-      camera.update(_);
+      if(camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
+      camera.update();
+
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        const shadowPass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
-        let lastShadowPipeline = null;
-        for(let j = 0;j < this.mainRenderBundle.length;j++) {
-          const m = this.mainRenderBundle[j];
-          if(m.shadowsCast == false) continue;
-          let targetShadowPipeline;
-          if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
-            targetShadowPipeline = light.shadowPipelineInstanced;
-          } else if(m.mType == MeshType.PROCEDURAL) {
-            targetShadowPipeline = light.shadowPipelineMorph;
-          } else {
-            targetShadowPipeline = light.shadowPipeline;
+        const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+        if(this.shadowBuckets.default.length) {
+          pass.setPipeline(light.shadowPipeline);
+          for(let m of this.shadowBuckets.default) {
+            pass.setBindGroup(0, light.getShadowBindGroup(m));
+            pass.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(pass, light);
           }
-          if(lastShadowPipeline !== targetShadowPipeline) {
-            shadowPass.setPipeline(targetShadowPipeline);
-            lastShadowPipeline = targetShadowPipeline;
-          }
-          shadowPass.setBindGroup(0, light.getShadowBindGroup(m, j));
-          if(m.mType == MeshType.BVHANIM || m.mType == MeshType.INSTANCED) {
-            shadowPass.setBindGroup(1, m.modelBindGroupInstanced);
-          }
-          else if(m.mType == MeshType.PROCEDURAL) {
-            shadowPass.setBindGroup(1, m.mainRenderBindGroup);
-          }
-          else {
-            shadowPass.setBindGroup(1, m.modelBindGroup);
-          }
-          m.drawShadows(shadowPass, light);
         }
-        shadowPass.end();
+        if(this.shadowBuckets.instanced.length) {
+          pass.setPipeline(light.shadowPipelineInstanced);
+          for(let m of this.shadowBuckets.instanced) {
+            pass.setBindGroup(0, light.getShadowBindGroup(m));
+            pass.setBindGroup(1, m.modelBindGroupInstanced);
+            m.drawShadows(pass, light);
+          }
+        }
+        if(this.shadowBuckets.procedural.length) {
+          pass.setPipeline(light.shadowPipelineMorph);
+          for(let m of this.shadowBuckets.procedural) {
+            pass.setBindGroup(0, light.getShadowBindGroup(m));
+            pass.setBindGroup(1, m.mainRenderBindGroup);
+            m.drawShadows(pass, light);
+          }
+        }
+        pass.end();
       }
-      // Main
-      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      let lastPipeline = null;
 
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
         if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
-        if(mesh.vertexAnim.active == true) mesh.updateTime(this.now);
-        // if((camera._dirty || mesh.position.inMove)) mesh.updateModelUniformBuffer(i);
-        if(mesh.position.inMove == true) mesh.updateModelUniformBuffer(i);
-
+        if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
+        if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
-        if(mesh.material?.useBlend) {this.blendQueue.push(mesh); continue;}
-        if(!mesh.sceneBindGroupForRender) {
+        // lazy pipeline init
+        if(!mesh.pipeline || !mesh.pipelineTransparent) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
-          mesh.setupPipeline();
+          // mesh.setupPipeline();
         }
-        const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
-        if(lastPipeline !== targetPipeline) {
-          pass.setPipeline(targetPipeline);
-          lastPipeline = targetPipeline;
-        }
-        mesh.drawElements(pass, this.lightContainer);
       }
-      // Blend
-      for(let i = 0;i < this.blendQueue.length;i++) {
-        const m = this.blendQueue[i];
-        pass.setPipeline(m.pipelineTransparent);
-        m.drawElements(pass, this.lightContainer);
+
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      for(const [pipeline, meshes] of this.opaqueBuckets) {
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
+      }
+      for(const [pipeline, meshes] of this.transparentBuckets) {
+        meshes.sort((a, b) => {
+          const cam = this.getCamera();
+          const da = vec3.distance(cam.position, a.position);
+          const db = vec3.distance(cam.position, b.position);
+          return db - da;
+        });
+        pass.setPipeline(pipeline);
+        for(const mesh of meshes) {
+          mesh.drawElements(pass, this.lightContainer);
+        }
       }
       pass.end();
 
@@ -980,12 +1068,11 @@ export default class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      const canvasView = this._canvasView;
       if(this.bloomPass.enabled == true) {
-        const bloomInput = this.volumetricPass.enabled ? this.volumetricPass.compositeOutputTexView : this.sceneTextureView;
-        this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+        // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       }
-      this.finalPS.colorAttachments[0].view = canvasView;
+      this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
       pass.setBindGroup(0, this._activeBindGroup);
@@ -999,7 +1086,7 @@ export default class MatrixEngineWGPU {
       this.graphUpdate(this.now);
       this.blendQueue.length = 0;
     } catch(err) {
-      if(this.logLoopError) console.log('%cLoop(warn):' + err + " Info : " + err.stack, LOG_WARN)
+      if(this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
     }
   }
 
@@ -1078,6 +1165,7 @@ export default class MatrixEngineWGPU {
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
+
         setTimeout(() => {
           document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
         }, 50);
@@ -1189,23 +1277,12 @@ export default class MatrixEngineWGPU {
   }
 
   sortRenderBundle() {
-    this.mainRenderBundle.sort((a, b) => {
-      // blend meshes always go last (you already have a second loop for them)
-      const aBlend = a.material?.useBlend ? 1 : 0;
-      const bBlend = b.material?.useBlend ? 1 : 0;
-      if(aBlend !== bBlend) return aBlend - bBlend;
-      // group by pipeline reference
-      const aPipe = a.pipeline || this.mainRenderBundle[0].pipeline;
-      const bPipe = b.pipeline || this.mainRenderBundle[0].pipeline;
-      if(aPipe < bPipe) return -1;
-      if(aPipe > bPipe) return 1;
-      return 0;
-    });
+    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 50);
   }
 
   activateBloomEffect = () => {
     if(this.bloomPass.enabled != true) {
-      this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+      this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, this.sceneTextureView, 1.5);
       this.bloomPass.enabled = true;
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
     }
@@ -1224,8 +1301,9 @@ export default class MatrixEngineWGPU {
       }
     } else {p = arg}
     if(this.volumetricPass.enabled != true) {
-      this.volumetricPass = new VolumetricPass(this.canvas.width, this.canvas.height, this.device, p).init();
+      this.volumetricPass = new VolumetricPass(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
+      this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   }
 }

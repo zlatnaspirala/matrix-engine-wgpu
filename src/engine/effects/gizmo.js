@@ -5,7 +5,6 @@ export class GizmoEffect {
     this.device = device;
     this.format = format;
     this.enabled = true;
-    // 0=translate, 1=rotate, 2=scale
     this.mode = 0;
     this.size = 3;
     this.selectedAxis = 0;

@@ -15,6 +15,7 @@ import {GenGeoTexture} from '../effects/gen-tex';
 import {GenGeoTexture2} from '../effects/gen-tex2';
 import {VERTEX_ANIM_FLAGS} from '../literals';
 import {MEConfig} from '../../me-config';
+import {buildPipelineKey, PipelineManager} from '../pipelineManager';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -37,7 +38,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.useScale = o.useScale || false;
 
     this.mType = MeshType.INSTANCED;
-    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
+    this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
     if(typeof o.sharedSU !== null) {
       this.sharedSU = o.sharedSU;
     }
@@ -62,11 +63,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     if(o.envMapParams !== null) {this.envMapParams = o.envMapParams;}
 
-
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
-    this._sceneData = new Float32Array(48);
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -218,7 +217,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly) Low level priority warn.");
+        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly) Low level priority warn.");
       }
     } else {
       this.mesh.uvs = this.mesh.textures;
@@ -253,7 +252,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
     // new dummy for skin mesh
-    if(!this.joints) {
+    if(!this.mesh.jointsBuffer) {
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -263,11 +262,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      this.joints = {
-        data: jointsData,
-        buffer: jointsBuffer,
-        stride: 16, // vec4<u32>
-      };
+      // this.joints = {
+      //   data: jointsData,
+      //   buffer: jointsBuffer,
+      //   stride: 16, // vec4<u32>
+      // };
+      this.mesh.jointsBuffer = jointsBuffer;
       const numVerts = this.mesh.vertices.length / 3;
       // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
@@ -286,7 +286,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      this.weights = {data: weightsData, buffer: weightsBuffer, stride: 16, };
+      // this.weights = {data: weightsData, buffer: weightsBuffer, stride: 16, };
+      this.mesh.weightsBuffer = weightsBuffer;
     }
 
     this.runProgram = () => {
@@ -423,7 +424,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
+
+
       this.createLayoutForRender();
+
+
+
 
       // EDIT INSTANCED PART
       this.instanceTargets = [];
@@ -499,24 +505,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
-
-        this.uvScaleBuffer = this.device.createBuffer({
-          size: 8, // vec2f
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-        // Default = no scale
-        this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
-
-        this.modelBindGroupInstanced = this.device.createBindGroup({
-          label: 'modelBindGroup in mesh [instanced]',
-          layout: this.uniformBufferBindGroupLayoutInstanced,
-          entries: [
-            {binding: 0, resource: {buffer: this.instanceBuffer, }},
-            {binding: 1, resource: {buffer: this.bonesBuffer}},
-            {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-            {binding: 3, resource: {buffer: this.uvScaleBuffer}}
-          ],
-        });
       };
 
       this.updateMaxInstances = (newMax) => {
@@ -743,16 +731,23 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      // this.modelBindGroupInstanced = this.device.createBindGroup({
-      //   label: 'modelBindGroup in mesh [instanced]',
-      //   layout: this.uniformBufferBindGroupLayoutInstanced,
-      //   entries: [
-      //     {binding: 0, resource: {buffer: this.instanceBuffer, }},
-      //     {binding: 1, resource: {buffer: this.bonesBuffer}},
-      //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+      this.uvScaleBuffer = this.device.createBuffer({
+        size: 8, // vec2f
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      // Default = no scale
+      this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
 
-      //   ],
-      // });
+      this.modelBindGroupInstanced = this.device.createBindGroup({
+        label: 'modelBindGroup in mesh [instanced]',
+        layout: this.uniformBufferBindGroupLayoutInstanced,
+        entries: [
+          {binding: 0, resource: {buffer: this.instanceBuffer, }},
+          {binding: 1, resource: {buffer: this.bonesBuffer}},
+          {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+        ],
+      });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mainPassBindGroupLayout mesh [instaced]',
@@ -795,29 +790,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
-
-      this.getTransformationMatrix = (camVP, dt) => {
-        // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);
-        // this._sceneData.set(spotLight.viewProjMatrix, 0);
-        this._sceneData.set(camVP, 16);
-        // this._sceneData[32] = camera.position[0];
-        // this._sceneData[33] = camera.position[1];
-        // this._sceneData[34] = camera.position[2];
-        this._sceneData[35] = 0.0;
-        // this._sceneData[36] = spotLight.position[0];
-        // this._sceneData[37] = spotLight.position[1];
-        // this._sceneData[38] = spotLight.position[2];
-        this._sceneData[39] = 0.0;
-        this._sceneData[40] = this.globalAmbient[0];
-        this._sceneData[41] = this.globalAmbient[1];
-        this._sceneData[42] = this.globalAmbient[2];
-        this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        this._sceneData[46] = 0;
-        this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);
@@ -871,87 +843,106 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
   setupPipeline = () => {
     this.createBindGroupForRender();
-    const pipelineLayout = this.device.createPipelineLayout({
-      label: 'PipelineLayout Mesh',
+    const pm = PipelineManager.get();
+    const isMirror = this.material.type === 'mirror';
+    const isVideo = this.isVideo === true;
+    const vertexCode = vertexWGSLInstanced;
+    const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
+    const isNormalMap = this.material.type === 'normalmap';
+    const layout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Instanced Mesh',
       bindGroupLayouts: [
         this.bglForRender,
         this.uniformBufferBindGroupLayoutInstanced,
-        (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
+        ...(isMirror ? [this.mirrorBindGroupLayout] : []),
       ],
     });
-
-    const vertexModule = this.device.createShaderModule({
-      label: 'VertexShader Mesh',
-      code: vertexWGSLInstanced,
-    });
-
-    const fragmentModule = this.device.createShaderModule({
-      label: 'FragmentShader Mesh',
-      code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial(),
-    });
-
     const vertexState = {
       entryPoint: 'main',
-      module: vertexModule,
+      module: this.device.createShaderModule({code: vertexCode}),
       buffers: this.vertexBuffers,
     };
-
-    const fragmentConstants = {
-      shadowDepthTextureSize: this.shadowDepthTextureSize,
+    const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
+    const baseKey = {
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
+      type: "instanced",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
     };
-
-    // Opaque pipeline
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Pipeline Opaque ✅',
-      layout: pipelineLayout,
-      vertex: vertexState,
-      fragment: {
-        entryPoint: 'main',
-        module: fragmentModule,
-        constants: fragmentConstants,
-        targets: [{
-          format: 'rgba16float',
-        }],
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-      primitive: this.primitive,
+    // OPAQUE
+    this.pipeline = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: false,
+        depthWrite: true,
+      }),
+      pipeline: {
+        label: 'Instanced Pipeline Opaque Cached',
+        layout,
+        vertex: vertexState,
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+            },
+          ],
+        },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+        primitive: this.primitive,
+      }
     });
-
-    // Transparent pipeline
-    this.pipelineTransparent = this.device.createRenderPipeline({
-      label: 'Pipeline Transparent ✅',
-      layout: pipelineLayout,
-      vertex: vertexState,
-      fragment: {
-        entryPoint: 'main',
-        module: fragmentModule,
-        constants: fragmentConstants,
-        targets: [{
-          format: 'rgba16float',
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
+    // TRANSPARENT
+    this.pipelineTransparent = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: true,
+        depthWrite: false,
+      }),
+      pipeline: {
+        label: 'Instanced Pipeline Transparent Cached',
+        layout,
+        vertex: vertexState,
+        fragment: {
+          entryPoint: 'main',
+          module: this.device.createShaderModule({code: fragmentCode}),
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+              blend: {
+                color: {
+                  srcFactor: 'src-alpha',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
+                alpha: {
+                  srcFactor: 'one',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
+              },
             },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-          },
-        }],
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-      primitive: this.primitive,
+          ],
+        },
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+        primitive: this.primitive,
+      }
     });
   };
 
@@ -1017,26 +1008,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     } else {
       pass.setBindGroup(1, this.modelBindGroup);
     }
-    if(this.material.type === "mirror" && this.mirrorBindGroup) {
-      pass.setBindGroup(2, this.mirrorBindGroup);
-    }
+    if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
     pass.setBindGroup(3, this.waterBindGroup);
 
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      if(this.mType == MeshType.BVHANIM || this.mType == MeshType.INSTANCED) {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        pass.setVertexBuffer(3, this.joints.buffer);  // dummy
-        pass.setVertexBuffer(4, this.weights.buffer); // dummy
-      }
-    }
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
-    else pass.setPipeline(this.pipeline);
+    // if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
+    // else pass.setPipeline(this.pipeline);
 
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for(var ins = 1;ins < this.instanceCount;ins++) {
@@ -1058,15 +1040,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      if(this.mType == MeshType.BVHANIM || this.mType == MeshType.INSTANCED) {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        pass.setVertexBuffer(3, this.joints.buffer);  // dummy
-        pass.setVertexBuffer(4, this.weights.buffer); // dummy
-      }
-    }
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
     else pass.setPipeline(this.pipeline);
@@ -1086,26 +1062,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
 
-    if(this.isVideo == false) {
-      if(this.material.type === "mirror" && this.mirrorBindGroup) {
-        pass.setBindGroup(2, this.mirrorBindGroup);
-      }
-    }
-
+    if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
     pass.setBindGroup(3, this.waterBindGroup);
 
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
 
-    if(this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer);
-      renderPass.setVertexBuffer(4, this.weights.buffer);
-    }
+    renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
 
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
@@ -1127,16 +1092,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        // dummy
-        shadowPass.setVertexBuffer(3, this.joints.buffer);
-        shadowPass.setVertexBuffer(4, this.weights.buffer);
-      }
-    }
+
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     if(this instanceof BVHPlayerInstances) {
       shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);

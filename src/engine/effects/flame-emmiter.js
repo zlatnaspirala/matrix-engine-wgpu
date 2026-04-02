@@ -1,10 +1,11 @@
 import {mat4} from "wgpu-matrix";
 import {flameEffectInstance} from "../../shaders/flame-effect/flame-instanced";
-import {randomFloatFromTo, randomIntFromTo} from "../utils";
+import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
 
 /**
  * @description
  * FlameEmitter
+ * transformed vertex particle, posible to choose dir also...
  */
 export class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
@@ -26,10 +27,11 @@ export class FlameEmitter {
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
-
+    this.rotSpeed = 0.1;
     // cache
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
+    this._scratch4 = new Float32Array(4);
 
     for(let i = 0;i < maxParticles;i++) {
       this.instanceTargets.push({
@@ -37,7 +39,7 @@ export class FlameEmitter {
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        rotation: 0.1,
+        rotation: randomFloatFromTo(10 , 20),
         color: [1, 0.3, 0, 0.1],
         time: 1,
         intensity: 1,
@@ -69,7 +71,6 @@ export class FlameEmitter {
     return vertexData;
   }
 
-  // not tested
   recreateVertexDataCrazzy(S) {
     const memory1 = -randomFloatFromTo(0.1, 0.1 + S);
     const memory11 = randomFloatFromTo(0.1, 0.1 + S);
@@ -80,7 +81,7 @@ export class FlameEmitter {
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S)
     this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info('crazzy flame emitter case data:', this.memoryCrazzyCase);
+    console.info(`Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([
       memory1, memory2, 0.0,
       memory11, memory21, 0.0,
@@ -175,9 +176,21 @@ export class FlameEmitter {
       mat4.multiply(baseModelMatrix, local, this._finalMatrix);
       const offset = i * floatsPerInstance;
       this.instanceData.set(this._finalMatrix, offset);
-      this.instanceData.set([t.time, t.speed ?? 1.0, 0, 0], offset + 16);
-      this.instanceData.set([(t.intensity ?? 1.0) * this.intensity, t.turbulence ?? 0.5, t.stretch ?? 1.0, 0], offset + 20);
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.tintStrength ?? 0.0], offset + 24);
+
+      this.instanceData[offset + 16] = t.time;
+      this.instanceData[offset + 17] = t.speed ?? 1.0;
+      this.instanceData[offset + 18] = 0;
+      this.instanceData[offset + 19] = 0;
+
+      this.instanceData[offset + 20] = (t.intensity ?? 1.0) * this.intensity;
+      this.instanceData[offset + 21] = t.turbulence ?? 0.5;
+      this.instanceData[offset + 22] = t.stretch ?? 1.0;
+      this.instanceData[offset + 23] = 0;
+
+      this.instanceData[offset + 24] = t.color[0];
+      this.instanceData[offset + 25] = t.color[1];
+      this.instanceData[offset + 26] = t.color[2];
+      this.instanceData[offset + 27] = t.tintStrength ?? 0.0;
     }
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
   }
@@ -186,7 +199,6 @@ export class FlameEmitter {
     this.time += dt;
     for(const p of this.instanceTargets) {
       p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
-      // Reset check
       const resetCondition = this.riseDirection > 0
         ? p.position[this.swap1] > this.maxBound
         : p.position[this.swap1] < this.minBound;
@@ -198,9 +210,8 @@ export class FlameEmitter {
         p.position[this.swap2] = (Math.random() - 0.5) * 0.2;
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
-
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * randomIntFromTo(1, 4);
+      p.rotation += dt * this.rotSpeed;
     }
 
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);

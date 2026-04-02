@@ -11,7 +11,8 @@ export class GenGeoTexture {
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
     this.enabled = true;
-
+    this._localMatrix = new Float32Array(16);
+    this._finalMatrix = new Float32Array(16);
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
@@ -157,33 +158,36 @@ export class GenGeoTexture {
   updateInstanceData = (baseModelMatrix) => {
     if(this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
-      if (this.rotateAngle >= 360) {
+      if(this.rotateAngle >= 360) {
         this.rotateAngle = 0;
       }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
-      // smooth interpolation of position & scale
       for(let j = 0;j < 3;j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
-      const local = mat4.identity();
-      if(this.rotateEffect == true) {
-        mat4.rotateY(local, this.rotateAngle, local);
+
+      mat4.identity(this._localMatrix);
+      if(this.rotateEffect) {
+        mat4.rotateY(this._localMatrix, this.rotateAngle, this._localMatrix);
       }
-      mat4.translate(local, t.currentPosition, local);
-      mat4.scale(local, t.currentScale, local);
-      const finalMat = mat4.identity();
-      mat4.multiply(baseModelMatrix, local, finalMat);
+      mat4.translate(this._localMatrix, t.currentPosition, this._localMatrix);
+      mat4.scale(this._localMatrix, t.currentScale, this._localMatrix);
+      mat4.identity(this._finalMatrix);
+      mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
+
       const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
+      this.instanceData.set(this._finalMatrix, offset);
+      this.instanceData[offset + 16] = t.color[0];
+      this.instanceData[offset + 17] = t.color[1];
+      this.instanceData[offset + 18] = t.color[2];
+      this.instanceData[offset + 19] = t.color[3];
     }
     // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
     const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
   };
 

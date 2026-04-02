@@ -87,7 +87,7 @@ export var fontana = function() {
         material: {type: 'free'},
         position: {x: 0, y: 4, z: -15} ,
         rotation: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
+        scale: [10, 10, 10],
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
         name: `fontana`,
@@ -96,25 +96,22 @@ export var fontana = function() {
       });
 
       fontana.addLight();
-      fontana.lightContainer[0].intensity = 10;
+      fontana.lightContainer[0].setIntensity(10);
 
       fontana.activateBloomEffect();
       fontana.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
       fontana.lightContainer[0].behavior.value_ = -1;
       fontana.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
-        light.target[0] = light.behavior.setPath0()
+        light.setPosX(light.behavior.setPath0())
+        light.setTargetX(light.behavior.setPath0())
       })
 
-      fontana.lightContainer[0].position = [0, 17, -10];
-      fontana.lightContainer[0].target = [0, 0, -10];
+      fontana.lightContainer[0].setPosition(0, 17, -10);
+      fontana.lightContainer[0].setTarget(0, 0, -10);
 
-      var TEST = fontana.getSceneObjectByName('cube2');
+      // var TEST = fontana.getSceneObjectByName('cube2');
       setTimeout(() => {
         // app.activateBloomEffect();
-        let cube1 = app.getSceneObjectByName('cube1')
-        // cube1.effects.flameEffect.intensity = 100;
-        // cube1.effects.flameEffect.morphTo("pyramid", 8)
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;

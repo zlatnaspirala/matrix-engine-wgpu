@@ -16,14 +16,13 @@ export let application = new MatrixEngineWGPU({
   application.addLight();
   console.log('light added.')
   application.lightContainer[0].outerCutoff = 0.5;
-  application.lightContainer[0].position[2] = -16;
-  application.lightContainer[0].intensity = 6;
-  application.lightContainer[0].target[2] = -20;
-  application.lightContainer[0].position[1] = 9;
+  application.lightContainer[0].setPosZ(-16);
+  application.lightContainer[0].setIntensity(6);
+  application.lightContainer[0].setTargetZ(-20);
+  application.lightContainer[0].setPosY(9);
   application.globalAmbient[0] = 0.7;
   application.globalAmbient[1] = 0.7;
   application.globalAmbient[2] = 0.7;
-
   application.activateBloomEffect();
   application.bloomPass.setIntensity(5);
   application.bloomPass.setKnee(25);

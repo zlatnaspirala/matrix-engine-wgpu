@@ -40,8 +40,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -162,7 +164,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let radiance = light.color * light.intensity;
     return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
-
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
     var visibility: f32 = 0.0;
     let biasConstant: f32 = 0.001;
@@ -174,14 +175,20 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
         vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
         vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
     );
+    var weight: f32 = 0.0;
     for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
+        let sampleUV = shadowUV + offsets[i] * oneOverSize;
+        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+        let s = textureSampleCompare(
             shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
+            sampleUV, layer, depthRef - bias
         );
+        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+        visibility += select(1.0, s, inBounds);
+        weight += 1.0;
     }
-    return visibility / 9.0;
+    return visibility / weight;
 }
 
 @fragment
@@ -201,12 +208,13 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
         let depthRef = p.z;
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let inFrustum =
-        p.z >= 0.0 && p.z <= 1.0 &&
-        p.x >= -1.5 && p.x <= 1.5 &&
-        p.y >= -1.5 && p.y <= 1.5;
-        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-        let shadowFactor = select(1.0, visibility, inFrustum);
+// let inFrustum =
+//     p.z >= 0.0 && p.z <= 1.0 &&
+//     p.x >= -1.0 && p.x <= 1.0 &&
+//     p.y >= -1.0 && p.y <= 1.0;
+      let inDepth = p.z >= 0.0 && p.z <= 1.0;
+let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+let shadowFactor = select(1.0, visibility, inDepth);
         let contrib = computeSpotLight(
             spotlights[i],
             norm,
@@ -217,10 +225,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         lightContribution += contrib * shadowFactor;
     }
 
-    // 
     // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+    // -- from dark next feature
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    // like fog interest
+    // var ambientTerm = material.ambientColor + scene.globalAmbient;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;

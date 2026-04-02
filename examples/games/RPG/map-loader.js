@@ -210,8 +210,8 @@ export class MEMapLoader {
 
     }, 6500);
 
-    this.core.lightContainer[0].position[1] = 175;
-    this.core.lightContainer[0].intesity = 1;
+    this.core.lightContainer[0].setPosY(175);
+    this.core.lightContainer[0].setIntensity(1);
   }
 
   onTree(m) {

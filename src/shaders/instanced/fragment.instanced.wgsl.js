@@ -37,8 +37,10 @@ struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
     roughnessFactor : f32,
-    _pad1           : f32,
-    _pad2           : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  // add this
+    _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
@@ -202,7 +204,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     // Apply per-instance tint
     finalColor *= input.colorMult.rgb;
     let N = normalize(input.fragNorm);

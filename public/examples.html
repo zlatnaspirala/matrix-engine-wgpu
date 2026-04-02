@@ -5,7 +5,7 @@
   <link rel="manifest" href="manifest.web" />
   <title>Matrix Engine Powered by webGPU. Created by Nikola Lukic zlatnaspirala@gmail.com </title>
   <meta name="description" content="The benefits of this project is offering an overview of the entire application logic, easy native implementations (hybrid app), object structural. " />
-  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <link defer rel="stylesheet" href="css/style.css" />
   <link rel="apple-touch-icon" href="res/icons/512.png" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -19,7 +19,8 @@
   <div class="header" style="display: contents;text-align: center;font-size: large;">
     MATRIX-ENGINE-WGPU WORKSPACE 2026 <a style="font-size: x-small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
   </div>
-  <div id="examples" style="display: flex; flex-direction: column;width: 180px;position: absolute;">
+  <div id="examples" style="left: 0;display: flex; flex-direction: column;width: 180px;position: absolute;">
+    <button class="btn" style="width: 210px;text-align: end;" id="sliderMenu1">Matrix EngineWGPU 👉🏼</button>
     <button class="btn" id="loadObjFile">Load meshes</button>
     <button class="btn" id="physicsPlayground">Physics Playground</button>
     <button class="btn" id="objs-anim">Objs Sequence</button>
@@ -37,6 +38,15 @@
     <button class="btn" id="moba">MOBA game</button>
   </div>
   <script src="examples.js"></script>
+  <script>
+    document.getElementById('sliderMenu1').addEventListener('click', () => {
+      if (document.getElementById('examples').style.left == "0px") {
+        document.getElementById('examples').style.left = "-150px";
+      } else {
+        document.getElementById('examples').style.left = "0px";
+      }
+    }, {passive: true});
+  </script>
 </body>
 
 </html>

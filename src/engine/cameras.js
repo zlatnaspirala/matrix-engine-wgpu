@@ -146,6 +146,7 @@ export class WASDCamera {
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
+          this._dirtyAngle = true;
           this._applyDigitalMovement()
         }, 16);
       } else {
@@ -155,6 +156,7 @@ export class WASDCamera {
           this._keyInterval = null;
           console.log
           this._dirty = false;
+          this._dirtyAngle = false;
         }
       }
     };
@@ -206,7 +208,14 @@ export class WASDCamera {
     this._dirtyAngle = true;
   }
 
-  setX (z) {
+  setZ (z) {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+
+  setPosition (x,y,z) {
+    this.position[0] = x;
+    this.position[1] = y;
     this.position[2] = z;
     this._dirtyAngle = true;
   }
@@ -475,27 +484,20 @@ export class RPGCamera {
 
   _updateFollow() {
     if(!this.followMe) return;
-
     if(this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
-
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
-
-      // optional external coupling
-      app.lightContainer[0].position[0] = this.followMe.x;
-      app.lightContainer[0].position[2] = this.followMe.z;
-      app.lightContainer[0].target[0] = this.followMe.x;
-      app.lightContainer[0].target[2] = this.followMe.z;
-
+      app.lightContainer[0].setPosX(this.followMe.x);
+      app.lightContainer[0].setPosZ(this.followMe.z);
+      app.lightContainer[0].setTargetX(this.followMe.x);
+      app.lightContainer[0].setTargetZ(this.followMe.z);
       this.mousRollInAction = false;
       this._dirty = true;
     }
-
     // smooth Y only (cheap)
     const smoothFactor = 0.1;
     const newY = this.position[1] + (this.scrollY - this.position[1]) * smoothFactor;
-
     if(Math.abs(newY - this.position[1]) > 0.0001) {
       this.position[1] = newY;
       this._dirty = true;

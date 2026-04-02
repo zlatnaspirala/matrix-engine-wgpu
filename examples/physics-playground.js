@@ -23,7 +23,7 @@ export var physicsPlayground = function() {
         ball: "./res/meshes/shapes/sphere.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
-      physicsPlayground.matrixAmmo.speedUpSimulation = 4;
+      // physicsPlayground.matrixAmmo.speedUpSimulation = 4;
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -103,7 +103,7 @@ export var physicsPlayground = function() {
       // }, null, glbFile01);
       // console.log('1myComplexGeometry', myComplexGeometry2)
 
-      
+
 
       // Test complex geometry with ConvexHull
       const myComplexGeometry = physicsPlayground.addMeshObj({
@@ -122,13 +122,13 @@ export var physicsPlayground = function() {
         }
       });
 
-      setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 3.76;
-        app.cameras.WASD._dirtyAngle = true;
-      }, 1000);
+      // setTimeout(() => {
+      app.cameras.WASD.yaw = -0.03;
+      app.cameras.WASD.pitch = -0.49;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
+      app.cameras.WASD._dirtyAngle = true;
+      // }, 1000);
 
       physicsPlayground.addMeshObj({
         material: {type: 'standard'},
@@ -249,14 +249,14 @@ export var physicsPlayground = function() {
         'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
 
       app.activateBloomEffect();
-      
+
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
       physicsPlayground.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
+        light.setPosX(light.behavior.setPath0())
       })
-      physicsPlayground.lightContainer[0].position[1] = 14;
-      physicsPlayground.lightContainer[0].intesity = 24;
+      physicsPlayground.lightContainer[0].setPosY(14);
+      physicsPlayground.lightContainer[0].setIntensity(24);
     }
 
     function onLoadObj(m) {

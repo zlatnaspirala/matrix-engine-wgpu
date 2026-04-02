@@ -13,6 +13,8 @@ import {FlameEmitter} from './effects/flame-emmiter';
 import {VERTEX_ANIM_FLAGS} from './literals';
 import {createGroundTexture} from './procedures/procedural-textures';
 import {MEConfig} from '../me-config';
+import {PointerEffect} from './effects/pointerEffect';
+import {buildPipelineKey, PipelineManager} from './pipelineManager';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -59,6 +61,8 @@ export default class MEMeshObj extends Materials {
 
     this.useScale = o.useScale || false;
 
+
+
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8, // vec2f
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -67,7 +71,7 @@ export default class MEMeshObj extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
 
     this.material = o.material;
-    this.shadowsCast = o.shadowsCast == false ? o.shadowsCast : true;
+    this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
     this.time = 0;
     this.deltaTimeAdapter = 10;
     //cache
@@ -231,7 +235,7 @@ export default class MEMeshObj extends Materials {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
       }
 
       // if(this.material.useTextureFromGlb == true) {
@@ -281,7 +285,7 @@ export default class MEMeshObj extends Materials {
     this.scale = o.scale;
 
     // new dummy for skin mesh
-    if(!this.joints) {
+    if(!this.mesh.jointsBuffer) {
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -291,11 +295,12 @@ export default class MEMeshObj extends Materials {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      this.joints = {
-        data: jointsData,
-        buffer: jointsBuffer,
-        stride: 16, // vec4<u32>
-      };
+      this.mesh.jointsBuffer = jointsBuffer;
+      // = {
+      //   data: jointsData,
+      //   buffer: jointsBuffer,
+      //   stride: 16, // vec4<u32>
+      // };
       const numVerts = this.mesh.vertices.length / 3;
       // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
@@ -314,11 +319,13 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      this.weights = {
-        data: weightsData,
-        buffer: weightsBuffer,
-        stride: 16, // vec4<f32>
-      };
+      // this.weights = {
+      this.mesh.weightsBuffer = weightsBuffer;
+      //  {
+      //   data: weightsData,
+      //   buffer: weightsBuffer,
+      //   stride: 16
+      // };
 
       this._modelMatrix = mat4.create();
     }
@@ -465,28 +472,6 @@ export default class MEMeshObj extends Materials {
         ]
       });
 
-      // Selected effect
-      // this.selectedBuffer = device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-      // this.selectedBindGroupLayout = device.createBindGroupLayout({
-      //   label: 'selectedBindGroupLayout mesh',
-      //   entries: [
-      //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
-      //   ],
-      // });
-      // this.selectedBindGroup = device.createBindGroup({
-      //   label: 'selectedBindGroup mesh',
-      //   layout: this.selectedBindGroupLayout,
-      //   entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
-      // });
-      // this.setSelectedEffect = (selected = false) => {
-      //   this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
-      // };
-      // // 0 default
-      // this.setSelectedEffect();
-
-      // Create a bind group layout which holds the scene uniforms and
-      // the texture+sampler for depth. We create it manually because the WebPU
-      // implementation doesn't infer this from the shader (yet).
       this.createLayoutForRender();
 
       this.modelUniformBuffer = this.device.createBuffer({
@@ -655,8 +640,6 @@ export default class MEMeshObj extends Materials {
       this.updateVertexAnimBuffer = () => {
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       };
-
-      // globalIntensity
       this.vertexAnimParams[2] = 1.0;
       this.updateVertexAnimBuffer();
 
@@ -673,7 +656,8 @@ export default class MEMeshObj extends Materials {
           {binding: 0, resource: {buffer: this.modelUniformBuffer}},
           {binding: 1, resource: {buffer: this.bonesBuffer}},
           {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+          {binding: 3, resource: {buffer: this.uvScaleBuffer}},
+
         ],
       });
 
@@ -685,11 +669,12 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      this._sceneData = new Float32Array(48);
-
       this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
+        if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
+          this.effects.pointer = new PointerEffect(device, 'rgba16float', 1);
+        }
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect(device, 'rgba16float');
         }
@@ -698,12 +683,10 @@ export default class MEMeshObj extends Materials {
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch');
-
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
         }
-
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {
             particleCount: 100,
@@ -712,21 +695,6 @@ export default class MEMeshObj extends Materials {
           });
         }
       }
-
-      this.getTransformationMatrix = (camVP, dt) => {
-        this._sceneData.set(camVP, 16);
-        this._sceneData[35] = 0.0;
-        this._sceneData[39] = 0.0;
-        this._sceneData[40] = this.globalAmbient[0];
-        this._sceneData[41] = this.globalAmbient[1];
-        this._sceneData[42] = this.globalAmbient[2];
-        this._sceneData[43] = 0.0;
-        this._sceneData[44] = this.time;
-        this._sceneData[45] = dt;
-        this._sceneData[46] = 0;
-        this._sceneData[47] = 0;
-        device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      };
 
       this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity(this._modelMatrix);
@@ -765,15 +733,14 @@ export default class MEMeshObj extends Materials {
       );
       this.done = true;
       this.updateModelUniformBuffer();
-      if(this.texturesPaths.length > 1) {
+      if(this.texturesPaths.length > 1 && this.material.type == "mirror") {
         this.loadEnvMap(this.texturesPaths, true).then((envTexture) => {
           try {this.envMapParams.envTexture = envTexture;} catch(err) {
-            console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE);
-            return;
+            console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE); return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
         });
+        this.setupPipeline()
       } else {
         try {this.setupPipeline()} catch(err) {console.log('Err[create pipeline]:', err)}
       }
@@ -785,110 +752,136 @@ export default class MEMeshObj extends Materials {
     })
   }
 
-
-  // Helper to set it
   setUVScale(x, y = x) {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
   setupPipeline = () => {
     this.createBindGroupForRender();
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
-      layout: this.device.createPipelineLayout({
-        label: 'PipelineLayout Opaque',
-        bindGroupLayouts: [
-          this.bglForRender,
-          this.uniformBufferBindGroupLayout,
-          (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
-          this.waterBindGroupLayout,
-        ],
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: (this.material.type === 'normalmap') ? vertexWGSL_NM : vertexWGSL,
-        }),
-        buffers: this.vertexBuffers,
-      },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: (this.isVideo === true ? fragmentVideoWGSL : this.getMaterial()),
-        }),
-        targets: [
-          {
-            format: 'rgba16float',
-            blend: undefined
-          },
-        ],
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize,
-        },
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-      primitive: this.primitive,
+    const pm = PipelineManager.get();
+    const isMirror = this.material.type === 'mirror';
+    const isVideo = this.isVideo === true;
+    const isNormalMap = this.material.type === 'normalmap';
+    const vertexCode = isNormalMap ? vertexWGSL_NM : vertexWGSL;
+    const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
+    const vertexModule = this.device.createShaderModule({code: vertexCode});
+    const fragmentModule = this.device.createShaderModule({
+      code: fragmentCode,
     });
-    this.pipelineTransparent = this.device.createRenderPipeline({
-      label: 'Main [Mesh] Pipeline ✅[Transparent]',
-      layout: this.device.createPipelineLayout({
-        label: 'Main PipelineLayout Transparent',
-        bindGroupLayouts: [
-          this.bglForRender,
-          this.uniformBufferBindGroupLayout,
-          (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
-          this.waterBindGroupLayout,
-        ],
+    // PIPELINE LAYOUT (STATIC PER MESH)
+    // const layout = this.device.createPipelineLayout({
+    //   label: 'PipelineLayout Mesh',
+    //   bindGroupLayouts: [
+    //     this.bglForRender,
+    //     this.uniformBufferBindGroupLayout,
+    //     (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
+    //   ],
+    // });
+    // VERTEX STATE (SHARED)
+    const vertexState = {
+      entryPoint: 'main',
+      module: vertexModule,
+      buffers: this.vertexBuffers,
+    };
+    const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
+    const baseKey = {
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
+      type: "mesh",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+    };
+    // OPAQUE PIPELINE
+    this.pipeline = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: 0,
+        depthWrite: 1,
       }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: (this.material.type === 'normalmap') ? vertexWGSL_NM : vertexWGSL,
+      pipeline: {
+        label: 'Mesh Pipeline Opaque',
+        layout: this.device.createPipelineLayout({
+          label: 'PipelineLayout Mesh',
+          bindGroupLayouts: [
+            this.bglForRender,
+            this.uniformBufferBindGroupLayout,
+            (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
+          ],
         }),
-        buffers: this.vertexBuffers,
+        vertex: vertexState,
+        fragment: {
+          entryPoint: 'main',
+          module: fragmentModule,
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+            },
+          ],
+        },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+        primitive: this.primitive,
       },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: (this.isVideo === true ? fragmentVideoWGSL : this.getMaterial()),
+    });
+    // TRANSPARENT PIPELINE
+    this.pipelineTransparent = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: 1,
+        depthWrite: 0,
+      }),
+      pipeline: {
+        label: 'Mesh Pipeline Transparent',
+        layout: this.device.createPipelineLayout({
+          label: 'PipelineLayout Mesh',
+          bindGroupLayouts: [
+            this.bglForRender,
+            this.uniformBufferBindGroupLayout,
+            (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
+          ],
         }),
-        targets: [
-          {
-            format: 'rgba16float',
-            blend: {
-              color: {
-                srcFactor: 'src-alpha',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add',
-              },
-              alpha: {
-                srcFactor: 'one',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add',
+        vertex: vertexState,
+        fragment: {
+          entryPoint: 'main',
+          module: fragmentModule,
+          constants: fragmentConstants,
+          targets: [
+            {
+              format: 'rgba16float',
+              blend: {
+                color: {
+                  srcFactor: 'src-alpha',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
+                alpha: {
+                  srcFactor: 'one',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add',
+                },
               },
             },
-          },
-        ],
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize,
+          ],
         },
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+          format: 'depth24plus',
+        },
+        primitive: this.primitive,
       },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-      primitive: this.primitive,
     });
-  }
+  };
 
-  getMainPipeline = () => {
-    return this.pipeline;
-  }
+  getMainPipeline = () => {return this.pipeline}
 
   updateModelUniformBuffer = () => {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
@@ -963,29 +956,14 @@ export default class MEMeshObj extends Materials {
   drawElements = (pass) => {
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    if(this.material.type === "mirror" && this.mirrorBindGroup) {
-      pass.setBindGroup(2, this.mirrorBindGroup);
-    }
+    if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
     pass.setBindGroup(3, this.waterBindGroup);
-
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      if(this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        // dummy
-        pass.setVertexBuffer(3, this.joints.buffer);
-        pass.setVertexBuffer(4, this.weights.buffer);
-      }
-    }
-
-    if(this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
-
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
@@ -993,49 +971,32 @@ export default class MEMeshObj extends Materials {
   drawVideoElements = (pass) => {
     if(!this.video || this.video.readyState < 2) return;
     this.updateVideoTexture();
-    if(!this.sceneBindGroupForRender) return;
+    // if(!this.sceneBindGroupForRender) return;
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);  // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
-
+    pass.setBindGroup(3, this.waterBindGroup);  // REPLACE WITH REAL DUMMY!
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      pass.setVertexBuffer(3, this.joints.buffer);
-      pass.setVertexBuffer(4, this.weights.buffer);
-    }
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
 
   drawElementsAnim = (renderPass) => {
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
-
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-
-    if(this.material.type === "mirror" && this.mirrorBindGroup) {
-      renderPass.setBindGroup(2, this.mirrorBindGroup);
-    }
-
+    if(this.material.type === "mirror") renderPass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
-
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-
-    if(this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      renderPass.setVertexBuffer(3, this.joints.buffer);
-      renderPass.setVertexBuffer(4, this.weights.buffer);
-    }
-
+    renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     if(this.objAnim.playing == true) {
@@ -1055,37 +1016,20 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if(this.joints) {
-      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        shadowPass.setVertexBuffer(3, this.joints.buffer);  // dummy
-        shadowPass.setVertexBuffer(4, this.weights.buffer); // dummy
-      }
-    }
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
 
   drawShadowsAnim = (shadowPass) => {
     if(!this.objAnim?.meshList[this.objAnim.id + this.objAnim.currentAni]) return;
-
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-
     shadowPass.setVertexBuffer(0, mesh.vertexBuffer);
     shadowPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-
-    if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-      shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      // dummy
-      shadowPass.setVertexBuffer(3, this.joints.buffer);
-      shadowPass.setVertexBuffer(4, this.weights.buffer);
-    }
-
+    shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     shadowPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     shadowPass.drawIndexed(mesh.indexCount);
   }
@@ -1148,5 +1092,4 @@ export default class MEMeshObj extends Materials {
     }
     console.info(`🧹Destroyed: ${this.name}`);
   }
-
 }

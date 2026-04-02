@@ -44,15 +44,57 @@ export class SpotLight {
 
   // ─── Getters / Setters ────────────────────────────────────────────────────
   get position() {return this._position;}
-  set position(v) {
+
+  // set position(v) {
+  //   vec3.copy(v, this._position);
+  //   this._dirty = true;
+  //   this._lightBufferDirty = true;
+  // }
+
+  setPosition(x, y, z) {
+    this._position[0] = x;
+    this._position[1] = y;
+    this._position[2] = z;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setPositionVec(v) {
     vec3.copy(v, this._position);
     this._dirty = true;
     this._lightBufferDirty = true;
   }
 
   get target() {return this._target;}
-  set target(v) {
+
+  setTargetVec(v) {
     vec3.copy(v, this._target);
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTarget(x, y, z) {
+    this._target[0] = x;
+    this._target[1] = y;
+    this._target[2] = z;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTargetX(x) {
+    this._target[0] = x;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTargetY(y) {
+    this._target[1] = y;
+    this._dirty = true;
+    this._lightBufferDirty = true;
+  }
+
+  setTargetZ(z) {
+    this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
@@ -64,7 +106,7 @@ export class SpotLight {
     indexx,
     shadowPassView = null,
     shadowSampler = null,
-    fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    fov = 175, aspect = 1.0, near = 0.1, far = 100) {
 
     aspect = 1;
     this.name = "light" + indexx;
@@ -92,7 +134,7 @@ export class SpotLight {
 
     this.viewMatrix = mat4.lookAt(this._position, this._target, this.up);
     this.projectionMatrix = mat4.perspective(
-      (this.fov * Math.PI) / 180,
+      this.fov,
       this.aspect,
       this.near,
       this.far
@@ -114,12 +156,13 @@ export class SpotLight {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    this.setProjection = function(fov = (2 * Math.PI) / 5, aspect = 1.0, near = 0.1, far = 200) {
+    this.setProjection = function(fov = 175, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
       this._dirty = true;
     };
 
     this.updateProjection = function() {
+      console.log('test ', this.fov, this.aspect, this.near, this.far)
       this.projectionMatrix = mat4.perspective(this.fov, this.aspect, this.near, this.far);
       this._dirty = true;
     };
@@ -370,23 +413,25 @@ export class SpotLight {
   // Position components — mutate vec3 in place, mark both dirty flags
 
   setPosX = (x) => {
-    if (this._position[0] === x) return;
+    if(this._position[0] === x) return;
     this._position[0] = x;
     this._dirty = true;
     this._lightBufferDirty = true;
-  };
+  }
+
   setPosY = (y) => {
-    if (this._position[1] === y) return; 
+    if(this._position[1] === y) return;
     this._position[1] = y;
     this._dirty = true;
     this._lightBufferDirty = true;
-  };
+  }
+
   setPosZ = (z) => {
-    if (this._position[1] === y) return; 
+    if(this._position[2] === z) return;
     this._position[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
-  };
+  }
 
   // These only affect the light buffer, not the VP matrix
   setInnerCutoff = (innerCutoff) => {

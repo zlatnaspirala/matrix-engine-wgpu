@@ -5,7 +5,6 @@ import {isMobile, ORBIT} from '../src/engine/utils.js';
 
 export var myLights = function() {
   let myLights = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -33,10 +32,6 @@ export var myLights = function() {
       [1.0, 0.1, 0.8],  // pink
       [1.0, 0.1, 0.4],  // rose
     ];
-
-    for(let i = 0;i < NUM_LIGHTS;i++) {
-      myLights.addLight();
-    }
 
     // Ground
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
@@ -66,6 +61,10 @@ export var myLights = function() {
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile);
 
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      myLights.addLight();
+    }
+
     // Set up lights evenly spaced around the circle
     for(let i = 0;i < NUM_LIGHTS;i++) {
       const light = myLights.lightContainer[i];
@@ -75,12 +74,12 @@ export var myLights = function() {
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
-      light.position = [
+      light.setPosition(
         TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
         4 + heightOffset,
         TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
-      ];
-      light.target = [TARGET.x, TARGET.y, TARGET.z];
+      );
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
 
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
@@ -90,8 +89,8 @@ export var myLights = function() {
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
         const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-        light.position = [x, height, z];
-        light.target = [TARGET.x, TARGET.y, TARGET.z];
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
 

@@ -2,18 +2,21 @@ import {mat4} from "wgpu-matrix";
 import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
 
 export class PointerEffect {
-  constructor(device, format) {
+  constructor(device, format, initialScale = 10) {
+    this.initialScale = initialScale;
     this.device = device;
     this.format = format;
     this._tempModelMatrix = mat4.identity();
     this._tempTranslation = new Float32Array(3);
     this.enabled = true;
+    this.yOffset = 60;
     this._initPipeline();
+    // alert('pointer');
   }
 
   _initPipeline() {
     // Vertex data: simple quad
-    let S = 10;
+    let S = this.initialScale;
     const vertexData = new Float32Array([
       -0.5 * S, 0.5 * S, 0.0 * S,  // top-left
       0.5 * S, 0.5 * S, 0.0 * S,  // top-right
@@ -112,9 +115,9 @@ export class PointerEffect {
       const objPos = mesh.position;
       mat4.identity(this._tempModelMatrix);
       this._tempTranslation[0] = objPos.x;
-      this._tempTranslation[1] = objPos.y + 60;
+      this._tempTranslation[1] = objPos.y + this.yOffset;
       this._tempTranslation[2] = objPos.z;
       mat4.translate(this._tempModelMatrix, this._tempTranslation, this._tempModelMatrix);
-      this.draw(transPass, viewProjMatrix, modelMatrix);
+      this.draw(transPass, viewProjMatrix, this._tempModelMatrix);
   }
 }

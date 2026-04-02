@@ -3,35 +3,35 @@ import {downloadMeshes, makeObjSeqArg} from '../src/engine/loader-obj.js';
 import {LOG_MATRIX} from "../src/engine/utils.js";
 
 export var loadObjsSequence = function() {
-
+  // THIS EXAMPLE GIVE EXSTRIME GOOD PERFOMANCE (ALSO ON MOBILE)
+  // IST IS EXSPECTED OPOSITY
+  // PROBABLY SWICTHING PIPELINE COST IN WEBGPU
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
+    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
     }
   }, () => {
-
     loadObjFile.addLight();
 
-    addEventListener('AmmoReady', () => {
-      loadObjFile.lightContainer[0].position[2] = -20;
-      loadObjFile.lightContainer[0].position[1] = 35;
-      loadObjFile.lightContainer[0].intensity = 5;
+    loadObjFile.lightContainer[0].setPosZ(-20);
+    loadObjFile.lightContainer[0].setPosY(35);
+    loadObjFile.lightContainer[0].setIntensity(5);
 
-      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]});
+    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]});
 
-      downloadMeshes(
-        makeObjSeqArg({
-          id: "swat-walk-pistol",
-          path: "res/meshes/objs-sequence/swat-walk-pistol",
-          from: 1,
-          to: 20
-        }),
-        onLoadObj,
-        {scale: [0.1, 0.1, 0.1]}
-      );
-    })
+    downloadMeshes(
+      makeObjSeqArg({
+        id: "swat-walk-pistol",
+        path: "res/meshes/objs-sequence/swat-walk-pistol",
+        from: 1,
+        to: 20
+      }),
+      onLoadObj,
+      {scale: [0.1, 0.1, 0.1]}
+    );
 
     function onLoadObj(m) {
       console.log(`%c Loaded objs: ${m} `, LOG_MATRIX);
@@ -71,10 +71,11 @@ export var loadObjsSequence = function() {
       })
 
       setTimeout(() => {
-        app.cameras.WASD.pitch = -0.2605728267949113;
-        app.cameras.WASD.yaw = -0.0580;
+        app.cameras.WASD.pitch = -0.26;
+        app.cameras.WASD.yaw = -0.06;
         app.cameras.WASD.position[1] = 15
         app.cameras.WASD.position[2] = 11;
+        app.cameras.WASD._dirtyAngle = true;
         app.getSceneObjectByName('swat').objAnim.play('walk')
       }, 200);
     }
@@ -94,11 +95,6 @@ export var loadObjsSequence = function() {
         }
       })
     }
-
-    if (Ammo) dispatchEvent(new CustomEvent('AmmoReady'))
-
-
   })
-
   window.app = loadObjFile;
 }
