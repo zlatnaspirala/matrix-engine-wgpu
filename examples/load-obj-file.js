@@ -27,10 +27,10 @@ export var loadObjFile = function() {
       loadObjFile.addMeshObj({
         material: {type: 'mirror'},
         envMapParams: {
-          baseColorMix: 0.5,                // CLEAR SKY
+          baseColorMix: 0.1,                // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
           reflectivity: 0.5,                // 25% reflection blend
-          illuminateColor: [0.5, 0.5, 0.2], // Soft cyan
+          illuminateColor: [0.6, 0.5, 0.2], // Soft cyan
           illuminateStrength: 0.1,          // Gentle rim
           illuminatePulse: 0.01,            // No pulse (static)
           fresnelPower: 0.1,                // Medium-sharp edge
@@ -79,7 +79,7 @@ export var loadObjFile = function() {
       });
 
       let MYCUBE = loadObjFile.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -87,13 +87,13 @@ export var loadObjFile = function() {
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.99,               // CLEAR SKY
+          baseColorMix: 0.3,               // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
+          reflectivity: 0.35,               // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 2.0,                // Medium-sharp edge
+          illuminateStrength: 0.5,          // Gentle rim
+          illuminatePulse: 0.1,            // No pulse (static)
+          fresnelPower: 5,                // Medium-sharp edge
           envLodBias: 1.5,
           usePlanarReflection: false,       // ✅ Env map mode
         },
@@ -128,10 +128,11 @@ export var loadObjFile = function() {
         MYCUBE.effects.flameEmitter.setIntensity(100);
         MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
         MYCUBE.setAmbient(10, 1, 0);
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 10;
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(10);
+        app.buildRenderBuckets(app.mainRenderBundle);
         app.cameras.WASD._dirtyAngle = true;
       }, 400);
     }

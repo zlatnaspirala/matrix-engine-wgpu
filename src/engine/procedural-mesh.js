@@ -528,168 +528,72 @@ export default class ProceduralMeshObj extends Materials {
 
   }
 
-  _setupPipeline2() {
-    this.createLayoutForRender();
-    this.createBindGroupForRender();
-
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Procedural Mesh Pipeline [OPAQUE]',
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [
-          this.bglForRender,                    // From Materials
-          this.uniformBufferBindGroupLayout,    // Model/morph uniforms
-        ],
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL,
-        }),
-        buffers: this.vertexBuffers,
-      },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial(),
-        }),
-        targets: [{format: 'rgba16float', blend: undefined}],
-        constants: {shadowDepthTextureSize: this.shadowDepthTextureSize},
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-      primitive: this.primitive,
-    });
-
-    this.pipelineTransparent = this.device.createRenderPipeline({
-      label: 'Procedural Mesh Pipeline [TRANSPARENT]',
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [
-          this.bglForRender,
-          this.uniformBufferBindGroupLayout,
-        ],
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL,
-        }),
-        buffers: this.vertexBuffers,
-      },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial(),
-        }),
-        targets: [{
-          format: 'rgba16float',
-          blend: {
-            color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-            alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-          },
-        }],
-        constants: {shadowDepthTextureSize: this.shadowDepthTextureSize},
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-      primitive: this.primitive,
-    });
-  }
-
   _setupPipeline() {
     this.createLayoutForRender();
     this.createBindGroupForRender();
-
     const pm = PipelineManager.get();
-
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
-
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
-
     const layout = this.device.createPipelineLayout({
       bindGroupLayouts: [
         this.bglForRender,
         this.uniformBufferBindGroupLayout,
       ],
     });
-
     const vertexState = {
       entryPoint: 'main',
       module: this.device.createShaderModule({code: vertexCode}),
       buffers: this.vertexBuffers,
     };
-
-    const fragmentConstants = {
-      shadowDepthTextureSize: this.shadowDepthTextureSize,
-    };
-
+    const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
     const baseKey = {
       vertexId,
       fragmentId,
       type: "procedural",
-      primitive: this.primitive,
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
       format: 'rgba16float',
-      layoutFlags: {
-        morph: !this.vertexWGSL, // using morph fallback
-      }
+      morph: !this.vertexWGSL ? 1 : 0,
     };
-
-    // -------------------------
     // OPAQUE
-    // -------------------------
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
         transparent: false,
         depthWrite: true,
       }),
-
       pipeline: {
         label: 'Procedural Opaque Cached',
         layout,
-
         vertex: vertexState,
-
         fragment: {
           entryPoint: 'main',
           module: this.device.createShaderModule({code: fragmentCode}),
           targets: [{format: 'rgba16float'}],
           constants: fragmentConstants,
         },
-
         depthStencil: {
           depthWriteEnabled: true,
           depthCompare: 'less',
           format: 'depth24plus',
         },
-
         primitive: this.primitive,
       }
     });
-
-    // -------------------------
     // TRANSPARENT
-    // -------------------------
     this.pipelineTransparent = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
         transparent: true,
         depthWrite: false,
       }),
-
       pipeline: {
         label: 'Procedural Transparent Cached',
         layout,
-
         vertex: vertexState,
-
         fragment: {
           entryPoint: 'main',
           module: this.device.createShaderModule({code: fragmentCode}),
@@ -710,13 +614,11 @@ export default class ProceduralMeshObj extends Materials {
           }],
           constants: fragmentConstants,
         },
-
         depthStencil: {
           depthWriteEnabled: false,
           depthCompare: 'less',
           format: 'depth24plus',
         },
-
         primitive: this.primitive,
       }
     });

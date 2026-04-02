@@ -209,7 +209,6 @@ export default class MatrixAmmo {
     if(pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
       body.setActivationState(2)
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-      console.log('pOptions.mass is 0 and state is 2', pOptions.mass)
     } else if(typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
       // idea not work for now - eliminate collide effect
       body.setActivationState(4)

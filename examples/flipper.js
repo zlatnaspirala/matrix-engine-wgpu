@@ -55,20 +55,18 @@ export var flipper = function() {
       const light = flipper.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-      light.setIntensity = 8.5;
+      light.setIntensity(15);
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
-      light.setPosition (
+      light.setPosition(
         TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
         4 + heightOffset,
         TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
       );
       light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
-
       light.updater.push((light) => {
         light.orbitAngle += ORBIT_SPEED * 0.01;
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
@@ -80,9 +78,6 @@ export var flipper = function() {
     }
 
     addEventListener('AmmoReady', () => {
- 
-      //
-      // flipper.addLight();
       addRaycastsAABBListener();
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
@@ -106,14 +101,11 @@ export var flipper = function() {
       // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
       //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
       //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
-      setTimeout(() => {
-        // you cna call setters for each but bettter
-        app.cameras.WASD.setYaw(-0.03);
-        app.cameras.WASD.setPitch(-0.49);
-        app.cameras.WASD.setZ(0);
-        app.cameras.WASD.setY(10);
-        // app.cameras.WASD._dirtyAngle = true;
-      }, 500);
+      // setTimeout(() => {
+      //   // you cna call setters for each but bettter
+
+      //   // app.cameras.WASD._dirtyAngle = true;
+      // }, 500);
 
       let envMapParams = {
         baseColorMix: 0.4,               // CLEAR SKY
@@ -135,6 +127,7 @@ export var flipper = function() {
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
         mesh: m.ball,
+        shadowsCast: false,
         physics: {
           enabled: true,
           mass: 1,
@@ -209,7 +202,7 @@ export var flipper = function() {
           geometry: "Cube"
         }
       });
-      // glass.setBlend(0.01);
+      glass.setBlend(0.1);
       app.glass = glass;
 
       const commonAchorX = 2;
@@ -629,6 +622,7 @@ export var flipper = function() {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg1',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -643,6 +637,7 @@ export var flipper = function() {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg2',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -657,6 +652,7 @@ export var flipper = function() {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg3',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -671,6 +667,7 @@ export var flipper = function() {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg4',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -678,8 +675,16 @@ export var flipper = function() {
         }
       });
 
-      flipper.buildRenderBuckets(flipper.mainRenderBundle);
       // ball1.effects.pointer.yOffset = 3;
+      setTimeout(() => {
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(10);
+        app.buildRenderBuckets(app.mainRenderBundle);
+        app.cameras.WASD._dirtyAngle = true;
+      }, 500)
+
     }
 
   });

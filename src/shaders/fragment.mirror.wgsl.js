@@ -179,20 +179,13 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
-// ─── NEW: Mirror Illuminate helpers ──────────────────────────────────────────
 fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
-    let dir = normalize(R);
-    let phi = atan2(dir.x, dir.z);     // Horizontal angle
-    let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
-    let u = phi / (2.0 * PI) + 0.5;
-    let v = theta / PI;
-    return vec2f(u, v);
-    // let dir = normalize(R);
-    // let phi = atan2(-dir.z, dir.x);  // Note the negative
-    // let theta = acos(clamp(dir.y, -1.0, 1.0));
-    // let u = phi / (2.0 * PI) + 0.5;
-    // let v = theta / PI;
-    // return vec2f(u, 1.0 - v);  // Try flipping V
+  let dir = normalize(R);
+  let phi = atan2(dir.x, dir.z);     // Horizontal angle
+  let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
+  let u = phi / (2.0 * PI) + 0.5;
+  let v = theta / PI;
+  return vec2f(u, v);
 }
 
 // Planar mirror UV (screen-space)
@@ -217,19 +210,16 @@ fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32)
 
 // Animated illuminate rim — pulsing Fresnel edge glow
 fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
- let NdotV = max(dot(N, V), 0.0);
+  let NdotV = max(dot(N, V), 0.0);
     let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
 
     let pulse = mix(0.3, 1.0,
         (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
     );
-
     let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
-
     let result = mirrorParams.illuminateColor
         * mirrorParams.illuminateStrength
         * rim * pulse * shimmer;
-
     return clamp(result, vec3f(0.0), vec3f(1.0)); // ← ADD THIS
 }
 
@@ -252,11 +242,8 @@ fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f)
 fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
     // Normalize position relative to object center
     let dir = normalize(worldPos);
-    
-    // Convert to spherical coordinates
     let u = atan2(dir.z, dir.x) / (2.0 * PI) + 0.5;
     let v = asin(clamp(dir.y, -1.0, 1.0)) / PI + 0.5;
-    
     return vec2f(u, v);
 }
 
@@ -273,45 +260,33 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
         let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
         let p        = sc.xyz / sc.w;
-        // ✅ FIX 1: Y-flip to match working shader
         // let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
         let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
-
-        // ✅ FIX 2: Use p.z directly (not * 0.5 + 0.5)
         let depthRef = p.z;
 
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-
-        // ✅ FIX 3: Frustum guard — only apply shadow when inside light frustum
         let inFrustum = p.z >= 0.0 && p.z <= 1.0
                      && p.x >= -1.0 && p.x <= 1.0
                      && p.y >= -1.0 && p.y <= 1.0;
 
-        // ✅ FIX 4: Pass depthRef without subtracting bias here (sampleShadow handles it)
         let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
         let shadowFactor = select(1.0, vis, inFrustum);
 
         let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
         lightContribution += contrib * shadowFactor;
 
-        // ── Mirror: sharp specular from each spotlight ────────────────────
+        // Mirror: sharp specular from each spotlight
         let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
         let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
         lightContribution += mirrorSpec * coneFactor * shadowFactor;
     }
 
     let R = reflect(-V, N);
-    var envColor: vec3f;
-    if (mirrorParams.baseColorMix < 0.01) {
-        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
-    } else {
-        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
-    }
-    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), 
-                   mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+    // var envColor: vec3f;
+    let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
 
+    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     finalColor = mix(
         envColor,

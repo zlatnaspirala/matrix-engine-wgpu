@@ -217,22 +217,16 @@ fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32)
 }
 
 fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-    // let NdotV = max(dot(N, V), 0.0);
-    // let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
-    // let pulse = mix(0.3, 1.0,
-    //     (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
-    // );
-    // let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
-    // return mirrorParams.illuminateColor
-    //      * mirrorParams.illuminateStrength
-    //      * rim * pulse * shimmer;
-
-     let NdotV = max(dot(N, V), 0.0);
+  let NdotV = max(dot(N, V), 0.0);
     let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
-    // NO scene.time — static version
-    return mirrorParams.illuminateColor
-         * mirrorParams.illuminateStrength
-         * rim;
+    let pulse = mix(0.3, 1.0,
+        (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+    );
+    let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+    let result = mirrorParams.illuminateColor
+        * mirrorParams.illuminateStrength
+        * rim * pulse * shimmer;
+    return clamp(result, vec3f(0.0), vec3f(1.0));
 }
 
 @fragment

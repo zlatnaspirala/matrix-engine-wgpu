@@ -106,7 +106,7 @@ export class SpotLight {
     indexx,
     shadowPassView = null,
     shadowSampler = null,
-    fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    fov = 175, aspect = 1.0, near = 0.1, far = 100) {
 
     aspect = 1;
     this.name = "light" + indexx;
@@ -134,7 +134,7 @@ export class SpotLight {
 
     this.viewMatrix = mat4.lookAt(this._position, this._target, this.up);
     this.projectionMatrix = mat4.perspective(
-      (this.fov * Math.PI) / 180,
+      this.fov,
       this.aspect,
       this.near,
       this.far
@@ -156,12 +156,13 @@ export class SpotLight {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    this.setProjection = function(fov = (2 * Math.PI) / 5, aspect = 1.0, near = 0.1, far = 200) {
+    this.setProjection = function(fov = 175, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
       this._dirty = true;
     };
 
     this.updateProjection = function() {
+      console.log('test ', this.fov, this.aspect, this.near, this.far)
       this.projectionMatrix = mat4.perspective(this.fov, this.aspect, this.near, this.far);
       this._dirty = true;
     };

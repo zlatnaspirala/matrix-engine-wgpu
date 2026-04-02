@@ -316,12 +316,12 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff(callback) {
-
-    // singleton
     PipelineManager.init(this.device);
-
-    this.getTransformationMatrix = (camVP, dt) => {
-      this._sceneData.set(camVP, 16);
+    this.getTransformationMatrix = (camera, dt) => {
+      this._sceneData.set(camera.VP, 16);
+      this._sceneData[32] = camera.position[0];
+      this._sceneData[33] = camera.position[1];
+      this._sceneData[34] = camera.position[2];
       this._sceneData[35] = 0.0;
       this._sceneData[39] = 0.0;
       this._sceneData[40] = this.globalAmbient[0];
@@ -602,7 +602,7 @@ export default class MatrixEngineWGPU {
       const pipeline = isTransparent ? mesh.pipelineTransparent : mesh.pipeline;
 
       if(!pipeline) {
-        console.warn("❌ Pipeline undefined:", mesh.name);
+        // console.warn("❌ Pipeline undefined:", mesh.name);
         continue;
       }
       const buckets = isTransparent ? this.transparentBuckets : this.opaqueBuckets;
@@ -613,7 +613,6 @@ export default class MatrixEngineWGPU {
       }
       bucket.push(mesh);
     }
-
     this.buildLightShadowBuckets()
   }
 
@@ -963,7 +962,7 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      if(camera._dirtyAngle) this.getTransformationMatrix(camera.VP, now2);
+      if(camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
       camera.update();
 
       for(let i = 0;i < this.lightContainer.length;i++) {
@@ -993,7 +992,6 @@ export default class MatrixEngineWGPU {
             m.drawShadows(pass, light);
           }
         }
-
         pass.end();
       }
       // -------- UPDATE PHASE --------
@@ -1283,7 +1281,7 @@ export default class MatrixEngineWGPU {
   }
 
   sortRenderBundle() {
-    // setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 250);
+    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 50);
   }
 
   activateBloomEffect = () => {

@@ -237,13 +237,12 @@ var flipper = function () {
       const light = flipper.lightContainer[i];
       const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-      light.setIntensity = 8.5;
+      light.setIntensity(15);
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
       light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
       light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
       light.updater.push(light => {
@@ -256,8 +255,6 @@ var flipper = function () {
       });
     }
     addEventListener('AmmoReady', () => {
-      //
-      // flipper.addLight();
       (0, _raycast.addRaycastsAABBListener)();
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
@@ -279,14 +276,12 @@ var flipper = function () {
       // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
       //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
       //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
-      setTimeout(() => {
-        // you cna call setters for each but bettter
-        app.cameras.WASD.setYaw(-0.03);
-        app.cameras.WASD.setPitch(-0.49);
-        app.cameras.WASD.setZ(0);
-        app.cameras.WASD.setY(10);
-        // app.cameras.WASD._dirtyAngle = true;
-      }, 500);
+      // setTimeout(() => {
+      //   // you cna call setters for each but bettter
+
+      //   // app.cameras.WASD._dirtyAngle = true;
+      // }, 500);
+
       let envMapParams = {
         baseColorMix: 0.4,
         // CLEAR SKY
@@ -320,6 +315,7 @@ var flipper = function () {
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
         mesh: m.ball,
+        shadowsCast: false,
         physics: {
           enabled: true,
           mass: 1,
@@ -419,7 +415,7 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
-      // glass.setBlend(0.01);
+      glass.setBlend(0.1);
       app.glass = glass;
       const commonAchorX = 2;
       const LAnchor = flipper.addMeshObj({
@@ -918,6 +914,7 @@ var flipper = function () {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg1',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -937,6 +934,7 @@ var flipper = function () {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg2',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -956,6 +954,7 @@ var flipper = function () {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg3',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -975,14 +974,23 @@ var flipper = function () {
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'leg4',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
           geometry: "Cube"
         }
       });
-      flipper.buildRenderBuckets(flipper.mainRenderBundle);
+
       // ball1.effects.pointer.yOffset = 3;
+      setTimeout(() => {
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(10);
+        app.buildRenderBuckets(app.mainRenderBundle);
+        app.cameras.WASD._dirtyAngle = true;
+      }, 500);
     }
   });
   window.app = flipper;
@@ -1994,13 +2002,13 @@ var loadObjFile = function () {
           type: 'mirror'
         },
         envMapParams: {
-          baseColorMix: 0.5,
+          baseColorMix: 0.1,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
           reflectivity: 0.5,
           // 25% reflection blend
-          illuminateColor: [0.5, 0.5, 0.2],
+          illuminateColor: [0.6, 0.5, 0.2],
           // Soft cyan
           illuminateStrength: 0.1,
           // Gentle rim
@@ -2078,7 +2086,7 @@ var loadObjFile = function () {
       });
       let MYCUBE = loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'mirror'
         },
         position: {
           x: 0,
@@ -2099,19 +2107,19 @@ var loadObjFile = function () {
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.99,
+          baseColorMix: 0.3,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
-          reflectivity: 0.25,
+          reflectivity: 0.35,
           // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0],
           // Soft cyan
-          illuminateStrength: 0.1,
+          illuminateStrength: 0.5,
           // Gentle rim
-          illuminatePulse: 0.01,
+          illuminatePulse: 0.1,
           // No pulse (static)
-          fresnelPower: 2.0,
+          fresnelPower: 5,
           // Medium-sharp edge
           envLodBias: 1.5,
           usePlanarReflection: false // ✅ Env map mode
@@ -2147,10 +2155,11 @@ var loadObjFile = function () {
         MYCUBE.effects.flameEmitter.setIntensity(100);
         MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
         MYCUBE.setAmbient(10, 1, 0);
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 10;
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(10);
+        app.buildRenderBuckets(app.mainRenderBundle);
         app.cameras.WASD._dirtyAngle = true;
       }, 400);
     }
@@ -28941,83 +28950,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
   setUVScale(x, y = x) {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
-  setupPipeline2 = () => {
-    this.createBindGroupForRender();
-    const pipelineLayout = this.device.createPipelineLayout({
-      label: 'PipelineLayout Mesh',
-      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null]
-    });
-    const vertexModule = this.device.createShaderModule({
-      label: 'VertexShader Mesh',
-      code: _vertexInstanced.vertexWGSLInstanced
-    });
-    const fragmentModule = this.device.createShaderModule({
-      label: 'FragmentShader Mesh',
-      code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
-    });
-    const vertexState = {
-      entryPoint: 'main',
-      module: vertexModule,
-      buffers: this.vertexBuffers
-    };
-    const fragmentConstants = {
-      shadowDepthTextureSize: this.shadowDepthTextureSize
-    };
-
-    // Opaque pipeline
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Pipeline Opaque ✅',
-      layout: pipelineLayout,
-      vertex: vertexState,
-      fragment: {
-        entryPoint: 'main',
-        module: fragmentModule,
-        constants: fragmentConstants,
-        targets: [{
-          format: 'rgba16float'
-        }]
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus'
-      },
-      primitive: this.primitive
-    });
-
-    // Transparent pipeline
-    this.pipelineTransparent = this.device.createRenderPipeline({
-      label: 'Pipeline Transparent ✅',
-      layout: pipelineLayout,
-      vertex: vertexState,
-      fragment: {
-        entryPoint: 'main',
-        module: fragmentModule,
-        constants: fragmentConstants,
-        targets: [{
-          format: 'rgba16float',
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            }
-          }
-        }]
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-        format: 'depth24plus'
-      },
-      primitive: this.primitive
-    });
-  };
   setupPipeline = () => {
     this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
@@ -29025,8 +28957,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     const isVideo = this.isVideo === true;
     const vertexCode = _vertexInstanced.vertexWGSLInstanced;
     const fragmentCode = isVideo ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
-    const vertexId = 'instanced_basic';
-    const fragmentId = isVideo ? 'video' : this.material.type;
+    const isNormalMap = this.material.type === 'normalmap';
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
       bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, ...(isMirror ? [this.mirrorBindGroupLayout] : [])]
@@ -29042,20 +28973,17 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       shadowDepthTextureSize: this.shadowDepthTextureSize
     };
     const baseKey = {
-      vertexId,
-      fragmentId,
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
       type: "instanced",
-      primitive: this.primitive,
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
       format: 'rgba16float',
-      layoutFlags: {
-        mirror: isMirror,
-        instanced: true
-      }
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0
     };
-
-    // -------------------------
     // OPAQUE
-    // -------------------------
     this.pipeline = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
         ...baseKey,
@@ -29084,10 +29012,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         primitive: this.primitive
       }
     });
-
-    // -------------------------
     // TRANSPARENT
-    // -------------------------
     this.pipelineTransparent = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
         ...baseKey,
@@ -29380,7 +29305,7 @@ class SpotLight {
     this._dirty = true;
     this._lightBufferDirty = true;
   }
-  constructor(camera, inputHandler, device, indexx, shadowPassView = null, shadowSampler = null, fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, indexx, shadowPassView = null, shadowSampler = null, fov = 175, aspect = 1.0, near = 0.1, far = 100) {
     aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {
@@ -29404,7 +29329,7 @@ class SpotLight {
     this.intensity = 1.0;
     this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this._position, this._target, this.up);
-    this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, this.aspect, this.near, this.far);
     this._lightBuffer = new Float32Array(36);
     this._diffScratch = _wgpuMatrix.vec3.create();
     this._dirScratch = _wgpuMatrix.vec3.create();
@@ -29419,11 +29344,12 @@ class SpotLight {
       size: 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.setProjection = function (fov = 2 * Math.PI / 5, aspect = 1.0, near = 0.1, far = 200) {
+    this.setProjection = function (fov = 175, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
       this._dirty = true;
     };
     this.updateProjection = function () {
+      console.log('test ', this.fov, this.aspect, this.near, this.far);
       this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, this.aspect, this.near, this.far);
       this._dirty = true;
     };
@@ -34400,8 +34326,6 @@ class MEMeshObj extends _materials.default {
       this.updateVertexAnimBuffer = () => {
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       };
-
-      // globalIntensity
       this.vertexAnimParams[2] = 1.0;
       this.updateVertexAnimBuffer();
       this.updateTime = time => {
@@ -34515,13 +34439,6 @@ class MEMeshObj extends _materials.default {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          console.log('mirrorBindGroup created: this.shadowDepthTextureView', this.shadowDepthTextureView); // ← is it null/undefined?
-          // console.log('mirrorBindGroupLayout:', this.mirrorBindGroupLayout);
-          try {
-            // this.setupPipeline();
-          } catch (err) {
-            console.log('Err[create pipeline]:', err);
-          }
         });
         this.setupPipeline();
       } else {
@@ -34538,101 +34455,15 @@ class MEMeshObj extends _materials.default {
       }
     });
   }
-
-  // Helper to set it
   setUVScale(x, y = x) {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
-  setupPipelineOLD = () => {
-    this.createBindGroupForRender();
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Main [Mesh] Pipeline ✅[OPAQUE]',
-      layout: this.device.createPipelineLayout({
-        label: 'PipelineLayout Opaque',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null, this.waterBindGroupLayout]
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.material.type === 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL
-        }),
-        buffers: this.vertexBuffers
-      },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.isVideo === true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
-        }),
-        targets: [{
-          format: 'rgba16float',
-          blend: undefined
-        }],
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
-        }
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus'
-      },
-      primitive: this.primitive
-    });
-    this.pipelineTransparent = this.device.createRenderPipeline({
-      label: 'Main [Mesh] Pipeline ✅[Transparent]',
-      layout: this.device.createPipelineLayout({
-        label: 'Main PipelineLayout Transparent',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null, this.waterBindGroupLayout]
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.material.type === 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL
-        }),
-        buffers: this.vertexBuffers
-      },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.isVideo === true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
-        }),
-        targets: [{
-          format: 'rgba16float',
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            }
-          }
-        }],
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
-        }
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-        format: 'depth24plus'
-      },
-      primitive: this.primitive
-    });
-  };
   setupPipeline = () => {
-    this.createLayoutForRender();
     this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isVideo = this.isVideo === true;
     const isNormalMap = this.material.type === 'normalmap';
-    // -------------------------
-    // SHADERS (CACHE SAFE)
-    // -------------------------
     const vertexCode = isNormalMap ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL;
     const fragmentCode = isVideo ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
     const vertexModule = this.device.createShaderModule({
@@ -34641,18 +34472,16 @@ class MEMeshObj extends _materials.default {
     const fragmentModule = this.device.createShaderModule({
       code: fragmentCode
     });
-
-    // -------------------------
     // PIPELINE LAYOUT (STATIC PER MESH)
-    // -------------------------
-    const layout = this.device.createPipelineLayout({
-      label: 'PipelineLayout Mesh',
-      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null]
-    });
-
-    // -------------------------
+    // const layout = this.device.createPipelineLayout({
+    //   label: 'PipelineLayout Mesh',
+    //   bindGroupLayouts: [
+    //     this.bglForRender,
+    //     this.uniformBufferBindGroupLayout,
+    //     (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
+    //   ],
+    // });
     // VERTEX STATE (SHARED)
-    // -------------------------
     const vertexState = {
       entryPoint: 'main',
       module: vertexModule,
@@ -34661,10 +34490,6 @@ class MEMeshObj extends _materials.default {
     const fragmentConstants = {
       shadowDepthTextureSize: this.shadowDepthTextureSize
     };
-
-    // -------------------------
-    // BASE KEY (STABLE + FLAT)
-    // -------------------------
     const baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
@@ -34676,31 +34501,7 @@ class MEMeshObj extends _materials.default {
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0
     };
-
-    // pm.invalidate(buildPipelineKey({...baseKey, transparent: 0, depthWrite: 1}));
-    // pm.invalidate(buildPipelineKey({...baseKey, transparent: 1, depthWrite: 0}));
-    // this.setupPipeline();
-    // -------------------------
-    // DEBUG (SAFE)
-    // -------------------------
-    if (this.name === 'glass') {
-      pm.invalidate(baseKey);
-      const testOpaque = (0, _pipelineManager.buildPipelineKey)({
-        ...baseKey,
-        transparent: 0,
-        depthWrite: 1
-      });
-      const testTransparent = (0, _pipelineManager.buildPipelineKey)({
-        ...baseKey,
-        transparent: 1,
-        depthWrite: 0
-      });
-      console.log('PIPE DIFFERENCE:', testOpaque === testTransparent);
-    }
-
-    // =========================================================
-    // OPAQUE PIPELINE (OLD BEHAVIOR)
-    // =========================================================
+    // OPAQUE PIPELINE
     this.pipeline = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
         ...baseKey,
@@ -34730,10 +34531,7 @@ class MEMeshObj extends _materials.default {
         primitive: this.primitive
       }
     });
-
-    // =========================================================
-    // TRANSPARENT PIPELINE (ONLY DIFFERENCE = BLEND + DEPTH)
-    // =========================================================
+    // TRANSPARENT PIPELINE
     this.pipelineTransparent = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
         ...baseKey,
@@ -34770,7 +34568,6 @@ class MEMeshObj extends _materials.default {
         depthStencil: {
           depthWriteEnabled: false,
           depthCompare: 'less',
-          // depthCompare: 'always',
           format: 'depth24plus'
         },
         primitive: this.primitive
@@ -34859,10 +34656,10 @@ class MEMeshObj extends _materials.default {
   drawVideoElements = pass => {
     if (!this.video || this.video.readyState < 2) return;
     this.updateVideoTexture();
-    if (!this.sceneBindGroupForRender) return;
+    // if(!this.sceneBindGroupForRender) return;
     pass.setBindGroup(0, this.sceneBindGroupForRender);
     pass.setBindGroup(1, this.modelBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup); // ← dummy (same as mesh path) REPLACE WITH REAL DUMMY!
+    pass.setBindGroup(3, this.waterBindGroup); // REPLACE WITH REAL DUMMY!
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -35072,7 +34869,6 @@ function buildPipelineKey({
   mirror,
   normalMap
 }) {
-  console.log('debug: ', vertexId, fragmentId, type, transparent, depthWrite, format, topology, cullMode, frontFace, mirror, normalMap);
   return JSON.stringify({
     v: vertexId,
     f: fragmentId,
@@ -35100,11 +34896,9 @@ class PipelineManager {
       return this.cache.get(key);
     }
     const p = this.device.createRenderPipeline(pipeline);
-    console.log('get pipeline cache system [SET] key: ', key);
     this.cache.set(key, p);
     return p;
   }
-  // static singleton access
   static instance;
   static init(device) {
     this.instance = new PipelineManager(device);
@@ -36752,88 +36546,6 @@ class ProceduralMeshObj extends _materials.default {
     this.vertexAnimParams[2] = 1.0;
     this.updateVertexAnimBuffer();
   }
-  _setupPipeline2() {
-    this.createLayoutForRender();
-    this.createBindGroupForRender();
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Procedural Mesh Pipeline [OPAQUE]',
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [this.bglForRender,
-        // From Materials
-        this.uniformBufferBindGroupLayout // Model/morph uniforms
-        ]
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.vertexWGSL ? this.vertexWGSL : _vertexProcedural.vertexMorphWGSL
-        }),
-        buffers: this.vertexBuffers
-      },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial()
-        }),
-        targets: [{
-          format: 'rgba16float',
-          blend: undefined
-        }],
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
-        }
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus'
-      },
-      primitive: this.primitive
-    });
-    this.pipelineTransparent = this.device.createRenderPipeline({
-      label: 'Procedural Mesh Pipeline [TRANSPARENT]',
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
-      }),
-      vertex: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.vertexWGSL ? this.vertexWGSL : _vertexProcedural.vertexMorphWGSL
-        }),
-        buffers: this.vertexBuffers
-      },
-      fragment: {
-        entryPoint: 'main',
-        module: this.device.createShaderModule({
-          code: this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial()
-        }),
-        targets: [{
-          format: 'rgba16float',
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add'
-            }
-          }
-        }],
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
-        }
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-        format: 'depth24plus'
-      },
-      primitive: this.primitive
-    });
-  }
   _setupPipeline() {
     this.createLayoutForRender();
     this.createBindGroupForRender();
@@ -36859,16 +36571,13 @@ class ProceduralMeshObj extends _materials.default {
       vertexId,
       fragmentId,
       type: "procedural",
-      primitive: this.primitive,
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
       format: 'rgba16float',
-      layoutFlags: {
-        morph: !this.vertexWGSL // using morph fallback
-      }
+      morph: !this.vertexWGSL ? 1 : 0
     };
-
-    // -------------------------
     // OPAQUE
-    // -------------------------
     this.pipeline = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
         ...baseKey,
@@ -36897,10 +36606,7 @@ class ProceduralMeshObj extends _materials.default {
         primitive: this.primitive
       }
     });
-
-    // -------------------------
     // TRANSPARENT
-    // -------------------------
     this.pipelineTransparent = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
         ...baseKey,
@@ -39504,7 +39210,6 @@ class MatrixAmmo {
     if (pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
       body.setActivationState(2);
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-      console.log('pOptions.mass is 0 and state is 2', pOptions.mass);
     } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
       // idea not work for now - eliminate collide effect
       body.setActivationState(4);
@@ -41484,20 +41189,13 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
-// ─── NEW: Mirror Illuminate helpers ──────────────────────────────────────────
 fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
-    let dir = normalize(R);
-    let phi = atan2(dir.x, dir.z);     // Horizontal angle
-    let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
-    let u = phi / (2.0 * PI) + 0.5;
-    let v = theta / PI;
-    return vec2f(u, v);
-    // let dir = normalize(R);
-    // let phi = atan2(-dir.z, dir.x);  // Note the negative
-    // let theta = acos(clamp(dir.y, -1.0, 1.0));
-    // let u = phi / (2.0 * PI) + 0.5;
-    // let v = theta / PI;
-    // return vec2f(u, 1.0 - v);  // Try flipping V
+  let dir = normalize(R);
+  let phi = atan2(dir.x, dir.z);     // Horizontal angle
+  let theta = acos(clamp(dir.y, -1.0, 1.0));  // Vertical angle
+  let u = phi / (2.0 * PI) + 0.5;
+  let v = theta / PI;
+  return vec2f(u, v);
 }
 
 // Planar mirror UV (screen-space)
@@ -41522,19 +41220,16 @@ fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32)
 
 // Animated illuminate rim — pulsing Fresnel edge glow
 fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
- let NdotV = max(dot(N, V), 0.0);
+  let NdotV = max(dot(N, V), 0.0);
     let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
 
     let pulse = mix(0.3, 1.0,
         (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
     );
-
     let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
-
     let result = mirrorParams.illuminateColor
         * mirrorParams.illuminateStrength
         * rim * pulse * shimmer;
-
     return clamp(result, vec3f(0.0), vec3f(1.0)); // ← ADD THIS
 }
 
@@ -41557,11 +41252,8 @@ fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f)
 fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
     // Normalize position relative to object center
     let dir = normalize(worldPos);
-    
-    // Convert to spherical coordinates
     let u = atan2(dir.z, dir.x) / (2.0 * PI) + 0.5;
     let v = asin(clamp(dir.y, -1.0, 1.0)) / PI + 0.5;
-    
     return vec2f(u, v);
 }
 
@@ -41578,45 +41270,33 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
         let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
         let p        = sc.xyz / sc.w;
-        // ✅ FIX 1: Y-flip to match working shader
         // let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
         let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
-
-        // ✅ FIX 2: Use p.z directly (not * 0.5 + 0.5)
         let depthRef = p.z;
 
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-
-        // ✅ FIX 3: Frustum guard — only apply shadow when inside light frustum
         let inFrustum = p.z >= 0.0 && p.z <= 1.0
                      && p.x >= -1.0 && p.x <= 1.0
                      && p.y >= -1.0 && p.y <= 1.0;
 
-        // ✅ FIX 4: Pass depthRef without subtracting bias here (sampleShadow handles it)
         let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
         let shadowFactor = select(1.0, vis, inFrustum);
 
         let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
         lightContribution += contrib * shadowFactor;
 
-        // ── Mirror: sharp specular from each spotlight ────────────────────
+        // Mirror: sharp specular from each spotlight
         let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
         let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
         lightContribution += mirrorSpec * coneFactor * shadowFactor;
     }
 
     let R = reflect(-V, N);
-    var envColor: vec3f;
-    if (mirrorParams.baseColorMix < 0.01) {
-        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
-    } else {
-        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
-    }
-    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), 
-                   mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+    // var envColor: vec3f;
+    let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
 
+    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     finalColor = mix(
         envColor,
@@ -43524,22 +43204,16 @@ fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32)
 }
 
 fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-    // let NdotV = max(dot(N, V), 0.0);
-    // let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
-    // let pulse = mix(0.3, 1.0,
-    //     (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
-    // );
-    // let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
-    // return mirrorParams.illuminateColor
-    //      * mirrorParams.illuminateStrength
-    //      * rim * pulse * shimmer;
-
-     let NdotV = max(dot(N, V), 0.0);
+  let NdotV = max(dot(N, V), 0.0);
     let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
-    // NO scene.time — static version
-    return mirrorParams.illuminateColor
-         * mirrorParams.illuminateStrength
-         * rim;
+    let pulse = mix(0.3, 1.0,
+        (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+    );
+    let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+    let result = mirrorParams.illuminateColor
+        * mirrorParams.illuminateStrength
+        * rim * pulse * shimmer;
+    return clamp(result, vec3f(0.0), vec3f(1.0));
 }
 
 @fragment
@@ -58854,10 +58528,12 @@ class MatrixEngineWGPU {
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
-    // singleton
     _pipelineManager.PipelineManager.init(this.device);
-    this.getTransformationMatrix = (camVP, dt) => {
-      this._sceneData.set(camVP, 16);
+    this.getTransformationMatrix = (camera, dt) => {
+      this._sceneData.set(camera.VP, 16);
+      this._sceneData[32] = camera.position[0];
+      this._sceneData[33] = camera.position[1];
+      this._sceneData[34] = camera.position[2];
       this._sceneData[35] = 0.0;
       this._sceneData[39] = 0.0;
       this._sceneData[40] = this.globalAmbient[0];
@@ -59121,7 +58797,7 @@ class MatrixEngineWGPU {
       const isTransparent = mesh.material.useBlend == true;
       const pipeline = isTransparent ? mesh.pipelineTransparent : mesh.pipeline;
       if (!pipeline) {
-        console.warn("❌ Pipeline undefined:", mesh.name);
+        // console.warn("❌ Pipeline undefined:", mesh.name);
         continue;
       }
       const buckets = isTransparent ? this.transparentBuckets : this.opaqueBuckets;
@@ -59685,7 +59361,7 @@ class MatrixEngineWGPU {
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      if (camera._dirtyAngle) this.getTransformationMatrix(camera.VP, now2);
+      if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -60081,7 +59757,7 @@ class MatrixEngineWGPU {
     }
   };
   sortRenderBundle() {
-    // setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 250);
+    setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 50);
   }
   activateBloomEffect = () => {
     if (this.bloomPass.enabled != true) {
