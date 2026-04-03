@@ -21790,6 +21790,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.WASDCamera = exports.RPGCamera = exports.FirstPersonCamera = exports.ArcballCamera = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
+var _utils = require("./utils");
 class WASDCamera {
   pitch = 0;
   yaw = 0;
@@ -22470,6 +22471,9 @@ class FirstPersonCamera {
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
+    if ((0, _utils.isMobile)() == true) {
+      MobileDOM.createWASD(this);
+    }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
     _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
@@ -22693,8 +22697,139 @@ class FirstPersonCamera {
   }
 }
 exports.FirstPersonCamera = FirstPersonCamera;
+const MobileDOM = {
+  createWASD(camera, options = {}) {
+    const size = options.size ?? 60;
+    const margin = options.margin ?? 20;
+    const opacity = options.opacity ?? 0.35;
+    const color = options.color ?? '#ffffff';
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, {
+      position: 'fixed',
+      bottom: `${margin}px`,
+      left: `${margin}px`,
+      width: `${size * 3 + 8}px`,
+      userSelect: 'none',
+      zIndex: '9999',
+      display: 'grid',
+      gridTemplateColumns: `repeat(3, ${size}px)`,
+      gridTemplateRows: `repeat(2, ${size}px)`,
+      gap: '4px',
+      touchAction: 'none'
+    });
 
-},{"wgpu-matrix":30}],34:[function(require,module,exports){
+    // [key, label, col, row, digital_key]
+    const defs = [['W', '▲', 2, 1, 'forward'], ['A', '◀', 1, 2, 'left'], ['S', '▼', 2, 2, 'backward'], ['D', '▶', 3, 2, 'right']];
+    for (const [, label, col, row, action] of defs) {
+      const btn = document.createElement('div');
+      Object.assign(btn.style, {
+        width: `${size}px`,
+        height: `${size}px`,
+        gridColumn: `${col}`,
+        gridRow: `${row}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: `${size * 0.38}px`,
+        color,
+        background: `rgba(255,255,255,${opacity * 0.4})`,
+        border: `2px solid rgba(255,255,255,${opacity})`,
+        borderRadius: `${size * 0.18}px`,
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent'
+      });
+      btn.textContent = label;
+      const press = () => {
+        camera._digital[action] = true;
+        btn.style.background = `rgba(255,255,255,${opacity})`;
+        if (camera._keyInterval === null) {
+          camera._keyInterval = setInterval(() => {
+            camera._dirty = true;
+            camera._applyDigitalMovement();
+          }, 16);
+        }
+      };
+      const release = () => {
+        camera._digital[action] = false;
+        btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        const d = camera._digital;
+        if (!d.forward && !d.backward && !d.left && !d.right) {
+          clearInterval(camera._keyInterval);
+          camera._keyInterval = null;
+          camera._dirty = false;
+        }
+      };
+      btn.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        press();
+        btn.setPointerCapture(e.pointerId);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('pointerup', e => {
+        release();
+      }, {
+        passive: true
+      });
+      btn.addEventListener('pointercancel', e => {
+        release();
+      }, {
+        passive: true
+      });
+      wrap.appendChild(btn);
+    }
+    document.body.appendChild(wrap);
+    return wrap; // caller can hide/remove later
+  },
+  addButton(label, onClick, options = {}) {
+    const size = options.size ?? 56;
+    const margin = options.margin ?? 20;
+    const opacity = options.opacity ?? 0.35;
+    const btn = document.createElement('div');
+    Object.assign(btn.style, {
+      position: 'fixed',
+      bottom: options.bottom ?? `${margin}px`,
+      right: options.right ?? `${margin}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: `${size * 0.35}px`,
+      color: options.color ?? '#ffffff',
+      background: `rgba(255,255,255,${opacity * 0.4})`,
+      border: `2px solid rgba(255,255,255,${opacity})`,
+      borderRadius: '50%',
+      zIndex: '9999',
+      userSelect: 'none',
+      cursor: 'pointer',
+      WebkitTapHighlightColor: 'transparent',
+      touchAction: 'none'
+    });
+    btn.textContent = label;
+    btn.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      btn.style.background = `rgba(255,255,255,${opacity})`;
+      onClick(e);
+    }, {
+      passive: true
+    });
+    btn.addEventListener('pointerup', () => {
+      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+    }, {
+      passive: true
+    });
+    btn.addEventListener('pointercancel', () => {
+      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+    }, {
+      passive: true
+    });
+    document.body.appendChild(btn);
+    return btn;
+  }
+};
+
+},{"./utils":70,"wgpu-matrix":30}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22709,7 +22844,12 @@ class CollisionSystem {
     this.cameraEntry = null;
     this.cellSize = 100;
     this._grid = new Map();
+    this._event1 = new CustomEvent('close-distance', {});
+    this._eventDetail = {};
+    this._neighbors = [];
   }
+
+  // DONT TOUCH THIS
   register(id, positionInstance, radius = 0.6, group = "default") {
     this.entries.push({
       id,
@@ -22755,14 +22895,19 @@ class CollisionSystem {
     }
   }
   _getNeighborCells(x, z) {
+    const result = this._neighbors;
+    result.length = 0;
     const cx = Math.floor(x / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    const result = [];
     for (let dx = -1; dx <= 1; dx++) {
       for (let dz = -1; dz <= 1; dz++) {
         const key = cx + dx << 16 ^ cz + dz;
         const cell = this._grid.get(key);
-        if (cell) result.push(...cell);
+        if (cell) {
+          for (let i = 0; i < cell.length; i++) {
+            result.push(cell[i]); // NO spread
+          }
+        }
       }
     }
     return result;
@@ -22771,35 +22916,43 @@ class CollisionSystem {
     this._buildGrid();
     const n = this.entries.length;
     for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const A = this.entries[i];
-        const B = this.entries[j];
+      const A = this.entries[i];
+      const neighbors = this._getNeighborCells(A.pos.x, A.pos.z);
+      for (let j = 0; j < neighbors.length; j++) {
+        const B = neighbors[j];
+        if (A === B) continue;
         if (A.group === B.group) continue;
-        const minDist = (A.radius + B.radius) / 1.5;
+        if (A.id >= B.id) continue;
+        const minDist = (A.radius + B.radius) * 0.5;
+        const dx = A.pos.x - B.pos.x;
+        const dz = A.pos.z - B.pos.z;
+        const distSq = dx * dx + dz * dz;
+        if (distSq > minDist * minDist) continue;
         const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
         if (testCollide) {
-          dispatchEvent(new CustomEvent('close-distance', {
-            detail: {
-              A,
-              B
-            }
-          }));
+          this._eventDetail.A = A;
+          this._eventDetail.B = B;
+          this._event1.detail = this._eventDetail;
+          dispatchEvent(this._event1);
         }
       }
     }
-
     // --- camera vs entities (only neighbor cells) ---
     if (this.cameraEntry) {
       const cam = this.cameraEntry;
       const camX = cam.pos[0];
       const camZ = cam.pos[2];
-      const neighbors = this._getNeighborCells(camX, camZ);
-      for (let i = 0; i < neighbors.length; i++) {
-        const target = neighbors[i];
-        const minCamDist = 1 + 0.5;
-        const collided = (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 1.1);
-        if (collided) {
-          console.log('kinematic collision');
+      if (camX !== this._lastCamX || camZ !== this._lastCamZ) {
+        this._lastCamX = camX;
+        this._lastCamZ = camZ;
+        const neighbors = this._getNeighborCells(camX, camZ);
+        for (let i = 0; i < neighbors.length; i++) {
+          const target = neighbors[i];
+          const minCamDist = 1 + 0.5;
+          (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 1.1);
+          // if(collided) {
+          //  // console.log('kinematic collision')
+          // }
         }
       }
     }
@@ -27429,7 +27582,9 @@ class MaterialsInstanced {
         minFilter: 'linear'
       });
     }
-    this.createBufferForWater();
+    if (this.material.type == 'water') {
+      this.createBufferForWater();
+    }
   }
   createBufferForWater = () => {
     // new water test
@@ -32402,7 +32557,9 @@ class Materials {
         minFilter: 'linear'
       });
     }
-    this.createBufferForWater();
+    if (this.material.type == 'water') {
+      this.createBufferForWater();
+    }
   }
   createBufferForWater = () => {
     this.waterBindGroupLayout = this.device.createBindGroupLayout({
@@ -32451,6 +32608,7 @@ class Materials {
       ]);
       this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     };
+    this.drawElements = this.drawElementsOrigin;
   };
   createDummyTexture(device, size = 256) {
     const data = new Uint8Array(size * size * 4);
@@ -33897,6 +34055,8 @@ class MEMeshObj extends _materials.default {
       this.mesh.uvs = this.mesh.textures;
     }
     // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
+
+    this.drawElementsOrigin = this.drawElements;
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -33909,6 +34069,11 @@ class MEMeshObj extends _materials.default {
     } else if (typeof o.isVideo !== 'undefined') {
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
+    }
+
+    // optimisation
+    if (this.material.type != 'mirror' && this.material.type != 'water') {
+      this.drawElements = this.drawElementsNoWaterMirror;
     }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
@@ -34655,6 +34820,17 @@ class MEMeshObj extends _materials.default {
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
+  drawElementsNoWaterMirror = pass => {
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
   drawVideoElements = pass => {
     if (!this.video || this.video.readyState < 2) return;
     this.updateVideoTexture();
@@ -34790,28 +34966,76 @@ let zeroPass = function () {
   requestAnimationFrame(this.frame);
   try {
     let commandEncoder = this.device.createCommandEncoder();
+    this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirty || camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
+    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
     camera.update();
-    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-    let lastPipeline = null;
+
+    // for(let i = 0;i < this.lightContainer.length;i++) {
+    //   const light = this.lightContainer[i];
+    //   const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+    //   if(this.shadowBuckets.default.length) {
+    //     pass.setPipeline(light.shadowPipeline);
+    //     for(let m of this.shadowBuckets.default) {
+    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
+    //       pass.setBindGroup(1, m.modelBindGroup);
+    //       m.drawShadows(pass, light);
+    //     }
+    //   }
+    //   if(this.shadowBuckets.instanced.length) {
+    //     pass.setPipeline(light.shadowPipelineInstanced);
+    //     for(let m of this.shadowBuckets.instanced) {
+    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
+    //       pass.setBindGroup(1, m.modelBindGroupInstanced);
+    //       m.drawShadows(pass, light);
+    //     }
+    //   }
+    //   if(this.shadowBuckets.procedural.length) {
+    //     pass.setPipeline(light.shadowPipelineMorph);
+    //     for(let m of this.shadowBuckets.procedural) {
+    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
+    //       pass.setBindGroup(1, m.mainRenderBindGroup);
+    //       m.drawShadows(pass, light);
+    //     }
+    //   }
+    //   pass.end();
+    // }
+
     const len = this.mainRenderBundle.length;
     for (let i = 0; i < len; i++) {
       const mesh = this.mainRenderBundle[i];
+      if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+      if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
       if (mesh.position.inMove) mesh.updateModelUniformBuffer(i);
       mesh.position.update();
+      if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if (mesh.update) mesh.update(now2);
-      if (!mesh.sceneBindGroupForRender) {
+      if (!mesh.pipeline) {
         mesh.shadowDepthTextureView = this.shadowArrayView;
-        mesh.setupPipeline();
       }
-      const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
-      if (lastPipeline !== targetPipeline) {
-        pass.setPipeline(targetPipeline);
-        lastPipeline = targetPipeline;
+    }
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    for (const [pipeline, meshes] of this.opaqueBuckets) {
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        mesh.drawElements(pass, this.lightContainer);
       }
-      mesh.drawElements(pass, this.lightContainer);
+    }
+    for (const [pipeline, meshes] of this.transparentBuckets) {
+      if (cam._dirty) meshes.sort((a, b) => {
+        const dx1 = cam.position[0] - a.position[0];
+        const dz1 = cam.position[2] - a.position[2];
+        const da = dx1 * dx1 + dz1 * dz1;
+        const dx2 = cam.position[0] - b.position[0];
+        const dz2 = cam.position[2] - b.position[2];
+        const db = dx2 * dx2 + dz2 * dz2;
+        return db - da;
+      });
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        mesh.drawElements(pass, this.lightContainer);
+      }
     }
     pass.end();
     const canvasTexture = this.context.getCurrentTexture();
@@ -58534,12 +58758,9 @@ class MatrixEngineWGPU {
   };
   createGlobalStuff(callback) {
     addEventListener('update-pipeine-buckets', () => {
-      console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
       this.buildRenderBuckets(this.mainRenderBundle);
-      setTimeout(() => {
-        this.getCamera()._dirtyAngle = true;
-        this.getCamera()._dirty = true;
-      }, 200);
+      this.getCamera()._dirtyAngle = true;
+      this.getCamera()._dirty = true;
     });
     _pipelineManager.PipelineManager.init(this.device);
     this.getTransformationMatrix = (camera, dt) => {

@@ -130,7 +130,9 @@ export default class MaterialsInstanced {
         minFilter: 'linear',
       });
     }
-    this.createBufferForWater();
+    if(this.material.type == 'water') {
+      this.createBufferForWater();
+    }
   }
 
   createBufferForWater = () => {

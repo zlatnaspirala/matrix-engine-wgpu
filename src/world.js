@@ -318,12 +318,9 @@ export default class MatrixEngineWGPU {
   createGlobalStuff(callback) {
 
     addEventListener('update-pipeine-buckets', () => {
-      console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
       this.buildRenderBuckets(this.mainRenderBundle);
-      setTimeout(()=>{
-         this.getCamera()._dirtyAngle = true;
-         this.getCamera()._dirty = true;
-     }, 200);
+      this.getCamera()._dirtyAngle = true;
+      this.getCamera()._dirty = true;
     })
 
     PipelineManager.init(this.device);

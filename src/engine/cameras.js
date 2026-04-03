@@ -1,4 +1,5 @@
 import {mat4, vec3} from 'wgpu-matrix';
+import {isMobile} from './utils';
 
 export class WASDCamera {
   pitch = 0;
@@ -198,22 +199,22 @@ export class WASDCamera {
     this._dirtyAngle = false;
   }
 
-  setX (x) {
+  setX(x) {
     this.position[0] = x;
     this._dirtyAngle = true;
   }
 
-  setY (y) {
+  setY(y) {
     this.position[1] = y;
     this._dirtyAngle = true;
   }
 
-  setZ (z) {
+  setZ(z) {
     this.position[2] = z;
     this._dirtyAngle = true;
   }
 
-  setPosition (x,y,z) {
+  setPosition(x, y, z) {
     this.position[0] = x;
     this.position[1] = y;
     this.position[2] = z;
@@ -230,7 +231,7 @@ export class WASDCamera {
     this._dirtyAngle = true;
   }
 
-  setTarget (x,y,z) {
+  setTarget(x, y, z) {
     this.target[0] = x;
     this.target[1] = y;
     this.target[2] = z;
@@ -569,6 +570,10 @@ export class FirstPersonCamera {
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 100);
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
+
+    if(isMobile() == true) {
+      MobileDOM.createWASD(this);
+    }
   }
 
   setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
@@ -690,10 +695,10 @@ export class FirstPersonCamera {
     const fnx = flen > 0.0001 ? fx / flen : 0;
     const fnz = flen > 0.0001 ? fz / flen : 0;
 
-    if(d.forward)  { vx += fnx; vz += fnz; }
-    if(d.backward) { vx -= fnx; vz -= fnz; }
-    if(d.right)    { vx += this.right[0]; vz += this.right[2]; }
-    if(d.left)     { vx -= this.right[0]; vz -= this.right[2]; }
+    if(d.forward) {vx += fnx; vz += fnz;}
+    if(d.backward) {vx -= fnx; vz -= fnz;}
+    if(d.right) {vx += this.right[0]; vz += this.right[2];}
+    if(d.left) {vx -= this.right[0]; vz -= this.right[2];}
 
     const len = Math.sqrt(vx * vx + vz * vz);
     if(len < 0.0001) return;
@@ -716,3 +721,128 @@ export class FirstPersonCamera {
     this._dirtyAngle = false;
   }
 }
+
+const MobileDOM = {
+
+  createWASD(camera, options = {}) {
+    const size = options.size ?? 60;
+    const margin = options.margin ?? 20;
+    const opacity = options.opacity ?? 0.35;
+    const color = options.color ?? '#ffffff';
+
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, {
+      position: 'fixed',
+      bottom: `${margin}px`,
+      left: `${margin}px`,
+      width: `${size * 3 + 8}px`,
+      userSelect: 'none',
+      zIndex: '9999',
+      display: 'grid',
+      gridTemplateColumns: `repeat(3, ${size}px)`,
+      gridTemplateRows: `repeat(2, ${size}px)`,
+      gap: '4px',
+      touchAction: 'none',
+    });
+
+    // [key, label, col, row, digital_key]
+    const defs = [
+      ['W', '▲', 2, 1, 'forward'],
+      ['A', '◀', 1, 2, 'left'],
+      ['S', '▼', 2, 2, 'backward'],
+      ['D', '▶', 3, 2, 'right'],
+    ];
+
+    for(const [, label, col, row, action] of defs) {
+      const btn = document.createElement('div');
+      Object.assign(btn.style, {
+        width: `${size}px`,
+        height: `${size}px`,
+        gridColumn: `${col}`,
+        gridRow: `${row}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: `${size * 0.38}px`,
+        color,
+        background: `rgba(255,255,255,${opacity * 0.4})`,
+        border: `2px solid rgba(255,255,255,${opacity})`,
+        borderRadius: `${size * 0.18}px`,
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
+      });
+      btn.textContent = label;
+
+      const press = () => {
+        camera._digital[action] = true;
+        btn.style.background = `rgba(255,255,255,${opacity})`;
+        if(camera._keyInterval === null) {
+          camera._keyInterval = setInterval(() => {
+            camera._dirty = true;
+            camera._applyDigitalMovement();
+          }, 16);
+        }
+      };
+
+      const release = () => {
+        camera._digital[action] = false;
+        btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        const d = camera._digital;
+        if(!d.forward && !d.backward && !d.left && !d.right) {
+          clearInterval(camera._keyInterval);
+          camera._keyInterval = null;
+          camera._dirty = false;
+        }
+      };
+
+      btn.addEventListener('pointerdown', e => {e.stopPropagation(); press(); btn.setPointerCapture(e.pointerId);}, {passive: true});
+      btn.addEventListener('pointerup', e => {release();}, {passive: true});
+      btn.addEventListener('pointercancel', e => {release();}, {passive: true});
+
+      wrap.appendChild(btn);
+    }
+
+    document.body.appendChild(wrap);
+    return wrap; // caller can hide/remove later
+  },
+
+  addButton(label, onClick, options = {}) {
+    const size = options.size ?? 56;
+    const margin = options.margin ?? 20;
+    const opacity = options.opacity ?? 0.35;
+
+    const btn = document.createElement('div');
+    Object.assign(btn.style, {
+      position: 'fixed',
+      bottom: options.bottom ?? `${margin}px`,
+      right: options.right ?? `${margin}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: `${size * 0.35}px`,
+      color: options.color ?? '#ffffff',
+      background: `rgba(255,255,255,${opacity * 0.4})`,
+      border: `2px solid rgba(255,255,255,${opacity})`,
+      borderRadius: '50%',
+      zIndex: '9999',
+      userSelect: 'none',
+      cursor: 'pointer',
+      WebkitTapHighlightColor: 'transparent',
+      touchAction: 'none',
+    });
+    btn.textContent = label;
+
+    btn.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      btn.style.background = `rgba(255,255,255,${opacity})`;
+      onClick(e);
+    }, {passive: true});
+    btn.addEventListener('pointerup', () => {btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;}, {passive: true});
+    btn.addEventListener('pointercancel', () => {btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;}, {passive: true});
+
+    document.body.appendChild(btn);
+    return btn;
+  },
+};

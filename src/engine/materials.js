@@ -144,7 +144,10 @@ export default class Materials {
         minFilter: 'linear',
       });
     }
-    this.createBufferForWater();
+
+    if(this.material.type == 'water') {
+      this.createBufferForWater();
+    }
   }
 
   createBufferForWater = () => {
@@ -195,6 +198,8 @@ export default class Materials {
       ]);
       this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     }
+
+     this.drawElements = this.drawElementsOrigin;
   }
 
   createDummyTexture(device, size = 256) {

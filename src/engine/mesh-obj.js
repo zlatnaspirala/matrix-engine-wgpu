@@ -251,6 +251,8 @@ export default class MEMeshObj extends Materials {
       this.mesh.uvs = this.mesh.textures;
     }
     // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
+
+    this.drawElementsOrigin = this.drawElements;
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -264,6 +266,12 @@ export default class MEMeshObj extends Materials {
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     }
+
+    // optimisation
+    if (this.material.type != 'mirror' && this.material.type != 'water') {
+      this.drawElements = this.drawElementsNoWaterMirror;
+    }
+
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -962,6 +970,18 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  }
+
+   drawElementsNoWaterMirror = (pass) => {
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
