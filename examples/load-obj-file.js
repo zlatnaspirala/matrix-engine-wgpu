@@ -25,7 +25,7 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         envMapParams: {
           baseColorMix: 0.1,                // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
@@ -79,7 +79,7 @@ export var loadObjFile = function() {
       });
 
       let MYCUBE = loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -103,11 +103,11 @@ export var loadObjFile = function() {
           mass: 0,
           geometry: "Cube"
         },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // flameEffect: true
-        }
+        // pointerEffect: {
+        //   enabled: true,
+        //   flameEmitter: true
+        //   // flameEffect: true
+        // }
       })
 
       loadObjFile.lightContainer[0].setIntensity(5);

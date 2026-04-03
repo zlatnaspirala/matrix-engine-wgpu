@@ -740,7 +740,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
 
       this.modelBindGroupInstanced = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh [instanced]',
+        label: 'modelBindGroup[instanced]',
         layout: this.uniformBufferBindGroupLayoutInstanced,
         entries: [
           {binding: 0, resource: {buffer: this.instanceBuffer, }},
@@ -853,7 +853,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
       bindGroupLayouts: [
-        this.bglForRender,
+        this.sceneBGL,
+        isVideo ? this.materialVideoBGL : this.materialBGL, // ✅ group 1
         this.uniformBufferBindGroupLayoutInstanced,
         ...(isMirror ? [this.mirrorBindGroupLayout] : []),
       ],

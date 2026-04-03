@@ -57,9 +57,12 @@ export let zeroPass = function() {
     }
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
     for(const [pipeline, meshes] of this.opaqueBuckets) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
@@ -75,6 +78,8 @@ export let zeroPass = function() {
       });
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }

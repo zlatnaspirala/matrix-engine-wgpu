@@ -190,7 +190,7 @@ export class WASDCamera {
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
     this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
     WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
-    // this._dirty = false;
+    this._dirty = false;
   }
 
   update() {

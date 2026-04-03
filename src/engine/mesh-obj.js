@@ -268,7 +268,7 @@ export default class MEMeshObj extends Materials {
     }
 
     // optimisation
-    if (this.material.type != 'mirror' && this.material.type != 'water') {
+    if(this.material.type != 'mirror' && this.material.type != 'water') {
       this.drawElements = this.drawElementsNoWaterMirror;
     }
 
@@ -484,17 +484,11 @@ export default class MEMeshObj extends Materials {
       });
 
       if(this.sharedSU) {
-        this.sceneUniformBuffer = this.sharedSU;
-      } else {
-        this.sceneUniformBuffer = this.device.createBuffer({
-          label: 'sceneUniformBuffer per mesh',
-          size: 192,
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
+        this.sceneBGL = this.sharedSU;
       }
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh regular',
+        label: 'uniformBufferBindGroupLayout in mesh',
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
           {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
@@ -773,14 +767,15 @@ export default class MEMeshObj extends Materials {
       code: fragmentCode,
     });
     // PIPELINE LAYOUT (STATIC PER MESH)
-    // const layout = this.device.createPipelineLayout({
-    //   label: 'PipelineLayout Mesh',
-    //   bindGroupLayouts: [
-    //     this.bglForRender,
-    //     this.uniformBufferBindGroupLayout,
-    //     (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
-    //   ],
-    // });
+    const layout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Mesh',
+      bindGroupLayouts: [
+        this.sceneBGL,                                   // ✅ group 0
+        isVideo ? this.materialVideoBGL : this.materialBGL, // ✅ group 1
+        this.uniformBufferBindGroupLayout,               // ✅ group 2 (model)
+        (isMirror ? this.mirrorBindGroupLayout : null),  // ✅ group 3 optional
+      ].filter(Boolean)
+    });
     // VERTEX STATE (SHARED)
     const vertexState = {
       entryPoint: 'main',
@@ -808,14 +803,7 @@ export default class MEMeshObj extends Materials {
       }),
       pipeline: {
         label: 'Mesh Pipeline Opaque',
-        layout: this.device.createPipelineLayout({
-          label: 'PipelineLayout Mesh',
-          bindGroupLayouts: [
-            this.bglForRender,
-            this.uniformBufferBindGroupLayout,
-            (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
-          ],
-        }),
+        layout: layout,
         vertex: vertexState,
         fragment: {
           entryPoint: 'main',
@@ -844,14 +832,7 @@ export default class MEMeshObj extends Materials {
       }),
       pipeline: {
         label: 'Mesh Pipeline Transparent',
-        layout: this.device.createPipelineLayout({
-          label: 'PipelineLayout Mesh',
-          bindGroupLayouts: [
-            this.bglForRender,
-            this.uniformBufferBindGroupLayout,
-            (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
-          ],
-        }),
+        layout: layout,
         vertex: vertexState,
         fragment: {
           entryPoint: 'main',
@@ -960,8 +941,6 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElements = (pass) => {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
     if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
     pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -974,9 +953,7 @@ export default class MEMeshObj extends Materials {
     pass.drawIndexed(this.indexCount);
   }
 
-   drawElementsNoWaterMirror = (pass) => {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
+  drawElementsNoWaterMirror = (pass) => {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -984,15 +961,22 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
+    // pass.setVertexBuffer(0, this.vertexBuffer);
+    // pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    // pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    // pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    // pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    // pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    // pass.drawIndexed(this.indexCount);
   }
 
   drawVideoElements = (pass) => {
     if(!this.video || this.video.readyState < 2) return;
     this.updateVideoTexture();
     // if(!this.sceneBindGroupForRender) return;
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);  // REPLACE WITH REAL DUMMY!
+    // pass.setBindGroup(0, this.sceneBindGroupForRender);
+    // pass.setBindGroup(1, this.modelBindGroup);
+    // pass.setBindGroup(3, this.waterBindGroup);  // REPLACE WITH REAL DUMMY!
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -1004,8 +988,8 @@ export default class MEMeshObj extends Materials {
 
   drawElementsAnim = (renderPass) => {
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
+    // renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+    // renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     if(this.material.type === "mirror") renderPass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);

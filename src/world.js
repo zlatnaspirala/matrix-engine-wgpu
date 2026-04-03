@@ -446,10 +446,48 @@ export default class MatrixEngineWGPU {
 
     this.createBloomBindGroup();
 
+    // global
     this.globalSceneUniformBuffer = this.device.createBuffer({
-      label: 'shared sceneUniformBuffer [meshObj]',
+      label: 'shared sceneUniformBuffer',
       size: 192,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.sceneBGL = this.device.createBindGroupLayout({
+      label: 'SceneBGL',
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: {type: 'uniform'} // sceneUniformBuffer
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: "depth",
+            viewDimension: "2d-array"
+          }
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'comparison'}
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {type: 'read-only-storage'} // lights / spotlight
+        }
+      ]
+    });
+
+    this.compareSampler = this.device.createSampler({
+      compare: 'less-equal',           // safer for shadow comparison
+      addressModeU: 'clamp-to-edge',   // prevents UV leaking outside
+      addressModeV: 'clamp-to-edge',
+      magFilter: 'linear',             // smooth PCF
+      minFilter: 'linear',
     });
 
     this.spotlightUniformBuffer = this.device.createBuffer({
@@ -457,6 +495,7 @@ export default class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
+
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
     this._emptyLight = new Float32Array(36);
     this.createTexArrayForShadows(callback)
@@ -564,6 +603,16 @@ export default class MatrixEngineWGPU {
         dimension: '2d',
         baseArrayLayer: 0,
         arrayLayerCount: 1
+      });
+
+      this.sceneBindGroup = this.device.createBindGroup({
+        layout: this.sceneBGL,
+        entries: [
+          {binding: 0, resource: {buffer: this.globalSceneUniformBuffer}},
+          {binding: 1, resource: this.shadowArrayView},
+          {binding: 2, resource: this.compareSampler},
+          {binding: 3, resource: {buffer: this.spotlightUniformBuffer}}
+        ]
       });
     };
     this.createMe();
@@ -700,10 +749,10 @@ export default class MatrixEngineWGPU {
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
-    o.sharedSU = this.globalSceneUniformBuffer;
+    o.sharedSU = this.sceneBGL;
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    // myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.shadowDepthTextureView = this.shadowArrayView;
     myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
@@ -1020,21 +1069,29 @@ export default class MatrixEngineWGPU {
 
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      pass.setBindGroup(0, this.sceneBindGroup);
       for(const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          pass.setBindGroup(2, mesh.modelBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
       for(const [pipeline, meshes] of this.transparentBuckets) {
         meshes.sort((a, b) => {
-          const cam = this.getCamera();
-          const da = vec3.distance(cam.position, a.position);
-          const db = vec3.distance(cam.position, b.position);
+          const dx1 = camera.position[0] - a.position[0];
+          const dz1 = camera.position[2] - a.position[2];
+          const da = dx1 * dx1 + dz1 * dz1;
+          const dx2 = camera.position[0] - b.position[0];
+          const dz2 = camera.position[2] - b.position[2];
+          const db = dx2 * dx2 + dz2 * dz2;
           return db - da;
         });
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          pass.setBindGroup(2, mesh.modelBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
