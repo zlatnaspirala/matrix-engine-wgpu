@@ -8,7 +8,7 @@ export let zeroPass = function() {
   try {
     let commandEncoder = this.device.createCommandEncoder();
     const camera = this.getCamera();
-    if((camera._dirty || camera._dirtyAngle)) this.getTransformationMatrix(camera.VP, now2);
+    if((camera._dirty || camera._dirtyAngle)) this.getTransformationMatrix(camera, now2);
     camera.update();
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
