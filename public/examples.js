@@ -171,7 +171,6 @@ var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
-
 var flipper = function () {
   let MYFLIPPER = {
     STATUS_PUSH: 'wait'
@@ -984,7 +983,6 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
-
       // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
         app.activateBloomEffect();
@@ -992,7 +990,6 @@ var flipper = function () {
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
         app.cameras.WASD.setY(10);
-        // app.buildRenderBuckets(app.mainRenderBundle);
         app.cameras.WASD._dirtyAngle = true;
       }, 500);
     }
@@ -34794,7 +34791,7 @@ let zeroPass = function () {
   try {
     let commandEncoder = this.device.createCommandEncoder();
     const camera = this.getCamera();
-    if (camera._dirty || camera._dirtyAngle) this.getTransformationMatrix(camera.VP, now2);
+    if (camera._dirty || camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
     camera.update();
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
