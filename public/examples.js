@@ -75,6 +75,8 @@ if (urlQ['demo'] === '1') {
   (0, _flipper.flipper)();
 } else if (urlQ['demo'] === '14') {
   //
+} else {
+  (0, _flipper.flipper)();
 }
 
 },{"./examples/camera-texture.js":2,"./examples/flipper.js":3,"./examples/fontana.js":4,"./examples/glb-loader.js":6,"./examples/load-obj-file.js":7,"./examples/load-objs-sequence.js":8,"./examples/maze.js":9,"./examples/my-lights.js":10,"./examples/physics-playground.js":11,"./examples/procedural-mesh.js":12,"./examples/snake-lights-instanced.js":13,"./examples/snake-lights.js":14,"./examples/video-texture.js":15,"./src/engine/utils.js":70}],2:[function(require,module,exports){
@@ -990,7 +992,7 @@ var flipper = function () {
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
         app.cameras.WASD.setY(10);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        // app.buildRenderBuckets(app.mainRenderBundle);
         app.cameras.WASD._dirtyAngle = true;
       }, 500);
     }
@@ -28109,6 +28111,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this._ghostScratch = new Float32Array(16);
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = _wgpuMatrix.mat4.create();
+    this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -29055,6 +29058,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         primitive: this.primitive
       }
     });
+    dispatchEvent(this.buildPipelineBucketsEvent);
   };
   updateModelUniformBuffer = () => {};
   createGPUBuffer(dataArray, usage) {
@@ -33734,9 +33738,7 @@ class MEMeshObj extends _materials.default {
     this._camVP = _wgpuMatrix.mat4.create();
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
-    addEventListener('update-pipeine', () => {
-      this.setupPipeline();
-    });
+    this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
@@ -34575,6 +34577,7 @@ class MEMeshObj extends _materials.default {
         primitive: this.primitive
       }
     });
+    dispatchEvent(this.buildPipelineBucketsEvent);
   };
   getMainPipeline = () => {
     return this.pipeline;
@@ -35968,6 +35971,7 @@ class ProceduralMeshObj extends _materials.default {
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
+    this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     this.shadowsCast = true;
     if (typeof o.sharedSU !== null) {
       this.sharedSU = o.sharedSU;
@@ -36649,6 +36653,7 @@ class ProceduralMeshObj extends _materials.default {
         primitive: this.primitive
       }
     });
+    dispatchEvent(this.buildPipelineBucketsEvent);
   }
   setMorphBlend(t) {
     this.morphBlend = Math.max(0, Math.min(1, t));
@@ -58531,6 +58536,14 @@ class MatrixEngineWGPU {
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
+    addEventListener('update-pipeine-buckets', () => {
+      console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      this.buildRenderBuckets(this.mainRenderBundle);
+      setTimeout(() => {
+        this.getCamera()._dirtyAngle = true;
+        this.getCamera()._dirty = true;
+      }, 200);
+    });
     _pipelineManager.PipelineManager.init(this.device);
     this.getTransformationMatrix = (camera, dt) => {
       this._sceneData.set(camera.VP, 16);
@@ -59364,7 +59377,7 @@ class MatrixEngineWGPU {
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
+      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];

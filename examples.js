@@ -78,6 +78,8 @@ if(urlQ['demo'] === '1') {
   flipper();
 } else if(urlQ['demo'] === '14') {
   //
+} else {
+  flipper();
 }
 
 

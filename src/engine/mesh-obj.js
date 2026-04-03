@@ -76,13 +76,9 @@ export default class MEMeshObj extends Materials {
     this.deltaTimeAdapter = 10;
     //cache
     this._camVP = mat4.create();
-
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
-
-    addEventListener('update-pipeine', () => {
-      this.setupPipeline()
-    })
+    this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -879,6 +875,8 @@ export default class MEMeshObj extends Materials {
         primitive: this.primitive,
       },
     });
+
+    dispatchEvent(this.buildPipelineBucketsEvent);
   };
 
   getMainPipeline = () => {return this.pipeline}
