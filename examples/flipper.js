@@ -684,7 +684,7 @@ export var flipper = function() {
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
         app.cameras.WASD.setY(10);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        // app.buildRenderBuckets(app.mainRenderBundle);
         app.cameras.WASD._dirtyAngle = true;
       }, 500)
 

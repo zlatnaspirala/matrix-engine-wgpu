@@ -316,6 +316,16 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff(callback) {
+
+    addEventListener('update-pipeine-buckets', () => {
+      console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+      this.buildRenderBuckets(this.mainRenderBundle);
+      setTimeout(()=>{
+         this.getCamera()._dirtyAngle = true;
+         this.getCamera()._dirty = true;
+     }, 200);
+    })
+
     PipelineManager.init(this.device);
     this.getTransformationMatrix = (camera, dt) => {
       this._sceneData.set(camera.VP, 16);
@@ -962,7 +972,7 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
-      if(camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
+      if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
 
       for(let i = 0;i < this.lightContainer.length;i++) {

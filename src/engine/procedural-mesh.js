@@ -43,6 +43,7 @@ export default class ProceduralMeshObj extends Materials {
     this.meshA = null;
     this.meshB = null;
     this.morphBlend = 0.0;
+    this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
 
     this.shadowsCast = true;
     if(typeof o.sharedSU !== null) {
@@ -622,6 +623,7 @@ export default class ProceduralMeshObj extends Materials {
         primitive: this.primitive,
       }
     });
+    dispatchEvent(this.buildPipelineBucketsEvent);
   }
 
   setMorphBlend(t) {

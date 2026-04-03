@@ -49,10 +49,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
-
     this._ghostScratch = new Float32Array(16);
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = mat4.create();
+    this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
+
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -944,6 +945,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         primitive: this.primitive,
       }
     });
+    dispatchEvent(this.buildPipelineBucketsEvent);
   };
 
   updateModelUniformBuffer = () => {}
