@@ -77,7 +77,6 @@ const MAX_SPOTLIGHTS = 20u;
 // @group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
 // @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
 // @group(0) @binding(8) var<uniform> material               : MaterialPBR;
-
 // @group(0) @binding(9) var normalTexture : texture_2d<f32>;
 // @group(0) @binding(10) var normalSampler : sampler;
 
@@ -93,10 +92,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(1) @binding(5) var normalTexture: texture_2d<f32>;
 @group(1) @binding(6) var normalSampler: sampler;
 
-
-@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
-@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
-@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+@group(3) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(3) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(3) @binding(2) var          mirrorEnvSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,

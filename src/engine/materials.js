@@ -512,6 +512,7 @@ export default class Materials {
   }
 
   async loadVideoTexture(arg) {
+    console.log('100000000000000000000000000000000')
     this.videoIsReady = 'MAYBE';
 
     this.isVideo = true;
@@ -528,10 +529,29 @@ export default class Materials {
       this.video.style.position = 'absolute';
       this.video.style.width = '640px';
       this.video.style.height = '480px';
-      this.video.style.top = '-420px';
+      this.video.style.top = '-20px';
       this.video.style.left = '50%';
-
-      await this.video.play();
+      this.video.play();
+      this.video.addEventListener('canplay', () => {
+        // alert('++++');
+        if(this.video.readyState >= 3) {
+           alert('++++ > 3 ');
+        }
+      }, {once: true});
+      this.video.addEventListener('canplaythrough', () => {
+        console.log('_cideo can playt +++++++++++++++++++++++++++');
+          if(this.video.readyState >= 3) {
+           this.externalTexture = this.device.importExternalTexture({source: this.video});
+          console.log('++++ > 3   ++++  ' + this.externalTexture);
+          if(!this.externalTexture) alert('ERROR ' + this.externalTexture);
+           this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear',
+          });
+          this.createLayoutForRender();
+          this.createMaterialBindGroupVideo();
+        }
+      }, {once: false});
 
     } else if(arg.type === 'videoElement') {
       this.video = arg.el;
@@ -572,7 +592,7 @@ export default class Materials {
       const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
       if(!stream) {console.error('❌ Cannot capture stream from canvas2d'); return;}
       this.video.srcObject = stream;
-      await this.video.play();
+      this.video.play();
       this.isVideo = true;
     } else if(arg.type === 'canvas2d-inline') {
       // console.log('what is arg', arg);
@@ -611,7 +631,7 @@ export default class Materials {
       this.video.playsInline = true;
       this.video.srcObject = canvas.captureStream(60);
       document.body.append(this.video);
-      await this.video.play();
+      this.video.play();
       await new Promise(resolve => {
         const check = () => {
           if(this.video.readyState >= 2) resolve();
@@ -633,10 +653,8 @@ export default class Materials {
   }
 
   updateVideoTexture() {
-    if(!this.video || this.video.readyState < 2) return;
-    // Always re-import — external textures expire each frame, never cache them
+    // if(!this.video || this.video.readyState < 2) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
-    // Always rebuild BG against the VIDEO layout
     this.createMaterialBindGroupVideo();
   }
 
@@ -672,7 +690,11 @@ export default class Materials {
       const material = this.skinnedNode.mesh.primitives[0].material;
       textureResource = material.baseColorTexture.imageView;
     }
+
+    if(this.isVideo == true) return;
+    // console.log('CREATE NORMAL this.materialBindGroup');
     this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialBindGroup normal',
       layout: this.materialBGL,
       entries: [
         {binding: 0, resource: textureResource},
@@ -715,7 +737,9 @@ export default class Materials {
 
   createMaterialBindGroupVideo() {
     if(!this.externalTexture) return;
+    console.log('SET VIDEO BIND GROUP')
     this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialVideoBGL',
       layout: this.materialVideoBGL,
       entries: [
         {binding: 0, resource: this.externalTexture},

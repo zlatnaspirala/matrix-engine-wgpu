@@ -33,21 +33,21 @@ export var loadVideoTexture = function() {
 
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;
-      videoTexture.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: -5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [10, 0.01, 10],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
+      // videoTexture.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [10, 0.01, 10],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'floor',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
 
       videoTexture.addMeshObj({
         position: {x: 0, y: -1, z: -15},
@@ -68,24 +68,24 @@ export var loadVideoTexture = function() {
         raycast: {enabled: true, radius: 12}
       })
 
-      videoTexture.addMeshObj({
-        position: {x: 0, y: 7, z: -20},
-        rotation: {x: 90, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'MyVideoTex',
-        mesh: m.piramyd,
-        scale: [5, 5, 5],
-        isVideo: {
-          type: 'video',
-          src: 'res/videos/tunel.mp4'
-        },
-        physics: {
-          enabled: false,
-          geometry: "piramyd"
-        },
-        raycast: {enabled: true, radius: 12}
-      })
+      // videoTexture.addMeshObj({
+      //   position: {x: 0, y: 7, z: -20},
+      //   rotation: {x: 90, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'MyVideoTex',
+      //   mesh: m.piramyd,
+      //   scale: [5, 5, 5],
+      //   isVideo: {
+      //     type: 'video',
+      //     src: 'res/videos/tunel.mp4'
+      //   },
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "piramyd"
+      //   },
+      //   raycast: {enabled: true, radius: 12}
+      // })
       // also possibole to switch in runtime
       // var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
       // console.log(`%c Test video-texture...`, LOG_MATRIX);

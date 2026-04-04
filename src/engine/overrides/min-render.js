@@ -51,9 +51,6 @@ export let zeroPass = function() {
       mesh.position.update();
       if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if(mesh.update) mesh.update(now2);
-      if(!mesh.pipeline) {
-        mesh.shadowDepthTextureView = this.shadowArrayView;
-      }
     }
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);

@@ -31,12 +31,10 @@ export default class ProceduralMeshObj extends Materials {
     this.device = device;
     this.context = context;
     this.globalAmbient = [...globalAmbient];
-
     if(typeof o.material.useBlend === 'undefined' ||
       typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
-
     this.mType = MeshType.PROCEDURAL;
     //cache
     this._camVP = mat4.create();
@@ -44,12 +42,10 @@ export default class ProceduralMeshObj extends Materials {
     this.meshB = null;
     this.morphBlend = 0.0;
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
-
     this.shadowsCast = true;
     if(typeof o.sharedSU !== null) {
       this.sharedSU = o.sharedSU;
     }
-
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -131,12 +127,10 @@ export default class ProceduralMeshObj extends Materials {
     };
 
     this.runProgram().then(() => {
-      this._setupShadowDepthTexture();
       this._setupBuffers();
       this._setupUniforms();
       this._setupPipeline();
       this.done = true;
-      // console.log(`%cProceduralMesh ready: ${this.name}`, LOG_FUNNY_SMALL);
     });
   }
 
@@ -285,10 +279,6 @@ export default class ProceduralMeshObj extends Materials {
       format: 'depth32float',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
-    this.shadowDepthTextureView = this.shadowDepthTexture.createView({
-      dimension: '2d-array',
-      arrayLayerCount: 20,
-    });
   }
 
   _setupBuffers() {
@@ -344,13 +334,7 @@ export default class ProceduralMeshObj extends Materials {
     }
     this.modelUniformBuffer = this.device.createBuffer({size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     if(this.sharedSU) {
-      this.sceneUniformBuffer = this.sharedSU;
-    } else {
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
+      this.sceneBGL = this.sharedSU;
     }
 
     this.bonesBuffer = this.device.createBuffer({size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
@@ -378,7 +362,7 @@ export default class ProceduralMeshObj extends Materials {
       ]
     });
 
-    this.mainRenderBindGroup = this.device.createBindGroup({
+    this.modelBindGroup = this.device.createBindGroup({
       layout: this.uniformBufferBindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.modelUniformBuffer}},
@@ -398,15 +382,15 @@ export default class ProceduralMeshObj extends Materials {
       ]
     });
 
-    this.modelBindGroup = this.device.createBindGroup({
-      layout: this.shadowBindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-        {binding: 1, resource: {buffer: this.bonesBuffer}},
-        {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-        {binding: 3, resource: {buffer: this.morphBlendBuffer}},
-      ]
-    });
+    // this.modelBindGroup = this.device.createBindGroup({
+    //   layout: this.shadowBindGroupLayout,
+    //   entries: [
+    //     {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+    //     {binding: 1, resource: {buffer: this.bonesBuffer}},
+    //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+    //     {binding: 3, resource: {buffer: this.morphBlendBuffer}},
+    //   ]
+    // });
 
     this.vertexAnim = {
       active: false,
@@ -537,10 +521,15 @@ export default class ProceduralMeshObj extends Materials {
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
+    const isMirror = this.material.type === 'mirror';
+    const isNormalMap = this.material.type === 'normalmap';
+    const isVideo = this.isVideo === true;
     const layout = this.device.createPipelineLayout({
       bindGroupLayouts: [
-        this.bglForRender,
-        this.uniformBufferBindGroupLayout,
+        this.sceneBGL,                                   // ✅ group 0
+        isVideo ? this.materialVideoBGL : this.materialBGL, // ✅ group 1
+        this.uniformBufferBindGroupLayout,               // ✅ group 2 (model)
+        (isMirror ? this.mirrorBindGroupLayout : null),  // ✅ group 3 optional
       ],
     });
     const vertexState = {
@@ -558,6 +547,8 @@ export default class ProceduralMeshObj extends Materials {
       frontFace: this.primitive.frontFace,
       format: 'rgba16float',
       morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -724,12 +715,6 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   drawElements(pass, lightContainer) {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.mainRenderBindGroup);
-
-    if(this.material.type === "mirror" && this.mirrorBindGroup) {
-      pass.setBindGroup(2, this.mirrorBindGroup);
-    }
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);

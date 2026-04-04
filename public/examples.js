@@ -2000,7 +2000,7 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'mirror'
         },
         envMapParams: {
           baseColorMix: 0.1,
@@ -3771,35 +3771,22 @@ var loadVideoTexture = function () {
     });
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;
-      videoTexture.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: -5,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [10, 0.01, 10],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
+      // videoTexture.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [10, 0.01, 10],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'floor',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
+
       videoTexture.addMeshObj({
         position: {
           x: 0,
@@ -3833,39 +3820,25 @@ var loadVideoTexture = function () {
           radius: 12
         }
       });
-      videoTexture.addMeshObj({
-        position: {
-          x: 0,
-          y: 7,
-          z: -20
-        },
-        rotation: {
-          x: 90,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'MyVideoTex',
-        mesh: m.piramyd,
-        scale: [5, 5, 5],
-        isVideo: {
-          type: 'video',
-          src: 'res/videos/tunel.mp4'
-        },
-        physics: {
-          enabled: false,
-          geometry: "piramyd"
-        },
-        raycast: {
-          enabled: true,
-          radius: 12
-        }
-      });
+
+      // videoTexture.addMeshObj({
+      //   position: {x: 0, y: 7, z: -20},
+      //   rotation: {x: 90, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'MyVideoTex',
+      //   mesh: m.piramyd,
+      //   scale: [5, 5, 5],
+      //   isVideo: {
+      //     type: 'video',
+      //     src: 'res/videos/tunel.mp4'
+      //   },
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "piramyd"
+      //   },
+      //   raycast: {enabled: true, radius: 12}
+      // })
       // also possibole to switch in runtime
       // var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
       // console.log(`%c Test video-texture...`, LOG_MATRIX);
@@ -32850,6 +32823,7 @@ class Materials {
     };
   }
   async loadVideoTexture(arg) {
+    console.log('100000000000000000000000000000000');
     this.videoIsReady = 'MAYBE';
     this.isVideo = true;
     this.drawElements = this.drawVideoElements;
@@ -32864,9 +32838,35 @@ class Materials {
       this.video.style.position = 'absolute';
       this.video.style.width = '640px';
       this.video.style.height = '480px';
-      this.video.style.top = '-420px';
+      this.video.style.top = '-20px';
       this.video.style.left = '50%';
-      await this.video.play();
+      this.video.play();
+      this.video.addEventListener('canplay', () => {
+        // alert('++++');
+        if (this.video.readyState >= 3) {
+          alert('++++ > 3 ');
+        }
+      }, {
+        once: true
+      });
+      this.video.addEventListener('canplaythrough', () => {
+        console.log('_cideo can playt +++++++++++++++++++++++++++');
+        if (this.video.readyState >= 3) {
+          this.externalTexture = this.device.importExternalTexture({
+            source: this.video
+          });
+          console.log('++++ > 3   ++++  ' + this.externalTexture);
+          if (!this.externalTexture) alert('ERROR ' + this.externalTexture);
+          this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear'
+          });
+          this.createLayoutForRender();
+          this.createMaterialBindGroupVideo();
+        }
+      }, {
+        once: false
+      });
     } else if (arg.type === 'videoElement') {
       this.video = arg.el;
       await this.video.play();
@@ -32913,7 +32913,7 @@ class Materials {
         return;
       }
       this.video.srcObject = stream;
-      await this.video.play();
+      this.video.play();
       this.isVideo = true;
     } else if (arg.type === 'canvas2d-inline') {
       // console.log('what is arg', arg);
@@ -32951,7 +32951,7 @@ class Materials {
       this.video.playsInline = true;
       this.video.srcObject = canvas.captureStream(60);
       document.body.append(this.video);
-      await this.video.play();
+      this.video.play();
       await new Promise(resolve => {
         const check = () => {
           if (this.video.readyState >= 2) resolve();else requestAnimationFrame(check);
@@ -32970,12 +32970,10 @@ class Materials {
     this.createMaterialBindGroupVideo();
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
-    // Always re-import — external textures expire each frame, never cache them
+    // if(!this.video || this.video.readyState < 2) return;
     this.externalTexture = this.device.importExternalTexture({
       source: this.video
     });
-    // Always rebuild BG against the VIDEO layout
     this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
@@ -33003,7 +33001,10 @@ class Materials {
       const material = this.skinnedNode.mesh.primitives[0].material;
       textureResource = material.baseColorTexture.imageView;
     }
+    if (this.isVideo == true) return;
+    // console.log('CREATE NORMAL this.materialBindGroup');
     this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialBindGroup normal',
       layout: this.materialBGL,
       entries: [{
         binding: 0,
@@ -33101,7 +33102,9 @@ class Materials {
   }
   createMaterialBindGroupVideo() {
     if (!this.externalTexture) return;
+    console.log('SET VIDEO BIND GROUP');
     this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialVideoBGL',
       layout: this.materialVideoBGL,
       entries: [{
         binding: 0,
@@ -33869,10 +33872,7 @@ class MEMeshObj extends _materials.default {
     } else if (typeof o.isVideo !== 'undefined') {
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
-    }
-
-    // optimisation
-    if (this.material.type != 'mirror' && this.material.type != 'water') {
+    } else if (this.material.type != 'mirror' && this.material.type != 'water') {
       this.drawElements = this.drawElementsNoWaterMirror;
     }
     this.inputHandler = inputHandler;
@@ -34399,6 +34399,8 @@ class MEMeshObj extends _materials.default {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, _utils.LOG_FUNNY_ARCADE);
+          return;
         });
         this.setupPipeline();
       } else {
@@ -34433,6 +34435,7 @@ class MEMeshObj extends _materials.default {
       code: fragmentCode
     });
     // PIPELINE LAYOUT (STATIC PER MESH)
+    // console.log(' PIPELINE LAYOUT (STATIC PER MESH) is video : ', isVideo)
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
       bindGroupLayouts: [this.sceneBGL,
@@ -34598,8 +34601,6 @@ class MEMeshObj extends _materials.default {
     }
   }
   drawElements = pass => {
-    if (this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -34626,11 +34627,8 @@ class MEMeshObj extends _materials.default {
     // pass.drawIndexed(this.indexCount);
   };
   drawVideoElements = pass => {
-    if (!this.video || this.video.readyState < 2) return;
-    this.updateVideoTexture();
-    // if(!this.sceneBindGroupForRender) return;
-    // pass.setBindGroup(0, this.sceneBindGroupForRender);
-    // pass.setBindGroup(1, this.modelBindGroup);
+    // if(!this.video || this.video.readyState < 2) return;
+    // this.updateVideoTexture();
     // pass.setBindGroup(3, this.waterBindGroup);  // REPLACE WITH REAL DUMMY!
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -34804,9 +34802,6 @@ let zeroPass = function () {
       mesh.position.update();
       if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if (mesh.update) mesh.update(now2);
-      if (!mesh.pipeline) {
-        mesh.shadowDepthTextureView = this.shadowArrayView;
-      }
     }
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -36074,12 +36069,10 @@ class ProceduralMeshObj extends _materials.default {
       });
     };
     this.runProgram().then(() => {
-      this._setupShadowDepthTexture();
       this._setupBuffers();
       this._setupUniforms();
       this._setupPipeline();
       this.done = true;
-      // console.log(`%cProceduralMesh ready: ${this.name}`, LOG_FUNNY_SMALL);
     });
   }
 
@@ -36199,10 +36192,6 @@ class ProceduralMeshObj extends _materials.default {
       format: 'depth32float',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
-    this.shadowDepthTextureView = this.shadowDepthTexture.createView({
-      dimension: '2d-array',
-      arrayLayerCount: 20
-    });
   }
   _setupBuffers() {
     this.context.configure({
@@ -36305,13 +36294,7 @@ class ProceduralMeshObj extends _materials.default {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     if (this.sharedSU) {
-      this.sceneUniformBuffer = this.sharedSU;
-    } else {
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
+      this.sceneBGL = this.sharedSU;
     }
     this.bonesBuffer = this.device.createBuffer({
       size: 6400 * 4,
@@ -36366,7 +36349,7 @@ class ProceduralMeshObj extends _materials.default {
       } // morphBlend
       ]
     });
-    this.mainRenderBindGroup = this.device.createBindGroup({
+    this.modelBindGroup = this.device.createBindGroup({
       layout: this.uniformBufferBindGroupLayout,
       entries: [{
         binding: 0,
@@ -36426,30 +36409,17 @@ class ProceduralMeshObj extends _materials.default {
       } // morphBlend
       ]
     });
-    this.modelBindGroup = this.device.createBindGroup({
-      layout: this.shadowBindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.modelUniformBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.bonesBuffer
-        }
-      }, {
-        binding: 2,
-        resource: {
-          buffer: this.vertexAnimBuffer
-        }
-      }, {
-        binding: 3,
-        resource: {
-          buffer: this.morphBlendBuffer
-        }
-      }]
-    });
+
+    // this.modelBindGroup = this.device.createBindGroup({
+    //   layout: this.shadowBindGroupLayout,
+    //   entries: [
+    //     {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+    //     {binding: 1, resource: {buffer: this.bonesBuffer}},
+    //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+    //     {binding: 3, resource: {buffer: this.morphBlendBuffer}},
+    //   ]
+    // });
+
     this.vertexAnim = {
       active: false,
       enableWave: () => {
@@ -36580,8 +36550,18 @@ class ProceduralMeshObj extends _materials.default {
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
+    const isMirror = this.material.type === 'mirror';
+    const isNormalMap = this.material.type === 'normalmap';
+    const isVideo = this.isVideo === true;
     const layout = this.device.createPipelineLayout({
-      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
+      bindGroupLayouts: [this.sceneBGL,
+      // ✅ group 0
+      isVideo ? this.materialVideoBGL : this.materialBGL,
+      // ✅ group 1
+      this.uniformBufferBindGroupLayout,
+      // ✅ group 2 (model)
+      isMirror ? this.mirrorBindGroupLayout : null // ✅ group 3 optional
+      ]
     });
     const vertexState = {
       entryPoint: 'main',
@@ -36601,7 +36581,9 @@ class ProceduralMeshObj extends _materials.default {
       cullMode: this.primitive.cullMode,
       frontFace: this.primitive.frontFace,
       format: 'rgba16float',
-      morph: !this.vertexWGSL ? 1 : 0
+      morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -36759,11 +36741,6 @@ class ProceduralMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
   drawElements(pass, lightContainer) {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.mainRenderBindGroup);
-    if (this.material.type === "mirror" && this.mirrorBindGroup) {
-      pass.setBindGroup(2, this.mirrorBindGroup);
-    }
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);
@@ -41115,7 +41092,6 @@ const MAX_SPOTLIGHTS = 20u;
 // @group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
 // @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
 // @group(0) @binding(8) var<uniform> material               : MaterialPBR;
-
 // @group(0) @binding(9) var normalTexture : texture_2d<f32>;
 // @group(0) @binding(10) var normalSampler : sampler;
 
@@ -41131,10 +41107,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(1) @binding(5) var normalTexture: texture_2d<f32>;
 @group(1) @binding(6) var normalSampler: sampler;
 
-
-@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
-@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
-@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+@group(3) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(3) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(3) @binding(2) var          mirrorEnvSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -41369,11 +41344,9 @@ struct Scene {
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMap: texture_depth_2d;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_external;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> postFXMode: u32;
+@group(1) @binding(0) var meshTexture: texture_external;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var<uniform> postFXMode: u32;
 
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
@@ -41388,21 +41361,21 @@ const ambientFactor = 0.7;
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
   // Shadow filtering
-  var visibility = 0.0;
-  let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
-  for (var y = -1; y <= 1; y++) {
-    for (var x = -1; x <= 1; x++) {
-      let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-      visibility += textureSampleCompare(
-        shadowMap, shadowSampler,
-        input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-      );
-    }
-  }
-  visibility /= 9.0;
+  // var visibility = 0.0;
+  // let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
+  // for (var y = -1; y <= 1; y++) {
+  //   for (var x = -1; x <= 1; x++) {
+  //     let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
+  //     visibility += textureSampleCompare(
+  //       shadowMap, shadowSampler,
+  //       input.shadowPos.xy + offset, input.shadowPos.z - 0.007
+  //     );
+  //   }
+  // }
+  // visibility /= 9.0;
 
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
-  let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
+  let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
 
   // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
@@ -58396,6 +58369,9 @@ class MatrixEngineWGPU {
       viewProjectionMatrix: null,
       direction: null
     };
+    this.usEvent = new CustomEvent('updateSceneContainer', {
+      detail: {}
+    });
     this.editor = undefined;
     if (typeof options.useEditor !== "undefined") {
       if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -58932,9 +58908,9 @@ class MatrixEngineWGPU {
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length, this.shadowPassViews[this.lightContainer.length], this.shadowSampler);
     this.lightContainer.push(newLight);
-    for (const mesh of this.mainRenderBundle) {
-      mesh.shadowDepthTextureView = this.shadowArrayView;
-    }
+    // for(const mesh of this.mainRenderBundle) {
+    //   mesh.shadowDepthTextureView = this.shadowArrayView;
+    // }
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -59024,9 +59000,8 @@ class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     o.sharedSU = this.sceneBGL;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    // myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.shadowDepthTextureView = this.shadowArrayView;
-    myMesh1.shadowVideoView = this.shadowVideoView;
+    // myMesh1.shadowDepthTextureView = this.shadowArrayView;
+    // myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
     this.mainRenderBundle.push(myMesh1);
@@ -59113,13 +59088,8 @@ class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
-    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sharedSU = this.sceneBGL;
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if (o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
@@ -59488,7 +59458,7 @@ class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineMorph);
           for (let m of this.shadowBuckets.procedural) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.mainRenderBindGroup);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -59505,10 +59475,9 @@ class MatrixEngineWGPU {
         mesh.position.update();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
-        // lazy pipeline init
+        if (mesh.isVideo) mesh.updateVideoTexture();
         if (!mesh.pipeline || !mesh.pipelineTransparent) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
-          // mesh.setupPipeline();
         }
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
@@ -59519,6 +59488,8 @@ class MatrixEngineWGPU {
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
+          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -59536,6 +59507,8 @@ class MatrixEngineWGPU {
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
+          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -59697,7 +59670,6 @@ class MatrixEngineWGPU {
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         // make it soft
@@ -59705,9 +59677,7 @@ class MatrixEngineWGPU {
         r.push(bvhPlayer);
         this.sortRenderBundle();
         setTimeout(() => {
-          document.dispatchEvent(new CustomEvent('updateSceneContainer', {
-            detail: {}
-          }));
+          document.dispatchEvent(this.usEvent);
         }, 50);
         c++;
       }
@@ -59839,7 +59809,7 @@ class MatrixEngineWGPU {
         }
         const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)

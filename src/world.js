@@ -152,6 +152,8 @@ export default class MatrixEngineWGPU {
     };
     this._volumetricUniforms = {invViewProjectionMatrix: null};
     this._volumetricLightUniforms = {viewProjectionMatrix: null, direction: null};
+    this.usEvent = new CustomEvent('updateSceneContainer', {detail: {}});
+
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
       if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -696,10 +698,9 @@ export default class MatrixEngineWGPU {
       this.shadowPassViews[this.lightContainer.length], this.shadowSampler
     );
     this.lightContainer.push(newLight);
-
-    for(const mesh of this.mainRenderBundle) {
-      mesh.shadowDepthTextureView = this.shadowArrayView;
-    }
+    // for(const mesh of this.mainRenderBundle) {
+    //   mesh.shadowDepthTextureView = this.shadowArrayView;
+    // }
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
 
@@ -752,9 +753,8 @@ export default class MatrixEngineWGPU {
     o.sharedSU = this.sceneBGL;
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    // myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.shadowDepthTextureView = this.shadowArrayView;
-    myMesh1.shadowVideoView = this.shadowVideoView;
+    // myMesh1.shadowDepthTextureView = this.shadowArrayView;
+    // myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
 
     if(o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -809,14 +809,8 @@ export default class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
-    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
-
+    o.sharedSU = this.sceneBGL;
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
@@ -1044,7 +1038,7 @@ export default class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineMorph);
           for(let m of this.shadowBuckets.procedural) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.mainRenderBindGroup);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -1060,10 +1054,9 @@ export default class MatrixEngineWGPU {
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
-        // lazy pipeline init
+        if(mesh.isVideo) mesh.updateVideoTexture();
         if(!mesh.pipeline || !mesh.pipelineTransparent) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
-          // mesh.setupPipeline();
         }
       }
 
@@ -1075,6 +1068,8 @@ export default class MatrixEngineWGPU {
         for(const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
+          if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1092,6 +1087,8 @@ export default class MatrixEngineWGPU {
         for(const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
+          if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1222,17 +1219,13 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
-
-        setTimeout(() => {
-          document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
-        }, 50);
+        setTimeout(() => {document.dispatchEvent(this.usEvent)}, 50);
         c++;
       }
       skinnedNodeIndex++;
@@ -1318,7 +1311,7 @@ export default class MatrixEngineWGPU {
           this.inputHandler,
           this.globalAmbient.slice());
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)

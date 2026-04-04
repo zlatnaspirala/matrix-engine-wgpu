@@ -7,11 +7,9 @@ struct Scene {
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMap: texture_depth_2d;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_external;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> postFXMode: u32;
+@group(1) @binding(0) var meshTexture: texture_external;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var<uniform> postFXMode: u32;
 
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
@@ -26,21 +24,21 @@ const ambientFactor = 0.7;
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
   // Shadow filtering
-  var visibility = 0.0;
-  let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
-  for (var y = -1; y <= 1; y++) {
-    for (var x = -1; x <= 1; x++) {
-      let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-      visibility += textureSampleCompare(
-        shadowMap, shadowSampler,
-        input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-      );
-    }
-  }
-  visibility /= 9.0;
+  // var visibility = 0.0;
+  // let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
+  // for (var y = -1; y <= 1; y++) {
+  //   for (var x = -1; x <= 1; x++) {
+  //     let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
+  //     visibility += textureSampleCompare(
+  //       shadowMap, shadowSampler,
+  //       input.shadowPos.xy + offset, input.shadowPos.z - 0.007
+  //     );
+  //   }
+  // }
+  // visibility /= 9.0;
 
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
-  let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
+  let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
 
   // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
