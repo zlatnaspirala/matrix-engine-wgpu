@@ -152,6 +152,8 @@ export default class MatrixEngineWGPU {
     };
     this._volumetricUniforms = {invViewProjectionMatrix: null};
     this._volumetricLightUniforms = {viewProjectionMatrix: null, direction: null};
+    this.usEvent = new CustomEvent('updateSceneContainer', {detail: {}});
+
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
       if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -318,12 +320,9 @@ export default class MatrixEngineWGPU {
   createGlobalStuff(callback) {
 
     addEventListener('update-pipeine-buckets', () => {
-      console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
       this.buildRenderBuckets(this.mainRenderBundle);
-      setTimeout(()=>{
-         this.getCamera()._dirtyAngle = true;
-         this.getCamera()._dirty = true;
-     }, 200);
+      this.getCamera()._dirtyAngle = true;
+      this.getCamera()._dirty = true;
     })
 
     PipelineManager.init(this.device);
@@ -449,10 +448,48 @@ export default class MatrixEngineWGPU {
 
     this.createBloomBindGroup();
 
+    // global
     this.globalSceneUniformBuffer = this.device.createBuffer({
-      label: 'shared sceneUniformBuffer [meshObj]',
+      label: 'Shared[sceneUniformBuffer]',
       size: 192,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.sceneBGL = this.device.createBindGroupLayout({
+      label: 'SceneBGL',
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: {type: 'uniform'}
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: "depth",
+            viewDimension: "2d-array"
+          }
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {type: 'comparison'}
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {type: 'read-only-storage'}
+        }
+      ]
+    });
+
+    this.compareSampler = this.device.createSampler({
+      compare: 'less-equal',           // safer for shadow comparison
+      addressModeU: 'clamp-to-edge',   // prevents UV leaking outside
+      addressModeV: 'clamp-to-edge',
+      magFilter: 'linear',             // smooth PCF
+      minFilter: 'linear',
     });
 
     this.spotlightUniformBuffer = this.device.createBuffer({
@@ -460,6 +497,7 @@ export default class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
+
     this._lightsData = new Float32Array(this.MAX_SPOTLIGHTS * 36);
     this._emptyLight = new Float32Array(36);
     this.createTexArrayForShadows(callback)
@@ -568,6 +606,16 @@ export default class MatrixEngineWGPU {
         baseArrayLayer: 0,
         arrayLayerCount: 1
       });
+
+      this.sceneBindGroup = this.device.createBindGroup({
+        layout: this.sceneBGL,
+        entries: [
+          {binding: 0, resource: {buffer: this.globalSceneUniformBuffer}},
+          {binding: 1, resource: this.shadowArrayView},
+          {binding: 2, resource: this.compareSampler},
+          {binding: 3, resource: {buffer: this.spotlightUniformBuffer}}
+        ]
+      });
     };
     this.createMe();
   }
@@ -650,10 +698,9 @@ export default class MatrixEngineWGPU {
       this.shadowPassViews[this.lightContainer.length], this.shadowSampler
     );
     this.lightContainer.push(newLight);
-
-    for(const mesh of this.mainRenderBundle) {
-      mesh.shadowDepthTextureView = this.shadowArrayView;
-    }
+    // for(const mesh of this.mainRenderBundle) {
+    //   mesh.shadowDepthTextureView = this.shadowArrayView;
+    // }
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
 
@@ -703,12 +750,9 @@ export default class MatrixEngineWGPU {
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
-    o.sharedSU = this.globalSceneUniformBuffer;
+    o.sceneBGL = this.sceneBGL;
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.shadowDepthTextureView = this.shadowArrayView;
-    myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
 
     if(o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -763,14 +807,8 @@ export default class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
-    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
-
+    o.sceneBGL = this.sceneBGL;
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
@@ -990,7 +1028,7 @@ export default class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineInstanced);
           for(let m of this.shadowBuckets.instanced) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroupInstanced);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -998,7 +1036,7 @@ export default class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineMorph);
           for(let m of this.shadowBuckets.procedural) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.mainRenderBindGroup);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -1014,30 +1052,41 @@ export default class MatrixEngineWGPU {
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
-        // lazy pipeline init
+        if(mesh.isVideo) mesh.updateVideoTexture();
         if(!mesh.pipeline || !mesh.pipelineTransparent) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
-          // mesh.setupPipeline();
         }
       }
 
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      pass.setBindGroup(0, this.sceneBindGroup);
       for(const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          pass.setBindGroup(2, mesh.modelBindGroup);
+          if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
       for(const [pipeline, meshes] of this.transparentBuckets) {
         meshes.sort((a, b) => {
-          const cam = this.getCamera();
-          const da = vec3.distance(cam.position, a.position);
-          const db = vec3.distance(cam.position, b.position);
+          const dx1 = camera.position[0] - a.position[0];
+          const dz1 = camera.position[2] - a.position[2];
+          const da = dx1 * dx1 + dz1 * dz1;
+          const dx2 = camera.position[0] - b.position[0];
+          const dz2 = camera.position[2] - b.position[2];
+          const db = dx2 * dx2 + dz2 * dz2;
           return db - da;
         });
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          pass.setBindGroup(2, mesh.modelBindGroup);
+          if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1141,11 +1190,7 @@ export default class MatrixEngineWGPU {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
 
-    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sceneBGL = this.sceneBGL;
 
     let r = [];
     o.textureCache = this.textureCache;
@@ -1168,17 +1213,13 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
-
-        setTimeout(() => {
-          document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
-        }, 50);
+        setTimeout(() => {document.dispatchEvent(this.usEvent)}, 50);
         c++;
       }
       skinnedNodeIndex++;
@@ -1234,11 +1275,9 @@ export default class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
     }
-    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+
+    o.sceneBGL = this.sceneBGL;
+
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -1264,7 +1303,7 @@ export default class MatrixEngineWGPU {
           this.inputHandler,
           this.globalAmbient.slice());
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)

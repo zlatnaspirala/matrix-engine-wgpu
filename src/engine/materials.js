@@ -30,22 +30,10 @@ export default class Materials {
     this.textureCache = textureCache;
     this.glb = glb;
     this.material = material;
-
     if(typeof isVideo !== 'undefined') {
       this.isVideo = true;
-    } else {
-      this.isVideo = false;
-    }
-
+    } else {this.isVideo = false}
     this.videoIsReady = 'NONE';
-    this.compareSampler = this.device.createSampler({
-      compare: 'less-equal',           // safer for shadow comparison
-      addressModeU: 'clamp-to-edge',   // prevents UV leaking outside
-      addressModeV: 'clamp-to-edge',
-      magFilter: 'linear',             // smooth PCF
-      minFilter: 'linear',
-    });
-    // For image textures (standard sampler)
     this.imageSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
@@ -53,19 +41,18 @@ export default class Materials {
       addressModeV: "repeat",
       addressModeW: "repeat",
     });
-    // For external video textures (needs to be filtering sampler too!)
     this.videoSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
     });
     // FX effect
     this.postFXModeBuffer = this.device.createBuffer({
-      size: 4, // u32 = 4 bytes
+      size: 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    // Dymmy buffer
+    // Dymmy
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
-      size: 80, // Must match size in shader
+      size: 80,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
@@ -144,24 +131,20 @@ export default class Materials {
         minFilter: 'linear',
       });
     }
-    this.createBufferForWater();
+
+    if(this.material.type == 'water') {
+      this.createBufferForWater();
+    }
   }
 
   createBufferForWater = () => {
     this.waterBindGroupLayout = this.device.createBindGroupLayout({
       label: '[Water]BindGroupLayout',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-      }]
+      entries: [{binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}]
     });
     this.waterParamsBuffer = this.device.createBuffer({
       label: '[WaterParams]Buffer',
-      size: 48,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.waterParamsData = new Float32Array([
       0.0, 0.2, 0.4,       // deepColor (vec3f)
@@ -174,7 +157,9 @@ export default class Materials {
       0.0                  // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>')
     this.waterBindGroup = this.device.createBindGroup({
+      label: 'waterBG',
       layout: this.waterBindGroupLayout,
       entries: [{
         binding: 0,
@@ -191,10 +176,11 @@ export default class Materials {
         waveHeight,
         fresnelPower,
         specularPower,
-        0.0  // padding
+        0.0
       ]);
       this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     }
+    // this.drawElements = this.drawElementsOrigin;
   }
 
   createDummyTexture(device, size = 256) {
@@ -241,29 +227,6 @@ export default class Materials {
     if(sampler) this.imageSampler = sampler;
     // Recreate bind group only
     this.createBindGroupForRender();
-
-    //     console.log('=== changeTexture called ===');
-    // console.log('newTexture:', newTexture);
-    // console.log('instanceof GPUTexture:', newTexture instanceof GPUTexture);
-
-    // if(newTexture instanceof GPUTexture) {
-    //   this.texture0 = newTexture;
-    // } else {
-    //   this.texture0 = {createView: () => newTexture};
-    // }
-
-    // this.isVideo = false;
-    // if(sampler) this.imageSampler = sampler;
-
-    // console.log('this.texture0 after set:', this.texture0);
-    // console.log('this.sceneUniformBuffer:', this.sceneUniformBuffer);
-    // console.log('this.shadowDepthTextureView:', this.shadowDepthTextureView);
-    // console.log('this.bglForRender:', this.bglForRender);
-
-    // this.createBindGroupForRender();
-
-    // console.log('this.sceneBindGroupForRender after rebuild:', this.sceneBindGroupForRender);
-
   }
 
   changeMaterial(newType = 'graph', graphShader) {
@@ -530,6 +493,7 @@ export default class Materials {
   }
 
   async loadVideoTexture(arg) {
+    console.log('100000000000000000000000000000000')
     this.videoIsReady = 'MAYBE';
 
     this.isVideo = true;
@@ -546,10 +510,29 @@ export default class Materials {
       this.video.style.position = 'absolute';
       this.video.style.width = '640px';
       this.video.style.height = '480px';
-      this.video.style.top = '-420px';
+      this.video.style.top = '-20px';
       this.video.style.left = '50%';
-
-      await this.video.play();
+      this.video.play();
+      this.video.addEventListener('canplay', () => {
+        // alert('++++');
+        if(this.video.readyState >= 3) {
+          alert('++++ > 3 ');
+        }
+      }, {once: true});
+      this.video.addEventListener('canplaythrough', () => {
+        console.log('_cideo can playt +++++++++++++++++++++++++++');
+        if(this.video.readyState >= 3) {
+          this.externalTexture = this.device.importExternalTexture({source: this.video});
+          console.log('++++ > 3   ++++  ' + this.externalTexture);
+          if(!this.externalTexture) alert('ERROR ' + this.externalTexture);
+          this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear',
+          });
+          this.createLayoutForRender();
+          this.createMaterialBindGroupVideo();
+        }
+      }, {once: false});
 
     } else if(arg.type === 'videoElement') {
       this.video = arg.el;
@@ -590,7 +573,7 @@ export default class Materials {
       const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
       if(!stream) {console.error('❌ Cannot capture stream from canvas2d'); return;}
       this.video.srcObject = stream;
-      await this.video.play();
+      this.video.play();
       this.isVideo = true;
     } else if(arg.type === 'canvas2d-inline') {
       // console.log('what is arg', arg);
@@ -629,7 +612,7 @@ export default class Materials {
       this.video.playsInline = true;
       this.video.srcObject = canvas.captureStream(60);
       document.body.append(this.video);
-      await this.video.play();
+      this.video.play();
       await new Promise(resolve => {
         const check = () => {
           if(this.video.readyState >= 2) resolve();
@@ -646,17 +629,14 @@ export default class Materials {
     });
 
     this.createLayoutForRender();
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
+    this.createMaterialBindGroupVideo();
   }
 
   updateVideoTexture() {
-    if(!this.video || this.video.readyState < 2) return;
-
-    // Always re-import — external textures expire each frame, never cache them
+    // if(!this.video || this.video.readyState < 2) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
-
-    // Always rebuild BG against the VIDEO layout
-    this.createBindGroupForRender();
+    this.createMaterialBindGroupVideo();
   }
 
   getMaterialTexture(glb, materialIndex) {
@@ -686,166 +666,67 @@ export default class Materials {
   }
 
   createBindGroupForRender() {
-    if(this.isVideo) {
-      if(!this.externalTexture || !this.sceneUniformBuffer) {console.warn("❗video BG: missing resource"); return;}
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        label: 'sceneBindGroupForRender [video]',
-        layout: this.bglForRender,
-        entries: [
-          {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
-          {binding: 1, resource: this.shadowVideoView},
-          {binding: 2, resource: this.compareSampler},
-          {binding: 3, resource: this.externalTexture},
-          {binding: 4, resource: this.videoSampler},
-          {binding: 5, resource: {buffer: this.postFXModeBuffer}},
-        ],
-      });
-      if(this.video.paused) this.video.play().catch(() => {});
-      this.isWaiting = false;
-    } else {
-      let textureResource = this.texture0.createView();
-      if(this.material.useTextureFromGlb === true) {
-        const material = this.skinnedNode.mesh.primitives[0].material;
-        textureResource = material.baseColorTexture.imageView;
-      }
-      if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-        if(!textureResource) console.log("%c❗Missing res texture", LOG_FUNNY_ARCADE);
-        if(!this.sceneUniformBuffer) console.warn("❗Missing res: sceneUniformBuffer");
-        return;
-      }
-
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        label: 'sceneBindGroupForRender [mesh][materials]',
-        layout: this.bglForRender,
-        entries: [
-          {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
-          {binding: 1, resource: this.shadowDepthTextureView},
-          {binding: 2, resource: this.compareSampler},
-          {binding: 3, resource: textureResource},
-          {binding: 4, resource: this.imageSampler},
-          {binding: 5, resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer}},
-          {binding: 6, resource: this.metallicRoughnessTextureView},
-          {binding: 7, resource: this.metallicRoughnessSampler},
-          {binding: 8, resource: {buffer: this.materialPBRBuffer}},
-          {binding: 9, resource: this.normalTextureView},
-          {binding: 10, resource: this.normalSampler},
-        ],
-      });
+    let textureResource = this.texture0.createView();
+    if(this.material.useTextureFromGlb === true) {
+      const material = this.skinnedNode.mesh.primitives[0].material;
+      textureResource = material.baseColorTexture.imageView;
     }
+
+    if(this.isVideo == true) return;
+    // console.log('CREATE NORMAL this.materialBindGroup');
+    this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialBindGroup normal',
+      layout: this.materialBGL,
+      entries: [
+        {binding: 0, resource: textureResource},
+        {binding: 1, resource: this.imageSampler},
+
+        {binding: 2, resource: this.metallicRoughnessTextureView},
+        {binding: 3, resource: this.metallicRoughnessSampler},
+
+        {binding: 4, resource: {buffer: this.materialPBRBuffer}},
+
+        {binding: 5, resource: this.normalTextureView},
+        {binding: 6, resource: this.normalSampler},
+      ]
+    });
+
   }
 
   createLayoutForRender() {
-    // ── VIDEO layout (separate, never mixed with mesh pipeline) ───────
-    if(this.isVideo) {
-      const videoEntries = [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'},
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "depth",
-            viewDimension: "2d",   // single shadow map for video objects
-            multisampled: false,
-          },
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'comparison'},
-        },
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          externalTexture: {},     // GPUExternalTexture slot
-        },
-        {
-          binding: 4,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'filtering'},
-        },
-        {
-          binding: 5,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'},
-          // buffer: {type: 'read-only-storage'}
-        },
-      ];
+    this.materialBGL = this.device.createBindGroupLayout({
+      label: 'MaterialBGL',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+      ]
+    });
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: 'MaterialVideoBGL',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
+      ]
+    });
+  }
 
-      this.bglForRender = this.device.createBindGroupLayout({
-        label: 'bglForRenderVideo',
-        entries: videoEntries,
-      });
-    } else {
-      const meshEntries = [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'},
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "depth",
-            viewDimension: "2d-array",
-            multisampled: false,
-          },
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'comparison'},
-        },
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {sampleType: 'float', viewDimension: '2d'},
-        },
-        {
-          binding: 4,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'filtering'},
-        },
-        {
-          binding: 5,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: {type: 'read-only-storage'}
-        },
-        {
-          binding: 6,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {sampleType: 'float', viewDimension: '2d'}
-        },
-        {
-          binding: 7,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'filtering'}
-        },
-        {
-          binding: 8,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'}
-        },
-        {
-          binding: 9,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {sampleType: 'float', viewDimension: '2d'},
-        },
-        {
-          binding: 10,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'filtering'}
-        }
-      ];
-
-      this.bglForRender = this.device.createBindGroupLayout({
-        label: 'bglForRender',
-        entries: meshEntries,
-      });
-    }
+  createMaterialBindGroupVideo() {
+    if(!this.externalTexture) return;
+    console.log('SET VIDEO BIND GROUP')
+    this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialVideoBGL',
+      layout: this.materialVideoBGL,
+      entries: [
+        {binding: 0, resource: this.externalTexture},
+        {binding: 1, resource: this.videoSampler},
+        {binding: 2, resource: {buffer: this.postFXModeBuffer}}
+      ]
+    });
   }
 }

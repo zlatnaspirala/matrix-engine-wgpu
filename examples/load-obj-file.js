@@ -25,22 +25,23 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
-        envMapParams: {
-          baseColorMix: 0.1,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.5,                // 25% reflection blend
-          illuminateColor: [0.6, 0.5, 0.2], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 0.1,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        material: {type: 'water', useBlend: true},
+        // envMapParams: {
+        //   baseColorMix: 0.1,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.5,                // 25% reflection blend
+        //   illuminateColor: [0.6, 0.5, 0.2], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 0.1,                // Medium-sharp edge
+        //   envLodBias: 2.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
+        
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -79,7 +80,7 @@ export var loadObjFile = function() {
       });
 
       let MYCUBE = loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -103,11 +104,11 @@ export var loadObjFile = function() {
           mass: 0,
           geometry: "Cube"
         },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // flameEffect: true
-        }
+        // pointerEffect: {
+        //   enabled: true,
+        //   flameEmitter: true
+        //   // flameEffect: true
+        // }
       })
 
       loadObjFile.lightContainer[0].setIntensity(5);

@@ -8,8 +8,13 @@ export class CollisionSystem {
 
     this.cellSize = 100;
     this._grid = new Map();
+
+    this._event1 = new CustomEvent('close-distance', {});
+    this._eventDetail = {};
+    this._neighbors = [];
   }
 
+  // DONT TOUCH THIS
   register(id, positionInstance, radius = 0.6, group = "default") {
     this.entries.push({id, pos: positionInstance, radius, group});
   }
@@ -50,16 +55,24 @@ export class CollisionSystem {
   }
 
   _getNeighborCells(x, z) {
+    const result = this._neighbors;
+    result.length = 0;
+
     const cx = Math.floor(x / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    const result = [];
+
     for(let dx = -1;dx <= 1;dx++) {
       for(let dz = -1;dz <= 1;dz++) {
         const key = ((cx + dx) << 16) ^ (cz + dz);
         const cell = this._grid.get(key);
-        if(cell) result.push(...cell);
+        if(cell) {
+          for(let i = 0;i < cell.length;i++) {
+            result.push(cell[i]); // NO spread
+          }
+        }
       }
     }
+
     return result;
   }
 
@@ -67,30 +80,43 @@ export class CollisionSystem {
     this._buildGrid();
     const n = this.entries.length;
     for(let i = 0;i < n;i++) {
-      for(let j = i + 1;j < n;j++) {
-        const A = this.entries[i];
-        const B = this.entries[j];
+      const A = this.entries[i];
+      const neighbors = this._getNeighborCells(A.pos.x, A.pos.z);
+      for(let j = 0;j < neighbors.length;j++) {
+        const B = neighbors[j];
+        if(A === B) continue;
         if(A.group === B.group) continue;
-        const minDist = (A.radius + B.radius) / 1.5;
+        if(A.id >= B.id) continue;
+        const minDist = (A.radius + B.radius) * 0.5;
+        const dx = A.pos.x - B.pos.x;
+        const dz = A.pos.z - B.pos.z;
+        const distSq = dx * dx + dz * dz;
+        if(distSq > minDist * minDist) continue;
         const testCollide = resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
         if(testCollide) {
-          dispatchEvent(new CustomEvent('close-distance', {detail: {A, B}}));
+          this._eventDetail.A = A;
+          this._eventDetail.B = B;
+          this._event1.detail = this._eventDetail;
+          dispatchEvent(this._event1);
         }
       }
     }
-
     // --- camera vs entities (only neighbor cells) ---
     if(this.cameraEntry) {
       const cam = this.cameraEntry;
       const camX = cam.pos[0];
       const camZ = cam.pos[2];
-      const neighbors = this._getNeighborCells(camX, camZ);
-      for(let i = 0;i < neighbors.length;i++) {
-        const target = neighbors[i];
-        const minCamDist = 1 + 0.5;
-        const collided = pairRepulsion(cam.pos, target.pos, minCamDist, 1.1);
-        if(collided) {
-          console.log('kinematic collision')
+      if(camX !== this._lastCamX || camZ !== this._lastCamZ) {
+        this._lastCamX = camX;
+        this._lastCamZ = camZ;
+        const neighbors = this._getNeighborCells(camX, camZ);
+        for(let i = 0;i < neighbors.length;i++) {
+          const target = neighbors[i];
+          const minCamDist = 1 + 0.5;
+          pairRepulsion(cam.pos, target.pos, minCamDist, 1.1);
+          // if(collided) {
+          //  // console.log('kinematic collision')
+          // }
         }
       }
     }

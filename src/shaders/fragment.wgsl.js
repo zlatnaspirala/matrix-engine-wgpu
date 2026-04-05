@@ -54,18 +54,17 @@ struct PBRMaterialData {
 };
 
 const MAX_SPOTLIGHTS = 20u;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -197,9 +196,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
     let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
+    // if (materialData.alpha < 0.01) {
+    //     discard;
+    // }
 
     var lightContribution = vec3f(0.0);
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -208,13 +207,13 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
         let depthRef = p.z;
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-// let inFrustum =
-//     p.z >= 0.0 && p.z <= 1.0 &&
-//     p.x >= -1.0 && p.x <= 1.0 &&
-//     p.y >= -1.0 && p.y <= 1.0;
-      let inDepth = p.z >= 0.0 && p.z <= 1.0;
-let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-let shadowFactor = select(1.0, visibility, inDepth);
+        // let inFrustum =
+        //     p.z >= 0.0 && p.z <= 1.0 &&
+        //     p.x >= -1.0 && p.x <= 1.0 &&
+        //     p.y >= -1.0 && p.y <= 1.0;
+        let inDepth = p.z >= 0.0 && p.z <= 1.0;
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+        let shadowFactor = select(1.0, visibility, inDepth);
         let contrib = computeSpotLight(
             spotlights[i],
             norm,
@@ -224,7 +223,6 @@ let shadowFactor = select(1.0, visibility, inDepth);
         );
         lightContribution += contrib * shadowFactor;
     }
-
     // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     // var ambientTerm = material.ambientColor * materialData.baseColor;

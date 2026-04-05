@@ -1,6 +1,7 @@
 import {MEConfig} from "../../me-config";
 
 export let fragmentWaterWGSL = `
+const MAX_SPOTLIGHTS = 20u;
 const PI: f32 = 3.141592653589793;
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
@@ -42,8 +43,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 struct PBRMaterialData {
@@ -52,19 +53,6 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
-
-@group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-
-// ✅ Graph custom uniforms
 struct WaterParams {
     deepColor     : vec3f,
     waveSpeed     : f32,
@@ -76,6 +64,17 @@ struct WaterParams {
     _pad1         : f32,
 };
 
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 @group(3) @binding(0) var<uniform> waterParams: WaterParams;
 
 // Gerstner wave function for realistic water waves
@@ -94,130 +93,141 @@ fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, t
 
 // Simpler sine wave for smoother animation
 fn sineWave(pos: vec2f, direction: vec2f, amplitude: f32, frequency: f32, time: f32) -> vec3f {
-    let d = normalize(direction);
-    let phase = dot(d, pos) * frequency - time;
-    
-    return vec3f(
-        d.x * amplitude * cos(phase),
-        amplitude * sin(phase),
-        d.y * amplitude * cos(phase)
-    );
+  let d = normalize(direction);
+  let phase = dot(d, pos) * frequency - time;
+  return vec3f(
+      d.x * amplitude * cos(phase),
+      amplitude * sin(phase),
+      d.y * amplitude * cos(phase)
+  );
 }
 
 // Calculate water normal from multiple waves
 fn calculateWaterNormal(worldPos: vec3f, time: f32) -> vec3f {
-    let pos = worldPos.xz * waterParams.waveScale;
-    let t = time * waterParams.waveSpeed;
-    
-    // Use smoother sine waves instead of Gerstner for better animation
-    let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
-    let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
-    let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
-    let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
-    
-    // Sum waves
-    let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
-    
-    // Calculate tangent vectors using small step size
-    let eps = 0.1;
-    let posX = worldPos + vec3f(eps, 0.0, 0.0);
-    let posZ = worldPos + vec3f(0.0, 0.0, eps);
-    
-    let offsetX = (
-        sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
-    ) * waterParams.waveHeight;
-    
-    let offsetZ = (
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
-    ) * waterParams.waveHeight;
-    
-    let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
-    let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
-    
-    return normalize(cross(tangentZ, tangentX));
+  let pos = worldPos.xz * waterParams.waveScale;
+  let t = time * waterParams.waveSpeed;
+  // Use smoother sine waves instead of Gerstner for better animation
+  let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
+  let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
+  let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
+  let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
+  // Sum waves
+  let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
+  // Calculate tangent vectors using small step size
+  let eps = 0.1;
+  let posX = worldPos + vec3f(eps, 0.0, 0.0);
+  let posZ = worldPos + vec3f(0.0, 0.0, eps);
+  let offsetX = (
+      sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+  ) * waterParams.waveHeight;
+  let offsetZ = (
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+  ) * waterParams.waveHeight;
+  let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
+  let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
+  return normalize(cross(tangentZ, tangentX));
 }
 
 // Fresnel effect for water reflections
 fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
 }
 
 // PREDEFINED Fragment input
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 // PREDEFINED PBR helpers
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  return PBRMaterialData(baseColor, metallic, roughness);
 }
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-    // Calculate animated water normal
-    let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
-    
-    // View direction
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    
-    // Fresnel effect (0 = looking straight down, 1 = grazing angle)
-    let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
-    
-    // Light direction
-    let lightDir = normalize(scene.lightPos - input.fragPos);
-    
-    // Diffuse lighting
-    let diff = max(dot(waterNormal, lightDir), 0.0);
-    
-    // Specular (sun reflection on water)
-    let halfDir = normalize(lightDir + viewDir);
-    let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
-    
-    // Mix deep and shallow water colors based on fresnel
-    let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
-    
-    // Enhanced lighting for more visible effect
-    let ambient = scene.globalAmbient * waterColor * 0.3;
-    let diffuse = diff * waterColor * 1.2;
-    let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
-    
-    // Enhanced foam on wave peaks
-    // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
-    // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
 
-    // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
-    let isFireMode = f32(waterParams.waveSpeed > 1.5);
+let waterNormal = vec3f(0.0, 1.0, 0.0);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+  let lightDir = normalize(scene.lightPos - input.fragPos);
+  let diff = max(dot(waterNormal, lightDir), 0.0);
+  let halfDir = normalize(lightDir + viewDir);
+  let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+  let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+  let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
+  let diffuse = diff * waterColor * 1.2;
+  let specular = spec * vec3f(1.0) * fresnel * 2.0;
+  let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
+                 sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+  let causticsColor = waterColor * caustics;
+  let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
+  let alpha = mix(0.4, 0.8, fresnel);
+  return vec4f(finalColor, alpha);
 
-    // Water foam — white peaks
-    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
-    let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
-    // Fire embers — bright yellow-white tips
-    let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
-    let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
-    // Add some caustics-like effect based on waves
-    let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
-                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
-    let causticsColor = waterColor * caustics;
-    
-    // Final color with enhanced effects
-    let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
-    // MUCH more transparent - alpha between 0.2 and 0.5
-    let alpha = mix(0.2, 0.5, fresnel);
-    // Make the color more vibrant so it's visible even when transparent
-    let vibrantColor = finalColor * 1.5;
-    return vec4f(vibrantColor, alpha);
+
+
+//   // Calculate animated water normal
+//   let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
+//   // View direction
+//   let viewDir = normalize(scene.cameraPos - input.fragPos);
+//   // Fresnel effect (0 = looking straight down, 1 = grazing angle)
+//   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+//   // Light direction
+//   let lightDir = normalize(scene.lightPos - input.fragPos);
+//   // Diffuse lighting
+//   let diff = max(dot(waterNormal, lightDir), 0.0);
+//   // Specular (sun reflection on water)
+//   let halfDir = normalize(lightDir + viewDir);
+//   let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+//   // Mix deep and shallow water colors based on fresnel
+//   let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+  
+
+//   // Enhanced lighting for more visible effect
+//   // let ambient = scene.globalAmbient * waterColor * 0.3;
+// let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
+
+//   let diffuse = diff * waterColor * 1.2;
+//   let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
+//   // Enhanced foam on wave peaks
+//   // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+//   // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+//   // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
+//   let isFireMode = f32(waterParams.waveSpeed > 1.5);
+//   // Water foam — white peaks
+//   let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
+//   let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+//   // Fire embers — bright yellow-white tips
+//   let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
+//   let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
+//   // Add some caustics-like effect based on waves
+//   let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
+//                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+//   let causticsColor = waterColor * caustics;
+//   // Final color with enhanced effects
+//   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
+//   // MUCH more transparent - alpha between 0.2 and 0.5
+//   let alpha = mix(0.2, 0.5, fresnel);
+//   // Make the color more vibrant so it's visible even when transparent
+//   let vibrantColor = finalColor * 1.5;
+//   // return vec4f(vibrantColor, alpha);
+//     // return vec4f(waterParams.deepColor, 1.0);
+//       // return vec4f(waterNormal * 0.5 + 0.5, 1.0); // visualize normal
+//         // return vec4f(input.fragPos * 0.01, 1.0); // scale down to see range
+//         return vec4f(input.fragPos.x * 0.01, input.fragPos.z * 0.01, 0.0, 1.0);
+//   // return vec4f(1.0, 0.0, 0.0, 1.0); // solid red, alpha 1
 }`;

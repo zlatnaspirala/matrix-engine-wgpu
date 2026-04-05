@@ -36,13 +36,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
-
     this.mType = MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
-    if(typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
-
+    this.sceneBGL = o.sceneBGL;
+    // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4.create();
@@ -160,27 +157,23 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.mesh.weightsBuffer.unmap();
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
       this.mesh.jointsView = jointsView;
-      // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
       let jointsArray16 = new Uint16Array(
         jointsView.buffer,
         jointsView.byteOffset || 0,
-        jointsView.byteLength / 2 // in Uint16 elements
+        jointsView.byteLength / 2
       );
       const jointsArray32 = new Uint32Array(jointsArray16.length);
       for(let i = 0;i < jointsArray16.length;i++) {
         jointsArray32[i] = jointsArray16[i];
       }
-      // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer[real]",
         size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
       });
-      // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
-
       // TANGENTS
       let tangentArray = null;
       if(_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
@@ -193,7 +186,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           byteLengthT / 4
         );
         this.mesh.tangents = tangentArray;
-
         this.mesh.tangentsBuffer = this.device.createBuffer({
           label: "tangentsBuffer[real]",
           size: tangentArray.byteLength,
@@ -218,7 +210,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly) Low level priority warn.");
       }
     } else {
       this.mesh.uvs = this.mesh.textures;
@@ -263,14 +254,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      // this.joints = {
-      //   data: jointsData,
-      //   buffer: jointsBuffer,
-      //   stride: 16, // vec4<u32>
-      // };
       this.mesh.jointsBuffer = jointsBuffer;
       const numVerts = this.mesh.vertices.length / 3;
-      // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
       for(let i = 0;i < numVerts;i++) {
         weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
@@ -278,7 +263,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         weightsData[i * 4 + 2] = 0.0;
         weightsData[i * 4 + 3] = 0.0;
       }
-      // GPU buffer
       const weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer dummy",
         size: weightsData.byteLength,
@@ -287,7 +271,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      // this.weights = {data: weightsData, buffer: weightsBuffer, stride: 16, };
       this.mesh.weightsBuffer = weightsBuffer;
     }
 
@@ -538,16 +521,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      if(this.sharedSU) {
-        this.sceneUniformBuffer = this.sharedSU;
-      } else {
-        this.sceneUniformBuffer = this.device.createBuffer({
-          label: 'sceneUniformBuffer per mesh',
-          size: 192,
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-      }
-
       this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [instanced]',
         entries: [
@@ -722,25 +695,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       }
 
-      this.modelBindGroup = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh',
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-          {binding: 1, resource: {buffer: this.bonesBuffer}},
-          {binding: 2, resource: {buffer: this.vertexAnimBuffer}}
-        ],
-      });
-
       this.uvScaleBuffer = this.device.createBuffer({
-        size: 8, // vec2f
+        size: 8,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
       // Default = no scale
       this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
 
-      this.modelBindGroupInstanced = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh [instanced]',
+      this.modelBindGroup = this.device.createBindGroup({
+        label: 'modelBindGroup[instanced]',
         layout: this.uniformBufferBindGroupLayoutInstanced,
         entries: [
           {binding: 0, resource: {buffer: this.instanceBuffer, }},
@@ -846,16 +809,19 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
     const vertexCode = vertexWGSLInstanced;
     const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>')
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
       bindGroupLayouts: [
-        this.bglForRender,
+        this.sceneBGL,
+        isVideo ? this.materialVideoBGL : this.materialBGL,
         this.uniformBufferBindGroupLayoutInstanced,
-        ...(isMirror ? [this.mirrorBindGroupLayout] : []),
+        (isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null),
       ],
     });
     const vertexState = {
@@ -874,6 +840,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -1004,24 +971,13 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   }
 
   drawElements = (pass) => {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if(this.mType == MeshType.INSTANCED) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
-    } else {
-      pass.setBindGroup(1, this.modelBindGroup);
-    }
-    if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
-
+    // IN
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    // if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
-    // else pass.setPipeline(this.pipeline);
-
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for(var ins = 1;ins < this.instanceCount;ins++) {
       if(ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
@@ -1031,24 +987,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
   drawVideoElements = (pass) => {
     this.updateVideoTexture();
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if(this.mType == MeshType.INSTANCED) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
-    } else {
-      pass.setBindGroup(1, this.modelBindGroup);
-    }
-    pass.setBindGroup(3, this.waterBindGroup);
-
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
-    else pass.setPipeline(this.pipeline);
-
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for(var ins = 1;ins < this.instanceCount;ins++) {
       if(ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
@@ -1060,20 +1004,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1'); return;}
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2'); return;}
 
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-
-    if(this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
-
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
 

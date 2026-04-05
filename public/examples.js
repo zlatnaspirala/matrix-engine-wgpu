@@ -171,7 +171,6 @@ var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
-
 var flipper = function () {
   let MYFLIPPER = {
     STATUS_PUSH: 'wait'
@@ -984,7 +983,6 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
-
       // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
         app.activateBloomEffect();
@@ -992,7 +990,6 @@ var flipper = function () {
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
         app.cameras.WASD.setY(10);
-        // app.buildRenderBuckets(app.mainRenderBundle);
         app.cameras.WASD._dirtyAngle = true;
       }, 500);
     }
@@ -2003,26 +2000,21 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'water',
+          useBlend: true
         },
-        envMapParams: {
-          baseColorMix: 0.1,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.5,
-          // 25% reflection blend
-          illuminateColor: [0.6, 0.5, 0.2],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 0.1,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        // envMapParams: {
+        //   baseColorMix: 0.1,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.5,                // 25% reflection blend
+        //   illuminateColor: [0.6, 0.5, 0.2], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 0.1,                // Medium-sharp edge
+        //   envLodBias: 2.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
+
         position: {
           x: 0,
           y: -5,
@@ -2038,7 +2030,8 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        //, './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -2090,7 +2083,7 @@ var loadObjFile = function () {
       });
       let MYCUBE = loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -2136,12 +2129,12 @@ var loadObjFile = function () {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // flameEffect: true
         }
+        // pointerEffect: {
+        //   enabled: true,
+        //   flameEmitter: true
+        //   // flameEffect: true
+        // }
       });
       loadObjFile.lightContainer[0].setIntensity(5);
       if ((0, _utils.isMobile)() == false) {
@@ -3774,35 +3767,22 @@ var loadVideoTexture = function () {
     });
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;
-      videoTexture.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: -5,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [10, 0.01, 10],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
+      // videoTexture.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [10, 0.01, 10],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'floor',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
+
       videoTexture.addMeshObj({
         position: {
           x: 0,
@@ -3836,39 +3816,25 @@ var loadVideoTexture = function () {
           radius: 12
         }
       });
-      videoTexture.addMeshObj({
-        position: {
-          x: 0,
-          y: 7,
-          z: -20
-        },
-        rotation: {
-          x: 90,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'MyVideoTex',
-        mesh: m.piramyd,
-        scale: [5, 5, 5],
-        isVideo: {
-          type: 'video',
-          src: 'res/videos/tunel.mp4'
-        },
-        physics: {
-          enabled: false,
-          geometry: "piramyd"
-        },
-        raycast: {
-          enabled: true,
-          radius: 12
-        }
-      });
+
+      // videoTexture.addMeshObj({
+      //   position: {x: 0, y: 7, z: -20},
+      //   rotation: {x: 90, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'MyVideoTex',
+      //   mesh: m.piramyd,
+      //   scale: [5, 5, 5],
+      //   isVideo: {
+      //     type: 'video',
+      //     src: 'res/videos/tunel.mp4'
+      //   },
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "piramyd"
+      //   },
+      //   raycast: {enabled: true, radius: 12}
+      // })
       // also possibole to switch in runtime
       // var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
       // console.log(`%c Test video-texture...`, LOG_MATRIX);
@@ -21793,6 +21759,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.WASDCamera = exports.RPGCamera = exports.FirstPersonCamera = exports.ArcballCamera = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
+var _utils = require("./utils");
 class WASDCamera {
   pitch = 0;
   yaw = 0;
@@ -22079,7 +22046,7 @@ class WASDCamera {
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
     this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
     WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
-    // this._dirty = false;
+    this._dirty = false;
   }
   update() {
     if (!this._dirtyAngle) return;
@@ -22473,6 +22440,9 @@ class FirstPersonCamera {
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
+    if ((0, _utils.isMobile)() == true) {
+      MobileDOM.createWASD(this);
+    }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
     _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
@@ -22696,8 +22666,139 @@ class FirstPersonCamera {
   }
 }
 exports.FirstPersonCamera = FirstPersonCamera;
+const MobileDOM = {
+  createWASD(camera, options = {}) {
+    const size = options.size ?? 60;
+    const margin = options.margin ?? 20;
+    const opacity = options.opacity ?? 0.35;
+    const color = options.color ?? '#ffffff';
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, {
+      position: 'fixed',
+      bottom: `${margin}px`,
+      left: `${margin}px`,
+      width: `${size * 3 + 8}px`,
+      userSelect: 'none',
+      zIndex: '9999',
+      display: 'grid',
+      gridTemplateColumns: `repeat(3, ${size}px)`,
+      gridTemplateRows: `repeat(2, ${size}px)`,
+      gap: '4px',
+      touchAction: 'none'
+    });
 
-},{"wgpu-matrix":30}],34:[function(require,module,exports){
+    // [key, label, col, row, digital_key]
+    const defs = [['W', '▲', 2, 1, 'forward'], ['A', '◀', 1, 2, 'left'], ['S', '▼', 2, 2, 'backward'], ['D', '▶', 3, 2, 'right']];
+    for (const [, label, col, row, action] of defs) {
+      const btn = document.createElement('div');
+      Object.assign(btn.style, {
+        width: `${size}px`,
+        height: `${size}px`,
+        gridColumn: `${col}`,
+        gridRow: `${row}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: `${size * 0.38}px`,
+        color,
+        background: `rgba(255,255,255,${opacity * 0.4})`,
+        border: `2px solid rgba(255,255,255,${opacity})`,
+        borderRadius: `${size * 0.18}px`,
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent'
+      });
+      btn.textContent = label;
+      const press = () => {
+        camera._digital[action] = true;
+        btn.style.background = `rgba(255,255,255,${opacity})`;
+        if (camera._keyInterval === null) {
+          camera._keyInterval = setInterval(() => {
+            camera._dirty = true;
+            camera._applyDigitalMovement();
+          }, 16);
+        }
+      };
+      const release = () => {
+        camera._digital[action] = false;
+        btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        const d = camera._digital;
+        if (!d.forward && !d.backward && !d.left && !d.right) {
+          clearInterval(camera._keyInterval);
+          camera._keyInterval = null;
+          camera._dirty = false;
+        }
+      };
+      btn.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        press();
+        btn.setPointerCapture(e.pointerId);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('pointerup', e => {
+        release();
+      }, {
+        passive: true
+      });
+      btn.addEventListener('pointercancel', e => {
+        release();
+      }, {
+        passive: true
+      });
+      wrap.appendChild(btn);
+    }
+    document.body.appendChild(wrap);
+    return wrap; // caller can hide/remove later
+  },
+  addButton(label, onClick, options = {}) {
+    const size = options.size ?? 56;
+    const margin = options.margin ?? 20;
+    const opacity = options.opacity ?? 0.35;
+    const btn = document.createElement('div');
+    Object.assign(btn.style, {
+      position: 'fixed',
+      bottom: options.bottom ?? `${margin}px`,
+      right: options.right ?? `${margin}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: `${size * 0.35}px`,
+      color: options.color ?? '#ffffff',
+      background: `rgba(255,255,255,${opacity * 0.4})`,
+      border: `2px solid rgba(255,255,255,${opacity})`,
+      borderRadius: '50%',
+      zIndex: '9999',
+      userSelect: 'none',
+      cursor: 'pointer',
+      WebkitTapHighlightColor: 'transparent',
+      touchAction: 'none'
+    });
+    btn.textContent = label;
+    btn.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      btn.style.background = `rgba(255,255,255,${opacity})`;
+      onClick(e);
+    }, {
+      passive: true
+    });
+    btn.addEventListener('pointerup', () => {
+      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+    }, {
+      passive: true
+    });
+    btn.addEventListener('pointercancel', () => {
+      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+    }, {
+      passive: true
+    });
+    document.body.appendChild(btn);
+    return btn;
+  }
+};
+
+},{"./utils":70,"wgpu-matrix":30}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22712,7 +22813,12 @@ class CollisionSystem {
     this.cameraEntry = null;
     this.cellSize = 100;
     this._grid = new Map();
+    this._event1 = new CustomEvent('close-distance', {});
+    this._eventDetail = {};
+    this._neighbors = [];
   }
+
+  // DONT TOUCH THIS
   register(id, positionInstance, radius = 0.6, group = "default") {
     this.entries.push({
       id,
@@ -22758,14 +22864,19 @@ class CollisionSystem {
     }
   }
   _getNeighborCells(x, z) {
+    const result = this._neighbors;
+    result.length = 0;
     const cx = Math.floor(x / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    const result = [];
     for (let dx = -1; dx <= 1; dx++) {
       for (let dz = -1; dz <= 1; dz++) {
         const key = cx + dx << 16 ^ cz + dz;
         const cell = this._grid.get(key);
-        if (cell) result.push(...cell);
+        if (cell) {
+          for (let i = 0; i < cell.length; i++) {
+            result.push(cell[i]); // NO spread
+          }
+        }
       }
     }
     return result;
@@ -22774,35 +22885,43 @@ class CollisionSystem {
     this._buildGrid();
     const n = this.entries.length;
     for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const A = this.entries[i];
-        const B = this.entries[j];
+      const A = this.entries[i];
+      const neighbors = this._getNeighborCells(A.pos.x, A.pos.z);
+      for (let j = 0; j < neighbors.length; j++) {
+        const B = neighbors[j];
+        if (A === B) continue;
         if (A.group === B.group) continue;
-        const minDist = (A.radius + B.radius) / 1.5;
+        if (A.id >= B.id) continue;
+        const minDist = (A.radius + B.radius) * 0.5;
+        const dx = A.pos.x - B.pos.x;
+        const dz = A.pos.z - B.pos.z;
+        const distSq = dx * dx + dz * dz;
+        if (distSq > minDist * minDist) continue;
         const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
         if (testCollide) {
-          dispatchEvent(new CustomEvent('close-distance', {
-            detail: {
-              A,
-              B
-            }
-          }));
+          this._eventDetail.A = A;
+          this._eventDetail.B = B;
+          this._event1.detail = this._eventDetail;
+          dispatchEvent(this._event1);
         }
       }
     }
-
     // --- camera vs entities (only neighbor cells) ---
     if (this.cameraEntry) {
       const cam = this.cameraEntry;
       const camX = cam.pos[0];
       const camZ = cam.pos[2];
-      const neighbors = this._getNeighborCells(camX, camZ);
-      for (let i = 0; i < neighbors.length; i++) {
-        const target = neighbors[i];
-        const minCamDist = 1 + 0.5;
-        const collided = (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 1.1);
-        if (collided) {
-          console.log('kinematic collision');
+      if (camX !== this._lastCamX || camZ !== this._lastCamZ) {
+        this._lastCamX = camX;
+        this._lastCamZ = camZ;
+        const neighbors = this._getNeighborCells(camX, camZ);
+        for (let i = 0; i < neighbors.length; i++) {
+          const target = neighbors[i];
+          const minCamDist = 1 + 0.5;
+          (0, _matrixClass.pairRepulsion)(cam.pos, target.pos, minCamDist, 1.1);
+          // if(collided) {
+          //  // console.log('kinematic collision')
+          // }
         }
       }
     }
@@ -27432,12 +27551,14 @@ class MaterialsInstanced {
         minFilter: 'linear'
       });
     }
-    this.createBufferForWater();
+    if (this.material.type == 'water') {
+      this.createBufferForWater();
+    }
   }
   createBufferForWater = () => {
     // new water test
     this.waterBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Water MAT Bind Group Layout for main pass',
+      label: 'Water BindGroupLayout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.FRAGMENT,
@@ -27846,202 +27967,123 @@ class MaterialsInstanced {
     return this.glb.glbTextures[texIndex].createView();
   }
   createBindGroupForRender() {
-    let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+    let textureResource = this.texture0.createView();
     if (this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
-      const textureView = material.baseColorTexture.imageView;
-      textureResource = textureView;
+      textureResource = material.baseColorTexture.imageView;
     }
-    if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("❗i Missing texture: ", textureResource);
-      if (!this.sceneUniformBuffer) console.warn("❗Missing sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if (typeof textureResource === 'undefined') this.updateVideoTexture();
-      if (typeof this.shadowDepthTextureView === 'undefined') {
-        this.shadowDepthTextureView = app.shadowArrayView;
-      }
-      // return;
-    }
-    if (this.isVideo == true) {
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: this.shadowDepthTextureView
-        }, {
-          binding: 2,
-          resource: this.compareSampler
-        }, {
-          binding: 3,
-          resource: textureResource
-        }, {
-          binding: 4,
-          resource: this.videoSampler
-        }, {
-          binding: 5,
-          resource: {
-            buffer: this.postFXModeBuffer
-          }
-        }]
-      });
-      // Special case for video maybe better solution exist
-      if (this.video.paused == true) this.video.play();
-    } else {
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: this.shadowDepthTextureView
-        }, {
-          binding: 2,
-          resource: this.compareSampler
-        }, {
-          binding: 3,
-          resource: textureResource
-        }, {
-          binding: 4,
-          resource: this.imageSampler
-        }, {
-          binding: 5,
-          resource: {
-            buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer
-          }
-        }, {
-          binding: 6,
-          resource: this.metallicRoughnessTextureView
-        }, {
-          binding: 7,
-          resource: this.metallicRoughnessSampler
-        }, {
-          binding: 8,
-          resource: {
-            buffer: this.materialPBRBuffer
-          }
-        },
-        // NEW: dummy normal map
-        {
-          binding: 9,
-          resource: this.normalTextureView
-        }, {
-          binding: 10,
-          resource: this.normalSampler
-        }]
-      });
-    }
+    this.materialBindGroup = this.device.createBindGroup({
+      layout: this.materialBGL,
+      entries: [{
+        binding: 0,
+        resource: textureResource
+      }, {
+        binding: 1,
+        resource: this.imageSampler
+      }, {
+        binding: 2,
+        resource: this.metallicRoughnessTextureView
+      }, {
+        binding: 3,
+        resource: this.metallicRoughnessSampler
+      }, {
+        binding: 4,
+        resource: {
+          buffer: this.materialPBRBuffer
+        }
+      }, {
+        binding: 5,
+        resource: this.normalTextureView
+      }, {
+        binding: 6,
+        resource: this.normalSampler
+      }]
+    });
   }
   createLayoutForRender() {
-    let e = [{
-      binding: 0,
-      visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-      buffer: {
-        type: 'uniform'
-      }
-    }, ...(this.isVideo == false ? [{
-      binding: 1,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: "depth",
-        viewDimension: "2d-array",
-        // <- must match shadowMapArray
-        multisampled: false
-      }
-    }] : [{
-      binding: 1,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: "depth",
-        viewDimension: "2d"
-      }
-    }]), {
-      binding: 2,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'comparison'
-      }
-    }, ...(this.isVideo ? [
-    // VIDEO
-    {
-      binding: 3,
-      visibility: GPUShaderStage.FRAGMENT,
-      externalTexture: {}
-    }, {
-      binding: 4,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      } // for video sampling
-    }, {
-      binding: 5,
-      visibility: GPUShaderStage.FRAGMENT,
-      buffer: {
-        type: 'uniform'
-      }
-    }] : [
-    // IMAGE
-    {
-      binding: 3,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: 'float',
-        viewDimension: '2d'
-      }
-    }, {
-      binding: 4,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      }
-    }, {
-      binding: 5,
-      visibility: GPUShaderStage.FRAGMENT,
-      buffer: {
-        type: 'read-only-storage'
-      }
-    }, {
-      binding: 6,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: 'float',
-        viewDimension: '2d'
-      }
-    }, {
-      binding: 7,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      }
-    }, {
-      binding: 8,
-      visibility: GPUShaderStage.FRAGMENT,
-      buffer: {
-        type: 'uniform'
-      }
-    }, {
-      binding: 9,
-      visibility: GPUShaderStage.FRAGMENT,
-      texture: {
-        sampleType: 'float',
-        viewDimension: '2d'
-      }
-    }, {
-      binding: 10,
-      visibility: GPUShaderStage.FRAGMENT,
-      sampler: {
-        type: 'filtering'
-      }
-    }])];
-    this.bglForRender = this.device.createBindGroupLayout({
-      label: 'bglForRender',
-      entries: e
+    this.materialBGL = this.device.createBindGroupLayout({
+      label: 'MaterialBGL',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float'
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float'
+        }
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 5,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float'
+        }
+      }, {
+        binding: 6,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }]
+    });
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: 'MaterialVideoBGL',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        externalTexture: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+  }
+  createMaterialBindGroupVideo() {
+    if (!this.externalTexture) return;
+    this.materialBindGroup = this.device.createBindGroup({
+      layout: this.materialVideoBGL,
+      entries: [{
+        binding: 0,
+        resource: this.externalTexture
+      }, {
+        binding: 1,
+        resource: this.videoSampler
+      }, {
+        binding: 2,
+        resource: {
+          buffer: this.postFXModeBuffer
+        }
+      }]
     });
   }
 }
@@ -28099,9 +28141,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.useScale = o.useScale || false;
     this.mType = _utils.MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
-    if (typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
+    this.sceneBGL = o.sceneBGL;
+    // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
@@ -28214,24 +28255,19 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.mesh.weightsBuffer.unmap();
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
       this.mesh.jointsView = jointsView;
-      // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
-      let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // in Uint16 elements
-      );
+      let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2);
       const jointsArray32 = new Uint32Array(jointsArray16.length);
       for (let i = 0; i < jointsArray16.length; i++) {
         jointsArray32[i] = jointsArray16[i];
       }
-      // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer[real]",
         size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
-      // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
-
       // TANGENTS
       let tangentArray = null;
       if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
@@ -28264,7 +28300,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly) Low level priority warn.");
       }
     } else {
       this.mesh.uvs = this.mesh.textures;
@@ -28311,14 +28346,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      // this.joints = {
-      //   data: jointsData,
-      //   buffer: jointsBuffer,
-      //   stride: 16, // vec4<u32>
-      // };
       this.mesh.jointsBuffer = jointsBuffer;
       const numVerts = this.mesh.vertices.length / 3;
-      // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
       for (let i = 0; i < numVerts; i++) {
         weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
@@ -28326,7 +28355,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         weightsData[i * 4 + 2] = 0.0;
         weightsData[i * 4 + 3] = 0.0;
       }
-      // GPU buffer
       const weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer dummy",
         size: weightsData.byteLength,
@@ -28335,7 +28363,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      // this.weights = {data: weightsData, buffer: weightsBuffer, stride: 16, };
       this.mesh.weightsBuffer = weightsBuffer;
     }
     this.runProgram = () => {
@@ -28589,15 +28616,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      if (this.sharedSU) {
-        this.sceneUniformBuffer = this.sharedSU;
-      } else {
-        this.sceneUniformBuffer = this.device.createBuffer({
-          label: 'sceneUniformBuffer per mesh',
-          size: 192,
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-      }
       this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [instanced]',
         entries: [{
@@ -28800,35 +28818,14 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       };
-      this.modelBindGroup = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh',
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.modelUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: {
-            buffer: this.bonesBuffer
-          }
-        }, {
-          binding: 2,
-          resource: {
-            buffer: this.vertexAnimBuffer
-          }
-        }]
-      });
       this.uvScaleBuffer = this.device.createBuffer({
         size: 8,
-        // vec2f
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       // Default = no scale
       this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
-      this.modelBindGroupInstanced = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh [instanced]',
+      this.modelBindGroup = this.device.createBindGroup({
+        label: 'modelBindGroup[instanced]',
         layout: this.uniformBufferBindGroupLayoutInstanced,
         entries: [{
           binding: 0,
@@ -28959,13 +28956,15 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
     const vertexCode = _vertexInstanced.vertexWGSLInstanced;
     const fragmentCode = isVideo ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>');
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
-      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, ...(isMirror ? [this.mirrorBindGroupLayout] : [])]
+      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayoutInstanced, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null]
     });
     const vertexState = {
       entryPoint: 'main',
@@ -28986,7 +28985,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       frontFace: this.primitive.frontFace,
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -29119,23 +29119,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
   }
   drawElements = pass => {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this.mType == _utils.MeshType.INSTANCED) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
-    } else {
-      pass.setBindGroup(1, this.modelBindGroup);
-    }
-    if (this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
+    // IN
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    // if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
-    // else pass.setPipeline(this.pipeline);
-
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for (var ins = 1; ins < this.instanceCount; ins++) {
       if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
@@ -29143,20 +29133,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
   };
   drawVideoElements = pass => {
     this.updateVideoTexture();
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this.mType == _utils.MeshType.INSTANCED) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
-    } else {
-      pass.setBindGroup(1, this.modelBindGroup);
-    }
-    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    if (this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent);else pass.setPipeline(this.pipeline);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for (var ins = 1; ins < this.instanceCount; ins++) {
       if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
@@ -29171,11 +29153,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       console.log(' NULL 2');
       return;
     }
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -32298,17 +32276,6 @@ class Materials {
       this.isVideo = false;
     }
     this.videoIsReady = 'NONE';
-    this.compareSampler = this.device.createSampler({
-      compare: 'less-equal',
-      // safer for shadow comparison
-      addressModeU: 'clamp-to-edge',
-      // prevents UV leaking outside
-      addressModeV: 'clamp-to-edge',
-      magFilter: 'linear',
-      // smooth PCF
-      minFilter: 'linear'
-    });
-    // For image textures (standard sampler)
     this.imageSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
@@ -32316,7 +32283,6 @@ class Materials {
       addressModeV: "repeat",
       addressModeW: "repeat"
     });
-    // For external video textures (needs to be filtering sampler too!)
     this.videoSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear'
@@ -32324,13 +32290,11 @@ class Materials {
     // FX effect
     this.postFXModeBuffer = this.device.createBuffer({
       size: 4,
-      // u32 = 4 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    // Dymmy buffer
+    // Dymmy
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
       size: 80,
-      // Must match size in shader
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
@@ -32405,7 +32369,9 @@ class Materials {
         minFilter: 'linear'
       });
     }
-    this.createBufferForWater();
+    if (this.material.type == 'water') {
+      this.createBufferForWater();
+    }
   }
   createBufferForWater = () => {
     this.waterBindGroupLayout = this.device.createBindGroupLayout({
@@ -32440,7 +32406,9 @@ class Materials {
     0.0 // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>');
     this.waterBindGroup = this.device.createBindGroup({
+      label: 'waterBG',
       layout: this.waterBindGroupLayout,
       entries: [{
         binding: 0,
@@ -32450,10 +32418,10 @@ class Materials {
       }]
     });
     this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
-      const data = new Float32Array([deepColor[0], deepColor[1], deepColor[2], waveSpeed, shallowColor[0], shallowColor[1], shallowColor[2], waveScale, waveHeight, fresnelPower, specularPower, 0.0 // padding
-      ]);
+      const data = new Float32Array([deepColor[0], deepColor[1], deepColor[2], waveSpeed, shallowColor[0], shallowColor[1], shallowColor[2], waveScale, waveHeight, fresnelPower, specularPower, 0.0]);
       this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     };
+    // this.drawElements = this.drawElementsOrigin;
   };
   createDummyTexture(device, size = 256) {
     const data = new Uint8Array(size * size * 4);
@@ -32497,28 +32465,6 @@ class Materials {
     if (sampler) this.imageSampler = sampler;
     // Recreate bind group only
     this.createBindGroupForRender();
-
-    //     console.log('=== changeTexture called ===');
-    // console.log('newTexture:', newTexture);
-    // console.log('instanceof GPUTexture:', newTexture instanceof GPUTexture);
-
-    // if(newTexture instanceof GPUTexture) {
-    //   this.texture0 = newTexture;
-    // } else {
-    //   this.texture0 = {createView: () => newTexture};
-    // }
-
-    // this.isVideo = false;
-    // if(sampler) this.imageSampler = sampler;
-
-    // console.log('this.texture0 after set:', this.texture0);
-    // console.log('this.sceneUniformBuffer:', this.sceneUniformBuffer);
-    // console.log('this.shadowDepthTextureView:', this.shadowDepthTextureView);
-    // console.log('this.bglForRender:', this.bglForRender);
-
-    // this.createBindGroupForRender();
-
-    // console.log('this.sceneBindGroupForRender after rebuild:', this.sceneBindGroupForRender);
   }
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
@@ -32797,6 +32743,7 @@ class Materials {
     };
   }
   async loadVideoTexture(arg) {
+    console.log('100000000000000000000000000000000');
     this.videoIsReady = 'MAYBE';
     this.isVideo = true;
     this.drawElements = this.drawVideoElements;
@@ -32811,9 +32758,35 @@ class Materials {
       this.video.style.position = 'absolute';
       this.video.style.width = '640px';
       this.video.style.height = '480px';
-      this.video.style.top = '-420px';
+      this.video.style.top = '-20px';
       this.video.style.left = '50%';
-      await this.video.play();
+      this.video.play();
+      this.video.addEventListener('canplay', () => {
+        // alert('++++');
+        if (this.video.readyState >= 3) {
+          alert('++++ > 3 ');
+        }
+      }, {
+        once: true
+      });
+      this.video.addEventListener('canplaythrough', () => {
+        console.log('_cideo can playt +++++++++++++++++++++++++++');
+        if (this.video.readyState >= 3) {
+          this.externalTexture = this.device.importExternalTexture({
+            source: this.video
+          });
+          console.log('++++ > 3   ++++  ' + this.externalTexture);
+          if (!this.externalTexture) alert('ERROR ' + this.externalTexture);
+          this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear'
+          });
+          this.createLayoutForRender();
+          this.createMaterialBindGroupVideo();
+        }
+      }, {
+        once: false
+      });
     } else if (arg.type === 'videoElement') {
       this.video = arg.el;
       await this.video.play();
@@ -32860,7 +32833,7 @@ class Materials {
         return;
       }
       this.video.srcObject = stream;
-      await this.video.play();
+      this.video.play();
       this.isVideo = true;
     } else if (arg.type === 'canvas2d-inline') {
       // console.log('what is arg', arg);
@@ -32898,7 +32871,7 @@ class Materials {
       this.video.playsInline = true;
       this.video.srcObject = canvas.captureStream(60);
       document.body.append(this.video);
-      await this.video.play();
+      this.video.play();
       await new Promise(resolve => {
         const check = () => {
           if (this.video.readyState >= 2) resolve();else requestAnimationFrame(check);
@@ -32913,18 +32886,15 @@ class Materials {
       minFilter: 'linear'
     });
     this.createLayoutForRender();
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
+    this.createMaterialBindGroupVideo();
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
-
-    // Always re-import — external textures expire each frame, never cache them
+    // if(!this.video || this.video.readyState < 2) return;
     this.externalTexture = this.device.importExternalTexture({
       source: this.video
     });
-
-    // Always rebuild BG against the VIDEO layout
-    this.createBindGroupForRender();
+    this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
@@ -32946,221 +32916,129 @@ class Materials {
     return this.glb.glbTextures[texIndex].createView();
   }
   createBindGroupForRender() {
-    if (this.isVideo) {
-      if (!this.externalTexture || !this.sceneUniformBuffer) {
-        console.warn("❗video BG: missing resource");
-        return;
-      }
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        label: 'sceneBindGroupForRender [video]',
-        layout: this.bglForRender,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: this.shadowVideoView
-        }, {
-          binding: 2,
-          resource: this.compareSampler
-        }, {
-          binding: 3,
-          resource: this.externalTexture
-        }, {
-          binding: 4,
-          resource: this.videoSampler
-        }, {
-          binding: 5,
-          resource: {
-            buffer: this.postFXModeBuffer
-          }
-        }]
-      });
-      if (this.video.paused) this.video.play().catch(() => {});
-      this.isWaiting = false;
-    } else {
-      let textureResource = this.texture0.createView();
-      if (this.material.useTextureFromGlb === true) {
-        const material = this.skinnedNode.mesh.primitives[0].material;
-        textureResource = material.baseColorTexture.imageView;
-      }
-      if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-        if (!textureResource) console.log("%c❗Missing res texture", _utils.LOG_FUNNY_ARCADE);
-        if (!this.sceneUniformBuffer) console.warn("❗Missing res: sceneUniformBuffer");
-        return;
-      }
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        label: 'sceneBindGroupForRender [mesh][materials]',
-        layout: this.bglForRender,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: this.shadowDepthTextureView
-        }, {
-          binding: 2,
-          resource: this.compareSampler
-        }, {
-          binding: 3,
-          resource: textureResource
-        }, {
-          binding: 4,
-          resource: this.imageSampler
-        }, {
-          binding: 5,
-          resource: {
-            buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer
-          }
-        }, {
-          binding: 6,
-          resource: this.metallicRoughnessTextureView
-        }, {
-          binding: 7,
-          resource: this.metallicRoughnessSampler
-        }, {
-          binding: 8,
-          resource: {
-            buffer: this.materialPBRBuffer
-          }
-        }, {
-          binding: 9,
-          resource: this.normalTextureView
-        }, {
-          binding: 10,
-          resource: this.normalSampler
-        }]
-      });
+    let textureResource = this.texture0.createView();
+    if (this.material.useTextureFromGlb === true) {
+      const material = this.skinnedNode.mesh.primitives[0].material;
+      textureResource = material.baseColorTexture.imageView;
     }
+    if (this.isVideo == true) return;
+    // console.log('CREATE NORMAL this.materialBindGroup');
+    this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialBindGroup normal',
+      layout: this.materialBGL,
+      entries: [{
+        binding: 0,
+        resource: textureResource
+      }, {
+        binding: 1,
+        resource: this.imageSampler
+      }, {
+        binding: 2,
+        resource: this.metallicRoughnessTextureView
+      }, {
+        binding: 3,
+        resource: this.metallicRoughnessSampler
+      }, {
+        binding: 4,
+        resource: {
+          buffer: this.materialPBRBuffer
+        }
+      }, {
+        binding: 5,
+        resource: this.normalTextureView
+      }, {
+        binding: 6,
+        resource: this.normalSampler
+      }]
+    });
   }
   createLayoutForRender() {
-    // ── VIDEO layout (separate, never mixed with mesh pipeline) ───────
-    if (this.isVideo) {
-      const videoEntries = [{
+    this.materialBGL = this.device.createBindGroupLayout({
+      label: 'MaterialBGL',
+      entries: [{
         binding: 0,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float'
         }
       }, {
         binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: "depth",
-          viewDimension: "2d",
-          // single shadow map for video objects
-          multisampled: false
-        }
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'comparison'
-        }
-      }, {
-        binding: 3,
-        visibility: GPUShaderStage.FRAGMENT,
-        externalTexture: {} // GPUExternalTexture slot
-      }, {
-        binding: 4,
         visibility: GPUShaderStage.FRAGMENT,
         sampler: {
           type: 'filtering'
         }
       }, {
-        binding: 5,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-        // buffer: {type: 'read-only-storage'}
-      }];
-      this.bglForRender = this.device.createBindGroupLayout({
-        label: 'bglForRenderVideo',
-        entries: videoEntries
-      });
-    } else {
-      const meshEntries = [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: "depth",
-          viewDimension: "2d-array",
-          multisampled: false
-        }
-      }, {
         binding: 2,
         visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'comparison'
+        texture: {
+          sampleType: 'float'
         }
       }, {
         binding: 3,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: 'float',
-          viewDimension: '2d'
-        }
-      }, {
-        binding: 4,
         visibility: GPUShaderStage.FRAGMENT,
         sampler: {
           type: 'filtering'
         }
       }, {
-        binding: 5,
+        binding: 4,
         visibility: GPUShaderStage.FRAGMENT,
         buffer: {
-          type: 'read-only-storage'
+          type: 'uniform'
+        }
+      }, {
+        binding: 5,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float'
         }
       }, {
         binding: 6,
         visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: 'float',
-          viewDimension: '2d'
+        sampler: {
+          type: 'filtering'
         }
+      }]
+    });
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: 'MaterialVideoBGL',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        externalTexture: {}
       }, {
-        binding: 7,
+        binding: 1,
         visibility: GPUShaderStage.FRAGMENT,
         sampler: {
           type: 'filtering'
         }
       }, {
-        binding: 8,
+        binding: 2,
         visibility: GPUShaderStage.FRAGMENT,
         buffer: {
           type: 'uniform'
         }
+      }]
+    });
+  }
+  createMaterialBindGroupVideo() {
+    if (!this.externalTexture) return;
+    console.log('SET VIDEO BIND GROUP');
+    this.materialBindGroup = this.device.createBindGroup({
+      label: 'materialVideoBGL',
+      layout: this.materialVideoBGL,
+      entries: [{
+        binding: 0,
+        resource: this.externalTexture
       }, {
-        binding: 9,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: 'float',
-          viewDimension: '2d'
-        }
+        binding: 1,
+        resource: this.videoSampler
       }, {
-        binding: 10,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'filtering'
+        binding: 2,
+        resource: {
+          buffer: this.postFXModeBuffer
         }
-      }];
-      this.bglForRender = this.device.createBindGroupLayout({
-        label: 'bglForRender',
-        entries: meshEntries
-      });
-    }
+      }]
+    });
   }
 }
 exports.default = Materials;
@@ -33719,9 +33597,7 @@ class MEMeshObj extends _materials.default {
     if (o.envMapParams !== null) {
       this.envMapParams = o.envMapParams;
     }
-    if (typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
+    this.sceneBGL = o.sceneBGL;
     this.useScale = o.useScale || false;
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8,
@@ -33898,8 +33774,28 @@ class MEMeshObj extends _materials.default {
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
+
+      // 🟢 dummy fallback
+      const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
+      for (let i = 0; i < dummyTangents.length; i += 4) {
+        dummyTangents[i + 0] = 1.0; // T = (1,0,0)
+        dummyTangents[i + 1] = 0.0;
+        dummyTangents[i + 2] = 0.0;
+        dummyTangents[i + 3] = 1.0; // handedness
+      }
+      this.mesh.tangentsBuffer = this.device.createBuffer({
+        label: "tangentsBuffer dummy",
+        size: dummyTangents.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
+      this.mesh.tangentsBuffer.unmap();
+      // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
     }
     // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
+
+    this.drawElementsOrigin = this.drawElements;
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -33912,6 +33808,8 @@ class MEMeshObj extends _materials.default {
     } else if (typeof o.isVideo !== 'undefined') {
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
+    } else if (this.material.type != 'mirror' && this.material.type != 'water') {
+      this.drawElements = this.drawElementsNoWaterMirror;
     }
     this.inputHandler = inputHandler;
     this.cameras = o.cameras;
@@ -34152,17 +34050,8 @@ class MEMeshObj extends _materials.default {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      if (this.sharedSU) {
-        this.sceneUniformBuffer = this.sharedSU;
-      } else {
-        this.sceneUniformBuffer = this.device.createBuffer({
-          label: 'sceneUniformBuffer per mesh',
-          size: 192,
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-      }
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh regular',
+        label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.VERTEX,
@@ -34443,6 +34332,8 @@ class MEMeshObj extends _materials.default {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, _utils.LOG_FUNNY_ARCADE);
+          return;
         });
         this.setupPipeline();
       } else {
@@ -34466,6 +34357,7 @@ class MEMeshObj extends _materials.default {
     this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
     const isNormalMap = this.material.type === 'normalmap';
     const vertexCode = isNormalMap ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL;
@@ -34476,15 +34368,10 @@ class MEMeshObj extends _materials.default {
     const fragmentModule = this.device.createShaderModule({
       code: fragmentCode
     });
-    // PIPELINE LAYOUT (STATIC PER MESH)
-    // const layout = this.device.createPipelineLayout({
-    //   label: 'PipelineLayout Mesh',
-    //   bindGroupLayouts: [
-    //     this.bglForRender,
-    //     this.uniformBufferBindGroupLayout,
-    //     (this.material.type === 'mirror') ? this.mirrorBindGroupLayout : null,
-    //   ],
-    // });
+    const layout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Mesh',
+      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null].filter(Boolean)
+    });
     // VERTEX STATE (SHARED)
     const vertexState = {
       entryPoint: 'main',
@@ -34503,7 +34390,8 @@ class MEMeshObj extends _materials.default {
       frontFace: this.primitive.frontFace,
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE PIPELINE
     this.pipeline = pm.getPipeline({
@@ -34514,10 +34402,7 @@ class MEMeshObj extends _materials.default {
       }),
       pipeline: {
         label: 'Mesh Pipeline Opaque',
-        layout: this.device.createPipelineLayout({
-          label: 'PipelineLayout Mesh',
-          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null]
-        }),
+        layout: layout,
         vertex: vertexState,
         fragment: {
           entryPoint: 'main',
@@ -34544,10 +34429,7 @@ class MEMeshObj extends _materials.default {
       }),
       pipeline: {
         label: 'Mesh Pipeline Transparent',
-        layout: this.device.createPipelineLayout({
-          label: 'PipelineLayout Mesh',
-          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.material.type === 'mirror' ? this.mirrorBindGroupLayout : null]
-        }),
+        layout: layout,
         vertex: vertexState,
         fragment: {
           entryPoint: 'main',
@@ -34645,31 +34527,32 @@ class MEMeshObj extends _materials.default {
     }
   }
   drawElements = pass => {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
-    if (this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
-  };
-  drawVideoElements = pass => {
-    if (!this.video || this.video.readyState < 2) return;
-    this.updateVideoTexture();
-    // if(!this.sceneBindGroupForRender) return;
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup); // REPLACE WITH REAL DUMMY!
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
+  drawElementsNoWaterMirror = pass => {
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
+  drawVideoElements = pass => {
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -34678,17 +34561,14 @@ class MEMeshObj extends _materials.default {
       console.log('NULL2');
       return;
     }
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.material.type === "mirror") renderPass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    if (this.mesh.tangentsBuffer) renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     if (this.objAnim.playing == true) {
@@ -34793,28 +34673,78 @@ let zeroPass = function () {
   requestAnimationFrame(this.frame);
   try {
     let commandEncoder = this.device.createCommandEncoder();
+    this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirty || camera._dirtyAngle) this.getTransformationMatrix(camera.VP, now2);
+    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
     camera.update();
-    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-    let lastPipeline = null;
+
+    // for(let i = 0;i < this.lightContainer.length;i++) {
+    //   const light = this.lightContainer[i];
+    //   const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+    //   if(this.shadowBuckets.default.length) {
+    //     pass.setPipeline(light.shadowPipeline);
+    //     for(let m of this.shadowBuckets.default) {
+    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
+    //       pass.setBindGroup(1, m.modelBindGroup);
+    //       m.drawShadows(pass, light);
+    //     }
+    //   }
+    //   if(this.shadowBuckets.instanced.length) {
+    //     pass.setPipeline(light.shadowPipelineInstanced);
+    //     for(let m of this.shadowBuckets.instanced) {
+    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
+    //       pass.setBindGroup(1, m.modelBindGroupInstanced);
+    //       m.drawShadows(pass, light);
+    //     }
+    //   }
+    //   if(this.shadowBuckets.procedural.length) {
+    //     pass.setPipeline(light.shadowPipelineMorph);
+    //     for(let m of this.shadowBuckets.procedural) {
+    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
+    //       pass.setBindGroup(1, m.mainRenderBindGroup);
+    //       m.drawShadows(pass, light);
+    //     }
+    //   }
+    //   pass.end();
+    // }
+
     const len = this.mainRenderBundle.length;
     for (let i = 0; i < len; i++) {
       const mesh = this.mainRenderBundle[i];
+      if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+      if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
       if (mesh.position.inMove) mesh.updateModelUniformBuffer(i);
       mesh.position.update();
+      if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if (mesh.update) mesh.update(now2);
-      if (!mesh.sceneBindGroupForRender) {
-        mesh.shadowDepthTextureView = this.shadowArrayView;
-        mesh.setupPipeline();
+    }
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
+    for (const [pipeline, meshes] of this.opaqueBuckets) {
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
       }
-      const targetPipeline = mesh.pipeline || this.mainRenderBundle[0].pipeline;
-      if (lastPipeline !== targetPipeline) {
-        pass.setPipeline(targetPipeline);
-        lastPipeline = targetPipeline;
+    }
+    for (const [pipeline, meshes] of this.transparentBuckets) {
+      if (cam._dirty) meshes.sort((a, b) => {
+        const dx1 = cam.position[0] - a.position[0];
+        const dz1 = cam.position[2] - a.position[2];
+        const da = dx1 * dx1 + dz1 * dz1;
+        const dx2 = cam.position[0] - b.position[0];
+        const dz2 = cam.position[2] - b.position[2];
+        const db = dx2 * dx2 + dz2 * dz2;
+        return db - da;
+      });
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
       }
-      mesh.drawElements(pass, this.lightContainer);
     }
     pass.end();
     const canvasTexture = this.context.getCurrentTexture();
@@ -34872,7 +34802,8 @@ function buildPipelineKey({
   cullMode,
   frontFace,
   mirror,
-  normalMap
+  normalMap,
+  isWater
 }) {
   return JSON.stringify({
     v: vertexId,
@@ -34885,7 +34816,8 @@ function buildPipelineKey({
     cull: cullMode,
     face: frontFace,
     mirror: mirror,
-    normalMap: normalMap
+    normalMap: normalMap,
+    isWater: isWater
   });
 }
 class PipelineManager {
@@ -35973,9 +35905,7 @@ class ProceduralMeshObj extends _materials.default {
     this.morphBlend = 0.0;
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     this.shadowsCast = true;
-    if (typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
+    this.sceneBGL = o.sceneBGL;
     if (o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -36054,12 +35984,10 @@ class ProceduralMeshObj extends _materials.default {
       });
     };
     this.runProgram().then(() => {
-      this._setupShadowDepthTexture();
       this._setupBuffers();
       this._setupUniforms();
       this._setupPipeline();
       this.done = true;
-      // console.log(`%cProceduralMesh ready: ${this.name}`, LOG_FUNNY_SMALL);
     });
   }
 
@@ -36179,10 +36107,6 @@ class ProceduralMeshObj extends _materials.default {
       format: 'depth32float',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
-    this.shadowDepthTextureView = this.shadowDepthTexture.createView({
-      dimension: '2d-array',
-      arrayLayerCount: 20
-    });
   }
   _setupBuffers() {
     this.context.configure({
@@ -36284,15 +36208,6 @@ class ProceduralMeshObj extends _materials.default {
       size: 16 * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    if (this.sharedSU) {
-      this.sceneUniformBuffer = this.sharedSU;
-    } else {
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: 'sceneUniformBuffer per mesh',
-        size: 192,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-    }
     this.bonesBuffer = this.device.createBuffer({
       size: 6400 * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -36346,7 +36261,7 @@ class ProceduralMeshObj extends _materials.default {
       } // morphBlend
       ]
     });
-    this.mainRenderBindGroup = this.device.createBindGroup({
+    this.modelBindGroup = this.device.createBindGroup({
       layout: this.uniformBufferBindGroupLayout,
       entries: [{
         binding: 0,
@@ -36406,30 +36321,17 @@ class ProceduralMeshObj extends _materials.default {
       } // morphBlend
       ]
     });
-    this.modelBindGroup = this.device.createBindGroup({
-      layout: this.shadowBindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.modelUniformBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.bonesBuffer
-        }
-      }, {
-        binding: 2,
-        resource: {
-          buffer: this.vertexAnimBuffer
-        }
-      }, {
-        binding: 3,
-        resource: {
-          buffer: this.morphBlendBuffer
-        }
-      }]
-    });
+
+    // this.modelBindGroup = this.device.createBindGroup({
+    //   layout: this.shadowBindGroupLayout,
+    //   entries: [
+    //     {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+    //     {binding: 1, resource: {buffer: this.bonesBuffer}},
+    //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+    //     {binding: 3, resource: {buffer: this.morphBlendBuffer}},
+    //   ]
+    // });
+
     this.vertexAnim = {
       active: false,
       enableWave: () => {
@@ -36560,8 +36462,12 @@ class ProceduralMeshObj extends _materials.default {
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
+    const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
+    const isNormalMap = this.material.type === 'normalmap';
+    const isVideo = this.isVideo === true;
     const layout = this.device.createPipelineLayout({
-      bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
+      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null]
     });
     const vertexState = {
       entryPoint: 'main',
@@ -36581,7 +36487,10 @@ class ProceduralMeshObj extends _materials.default {
       cullMode: this.primitive.cullMode,
       frontFace: this.primitive.frontFace,
       format: 'rgba16float',
-      morph: !this.vertexWGSL ? 1 : 0
+      morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -36739,11 +36648,6 @@ class ProceduralMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
   drawElements(pass, lightContainer) {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.mainRenderBindGroup);
-    if (this.material.type === "mirror" && this.mirrorBindGroup) {
-      pass.setBindGroup(2, this.mirrorBindGroup);
-    }
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);
@@ -40315,15 +40219,17 @@ struct PBRMaterialData {
 };
 const MAX_SPOTLIGHTS = 20u;
 
-@group(0) @binding(0) var<uniform> scene           : Scene;
-@group(0) @binding(1) var shadowMapArray           : texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler            : sampler_comparison;
-@group(0) @binding(3) var meshTexture              : texture_2d<f32>;
-@group(0) @binding(4) var meshSampler              : sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex     : texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler : sampler;
-@group(0) @binding(8) var<uniform> material        : MaterialPBR;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @builtin(position)                     clipPos   : vec4f,
@@ -40687,9 +40593,9 @@ struct VertexAnimParams {
 }
 
 @group(0) @binding(0) var<uniform> scene: Scene;
-@group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(1) @binding(3) var<uniform> morphBlend: f32;
+@group(2) @binding(0) var<uniform> model: Model;
+@group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(2) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -41086,22 +40992,21 @@ struct MirrorIlluminateParams {
 
 const MAX_SPOTLIGHTS = 20u;
 
-@group(0) @binding(0) var<uniform> scene                  : Scene;
-@group(0) @binding(1) var          shadowMapArray         : texture_depth_2d_array;
-@group(0) @binding(2) var          shadowSampler          : sampler_comparison;
-@group(0) @binding(3) var          meshTexture            : texture_2d<f32>;
-@group(0) @binding(4) var          meshSampler            : sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
-@group(0) @binding(7) var          metallicRoughnessSampler : sampler;
-@group(0) @binding(8) var<uniform> material               : MaterialPBR;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
-@group(0) @binding(9) var normalTexture : texture_2d<f32>;
-@group(0) @binding(10) var normalSampler : sampler;
-
-@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
-@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
-@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+@group(3) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(3) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(3) @binding(2) var          mirrorEnvSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -41336,11 +41241,9 @@ struct Scene {
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMap: texture_depth_2d;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_external;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> postFXMode: u32;
+@group(1) @binding(0) var meshTexture: texture_external;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var<uniform> postFXMode: u32;
 
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
@@ -41355,21 +41258,21 @@ const ambientFactor = 0.7;
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
   // Shadow filtering
-  var visibility = 0.0;
-  let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
-  for (var y = -1; y <= 1; y++) {
-    for (var x = -1; x <= 1; x++) {
-      let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-      visibility += textureSampleCompare(
-        shadowMap, shadowSampler,
-        input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-      );
-    }
-  }
-  visibility /= 9.0;
+  // var visibility = 0.0;
+  // let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
+  // for (var y = -1; y <= 1; y++) {
+  //   for (var x = -1; x <= 1; x++) {
+  //     let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
+  //     visibility += textureSampleCompare(
+  //       shadowMap, shadowSampler,
+  //       input.shadowPos.xy + offset, input.shadowPos.z - 0.007
+  //     );
+  //   }
+  // }
+  // visibility /= 9.0;
 
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
-  let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
+  let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
 
   // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
@@ -41470,18 +41373,17 @@ struct PBRMaterialData {
 };
 
 const MAX_SPOTLIGHTS = 20u;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -41613,9 +41515,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
     let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
+    // if (materialData.alpha < 0.01) {
+    //     discard;
+    // }
 
     var lightContribution = vec3f(0.0);
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -41624,13 +41526,13 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
         let depthRef = p.z;
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-// let inFrustum =
-//     p.z >= 0.0 && p.z <= 1.0 &&
-//     p.x >= -1.0 && p.x <= 1.0 &&
-//     p.y >= -1.0 && p.y <= 1.0;
-      let inDepth = p.z >= 0.0 && p.z <= 1.0;
-let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-let shadowFactor = select(1.0, visibility, inDepth);
+        // let inFrustum =
+        //     p.z >= 0.0 && p.z <= 1.0 &&
+        //     p.x >= -1.0 && p.x <= 1.0 &&
+        //     p.y >= -1.0 && p.y <= 1.0;
+        let inDepth = p.z >= 0.0 && p.z <= 1.0;
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+        let shadowFactor = select(1.0, visibility, inDepth);
         let contrib = computeSpotLight(
             spotlights[i],
             norm,
@@ -41640,7 +41542,6 @@ let shadowFactor = select(1.0, visibility, inDepth);
         );
         lightContribution += contrib * shadowFactor;
     }
-
     // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     // var ambientTerm = material.ambientColor * materialData.baseColor;
@@ -41717,18 +41618,17 @@ struct PBRMaterialData {
 };
 
 const MAX_SPOTLIGHTS = 20u;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -41935,14 +41835,14 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+// @group(1) @binding(5) var normalTexture: texture_2d<f32>;
+// @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
@@ -42116,17 +42016,15 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTex: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-// PBR normalmap
-@group(0) @binding(9) var normalTex: texture_2d<f32>;
-@group(0) @binding(10) var normalSampler: sampler;
 
 struct FragmentInput {
   @location(0) shadowPos : vec4f,
@@ -42366,14 +42264,15 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTex: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -42591,14 +42490,14 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+// @group(1) @binding(5) var normalTexture: texture_2d<f32>;
+// @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -42827,13 +42726,14 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -43063,19 +42963,21 @@ struct MirrorIlluminateParams {
 
 const MAX_SPOTLIGHTS = 20u;
 
-@group(0) @binding(0) var<uniform> scene                   : Scene;
-@group(0) @binding(1) var          shadowMapArray          : texture_depth_2d_array;
-@group(0) @binding(2) var          shadowSampler           : sampler_comparison;
-@group(0) @binding(3) var          meshTexture             : texture_2d<f32>;
-@group(0) @binding(4) var          meshSampler             : sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var          metallicRoughnessTex    : texture_2d<f32>;
-@group(0) @binding(7) var          metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material                : MaterialPBR;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
-@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
-@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
-@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+@group(3) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(3) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(3) @binding(2) var          mirrorEnvSampler: sampler;
 
 // ── INSTANCED: adds colorMult at location(4) ──────────────────────────────
 struct FragmentInput {
@@ -43347,9 +43249,9 @@ struct VertexAnimParams {
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
-@group(1) @binding(1) var<uniform> bones : Bones;
-@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+@group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
+@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -43603,6 +43505,7 @@ struct VertexAnimParams {
 @group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
 @group(1) @binding(1) var<uniform>      bones      : Bones;
 @group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
+
 
 const ANIM_WAVE:  u32 = 1u;
 const ANIM_WIND:  u32 = 2u;
@@ -44287,21 +44190,20 @@ struct SpotLight {
 const MAX_SPOTLIGHTS = 20u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-
-// KEEP bindings to avoid pipeline changes
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
 
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
 
-// KEEP (unused)
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f, // unused
@@ -44989,9 +44891,9 @@ struct VertexAnimParams {
 }
 
 @group(0) @binding(0) var<uniform> scene: Scene;
-@group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(1) @binding(3) var<uniform> morphBlend: f32;
+@group(2) @binding(0) var<uniform> model: Model;
+@group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(2) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -45309,9 +45211,9 @@ struct SkinResult {
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(1) @binding(0) var<uniform> model : Model;
-@group(1) @binding(1) var<uniform> bones : Bones;
-@group(1) @binding(3) var<uniform> uvScale: vec2f;
+@group(2) @binding(0) var<uniform> model : Model;
+@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -45391,7 +45293,7 @@ struct VertexAnimParams {
   _pad7: f32,
 }
 
-@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+@group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -45588,9 +45490,9 @@ struct SkinResult {
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(1) @binding(0) var<uniform> model : Model;
-@group(1) @binding(1) var<uniform> bones : Bones;
-@group(1) @binding(3) var<uniform> uvScale: vec2f;
+@group(2) @binding(0) var<uniform> model : Model;
+@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -45947,6 +45849,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.fragmentWaterWGSL = void 0;
 var _meConfig = require("../../me-config");
 let fragmentWaterWGSL = exports.fragmentWaterWGSL = `
+const MAX_SPOTLIGHTS = 20u;
 const PI: f32 = 3.141592653589793;
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
@@ -45988,8 +45891,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 struct PBRMaterialData {
@@ -45998,19 +45901,6 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
-
-@group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-
-// ✅ Graph custom uniforms
 struct WaterParams {
     deepColor     : vec3f,
     waveSpeed     : f32,
@@ -46022,6 +45912,17 @@ struct WaterParams {
     _pad1         : f32,
 };
 
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 @group(3) @binding(0) var<uniform> waterParams: WaterParams;
 
 // Gerstner wave function for realistic water waves
@@ -46040,132 +45941,143 @@ fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, t
 
 // Simpler sine wave for smoother animation
 fn sineWave(pos: vec2f, direction: vec2f, amplitude: f32, frequency: f32, time: f32) -> vec3f {
-    let d = normalize(direction);
-    let phase = dot(d, pos) * frequency - time;
-    
-    return vec3f(
-        d.x * amplitude * cos(phase),
-        amplitude * sin(phase),
-        d.y * amplitude * cos(phase)
-    );
+  let d = normalize(direction);
+  let phase = dot(d, pos) * frequency - time;
+  return vec3f(
+      d.x * amplitude * cos(phase),
+      amplitude * sin(phase),
+      d.y * amplitude * cos(phase)
+  );
 }
 
 // Calculate water normal from multiple waves
 fn calculateWaterNormal(worldPos: vec3f, time: f32) -> vec3f {
-    let pos = worldPos.xz * waterParams.waveScale;
-    let t = time * waterParams.waveSpeed;
-    
-    // Use smoother sine waves instead of Gerstner for better animation
-    let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
-    let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
-    let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
-    let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
-    
-    // Sum waves
-    let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
-    
-    // Calculate tangent vectors using small step size
-    let eps = 0.1;
-    let posX = worldPos + vec3f(eps, 0.0, 0.0);
-    let posZ = worldPos + vec3f(0.0, 0.0, eps);
-    
-    let offsetX = (
-        sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
-    ) * waterParams.waveHeight;
-    
-    let offsetZ = (
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
-    ) * waterParams.waveHeight;
-    
-    let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
-    let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
-    
-    return normalize(cross(tangentZ, tangentX));
+  let pos = worldPos.xz * waterParams.waveScale;
+  let t = time * waterParams.waveSpeed;
+  // Use smoother sine waves instead of Gerstner for better animation
+  let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
+  let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
+  let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
+  let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
+  // Sum waves
+  let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
+  // Calculate tangent vectors using small step size
+  let eps = 0.1;
+  let posX = worldPos + vec3f(eps, 0.0, 0.0);
+  let posZ = worldPos + vec3f(0.0, 0.0, eps);
+  let offsetX = (
+      sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+  ) * waterParams.waveHeight;
+  let offsetZ = (
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+  ) * waterParams.waveHeight;
+  let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
+  let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
+  return normalize(cross(tangentZ, tangentX));
 }
 
 // Fresnel effect for water reflections
 fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
 }
 
 // PREDEFINED Fragment input
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 // PREDEFINED PBR helpers
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  return PBRMaterialData(baseColor, metallic, roughness);
 }
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-    // Calculate animated water normal
-    let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
-    
-    // View direction
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    
-    // Fresnel effect (0 = looking straight down, 1 = grazing angle)
-    let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
-    
-    // Light direction
-    let lightDir = normalize(scene.lightPos - input.fragPos);
-    
-    // Diffuse lighting
-    let diff = max(dot(waterNormal, lightDir), 0.0);
-    
-    // Specular (sun reflection on water)
-    let halfDir = normalize(lightDir + viewDir);
-    let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
-    
-    // Mix deep and shallow water colors based on fresnel
-    let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
-    
-    // Enhanced lighting for more visible effect
-    let ambient = scene.globalAmbient * waterColor * 0.3;
-    let diffuse = diff * waterColor * 1.2;
-    let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
-    
-    // Enhanced foam on wave peaks
-    // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
-    // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
 
-    // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
-    let isFireMode = f32(waterParams.waveSpeed > 1.5);
+let waterNormal = vec3f(0.0, 1.0, 0.0);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+  let lightDir = normalize(scene.lightPos - input.fragPos);
+  let diff = max(dot(waterNormal, lightDir), 0.0);
+  let halfDir = normalize(lightDir + viewDir);
+  let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+  let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+  let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
+  let diffuse = diff * waterColor * 1.2;
+  let specular = spec * vec3f(1.0) * fresnel * 2.0;
+  let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
+                 sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+  let causticsColor = waterColor * caustics;
+  let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
+  let alpha = mix(0.4, 0.8, fresnel);
+  return vec4f(finalColor, alpha);
 
-    // Water foam — white peaks
-    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
-    let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
-    // Fire embers — bright yellow-white tips
-    let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
-    let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
-    // Add some caustics-like effect based on waves
-    let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
-                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
-    let causticsColor = waterColor * caustics;
-    
-    // Final color with enhanced effects
-    let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
-    // MUCH more transparent - alpha between 0.2 and 0.5
-    let alpha = mix(0.2, 0.5, fresnel);
-    // Make the color more vibrant so it's visible even when transparent
-    let vibrantColor = finalColor * 1.5;
-    return vec4f(vibrantColor, alpha);
+
+
+//   // Calculate animated water normal
+//   let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
+//   // View direction
+//   let viewDir = normalize(scene.cameraPos - input.fragPos);
+//   // Fresnel effect (0 = looking straight down, 1 = grazing angle)
+//   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+//   // Light direction
+//   let lightDir = normalize(scene.lightPos - input.fragPos);
+//   // Diffuse lighting
+//   let diff = max(dot(waterNormal, lightDir), 0.0);
+//   // Specular (sun reflection on water)
+//   let halfDir = normalize(lightDir + viewDir);
+//   let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+//   // Mix deep and shallow water colors based on fresnel
+//   let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+  
+
+//   // Enhanced lighting for more visible effect
+//   // let ambient = scene.globalAmbient * waterColor * 0.3;
+// let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
+
+//   let diffuse = diff * waterColor * 1.2;
+//   let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
+//   // Enhanced foam on wave peaks
+//   // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+//   // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+//   // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
+//   let isFireMode = f32(waterParams.waveSpeed > 1.5);
+//   // Water foam — white peaks
+//   let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
+//   let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+//   // Fire embers — bright yellow-white tips
+//   let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
+//   let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
+//   // Add some caustics-like effect based on waves
+//   let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
+//                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+//   let causticsColor = waterColor * caustics;
+//   // Final color with enhanced effects
+//   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
+//   // MUCH more transparent - alpha between 0.2 and 0.5
+//   let alpha = mix(0.2, 0.5, fresnel);
+//   // Make the color more vibrant so it's visible even when transparent
+//   let vibrantColor = finalColor * 1.5;
+//   // return vec4f(vibrantColor, alpha);
+//     // return vec4f(waterParams.deepColor, 1.0);
+//       // return vec4f(waterNormal * 0.5 + 0.5, 1.0); // visualize normal
+//         // return vec4f(input.fragPos * 0.01, 1.0); // scale down to see range
+//         return vec4f(input.fragPos.x * 0.01, input.fragPos.z * 0.01, 0.0, 1.0);
+//   // return vec4f(1.0, 0.0, 0.0, 1.0); // solid red, alpha 1
 }`;
 
 },{"../../me-config":71}],109:[function(require,module,exports){
@@ -58368,6 +58280,9 @@ class MatrixEngineWGPU {
       viewProjectionMatrix: null,
       direction: null
     };
+    this.usEvent = new CustomEvent('updateSceneContainer', {
+      detail: {}
+    });
     this.editor = undefined;
     if (typeof options.useEditor !== "undefined") {
       if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -58537,12 +58452,9 @@ class MatrixEngineWGPU {
   };
   createGlobalStuff(callback) {
     addEventListener('update-pipeine-buckets', () => {
-      console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
       this.buildRenderBuckets(this.mainRenderBundle);
-      setTimeout(() => {
-        this.getCamera()._dirtyAngle = true;
-        this.getCamera()._dirty = true;
-      }, 200);
+      this.getCamera()._dirtyAngle = true;
+      this.getCamera()._dirty = true;
     });
     _pipelineManager.PipelineManager.init(this.device);
     this.getTransformationMatrix = (camera, dt) => {
@@ -58656,10 +58568,51 @@ class MatrixEngineWGPU {
       }
     });
     this.createBloomBindGroup();
+
+    // global
     this.globalSceneUniformBuffer = this.device.createBuffer({
-      label: 'shared sceneUniformBuffer [meshObj]',
+      label: 'Shared[sceneUniformBuffer]',
       size: 192,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.sceneBGL = this.device.createBindGroupLayout({
+      label: 'SceneBGL',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: "depth",
+          viewDimension: "2d-array"
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'comparison'
+        }
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'read-only-storage'
+        }
+      }]
+    });
+    this.compareSampler = this.device.createSampler({
+      compare: 'less-equal',
+      // safer for shadow comparison
+      addressModeU: 'clamp-to-edge',
+      // prevents UV leaking outside
+      addressModeV: 'clamp-to-edge',
+      magFilter: 'linear',
+      // smooth PCF
+      minFilter: 'linear'
     });
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
@@ -58769,6 +58722,26 @@ class MatrixEngineWGPU {
         baseArrayLayer: 0,
         arrayLayerCount: 1
       });
+      this.sceneBindGroup = this.device.createBindGroup({
+        layout: this.sceneBGL,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.globalSceneUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: this.shadowArrayView
+        }, {
+          binding: 2,
+          resource: this.compareSampler
+        }, {
+          binding: 3,
+          resource: {
+            buffer: this.spotlightUniformBuffer
+          }
+        }]
+      });
     };
     this.createMe();
   }
@@ -58846,9 +58819,9 @@ class MatrixEngineWGPU {
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length, this.shadowPassViews[this.lightContainer.length], this.shadowSampler);
     this.lightContainer.push(newLight);
-    for (const mesh of this.mainRenderBundle) {
-      mesh.shadowDepthTextureView = this.shadowArrayView;
-    }
+    // for(const mesh of this.mainRenderBundle) {
+    //   mesh.shadowDepthTextureView = this.shadowArrayView;
+    // }
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -58936,11 +58909,8 @@ class MatrixEngineWGPU {
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
-    o.sharedSU = this.globalSceneUniformBuffer;
+    o.sceneBGL = this.sceneBGL;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.shadowDepthTextureView = this.shadowArrayView;
-    myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
     this.mainRenderBundle.push(myMesh1);
@@ -59027,13 +58997,8 @@ class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
-    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sceneBGL = this.sceneBGL;
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if (o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
@@ -59394,7 +59359,7 @@ class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineInstanced);
           for (let m of this.shadowBuckets.instanced) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroupInstanced);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -59402,7 +59367,7 @@ class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineMorph);
           for (let m of this.shadowBuckets.procedural) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.mainRenderBindGroup);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -59419,29 +59384,40 @@ class MatrixEngineWGPU {
         mesh.position.update();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
-        // lazy pipeline init
+        if (mesh.isVideo) mesh.updateVideoTexture();
         if (!mesh.pipeline || !mesh.pipelineTransparent) {
           mesh.shadowDepthTextureView = this.shadowArrayView;
-          // mesh.setupPipeline();
         }
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      pass.setBindGroup(0, this.sceneBindGroup);
       for (const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          pass.setBindGroup(2, mesh.modelBindGroup);
+          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
       for (const [pipeline, meshes] of this.transparentBuckets) {
         meshes.sort((a, b) => {
-          const cam = this.getCamera();
-          const da = _wgpuMatrix.vec3.distance(cam.position, a.position);
-          const db = _wgpuMatrix.vec3.distance(cam.position, b.position);
+          const dx1 = camera.position[0] - a.position[0];
+          const dz1 = camera.position[2] - a.position[2];
+          const da = dx1 * dx1 + dz1 * dz1;
+          const dx2 = camera.position[0] - b.position[0];
+          const dz2 = camera.position[2] - b.position[2];
+          const db = dx2 * dx2 + dz2 * dz2;
           return db - da;
         });
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          pass.setBindGroup(2, mesh.modelBindGroup);
+          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -59587,11 +59563,7 @@ class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
-    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sceneBGL = this.sceneBGL;
     let r = [];
     o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
@@ -59603,7 +59575,6 @@ class MatrixEngineWGPU {
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         // make it soft
@@ -59611,9 +59582,7 @@ class MatrixEngineWGPU {
         r.push(bvhPlayer);
         this.sortRenderBundle();
         setTimeout(() => {
-          document.dispatchEvent(new CustomEvent('updateSceneContainer', {
-            detail: {}
-          }));
+          document.dispatchEvent(this.usEvent);
         }, 50);
         c++;
       }
@@ -59723,11 +59692,7 @@ class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
     }
-    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sceneBGL = this.sceneBGL;
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -59745,7 +59710,7 @@ class MatrixEngineWGPU {
         }
         const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)

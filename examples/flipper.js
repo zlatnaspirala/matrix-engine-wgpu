@@ -3,9 +3,7 @@ import {downloadMeshes} from "../src/engine/loader-obj.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 // import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
-
 export var flipper = function() {
-
   let MYFLIPPER = {
     STATUS_PUSH: 'wait'
   };
@@ -676,7 +674,6 @@ export var flipper = function() {
           geometry: "Cube"
         }
       });
-
       // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
         app.activateBloomEffect();
@@ -684,13 +681,9 @@ export var flipper = function() {
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
         app.cameras.WASD.setY(10);
-        // app.buildRenderBuckets(app.mainRenderBundle);
         app.cameras.WASD._dirtyAngle = true;
       }, 500)
-
     }
-
   });
-
   window.app = flipper;
 };

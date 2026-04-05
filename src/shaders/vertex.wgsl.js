@@ -21,9 +21,9 @@ struct SkinResult {
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(1) @binding(0) var<uniform> model : Model;
-@group(1) @binding(1) var<uniform> bones : Bones;
-@group(1) @binding(3) var<uniform> uvScale: vec2f;
+@group(2) @binding(0) var<uniform> model : Model;
+@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -103,7 +103,7 @@ struct VertexAnimParams {
   _pad7: f32,
 }
 
-@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+@group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
