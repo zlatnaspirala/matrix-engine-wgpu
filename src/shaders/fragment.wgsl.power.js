@@ -62,8 +62,8 @@ const MAX_SPOTLIGHTS = 20u;
 @group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
 @group(1) @binding(3) var metallicRoughnessSampler: sampler;
 @group(1) @binding(4) var<uniform> material: MaterialPBR;
-@group(1) @binding(5) var normalTexture: texture_2d<f32>;
-@group(1) @binding(6) var normalSampler: sampler;
+// @group(1) @binding(5) var normalTexture: texture_2d<f32>;
+// @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,

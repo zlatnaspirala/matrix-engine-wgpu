@@ -2000,26 +2000,21 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'water',
+          useBlend: true
         },
-        envMapParams: {
-          baseColorMix: 0.1,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.5,
-          // 25% reflection blend
-          illuminateColor: [0.6, 0.5, 0.2],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 0.1,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        // envMapParams: {
+        //   baseColorMix: 0.1,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.5,                // 25% reflection blend
+        //   illuminateColor: [0.6, 0.5, 0.2], // Soft cyan
+        //   illuminateStrength: 0.1,          // Gentle rim
+        //   illuminatePulse: 0.01,            // No pulse (static)
+        //   fresnelPower: 0.1,                // Medium-sharp edge
+        //   envLodBias: 2.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
+
         position: {
           x: 0,
           y: -5,
@@ -2035,7 +2030,8 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        //, './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -27562,7 +27558,7 @@ class MaterialsInstanced {
   createBufferForWater = () => {
     // new water test
     this.waterBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Water MAT Bind Group Layout for main pass',
+      label: 'Water BindGroupLayout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.FRAGMENT,
@@ -28145,9 +28141,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.useScale = o.useScale || false;
     this.mType = _utils.MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
-    if (typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
+    this.sceneBGL = o.sceneBGL;
+    // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
@@ -28260,24 +28255,19 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.mesh.weightsBuffer.unmap();
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
       this.mesh.jointsView = jointsView;
-      // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
-      let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // in Uint16 elements
-      );
+      let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2);
       const jointsArray32 = new Uint32Array(jointsArray16.length);
       for (let i = 0; i < jointsArray16.length; i++) {
         jointsArray32[i] = jointsArray16[i];
       }
-      // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer[real]",
         size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
-      // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
-
       // TANGENTS
       let tangentArray = null;
       if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
@@ -28310,7 +28300,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly) Low level priority warn.");
       }
     } else {
       this.mesh.uvs = this.mesh.textures;
@@ -28357,14 +28346,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-      // this.joints = {
-      //   data: jointsData,
-      //   buffer: jointsBuffer,
-      //   stride: 16, // vec4<u32>
-      // };
       this.mesh.jointsBuffer = jointsBuffer;
       const numVerts = this.mesh.vertices.length / 3;
-      // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
       for (let i = 0; i < numVerts; i++) {
         weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
@@ -28372,7 +28355,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         weightsData[i * 4 + 2] = 0.0;
         weightsData[i * 4 + 3] = 0.0;
       }
-      // GPU buffer
       const weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer dummy",
         size: weightsData.byteLength,
@@ -28381,7 +28363,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      // this.weights = {data: weightsData, buffer: weightsBuffer, stride: 16, };
       this.mesh.weightsBuffer = weightsBuffer;
     }
     this.runProgram = () => {
@@ -28635,15 +28616,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      if (this.sharedSU) {
-        this.sceneUniformBuffer = this.sharedSU;
-      } else {
-        this.sceneUniformBuffer = this.device.createBuffer({
-          label: 'sceneUniformBuffer per mesh',
-          size: 192,
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-      }
       this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [instanced]',
         entries: [{
@@ -28846,34 +28818,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.vertexAnimParams[0] = time;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       };
-      this.modelBindGroup = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh',
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.modelUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: {
-            buffer: this.bonesBuffer
-          }
-        }, {
-          binding: 2,
-          resource: {
-            buffer: this.vertexAnimBuffer
-          }
-        }]
-      });
       this.uvScaleBuffer = this.device.createBuffer({
         size: 8,
-        // vec2f
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       // Default = no scale
       this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
-      this.modelBindGroupInstanced = this.device.createBindGroup({
+      this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup[instanced]',
         layout: this.uniformBufferBindGroupLayoutInstanced,
         entries: [{
@@ -29005,15 +28956,15 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
     const vertexCode = _vertexInstanced.vertexWGSLInstanced;
     const fragmentCode = isVideo ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>');
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
-      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL,
-      // ✅ group 1
-      this.uniformBufferBindGroupLayoutInstanced, ...(isMirror ? [this.mirrorBindGroupLayout] : [])]
+      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayoutInstanced, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null]
     });
     const vertexState = {
       entryPoint: 'main',
@@ -29034,7 +28985,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       frontFace: this.primitive.frontFace,
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -29167,23 +29119,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
   }
   drawElements = pass => {
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this.mType == _utils.MeshType.INSTANCED) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
-    } else {
-      pass.setBindGroup(1, this.modelBindGroup);
-    }
-    if (this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
+    // IN
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    // if(this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent)
-    // else pass.setPipeline(this.pipeline);
-
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for (var ins = 1; ins < this.instanceCount; ins++) {
       if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
@@ -29191,20 +29133,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
   };
   drawVideoElements = pass => {
     this.updateVideoTexture();
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this.mType == _utils.MeshType.INSTANCED) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
-    } else {
-      pass.setBindGroup(1, this.modelBindGroup);
-    }
-    pass.setBindGroup(3, this.waterBindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    if (this.material.useBlend == true) pass.setPipeline(this.pipelineTransparent);else pass.setPipeline(this.pipeline);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     for (var ins = 1; ins < this.instanceCount; ins++) {
       if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
@@ -29219,11 +29153,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       console.log(' NULL 2');
       return;
     }
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.material.type == "mirror") pass.setBindGroup(2, this.mirrorBindGroup);
-    pass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
@@ -32346,14 +32276,6 @@ class Materials {
       this.isVideo = false;
     }
     this.videoIsReady = 'NONE';
-    // this.compareSampler = this.device.createSampler({
-    //   compare: 'less-equal',           // safer for shadow comparison
-    //   addressModeU: 'clamp-to-edge',   // prevents UV leaking outside
-    //   addressModeV: 'clamp-to-edge',
-    //   magFilter: 'linear',             // smooth PCF
-    //   minFilter: 'linear',
-    // });
-    // For image textures (standard sampler)
     this.imageSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
@@ -32361,7 +32283,6 @@ class Materials {
       addressModeV: "repeat",
       addressModeW: "repeat"
     });
-    // For external video textures (needs to be filtering sampler too!)
     this.videoSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear'
@@ -32369,13 +32290,11 @@ class Materials {
     // FX effect
     this.postFXModeBuffer = this.device.createBuffer({
       size: 4,
-      // u32 = 4 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    // Dymmy buffer
+    // Dymmy
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
       size: 80,
-      // Must match size in shader
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
@@ -32487,7 +32406,9 @@ class Materials {
     0.0 // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>');
     this.waterBindGroup = this.device.createBindGroup({
+      label: 'waterBG',
       layout: this.waterBindGroupLayout,
       entries: [{
         binding: 0,
@@ -32497,11 +32418,10 @@ class Materials {
       }]
     });
     this.updateWaterParams = (deepColor, shallowColor, waveSpeed, waveScale, waveHeight, fresnelPower, specularPower) => {
-      const data = new Float32Array([deepColor[0], deepColor[1], deepColor[2], waveSpeed, shallowColor[0], shallowColor[1], shallowColor[2], waveScale, waveHeight, fresnelPower, specularPower, 0.0 // padding
-      ]);
+      const data = new Float32Array([deepColor[0], deepColor[1], deepColor[2], waveSpeed, shallowColor[0], shallowColor[1], shallowColor[2], waveScale, waveHeight, fresnelPower, specularPower, 0.0]);
       this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     };
-    this.drawElements = this.drawElementsOrigin;
+    // this.drawElements = this.drawElementsOrigin;
   };
   createDummyTexture(device, size = 256) {
     const data = new Uint8Array(size * size * 4);
@@ -33677,9 +33597,8 @@ class MEMeshObj extends _materials.default {
     if (o.envMapParams !== null) {
       this.envMapParams = o.envMapParams;
     }
-    if (typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
+    this.sceneBGL = o.sceneBGL;
+    console.log('this.sceneBGL , ', this.sceneBGL);
     this.useScale = o.useScale || false;
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8,
@@ -33838,7 +33757,7 @@ class MEMeshObj extends _materials.default {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
       }
 
       // if(this.material.useTextureFromGlb == true) {
@@ -33856,6 +33775,24 @@ class MEMeshObj extends _materials.default {
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
+
+      // 🟢 dummy fallback
+      const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
+      for (let i = 0; i < dummyTangents.length; i += 4) {
+        dummyTangents[i + 0] = 1.0; // T = (1,0,0)
+        dummyTangents[i + 1] = 0.0;
+        dummyTangents[i + 2] = 0.0;
+        dummyTangents[i + 3] = 1.0; // handedness
+      }
+      this.mesh.tangentsBuffer = this.device.createBuffer({
+        label: "tangentsBuffer dummy",
+        size: dummyTangents.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
+      this.mesh.tangentsBuffer.unmap();
+      console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
     }
     // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
 
@@ -34114,9 +34051,6 @@ class MEMeshObj extends _materials.default {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      if (this.sharedSU) {
-        this.sceneBGL = this.sharedSU;
-      }
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
@@ -34424,6 +34358,7 @@ class MEMeshObj extends _materials.default {
     this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
     const isNormalMap = this.material.type === 'normalmap';
     const vertexCode = isNormalMap ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL;
@@ -34434,18 +34369,9 @@ class MEMeshObj extends _materials.default {
     const fragmentModule = this.device.createShaderModule({
       code: fragmentCode
     });
-    // PIPELINE LAYOUT (STATIC PER MESH)
-    // console.log(' PIPELINE LAYOUT (STATIC PER MESH) is video : ', isVideo)
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
-      bindGroupLayouts: [this.sceneBGL,
-      // ✅ group 0
-      isVideo ? this.materialVideoBGL : this.materialBGL,
-      // ✅ group 1
-      this.uniformBufferBindGroupLayout,
-      // ✅ group 2 (model)
-      isMirror ? this.mirrorBindGroupLayout : null // ✅ group 3 optional
-      ].filter(Boolean)
+      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null].filter(Boolean)
     });
     // VERTEX STATE (SHARED)
     const vertexState = {
@@ -34465,7 +34391,8 @@ class MEMeshObj extends _materials.default {
       frontFace: this.primitive.frontFace,
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE PIPELINE
     this.pipeline = pm.getPipeline({
@@ -34604,9 +34531,9 @@ class MEMeshObj extends _materials.default {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -34616,25 +34543,17 @@ class MEMeshObj extends _materials.default {
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
-    // pass.setVertexBuffer(0, this.vertexBuffer);
-    // pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    // pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    // pass.setVertexBuffer(3, this.mesh.jointsBuffer);
-    // pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    // pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // pass.drawIndexed(this.indexCount);
   };
   drawVideoElements = pass => {
-    // if(!this.video || this.video.readyState < 2) return;
-    // this.updateVideoTexture();
-    // pass.setBindGroup(3, this.waterBindGroup);  // REPLACE WITH REAL DUMMY!
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     pass.setVertexBuffer(3, this.mesh.jointsBuffer);
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -34643,17 +34562,14 @@ class MEMeshObj extends _materials.default {
       console.log('NULL2');
       return;
     }
-    // renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    // renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.material.type === "mirror") renderPass.setBindGroup(2, this.mirrorBindGroup);
     renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    if (this.mesh.tangentsBuffer) renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     if (this.objAnim.playing == true) {
@@ -34887,7 +34803,8 @@ function buildPipelineKey({
   cullMode,
   frontFace,
   mirror,
-  normalMap
+  normalMap,
+  isWater
 }) {
   return JSON.stringify({
     v: vertexId,
@@ -34900,7 +34817,8 @@ function buildPipelineKey({
     cull: cullMode,
     face: frontFace,
     mirror: mirror,
-    normalMap: normalMap
+    normalMap: normalMap,
+    isWater: isWater
   });
 }
 class PipelineManager {
@@ -35988,9 +35906,7 @@ class ProceduralMeshObj extends _materials.default {
     this.morphBlend = 0.0;
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     this.shadowsCast = true;
-    if (typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
+    this.sceneBGL = o.sceneBGL;
     if (o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -36293,9 +36209,6 @@ class ProceduralMeshObj extends _materials.default {
       size: 16 * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    if (this.sharedSU) {
-      this.sceneBGL = this.sharedSU;
-    }
     this.bonesBuffer = this.device.createBuffer({
       size: 6400 * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -36551,17 +36464,11 @@ class ProceduralMeshObj extends _materials.default {
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
     const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
     const isNormalMap = this.material.type === 'normalmap';
     const isVideo = this.isVideo === true;
     const layout = this.device.createPipelineLayout({
-      bindGroupLayouts: [this.sceneBGL,
-      // ✅ group 0
-      isVideo ? this.materialVideoBGL : this.materialBGL,
-      // ✅ group 1
-      this.uniformBufferBindGroupLayout,
-      // ✅ group 2 (model)
-      isMirror ? this.mirrorBindGroupLayout : null // ✅ group 3 optional
-      ]
+      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null]
     });
     const vertexState = {
       entryPoint: 'main',
@@ -36583,7 +36490,8 @@ class ProceduralMeshObj extends _materials.default {
       format: 'rgba16float',
       morph: !this.vertexWGSL ? 1 : 0,
       mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -41083,18 +40991,6 @@ struct MirrorIlluminateParams {
 
 const MAX_SPOTLIGHTS = 20u;
 
-// @group(0) @binding(0) var<uniform> scene                  : Scene;
-// @group(0) @binding(1) var          shadowMapArray         : texture_depth_2d_array;
-// @group(0) @binding(2) var          shadowSampler          : sampler_comparison;
-// @group(0) @binding(3) var          meshTexture            : texture_2d<f32>;
-// @group(0) @binding(4) var          meshSampler            : sampler;
-// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
-// @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
-// @group(0) @binding(8) var<uniform> material               : MaterialPBR;
-// @group(0) @binding(9) var normalTexture : texture_2d<f32>;
-// @group(0) @binding(10) var normalSampler : sampler;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -42599,8 +42495,8 @@ const MAX_SPOTLIGHTS = 20u;
 @group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
 @group(1) @binding(3) var metallicRoughnessSampler: sampler;
 @group(1) @binding(4) var<uniform> material: MaterialPBR;
-@group(1) @binding(5) var normalTexture: texture_2d<f32>;
-@group(1) @binding(6) var normalSampler: sampler;
+// @group(1) @binding(5) var normalTexture: texture_2d<f32>;
+// @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -42826,16 +42722,27 @@ struct PBRMaterialData {
 
 const MAX_SPOTLIGHTS = 20u;
 
+// @group(0) @binding(0) var<uniform> scene : Scene;
+// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+// @group(0) @binding(2) var shadowSampler: sampler_comparison;
+// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
+// @group(0) @binding(4) var meshSampler: sampler;
+// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
+// @group(0) @binding(8) var<uniform> material: MaterialPBR;
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -43065,19 +42972,21 @@ struct MirrorIlluminateParams {
 
 const MAX_SPOTLIGHTS = 20u;
 
-@group(0) @binding(0) var<uniform> scene                   : Scene;
-@group(0) @binding(1) var          shadowMapArray          : texture_depth_2d_array;
-@group(0) @binding(2) var          shadowSampler           : sampler_comparison;
-@group(0) @binding(3) var          meshTexture             : texture_2d<f32>;
-@group(0) @binding(4) var          meshSampler             : sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var          metallicRoughnessTex    : texture_2d<f32>;
-@group(0) @binding(7) var          metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material                : MaterialPBR;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
-@group(2) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
-@group(2) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
-@group(2) @binding(2) var          mirrorEnvSampler: sampler;
+@group(3) @binding(0) var<uniform> mirrorParams    : MirrorIlluminateParams;
+@group(3) @binding(1) var          mirrorEnvTex    : texture_2d<f32>;
+@group(3) @binding(2) var          mirrorEnvSampler: sampler;
 
 // ── INSTANCED: adds colorMult at location(4) ──────────────────────────────
 struct FragmentInput {
@@ -43348,10 +43257,15 @@ struct VertexAnimParams {
   _pad7: f32,
 }
 
+// @group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
+// @group(1) @binding(1) var<uniform> bones : Bones;
+// @group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
-@group(1) @binding(1) var<uniform> bones : Bones;
-@group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+@group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
+@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+// @group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -43605,6 +43519,7 @@ struct VertexAnimParams {
 @group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
 @group(1) @binding(1) var<uniform>      bones      : Bones;
 @group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
+
 
 const ANIM_WAVE:  u32 = 1u;
 const ANIM_WIND:  u32 = 2u;
@@ -45948,6 +45863,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.fragmentWaterWGSL = void 0;
 var _meConfig = require("../../me-config");
 let fragmentWaterWGSL = exports.fragmentWaterWGSL = `
+const MAX_SPOTLIGHTS = 20u;
 const PI: f32 = 3.141592653589793;
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
@@ -45989,8 +45905,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 struct PBRMaterialData {
@@ -45999,19 +45915,6 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
-
-@group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-
-// ✅ Graph custom uniforms
 struct WaterParams {
     deepColor     : vec3f,
     waveSpeed     : f32,
@@ -46023,6 +45926,17 @@ struct WaterParams {
     _pad1         : f32,
 };
 
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 @group(3) @binding(0) var<uniform> waterParams: WaterParams;
 
 // Gerstner wave function for realistic water waves
@@ -46041,132 +45955,143 @@ fn gerstnerWave(pos: vec2f, direction: vec2f, steepness: f32, wavelength: f32, t
 
 // Simpler sine wave for smoother animation
 fn sineWave(pos: vec2f, direction: vec2f, amplitude: f32, frequency: f32, time: f32) -> vec3f {
-    let d = normalize(direction);
-    let phase = dot(d, pos) * frequency - time;
-    
-    return vec3f(
-        d.x * amplitude * cos(phase),
-        amplitude * sin(phase),
-        d.y * amplitude * cos(phase)
-    );
+  let d = normalize(direction);
+  let phase = dot(d, pos) * frequency - time;
+  return vec3f(
+      d.x * amplitude * cos(phase),
+      amplitude * sin(phase),
+      d.y * amplitude * cos(phase)
+  );
 }
 
 // Calculate water normal from multiple waves
 fn calculateWaterNormal(worldPos: vec3f, time: f32) -> vec3f {
-    let pos = worldPos.xz * waterParams.waveScale;
-    let t = time * waterParams.waveSpeed;
-    
-    // Use smoother sine waves instead of Gerstner for better animation
-    let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
-    let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
-    let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
-    let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
-    
-    // Sum waves
-    let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
-    
-    // Calculate tangent vectors using small step size
-    let eps = 0.1;
-    let posX = worldPos + vec3f(eps, 0.0, 0.0);
-    let posZ = worldPos + vec3f(0.0, 0.0, eps);
-    
-    let offsetX = (
-        sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
-        sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
-    ) * waterParams.waveHeight;
-    
-    let offsetZ = (
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
-        sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
-    ) * waterParams.waveHeight;
-    
-    let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
-    let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
-    
-    return normalize(cross(tangentZ, tangentX));
+  let pos = worldPos.xz * waterParams.waveScale;
+  let t = time * waterParams.waveSpeed;
+  // Use smoother sine waves instead of Gerstner for better animation
+  let wave1 = sineWave(pos, vec2f(1.0, 0.0), 0.3, 2.0, t);
+  let wave2 = sineWave(pos, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13);
+  let wave3 = sineWave(pos, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87);
+  let wave4 = sineWave(pos, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27);
+  // Sum waves
+  let offset = (wave1 + wave2 + wave3 + wave4) * waterParams.waveHeight;
+  // Calculate tangent vectors using small step size
+  let eps = 0.1;
+  let posX = worldPos + vec3f(eps, 0.0, 0.0);
+  let posZ = worldPos + vec3f(0.0, 0.0, eps);
+  let offsetX = (
+      sineWave(posX.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+      sineWave(posX.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+  ) * waterParams.waveHeight;
+  let offsetZ = (
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(1.0, 0.0), 0.3, 2.0, t) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(0.0, 1.0), 0.25, 1.8, t * 1.13) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(0.707, 0.707), 0.2, 1.5, t * 0.87) +
+      sineWave(posZ.xz * waterParams.waveScale, vec2f(-0.5, 0.866), 0.15, 1.2, t * 1.27)
+  ) * waterParams.waveHeight;
+  let tangentX = normalize(vec3f(eps, offsetX.y - offset.y, 0.0));
+  let tangentZ = normalize(vec3f(0.0, offsetZ.y - offset.y, eps));
+  return normalize(cross(tangentZ, tangentX));
 }
 
 // Fresnel effect for water reflections
 fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, waterParams.fresnelPower);
 }
 
 // PREDEFINED Fragment input
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 // PREDEFINED PBR helpers
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  return PBRMaterialData(baseColor, metallic, roughness);
 }
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-    // Calculate animated water normal
-    let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
-    
-    // View direction
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    
-    // Fresnel effect (0 = looking straight down, 1 = grazing angle)
-    let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
-    
-    // Light direction
-    let lightDir = normalize(scene.lightPos - input.fragPos);
-    
-    // Diffuse lighting
-    let diff = max(dot(waterNormal, lightDir), 0.0);
-    
-    // Specular (sun reflection on water)
-    let halfDir = normalize(lightDir + viewDir);
-    let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
-    
-    // Mix deep and shallow water colors based on fresnel
-    let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
-    
-    // Enhanced lighting for more visible effect
-    let ambient = scene.globalAmbient * waterColor * 0.3;
-    let diffuse = diff * waterColor * 1.2;
-    let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
-    
-    // Enhanced foam on wave peaks
-    // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
-    // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
 
-    // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
-    let isFireMode = f32(waterParams.waveSpeed > 1.5);
+let waterNormal = vec3f(0.0, 1.0, 0.0);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+  let lightDir = normalize(scene.lightPos - input.fragPos);
+  let diff = max(dot(waterNormal, lightDir), 0.0);
+  let halfDir = normalize(lightDir + viewDir);
+  let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+  let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+  let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
+  let diffuse = diff * waterColor * 1.2;
+  let specular = spec * vec3f(1.0) * fresnel * 2.0;
+  let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
+                 sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+  let causticsColor = waterColor * caustics;
+  let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
+  let alpha = mix(0.4, 0.8, fresnel);
+  return vec4f(finalColor, alpha);
 
-    // Water foam — white peaks
-    let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
-    let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
-    // Fire embers — bright yellow-white tips
-    let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
-    let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
-    // Add some caustics-like effect based on waves
-    let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
-                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
-    let causticsColor = waterColor * caustics;
-    
-    // Final color with enhanced effects
-    let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
-    // MUCH more transparent - alpha between 0.2 and 0.5
-    let alpha = mix(0.2, 0.5, fresnel);
-    // Make the color more vibrant so it's visible even when transparent
-    let vibrantColor = finalColor * 1.5;
-    return vec4f(vibrantColor, alpha);
+
+
+//   // Calculate animated water normal
+//   let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
+//   // View direction
+//   let viewDir = normalize(scene.cameraPos - input.fragPos);
+//   // Fresnel effect (0 = looking straight down, 1 = grazing angle)
+//   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
+//   // Light direction
+//   let lightDir = normalize(scene.lightPos - input.fragPos);
+//   // Diffuse lighting
+//   let diff = max(dot(waterNormal, lightDir), 0.0);
+//   // Specular (sun reflection on water)
+//   let halfDir = normalize(lightDir + viewDir);
+//   let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
+//   // Mix deep and shallow water colors based on fresnel
+//   let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
+  
+
+//   // Enhanced lighting for more visible effect
+//   // let ambient = scene.globalAmbient * waterColor * 0.3;
+// let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
+
+//   let diffuse = diff * waterColor * 1.2;
+//   let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
+//   // Enhanced foam on wave peaks
+//   // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
+//   // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+//   // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
+//   let isFireMode = f32(waterParams.waveSpeed > 1.5);
+//   // Water foam — white peaks
+//   let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
+//   let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+//   // Fire embers — bright yellow-white tips
+//   let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
+//   let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
+//   // Add some caustics-like effect based on waves
+//   let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
+//                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+//   let causticsColor = waterColor * caustics;
+//   // Final color with enhanced effects
+//   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
+//   // MUCH more transparent - alpha between 0.2 and 0.5
+//   let alpha = mix(0.2, 0.5, fresnel);
+//   // Make the color more vibrant so it's visible even when transparent
+//   let vibrantColor = finalColor * 1.5;
+//   // return vec4f(vibrantColor, alpha);
+//     // return vec4f(waterParams.deepColor, 1.0);
+//       // return vec4f(waterNormal * 0.5 + 0.5, 1.0); // visualize normal
+//         // return vec4f(input.fragPos * 0.01, 1.0); // scale down to see range
+//         return vec4f(input.fragPos.x * 0.01, input.fragPos.z * 0.01, 0.0, 1.0);
+//   // return vec4f(1.0, 0.0, 0.0, 1.0); // solid red, alpha 1
 }`;
 
 },{"../../me-config":71}],109:[function(require,module,exports){
@@ -58660,7 +58585,7 @@ class MatrixEngineWGPU {
 
     // global
     this.globalSceneUniformBuffer = this.device.createBuffer({
-      label: 'shared sceneUniformBuffer',
+      label: 'Shared[sceneUniformBuffer]',
       size: 192,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
@@ -58671,7 +58596,7 @@ class MatrixEngineWGPU {
         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
         buffer: {
           type: 'uniform'
-        } // sceneUniformBuffer
+        }
       }, {
         binding: 1,
         visibility: GPUShaderStage.FRAGMENT,
@@ -58690,7 +58615,7 @@ class MatrixEngineWGPU {
         visibility: GPUShaderStage.FRAGMENT,
         buffer: {
           type: 'read-only-storage'
-        } // lights / spotlight
+        }
       }]
     });
     this.compareSampler = this.device.createSampler({
@@ -58998,10 +58923,8 @@ class MatrixEngineWGPU {
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
-    o.sharedSU = this.sceneBGL;
+    o.sceneBGL = this.sceneBGL;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    // myMesh1.shadowDepthTextureView = this.shadowArrayView;
-    // myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
     this.mainRenderBundle.push(myMesh1);
@@ -59088,7 +59011,7 @@ class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
-    o.sharedSU = this.sceneBGL;
+    o.sceneBGL = this.sceneBGL;
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
@@ -59450,7 +59373,7 @@ class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineInstanced);
           for (let m of this.shadowBuckets.instanced) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroupInstanced);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -59489,7 +59412,7 @@ class MatrixEngineWGPU {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
+          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -59508,7 +59431,7 @@ class MatrixEngineWGPU {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
+          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -59654,11 +59577,7 @@ class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
-    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sceneBGL = this.sceneBGL;
     let r = [];
     o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
@@ -59787,11 +59706,7 @@ class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
     }
-    if (typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sceneBGL = this.sceneBGL;
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;

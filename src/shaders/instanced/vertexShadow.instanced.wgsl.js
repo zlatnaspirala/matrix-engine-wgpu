@@ -57,6 +57,7 @@ struct VertexAnimParams {
 @group(1) @binding(1) var<uniform>      bones      : Bones;
 @group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
 
+
 const ANIM_WAVE:  u32 = 1u;
 const ANIM_WIND:  u32 = 2u;
 const ANIM_PULSE: u32 = 4u;

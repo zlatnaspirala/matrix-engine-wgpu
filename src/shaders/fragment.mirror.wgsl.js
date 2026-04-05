@@ -68,18 +68,6 @@ struct MirrorIlluminateParams {
 
 const MAX_SPOTLIGHTS = 20u;
 
-// @group(0) @binding(0) var<uniform> scene                  : Scene;
-// @group(0) @binding(1) var          shadowMapArray         : texture_depth_2d_array;
-// @group(0) @binding(2) var          shadowSampler          : sampler_comparison;
-// @group(0) @binding(3) var          meshTexture            : texture_2d<f32>;
-// @group(0) @binding(4) var          meshSampler            : sampler;
-// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var          metallicRoughnessTex   : texture_2d<f32>;
-// @group(0) @binding(7) var          metallicRoughnessSampler : sampler;
-// @group(0) @binding(8) var<uniform> material               : MaterialPBR;
-// @group(0) @binding(9) var normalTexture : texture_2d<f32>;
-// @group(0) @binding(10) var normalSampler : sampler;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;

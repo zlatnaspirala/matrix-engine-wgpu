@@ -11,6 +11,7 @@ export function buildPipelineKey({
   frontFace,
   mirror,
   normalMap,
+  isWater
 }) {
   return JSON.stringify({
     v: vertexId, f: fragmentId,
@@ -19,6 +20,7 @@ export function buildPipelineKey({
     topo: topology, cull: cullMode,
     face: frontFace, mirror: mirror,
     normalMap: normalMap,
+    isWater: isWater
   });
 }
 

@@ -43,9 +43,8 @@ export default class ProceduralMeshObj extends Materials {
     this.morphBlend = 0.0;
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     this.shadowsCast = true;
-    if(typeof o.sharedSU !== null) {
-      this.sharedSU = o.sharedSU;
-    }
+    this.sceneBGL = o.sceneBGL;
+
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -333,9 +332,6 @@ export default class ProceduralMeshObj extends Materials {
       }
     }
     this.modelUniformBuffer = this.device.createBuffer({size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    if(this.sharedSU) {
-      this.sceneBGL = this.sharedSU;
-    }
 
     this.bonesBuffer = this.device.createBuffer({size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.morphBlendBuffer = this.device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
@@ -522,14 +518,15 @@ export default class ProceduralMeshObj extends Materials {
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
     const isMirror = this.material.type === 'mirror';
+    const isWater = this.material.type === 'water';
     const isNormalMap = this.material.type === 'normalmap';
     const isVideo = this.isVideo === true;
     const layout = this.device.createPipelineLayout({
       bindGroupLayouts: [
-        this.sceneBGL,                                   // ✅ group 0
-        isVideo ? this.materialVideoBGL : this.materialBGL, // ✅ group 1
-        this.uniformBufferBindGroupLayout,               // ✅ group 2 (model)
-        (isMirror ? this.mirrorBindGroupLayout : null),  // ✅ group 3 optional
+        this.sceneBGL,
+        isVideo ? this.materialVideoBGL : this.materialBGL,
+        this.uniformBufferBindGroupLayout,
+        (isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null),
       ],
     });
     const vertexState = {
@@ -549,6 +546,7 @@ export default class ProceduralMeshObj extends Materials {
       morph: !this.vertexWGSL ? 1 : 0,
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({

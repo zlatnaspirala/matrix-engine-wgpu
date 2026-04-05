@@ -30,22 +30,10 @@ export default class Materials {
     this.textureCache = textureCache;
     this.glb = glb;
     this.material = material;
-
     if(typeof isVideo !== 'undefined') {
       this.isVideo = true;
-    } else {
-      this.isVideo = false;
-    }
-
+    } else {this.isVideo = false}
     this.videoIsReady = 'NONE';
-    // this.compareSampler = this.device.createSampler({
-    //   compare: 'less-equal',           // safer for shadow comparison
-    //   addressModeU: 'clamp-to-edge',   // prevents UV leaking outside
-    //   addressModeV: 'clamp-to-edge',
-    //   magFilter: 'linear',             // smooth PCF
-    //   minFilter: 'linear',
-    // });
-    // For image textures (standard sampler)
     this.imageSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
@@ -53,19 +41,18 @@ export default class Materials {
       addressModeV: "repeat",
       addressModeW: "repeat",
     });
-    // For external video textures (needs to be filtering sampler too!)
     this.videoSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
     });
     // FX effect
     this.postFXModeBuffer = this.device.createBuffer({
-      size: 4, // u32 = 4 bytes
+      size: 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    // Dymmy buffer
+    // Dymmy
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
-      size: 80, // Must match size in shader
+      size: 80,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
@@ -153,18 +140,11 @@ export default class Materials {
   createBufferForWater = () => {
     this.waterBindGroupLayout = this.device.createBindGroupLayout({
       label: '[Water]BindGroupLayout',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-      }]
+      entries: [{binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}]
     });
     this.waterParamsBuffer = this.device.createBuffer({
       label: '[WaterParams]Buffer',
-      size: 48,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.waterParamsData = new Float32Array([
       0.0, 0.2, 0.4,       // deepColor (vec3f)
@@ -177,7 +157,9 @@ export default class Materials {
       0.0                  // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
+    console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>')
     this.waterBindGroup = this.device.createBindGroup({
+      label: 'waterBG',
       layout: this.waterBindGroupLayout,
       entries: [{
         binding: 0,
@@ -194,12 +176,11 @@ export default class Materials {
         waveHeight,
         fresnelPower,
         specularPower,
-        0.0  // padding
+        0.0
       ]);
       this.device.queue.writeBuffer(this.waterParamsBuffer, 0, data);
     }
-
-    this.drawElements = this.drawElementsOrigin;
+    // this.drawElements = this.drawElementsOrigin;
   }
 
   createDummyTexture(device, size = 256) {
@@ -535,16 +516,16 @@ export default class Materials {
       this.video.addEventListener('canplay', () => {
         // alert('++++');
         if(this.video.readyState >= 3) {
-           alert('++++ > 3 ');
+          alert('++++ > 3 ');
         }
       }, {once: true});
       this.video.addEventListener('canplaythrough', () => {
         console.log('_cideo can playt +++++++++++++++++++++++++++');
-          if(this.video.readyState >= 3) {
-           this.externalTexture = this.device.importExternalTexture({source: this.video});
+        if(this.video.readyState >= 3) {
+          this.externalTexture = this.device.importExternalTexture({source: this.video});
           console.log('++++ > 3   ++++  ' + this.externalTexture);
           if(!this.externalTexture) alert('ERROR ' + this.externalTexture);
-           this.sampler = this.device.createSampler({
+          this.sampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear',
           });

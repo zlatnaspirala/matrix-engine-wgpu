@@ -450,7 +450,7 @@ export default class MatrixEngineWGPU {
 
     // global
     this.globalSceneUniformBuffer = this.device.createBuffer({
-      label: 'shared sceneUniformBuffer',
+      label: 'Shared[sceneUniformBuffer]',
       size: 192,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
@@ -461,7 +461,7 @@ export default class MatrixEngineWGPU {
         {
           binding: 0,
           visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'} // sceneUniformBuffer
+          buffer: {type: 'uniform'}
         },
         {
           binding: 1,
@@ -479,7 +479,7 @@ export default class MatrixEngineWGPU {
         {
           binding: 3,
           visibility: GPUShaderStage.FRAGMENT,
-          buffer: {type: 'read-only-storage'} // lights / spotlight
+          buffer: {type: 'read-only-storage'}
         }
       ]
     });
@@ -750,11 +750,9 @@ export default class MatrixEngineWGPU {
     }
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
-    o.sharedSU = this.sceneBGL;
+    o.sceneBGL = this.sceneBGL;
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    // myMesh1.shadowDepthTextureView = this.shadowArrayView;
-    // myMesh1.shadowVideoView = this.shadowVideoView;
     myMesh1.clearColor = clearColor;
 
     if(o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -809,7 +807,7 @@ export default class MatrixEngineWGPU {
       }
     }
     let AM = this.globalAmbient.slice();
-    o.sharedSU = this.sceneBGL;
+    o.sceneBGL = this.sceneBGL;
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
@@ -1030,7 +1028,7 @@ export default class MatrixEngineWGPU {
           pass.setPipeline(light.shadowPipelineInstanced);
           for(let m of this.shadowBuckets.instanced) {
             pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroupInstanced);
+            pass.setBindGroup(1, m.modelBindGroup);
             m.drawShadows(pass, light);
           }
         }
@@ -1069,7 +1067,7 @@ export default class MatrixEngineWGPU {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if(mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
+          if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1088,7 +1086,7 @@ export default class MatrixEngineWGPU {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if(mesh.material.type == "water") pass.setBindGroup(4, mesh.waterBindGroup);
+          if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1192,11 +1190,7 @@ export default class MatrixEngineWGPU {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
 
-    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+    o.sceneBGL = this.sceneBGL;
 
     let r = [];
     o.textureCache = this.textureCache;
@@ -1281,11 +1275,9 @@ export default class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
     }
-    if(typeof o.sharedSU !== 'undefined' && o.sharedSU === false) {
-      o.sharedSU = null;
-    } else {
-      o.sharedSU = this.globalSceneUniformBuffer;
-    }
+
+    o.sceneBGL = this.sceneBGL;
+
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
