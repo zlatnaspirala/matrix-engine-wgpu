@@ -33598,7 +33598,6 @@ class MEMeshObj extends _materials.default {
       this.envMapParams = o.envMapParams;
     }
     this.sceneBGL = o.sceneBGL;
-    console.log('this.sceneBGL , ', this.sceneBGL);
     this.useScale = o.useScale || false;
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8,
@@ -33757,7 +33756,7 @@ class MEMeshObj extends _materials.default {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
       }
 
       // if(this.material.useTextureFromGlb == true) {
@@ -33792,7 +33791,7 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
       this.mesh.tangentsBuffer.unmap();
-      console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+      // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
     }
     // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
 
@@ -40220,15 +40219,17 @@ struct PBRMaterialData {
 };
 const MAX_SPOTLIGHTS = 20u;
 
-@group(0) @binding(0) var<uniform> scene           : Scene;
-@group(0) @binding(1) var shadowMapArray           : texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler            : sampler_comparison;
-@group(0) @binding(3) var meshTexture              : texture_2d<f32>;
-@group(0) @binding(4) var meshSampler              : sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex     : texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler : sampler;
-@group(0) @binding(8) var<uniform> material        : MaterialPBR;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @builtin(position)                     clipPos   : vec4f,
@@ -40592,9 +40593,9 @@ struct VertexAnimParams {
 }
 
 @group(0) @binding(0) var<uniform> scene: Scene;
-@group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(1) @binding(3) var<uniform> morphBlend: f32;
+@group(2) @binding(0) var<uniform> model: Model;
+@group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(2) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -42722,16 +42723,6 @@ struct PBRMaterialData {
 
 const MAX_SPOTLIGHTS = 20u;
 
-// @group(0) @binding(0) var<uniform> scene : Scene;
-// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-// @group(0) @binding(2) var shadowSampler: sampler_comparison;
-// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
-// @group(0) @binding(4) var meshSampler: sampler;
-// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
-// @group(0) @binding(8) var<uniform> material: MaterialPBR;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -43257,15 +43248,10 @@ struct VertexAnimParams {
   _pad7: f32,
 }
 
-// @group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
-// @group(1) @binding(1) var<uniform> bones : Bones;
-// @group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(2) @binding(1) var<uniform> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
-// @group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;

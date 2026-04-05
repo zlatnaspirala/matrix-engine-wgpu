@@ -40,15 +40,17 @@ struct PBRMaterialData {
 };
 const MAX_SPOTLIGHTS = 20u;
 
-@group(0) @binding(0) var<uniform> scene           : Scene;
-@group(0) @binding(1) var shadowMapArray           : texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler            : sampler_comparison;
-@group(0) @binding(3) var meshTexture              : texture_2d<f32>;
-@group(0) @binding(4) var meshSampler              : sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex     : texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler : sampler;
-@group(0) @binding(8) var<uniform> material        : MaterialPBR;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @builtin(position)                     clipPos   : vec4f,
@@ -413,9 +415,9 @@ struct VertexAnimParams {
 }
 
 @group(0) @binding(0) var<uniform> scene: Scene;
-@group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(1) @binding(3) var<uniform> morphBlend: f32;
+@group(2) @binding(0) var<uniform> model: Model;
+@group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(2) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;

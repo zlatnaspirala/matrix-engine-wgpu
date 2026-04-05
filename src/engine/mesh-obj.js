@@ -56,7 +56,6 @@ export default class MEMeshObj extends Materials {
     }
 
     this.sceneBGL = o.sceneBGL;
-    console.log('this.sceneBGL , ', this.sceneBGL)
     this.useScale = o.useScale || false;
 
     this.uvScaleBuffer = this.device.createBuffer({
@@ -227,7 +226,7 @@ export default class MEMeshObj extends Materials {
         });
         new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
         this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+        // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
       }
 
       // if(this.material.useTextureFromGlb == true) {
@@ -262,7 +261,7 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
       this.mesh.tangentsBuffer.unmap();
-      console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+      // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
     }
     // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
 

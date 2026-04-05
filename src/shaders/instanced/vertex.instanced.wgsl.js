@@ -62,15 +62,10 @@ struct VertexAnimParams {
   _pad7: f32,
 }
 
-// @group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
-// @group(1) @binding(1) var<uniform> bones : Bones;
-// @group(1) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(2) @binding(1) var<uniform> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
-// @group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
