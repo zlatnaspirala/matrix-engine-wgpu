@@ -167,6 +167,7 @@ export default class EditorHud {
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
       <!--div id="start-prod-build" class="drop-item">🛠️ Build for production</div-->
+      <div id="load-new-project" class="drop-item">Exit project - Goto landpage</div>
       </div>
     </div>
 
@@ -376,6 +377,12 @@ export default class EditorHud {
     };
     if(byId('start-refresh')) this.toolTip.attachTooltip(byId('start-refresh'), "Simple refresh page.");
 
+    alert()
+    byId('load-new-project').onclick = () => {
+      console.log("Go to editorX landing page...");
+      location.href = 'matrix-engine.html';
+    };
+    
 
     // byId('start-prod-build').onclick = () => {
     //   //
