@@ -1,6 +1,7 @@
-import {LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
-import {MEConfig} from "../me-config";
 
+import {MEConfig} from "../../me-config";
+import {LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../utils";
+ 
 export default class MatrixAmmo {
   constructor(options = {roundDimensionX: 10, roundDimensionY: 10, gravity: -10}) {
     this.options = options;
