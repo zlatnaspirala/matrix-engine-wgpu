@@ -319,6 +319,8 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff(callback) {
 
+    this.startTime = performance.now() / 1000;
+
     addEventListener('update-pipeine-buckets', () => {
       this.buildRenderBuckets(this.mainRenderBundle);
       this.getCamera()._dirtyAngle = true;
@@ -337,7 +339,7 @@ export default class MatrixEngineWGPU {
       this._sceneData[41] = this.globalAmbient[1];
       this._sceneData[42] = this.globalAmbient[2];
       this._sceneData[43] = 0.0;
-      this._sceneData[44] = this.time;
+      // this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this._sceneData[45] = dt;
       this._sceneData[46] = 0;
       this._sceneData[47] = 0;
@@ -809,7 +811,7 @@ export default class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh.shadowDepthTextureView = this.shadowArrayView;
+    // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
@@ -1010,6 +1012,8 @@ export default class MatrixEngineWGPU {
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
+      this._sceneData[44] = (performance.now() - this.startTime) / 1000;
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
 
@@ -1053,9 +1057,6 @@ export default class MatrixEngineWGPU {
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
         if(mesh.isVideo) mesh.updateVideoTexture();
-        if(!mesh.pipeline || !mesh.pipelineTransparent) {
-          mesh.shadowDepthTextureView = this.shadowArrayView;
-        }
       }
 
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
@@ -1213,7 +1214,7 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
+        // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);

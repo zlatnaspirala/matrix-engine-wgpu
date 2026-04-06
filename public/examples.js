@@ -2000,7 +2000,7 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'water',
+          type: 'standard',
           useBlend: true
         },
         // envMapParams: {
@@ -2392,7 +2392,7 @@ var mazeGame = function () {
           }
         }
       }
-      app.cameras.firstPersonCamera.movementSpeed = 0.05;
+      app.cameras.firstPersonCamera.movementSpeed = 0.1;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
     }
   });
@@ -46007,8 +46007,7 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-
-let waterNormal = vec3f(0.0, 1.0, 0.0);
+  let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
   let viewDir = normalize(scene.cameraPos - input.fragPos);
   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
   let lightDir = normalize(scene.lightPos - input.fragPos);
@@ -46018,68 +46017,22 @@ let waterNormal = vec3f(0.0, 1.0, 0.0);
   let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
   let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
   let diffuse = diff * waterColor * 1.2;
-  let specular = spec * vec3f(1.0) * fresnel * 2.0;
-  let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
-                 sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+  let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
+  // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
+  let isFireMode = f32(waterParams.waveSpeed > 1.5);
+  // Water foam — white peaks
+  let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
+  let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
+  // Fire embers — bright yellow-white tips
+  let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
+  let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
+  let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
+                  sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
   let causticsColor = waterColor * caustics;
-
-  // let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
-  let finalColor = waterColor * 1.5;
-  let alpha = mix(0.4, 0.8, fresnel);
-  return vec4f(finalColor, alpha);
-
-
-
-//   // Calculate animated water normal
-//   let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
-//   // View direction
-//   let viewDir = normalize(scene.cameraPos - input.fragPos);
-//   // Fresnel effect (0 = looking straight down, 1 = grazing angle)
-//   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
-//   // Light direction
-//   let lightDir = normalize(scene.lightPos - input.fragPos);
-//   // Diffuse lighting
-//   let diff = max(dot(waterNormal, lightDir), 0.0);
-//   // Specular (sun reflection on water)
-//   let halfDir = normalize(lightDir + viewDir);
-//   let spec = pow(max(dot(waterNormal, halfDir), 0.0), waterParams.specularPower);
-//   // Mix deep and shallow water colors based on fresnel
-//   let waterColor = mix(waterParams.deepColor, waterParams.shallowColor, fresnel * 0.5 + 0.5);
-  
-
-//   // Enhanced lighting for more visible effect
-//   // let ambient = scene.globalAmbient * waterColor * 0.3;
-// let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
-
-//   let diffuse = diff * waterColor * 1.2;
-//   let specular = spec * vec3f(1.0, 1.0, 1.0) * fresnel * 2.0;
-//   // Enhanced foam on wave peaks
-//   // let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8;
-//   // let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
-//   // WITH this — mode flag based on waveSpeed (fast = fire, slow = water):
-//   let isFireMode = f32(waterParams.waveSpeed > 1.5);
-//   // Water foam — white peaks
-//   let foamAmount = pow(max(waterNormal.y - 0.6, 0.0), 2.0) * 0.8 * (1.0 - isFireMode);
-//   let foam = vec3f(1.0, 1.0, 1.0) * foamAmount;
-//   // Fire embers — bright yellow-white tips
-//   let emberAmount = pow(max(waterNormal.y - 0.5, 0.0), 1.5) * 2.0 * isFireMode;
-//   let ember = vec3f(1.0, 0.95, 0.5) * emberAmount;
-//   // Add some caustics-like effect based on waves
-//   let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 
-//                   sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
-//   let causticsColor = waterColor * caustics;
-//   // Final color with enhanced effects
-//   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
-//   // MUCH more transparent - alpha between 0.2 and 0.5
-//   let alpha = mix(0.2, 0.5, fresnel);
-//   // Make the color more vibrant so it's visible even when transparent
-//   let vibrantColor = finalColor * 1.5;
-//   // return vec4f(vibrantColor, alpha);
-//     // return vec4f(waterParams.deepColor, 1.0);
-//       // return vec4f(waterNormal * 0.5 + 0.5, 1.0); // visualize normal
-//         // return vec4f(input.fragPos * 0.01, 1.0); // scale down to see range
-//         return vec4f(input.fragPos.x * 0.01, input.fragPos.z * 0.01, 0.0, 1.0);
-//   // return vec4f(1.0, 0.0, 0.0, 1.0); // solid red, alpha 1
+  let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
+  let alpha = mix(0.2, 0.5, fresnel);
+  let vibrantColor = finalColor * 1.5;
+  return vec4f(vibrantColor, alpha);
 }`;
 
 },{"../../me-config":72}],109:[function(require,module,exports){
@@ -58453,6 +58406,7 @@ class MatrixEngineWGPU {
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
+    this.startTime = performance.now() / 1000;
     addEventListener('update-pipeine-buckets', () => {
       this.buildRenderBuckets(this.mainRenderBundle);
       this.getCamera()._dirtyAngle = true;
@@ -58470,7 +58424,7 @@ class MatrixEngineWGPU {
       this._sceneData[41] = this.globalAmbient[1];
       this._sceneData[42] = this.globalAmbient[2];
       this._sceneData[43] = 0.0;
-      this._sceneData[44] = this.time;
+      // this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this._sceneData[45] = dt;
       this._sceneData[46] = 0;
       this._sceneData[47] = 0;
@@ -59001,7 +58955,7 @@ class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh.shadowDepthTextureView = this.shadowArrayView;
+    // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if (o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
@@ -59344,6 +59298,8 @@ class MatrixEngineWGPU {
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
+      this._sceneData[44] = (performance.now() - this.startTime) / 1000;
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
@@ -59387,9 +59343,6 @@ class MatrixEngineWGPU {
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();
-        if (!mesh.pipeline || !mesh.pipelineTransparent) {
-          mesh.shadowDepthTextureView = this.shadowArrayView;
-        }
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -59577,7 +59530,7 @@ class MatrixEngineWGPU {
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
+        // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);

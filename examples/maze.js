@@ -69,7 +69,7 @@ export var mazeGame = function() {
         }
       }
 
-      app.cameras.firstPersonCamera.movementSpeed = 0.05;
+      app.cameras.firstPersonCamera.movementSpeed = 0.1;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
     }
 
