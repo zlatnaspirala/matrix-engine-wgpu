@@ -25,7 +25,7 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'water', useBlend: true},
+        material: {type: 'standard', useBlend: true},
         // envMapParams: {
         //   baseColorMix: 0.1,                // CLEAR SKY
         //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
