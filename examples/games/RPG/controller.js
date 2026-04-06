@@ -20,10 +20,16 @@ export class Controller {
   constructor(core) {
     this.core = core;
     this.canvas = this.core.canvas;
-
     this.dragStart = null;
     this.dragEnd = null;
     this.selecting = false;
+
+    this.onMouseTargetEvent = new CustomEvent(`onMouseTarget`, 
+      { detail: {type: 'normal', x: 0, y: 0, z: 0}}
+    );
+    this.navigateFriendlyCreepsEvent = new CustomEvent('navigate-friendly_creeps', {detail: 'test'});
+    this.setWalkEvent = new CustomEvent('set-walk');
+    this.onSelectCharacterEvent = new CustomEvent("onSelectCharacter", {detail: 'floor'});
 
     this.canvas.addEventListener('mousedown', (e) => {
       if(e.button === 2) { // right m
@@ -58,33 +64,24 @@ export class Controller {
       console.log('ray.hit.event detected : ', hitObject.name);
 
       if(e.detail.hitObject.name == 'ground') {
-        dispatchEvent(new CustomEvent(`onMouseTarget`, {
-          detail: {
-            type: 'normal',
-            x: hitPoint[0],
-            y: hitPoint[1],
-            z: hitPoint[2]
-          }
-        }));
+        this.onMouseTargetEvent.detail.type = 'normal';
+        this.onMouseTargetEvent.detail.x = hitPoint[0];
+        this.onMouseTargetEvent.detail.y = hitPoint[1];
+        this.onMouseTargetEvent.detail.z = hitPoint[2];
+        dispatchEvent(this.onMouseTargetEvent);
         this.core.localHero.heroFocusAttackOn = null;
         // return;
       } else if(this.core.enemies && this.core.enemies.isEnemy(e.detail.hitObject.name)) {
-        dispatchEvent(new CustomEvent(`onMouseTarget`, {
-          detail: {
-            type: 'attach',
-            x: e.detail.hitObject.position.x,// hitPoint[0], blocked by colision observer
-            y: e.detail.hitObject.position.y,
-            z: e.detail.hitObject.position.z
-          }
-        }));
+        this.onMouseTargetEvent.detail.type = 'attach';
+        this.onMouseTargetEvent.detail.x = e.detail.hitObject.position.x;
+        this.onMouseTargetEvent.detail.y = e.detail.hitObject.position.y;
+        this.onMouseTargetEvent.detail.z = e.detail.hitObject.position.z;
+        dispatchEvent(this.onMouseTargetEvent);
       } else {
-        // for now
-
         if(app.net.virtualEmiter != null) {
           console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
-          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+          dispatchEvent(this.navigateFriendlyCreepsEvent);
         }
-
         // must be friendly objs
         return;
       }
@@ -101,8 +98,7 @@ export class Controller {
         // after all check is it eneimy
         this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
-        // cases for magic ->>>>>>>>>>>>>>>>>>>>>
-        // distance attack
+        // cases for magic // distance attack
         if(testDistance < this.distanceForLongAction) {
           console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]")
           this.core.localHero.setAttack(e.detail.hitObject);
@@ -124,7 +120,7 @@ export class Controller {
       }
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
-      dispatchEvent(new CustomEvent('set-walk'));
+      dispatchEvent(this.setWalkEvent);
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       // app.net.send({
@@ -153,13 +149,11 @@ export class Controller {
       // Security stuff
       if(window.innerHeight < window.outerHeight) {
         let test = window.outerHeight - window.innerHeight;
-        // 87 person comp case -> addressbar ~~~
         if(test > 100) {
           console.log('BAN', test);
           location.assign('https://maximumroulette.com');
         }
       }
-
       if(window.innerWidth < window.outerWidth) {
         let testW = window.outerWidth - window.innerWidth;
         if(testW > 100) {
@@ -243,17 +237,17 @@ export class Controller {
         // deplaced
         // object.setSelectedEffect(true);
         this.selected.push(object);
-        byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name}))
+        this.onSelectCharacterEvent.detail = object.name;
+        byId('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
       } else {
         if(this.selected.indexOf(object) !== -1) {
           this.selected.splice(this.selected.indexOf(object), 1)
           // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
         }
-        // deplaced
-        // object.setSelectedEffect(false);
+        // deplaced object.setSelectedEffect(false);
       }
     }
-    console.log("Selected:", this.selected.map(o => o.name));
+    console.info("Selected:", this.selected.map(o => o.name));
   }
 
   activateVisualRect() {

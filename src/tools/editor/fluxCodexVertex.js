@@ -82,6 +82,11 @@ export default class FluxCodexVertex {
       zoom: 1
     };
 
+    // cache
+    this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
+      detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
+    });
+
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
       // stop sepcial onDraw node
@@ -1026,9 +1031,9 @@ export default class FluxCodexVertex {
 
     if(node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
-      // console.log('!TEST! ??? BEFORE')
+      console.log('!TEST! ??? BEFORE   ', select)
       if(select) {
-        console.log('!TEST! ???')
+        console.log('!TEST! ??? exist')
         // const objects = spec.accessObject || [];
         // objects.forEach(obj => {
         //   const opt = document.createElement("option");
@@ -3130,18 +3135,12 @@ LIST OF INTEREST OBJECT:
         this.notifyVariableChanged("object", val);
       }
 
-      // ? not tested in last ver
-      document.dispatchEvent(
-        new CustomEvent("fluxcodex.field.change", {
-          detail: {
-            nodeId: node.id,
-            nodeType: node.type,
-            fieldKey: field.key,
-            fieldType: field.type,
-            value: field.value,
-          },
-        })
-      );
+      this.fluxcodexFieldChange.detail.nodeId = node.id;
+      this.fluxcodexFieldChange.detail.nodeType = node.type;
+      this.fluxcodexFieldChange.detail.fieldKey = field.key;
+      this.fluxcodexFieldChange.detail.fieldType = field.type;
+      this.fluxcodexFieldChange.detail.value = field.value;
+      document.dispatchEvent(this, this.fluxcodexFieldChange);
     };
 
     input.onkeydown = e => {
@@ -3491,9 +3490,9 @@ LIST OF INTEREST OBJECT:
     if(node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
       const objName = this._getSceneSelectedName(node);
       if(!objName) return undefined;
-      //repopulate
+      // repopulate
       const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
-      const selects = dom.querySelectorAll("select"); // returns NodeList
+      const selects = dom.querySelectorAll("select");
       let select = selects[0];
       select.innerHTML = ``;
       if(select) {
@@ -4942,6 +4941,8 @@ LIST OF INTEREST OBJECT:
 
   compileGraph() {
     // this is save !!!
+    console.log(">>>>>SAVE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", this.nodes)
+
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -5081,6 +5082,7 @@ LIST OF INTEREST OBJECT:
 
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph)
     if(saved || app.graph) {
       try {
         let data;

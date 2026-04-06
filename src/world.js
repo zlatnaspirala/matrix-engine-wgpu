@@ -24,8 +24,10 @@ import {MANABarEffect} from "./engine/effects/mana-bar.js";
 import {PointerEffect} from "./engine/effects/pointerEffect.js";
 import {FlameEffect} from "./engine/effects/flame.js";
 import ProceduralMeshObj, {MeshMorpher} from "./engine/procedural-mesh.js";
-import {FOUNTAIN_COLUMN_TOP, fountainBasinConfig, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainStructureConfig} from "./engine/procedures/fontana.js";
+import {FOUNTAIN_COLUMN_TOP, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainStructureConfig} from "./engine/procedures/fontana.js";
+
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
+
 import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
