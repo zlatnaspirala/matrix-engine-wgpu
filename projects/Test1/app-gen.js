@@ -582,15 +582,21 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_2 updatePosx
  
+   // ME START REEL_TOP updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').position.SetX(0);
+ }, 800);
+ // ME END REEL_TOP updatePosx
+ 
    // ME START REEL_TOP updatePosz
  setTimeout(() => {
-  app.getSceneObjectByName('REEL_TOP').position.SetZ(-19.232895546643668);
+  app.getSceneObjectByName('REEL_TOP').position.SetZ(-20);
  }, 800);
  // ME END REEL_TOP updatePosz
  
   // ME START REEL_TOP updatePosy
  setTimeout(() => {
-  app.getSceneObjectByName('REEL_TOP').position.SetY(3);
+  app.getSceneObjectByName('REEL_TOP').position.SetY(3.1199999999999997);
  }, 800);
  // ME END REEL_TOP updatePosy
  
