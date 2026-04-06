@@ -1178,18 +1178,15 @@ var fontana = function () {
       });
       fontana.lightContainer[0].setPosition(0, 17, -10);
       fontana.lightContainer[0].setTarget(0, 0, -10);
-
-      // var TEST = fontana.getSceneObjectByName('cube2');
       setTimeout(() => {
-        // app.activateBloomEffect();
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 5;
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(5);
       }, 800);
     }
     fontana.canvas.addEventListener("ray.hit.event", e => {
-      console.log('ray.hit.event detected');
+      // console.log('ray.hit.event');
       if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
     });
   });
@@ -1737,6 +1734,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
+ * 
+ * Code is absolute free commercials.
  **/
 function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
@@ -1759,10 +1758,10 @@ function loadGLBLoader() {
       scale: [120, 0.5, 120]
     });
     setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 35;
+      app.cameras.WASD.setYaw(-0.03);
+      app.cameras.WASD.setPitch(-0.49);
+      app.cameras.WASD.setZ(0);
+      app.cameras.WASD.setY(35);
       app.cameras.WASD._dirtyAngle = true;
     }, 1000);
 
@@ -1949,11 +1948,8 @@ function loadGLBLoader() {
       // app.bloomPass.setIntensity(0.25);
     }
   });
-  // just for dev
   window.app = TEST_ANIM;
 }
-
-// loadGLBLoader()
 
 },{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/world.js":121}],7:[function(require,module,exports){
 "use strict";
@@ -2183,9 +2179,6 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjsSequence = function () {
-  // THIS EXAMPLE GIVE EXSTRIME GOOD PERFOMANCE (ALSO ON MOBILE)
-  // IST IS EXSPECTED OPOSITY
-  // PROBABLY SWICTHING PIPELINE COST IN WEBGPU
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
@@ -2262,10 +2255,10 @@ var loadObjsSequence = function () {
         objAnim: objAnim
       });
       setTimeout(() => {
-        app.cameras.WASD.pitch = -0.26;
-        app.cameras.WASD.yaw = -0.06;
-        app.cameras.WASD.position[1] = 15;
-        app.cameras.WASD.position[2] = 11;
+        app.cameras.WASD.setPitch(-0.26);
+        app.cameras.WASD.setYaw(-0.06);
+        app.cameras.WASD.setY(15);
+        app.cameras.WASD.setZ(11);
         app.cameras.WASD._dirtyAngle = true;
         app.getSceneObjectByName('swat').objAnim.play('walk');
       }, 200);
@@ -2457,7 +2450,6 @@ var myLights = function () {
     // pink
     [1.0, 0.1, 0.4] // rose
     ];
-
     // Ground
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/blender/cube.obj"
@@ -2483,7 +2475,6 @@ var myLights = function () {
     }, {
       scale: [30, 0.5, 30]
     });
-
     // GLB monster
     const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
     myLights.addGlbObjInctance({
@@ -2535,9 +2526,9 @@ var myLights = function () {
       monster.updateInstances(5);
       monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
-      myLights.cameras.WASD.yaw = -0.03;
-      myLights.cameras.WASD.pitch = -0.35;
-      myLights.cameras.WASD.position = [0, 8, 5];
+      myLights.cameras.WASD.setYaw(-0.03);
+      myLights.cameras.WASD.setPitch(-0.35);
+      myLights.cameras.WASD.setPosition(0, 8, 5);
     }, 800);
   });
   window.app = myLights;
@@ -2682,15 +2673,11 @@ var physicsPlayground = function () {
           vertices: m.reel.vertices
         }
       });
-
-      // setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 3.76;
+      app.cameras.WASD.setYaw(-0.03);
+      app.cameras.WASD.setPitch(-0.49);
+      app.cameras.WASD.setZ(0);
+      app.cameras.WASD.setY(3.76);
       app.cameras.WASD._dirtyAngle = true;
-      // }, 1000);
-
       physicsPlayground.addMeshObj({
         material: {
           type: 'standard'
@@ -3209,7 +3196,6 @@ var procMesh = function () {
       };
       runChain(0);
       procMesh.lightContainer[0].intensity = 10;
-      // procMesh.activateBloomEffect();
       procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1);
       procMesh.lightContainer[0].behavior.value_ = -1;
       procMesh.lightContainer[0].updater.push(light => {
@@ -3219,15 +3205,15 @@ var procMesh = function () {
       procMesh.lightContainer[0].setPosition(0, 17, -10);
       procMesh.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 5;
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(5);
         app.cameras.WASD._dirtyAngle = true;
       }, 800);
     }
     procMesh.canvas.addEventListener("ray.hit.event", e => {
-      console.log('ray.hit.event detected');
+      // console.log('ray.hit.event');
       if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
     });
   });
@@ -3713,9 +3699,9 @@ var snakeLights = function () {
     }, null, glbFile);
     app.activateBloomEffect();
     setTimeout(() => {
-      app.cameras.WASD.yaw = 0;
-      app.cameras.WASD.pitch = -0.55;
-      app.cameras.WASD.position = [CENTER.x, 22, CENTER.z + 26];
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(-0.55);
+      app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
     }, 800);
   });
   window.app = app;
@@ -3754,9 +3740,8 @@ var loadVideoTexture = function () {
     videoTexture.addLight();
     (0, _raycast.addRaycastsAABBListener)();
     videoTexture.canvas.addEventListener("ray.hit.event", e => {
-      console.log('test ray after shadows merge');
+      console.log('*********');
     });
-    console.log('test AmmoReady attach');
     addEventListener('AmmoReady', () => {
       (0, _loaderObj.downloadMeshes)({
         piramyd: "./res/meshes/blender/piramyd.obj",
@@ -3843,10 +3828,10 @@ var loadVideoTexture = function () {
       //   src: 'res/videos/tunel.mp4'
       // });
       setTimeout(() => {
-        videoTexture.cameras.WASD.yaw = -0.03;
-        videoTexture.cameras.WASD.pitch = -0.49;
-        videoTexture.cameras.WASD.position[2] = 10;
-        videoTexture.cameras.WASD.position[1] = 5;
+        videoTexture.cameras.WASD.setYaw(-0.03);
+        videoTexture.cameras.WASD.setPitch(-0.49);
+        videoTexture.cameras.WASD.setZ(10);
+        videoTexture.cameras.WASD.setY(5);
         videoTexture.buildRenderBuckets(videoTexture.mainRenderBundle);
       }, 1000);
     }
@@ -22561,7 +22546,7 @@ class FirstPersonCamera {
         let dx = 0,
           dy = 0;
         if (ce.pointerType === 'mouse') {
-          if ((ce.buttons & 1) === 0) continue;
+          // if((ce.buttons & 1) === 0) continue;
           dx = ce.movementX * this.MOUSE_SENS;
           dy = ce.movementY * this.MOUSE_SENS;
         } else {
@@ -32250,13 +32235,13 @@ var _fragmentMirror = require("../shaders/fragment.mirror.wgsl");
 var _utils = require("./utils");
 var _fragmentGpt = require("../shaders/fragment.gpt.wgsl");
 var _fragmentWgsl5 = require("../shaders/fragment.wgsl.noCut");
-var _fontana = require("../shaders/fontana/fontana.wgsl");
 var _mini = require("../shaders/minimalist/mini.wgsl");
 var _miniA = require("../shaders/minimalist/mini-a.wgsl");
 var _midA = require("../shaders/minimalist/mid-a.wgsl");
 var _hybrid = require("../shaders/minimalist/hybrid.wgsl");
 var _colorA = require("../shaders/minimalist/color-a.wgsl");
 var _colorB = require("../shaders/minimalist/color-b.wgsl");
+var _fontana = require("../shaders/fontana/fontana.wgsl");
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -32626,7 +32611,7 @@ class Materials {
     } else if (this.material.type === "free") {
       return _fragmentWgsl5.fragmentWGSLNoCut;
     } else if (this.material.type === "fontana") {
-      return _fontana.fountainFragmentWGSL;
+      return _fontana.fountainBasinFragmentWGSL;
     } else if (this.material.type === "mini") {
       return _mini.miniWGSL;
     } else if (this.material.type === "minia") {
@@ -47331,7 +47316,7 @@ class Editor {
       this.client = new _client.MEEditorClient(this.check(a), projName);
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
-        console.log("MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
+        console.log("123 MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
         this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager, projName, this.toolTip);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
@@ -51103,9 +51088,9 @@ class FluxCodexVertex {
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
     if (node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
-      // console.log('!TEST! ??? BEFORE')
+      console.log('!TEST! ??? BEFORE   ', select);
       if (select) {
-        console.log('!TEST! ???');
+        console.log('!TEST! ??? exist');
         // const objects = spec.accessObject || [];
         // objects.forEach(obj => {
         //   const opt = document.createElement("option");
@@ -54622,9 +54607,9 @@ LIST OF INTEREST OBJECT:
     if (node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
       const objName = this._getSceneSelectedName(node);
       if (!objName) return undefined;
-      //repopulate
+      // repopulate
       const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
-      const selects = dom.querySelectorAll("select"); // returns NodeList
+      const selects = dom.querySelectorAll("select");
       let select = selects[0];
       select.innerHTML = ``;
       if (select) {
@@ -55988,6 +55973,7 @@ LIST OF INTEREST OBJECT:
   }
   compileGraph() {
     // this is save !!!
+    console.log(">>>>>SAVE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -56114,6 +56100,7 @@ LIST OF INTEREST OBJECT:
   }
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph);
     if (saved || app.graph) {
       try {
         let data;
@@ -56745,7 +56732,6 @@ class EditorHud {
       location.reload(true);
     };
     if ((0, _utils.byId)('start-refresh')) this.toolTip.attachTooltip((0, _utils.byId)('start-refresh'), "Simple refresh page.");
-    alert();
     (0, _utils.byId)('load-new-project').onclick = () => {
       console.log("Go to editorX landing page...");
       location.href = 'matrix-engine.html';
@@ -59404,7 +59390,7 @@ class MatrixEngineWGPU {
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if (effect.enabled === false) continue;
+            if (effect == null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(transPass, mesh, viewProjMatrix);
           }
@@ -59695,9 +59681,7 @@ class MatrixEngineWGPU {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
           setTimeout(() => {
-            document.dispatchEvent(new CustomEvent('updateSceneContainer', {
-              detail: {}
-            }));
+            document.dispatchEvent(this.usEvent);
           }, 50);
         }, 200);
         c++;

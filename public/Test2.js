@@ -2688,7 +2688,6 @@ var FirstPersonCamera = class _FirstPersonCamera {
       for (const ce of events) {
         let dx = 0, dy = 0;
         if (ce.pointerType === "mouse") {
-          if ((ce.buttons & 1) === 0) continue;
           dx = ce.movementX * this.MOUSE_SENS;
           dy = ce.movementY * this.MOUSE_SENS;
         } else {
