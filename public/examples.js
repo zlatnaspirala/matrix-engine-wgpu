@@ -46019,12 +46019,17 @@ let waterNormal = vec3f(0.0, 1.0, 0.0);
   let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
   let diffuse = diff * waterColor * 1.2;
   let specular = spec * vec3f(1.0) * fresnel * 2.0;
-  let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
-                 sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+  // let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
+                //  sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
+
+
+  let s1 = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 0.5 + 0.5;
+  let s2 = sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.5 + 0.5;  
+  let caustics = s1 * s2 * 0.3 + 0.1;  // range [0.1, 0.4]
   let causticsColor = waterColor * caustics;
 
   // let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
-  let finalColor = waterColor * 1.5;
+  let finalColor = causticsColor * 1.5;
   let alpha = mix(0.4, 0.8, fresnel);
   return vec4f(finalColor, alpha);
 
@@ -58453,6 +58458,7 @@ class MatrixEngineWGPU {
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", _utils.LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
+    this.startTime = performance.now() / 1000;
     addEventListener('update-pipeine-buckets', () => {
       this.buildRenderBuckets(this.mainRenderBundle);
       this.getCamera()._dirtyAngle = true;
@@ -58470,7 +58476,7 @@ class MatrixEngineWGPU {
       this._sceneData[41] = this.globalAmbient[1];
       this._sceneData[42] = this.globalAmbient[2];
       this._sceneData[43] = 0.0;
-      this._sceneData[44] = this.time;
+      // this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this._sceneData[45] = dt;
       this._sceneData[46] = 0;
       this._sceneData[47] = 0;
@@ -59001,7 +59007,7 @@ class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh.shadowDepthTextureView = this.shadowArrayView;
+    // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
     if (o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
@@ -59344,6 +59350,8 @@ class MatrixEngineWGPU {
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
+      this._sceneData[44] = (performance.now() - this.startTime) / 1000;
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
@@ -59387,9 +59395,6 @@ class MatrixEngineWGPU {
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();
-        if (!mesh.pipeline || !mesh.pipelineTransparent) {
-          mesh.shadowDepthTextureView = this.shadowArrayView;
-        }
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -59577,7 +59582,7 @@ class MatrixEngineWGPU {
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
+        // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
