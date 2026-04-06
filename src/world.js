@@ -32,6 +32,7 @@ import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 import {PipelineManager} from './engine/pipelineManager.js';
+import {nanoPass} from "./engine/overrides/nano-render.js";
 /**
  * @description
  * Main engine root class.
@@ -170,6 +171,8 @@ export default class MatrixEngineWGPU {
     if(typeof options.render !== 'undefined') {
       if(options.render == 'zero') {
         this.overrideRender = zeroPass.bind(this);
+      } else if(options.render == 'nano') {
+        this.overrideRender = nanoPass.bind(this);
       } else if(options.render == 'no-shadows') {
         this.overrideRender = noShadowPass.bind(this);
       }
@@ -256,6 +259,23 @@ export default class MatrixEngineWGPU {
     this.init({canvas, callback});
   }
 
+  createGlobalsForEntities() {
+
+    // for mesh
+    this.materialBGL = this.device.createBindGroupLayout({
+      label: 'MaterialBGL',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+        {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+      ]
+    });
+  }
+
   applyCanvasSize(scale) {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -292,6 +312,11 @@ export default class MatrixEngineWGPU {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = null;
     this.createGlobalStuff(callback);
+
+    // global layouts per sceneObj TYPE
+    // test meshObj first
+    this.createGlobalsForEntities();
+
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = mat4.create();
@@ -755,6 +780,7 @@ export default class MatrixEngineWGPU {
     o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
+    o.materialBGL = this.materialBGL;
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;

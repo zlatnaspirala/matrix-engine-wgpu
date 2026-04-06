@@ -56,10 +56,12 @@ export default class MEMeshObj extends Materials {
     }
 
     this.sceneBGL = o.sceneBGL;
+    this.materialBGL = o.materialBGL;
+
     this.useScale = o.useScale || false;
 
     this.uvScaleBuffer = this.device.createBuffer({
-      size: 8, // vec2f
+      size: 8,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     // Default = no scale
@@ -300,6 +302,7 @@ export default class MEMeshObj extends Materials {
 
     // new dummy for skin mesh
     if(!this.mesh.jointsBuffer) {
+      console.log('vvvvv', this.mesh.vertices.length)
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -310,13 +313,7 @@ export default class MEMeshObj extends Materials {
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
       this.mesh.jointsBuffer = jointsBuffer;
-      // = {
-      //   data: jointsData,
-      //   buffer: jointsBuffer,
-      //   stride: 16, // vec4<u32>
-      // };
       const numVerts = this.mesh.vertices.length / 3;
-      // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
       for(let i = 0;i < numVerts;i++) {
         weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
