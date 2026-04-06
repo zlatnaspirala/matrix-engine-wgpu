@@ -174,7 +174,9 @@ let waterNormal = vec3f(0.0, 1.0, 0.0);
   let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
                  sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
   let causticsColor = waterColor * caustics;
-  let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
+
+  // let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
+  let finalColor = waterColor * 1.5;
   let alpha = mix(0.4, 0.8, fresnel);
   return vec4f(finalColor, alpha);
 
