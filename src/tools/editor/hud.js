@@ -377,7 +377,6 @@ export default class EditorHud {
     };
     if(byId('start-refresh')) this.toolTip.attachTooltip(byId('start-refresh'), "Simple refresh page.");
 
-    alert()
     byId('load-new-project').onclick = () => {
       console.log("Go to editorX landing page...");
       location.href = 'matrix-engine.html';

@@ -113,19 +113,19 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END FLOOR updatePosz
  
-  // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-2.9200000000000026);
- }, 800);
- // ME END FLOOR updatePosy
- 
   // ME START monster_MutantMesh updatePosx
  setTimeout(() => {
   app.getSceneObjectByName('monster_MutantMesh').position.SetX(-1.0099999999999918);
  }, 800);
  // ME END monster_MutantMesh updatePosx
  
-   // ME START monster_MutantMesh updatePosy
+   // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-2.9300000000000024);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+  // ME START monster_MutantMesh updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('monster_MutantMesh').position.SetY(1.520000000000026);
  }, 800);

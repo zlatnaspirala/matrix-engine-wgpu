@@ -1102,7 +1102,7 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if(effect.enabled === false) continue;
+            if(effect == null || effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(transPass, mesh, viewProjMatrix);
           }
@@ -1316,7 +1316,7 @@ export default class MatrixEngineWGPU {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
           setTimeout(() => {
-            document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
+            document.dispatchEvent(this.usEvent);
           }, 50);
         }, 200)
         c++;
