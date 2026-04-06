@@ -9,13 +9,13 @@ import {mirrorIlluminateFragmentWGSL} from "../shaders/fragment.mirror.wgsl";
 import {byId, LOG_FUNNY_ARCADE} from "./utils";
 import {fragmentWGSLGPT} from "../shaders/fragment.gpt.wgsl";
 import {fragmentWGSLNoCut} from "../shaders/fragment.wgsl.noCut";
-import {fountainFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
 import {miniWGSL} from "../shaders/minimalist/mini.wgsl";
 import {miniaWGSL} from "../shaders/minimalist/mini-a.wgsl";
 import {midaWGSL} from "../shaders/minimalist/mid-a.wgsl";
 import {hybridWGSL} from "../shaders/minimalist/hybrid.wgsl";
 import {coloraWGSL} from "../shaders/minimalist/color-a.wgsl";
 import {colorbWGSL} from "../shaders/minimalist/color-b.wgsl";
+import {fountainBasinFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
 
 /**
  * @description
@@ -386,7 +386,7 @@ export default class Materials {
     } else if(this.material.type === "free") {
       return fragmentWGSLNoCut;
     } else if(this.material.type === "fontana") {
-      return fountainFragmentWGSL;
+      return fountainBasinFragmentWGSL;
     } else if(this.material.type === "mini") {
       return miniWGSL;
     } else if(this.material.type === "minia") {
