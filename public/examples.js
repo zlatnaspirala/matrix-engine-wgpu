@@ -2326,7 +2326,7 @@ var mazeGame = function () {
       a: 1
     }
   }, () => {
-    const mazeSize = 50;
+    let mazeSize = 50;
     const spacing = 2;
     maze.collisionSystem = new _collisionSubSystem.CollisionSystem(maze);
     maze.addLight();
@@ -2340,6 +2340,7 @@ var mazeGame = function () {
       scale: [1, 1, 1]
     });
     function generateMazeLogic(meshes) {
+      if (mazeSize % 2 === 0) mazeSize += 1;
       let grid = Array(mazeSize).fill().map(() => Array(mazeSize).fill(0));
       function walk(x, y) {
         grid[y][x] = 1;

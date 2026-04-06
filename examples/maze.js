@@ -16,7 +16,7 @@ export var mazeGame = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-    const mazeSize = 50;
+    let mazeSize = 50;
     const spacing = 2;
     maze.collisionSystem = new CollisionSystem(maze);
 
@@ -28,6 +28,9 @@ export var mazeGame = function() {
     }, {scale: [1, 1, 1]});
 
     function generateMazeLogic(meshes) {
+
+      if (mazeSize % 2 === 0) mazeSize += 1;
+
       let grid = Array(mazeSize).fill().map(() => Array(mazeSize).fill(0));
 
       function walk(x, y) {
