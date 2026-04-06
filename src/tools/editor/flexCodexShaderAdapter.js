@@ -1,19 +1,17 @@
+import {MEConfig} from "../../me-config";
+
 export function graphAdapter(compilerResult, nodes) {
   const {structs, uniforms, functions, locals, outputs, mainLines} = compilerResult;
-
   // console.log("what os node in adapter", nodes);
-
   const globals = new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
-  globals.add("override shadowDepthTextureSize: f32 = 512.0;");
-
+  globals.add(`override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};`);
   // 3️⃣ Prepare final color outputs
   const baseColor = outputs.baseColor || "vec3f(1.0)";
   const alpha = outputs.alpha || "1.0";
   const normal = outputs.normal || "normalize(input.fragNorm)";
   const emissive = outputs.emissive || "vec3f(0.0)";
 
-  /////////////////////////
   // --- Iterate nodes in topological order ---
   for(const node of nodes) {
     if(node.type === "LightShadowNode") {
@@ -151,16 +149,27 @@ struct PBRMaterialData {
 // PREDEFINED
 const MAX_SPOTLIGHTS = 20u;
 
-// PREDEFINED
+// // PREDEFINED
+// @group(0) @binding(0) var<uniform> scene : Scene;
+// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+// @group(0) @binding(2) var shadowSampler: sampler_comparison;
+// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
+// @group(0) @binding(4) var meshSampler: sampler;
+// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
+// @group(0) @binding(8) var<uniform> material: MaterialPBR;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 // ✅ Graph custom uniforms
 ${[...uniforms].join("\n")}

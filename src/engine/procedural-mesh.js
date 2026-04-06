@@ -128,7 +128,7 @@ export default class ProceduralMeshObj extends Materials {
     this.runProgram().then(() => {
       this._setupBuffers();
       this._setupUniforms();
-      this._setupPipeline();
+      this.setupPipeline();
       this.done = true;
     });
   }
@@ -509,7 +509,7 @@ export default class ProceduralMeshObj extends Materials {
 
   }
 
-  _setupPipeline() {
+  setupPipeline() {
     this.createLayoutForRender();
     this.createBindGroupForRender();
     const pm = PipelineManager.get();
