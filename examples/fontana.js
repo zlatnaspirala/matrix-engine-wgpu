@@ -85,7 +85,7 @@ export var fontana = function() {
       // fontana
       const obj = fontana.addFontana({
         material: {type: 'free'},
-        position: {x: 0, y: 4, z: -15} ,
+        position: {x: 0, y: 4, z: -15},
         rotation: {x: 0, y: 0, z: 0},
         scale: [10, 10, 10],
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -109,22 +109,18 @@ export var fontana = function() {
       fontana.lightContainer[0].setPosition(0, 17, -10);
       fontana.lightContainer[0].setTarget(0, 0, -10);
 
-      // var TEST = fontana.getSceneObjectByName('cube2');
       setTimeout(() => {
-        // app.activateBloomEffect();
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 5;
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(5);
       }, 800);
     }
 
     fontana.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
+      // console.log('ray.hit.event');
       if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
-
     });
-
   })
   window.app = fontana;
 }

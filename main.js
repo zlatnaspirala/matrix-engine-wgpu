@@ -566,7 +566,7 @@ export let application = new MatrixEngineWGPU({
 
     addEventListener('DICE.ROLL', rollProcedure)
     app.ROLL = () => {
-      dispatchEvent(app.DICE_ROLL_EVENT)
+      dispatchEvent(app.DICE_ROLL_EVENT);
     };
   }
 })

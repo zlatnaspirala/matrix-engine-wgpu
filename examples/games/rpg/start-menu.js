@@ -528,7 +528,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
 
     setTimeout(() => {
-      forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
+      forestOfHollowBloodStartSceen.cameras.WASD.setPosition(0, 14, 52);
       app.cameras.WASD.pitch = -0.13;
       app.cameras.WASD.yaw = 0;
       app.mainRenderBundle.forEach((sceneObj) => {

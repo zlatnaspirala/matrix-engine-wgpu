@@ -19,10 +19,9 @@ export var loadVideoTexture = function() {
 
     addRaycastsAABBListener();
     videoTexture.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('test ray after shadows merge')
+      console.log('*********')
     })
 
-    console.log('test AmmoReady attach')
     addEventListener('AmmoReady', () => {
       downloadMeshes({
         piramyd: "./res/meshes/blender/piramyd.obj",
@@ -94,10 +93,10 @@ export var loadVideoTexture = function() {
       //   src: 'res/videos/tunel.mp4'
       // });
       setTimeout(() => {
-        videoTexture.cameras.WASD.yaw = -0.03;
-        videoTexture.cameras.WASD.pitch = -0.49;
-        videoTexture.cameras.WASD.position[2] = 10;
-        videoTexture.cameras.WASD.position[1] = 5;
+        videoTexture.cameras.WASD.setYaw(-0.03);
+        videoTexture.cameras.WASD.setPitch(-0.49);
+        videoTexture.cameras.WASD.setZ(10);
+        videoTexture.cameras.WASD.setY(5);
         videoTexture.buildRenderBuckets(videoTexture.mainRenderBundle)
       }, 1000)
     }

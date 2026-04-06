@@ -206,7 +206,7 @@ export var snakeLights = function() {
 
     const glbFile = await fetch("res/meshes/glb/dancing-woman.glb")
       .then(r => r.arrayBuffer())
-      .then(buf => uploadGLBModel(buf, app.device)); 
+      .then(buf => uploadGLBModel(buf, app.device));
 
     app.addGlbObj({
       material: {type: 'standard', useTextureFromGlb: true},
@@ -220,9 +220,9 @@ export var snakeLights = function() {
     app.activateBloomEffect();
 
     setTimeout(() => {
-      app.cameras.WASD.yaw = 0;
-      app.cameras.WASD.pitch = -0.55;
-      app.cameras.WASD.position = [CENTER.x, 22, CENTER.z + 26];
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(-0.55);
+      app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
     }, 800);
 
   });

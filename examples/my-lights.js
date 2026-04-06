@@ -32,7 +32,6 @@ export var myLights = function() {
       [1.0, 0.1, 0.8],  // pink
       [1.0, 0.1, 0.4],  // rose
     ];
-
     // Ground
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
       myLights.addMeshObj({
@@ -46,7 +45,6 @@ export var myLights = function() {
         physics: {enabled: false}
       });
     }, {scale: [30, 0.5, 30]});
-
     // GLB monster
     const glbFile = await fetch("res/meshes/glb/monster.glb")
       .then(res => res.arrayBuffer())
@@ -102,12 +100,10 @@ export var myLights = function() {
       monster.updateInstances(5);
       monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
-      myLights.cameras.WASD.yaw = -0.03;
-      myLights.cameras.WASD.pitch = -0.35;
-      myLights.cameras.WASD.position = [0, 8, 5];
+      myLights.cameras.WASD.setYaw(-0.03);
+      myLights.cameras.WASD.setPitch(-0.35);
+      myLights.cameras.WASD.setPosition(0, 8, 5);
     }, 800);
-
   });
-
   window.app = myLights;
 }

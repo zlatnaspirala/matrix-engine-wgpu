@@ -103,8 +103,6 @@ export var physicsPlayground = function() {
       // }, null, glbFile01);
       // console.log('1myComplexGeometry', myComplexGeometry2)
 
-
-
       // Test complex geometry with ConvexHull
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
@@ -122,13 +120,11 @@ export var physicsPlayground = function() {
         }
       });
 
-      // setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 3.76;
+      app.cameras.WASD.setYaw(-0.03);
+      app.cameras.WASD.setPitch(-0.49);
+      app.cameras.WASD.setZ(0);
+      app.cameras.WASD.setY(3.76);
       app.cameras.WASD._dirtyAngle = true;
-      // }, 1000);
 
       physicsPlayground.addMeshObj({
         material: {type: 'standard'},

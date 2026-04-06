@@ -107,7 +107,6 @@ export var procMesh = function() {
       runChain(0);
 
       procMesh.lightContainer[0].intensity = 10;
-      // procMesh.activateBloomEffect();
       procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1)
       procMesh.lightContainer[0].behavior.value_ = -1;
       procMesh.lightContainer[0].updater.push((light) => {
@@ -118,16 +117,16 @@ export var procMesh = function() {
       procMesh.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        app.cameras.WASD.yaw = -0.03;
-        app.cameras.WASD.pitch = -0.49;
-        app.cameras.WASD.position[2] = 0;
-        app.cameras.WASD.position[1] = 5;
+        app.cameras.WASD.setYaw(-0.03);
+        app.cameras.WASD.setPitch(-0.49);
+        app.cameras.WASD.setZ(0);
+        app.cameras.WASD.setY(5);
         app.cameras.WASD._dirtyAngle = true;
       }, 800);
     }
 
     procMesh.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
+      // console.log('ray.hit.event');
       if(e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
     });
   })

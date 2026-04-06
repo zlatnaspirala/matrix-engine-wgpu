@@ -435,7 +435,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   })
 
   addEventListener('local-hero-bodies-ready', () => {
-    app.cameras.RPG.position[1] = 130;
+    app.cameras.RPG.setY(130);
     app.cameras.RPG.movementSpeed = 100;
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;

@@ -6,6 +6,8 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
+ * 
+ * Code is absolute free commercials.
  **/
 export function loadGLBLoader() {
   let TEST_ANIM = new MatrixEngineWGPU({
@@ -21,13 +23,13 @@ export function loadGLBLoader() {
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
     setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 35;
+      app.cameras.WASD.setYaw(-0.03);
+      app.cameras.WASD.setPitch(-0.49);
+      app.cameras.WASD.setZ(0);
+      app.cameras.WASD.setY(35);
       app.cameras.WASD._dirtyAngle = true;
-    }, 1000)
-    
+    }, 1000);
+
     // Monster1
     var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObj({
@@ -76,7 +78,7 @@ export function loadGLBLoader() {
       scale: [20, 20, 20],
       position: {x: 0, y: -4, z: -20},
       name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp' , './res/textures/env-maps/sky1.webp'],
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
     }, null, glbFile11);
 
     TEST_ANIM.addGlbObj({
@@ -147,8 +149,5 @@ export function loadGLBLoader() {
       // app.bloomPass.setIntensity(0.25);
     }
   })
-  // just for dev
   window.app = TEST_ANIM;
 }
-
-// loadGLBLoader()
