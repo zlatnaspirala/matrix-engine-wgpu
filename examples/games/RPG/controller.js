@@ -29,6 +29,7 @@ export class Controller {
     );
     this.navigateFriendlyCreepsEvent = new CustomEvent('navigate-friendly_creeps', {detail: 'test'});
     this.setWalkEvent = new CustomEvent('set-walk');
+    this.onSelectCharacterEvent = new CustomEvent("onSelectCharacter", {detail: 'floor'});
 
     this.canvas.addEventListener('mousedown', (e) => {
       if(e.button === 2) { // right m
@@ -236,17 +237,17 @@ export class Controller {
         // deplaced
         // object.setSelectedEffect(true);
         this.selected.push(object);
-        byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name}))
+        this.onSelectCharacterEvent.detail = object.name;
+        byId('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
       } else {
         if(this.selected.indexOf(object) !== -1) {
           this.selected.splice(this.selected.indexOf(object), 1)
           // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
         }
-        // deplaced
-        // object.setSelectedEffect(false);
+        // deplaced object.setSelectedEffect(false);
       }
     }
-    console.log("Selected:", this.selected.map(o => o.name));
+    console.info("Selected:", this.selected.map(o => o.name));
   }
 
   activateVisualRect() {

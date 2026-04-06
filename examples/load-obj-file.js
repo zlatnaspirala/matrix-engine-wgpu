@@ -6,7 +6,7 @@ import {isMobile} from "../src/engine/utils.js";
 export var loadObjFile = function() {
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.9,
+    fastRender: 0.6,
     // render: 'no-shadows',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -126,8 +126,8 @@ export var loadObjFile = function() {
       }
 
       setTimeout(() => {
-        MYCUBE.effects.flameEmitter.setIntensity(100);
-        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
+        // MYCUBE.effects.flameEmitter.setIntensity(100);
+        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.setAmbient(10, 1, 0);
         app.cameras.WASD.setYaw(-0.03);
         app.cameras.WASD.setPitch(-0.49);

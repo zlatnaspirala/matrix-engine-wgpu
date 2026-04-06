@@ -82,6 +82,11 @@ export default class FluxCodexVertex {
       zoom: 1
     };
 
+    // cache
+    this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
+      detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
+    });
+
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
       // stop sepcial onDraw node
@@ -3130,18 +3135,12 @@ LIST OF INTEREST OBJECT:
         this.notifyVariableChanged("object", val);
       }
 
-      // ? not tested in last ver
-      document.dispatchEvent(
-        new CustomEvent("fluxcodex.field.change", {
-          detail: {
-            nodeId: node.id,
-            nodeType: node.type,
-            fieldKey: field.key,
-            fieldType: field.type,
-            value: field.value,
-          },
-        })
-      );
+      this.fluxcodexFieldChange.detail.nodeId = node.id;
+      this.fluxcodexFieldChange.detail.nodeType = node.type;
+      this.fluxcodexFieldChange.detail.fieldKey = field.key;
+      this.fluxcodexFieldChange.detail.fieldType = field.type;
+      this.fluxcodexFieldChange.detail.value = field.value;
+      document.dispatchEvent(this, this.fluxcodexFieldChange);
     };
 
     input.onkeydown = e => {

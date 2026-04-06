@@ -56,7 +56,7 @@ let app = new MatrixEngineWGPU(
             // destructionEffect: true
           },
           mesh: m.mesh,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [25, 1, 25]});
@@ -81,7 +81,7 @@ let app = new MatrixEngineWGPU(
      scale: [2, 2, 2],
      name:  app.getNameFromPath('res/meshes/glb/monster.glb'),
      material: {type: 'standard', useTextureFromGlb: true},
-     raycast: {enabled: true, radius: 2},
+     raycast: {enabled: true, radius: 3},
      pointerEffect: {enabled: true},
      physics: {enabled: true, geometry: "Cube"}
    }, null, glbFile01);
@@ -107,29 +107,29 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END monster_MutantMesh updatePosz
  
-   // ME START monster_MutantMesh updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('monster_MutantMesh').position.SetX(-0.6799999999999919);
- }, 800);
- // ME END monster_MutantMesh updatePosx
- 
-   // ME START monster_MutantMesh updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('monster_MutantMesh').position.SetY(-3.429999999999971);
- }, 800);
- // ME END monster_MutantMesh updatePosy
- 
    // ME START FLOOR updatePosz
  setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetZ(-5.860405315833798);
+  app.getSceneObjectByName('FLOOR').position.SetZ(-4.881266945378257);
  }, 800);
  // ME END FLOOR updatePosz
  
   // ME START FLOOR updatePosy
  setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-5.759999999999999);
+  app.getSceneObjectByName('FLOOR').position.SetY(-2.9200000000000026);
  }, 800);
  // ME END FLOOR updatePosy
+ 
+  // ME START monster_MutantMesh updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('monster_MutantMesh').position.SetX(-1.0099999999999918);
+ }, 800);
+ // ME END monster_MutantMesh updatePosx
+ 
+   // ME START monster_MutantMesh updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('monster_MutantMesh').position.SetY(1.520000000000026);
+ }, 800);
+ // ME END monster_MutantMesh updatePosy
  
  // [MAIN_REPLACE2]
     })

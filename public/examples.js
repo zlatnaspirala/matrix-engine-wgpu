@@ -1970,7 +1970,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.9,
+    fastRender: 0.6,
     // render: 'no-shadows',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -2149,8 +2149,8 @@ var loadObjFile = function () {
         loadObjFile.lightContainer[0].setTarget(0, 0, -10);
       }
       setTimeout(() => {
-        MYCUBE.effects.flameEmitter.setIntensity(100);
-        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
+        // MYCUBE.effects.flameEmitter.setIntensity(100);
+        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.setAmbient(10, 1, 0);
         app.cameras.WASD.setYaw(-0.03);
         app.cameras.WASD.setPitch(-0.49);
@@ -36741,7 +36741,7 @@ class ProceduralMeshObj extends _materials.default {
     this.runProgram().then(() => {
       this._setupBuffers();
       this._setupUniforms();
-      this._setupPipeline();
+      this.setupPipeline();
       this.done = true;
     });
   }
@@ -37209,7 +37209,7 @@ class ProceduralMeshObj extends _materials.default {
     this.vertexAnimParams[2] = 1.0;
     this.updateVertexAnimBuffer();
   }
-  _setupPipeline() {
+  setupPipeline() {
     this.createLayoutForRender();
     this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
@@ -49899,6 +49899,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.graphAdapter = graphAdapter;
+var _meConfig = require("../../me-config");
 function graphAdapter(compilerResult, nodes) {
   const {
     structs,
@@ -49908,20 +49909,16 @@ function graphAdapter(compilerResult, nodes) {
     outputs,
     mainLines
   } = compilerResult;
-
   // console.log("what os node in adapter", nodes);
-
   const globals = new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
-  globals.add("override shadowDepthTextureSize: f32 = 512.0;");
-
+  globals.add(`override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};`);
   // 3️⃣ Prepare final color outputs
   const baseColor = outputs.baseColor || "vec3f(1.0)";
   const alpha = outputs.alpha || "1.0";
   const normal = outputs.normal || "normalize(input.fragNorm)";
   const emissive = outputs.emissive || "vec3f(0.0)";
 
-  /////////////////////////
   // --- Iterate nodes in topological order ---
   for (const node of nodes) {
     if (node.type === "LightShadowNode") {
@@ -50058,16 +50055,27 @@ struct PBRMaterialData {
 // PREDEFINED
 const MAX_SPOTLIGHTS = 20u;
 
-// PREDEFINED
+// // PREDEFINED
+// @group(0) @binding(0) var<uniform> scene : Scene;
+// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+// @group(0) @binding(2) var shadowSampler: sampler_comparison;
+// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
+// @group(0) @binding(4) var meshSampler: sampler;
+// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
+// @group(0) @binding(8) var<uniform> material: MaterialPBR;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 // ✅ Graph custom uniforms
 ${[...uniforms].join("\n")}
@@ -50108,7 +50116,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{}],117:[function(require,module,exports){
+},{"../../me-config":72}],117:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50199,6 +50207,17 @@ class FluxCodexVertex {
       panStart: [0, 0],
       zoom: 1
     };
+
+    // cache
+    this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
+      detail: {
+        nodeId: null,
+        nodeType: null,
+        fieldKey: null,
+        fieldType: null,
+        value: null
+      }
+    });
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
       // stop sepcial onDraw node
@@ -54274,17 +54293,12 @@ LIST OF INTEREST OBJECT:
       if (node.isGetterNode && field.key === "var") {
         this.notifyVariableChanged("object", val);
       }
-
-      // ? not tested in last ver
-      document.dispatchEvent(new CustomEvent("fluxcodex.field.change", {
-        detail: {
-          nodeId: node.id,
-          nodeType: node.type,
-          fieldKey: field.key,
-          fieldType: field.type,
-          value: field.value
-        }
-      }));
+      this.fluxcodexFieldChange.detail.nodeId = node.id;
+      this.fluxcodexFieldChange.detail.nodeType = node.type;
+      this.fluxcodexFieldChange.detail.fieldKey = field.key;
+      this.fluxcodexFieldChange.detail.fieldType = field.type;
+      this.fluxcodexFieldChange.detail.value = field.value;
+      document.dispatchEvent(this, this.fluxcodexFieldChange);
     };
     input.onkeydown = e => {
       if (e.key === "Enter") {
@@ -56542,6 +56556,7 @@ class EditorHud {
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
       <!--div id="start-prod-build" class="drop-item">🛠️ Build for production</div-->
+      <div id="load-new-project" class="drop-item">Exit project - Goto landpage</div>
       </div>
     </div>
 
@@ -56730,6 +56745,11 @@ class EditorHud {
       location.reload(true);
     };
     if ((0, _utils.byId)('start-refresh')) this.toolTip.attachTooltip((0, _utils.byId)('start-refresh'), "Simple refresh page.");
+    alert();
+    (0, _utils.byId)('load-new-project').onclick = () => {
+      console.log("Go to editorX landing page...");
+      location.href = 'matrix-engine.html';
+    };
 
     // byId('start-prod-build').onclick = () => {
     //   //
