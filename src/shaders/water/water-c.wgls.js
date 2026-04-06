@@ -171,17 +171,12 @@ let waterNormal = vec3f(0.0, 1.0, 0.0);
   let ambient = (scene.globalAmbient + vec3f(0.3)) * waterColor;
   let diffuse = diff * waterColor * 1.2;
   let specular = spec * vec3f(1.0) * fresnel * 2.0;
-  // let caustics = sin(input.fragPos.x * 10.0 + scene.time * 2.0) *
-                //  sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.15 + 0.15;
-
-
   let s1 = sin(input.fragPos.x * 10.0 + scene.time * 2.0) * 0.5 + 0.5;
   let s2 = sin(input.fragPos.z * 10.0 + scene.time * 2.0) * 0.5 + 0.5;  
   let caustics = s1 * s2 * 0.3 + 0.1;  // range [0.1, 0.4]
   let causticsColor = waterColor * caustics;
-
-  // let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
-  let finalColor = causticsColor * 1.5;
+  let finalColor = (ambient + diffuse + specular + causticsColor) * 1.5;
+  // let finalColor = causticsColor * 1.5;
   let alpha = mix(0.4, 0.8, fresnel);
   return vec4f(finalColor, alpha);
 
