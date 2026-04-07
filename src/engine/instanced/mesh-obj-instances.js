@@ -410,7 +410,14 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
-      // this.createLayoutForRender();
+      this.materialVideoBGL = this.device.createBindGroupLayout({
+        label: 'MaterialVideoBGL',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
+        ]
+      });
 
       // EDIT INSTANCED PART
       this.instanceTargets = [];
@@ -441,34 +448,38 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.updateInstanceData = (modelMatrix) => {
         this.instanceData.set(modelMatrix, 0);
         this.instanceData.set(this._defaultColor, 16);
+
         for(let i = 1;i < this.instanceCount;i++) {
           const t = this.instanceTargets[i];
           this._ghostScratch.set(modelMatrix);
           const ghost = this._ghostScratch;
-          // --- Smooth interpolate position
+
           for(let j = 0;j < 3;j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
             t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
             t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
-            if(j == 2) {
+            if(j === 2) {
               t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          ghost[0] *= t.currentScale[0];
-          ghost[5] *= t.currentScale[1];
-          ghost[10] *= t.currentScale[2];
-          // pos
-          ghost[12] += t.currentPosition[0]; // X
-          ghost[13] += t.currentPosition[1]; // Y
-          ghost[14] += t.currentPosition[2]; // Z
-          // t.color[0] += t.currentColor[0]//r;
-          // t.color[1] += t.currentColor[1]//r;
-          // t.color[2] += t.currentColor[2]//r;
-          // t.color[3] += t.currentColor[3]//r;
+
+          const sx = t.currentScale[0];
+          const sy = t.currentScale[1];
+          const sz = t.currentScale[2];
+
+          ghost[0] *= sx; ghost[1] *= sx; ghost[2] *= sx;
+          ghost[4] *= sy; ghost[5] *= sy; ghost[6] *= sy;
+          ghost[8] *= sz; ghost[9] *= sz; ghost[10] *= sz;
+
+          ghost[12] += t.currentPosition[0];
+          ghost[13] += t.currentPosition[1];
+          ghost[14] += t.currentPosition[2];
+
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
           this.instanceData.set(t.currentColor, offset + 16);
         }
+
         device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
       };
 
@@ -838,7 +849,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       buffers: this.vertexBuffers,
     };
     const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-    
+
     // OPAQUE
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
@@ -976,10 +987,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    for(var ins = 1;ins < this.instanceCount;ins++) {
-      if(ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
-      else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    }
+    // instanceCount covers all instances including index 0
+    pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   }
 
   drawVideoElements = (pass) => {

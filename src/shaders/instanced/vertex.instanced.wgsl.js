@@ -1,7 +1,6 @@
 import {MEConfig} from "../../me-config";
 
 export let vertexWGSLInstanced = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
-const MAX_INSTANCES = 10u; 
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -66,6 +65,7 @@ struct VertexAnimParams {
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(2) @binding(1) var<uniform> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+@group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -83,27 +83,6 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
-//     var skinnedPos  = vec4f(0.0);
-//     var skinnedNorm = vec3f(0.0);
-//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-//         let jointIndex = joints[i];
-//         let w = weights[i];
-//         if (w > 0.0) {
-//           let boneMat  = bones.boneMatrices[jointIndex];
-//           skinnedPos  += (boneMat * pos) * w;
-//           let boneMat3 = mat3x3f(
-//             boneMat[0].xyz,
-//             boneMat[1].xyz,
-//             boneMat[2].xyz
-//           );
-//           skinnedNorm += (boneMat3 * nrm) * w;
-//         }
-//     }
-//     return SkinResult(skinnedPos, skinnedNorm);
-// }
-
-// 2. skinVertex gets instId passed in
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);

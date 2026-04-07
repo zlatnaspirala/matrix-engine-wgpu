@@ -589,29 +589,6 @@ export default class MaterialsInstanced {
     }
   }
 
-  createLayoutForRender() {
-    // this.materialBGL = this.device.createBindGroupLayout({
-    //   label: 'MaterialBGL',
-    //   entries: [
-    //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
-    //     {binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //   ]
-    // });
-    this.materialVideoBGL = this.device.createBindGroupLayout({
-      label: 'MaterialVideoBGL',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
-        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
-      ]
-    });
-  }
-
   createMaterialBindGroupVideo() {
     if(!this.externalTexture) return;
     this.materialBindGroup = this.device.createBindGroup({

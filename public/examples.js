@@ -3271,168 +3271,26 @@ var snakeLightsInstanced = function () {
     }
   }, async () => {
     const NUM_LIGHTS = 2;
-    const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.55;
-    const LIGHT_HEIGHT = 5;
+    const LIGHT_HEIGHT = 15;
     const CENTER = {
       x: 0,
       z: -10
     };
     const LIGHT_COLORS = [[1.0, 0.1, 0.05], [1.0, 0.3, 0.05], [1.0, 0.55, 0.05], [1.0, 0.8, 0.05], [0.8, 1.0, 0.05], [0.4, 1.0, 0.05], [0.05, 1.0, 0.2], [0.05, 1.0, 0.7], [0.05, 0.8, 1.0], [0.05, 0.5, 1.0], [0.05, 0.2, 1.0], [0.2, 0.05, 1.0], [0.5, 0.05, 1.0], [0.8, 0.05, 1.0], [1.0, 0.05, 0.8], [1.0, 0.05, 0.5], [1.0, 0.05, 0.3], [0.9, 0.1, 0.1], [0.7, 0.1, 0.1], [0.5, 0.05, 0.05]];
 
-    // ─── PATH DEFINITIONS ───────────────────────────────────────────────────
-    // Each path is a function(t) -> {x, z} in local space, then shifted by CENTER
-
-    const PATHS = {
-      snake: t => ({
-        x: CENTER.x + Math.sin(t) * 20,
-        // was 12
-        z: CENTER.z + Math.sin(t * 2) * 12 // was 7
-      }),
-      circle: t => ({
-        x: CENTER.x + Math.cos(t) * 18,
-        // was 10
-        z: CENTER.z + Math.sin(t) * 18 // was 10
-      }),
-      star: t => {
-        const r = 14 + 7 * Math.cos(t * 5); // was 8 + 4
-        return {
-          x: CENTER.x + r * Math.cos(t),
-          z: CENTER.z + r * Math.sin(t)
-        };
-      },
-      infinity: t => ({
-        x: CENTER.x + 18 * Math.cos(t),
-        // was 11
-        z: CENTER.z + 10 * Math.sin(t * 2) // was 6
-      }),
-      heart: t => ({
-        x: CENTER.x + 13 * Math.pow(Math.sin(t), 3),
-        // was 8
-        z: CENTER.z - 10 * (Math.cos(t) - 0.5 * Math.cos(2 * t) - 0.25 * Math.cos(3 * t) - 0.1 * Math.cos(4 * t)) // was 6
-      }),
-      rose: t => {
-        const r = 16 * Math.cos(t * 3); // was 10
-        return {
-          x: CENTER.x + r * Math.cos(t),
-          z: CENTER.z + r * Math.sin(t)
-        };
-      },
-      spiral: t => {
-        const r = 3 + t % (Math.PI * 2) * 1.2;
-        return {
-          x: CENTER.x + r * Math.cos(t * 3),
-          z: CENTER.z + r * Math.sin(t * 3)
-        };
-      },
-      heart: t => ({
-        x: CENTER.x + 8 * Math.pow(Math.sin(t), 3),
-        z: CENTER.z - 6 * (Math.cos(t) - 0.5 * Math.cos(2 * t) - 0.25 * Math.cos(3 * t) - 0.1 * Math.cos(4 * t))
-      }),
-      // Letters — sampled as closed loops
-      letterS: t => {
-        // S shape via two arcs joined
-        const phase = (t % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-        if (phase < Math.PI) {
-          return {
-            x: CENTER.x + 4 * Math.cos(phase + Math.PI) + 2,
-            z: CENTER.z + 4 * Math.sin(phase) - 3
-          };
-        } else {
-          return {
-            x: CENTER.x + 4 * Math.cos(phase) - 2,
-            z: CENTER.z + 4 * Math.sin(phase) + 3
-          };
-        }
-      },
-      letterO: t => ({
-        x: CENTER.x + 8 * Math.cos(t),
-        z: CENTER.z + 11 * Math.sin(t)
-      }),
-      wave: t => ({
-        x: CENTER.x + t * 3,
-        z: CENTER.z + 7 * Math.sin(t * 2.5)
-      })
-    };
-
-    // ─── PATH SWITCHER ───────────────────────────────────────────────────────
-
-    const pathNames = Object.keys(PATHS);
-    let currentPathKey = 'snake';
-    let nextPathKey = null;
-    let morphT = 1.0; // 1.0 = fully on currentPath
-    const MORPH_SPEED = 1.2; // how fast we blend (seconds)
-
-    // Call this to switch path with smooth morph
-    app.switchPath = name => {
-      if (!PATHS[name]) {
-        console.warn('Unknown path:', name);
-        return;
-      }
-      if (name === currentPathKey) return;
-      nextPathKey = name;
-      morphT = 0.0;
-    };
-
-    // Auto-cycle every 6 seconds
-    let autoCycleIndex = 0;
-    setInterval(() => {
-      autoCycleIndex = (autoCycleIndex + 1) % pathNames.length;
-      app.switchPath(pathNames[autoCycleIndex]);
-    }, 6000);
-
     // ─── LIGHTS ─────────────────────────────────────────────────────────────
-
     for (let i = 0; i < NUM_LIGHTS; i++) app.addLight();
     for (let i = 0; i < NUM_LIGHTS; i++) {
       const light = app.lightContainer[i];
       const phaseOffset = i * SNAKE_SPACING;
       const fade = 1.0 - i / NUM_LIGHTS * 0.4;
-
-      // light.intensity = 15 * fade;
       light.color = LIGHT_COLORS[i];
-
-      // light.innerCutoff = //0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
-      // light.outerCutoff = //0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
-      // light.innerCutoff = 0.92;
-      // light.outerCutoff = 0.75;
-
-      light.innerCutoff = 0.87;
-      light.outerCutoff = 0.62;
       light.setIntensity(18 * fade);
       light._phase = phaseOffset;
-      const initialPos = PATHS[currentPathKey](0);
-      light.setPosition(initialPos.x, LIGHT_HEIGHT, initialPos.z);
-      light.setTarget(initialPos.x, 0, initialPos.z);
-      light.updater.push(light => {
-        const t = app.now * SNAKE_SPEED - light._phase;
-        const cur = PATHS[currentPathKey](t);
-        let x, z;
-        if (nextPathKey && morphT < 1.0) {
-          const nxt = PATHS[nextPathKey](t);
-          // Smooth ease in-out
-          const ease = morphT * morphT * (3 - 2 * morphT);
-          x = cur.x + (nxt.x - cur.x) * ease;
-          z = cur.z + (nxt.z - cur.z) * ease;
-        } else {
-          if (nextPathKey && morphT >= 1.0) {
-            currentPathKey = nextPathKey;
-            nextPathKey = null;
-          }
-          x = cur.x;
-          z = cur.z;
-        }
-        light.setPosition(x, LIGHT_HEIGHT, z);
-        light.setTarget(x + 1, 0, z + 1);
-      });
+      light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
+      light.setTarget(CENTER.x, 0, CENTER.z);
     }
-
-    // Advance morph timer in a single updater on the first light
-    app.lightContainer[0].updater.push(() => {
-      if (nextPathKey && morphT < 1.0) {
-        morphT = Math.min(1.0, morphT + 1 / 60 / MORPH_SPEED);
-      }
-    });
 
     // ─── SCENE ──────────────────────────────────────────────────────────────
 
@@ -3451,19 +3309,17 @@ var snakeLightsInstanced = function () {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
-        scale: [50, 0.5, 50],
+        scale: [10, 0.5, 10],
         physics: {
           enabled: false
         },
         shadowsCast: false
       });
     }, {
-      scale: [20, 0.5, 20]
+      scale: [1, 0.5, 1]
     });
     const glbFile = await fetch("res/meshes/glb/monster.glb").then(r => r.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device));
-
-    // app.addGlbObjInctance({
-    app.addGlbObj({
+    app.addGlbObjInctance({
       material: {
         type: 'standard',
         useTextureFromGlb: true
@@ -28102,40 +27958,6 @@ class MaterialsInstanced {
       });
     }
   }
-  createLayoutForRender() {
-    // this.materialBGL = this.device.createBindGroupLayout({
-    //   label: 'MaterialBGL',
-    //   entries: [
-    //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
-    //     {binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //   ]
-    // });
-    this.materialVideoBGL = this.device.createBindGroupLayout({
-      label: 'MaterialVideoBGL',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        externalTexture: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'filtering'
-        }
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-      }]
-    });
-  }
   createMaterialBindGroupVideo() {
     if (!this.externalTexture) return;
     this.materialBindGroup = this.device.createBindGroup({
@@ -28582,7 +28404,26 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
-      // this.createLayoutForRender();
+      this.materialVideoBGL = this.device.createBindGroupLayout({
+        label: 'MaterialVideoBGL',
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          externalTexture: {}
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'filtering'
+          }
+        }, {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {
+            type: 'uniform'
+          }
+        }]
+      });
 
       // EDIT INSTANCED PART
       this.instanceTargets = [];
@@ -28614,26 +28455,29 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           const t = this.instanceTargets[i];
           this._ghostScratch.set(modelMatrix);
           const ghost = this._ghostScratch;
-          // --- Smooth interpolate position
           for (let j = 0; j < 3; j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
             t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
             t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
-            if (j == 2) {
+            if (j === 2) {
               t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          ghost[0] *= t.currentScale[0];
-          ghost[5] *= t.currentScale[1];
-          ghost[10] *= t.currentScale[2];
-          // pos
-          ghost[12] += t.currentPosition[0]; // X
-          ghost[13] += t.currentPosition[1]; // Y
-          ghost[14] += t.currentPosition[2]; // Z
-          // t.color[0] += t.currentColor[0]//r;
-          // t.color[1] += t.currentColor[1]//r;
-          // t.color[2] += t.currentColor[2]//r;
-          // t.color[3] += t.currentColor[3]//r;
+          const sx = t.currentScale[0];
+          const sy = t.currentScale[1];
+          const sz = t.currentScale[2];
+          ghost[0] *= sx;
+          ghost[1] *= sx;
+          ghost[2] *= sx;
+          ghost[4] *= sy;
+          ghost[5] *= sy;
+          ghost[6] *= sy;
+          ghost[8] *= sz;
+          ghost[9] *= sz;
+          ghost[10] *= sz;
+          ghost[12] += t.currentPosition[0];
+          ghost[13] += t.currentPosition[1];
+          ghost[14] += t.currentPosition[2];
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
           this.instanceData.set(t.currentColor, offset + 16);
@@ -29174,9 +29018,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    for (var ins = 1; ins < this.instanceCount; ins++) {
-      if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    }
+    // instanceCount covers all instances including index 0
+    pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   };
   drawVideoElements = pass => {
     this.updateVideoTexture();
@@ -43298,7 +43141,6 @@ Object.defineProperty(exports, "__esModule", {
 exports.vertexWGSLInstanced = void 0;
 var _meConfig = require("../../me-config");
 let vertexWGSLInstanced = exports.vertexWGSLInstanced = `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
-const MAX_INSTANCES = 10u; 
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -43363,6 +43205,7 @@ struct VertexAnimParams {
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(2) @binding(1) var<uniform> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+@group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -43380,27 +43223,6 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
-//     var skinnedPos  = vec4f(0.0);
-//     var skinnedNorm = vec3f(0.0);
-//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-//         let jointIndex = joints[i];
-//         let w = weights[i];
-//         if (w > 0.0) {
-//           let boneMat  = bones.boneMatrices[jointIndex];
-//           skinnedPos  += (boneMat * pos) * w;
-//           let boneMat3 = mat3x3f(
-//             boneMat[0].xyz,
-//             boneMat[1].xyz,
-//             boneMat[2].xyz
-//           );
-//           skinnedNorm += (boneMat3 * nrm) * w;
-//         }
-//     }
-//     return SkinResult(skinnedPos, skinnedNorm);
-// }
-
-// 2. skinVertex gets instId passed in
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
