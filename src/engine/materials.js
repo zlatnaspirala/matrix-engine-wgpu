@@ -16,6 +16,7 @@ import {hybridWGSL} from "../shaders/minimalist/hybrid.wgsl";
 import {coloraWGSL} from "../shaders/minimalist/color-a.wgsl";
 import {colorbWGSL} from "../shaders/minimalist/color-b.wgsl";
 import {fountainBasinFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
+import {MaterialBindGroupCache} from "./pipelineManager";
 
 /**
  * @description
@@ -28,6 +29,9 @@ export default class Materials {
   constructor(device, material, glb, textureCache, isVideo) {
     this.device = device;
     this.textureCache = textureCache;
+
+    this.materialBindGroupCache = MaterialBindGroupCache.get();
+
     this.glb = glb;
     this.material = material;
     if(typeof isVideo !== 'undefined') {
@@ -226,7 +230,8 @@ export default class Materials {
     this.isVideo = false;
     if(sampler) this.imageSampler = sampler;
     // Recreate bind group only
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
+    // MAYBE SETYPPIPELINE !
   }
 
   changeMaterial(newType = 'graph', graphShader) {
@@ -513,23 +518,16 @@ export default class Materials {
       this.video.style.top = '-20px';
       this.video.style.left = '50%';
       this.video.play();
-      this.video.addEventListener('canplay', () => {
-        // alert('++++');
-        if(this.video.readyState >= 3) {
-          alert('++++ > 3 ');
-        }
-      }, {once: true});
       this.video.addEventListener('canplaythrough', () => {
-        console.log('_cideo can playt +++++++++++++++++++++++++++');
+        // console.log('_cideo can playt +++++++++++++++++++++++++++');
         if(this.video.readyState >= 3) {
           this.externalTexture = this.device.importExternalTexture({source: this.video});
-          console.log('++++ > 3   ++++  ' + this.externalTexture);
+          // console.log('++++ > 3   ++++  ' + this.externalTexture);
           if(!this.externalTexture) alert('ERROR ' + this.externalTexture);
           this.sampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear',
           });
-          this.createLayoutForRender();
           this.createMaterialBindGroupVideo();
         }
       }, {once: false});
@@ -627,9 +625,6 @@ export default class Materials {
       magFilter: 'linear',
       minFilter: 'linear',
     });
-
-    this.createLayoutForRender();
-    // this.createBindGroupForRender();
     this.createMaterialBindGroupVideo();
   }
 
@@ -665,55 +660,66 @@ export default class Materials {
     return this.glb.glbTextures[texIndex].createView();
   }
 
-  createBindGroupForRender() {
+  createBindGroupForRender(key) {
     let textureResource = this.texture0.createView();
     if(this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
       textureResource = material.baseColorTexture.imageView;
     }
-
     if(this.isVideo == true) return;
-    // console.log('CREATE NORMAL this.materialBindGroup');
-    this.materialBindGroup = this.device.createBindGroup({
-      label: 'materialBindGroup normal',
-      layout: this.materialBGL,
-      entries: [
-        {binding: 0, resource: textureResource},
-        {binding: 1, resource: this.imageSampler},
-
-        {binding: 2, resource: this.metallicRoughnessTextureView},
-        {binding: 3, resource: this.metallicRoughnessSampler},
-
-        {binding: 4, resource: {buffer: this.materialPBRBuffer}},
-
-        {binding: 5, resource: this.normalTextureView},
-        {binding: 6, resource: this.normalSampler},
-      ]
-    });
-
-  }
-
-  createLayoutForRender() {
-    // this.materialBGL = this.device.createBindGroupLayout({
-    //   label: 'MaterialBGL',
-    //   entries: [
-    //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
-    //     {binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //   ]
-    // });
-    this.materialVideoBGL = this.device.createBindGroupLayout({
-      label: 'MaterialVideoBGL',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
-        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
-      ]
-    });
+    key = JSON.stringify(key);
+    if(typeof this.material.share !== 'undefined' && this.material.share == true) {
+      if(!this.materialBindGroupCache._cache.has(key)) {
+        // console.log('[CREATE NEW] materialBindGroup [key] = ', key);
+        this.materialBindGroupCache._cache.set(key,
+          this.device.createBindGroup({
+            label: 'materialBindGroup normal',
+            layout: this.materialBGL,
+            entries: [
+              {binding: 0, resource: textureResource},
+              {binding: 1, resource: this.imageSampler},
+              {binding: 2, resource: this.metallicRoughnessTextureView},
+              {binding: 3, resource: this.metallicRoughnessSampler},
+              {binding: 4, resource: {buffer: this.materialPBRBuffer}},
+              {binding: 5, resource: this.normalTextureView},
+              {binding: 6, resource: this.normalSampler},
+            ]
+          })
+        );
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
+      } else {
+        console.log('[no share] materialBindGroup [key] = ', key);
+        // console.log('[CREATE NEW] materialBindGroup = ', key);
+        this.materialBindGroup = this.device.createBindGroup({
+          label: 'materialBindGroup normal',
+          layout: this.materialBGL,
+          entries: [
+            {binding: 0, resource: textureResource},
+            {binding: 1, resource: this.imageSampler},
+            {binding: 2, resource: this.metallicRoughnessTextureView},
+            {binding: 3, resource: this.metallicRoughnessSampler},
+            {binding: 4, resource: {buffer: this.materialPBRBuffer}},
+            {binding: 5, resource: this.normalTextureView},
+            {binding: 6, resource: this.normalSampler},
+          ]
+        });
+      }
+    } else {
+      // console.log('[CREATE NEW] materialBindGroup = ', key);
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialBindGroup normal',
+        layout: this.materialBGL,
+        entries: [
+          {binding: 0, resource: textureResource},
+          {binding: 1, resource: this.imageSampler},
+          {binding: 2, resource: this.metallicRoughnessTextureView},
+          {binding: 3, resource: this.metallicRoughnessSampler},
+          {binding: 4, resource: {buffer: this.materialPBRBuffer}},
+          {binding: 5, resource: this.normalTextureView},
+          {binding: 6, resource: this.normalSampler},
+        ]
+      });
+    }
   }
 
   createMaterialBindGroupVideo() {

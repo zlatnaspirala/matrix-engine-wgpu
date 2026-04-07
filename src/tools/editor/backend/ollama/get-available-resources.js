@@ -25,7 +25,7 @@ ${texs}
 3. SEMANTIC MAPPING: 
    - If user says "metal" or "dirty", look for "rust.jpg".
    - If user says "shiny" or "treasure", look for "gold-1.png".
-   - If user says "cube face", use "cube-1.png" through "cube-4.png".
+   - If user says "cube face", use "cube*.png" through "cube-4.png".
 4. DEFAULT: If the visual style is unspecified, use "res/textures/default.png".
 5. NEVER leave a texturePath empty if the node requires one.
 

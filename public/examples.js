@@ -1967,7 +1967,6 @@ var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
     fastRender: 0.6,
-    // render: 'no-shadows',
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -1996,8 +1995,7 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard',
-          useBlend: true
+          type: 'standard'
         },
         // envMapParams: {
         //   baseColorMix: 0.1,                // CLEAR SKY
@@ -2010,7 +2008,6 @@ var loadObjFile = function () {
         //   envLodBias: 2.5,
         //   usePlanarReflection: false,       // ✅ Env map mode
         // },
-
         position: {
           x: 0,
           y: -5,
@@ -2059,17 +2056,6 @@ var loadObjFile = function () {
           z: 0
         },
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        // envMapParams: {
-        //   baseColorMix: 0.0,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.95,               // 25% reflection blend
-        //   illuminateColor: [0.2, 0.2, 0.2], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 1.0,                // Medium-sharp edge
-        //   envLodBias: 1.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -2077,9 +2063,12 @@ var loadObjFile = function () {
           geometry: "Sphere"
         }
       });
+
+      // share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -2096,7 +2085,7 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
@@ -2315,8 +2304,8 @@ var mazeGame = function () {
     //'zero', // test
     dontUsePhysics: true,
     mainCameraParams: {
-      // type: 'firstPersonCamera',
-      type: 'WASD',
+      type: 'firstPersonCamera',
+      // type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {
@@ -2355,7 +2344,6 @@ var mazeGame = function () {
         }
       }
       walk(1, 1); // Start from (1,1) so (0,0) stays wall
-
       // Seal entire perimeter
       for (let i = 0; i < mazeSize; i++) {
         grid[0][i] = 0;
@@ -2363,11 +2351,9 @@ var mazeGame = function () {
         grid[i][0] = 0;
         grid[i][mazeSize - 1] = 0;
       }
-
       // Carve entrance top-left, exit bottom-right
       grid[1][0] = 1; // entrance: left wall, row 1
       grid[mazeSize - 2][mazeSize - 1] = 1; // exit: right wall, second-to-last row
-
       // Instantiate walls (unchanged)
       for (let y = 0; y < mazeSize; y++) {
         for (let x = 0; x < mazeSize; x++) {
@@ -2376,7 +2362,7 @@ var mazeGame = function () {
             let test = maze.addMeshObj({
               shadowsCast: false,
               material: {
-                type: 'minia'
+                type: 'standard'
               },
               position: {
                 x: x * spacing - mazeSize * spacing / 2,
@@ -2396,8 +2382,34 @@ var mazeGame = function () {
           }
         }
       }
-      app.cameras.firstPersonCamera.movementSpeed = 0.1;
+      console.log('__________________');
+      maze.cameras.firstPersonCamera.movementSpeed = 0.03;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
+      maze.cameras.firstPersonCamera.setPosition(-49, 0.40, -49);
+      maze.cameras.WASD.setPosition(-49, 0.40, -49);
+
+      // close space
+      let test2 = maze.addMeshObj({
+        shadowsCast: false,
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -51,
+          y: 0,
+          z: -49
+        },
+        texturesPaths: ['./res/textures/floor1.webp'],
+        // becouse nano render use single mat per objectScene entity text not changed!
+        name: 'enter',
+        mesh: meshes.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      maze.collisionSystem.registerStatic(test2.name, test2.position, 1.2, 'walls');
     }
   });
   window.app = maze;
@@ -22318,8 +22330,6 @@ class RPGCamera {
       this._dirty = true;
     });
   }
-
-  // 🔥 SAME AS WASD (no matrices)
   _updateOrientation() {
     const cy = Math.cos(this.yaw),
       sy = Math.sin(this.yaw);
@@ -22437,12 +22447,21 @@ class FirstPersonCamera {
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if ((0, _utils.isMobile)() == true) {
-      MobileDOM.createWASD(this);
+      console.log('>>>>>>>>>> camera WASD HUD');
+      MobileDOM.createWASD(this, {
+        margin: 50
+      });
     }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
     _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
+  }
+  setPosition(x, y, z) {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
   }
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0],
@@ -27439,6 +27458,7 @@ var _colorA = require("../../shaders/minimalist/color-a.wgsl");
 var _colorB = require("../../shaders/minimalist/color-b.wgsl");
 var _mini = require("../../shaders/minimalist/mini.wgsl");
 var _waterC = require("../../shaders/water/water-c.wgls");
+var _pipelineManager = require("../pipelineManager");
 /**
  * @description
  * Created for matrix-engine-wgpu project.
@@ -27455,6 +27475,7 @@ class MaterialsInstanced {
     this.textureCache = textureCache;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
+    this.materialBindGroupCache = _pipelineManager.MaterialBindGroupCache.get();
     this.compareSampler = this.device.createSampler({
       compare: 'less-equal',
       // safer for shadow comparison
@@ -27715,7 +27736,7 @@ class MaterialsInstanced {
     }
     this.isVideo = false;
     // Recreate bind group only
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
   }
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
@@ -27850,12 +27871,30 @@ class MaterialsInstanced {
       this.video.autoplay = true;
       this.video.loop = true;
       document.body.append(this.video);
-      this.video.style.display = 'none';
+      // this.video.style.display = 'none';
       this.video.style.position = 'absolute';
-      this.video.style.top = '750px';
-      this.video.style.left = '50px';
-      await this.video.play();
-      this.isVideo = true;
+      this.video.style.width = '640px';
+      this.video.style.height = '480px';
+      this.video.style.top = '-20px';
+      this.video.style.left = '50%';
+      this.video.play();
+      this.video.addEventListener('canplaythrough', () => {
+        // console.log('_cideo can playt +++++++++++++++++++++++++++');
+        if (this.video.readyState >= 3) {
+          this.externalTexture = this.device.importExternalTexture({
+            source: this.video
+          });
+          // console.log('++++ > 3   ++++  ' + this.externalTexture);
+          if (!this.externalTexture) alert('ERROR ' + this.externalTexture);
+          this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear'
+          });
+          this.createMaterialBindGroupVideo();
+        }
+      }, {
+        once: false
+      });
     } else if (arg.type === 'videoElement') {
       this.video = arg.el;
       await this.video.play();
@@ -27934,25 +27973,13 @@ class MaterialsInstanced {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-    // ✅ Now - maybe noT
-    this.createLayoutForRender();
+    this.createMaterialBindGroupVideo();
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
-    if (!this.externalTexture) {
-      // create it once
-      this.externalTexture = this.device.importExternalTexture({
-        source: this.video
-      });
-      this.createBindGroupForRender();
-      this.videoIsReady = 'YES';
-      console.log("%c✅video bind.", LOG_FUNNY_ARCADE);
-    } else {
-      this.externalTexture = this.device.importExternalTexture({
-        source: this.video
-      });
-      this.createBindGroupForRender();
-    }
+    this.externalTexture = this.device.importExternalTexture({
+      source: this.video
+    });
+    this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
@@ -27973,87 +28000,121 @@ class MaterialsInstanced {
     const texIndex = texInfo.index;
     return this.glb.glbTextures[texIndex].createView();
   }
-  createBindGroupForRender() {
+  createBindGroupForRender(key) {
     let textureResource = this.texture0.createView();
     if (this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
       textureResource = material.baseColorTexture.imageView;
     }
-    this.materialBindGroup = this.device.createBindGroup({
-      layout: this.materialBGL,
-      entries: [{
-        binding: 0,
-        resource: textureResource
-      }, {
-        binding: 1,
-        resource: this.imageSampler
-      }, {
-        binding: 2,
-        resource: this.metallicRoughnessTextureView
-      }, {
-        binding: 3,
-        resource: this.metallicRoughnessSampler
-      }, {
-        binding: 4,
-        resource: {
-          buffer: this.materialPBRBuffer
-        }
-      }, {
-        binding: 5,
-        resource: this.normalTextureView
-      }, {
-        binding: 6,
-        resource: this.normalSampler
-      }]
-    });
+    key = JSON.stringify(key);
+    if (typeof this.material.share !== 'undefined' && this.material.share == true) {
+      if (!this.materialBindGroupCache._cache.has(key)) {
+        // console.log('[CREATE NEW] materialBindGroup [key] = ', key);
+        this.materialBindGroupCache._cache.set(key, this.device.createBindGroup({
+          layout: this.materialBGL,
+          entries: [{
+            binding: 0,
+            resource: textureResource
+          }, {
+            binding: 1,
+            resource: this.imageSampler
+          }, {
+            binding: 2,
+            resource: this.metallicRoughnessTextureView
+          }, {
+            binding: 3,
+            resource: this.metallicRoughnessSampler
+          }, {
+            binding: 4,
+            resource: {
+              buffer: this.materialPBRBuffer
+            }
+          }, {
+            binding: 5,
+            resource: this.normalTextureView
+          }, {
+            binding: 6,
+            resource: this.normalSampler
+          }]
+        }));
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
+      } else {
+        console.log('[no share] materialBindGroup [key] = ', key);
+        // console.log('[CREATE NEW] materialBindGroup = ', key);
+        this.materialBindGroup = this.device.createBindGroup({
+          label: 'materialBindGroup normal',
+          layout: this.materialBGL,
+          entries: [{
+            binding: 0,
+            resource: textureResource
+          }, {
+            binding: 1,
+            resource: this.imageSampler
+          }, {
+            binding: 2,
+            resource: this.metallicRoughnessTextureView
+          }, {
+            binding: 3,
+            resource: this.metallicRoughnessSampler
+          }, {
+            binding: 4,
+            resource: {
+              buffer: this.materialPBRBuffer
+            }
+          }, {
+            binding: 5,
+            resource: this.normalTextureView
+          }, {
+            binding: 6,
+            resource: this.normalSampler
+          }]
+        });
+      }
+    } else {
+      // console.log('[CREATE NEW] materialBindGroup = ', key);
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialBindGroup normal',
+        layout: this.materialBGL,
+        entries: [{
+          binding: 0,
+          resource: textureResource
+        }, {
+          binding: 1,
+          resource: this.imageSampler
+        }, {
+          binding: 2,
+          resource: this.metallicRoughnessTextureView
+        }, {
+          binding: 3,
+          resource: this.metallicRoughnessSampler
+        }, {
+          binding: 4,
+          resource: {
+            buffer: this.materialPBRBuffer
+          }
+        }, {
+          binding: 5,
+          resource: this.normalTextureView
+        }, {
+          binding: 6,
+          resource: this.normalSampler
+        }]
+      });
+    }
   }
   createLayoutForRender() {
-    this.materialBGL = this.device.createBindGroupLayout({
-      label: 'MaterialBGL',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: 'float'
-        }
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'filtering'
-        }
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: 'float'
-        }
-      }, {
-        binding: 3,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'filtering'
-        }
-      }, {
-        binding: 4,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-      }, {
-        binding: 5,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: 'float'
-        }
-      }, {
-        binding: 6,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'filtering'
-        }
-      }]
-    });
+    // this.materialBGL = this.device.createBindGroupLayout({
+    //   label: 'MaterialBGL',
+    //   entries: [
+    //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+    //     {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+    //     {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+    //     {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+    //     {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+    //     {binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
+    //     {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+    //   ]
+    // });
     this.materialVideoBGL = this.device.createBindGroupLayout({
       label: 'MaterialVideoBGL',
       entries: [{
@@ -28096,7 +28157,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":81,"../../shaders/fragment.wgsl":83,"../../shaders/fragment.wgsl.metal":84,"../../shaders/fragment.wgsl.noCut":85,"../../shaders/fragment.wgsl.normalmap":86,"../../shaders/fragment.wgsl.pong":87,"../../shaders/fragment.wgsl.power":88,"../../shaders/instanced/fragment.instanced.wgsl":90,"../../shaders/instanced/fragment.mirror.instanced.wgsl":91,"../../shaders/minimalist/color-a.wgsl":94,"../../shaders/minimalist/color-b.wgsl":95,"../../shaders/minimalist/mini.wgsl":99,"../../shaders/water/water-c.wgls":109}],50:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":81,"../../shaders/fragment.wgsl":83,"../../shaders/fragment.wgsl.metal":84,"../../shaders/fragment.wgsl.noCut":85,"../../shaders/fragment.wgsl.normalmap":86,"../../shaders/fragment.wgsl.pong":87,"../../shaders/fragment.wgsl.power":88,"../../shaders/instanced/fragment.instanced.wgsl":90,"../../shaders/instanced/fragment.mirror.instanced.wgsl":91,"../../shaders/minimalist/color-a.wgsl":94,"../../shaders/minimalist/color-b.wgsl":95,"../../shaders/minimalist/mini.wgsl":99,"../../shaders/water/water-c.wgls":109,"../pipelineManager":64}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28149,6 +28210,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.mType = _utils.MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
     this.sceneBGL = o.sceneBGL;
+    this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayoutInstanced = o.uniformBufferBindGroupLayoutInstanced;
     // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
@@ -28519,8 +28582,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
-
-      this.createLayoutForRender();
+      // this.createLayoutForRender();
 
       // EDIT INSTANCED PART
       this.instanceTargets = [];
@@ -28622,34 +28684,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         size: 4 * 16,
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh [instanced]',
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {
-            type: "read-only-storage"
-          }
-        }, {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 3,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }]
       });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [regular]',
@@ -28960,7 +28994,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline = () => {
-    this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -28968,7 +29001,25 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     const vertexCode = _vertexInstanced.vertexWGSLInstanced;
     const fragmentCode = isVideo ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>');
+    console.log('>>>>>>>>>>>>>INSTANCED >>>>>>>>>>>>');
+    const baseKey = {
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
+      type: "instanced",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
       bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayoutInstanced, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null]
@@ -28983,18 +29034,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     const fragmentConstants = {
       shadowDepthTextureSize: this.shadowDepthTextureSize
     };
-    const baseKey = {
-      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
-      fragmentId: isVideo ? 'video' : this.material.type,
-      type: "instanced",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: 'rgba16float',
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
+
     // OPAQUE
     this.pipeline = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
@@ -32264,6 +32304,7 @@ var _hybrid = require("../shaders/minimalist/hybrid.wgsl");
 var _colorA = require("../shaders/minimalist/color-a.wgsl");
 var _colorB = require("../shaders/minimalist/color-b.wgsl");
 var _fontana = require("../shaders/fontana/fontana.wgsl");
+var _pipelineManager = require("./pipelineManager");
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -32275,6 +32316,7 @@ class Materials {
   constructor(device, material, glb, textureCache, isVideo) {
     this.device = device;
     this.textureCache = textureCache;
+    this.materialBindGroupCache = _pipelineManager.MaterialBindGroupCache.get();
     this.glb = glb;
     this.material = material;
     if (typeof isVideo !== 'undefined') {
@@ -32471,7 +32513,8 @@ class Materials {
     this.isVideo = false;
     if (sampler) this.imageSampler = sampler;
     // Recreate bind group only
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
+    // MAYBE SETYPPIPELINE !
   }
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
@@ -32768,27 +32811,18 @@ class Materials {
       this.video.style.top = '-20px';
       this.video.style.left = '50%';
       this.video.play();
-      this.video.addEventListener('canplay', () => {
-        // alert('++++');
-        if (this.video.readyState >= 3) {
-          alert('++++ > 3 ');
-        }
-      }, {
-        once: true
-      });
       this.video.addEventListener('canplaythrough', () => {
-        console.log('_cideo can playt +++++++++++++++++++++++++++');
+        // console.log('_cideo can playt +++++++++++++++++++++++++++');
         if (this.video.readyState >= 3) {
           this.externalTexture = this.device.importExternalTexture({
             source: this.video
           });
-          console.log('++++ > 3   ++++  ' + this.externalTexture);
+          // console.log('++++ > 3   ++++  ' + this.externalTexture);
           if (!this.externalTexture) alert('ERROR ' + this.externalTexture);
           this.sampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear'
           });
-          this.createLayoutForRender();
           this.createMaterialBindGroupVideo();
         }
       }, {
@@ -32892,8 +32926,6 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-    this.createLayoutForRender();
-    // this.createBindGroupForRender();
     this.createMaterialBindGroupVideo();
   }
   updateVideoTexture() {
@@ -32922,76 +32954,109 @@ class Materials {
     const texIndex = texInfo.index;
     return this.glb.glbTextures[texIndex].createView();
   }
-  createBindGroupForRender() {
+  createBindGroupForRender(key) {
     let textureResource = this.texture0.createView();
     if (this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
       textureResource = material.baseColorTexture.imageView;
     }
     if (this.isVideo == true) return;
-    // console.log('CREATE NORMAL this.materialBindGroup');
-    this.materialBindGroup = this.device.createBindGroup({
-      label: 'materialBindGroup normal',
-      layout: this.materialBGL,
-      entries: [{
-        binding: 0,
-        resource: textureResource
-      }, {
-        binding: 1,
-        resource: this.imageSampler
-      }, {
-        binding: 2,
-        resource: this.metallicRoughnessTextureView
-      }, {
-        binding: 3,
-        resource: this.metallicRoughnessSampler
-      }, {
-        binding: 4,
-        resource: {
-          buffer: this.materialPBRBuffer
-        }
-      }, {
-        binding: 5,
-        resource: this.normalTextureView
-      }, {
-        binding: 6,
-        resource: this.normalSampler
-      }]
-    });
-  }
-  createLayoutForRender() {
-    // this.materialBGL = this.device.createBindGroupLayout({
-    //   label: 'MaterialBGL',
-    //   entries: [
-    //     {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //     {binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
-    //     {binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
-    //     {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
-    //   ]
-    // });
-    this.materialVideoBGL = this.device.createBindGroupLayout({
-      label: 'MaterialVideoBGL',
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        externalTexture: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: 'filtering'
-        }
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-      }]
-    });
+    key = JSON.stringify(key);
+    if (typeof this.material.share !== 'undefined' && this.material.share == true) {
+      if (!this.materialBindGroupCache._cache.has(key)) {
+        // console.log('[CREATE NEW] materialBindGroup [key] = ', key);
+        this.materialBindGroupCache._cache.set(key, this.device.createBindGroup({
+          label: 'materialBindGroup normal',
+          layout: this.materialBGL,
+          entries: [{
+            binding: 0,
+            resource: textureResource
+          }, {
+            binding: 1,
+            resource: this.imageSampler
+          }, {
+            binding: 2,
+            resource: this.metallicRoughnessTextureView
+          }, {
+            binding: 3,
+            resource: this.metallicRoughnessSampler
+          }, {
+            binding: 4,
+            resource: {
+              buffer: this.materialPBRBuffer
+            }
+          }, {
+            binding: 5,
+            resource: this.normalTextureView
+          }, {
+            binding: 6,
+            resource: this.normalSampler
+          }]
+        }));
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
+      } else {
+        console.log('[no share] materialBindGroup [key] = ', key);
+        // console.log('[CREATE NEW] materialBindGroup = ', key);
+        this.materialBindGroup = this.device.createBindGroup({
+          label: 'materialBindGroup normal',
+          layout: this.materialBGL,
+          entries: [{
+            binding: 0,
+            resource: textureResource
+          }, {
+            binding: 1,
+            resource: this.imageSampler
+          }, {
+            binding: 2,
+            resource: this.metallicRoughnessTextureView
+          }, {
+            binding: 3,
+            resource: this.metallicRoughnessSampler
+          }, {
+            binding: 4,
+            resource: {
+              buffer: this.materialPBRBuffer
+            }
+          }, {
+            binding: 5,
+            resource: this.normalTextureView
+          }, {
+            binding: 6,
+            resource: this.normalSampler
+          }]
+        });
+      }
+    } else {
+      // console.log('[CREATE NEW] materialBindGroup = ', key);
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialBindGroup normal',
+        layout: this.materialBGL,
+        entries: [{
+          binding: 0,
+          resource: textureResource
+        }, {
+          binding: 1,
+          resource: this.imageSampler
+        }, {
+          binding: 2,
+          resource: this.metallicRoughnessTextureView
+        }, {
+          binding: 3,
+          resource: this.metallicRoughnessSampler
+        }, {
+          binding: 4,
+          resource: {
+            buffer: this.materialPBRBuffer
+          }
+        }, {
+          binding: 5,
+          resource: this.normalTextureView
+        }, {
+          binding: 6,
+          resource: this.normalSampler
+        }]
+      });
+    }
   }
   createMaterialBindGroupVideo() {
     if (!this.externalTexture) return;
@@ -33016,7 +33081,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":79,"../shaders/fragment.gpt.wgsl":80,"../shaders/fragment.mirror.wgsl":81,"../shaders/fragment.wgsl":83,"../shaders/fragment.wgsl.metal":84,"../shaders/fragment.wgsl.noCut":85,"../shaders/fragment.wgsl.normalmap":86,"../shaders/fragment.wgsl.pong":87,"../shaders/fragment.wgsl.power":88,"../shaders/minimalist/color-a.wgsl":94,"../shaders/minimalist/color-b.wgsl":95,"../shaders/minimalist/hybrid.wgsl":96,"../shaders/minimalist/mid-a.wgsl":97,"../shaders/minimalist/mini-a.wgsl":98,"../shaders/minimalist/mini.wgsl":99,"../shaders/mixed/fragmentMix1.wgsl":100,"../shaders/water/water-c.wgls":109,"./utils":72}],58:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":79,"../shaders/fragment.gpt.wgsl":80,"../shaders/fragment.mirror.wgsl":81,"../shaders/fragment.wgsl":83,"../shaders/fragment.wgsl.metal":84,"../shaders/fragment.wgsl.noCut":85,"../shaders/fragment.wgsl.normalmap":86,"../shaders/fragment.wgsl.pong":87,"../shaders/fragment.wgsl.power":88,"../shaders/minimalist/color-a.wgsl":94,"../shaders/minimalist/color-b.wgsl":95,"../shaders/minimalist/hybrid.wgsl":96,"../shaders/minimalist/mid-a.wgsl":97,"../shaders/minimalist/mini-a.wgsl":98,"../shaders/minimalist/mini.wgsl":99,"../shaders/mixed/fragmentMix1.wgsl":100,"../shaders/water/water-c.wgls":109,"./pipelineManager":64,"./utils":72}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33572,6 +33637,7 @@ class MEMeshObj extends _materials.default {
     }
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
     this.useScale = o.useScale || false;
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8,
@@ -34012,40 +34078,22 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
-      this.createLayoutForRender();
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh',
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 3,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }]
-      });
+
+      // this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      //   label: 'uniformBufferBindGroupLayout in mesh',
+      //   entries: [
+      //     {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //     {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //     {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //     {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //   ],
+      // });
+
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
@@ -34322,7 +34370,6 @@ class MEMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline = () => {
-    this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -34336,6 +34383,24 @@ class MEMeshObj extends _materials.default {
     const fragmentModule = this.device.createShaderModule({
       code: fragmentCode
     });
+    let baseKey = {
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
+      type: "mesh",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
       bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null].filter(Boolean)
@@ -34349,18 +34414,7 @@ class MEMeshObj extends _materials.default {
     const fragmentConstants = {
       shadowDepthTextureSize: this.shadowDepthTextureSize
     };
-    const baseKey = {
-      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
-      fragmentId: isVideo ? 'video' : this.material.type,
-      type: "mesh",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: 'rgba16float',
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
+
     // OPAQUE PIPELINE
     this.pipeline = pm.getPipeline({
       key: (0, _pipelineManager.buildPipelineKey)({
@@ -34766,7 +34820,7 @@ let nanoPass = function () {
       // if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
       if (mesh.position.inMove) mesh.updateModelUniformBuffer(i);
       mesh.position.update();
-      if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+      // if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       // if(mesh.update) mesh.update(now2);
     }
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
@@ -35578,7 +35632,7 @@ exports.default = MatrixAmmo;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.PipelineManager = void 0;
+exports.PipelineManager = exports.MaterialBindGroupCache = void 0;
 exports.buildPipelineKey = buildPipelineKey;
 function buildPipelineKey({
   vertexId,
@@ -35618,9 +35672,7 @@ class PipelineManager {
     key,
     pipeline
   }) {
-    if (this.cache.has(key)) {
-      return this.cache.get(key);
-    }
+    if (this.cache.has(key)) return this.cache.get(key);
     const p = this.device.createRenderPipeline(pipeline);
     this.cache.set(key, p);
     return p;
@@ -35640,6 +35692,35 @@ class PipelineManager {
   }
 }
 exports.PipelineManager = PipelineManager;
+class MaterialBindGroupCache {
+  constructor(device) {
+    this.device = device;
+    this._cache = new Map();
+  }
+  static instance;
+  static init(device) {
+    this.instance = new MaterialBindGroupCache(device);
+  }
+  static get() {
+    return this.instance;
+  }
+  get(pipelineKey) {
+    return this._cache.get(pipelineKey);
+  }
+  set(pipelineKey, bindGroup) {
+    this._cache.set(pipelineKey, bindGroup);
+  }
+  has(pipelineKey) {
+    return this._cache.has(pipelineKey);
+  }
+  invalidate(pipelineKey) {
+    this._cache.delete(pipelineKey);
+  }
+  static invalidateAll() {
+    this.instance._cache.clear();
+  }
+}
+exports.MaterialBindGroupCache = MaterialBindGroupCache;
 
 },{}],65:[function(require,module,exports){
 "use strict";
@@ -36695,6 +36776,8 @@ class ProceduralMeshObj extends _materials.default {
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     this.shadowsCast = true;
     this.sceneBGL = o.sceneBGL;
+    this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
     if (o.meshA && o.meshB) {
       // Use your existing mesh objects directly
       const pair = MeshMorpher.createMatchedPair(o.meshA, o.meshB, o.resolutionU || 32, o.resolutionV || 32);
@@ -37110,17 +37193,6 @@ class ProceduralMeshObj extends _materials.default {
       } // morphBlend
       ]
     });
-
-    // this.modelBindGroup = this.device.createBindGroup({
-    //   layout: this.shadowBindGroupLayout,
-    //   entries: [
-    //     {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-    //     {binding: 1, resource: {buffer: this.bonesBuffer}},
-    //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-    //     {binding: 3, resource: {buffer: this.morphBlendBuffer}},
-    //   ]
-    // });
-
     this.vertexAnim = {
       active: false,
       enableWave: () => {
@@ -37244,8 +37316,7 @@ class ProceduralMeshObj extends _materials.default {
     this.updateVertexAnimBuffer();
   }
   setupPipeline() {
-    this.createLayoutForRender();
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : _vertexProcedural.vertexMorphWGSL;
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
@@ -37255,19 +37326,6 @@ class ProceduralMeshObj extends _materials.default {
     const isWater = this.material.type === 'water';
     const isNormalMap = this.material.type === 'normalmap';
     const isVideo = this.isVideo === true;
-    const layout = this.device.createPipelineLayout({
-      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null]
-    });
-    const vertexState = {
-      entryPoint: 'main',
-      module: this.device.createShaderModule({
-        code: vertexCode
-      }),
-      buffers: this.vertexBuffers
-    };
-    const fragmentConstants = {
-      shadowDepthTextureSize: this.shadowDepthTextureSize
-    };
     const baseKey = {
       vertexId,
       fragmentId,
@@ -37280,6 +37338,25 @@ class ProceduralMeshObj extends _materials.default {
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
       isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
+    const layout = this.device.createPipelineLayout({
+      bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null]
+    });
+    const vertexState = {
+      entryPoint: 'main',
+      module: this.device.createShaderModule({
+        code: vertexCode
+      }),
+      buffers: this.vertexBuffers
+    };
+    const fragmentConstants = {
+      shadowDepthTextureSize: this.shadowDepthTextureSize
     };
     // OPAQUE
     this.pipeline = pm.getPipeline({
@@ -40627,9 +40704,9 @@ struct VertexAnimParams {
 }
 
 @group(0) @binding(0) var<uniform> scene: Scene;
-@group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(1) @binding(3) var<uniform> morphBlend: f32;
+@group(2) @binding(0) var<uniform> model: Model;
+@group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(2) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -58407,9 +58484,9 @@ class MatrixEngineWGPU {
     });
   }
   createGlobalsForEntities() {
-    // for mesh
+    // TYPE "MESH" --------------------------------------------
     this.materialBGL = this.device.createBindGroupLayout({
-      label: 'MaterialBGL',
+      label: 'MaterialBGL[mesh]',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.FRAGMENT,
@@ -58451,6 +58528,85 @@ class MatrixEngineWGPU {
         visibility: GPUShaderStage.FRAGMENT,
         sampler: {
           type: 'filtering'
+        }
+      }]
+    });
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: 'MaterialVideoBGL[mesh]',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        externalTexture: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'uniformBufferBindGroupLayout[mesh]',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    // TYPE "MESH" --------------------------------------------
+
+    // type GLBINSTANCED
+    this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+      label: 'uniformBufferBindGroupLayout in mesh [instanced]',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
         }
       }]
     });
@@ -58524,6 +58680,7 @@ class MatrixEngineWGPU {
       this.getCamera()._dirty = true;
     });
     _pipelineManager.PipelineManager.init(this.device);
+    _pipelineManager.MaterialBindGroupCache.init(this.device);
     this.getTransformationMatrix = (camera, dt) => {
       this._sceneData.set(camera.VP, 16);
       this._sceneData[32] = camera.position[0];
@@ -58978,6 +59135,7 @@ class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
+    o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -59066,6 +59224,8 @@ class MatrixEngineWGPU {
     }
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
+    o.materialBGL = this.materialBGL;
+    o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
@@ -59461,8 +59621,15 @@ class MatrixEngineWGPU {
       pass.setBindGroup(0, this.sceneBindGroup);
       for (const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
+        let l = null;
         for (const mesh of meshes) {
-          pass.setBindGroup(1, mesh.materialBindGroup);
+          if (mesh.materialBindGroup !== l) {
+            pass.setBindGroup(1, mesh.materialBindGroup);
+            l = mesh.materialBindGroup;
+          } else {
+            console.log('same BIND GROUP!');
+          }
+          // pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
           if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
@@ -59641,6 +59808,8 @@ class MatrixEngineWGPU {
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
+        o.materialBGL = this.materialBGL;
+        o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
@@ -59775,6 +59944,8 @@ class MatrixEngineWGPU {
             enabled: false
           };
         }
+        o.materialBGL = this.materialBGL;
+        o.uniformBufferBindGroupLayoutInstanced = this.uniformBufferBindGroupLayoutInstanced;
         const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;

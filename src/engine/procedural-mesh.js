@@ -44,6 +44,8 @@ export default class ProceduralMeshObj extends Materials {
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     this.shadowsCast = true;
     this.sceneBGL = o.sceneBGL;
+    this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
 
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
@@ -378,16 +380,6 @@ export default class ProceduralMeshObj extends Materials {
       ]
     });
 
-    // this.modelBindGroup = this.device.createBindGroup({
-    //   layout: this.shadowBindGroupLayout,
-    //   entries: [
-    //     {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-    //     {binding: 1, resource: {buffer: this.bonesBuffer}},
-    //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-    //     {binding: 3, resource: {buffer: this.morphBlendBuffer}},
-    //   ]
-    // });
-
     this.vertexAnim = {
       active: false,
       enableWave: () => {
@@ -510,8 +502,7 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   setupPipeline() {
-    this.createLayoutForRender();
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
@@ -521,6 +512,26 @@ export default class ProceduralMeshObj extends Materials {
     const isWater = this.material.type === 'water';
     const isNormalMap = this.material.type === 'normalmap';
     const isVideo = this.isVideo === true;
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "procedural",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
+
     const layout = this.device.createPipelineLayout({
       bindGroupLayouts: [
         this.sceneBGL,
@@ -535,19 +546,6 @@ export default class ProceduralMeshObj extends Materials {
       buffers: this.vertexBuffers,
     };
     const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-    const baseKey = {
-      vertexId,
-      fragmentId,
-      type: "procedural",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: 'rgba16float',
-      morph: !this.vertexWGSL ? 1 : 0,
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
     // OPAQUE
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({

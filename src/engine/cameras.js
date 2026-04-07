@@ -473,7 +473,6 @@ export class RPGCamera {
     });
   }
 
-  // 🔥 SAME AS WASD (no matrices)
   _updateOrientation() {
     const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
@@ -572,13 +571,21 @@ export class FirstPersonCamera {
     this._recalculateViewVP();
 
     if(isMobile() == true) {
-      MobileDOM.createWASD(this);
+      console.log('>>>>>>>>>> camera WASD HUD')
+      MobileDOM.createWASD(this, {margin: 50});
     }
   }
 
   setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
     mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
+  }
+
+  setPosition(x, y, z) {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
   }
 
   static mat4MultiplySafe(a, b, out) {

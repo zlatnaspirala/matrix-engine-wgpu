@@ -57,6 +57,7 @@ export default class MEMeshObj extends Materials {
 
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
 
     this.useScale = o.useScale || false;
 
@@ -483,23 +484,20 @@ export default class MEMeshObj extends Materials {
         ]
       });
 
-      this.createLayoutForRender();
-
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16, // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh',
-        entries: [
-          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        ],
-      });
+      // this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      //   label: 'uniformBufferBindGroupLayout in mesh',
+      //   entries: [
+      //     {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //     {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //     {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //     {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      //   ],
+      // });
 
       function alignTo256(n) {return Math.ceil(n / 256) * 256;}
 
@@ -658,8 +656,7 @@ export default class MEMeshObj extends Materials {
           {binding: 0, resource: {buffer: this.modelUniformBuffer}},
           {binding: 1, resource: {buffer: this.bonesBuffer}},
           {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-          {binding: 3, resource: {buffer: this.uvScaleBuffer}},
-
+          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
         ],
       });
 
@@ -762,7 +759,6 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline = () => {
-    this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -773,23 +769,7 @@ export default class MEMeshObj extends Materials {
     const vertexModule = this.device.createShaderModule({code: vertexCode});
     const fragmentModule = this.device.createShaderModule({code: fragmentCode});
 
-    const layout = this.device.createPipelineLayout({
-      label: 'PipelineLayout Mesh',
-      bindGroupLayouts: [
-        this.sceneBGL,
-        isVideo ? this.materialVideoBGL : this.materialBGL,
-        this.uniformBufferBindGroupLayout,
-        (isMirror ? this.mirrorBindGroupLayout : (isWater ? this.waterBindGroupLayout : null)),
-      ].filter(Boolean)
-    });
-    // VERTEX STATE (SHARED)
-    const vertexState = {
-      entryPoint: 'main',
-      module: vertexModule,
-      buffers: this.vertexBuffers,
-    };
-    const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-    const baseKey = {
+    let baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "mesh",
@@ -801,6 +781,31 @@ export default class MEMeshObj extends Materials {
       normalMap: isNormalMap ? 1 : 0,
       isWater: isWater ? 1 : 0
     };
+
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
+
+    const layout = this.device.createPipelineLayout({
+      label: 'PipelineLayout Mesh',
+      bindGroupLayouts: [
+        this.sceneBGL,
+        isVideo ? this.materialVideoBGL : this.materialBGL,
+        this.uniformBufferBindGroupLayout, 
+       (isMirror ? this.mirrorBindGroupLayout : (isWater ? this.waterBindGroupLayout : null)),
+      ].filter(Boolean)
+    });
+    // VERTEX STATE (SHARED)
+    const vertexState = {
+      entryPoint: 'main',
+      module: vertexModule,
+      buffers: this.vertexBuffers,
+    };
+    const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
+
     // OPAQUE PIPELINE
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({

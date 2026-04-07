@@ -31,7 +31,7 @@ import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragm
 import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
-import {PipelineManager} from './engine/pipelineManager.js';
+import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
 import {nanoPass} from "./engine/overrides/nano-render.js";
 /**
  * @description
@@ -261,9 +261,9 @@ export default class MatrixEngineWGPU {
 
   createGlobalsForEntities() {
 
-    // for mesh
+    // TYPE "MESH" --------------------------------------------
     this.materialBGL = this.device.createBindGroupLayout({
-      label: 'MaterialBGL',
+      label: 'MaterialBGL[mesh]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'float'}},
         {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
@@ -274,6 +274,36 @@ export default class MatrixEngineWGPU {
         {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
       ]
     });
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: 'MaterialVideoBGL[mesh]',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
+      ]
+    });
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'uniformBufferBindGroupLayout[mesh]',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      ],
+    });
+    // TYPE "MESH" --------------------------------------------
+
+    // type GLBINSTANCED
+    this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+      label: 'uniformBufferBindGroupLayout in mesh [instanced]',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+      ],
+    });
+
   }
 
   applyCanvasSize(scale) {
@@ -355,6 +385,8 @@ export default class MatrixEngineWGPU {
     })
 
     PipelineManager.init(this.device);
+    MaterialBindGroupCache.init(this.device);
+
     this.getTransformationMatrix = (camera, dt) => {
       this._sceneData.set(camera.VP, 16);
       this._sceneData[32] = camera.position[0];
@@ -781,6 +813,7 @@ export default class MatrixEngineWGPU {
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
+    o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;
@@ -838,6 +871,8 @@ export default class MatrixEngineWGPU {
     }
     let AM = this.globalAmbient.slice();
     o.sceneBGL = this.sceneBGL;
+    o.materialBGL = this.materialBGL;
+    o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
@@ -1092,8 +1127,15 @@ export default class MatrixEngineWGPU {
       pass.setBindGroup(0, this.sceneBindGroup);
       for(const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
+        let l = null;
         for(const mesh of meshes) {
-          pass.setBindGroup(1, mesh.materialBindGroup);
+          if(mesh.materialBindGroup !== l) {
+            pass.setBindGroup(1, mesh.materialBindGroup);
+            l = mesh.materialBindGroup;
+          } else {
+            console.log('same BIND GROUP!')
+          }
+          // pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
           if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
@@ -1231,6 +1273,8 @@ export default class MatrixEngineWGPU {
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
+        o.materialBGL = this.materialBGL;
+        o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
         const bvhPlayer = new BVHPlayer(
           o,
           BVHANIM,
@@ -1320,6 +1364,8 @@ export default class MatrixEngineWGPU {
         if(skinnedNodeIndex == 0) {} else {
           o.pointerEffect = {enabled: false};
         }
+        o.materialBGL = this.materialBGL;
+        o.uniformBufferBindGroupLayoutInstanced = this.uniformBufferBindGroupLayoutInstanced;
         const bvhPlayer = new BVHPlayerInstances(
           o,
           BVHANIM,

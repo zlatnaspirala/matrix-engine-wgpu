@@ -19,7 +19,7 @@ export let nanoPass = function() {
       // if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
       if(mesh.position.inMove) mesh.updateModelUniformBuffer(i)
       mesh.position.update();
-      if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+      // if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       // if(mesh.update) mesh.update(now2);
     }
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
