@@ -495,6 +495,18 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
+
+        this.modelBindGroup = this.device.createBindGroup({
+          label: 'modelBindGroup[instanced]',
+          layout: this.uniformBufferBindGroupLayoutInstanced,
+          entries: [
+            {binding: 0, resource: {buffer: this.instanceBuffer, }},
+            {binding: 1, resource: {buffer: this.bonesBuffer}},
+            {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+            {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+          ],
+        });
+
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
       };

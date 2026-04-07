@@ -3254,6 +3254,7 @@ exports.snakeLightsInstanced = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var snakeLightsInstanced = function () {
   let app = new _world.default({
@@ -3270,30 +3271,16 @@ var snakeLightsInstanced = function () {
       a: 1
     }
   }, async () => {
-    const NUM_LIGHTS = 2;
-    const SNAKE_SPACING = 0.55;
-    const LIGHT_HEIGHT = 15;
+    const LIGHT_HEIGHT = 25;
     const CENTER = {
       x: 0,
       z: -10
     };
-    const LIGHT_COLORS = [[1.0, 0.1, 0.05], [1.0, 0.3, 0.05], [1.0, 0.55, 0.05], [1.0, 0.8, 0.05], [0.8, 1.0, 0.05], [0.4, 1.0, 0.05], [0.05, 1.0, 0.2], [0.05, 1.0, 0.7], [0.05, 0.8, 1.0], [0.05, 0.5, 1.0], [0.05, 0.2, 1.0], [0.2, 0.05, 1.0], [0.5, 0.05, 1.0], [0.8, 0.05, 1.0], [1.0, 0.05, 0.8], [1.0, 0.05, 0.5], [1.0, 0.05, 0.3], [0.9, 0.1, 0.1], [0.7, 0.1, 0.1], [0.5, 0.05, 0.05]];
-
-    // ─── LIGHTS ─────────────────────────────────────────────────────────────
-    for (let i = 0; i < NUM_LIGHTS; i++) app.addLight();
-    for (let i = 0; i < NUM_LIGHTS; i++) {
-      const light = app.lightContainer[i];
-      const phaseOffset = i * SNAKE_SPACING;
-      const fade = 1.0 - i / NUM_LIGHTS * 0.4;
-      light.color = LIGHT_COLORS[i];
-      light.setIntensity(18 * fade);
-      light._phase = phaseOffset;
-      light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
-      light.setTarget(CENTER.x, 0, CENTER.z);
-    }
-
-    // ─── SCENE ──────────────────────────────────────────────────────────────
-
+    app.addLight();
+    const light = app.lightContainer[0];
+    light.setIntensity(18);
+    light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
+    light.setTarget(CENTER.x, 0, CENTER.z);
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/blender/cube.obj"
     }, m => {
@@ -3309,14 +3296,14 @@ var snakeLightsInstanced = function () {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
-        scale: [10, 0.5, 10],
+        scale: [1, 0.5, 1],
         physics: {
           enabled: false
         },
         shadowsCast: false
       });
     }, {
-      scale: [1, 0.5, 1]
+      scale: [20, 0.5, 20]
     });
     const glbFile = await fetch("res/meshes/glb/monster.glb").then(r => r.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device));
     app.addGlbObjInctance({
@@ -3335,21 +3322,60 @@ var snakeLightsInstanced = function () {
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
     }, null, glbFile);
     app.activateBloomEffect();
+    app.bloomPass.setBlurRadius(1.5);
+    let monster = null;
     setTimeout(() => {
-      let monster = app.getSceneObjectByName('monster_MutantMesh');
-      // monster.updateMaxInstances(7);
-      // monster.updateInstances(7);
+      monster = app.getSceneObjectByName('monster_MutantMesh');
+      monster.updateMaxInstances(10);
+      monster.updateInstances(10);
       // monster.trailAnimation.delay = 15;
       app.cameras.WASD.setYaw(0);
       app.cameras.WASD.setPitch(-0.55);
       app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
-    }, 1200);
+      let currentIdx = 1;
+      const totalInstances = monster.instanceTargets.length - 1;
+      const radius = 12;
+
+      // Center based on the first target's initial position
+      const centerX = monster.instanceTargets[0].position[0];
+      const centerZ = monster.instanceTargets[0].position[2];
+      const moveTimer = setInterval(() => {
+        // --- PHASE 1: POSITIONING ---
+        if (currentIdx <= totalInstances) {
+          let angle = currentIdx / totalInstances * (2 * Math.PI);
+          let newPosX = centerX + radius * Math.cos(angle);
+          let newPosZ = centerZ + radius * Math.sin(angle);
+          monster.instanceTargets[currentIdx].position[0] = newPosX;
+          monster.instanceTargets[currentIdx].position[2] = newPosZ;
+          console.log(`Positioned ${currentIdx}`);
+          currentIdx++;
+        } else {
+          clearInterval(moveTimer);
+          console.log("Circle complete! Starting scale wave...");
+          startScaleWave();
+        }
+      }, 500);
+      function startScaleWave() {
+        let scaleIdx = 1;
+        setInterval(() => {
+          let prevIdx = scaleIdx === 1 ? totalInstances : scaleIdx - 1;
+          monster.instanceTargets[prevIdx].scale = [1, 1, 1];
+          monster.instanceTargets[prevIdx].color[0] = 0.5;
+          monster.instanceTargets[prevIdx].color[1] = 0.5;
+          monster.instanceTargets[prevIdx].color[2] = 0.5;
+          monster.instanceTargets[scaleIdx].scale = [2, 2, 2];
+          monster.instanceTargets[scaleIdx].color[(0, _utils.randomIntFromTo)(0, 2)] = (0, _utils.randomIntFromTo)(2, 20);
+          scaleIdx++;
+          if (scaleIdx > totalInstances) scaleIdx = 1;
+        }, 750);
+      }
+    }, 1000);
   });
   window.app = app;
 };
 exports.snakeLightsInstanced = snakeLightsInstanced;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/world.js":122}],14:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/utils.js":72,"../src/world.js":122}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28496,6 +28522,31 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
+        this.modelBindGroup = this.device.createBindGroup({
+          label: 'modelBindGroup[instanced]',
+          layout: this.uniformBufferBindGroupLayoutInstanced,
+          entries: [{
+            binding: 0,
+            resource: {
+              buffer: this.instanceBuffer
+            }
+          }, {
+            binding: 1,
+            resource: {
+              buffer: this.bonesBuffer
+            }
+          }, {
+            binding: 2,
+            resource: {
+              buffer: this.vertexAnimBuffer
+            }
+          }, {
+            binding: 3,
+            resource: {
+              buffer: this.uvScaleBuffer
+            }
+          }]
+        });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
       };
@@ -32261,6 +32312,29 @@ class Materials {
         minFilter: 'linear'
       });
     }
+
+    // remove later
+    // remove later
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: 'MaterialVideoBGL[mesh]',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        externalTexture: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
     if (this.material.type == 'water') {
       this.createBufferForWater();
     }
@@ -42812,10 +42886,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
     let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
-
     var lightContribution = vec3f(0.0);
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
@@ -42828,11 +42898,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
-
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    // Apply per-instance tint
     finalColor *= input.colorMult.rgb;
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
@@ -59751,6 +59818,7 @@ class MatrixEngineWGPU {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
     }
     o.sceneBGL = this.sceneBGL;
+    let results = [];
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -59772,6 +59840,7 @@ class MatrixEngineWGPU {
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
+        results.push(bvhPlayer);
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
@@ -59790,6 +59859,7 @@ class MatrixEngineWGPU {
     if (typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
+    return results[0];
   };
   sortRenderBundle() {
     setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 50);

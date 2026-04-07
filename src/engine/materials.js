@@ -136,6 +136,17 @@ export default class Materials {
       });
     }
 
+    // remove later
+    // remove later
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: 'MaterialVideoBGL[mesh]',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
+      ]
+    });
+
     if(this.material.type == 'water') {
       this.createBufferForWater();
     }
@@ -720,6 +731,8 @@ export default class Materials {
         ]
       });
     }
+
+
   }
 
   createMaterialBindGroupVideo() {

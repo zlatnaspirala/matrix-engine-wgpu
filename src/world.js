@@ -1351,6 +1351,8 @@ export default class MatrixEngineWGPU {
 
     o.sceneBGL = this.sceneBGL;
 
+    let results = [];
+
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -1380,6 +1382,8 @@ export default class MatrixEngineWGPU {
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
+
+        results.push(bvhPlayer);
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
@@ -1398,6 +1402,7 @@ export default class MatrixEngineWGPU {
     if(typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
+    return results[0];
   }
 
   sortRenderBundle() {
