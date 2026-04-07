@@ -32,6 +32,9 @@ const switchDemo = id => {
   url.searchParams.set('demo', id);
   window.location.href = url.toString();
 };
+const hideMenu = () => {
+  document.getElementById('examples').style.left = "-150px";
+};
 (0, _utils.byId)('loadObjFile').addEventListener("click", () => switchDemo('1'));
 (0, _utils.byId)('physicsPlayground').addEventListener("click", () => switchDemo('2'));
 (0, _utils.byId)('camera-texture').addEventListener("click", () => switchDemo('3'));
@@ -49,34 +52,76 @@ const switchDemo = id => {
 (0, _utils.byId)('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '2') {
   (0, _physicsPlayground.physicsPlayground)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '3') {
   (0, _cameraTexture.loadCameraTexture)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '4') {
   (0, _videoTexture.loadVideoTexture)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '5') {
   (0, _loadObjsSequence.loadObjsSequence)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '6') {
   (0, _glbLoader.loadGLBLoader)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '7') {
   (0, _proceduralMesh.procMesh)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '8') {
   (0, _fontana.fontana)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '9') {
   (0, _myLights.myLights)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '10') {
   (0, _snakeLights.snakeLights)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '11') {
   (0, _snakeLightsInstanced.snakeLightsInstanced)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '12') {
   (0, _maze.mazeGame)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '13') {
   (0, _flipper.flipper)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 } else if (urlQ['demo'] === '14') {
   //
 } else {
   (0, _flipper.flipper)();
+  setTimeout(() => {
+    hideMenu();
+  }, 2000);
 }
 
 },{"./examples/camera-texture.js":2,"./examples/flipper.js":3,"./examples/fontana.js":4,"./examples/glb-loader.js":6,"./examples/load-obj-file.js":7,"./examples/load-objs-sequence.js":8,"./examples/maze.js":9,"./examples/my-lights.js":10,"./examples/physics-playground.js":11,"./examples/procedural-mesh.js":12,"./examples/snake-lights-instanced.js":13,"./examples/snake-lights.js":14,"./examples/video-texture.js":15,"./src/engine/utils.js":72}],2:[function(require,module,exports){

@@ -33,6 +33,10 @@ const switchDemo = (id) => {
   window.location.href = url.toString();
 };
 
+const hideMenu = () => {
+  document.getElementById('examples').style.left = "-150px";
+}
+
 byId('loadObjFile').addEventListener("click", () => switchDemo('1'));
 byId('physicsPlayground').addEventListener("click", () => switchDemo('2'));
 byId('camera-texture').addEventListener("click", () => switchDemo('3'));
@@ -52,34 +56,46 @@ byId('moba').addEventListener("click", () => window.open('https://goldenspiral.i
 
 if(urlQ['demo'] === '1') {
   loadObjFile();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '2') {
-  physicsPlayground()
+  physicsPlayground();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '3') {
   loadCameraTexture();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '4') {
   loadVideoTexture();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '5') {
-  loadObjsSequence()
+  loadObjsSequence();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '6') {
   loadGLBLoader();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '7') {
   procMesh();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '8') {
   fontana();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '9') {
   myLights();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '10') {
   snakeLights();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '11') {
   snakeLightsInstanced();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '12') {
   mazeGame();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '13') {
   flipper();
+  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '14') {
   //
 } else {
   flipper();
+  setTimeout(()=> {hideMenu()}, 2000);
 }
-
-
