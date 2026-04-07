@@ -29,7 +29,7 @@ export var fontana = function() {
 
     function onGround(m) {
       fontana.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'dark'},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -58,23 +58,12 @@ export var fontana = function() {
     function onLoadObj(m) {
       fontana.myLoadedMeshes = m;
       fontana.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'dark'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.25,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.01,            // No pulse (static)
-          fresnelPower: 2.0,                // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -84,7 +73,7 @@ export var fontana = function() {
       });
       // fontana
       const obj = fontana.addFontana({
-        material: {type: 'free'},
+        material: {type: 'dark'},
         position: {x: 0, y: 4, z: -15},
         rotation: {x: 0, y: 0, z: 0},
         scale: [10, 10, 10],
@@ -98,13 +87,13 @@ export var fontana = function() {
       fontana.addLight();
       fontana.lightContainer[0].setIntensity(10);
 
-      fontana.activateBloomEffect();
+      // fontana.activateBloomEffect();
       fontana.lightContainer[0].behavior.setOsc0(-2, 2, 0.001)
       fontana.lightContainer[0].behavior.value_ = -1;
-      fontana.lightContainer[0].updater.push((light) => {
-        light.setPosX(light.behavior.setPath0())
-        light.setTargetX(light.behavior.setPath0())
-      })
+      // fontana.lightContainer[0].updater.push((light) => {
+      //   light.setPosX(light.behavior.setPath0())
+      //   light.setTargetX(light.behavior.setPath0())
+      // })
 
       fontana.lightContainer[0].setPosition(0, 17, -10);
       fontana.lightContainer[0].setTarget(0, 0, -10);

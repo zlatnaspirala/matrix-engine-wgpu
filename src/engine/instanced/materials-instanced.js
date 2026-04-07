@@ -1,7 +1,7 @@
 import {mirrorIlluminateFragmentWGSL} from "../../shaders/fragment.mirror.wgsl";
 import {fragmentWGSL} from "../../shaders/fragment.wgsl";
 import {fragmentWGSLMetal} from "../../shaders/fragment.wgsl.metal";
-import {fragmentWGSLNoCut} from "../../shaders/fragment.wgsl.noCut";
+import {fragmentWGSLDark} from "../../shaders/fragment.wgsl.noCut";
 import {fragmentWGSLNormalMap} from "../../shaders/fragment.wgsl.normalmap";
 import {fragmentWGSLPong} from "../../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../../shaders/fragment.wgsl.power";
@@ -310,8 +310,8 @@ export default class MaterialsInstanced {
       return this.material.fromGraph;
     } else if(this.material.type === "mirror") {
       return fragmentMirrorWGSLInstanced;
-    } else if(this.material.type === "free") {
-      return fragmentWGSLNoCut;
+    } else if(this.material.type === "dark" || this.material.type === "free") {
+      return fragmentWGSLDark;
     } else if(this.material.type === "mini") {
       return miniWGSL;
     } else if(this.material.type === "minia") {

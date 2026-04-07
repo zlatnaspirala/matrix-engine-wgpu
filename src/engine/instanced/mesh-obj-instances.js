@@ -557,11 +557,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       }
       this.MAX_BONES = MEConfig.MAX_BONES;
       // your total instance count
-      const TRAIL_INSTANCES = 10;
+      const TRAIL_INSTANCES = 11;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
-        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        size:  64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 

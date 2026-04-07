@@ -229,7 +229,6 @@ export default class MatrixEngineWGPU {
     target.append(canvas);
 
     this.submitQueue = [null];
-
     const initialCameraPosition = vec3.create(0, 0, 0);
     this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
@@ -238,9 +237,9 @@ export default class MatrixEngineWGPU {
 
     this.cameras = {
       // arcball: new ArcballCamera({position: initialCameraPosition, canvas: canvas}),
-      firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
-      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1}),
-      RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
+      firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+      RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
     };
 
     if(urlQuery.lang != null) {
@@ -896,11 +895,10 @@ export default class MatrixEngineWGPU {
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo1.meshA, meshB: geo1.meshB, resolutionU: geo1.resolutionU, resolutionV: geo1.resolutionV,
       fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
-      pointerEffect: {
-        enabled: true,
-        flameEffect: false,
-        flameEmitter: true,
-      }
+      // pointerEffect: {
+      //   enabled: true,
+      //   flameEmitter: true,
+      // }
     });
 
     const geo2 = fountainBasinStoneConfig(MeshMorpher);
@@ -929,12 +927,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo4.meshA, meshB: geo4.meshB, resolutionU: geo4.resolutionU, resolutionV: geo4.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
-      pointerEffect: {
-        enabled: true,
-        flameEffect: false,
-        flameEmitter: true,
-      }
+      fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL
     });
 
     const geo5 = fountainBasinWaterConfig(MeshMorpher);

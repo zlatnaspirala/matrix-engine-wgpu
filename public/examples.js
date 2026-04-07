@@ -1088,7 +1088,7 @@ var fontana = function () {
     function onGround(m) {
       fontana.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'dark'
         },
         position: {
           x: 0,
@@ -1136,7 +1136,7 @@ var fontana = function () {
       fontana.myLoadedMeshes = m;
       fontana.addMeshObj({
         material: {
-          type: 'mirror'
+          type: 'dark'
         },
         position: {
           x: 0,
@@ -1154,25 +1154,7 @@ var fontana = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/cube-g1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        envMapParams: {
-          baseColorMix: 0.0,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.25,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.01,
-          // No pulse (static)
-          fresnelPower: 2.0,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'sky',
         mesh: m.ball,
         physics: {
@@ -1183,7 +1165,7 @@ var fontana = function () {
       // fontana
       const obj = fontana.addFontana({
         material: {
-          type: 'free'
+          type: 'dark'
         },
         position: {
           x: 0,
@@ -1214,13 +1196,15 @@ var fontana = function () {
       });
       fontana.addLight();
       fontana.lightContainer[0].setIntensity(10);
-      fontana.activateBloomEffect();
+
+      // fontana.activateBloomEffect();
       fontana.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
       fontana.lightContainer[0].behavior.value_ = -1;
-      fontana.lightContainer[0].updater.push(light => {
-        light.setPosX(light.behavior.setPath0());
-        light.setTargetX(light.behavior.setPath0());
-      });
+      // fontana.lightContainer[0].updater.push((light) => {
+      //   light.setPosX(light.behavior.setPath0())
+      //   light.setTargetX(light.behavior.setPath0())
+      // })
+
       fontana.lightContainer[0].setPosition(0, 17, -10);
       fontana.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
@@ -2015,6 +1999,7 @@ var loadObjFile = function () {
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
+      // type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -2042,17 +2027,6 @@ var loadObjFile = function () {
         material: {
           type: 'standard'
         },
-        // envMapParams: {
-        //   baseColorMix: 0.1,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.5,                // 25% reflection blend
-        //   illuminateColor: [0.6, 0.5, 0.2], // Soft cyan
-        //   illuminateStrength: 0.1,          // Gentle rim
-        //   illuminatePulse: 0.01,            // No pulse (static)
-        //   fresnelPower: 0.1,                // Medium-sharp edge
-        //   envLodBias: 2.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
         position: {
           x: 0,
           y: -5,
@@ -2182,12 +2156,13 @@ var loadObjFile = function () {
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.setAmbient(10, 1, 0);
-        app.cameras.WASD.setYaw(-0.03);
-        app.cameras.WASD.setPitch(-0.49);
-        app.cameras.WASD.setZ(0);
-        app.cameras.WASD.setY(10);
+        let cam = app.getCamera();
+        cam.setYaw(-0.03);
+        cam.setPitch(-0.49);
+        cam.setZ(0);
+        cam.setY(10);
         app.buildRenderBuckets(app.mainRenderBundle);
-        app.cameras.WASD._dirtyAngle = true;
+        cam._dirtyAngle = true;
       }, 400);
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
@@ -21745,6 +21720,12 @@ class WASDCamera {
     this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
+    if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
+      console.log('CONTROLER MOBILE WASDCAMERA');
+      MobileDOM.createWASD(this, {
+        margin: 0
+      });
+    }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
     _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
@@ -22373,12 +22354,20 @@ class FirstPersonCamera {
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
-    if ((0, _utils.isMobile)() == true) {
-      console.log('>>>>>>>>>> camera WASD HUD');
+    if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
+      console.log('FPCAMERA');
       MobileDOM.createWASD(this, {
         margin: 50
       });
     }
+  }
+  setPitch(p) {
+    this.pitch = p;
+    this._dirtyAngle = true;
+  }
+  setYaw(y) {
+    this.yaw = y;
+    this._dirtyAngle = true;
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
     _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
@@ -22387,6 +22376,18 @@ class FirstPersonCamera {
   setPosition(x, y, z) {
     this.position[0] = x;
     this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+  setX(x) {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  }
+  setY(y) {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  }
+  setZ(z) {
     this.position[2] = z;
     this._dirtyAngle = true;
   }
@@ -22618,7 +22619,7 @@ const MobileDOM = {
     Object.assign(wrap.style, {
       position: 'fixed',
       bottom: `${margin}px`,
-      left: `${margin}px`,
+      right: `${margin}px`,
       width: `${size * 3 + 8}px`,
       userSelect: 'none',
       zIndex: '9999',
@@ -27692,8 +27693,8 @@ class MaterialsInstanced {
       return this.material.fromGraph;
     } else if (this.material.type === "mirror") {
       return _fragmentMirrorInstanced.fragmentMirrorWGSLInstanced;
-    } else if (this.material.type === "free") {
-      return _fragmentWgsl2.fragmentWGSLNoCut;
+    } else if (this.material.type === "dark" || this.material.type === "free") {
+      return _fragmentWgsl2.fragmentWGSLDark;
     } else if (this.material.type === "mini") {
       return _mini.miniWGSL;
     } else if (this.material.type === "minia") {
@@ -28654,11 +28655,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       }
       this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
       // your total instance count
-      const TRAIL_INSTANCES = 10;
+      const TRAIL_INSTANCES = 11;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
-        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        size: 64000,
+        //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
@@ -32635,8 +32637,8 @@ class Materials {
       return _fragmentMix.fragmentWGSLMix1; // ?
     } else if (this.material.type === "mirror") {
       return _fragmentMirror.mirrorIlluminateFragmentWGSL;
-    } else if (this.material.type === "free") {
-      return _fragmentWgsl5.fragmentWGSLNoCut;
+    } else if (this.material.type === "dark" || this.material.type === "free") {
+      return _fragmentWgsl5.fragmentWGSLDark;
     } else if (this.material.type === "fontana") {
       return _fontana.fountainBasinFragmentWGSL;
     } else if (this.material.type === "mini") {
@@ -40851,14 +40853,14 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -41849,9 +41851,10 @@ let validLight = select(0.0, 1.0, NdotL > 0.0);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.fragmentWGSLNoCut = void 0;
+exports.fragmentWGSLDark = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSLNoCut = exports.fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+let fragmentWGSLDark = exports.fragmentWGSLDark = `
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -41900,11 +41903,10 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
-    alpha     : f32,  // ✅ Added alpha
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -41914,115 +41916,180 @@ const MAX_SPOTLIGHTS = 20u;
 @group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
 @group(1) @binding(3) var metallicRoughnessSampler: sampler;
 @group(1) @binding(4) var<uniform> material: MaterialPBR;
-// @group(1) @binding(5) var normalTexture: texture_2d<f32>;
-// @group(1) @binding(6) var normalSampler: sampler;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-  @location(0) shadowPos : vec4f,
-  @location(1) fragPos   : vec3f,
-  @location(2) fragNorm  : vec3f,
-  @location(3) uv        : vec2f,
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-  let texColor = textureSample(meshTexture, meshSampler, uv);
-  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-  let metallic = mrTex.b * material.metallicFactor;
-  let roughness = mrTex.g * material.roughnessFactor;
-  let alpha = texColor.a * material.baseColorFactor.a;
-  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha = material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-  let a = roughness * roughness;
-  let a2 = a * a;
-  let NdotH = max(dot(N, H), 0.0);
-  let NdotH2 = NdotH * NdotH;
-  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-  return a2 / (PI * denom * denom);
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-  let r = (roughness + 1.0);
-  let k = (r * r) / 8.0;
-  return NdotV / (NdotV * (1.0 - k) + k);
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-  let NdotV = max(dot(N, V), 0.0);
-  let NdotL = max(dot(N, L), 0.0);
-  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-  let L = normalize(light.position - fragPos);
-  let theta = dot(L, normalize(-light.direction));
-  let epsilon = light.innerCutoff - light.outerCutoff;
-  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-// PCF shadow sampling
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+    return material.baseColor * light.color * light.intensity * NdotL;
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-  var visibility: f32 = 0.0;
-  let biasConstant: f32 = 0.001;
-  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-  let bias = biasConstant + slopeBias;
-  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-  let offsets: array<vec2f, 9> = array<vec2f, 9>(
-      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-  );
-  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
-  }
-  return visibility / 9.0;
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    var weight: f32 = 0.0;
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        let sampleUV = shadowUV + offsets[i] * oneOverSize;
+        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+        let s = textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            sampleUV, layer, depthRef - bias
+        );
+        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+        visibility += select(1.0, s, inBounds);
+        weight += 1.0;
+    }
+    return visibility / weight;
 }
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-  let materialData = getPBRMaterial(input.uv);
-  if (materialData.alpha < 0.01) {
-      discard;
-  }
-  let N = normalize(input.fragNorm);
-  let V = normalize(scene.cameraPos - input.fragPos);
-  var Lo = vec3f(0.0);
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-      let L = normalize(spotlights[i].position - input.fragPos);
-      let H = normalize(V + L);
-      let distance = length(spotlights[i].position - input.fragPos);
-      let dist        = length(spotlights[i].position - input.fragPos);
-      let r           = dist / max(spotlights[i].range, 0.001);
-      let attenuation = 1.0 / (1.0 + r * r);
-      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-      let NDF = distributionGGX(N, H, materialData.roughness);
-      let G   = geometrySmith(N, V, L, materialData.roughness);
-      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-      let kS = F;
-      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-      let diffuse  = kD * materialData.baseColor / PI;
-      let NdotL = max(dot(N, L), 0.0);
-      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-      Lo += (diffuse + specular) * radiance * NdotL;
-  }
+    let materialData = getPBRMaterial(input.uv);
+    // if (materialData.alpha < 0.01) {
+    //     discard;
+    // }
 
-  let maxIntensity = max(length(Lo), 0.0);
-  let ambientScale = clamp(maxIntensity * 0.5 + 0.05, 0.0, 1.0);
-  let ambient = scene.globalAmbient * materialData.baseColor * ambientScale;
-  var color = ambient + Lo;
-
-  color = pow(max(color, vec3f(0.0)), vec3f(1.0 / 2.2));
-  return vec4f(color, 1.0);
-}
-`;
+    var lightContribution = vec3f(0.0);
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+        let depthRef = p.z;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        // let inFrustum =
+        //     p.z >= 0.0 && p.z <= 1.0 &&
+        //     p.x >= -1.0 && p.x <= 1.0 &&
+        //     p.y >= -1.0 && p.y <= 1.0;
+        let inDepth = p.z >= 0.0 && p.z <= 1.0;
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+        let shadowFactor = select(1.0, visibility, inDepth);
+        let contrib = computeSpotLight(
+            spotlights[i],
+            norm,
+            input.fragPos,
+            viewDir,
+            materialData
+        );
+        lightContribution += contrib * shadowFactor;
+    }
+    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+    // -- from dark next feature
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    // like fog interest
+    // var ambientTerm = material.ambientColor + scene.globalAmbient;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    return vec4f(finalColor, alpha);
+}`;
 
 },{"../me-config":73}],86:[function(require,module,exports){
 "use strict";
@@ -58386,17 +58453,20 @@ class MatrixEngineWGPU {
         position: initialCameraPosition,
         canvas: canvas,
         pitch: 0.18,
-        yaw: -0.1
+        yaw: -0.1,
+        isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null
       }),
       WASD: new _cameras.WASDCamera({
         position: initialCameraPosition,
         canvas: canvas,
         pitch: 0.18,
-        yaw: -0.1
+        yaw: -0.1,
+        isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null
       }),
       RPG: new _cameras.RPGCamera({
         position: initialCameraPosition,
-        canvas: canvas
+        canvas: canvas,
+        isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null
       })
     };
     if (_utils.urlQuery.lang != null) {
@@ -59210,12 +59280,11 @@ class MatrixEngineWGPU {
       resolutionU: geo1.resolutionU,
       resolutionV: geo1.resolutionV,
       fragmentWGSL: _fontanaWgsl.fountainCurtainFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL,
-      pointerEffect: {
-        enabled: true,
-        flameEffect: false,
-        flameEmitter: true
-      }
+      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      // pointerEffect: {
+      //   enabled: true,
+      //   flameEmitter: true,
+      // }
     });
     const geo2 = (0, _fontana.fountainBasinStoneConfig)(_proceduralMesh.MeshMorpher);
     let m2 = this.addProceduralMeshObj({
@@ -59331,12 +59400,7 @@ class MatrixEngineWGPU {
       resolutionU: geo4.resolutionU,
       resolutionV: geo4.resolutionV,
       fragmentWGSL: _fontanaWgsl.fountainCurtainFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL,
-      pointerEffect: {
-        enabled: true,
-        flameEffect: false,
-        flameEmitter: true
-      }
+      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
     });
     const geo5 = (0, _fontana.fountainBasinWaterConfig)(_proceduralMesh.MeshMorpher);
     let m5 = this.addProceduralMeshObj({

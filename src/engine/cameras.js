@@ -42,6 +42,11 @@ export class WASDCamera {
     this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
+
+    if(isMobile() == true && options.isActive == 'init active cam') {
+      console.log('CONTROLER MOBILE WASDCAMERA')
+      MobileDOM.createWASD(this, {margin: 0});
+    }
   }
 
   setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
@@ -570,10 +575,20 @@ export class FirstPersonCamera {
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
 
-    if(isMobile() == true) {
-      console.log('>>>>>>>>>> camera WASD HUD')
+    if(isMobile() == true && options.isActive == 'init active cam') {
+      console.log('FPCAMERA')
       MobileDOM.createWASD(this, {margin: 50});
     }
+  }
+
+  setPitch(p) {
+    this.pitch = p;
+    this._dirtyAngle = true;
+  }
+
+  setYaw(y) {
+    this.yaw = y;
+    this._dirtyAngle = true;
   }
 
   setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
@@ -584,6 +599,21 @@ export class FirstPersonCamera {
   setPosition(x, y, z) {
     this.position[0] = x;
     this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+
+  setX(x) {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  }
+
+  setY(y) {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  }
+
+  setZ(z) {
     this.position[2] = z;
     this._dirtyAngle = true;
   }
@@ -741,7 +771,7 @@ const MobileDOM = {
     Object.assign(wrap.style, {
       position: 'fixed',
       bottom: `${margin}px`,
-      left: `${margin}px`,
+      right: `${margin}px`,
       width: `${size * 3 + 8}px`,
       userSelect: 'none',
       zIndex: '9999',

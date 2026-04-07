@@ -8,7 +8,7 @@ import {fragmentWaterWGSL} from "../shaders/water/water-c.wgls";
 import {mirrorIlluminateFragmentWGSL} from "../shaders/fragment.mirror.wgsl";
 import {byId, LOG_FUNNY_ARCADE} from "./utils";
 import {fragmentWGSLGPT} from "../shaders/fragment.gpt.wgsl";
-import {fragmentWGSLNoCut} from "../shaders/fragment.wgsl.noCut";
+import {fragmentWGSLDark} from "../shaders/fragment.wgsl.noCut";
 import {miniWGSL} from "../shaders/minimalist/mini.wgsl";
 import {miniaWGSL} from "../shaders/minimalist/mini-a.wgsl";
 import {midaWGSL} from "../shaders/minimalist/mid-a.wgsl";
@@ -399,8 +399,8 @@ export default class Materials {
       return fragmentWGSLMix1; // ?
     } else if(this.material.type === "mirror") {
       return mirrorIlluminateFragmentWGSL;
-    } else if(this.material.type === "free") {
-      return fragmentWGSLNoCut;
+    } else if(this.material.type === "dark" || this.material.type === "free") {
+      return fragmentWGSLDark;
     } else if(this.material.type === "fontana") {
       return fountainBasinFragmentWGSL;
     } else if(this.material.type === "mini") {
