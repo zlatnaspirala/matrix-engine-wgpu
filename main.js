@@ -45,25 +45,24 @@ export let application = new MatrixEngineWGPU({
   application.dices = dices;
   application.activateDiceClickListener = null;
 
-  application.matrixAmmo.detectTopFaceFromQuat = (q) => {
-    // Define based on *visual face* → object-space normal mapping
+  // Detect which face is on top from a plain quaternion {x, y, z, w}
+  application.matrixPhysics.detectTopFaceFromQuat = (q) => {
     const faces = [
-      {face: 1, vec: [0, 1, 0]},   // top
-      {face: 2, vec: [0, -1, 0]},  // bottom
-      {face: 3, vec: [0, 0, 1]},   // front
-      {face: 4, vec: [0, 0, -1]},  // back
-      {face: 5, vec: [1, 0, 0]},   // right
-      {face: 6, vec: [-1, 0, 0]}   // left
+      {face: 1, vec: [0, 1, 0]},
+      {face: 2, vec: [0, -1, 0]},
+      {face: 3, vec: [0, 0, 1]},
+      {face: 4, vec: [0, 0, -1]},
+      {face: 5, vec: [1, 0, 0]},
+      {face: 6, vec: [-1, 0, 0]}
     ];
 
     let maxDot = -Infinity;
     let topFace = null;
 
     for(const f of faces) {
-      const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
-      const dot = v.y; // Compare with world up (0, 1, 0)
-      if(dot > maxDot) {
-        maxDot = dot;
+      const v = application.matrixPhysics.applyQuatToVec(q, f.vec);
+      if(v.y > maxDot) {
+        maxDot = v.y;
         topFace = f.face;
       }
     }
@@ -71,11 +70,10 @@ export let application = new MatrixEngineWGPU({
     return topFace;
   };
 
-  application.matrixAmmo.applyQuatToVec = (q, vec) => {
+  application.matrixPhysics.applyQuatToVec = (q, vec) => {
     const [x, y, z] = vec;
-    const qx = q.x(), qy = q.y(), qz = q.z(), qw = q.w();
+    const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
 
-    // Quaternion * vector * inverse(quaternion)
     const ix = qw * x + qy * z - qz * y;
     const iy = qw * y + qz * x - qx * z;
     const iz = qw * z + qx * y - qy * x;
@@ -86,21 +84,18 @@ export let application = new MatrixEngineWGPU({
       y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
       z: iz * qw + iw * -qz + ix * -qy - iy * -qx
     };
-  }
-  
+  };
+
   // This code must be on top (Physics)
-  application.matrixAmmo.detectCollision = function() {
+  application.matrixPhysics.detectCollision = function() {
     this.lastRoll = '';
     this.presentScore = '';
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
     for(let i = 0;i < numManifolds;i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      // let numContacts = contactManifold.getNumContacts();
       if(this.ground.kB == contactManifold.getBody0().kB ||
         this.ground.kB == contactManifold.getBody1().kB) {
-        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
-        // CHECK ROTATION BEST WAY - VISAL PART IS NOT INTEREST NOW 
         if(this.ground.kB == contactManifold.getBody0().kB) {
           var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
           var testR = contactManifold.getBody1().getWorldTransform().getRotation();
@@ -110,15 +105,22 @@ export let application = new MatrixEngineWGPU({
           var testR = contactManifold.getBody0().getWorldTransform().getRotation();
         }
         var passed = false;
-        const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
-        if(face) {
-          this.lastRoll = face.toString();
-          // Update score logic - must be created manual or manager for this -> cache
-          dispatchEvent(new CustomEvent(`dice-${face}`, {detail: {result: `dice-${face}`, cubeId: MY_DICE_NAME}}));
-        }
+
+        const quatPlain = {x: testR.x(), y: testR.y(), z: testR.z(), w: testR.w()};
+        this._onGroundContact(MY_DICE_NAME, quatPlain);
       }
     }
   }
+
+  application.matrixPhysics._onGroundContact = (bodyName, quatPlain) => {
+    const face = application.matrixPhysics.detectTopFaceFromQuat(quatPlain);
+    if(face) {
+      application.matrixPhysics.lastRoll = face.toString();
+      dispatchEvent(new CustomEvent(`dice-${face}`, {
+        detail: {result: `dice-${face}`, cubeId: bodyName}
+      }));
+    }
+  };
 
   addRaycastsListener();
   // addRaycastsAABBListener();
@@ -154,28 +156,15 @@ export let application = new MatrixEngineWGPU({
   application.matrixSounds.createAudio('hover', 'res/audios/feel.mp3', 3)
   application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2)
 
-  addEventListener('AmmoReady', () => {
+  addEventListener('PhysicsReady', () => {
     myDom.createJamb();
     myDom.addDraggerForTable();
     myDom.createBlocker();
-    app.matrixAmmo.speedUpSimulation = 2;
+    app.matrixPhysics.speedUpSimulation = 2;
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
     }, onLoadObj, {scale: [0.5, 0.5, 0.5], swap: [null]})
-
-    // downloadMeshes({
-    //   star1: "./res/meshes/shapes/star1.obj",
-    // }, (m) => {
-
-    //   let o = {
-    //     scale: 2,
-    //     position: {x: 3, y: 0, z: -10},
-    //     rotation: {x: 0, y: 0, z: 0},
-    //     rotationSpeed: {x: 10, y: 0, z: 0},
-    //     texturesPaths: ['./res/textures/default.png']
-    //   };
-    // }, {scale: [11, 11, 11], swap: [null]})
 
     downloadMeshes({
       bg: "./res/meshes/jamb/bg.obj",
@@ -267,10 +256,10 @@ export let application = new MatrixEngineWGPU({
       app.cameras.WASD.setZ(0);
       app.cameras.WASD.setY(3.76);
       // BODY x, y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(
-        app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1)
-      app.matrixAmmo.setKinematicTransform(
-        app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
+      app.matrixPhysics.setKinematicTransform(
+        app.matrixPhysics.getBodyByName('mainTitle'), 0, 0, 0, 1)
+      app.matrixPhysics.setKinematicTransform(
+        app.matrixPhysics.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
     }, 1200);
   }
 
@@ -492,13 +481,19 @@ export let application = new MatrixEngineWGPU({
 
     function shootDice(x) {
       setTimeout(() => {
-        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
-          randomFloatFromTo(3, 12), 9, 9
-        ))
-        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3(
-          randomFloatFromTo(-5, 5), 15, -20
-        ))
-        setTimeout(() => app.matrixSounds.play('roll'), 1500)
+        // app.matrixPhysics.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
+        //   randomFloatFromTo(3, 12), 9, 9
+        // ))
+        // app.matrixPhysics.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3(
+        //   randomFloatFromTo(-5, 5), 15, -20
+        // ))
+        const body = app.matrixPhysics.getBodyByName(`CubePhysics${x}`);
+        app.matrixPhysics.shootBody(
+          body,
+          randomFloatFromTo(-5, 5), 15, -20,   // linear
+          randomFloatFromTo(3, 12), 9, 9        // angular
+        );
+        setTimeout(() => app.matrixSounds.play('roll'), 1500);
       }, 200 * x)
     }
 

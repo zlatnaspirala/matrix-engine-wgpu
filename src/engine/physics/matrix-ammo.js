@@ -1,7 +1,8 @@
 
 import {MEConfig} from "../../me-config";
+import {PVector} from "../matrix-class";
 import {LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../utils";
- 
+
 export default class MatrixAmmo {
   constructor(options = {roundDimensionX: 10, roundDimensionY: 10, gravity: -10}) {
     this.options = options;
@@ -27,6 +28,9 @@ export default class MatrixAmmo {
     this._quat = new Ammo.btQuaternion();
     this._axis = new Ammo.btVector3(0, 0, 0);
 
+    this._transform2 = new Ammo.btTransform();
+    this._origin2 = new Ammo.btVector3(0, 0, 0);
+
     this.maxSubSteps = 4;
   }
 
@@ -39,11 +43,16 @@ export default class MatrixAmmo {
       this.lastUpdate = 0;
       console.log("%cAmmo core loaded.", LOG_FUNNY_ARCADE);
       this.initPhysics(MEConfig.PHYSICS_GROUND_Y);
-      setTimeout(() => {dispatchEvent(new CustomEvent('AmmoReady', {}))}, 200);
+      setTimeout(() => {dispatchEvent(new CustomEvent('PhysicsReady', {}))}, 200);
     });
   };
 
-  initPhysics(GROUND_Y = -4) {
+  setGravity(x, y, z) {
+    this._origin2.setValue(x, y, z);
+    this.dynamicsWorld.setGravity(this._origin2);
+  }
+
+  initPhysics(GROUND_Y) {
     let Ammo = this.Ammo;
     // Physics configuration
     var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration(),
@@ -108,8 +117,6 @@ export default class MatrixAmmo {
     }
   }
 
-  // ─── shared helper ────────────────────────────────────────────
-  // Registers body in world + rigidBodies list.
   _registerBody(body, MEObject, pOptions) {
     body.name = pOptions.name;
     MEObject.itIsPhysicsBody = true;
@@ -753,6 +760,15 @@ export default class MatrixAmmo {
     return b;
   }
 
+  setBodyTransform(body, pVect) {
+    this._transform.setIdentity();
+    this._origin.setValue(pVect.x, pVect.y, pVect.z);
+    this._transform.setOrigin(this._origin);
+    body.setWorldTransform(this._transform);
+    const ms = body.getMotionState();
+    if(ms) ms.setWorldTransform(this._transform);
+  }
+
   deactivatePhysics = (body) => {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
@@ -771,7 +787,7 @@ export default class MatrixAmmo {
     body.setWorldTransform(currentTransform);
     body.getMotionState().setWorldTransform(currentTransform);
     // 5. Add back to physics world
-    this.matrixAmmo.dynamicsWorld.addRigidBody(body);
+    this.matrixPhysics.dynamicsWorld.addRigidBody(body);
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   }
@@ -795,6 +811,94 @@ export default class MatrixAmmo {
       rayDirection[1] / length,
       rayDirection[2] / length
     ];
+  }
+
+  shootBody = (body, lx, ly, lz, ax, ay, az) => {
+    // body.setLinearVelocity(new Ammo.btVector3(lx, ly, lz));
+    // body.setAngularVelocity(new Ammo.btVector3(ax, ay, az));
+    // Use pre-allocated scratch vector to avoid memory leaks
+    this._origin2.setValue(lx, ly, lz);
+    body.setLinearFactor(this._origin2);
+    this._origin2.setValue(ax, ay, az);
+    body.setAngularFactor(this._origin2);
+  }
+
+  // Inside MatrixAmmo class
+  applyImpulse(body, pVect) {
+    const v = new this.Ammo.btVector3(pVect.x, pVect.y, pVect.z);
+    body.activate(true);
+    body.applyCentralImpulse(v);
+    this.Ammo.destroy(v);
+  }
+
+  applyTorque(body, pVect) {
+    const v = new this.Ammo.btVector3(pVect.x, pVect.y, pVect.z);
+    body.activate(true);
+    body.applyTorqueImpulse(v);
+    this.Ammo.destroy(v);
+  }
+
+  setAngularVelocity(body, pVect) {
+    const v = new this.Ammo.btVector3(pVect.x, pVect.y, pVect.z);
+    body.setAngularVelocity(v);
+    this.Ammo.destroy(v);
+  }
+
+  setMaterial(body, friction, restitution) {
+    body.setFriction(friction);
+    body.setRestitution(restitution);
+  }
+
+  activate(body) {
+    body.activate(true);
+  }
+
+  explode(positionVect, radius, strength) {
+    this.rigidBodies.forEach(body => {
+      const p = body.getWorldTransform().getOrigin();
+      const dx = p.x() - positionVect.x;
+      const dy = p.y() - positionVect.y;
+      const dz = p.z() - positionVect.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if(dist > radius || dist === 0) return;
+      const force = strength / (dist + 0.1);
+      this.applyImpulse(body, new PVector(dx * force, dy * force, dz * force));
+    });
+  }
+
+  activatePhysics(body) {
+    const Ammo = this.Ammo;
+
+    // 1. Make it dynamic again
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // Remove CF_KINEMATIC_OBJECT
+    body.setActivationState(1); // ACTIVE_TAG
+    body.isKinematic = false;
+
+    // 2. Reset position above floor
+    const newX = (Math.random() - 0.5) * 4;
+    const newY = 3;
+
+    this._transform2.setIdentity();
+    this._origin2.setValue(newX, newY, 0);
+    this._transform2.setOrigin(this._origin2);
+    body.setWorldTransform(this._transform2);
+
+    // 3. Clear velocities
+    this._origin2.setValue(0, 0, 0);
+    body.setLinearVelocity(this._origin2);
+    body.setAngularVelocity(this._origin2);
+
+    // 4. Enable CCD (Continuous Collision Detection)
+    const size = 1;
+    body.setCcdMotionThreshold(1e-7);
+    body.setCcdSweptSphereRadius(size * 0.5);
+
+    // 5. Re-add to world to force state update
+    this.dynamicsWorld.removeRigidBody(body);
+    this.dynamicsWorld.addRigidBody(body);
+
+    // 6. Final activation
+    body.activate(true);
   }
 
   detectCollision() {

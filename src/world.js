@@ -33,6 +33,7 @@ import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
 import {nanoPass} from "./engine/overrides/nano-render.js";
+import{MatrixJolt} from "./engine/physics/matrix-jolt.js";
 /**
  * @description
  * Main engine root class.
@@ -122,18 +123,25 @@ export default class MatrixEngineWGPU {
     }
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {
-      if(typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
-        this.matrixAmmo = new MatrixAmmo({
-          gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
-          roundDimensionX: options.PHYSICS_GROUND_BYX,
-          roundDimensionY: options.PHYSICS_GROUND_BYZ
-        });
+
+      // check jolt
+      if(typeof options.useJolt !== 'undefined') {
+        //
+          this.matrixPhysics = new MatrixJolt();
       } else {
-        this.matrixAmmo = new MatrixAmmo({
-          gravity: MEConfig.GRAVITY_Y_AXIS,
-          roundDimensionX: MEConfig.PHYSICS_GROUND_BYX,
-          roundDimensionY: MEConfig.PHYSICS_GROUND_BYZ
-        });
+        if(typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
+          this.matrixPhysics = new MatrixAmmo({
+            gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
+            roundDimensionX: options.PHYSICS_GROUND_BYX,
+            roundDimensionY: options.PHYSICS_GROUND_BYZ
+          });
+        } else {
+          this.matrixPhysics = new MatrixAmmo({
+            gravity: MEConfig.GRAVITY_Y_AXIS,
+            roundDimensionX: MEConfig.PHYSICS_GROUND_BYX,
+            roundDimensionY: MEConfig.PHYSICS_GROUND_BYZ
+          });
+        }
       }
     }
     // cache
@@ -693,10 +701,10 @@ export default class MatrixEngineWGPU {
       return false;
     }
     const obj = this.mainRenderBundle[index];
-    let testPB = app.matrixAmmo.getBodyByName(obj.name);
+    let testPB = app.matrixPhysics.getBodyByName(obj.name);
     if(testPB !== null) {
       try {
-        this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        this.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
       } catch(e) {
         console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
       }
@@ -817,7 +825,7 @@ export default class MatrixEngineWGPU {
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;
 
-    if(o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
+    if(o.physics.enabled == true) this.matrixPhysics.addPhysics(myMesh1, o.physics);
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -875,7 +883,7 @@ export default class MatrixEngineWGPU {
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
-    if(o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
+    if(o.physics.enabled === true) this.matrixPhysics.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -1008,8 +1016,8 @@ export default class MatrixEngineWGPU {
     this.mainRenderBundle.length = 0;
 
     // 3️⃣ Physics
-    this.matrixAmmo?.destroy?.();
-    this.matrixAmmo = null;
+    this.matrixPhysics?.destroy?.();
+    this.matrixPhysics = null;
 
     // 4️⃣ Editor
     this.editor?.destroy?.();
@@ -1065,7 +1073,7 @@ export default class MatrixEngineWGPU {
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
-      if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+      if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
@@ -1378,7 +1386,7 @@ export default class MatrixEngineWGPU {
 
         results.push(bvhPlayer);
         // if(o.physics.enabled == true) {
-        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+        //   this.matrixPhysics.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
         setTimeout(() => {

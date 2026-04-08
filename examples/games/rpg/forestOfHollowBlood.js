@@ -74,7 +74,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     return name;
   }
 
-  // addEventListener('AmmoReady', async () => {})
+  // addEventListener('PhysicsReady', async () => {})
   forestOfHollowBlood.player.data = SS.get('player');
 
   // ASYNC FOR very small json become big buggy - pragmatic

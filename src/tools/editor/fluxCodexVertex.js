@@ -4255,7 +4255,7 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        let b = app.matrixAmmo.getBodyByName(objectName);
+        let b = app.matrixPhysics.getBodyByName(objectName);
         const i = new Ammo.btVector3(
           rayDirection[0] * strength,
           rayDirection[1] * strength,

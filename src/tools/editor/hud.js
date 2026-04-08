@@ -1103,7 +1103,7 @@ class SceneObjectProperty {
           }
         })
       } else if(propName == "itIsPhysicsBody") {
-        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for(let key in body) {
           if(typeof body[key] === 'string') {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 

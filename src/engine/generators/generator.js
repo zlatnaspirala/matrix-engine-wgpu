@@ -270,7 +270,7 @@ export function physicsBodiesGeneratorDeepPyramid(
                 raycast: RAY
               });
 
-              const b = app.matrixAmmo.getBodyByName(cubeName);
+              const b = app.matrixPhysics.getBodyByName(cubeName);
               stabilizeTowerBody(b);
 
               const o = app.getSceneObjectByName(cubeName);
@@ -332,7 +332,7 @@ export function physicsBodiesGeneratorTower(
           },
           raycast: RAY
         });
-        const b = app.matrixAmmo.getBodyByName(cubeName);
+        const b = app.matrixPhysics.getBodyByName(cubeName);
         stabilizeTowerBody(b);
         // cache
         const o = app.getSceneObjectByName(cubeName);
@@ -383,7 +383,7 @@ export function addOBJ(
         },
         raycast: RAY
       });
-      // const b = app.matrixAmmo.getBodyByName(name);
+      // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
       runtimeCacheObjs.push(o);
       resolve(o);

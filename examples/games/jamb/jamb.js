@@ -1,3 +1,4 @@
+import {PVector} from "../../../src/engine/matrix-class.js";
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb, setupCanvasFilters, typeText} from "../../../src/engine/utils.js";
 import {settingsBox, welcomeBoxHTML} from "./html-content.js";
 
@@ -19,106 +20,37 @@ export let dices = {
     // 
     let currentIndex = 0;
     for(var x = 1;x < 7;x++) {
-      app.matrixAmmo.getBodyByName(('CubePhysics' + x)).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
+      app.matrixPhysics.getBodyByName(('CubePhysics' + x)).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
     }
   },
 
   refreshSelectedBox: function(arg) {
     let currentIndex = 0;
+    const physics = app.matrixPhysics;
+    const originVect = new PVector(0, 0, 0);
     for(var key in this.SAVED_DICES) {
-      let B = app.matrixAmmo.getBodyByName(key);
-      this.deactivatePhysics(B);
-      const transform = new Ammo.btTransform();
-      transform.setIdentity();
-      transform.setOrigin(new Ammo.btVector3(0, 0, 0));
-      B.setWorldTransform(transform);
+      let B = physics.getBodyByName(key);
+      if(!B) continue;
+      physics.deactivatePhysics(B);
+      physics.setBodyTransform(B, originVect);
       B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
       currentIndex += 3;
     }
   },
 
-  deactivatePhysics: function(body) {
-    const CF_KINEMATIC_OBJECT = 2;
-    const DISABLE_DEACTIVATION = 4;
-    // 1. Remove from world
-    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
-    // 2. Set body to kinematic
-    const flags = body.getCollisionFlags();
-    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
-    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
-    // 3. Clear motion
-    const zero = new Ammo.btVector3(0, 0, 0);
-    body.setLinearVelocity(zero);
-    body.setAngularVelocity(zero);
-    // 4. Reset transform to current position (optional — preserves pose)
-    const currentTransform = body.getWorldTransform();
-    body.setWorldTransform(currentTransform);
-    body.getMotionState().setWorldTransform(currentTransform);
-    // 5. Add back to physics world
-    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
-    // 6. Mark it manually (logic flag)
-    body.isKinematic = true;
-  },
-
   resetBodyAboveFloor: function(body, z = -14) {
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(-1 + Math.random(), 3, z));
-    body.setWorldTransform(transform);
-    body.getMotionState().setWorldTransform(transform);
-  },
-
-  activatePhysics: function(body) {
-    // 1. Make it dynamic again
-    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove kinematic
-    body.setActivationState(1); // ACTIVE_TAG
-    body.isKinematic = false;
-
-    // 2. Reset position ABOVE the floor — force it out of collision
-    // const newY = 3 + Math.random(); // ensure it’s above the floor
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-    const newX = (Math.random() - 0.5) * 4; // spread from -2 to +2 on X
-    const newY = 3;                        // fixed height above floor
-    transform.setOrigin(new Ammo.btVector3(newX, newY, 0));
-    body.setWorldTransform(transform);
-
-    // 3. Clear velocities
-    body.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
-    body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
-
-    // 4. Enable CCD (to prevent tunneling)
-    const size = 1; // cube side length
-    body.setCcdMotionThreshold(1e-7);
-    body.setCcdSweptSphereRadius(size * 0.5);
-
-    // Re-add to world if needed
-    // Optionally: remove and re-add if not responding
-    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
-    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
-
-    // 5. Reactivate it
+    const pos = {x: -1 + Math.random(), y: 3, z: z};
+    this.setBodyTransform(body, pos);
     body.activate(true);
-
-    this.resetBodyAboveFloor(body);
   },
 
   activateAllDicesPhysics: function() {
-    this.getAllDices()
-      // .filter((item) => {
-      //   let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
-      //   if(test === true) {
-      //     return true;
-      //   } else {
-      //     return false;
-      //   }
-      // })
-      .forEach((dice) => {
-        const body = app.matrixAmmo.getBodyByName(dice.name);
-        if(body) {
-          this.activatePhysics(body);  // <--- FIX: pass the physics body, not the dice object
-        }
-      });
+    this.getAllDices().forEach((dice) => {
+      const body = app.matrixPhysics.getBodyByName(dice.name);
+      if(body) {
+        app.matrixPhysics.activatePhysics(body);
+      }
+    });
   },
 
   getAllDices: function() {
@@ -235,9 +167,9 @@ export let myDom = {
       });
       setupCanvasFilters();
       byId('messageBox').setAttribute('data-loaded', 'loaded');
-      document.getElementById('physicsSpeed').value = app.matrixAmmo.speedUpSimulation;
+      document.getElementById('physicsSpeed').value = app.matrixPhysics.speedUpSimulation;
       byId("physicsSpeed").addEventListener("change", (e) => {
-        app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
+        app.matrixPhysics.speedUpSimulation = parseInt(e.target.value);
       });
 
     })

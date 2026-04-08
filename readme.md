@@ -26,26 +26,27 @@ Published on npm as: **`matrix-engine-wgpu`**
 Backend editor (works in local env - desktop browsers) support list:
 - Chrome, Edge, Opera
 
-For 1.10.0 Firefox not FIXED Render
+HOT: For 1.10.0 Firefox not FIXED Render
 
 ---
 
 ## Done list []
 
 - ✔️ Draw loop per pipeline not per mesh (PipelineManager) Power optimisation.
-- ✔️ Support for 3D objects and scene transformations
-- ✔️ Ammo.js physics integration
-- ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-- ✔️ Bloom post processing
-- 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex)
-- ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader)
-- ✔️ Dynamic shadow cast (done also for skinned meshes)
-- ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect
-- ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/)
+- ✔️ Support for 3D objects and scene transformations.
+- ✔️ Ammo.js physics lib integration.
+- ✔️ Jolt physics lib integration.
+- ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
+- ✔️ Bloom post processing.
+- 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
+- ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
+- ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).
+- ✔️ Dynamic shadow cast (done also for skinned meshes).
+- ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect.
+- ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/).
 - ✔️ Trace from V8.GC_MC_BACKGROUND_MARKING (67.9ms) to V8.GCScavenger (7.7ms).
   GC is no longer a factor. ✅
-- ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend
+- ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.
 
 ## Roadmap
 
@@ -217,8 +218,8 @@ mainCameraParams: {
 ### Object Position
 
 Best way for access physics body object:
-app.matrixAmmo.getBodyByName(name)
-also app.matrixAmmo.getNameByBody
+app.matrixPhysics.getBodyByName(name)
+also app.matrixPhysics.getNameByBody
 
 Control object position:
 
@@ -238,13 +239,34 @@ Adjust movement speed:
 app.mainRenderBundle[0].position.thrust = 0.1;
 ```
 
-> ⚠️ For physics-enabled objects, use Ammo.js functions — `.position` and `.rotation` are not visually applied but can be read.
+> ⚠️ For physics-enabled objects, use matrixPhysics functions — `.position` and `.rotation` are not visually applied but can be read.
 
-Example:
-
+Example for `apply physics on scene object click`.
 ```js
-app.matrixAmmo.rigidBodies[0].setAngularVelocity(new Ammo.btVector3(0, 2, 0));
-app.matrixAmmo.rigidBodies[0].setLinearVelocity(new Ammo.btVector3(0, 7, 0));
+physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
+  console.log('ray.hit.event:', e.detail);
+  const physics = app.matrixPhysics; // The engine instance
+  const body = physics.getBodyByName(e.detail.hitObject.name);
+  if(!body) return;
+  // 1. Apply Impulse up
+  // physics.applyImpulse(body, new PVector(0, 5, 0));
+  // 2. Set Angular Velocity
+  // physics.setAngularVelocity(body, new PVector(0, 9, 9));
+  // 3. Directional hit based on ray
+  // const dir = e.detail.rayDirection; // assuming [x, y, z]
+  // const strength = 20;
+  // physics.applyImpulse(body, new PVector(
+  //   dir[0] * strength,
+  //   dir[1] * strength,
+  //   dir[2] * strength
+  // ));
+  // 4. Explosion example
+  const hitPos = new PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
+  physics.explode(hitPos, 10, 50);
+  // 5. Change Materials
+  // const metal = {friction: 0.4, restitution: 0.1};
+  // physics.setMaterial(body, metal.friction, metal.restitution);
+});
 ```
 
 ---
@@ -269,7 +291,7 @@ Stop rotation:
 app.mainRenderBundle[0].rotation.rotationSpeed.y = 0;
 ```
 
-> ⚠️ For physics-enabled objects, use Ammo.js methods (e.g., `.setLinearVelocity()`).
+> ⚠️ For physics-enabled objects, use matrixPhysics methods (e.g., `.applyImpulse`).
 
 ---
 
@@ -278,7 +300,8 @@ app.mainRenderBundle[0].rotation.rotationSpeed.y = 0;
 Manipulate WASD camera:
 
 ```js
-app.cameras.WASD.pitch = 0.2;
+app.cameras.WASD.setPitch(0.2);
+
 ```
 
 ---
@@ -567,7 +590,7 @@ export let application = new MatrixEngineWGPU(
     },
   },
   () => {
-    addEventListener("AmmoReady", () => {
+    addEventListener("PhysicsReady", () => {
       downloadMeshes(
         {
           welcomeText: "./res/meshes/blender/piramyd.obj",
@@ -636,7 +659,7 @@ export var loadObjsSequence = function () {
       },
     },
     () => {
-      addEventListener("AmmoReady", () => {
+      addEventListener("PhysicsReady", () => {
         downloadMeshes(
           makeObjSeqArg({
             id: "swat-walk-pistol",

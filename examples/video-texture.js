@@ -22,7 +22,7 @@ export var loadVideoTexture = function() {
       console.log('*********')
     })
 
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       downloadMeshes({
         piramyd: "./res/meshes/blender/piramyd.obj",
         cube: "./res/meshes/blender/cube.obj",

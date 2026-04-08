@@ -2,6 +2,7 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from "../src/engine/loader-obj.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {PVector} from "../src/engine/matrix-class.js";
 // import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
 export var flipper = function() {
   let MYFLIPPER = {
@@ -75,7 +76,7 @@ export var flipper = function() {
       });
     }
 
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       addRaycastsAABBListener();
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
@@ -92,7 +93,7 @@ export var flipper = function() {
         onGround,
         {scale: [1, 1, 1]}
       );
-      flipper.matrixAmmo.speedUpSimulation = 4;
+      flipper.matrixPhysics.speedUpSimulation = 4;
     });
 
     function onGround(m) {
@@ -230,13 +231,14 @@ export var flipper = function() {
         name: "flipperRightAnchor"
       });
 
-      let getLA = flipper.matrixAmmo.getBodyByName('flipperLeftAnchor');
-      getLA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
-      getLA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
-
-      let getRA = flipper.matrixAmmo.getBodyByName('flipperRightAnchor');
-      getRA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
-      getRA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
+      let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+      flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
+      // getLA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
+      // getLA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
+      let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+      // getRA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
+      // getRA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
+      flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
 
       const commomBODYX = 0;
       const L = flipper.addMeshObj({
@@ -269,8 +271,8 @@ export var flipper = function() {
         }
       });
 
-      const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
-      const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
+      const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+      const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
       leftBody.setActivationState(4);
       leftBody.activate(true);
       leftBody.setDamping(0.8, 0.8);
@@ -488,9 +490,11 @@ export var flipper = function() {
         if(e.detail.hitObject.name == "pushBtn" && MYFLIPPER.STATUS_PUSH == 'free') {
           console.log('e.detail pushBtn123 ', e.detail);
           MYFLIPPER.STATUS_PUSH = 'in action';
-          let ball = app.matrixAmmo.getBodyByName(ball1.name);
-          const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
-          ball.applyCentralImpulse(impulse);
+          let ball = app.matrixPhysics.getBodyByName(ball1.name);
+          // const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
+          // ball.applyCentralImpulse(impulse);
+          flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
+
         }
       });
 
@@ -503,16 +507,21 @@ export var flipper = function() {
 
         console.log('collision : ', body1Name)
         if(body1Name.startsWith("bumper")) {
-          const ball = app.matrixAmmo.getBodyByName('ball1');
-          const bumperBody = app.matrixAmmo.getBodyByName(body1Name);
+          const ball = app.matrixPhysics.getBodyByName('ball1');
+          const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if(ball && bumperBody) {
-            const impulse = new Ammo.btVector3(
+            // const impulse = new Ammo.btVector3(
+            //   rayDirection[0] * strength,
+            //   Math.abs(rayDirection[1]) * strength + 8,
+            //   rayDirection[2] * strength
+            // );
+            // ball.activate(true);
+            // ball.applyCentralImpulse(impulse);
+            flipper.matrixPhysics.applyImpulse(ball, new PVector(
               rayDirection[0] * strength,
               Math.abs(rayDirection[1]) * strength + 8,
               rayDirection[2] * strength
-            );
-            ball.activate(true);
-            ball.applyCentralImpulse(impulse);
+            ));
           }
         } else if(body1Name.startsWith("edgeRigth") && MYFLIPPER.STATUS_PUSH == 'wait') {
           MYFLIPPER.STATUS_PUSH = 'free';
@@ -526,12 +535,11 @@ export var flipper = function() {
       })
 
       // GRAVITY TILT (PINBALL FEEL)
-      flipper.matrixAmmo.dynamicsWorld.setGravity(
-        new Ammo.btVector3(0, -9.8, 1)
-      );
+      // flipper.matrixPhysics.dynamicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 1));
+      flipper.matrixPhysics.setGravity(0, -9.8, 1);
 
       // BALL PHYSICS TUNING
-      const ball = flipper.matrixAmmo.getBodyByName('ball1');
+      const ball = flipper.matrixPhysics.getBodyByName('ball1');
       if(ball) {
         ball.setRestitution(0.9);
         ball.setFriction(0.2);
@@ -541,7 +549,7 @@ export var flipper = function() {
 
       // FLIPPER SETUP
       const commonX = 0.5;
-      const hingeLeft = app.matrixAmmo.addHingeConstraint(L, LAnchor, {
+      const hingeLeft = app.matrixPhysics.addHingeConstraint(L, LAnchor, {
         name: "flipperLeftHinge",
         pivotA: [-commonX, 0, 0],
         pivotB: [0, 0, 0],
@@ -549,7 +557,7 @@ export var flipper = function() {
         limits: [-0.8, 0.5]
       });
 
-      const hingeRight = app.matrixAmmo.addHingeConstraint(R, RAnchor, {
+      const hingeRight = app.matrixPhysics.addHingeConstraint(R, RAnchor, {
         name: "flipperRightHinge",
         pivotA: [commonX, 0, 0],
         pivotB: [0, 0, 0],
@@ -565,13 +573,13 @@ export var flipper = function() {
         e.preventDefault();
         if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
           leftBodycurrPos = 'pressed';
-          const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
+          const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
           leftBody.activate(true);
           leftBody.setActivationState(4);
           hingeLeft.enableAngularMotor(true, -25, 500);
         }
         if(e.code === "KeyM") {
-          const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
+          const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
           rightBody.activate(true);
           rightBody.setActivationState(4);
           hingeRight.enableAngularMotor(true, -25, 500);
@@ -591,13 +599,13 @@ export var flipper = function() {
       window.addEventListener("keyup", (e) => {
         if(e.code === "KeyZ") {
           leftBodycurrPos = 'unpressed';
-          // const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
+          // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
           // leftBody.activate(true);
           // leftBody.setActivationState(4);
           hingeLeft.enableAngularMotor(true, 10, 500);
         }
         if(e.code === "KeyM") {
-          // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
+          // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
           // rightBody.activate(true);
           // rightBody.setActivationState(4);
           hingeRight.enableAngularMotor(true, 10, 500);
@@ -606,9 +614,10 @@ export var flipper = function() {
         if(e.code == "Space") {
           if(MYFLIPPER.STATUS_PUSH == 'free') {
             MYFLIPPER.STATUS_PUSH = 'in action';
-            let ball = app.matrixAmmo.getBodyByName(ball1.name);
-            const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
-            ball.applyCentralImpulse(impulse);
+            let ball = app.matrixPhysics.getBodyByName(ball1.name);
+            // const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
+            // ball.applyCentralImpulse(impulse);
+            flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
           }
         }
       });

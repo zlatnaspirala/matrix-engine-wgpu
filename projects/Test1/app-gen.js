@@ -27,7 +27,7 @@ let app = new MatrixEngineWGPU(
       if(typeof shaderReady.final === undefined) console.warn(`Shader ${shaderReady.name} is not compiled.`);
     });
 
-    addEventListener('AmmoReady', async () => {
+    addEventListener('PhysicsReady', async () => {
 
       addRaycastsListener("canvas1", "mousedown");
       // [light]

@@ -482,7 +482,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  // addEventListener('AmmoReady', async () => {
+  // addEventListener('PhysicsReady', async () => {
   // catch
   if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
     if(typeof app.label == 'undefined') app.label = {get: {}};

@@ -124,7 +124,7 @@ if (urlQ['demo'] === '1') {
   }, 2000);
 }
 
-},{"./examples/camera-texture.js":2,"./examples/flipper.js":3,"./examples/fontana.js":4,"./examples/glb-loader.js":6,"./examples/load-obj-file.js":7,"./examples/load-objs-sequence.js":8,"./examples/maze.js":9,"./examples/my-lights.js":10,"./examples/physics-playground.js":11,"./examples/procedural-mesh.js":12,"./examples/snake-lights-instanced.js":13,"./examples/snake-lights.js":14,"./examples/video-texture.js":15,"./src/engine/utils.js":72}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/flipper.js":3,"./examples/fontana.js":4,"./examples/glb-loader.js":6,"./examples/load-obj-file.js":7,"./examples/load-objs-sequence.js":8,"./examples/maze.js":9,"./examples/my-lights.js":10,"./examples/physics-playground.js":11,"./examples/procedural-mesh.js":12,"./examples/snake-lights-instanced.js":13,"./examples/snake-lights.js":14,"./examples/video-texture.js":15,"./src/engine/utils.js":73}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -152,7 +152,7 @@ var loadCameraTexture = function () {
     }
   }, () => {
     cameraTexture.addLight();
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
         welcomeText: "./res/meshes/blender/piramyd.obj",
         armor: "./res/meshes/obj/armor.obj",
@@ -203,7 +203,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":71,"../src/engine/utils.js":72,"../src/world.js":122}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":72,"../src/engine/utils.js":73,"../src/world.js":123}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -214,6 +214,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
+var _matrixClass = require("../src/engine/matrix-class.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
 var flipper = function () {
@@ -300,7 +301,7 @@ var flipper = function () {
         light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
@@ -316,7 +317,7 @@ var flipper = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      flipper.matrixAmmo.speedUpSimulation = 4;
+      flipper.matrixPhysics.speedUpSimulation = 4;
     });
     function onGround(m) {
       // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
@@ -495,12 +496,14 @@ var flipper = function () {
         },
         name: "flipperRightAnchor"
       });
-      let getLA = flipper.matrixAmmo.getBodyByName('flipperLeftAnchor');
-      getLA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
-      getLA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
-      let getRA = flipper.matrixAmmo.getBodyByName('flipperRightAnchor');
-      getRA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
-      getRA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
+      let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+      flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
+      // getLA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
+      // getLA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
+      let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+      // getRA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
+      // getRA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
+      flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
       const commomBODYX = 0;
       const L = flipper.addMeshObj({
         material: {
@@ -542,8 +545,8 @@ var flipper = function () {
           vertices: m.pinR.vertices
         }
       });
-      const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
-      const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
+      const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+      const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
       leftBody.setActivationState(4);
       leftBody.activate(true);
       leftBody.setDamping(0.8, 0.8);
@@ -838,9 +841,10 @@ var flipper = function () {
         if (e.detail.hitObject.name == "pushBtn" && MYFLIPPER.STATUS_PUSH == 'free') {
           console.log('e.detail pushBtn123 ', e.detail);
           MYFLIPPER.STATUS_PUSH = 'in action';
-          let ball = app.matrixAmmo.getBodyByName(ball1.name);
-          const impulse = new Ammo.btVector3(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20));
-          ball.applyCentralImpulse(impulse);
+          let ball = app.matrixPhysics.getBodyByName(ball1.name);
+          // const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
+          // ball.applyCentralImpulse(impulse);
+          flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20)));
         }
       });
       const strength = 1;
@@ -851,12 +855,17 @@ var flipper = function () {
         const rayDirection = e.detail.rayDirection;
         console.log('collision : ', body1Name);
         if (body1Name.startsWith("bumper")) {
-          const ball = app.matrixAmmo.getBodyByName('ball1');
-          const bumperBody = app.matrixAmmo.getBodyByName(body1Name);
+          const ball = app.matrixPhysics.getBodyByName('ball1');
+          const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if (ball && bumperBody) {
-            const impulse = new Ammo.btVector3(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength);
-            ball.activate(true);
-            ball.applyCentralImpulse(impulse);
+            // const impulse = new Ammo.btVector3(
+            //   rayDirection[0] * strength,
+            //   Math.abs(rayDirection[1]) * strength + 8,
+            //   rayDirection[2] * strength
+            // );
+            // ball.activate(true);
+            // ball.applyCentralImpulse(impulse);
+            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength));
           }
         } else if (body1Name.startsWith("edgeRigth") && MYFLIPPER.STATUS_PUSH == 'wait') {
           MYFLIPPER.STATUS_PUSH = 'free';
@@ -869,10 +878,11 @@ var flipper = function () {
       });
 
       // GRAVITY TILT (PINBALL FEEL)
-      flipper.matrixAmmo.dynamicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 1));
+      // flipper.matrixPhysics.dynamicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 1));
+      flipper.matrixPhysics.setGravity(0, -9.8, 1);
 
       // BALL PHYSICS TUNING
-      const ball = flipper.matrixAmmo.getBodyByName('ball1');
+      const ball = flipper.matrixPhysics.getBodyByName('ball1');
       if (ball) {
         ball.setRestitution(0.9);
         ball.setFriction(0.2);
@@ -882,14 +892,14 @@ var flipper = function () {
 
       // FLIPPER SETUP
       const commonX = 0.5;
-      const hingeLeft = app.matrixAmmo.addHingeConstraint(L, LAnchor, {
+      const hingeLeft = app.matrixPhysics.addHingeConstraint(L, LAnchor, {
         name: "flipperLeftHinge",
         pivotA: [-commonX, 0, 0],
         pivotB: [0, 0, 0],
         axis: [0, 1, 0],
         limits: [-0.8, 0.5]
       });
-      const hingeRight = app.matrixAmmo.addHingeConstraint(R, RAnchor, {
+      const hingeRight = app.matrixPhysics.addHingeConstraint(R, RAnchor, {
         name: "flipperRightHinge",
         pivotA: [commonX, 0, 0],
         pivotB: [0, 0, 0],
@@ -903,13 +913,13 @@ var flipper = function () {
         e.preventDefault();
         if (e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
           leftBodycurrPos = 'pressed';
-          const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
+          const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
           leftBody.activate(true);
           leftBody.setActivationState(4);
           hingeLeft.enableAngularMotor(true, -25, 500);
         }
         if (e.code === "KeyM") {
-          const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
+          const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
           rightBody.activate(true);
           rightBody.setActivationState(4);
           hingeRight.enableAngularMotor(true, -25, 500);
@@ -926,13 +936,13 @@ var flipper = function () {
       window.addEventListener("keyup", e => {
         if (e.code === "KeyZ") {
           leftBodycurrPos = 'unpressed';
-          // const leftBody = flipper.matrixAmmo.getBodyByName('flipperLeft');
+          // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
           // leftBody.activate(true);
           // leftBody.setActivationState(4);
           hingeLeft.enableAngularMotor(true, 10, 500);
         }
         if (e.code === "KeyM") {
-          // const rightBody = flipper.matrixAmmo.getBodyByName('flipperRight');
+          // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
           // rightBody.activate(true);
           // rightBody.setActivationState(4);
           hingeRight.enableAngularMotor(true, 10, 500);
@@ -940,9 +950,10 @@ var flipper = function () {
         if (e.code == "Space") {
           if (MYFLIPPER.STATUS_PUSH == 'free') {
             MYFLIPPER.STATUS_PUSH = 'in action';
-            let ball = app.matrixAmmo.getBodyByName(ball1.name);
-            const impulse = new Ammo.btVector3(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20));
-            ball.applyCentralImpulse(impulse);
+            let ball = app.matrixPhysics.getBodyByName(ball1.name);
+            // const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
+            // ball.applyCentralImpulse(impulse);
+            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20)));
           }
         }
       });
@@ -1043,7 +1054,7 @@ var flipper = function () {
 };
 exports.flipper = flipper;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":71,"../src/engine/utils.js":72,"../src/world.js":122}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/matrix-class.js":58,"../src/engine/raycast.js":72,"../src/engine/utils.js":73,"../src/world.js":123}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1071,7 +1082,7 @@ var fontana = function () {
       a: 1
     }
   }, () => {
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
       (0, _loaderObj.downloadMeshes)({
         ball: "./res/meshes/blender/sphere.obj",
@@ -1223,7 +1234,7 @@ var fontana = function () {
 };
 exports.fontana = fontana;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/procedural-mesh.js":68,"../src/engine/raycast.js":71,"../src/engine/utils.js":72,"../src/world.js":122}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/procedural-mesh.js":69,"../src/engine/raycast.js":72,"../src/engine/utils.js":73,"../src/world.js":123}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1747,7 +1758,7 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":72}],6:[function(require,module,exports){
+},{"../../../src/engine/utils.js":73}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1980,7 +1991,7 @@ function loadGLBLoader() {
   window.app = TEST_ANIM;
 }
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/world.js":122}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/world.js":123}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2176,7 +2187,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":71,"../src/engine/utils.js":72,"../src/world.js":122}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":72,"../src/engine/utils.js":73,"../src/world.js":123}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2304,7 +2315,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/utils.js":72,"../src/world.js":122}],9:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/utils.js":73,"../src/world.js":123}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2436,7 +2447,7 @@ var mazeGame = function () {
 };
 exports.mazeGame = mazeGame;
 
-},{"../src/engine/collision-sub-system.js":34,"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":71,"../src/world.js":122}],10:[function(require,module,exports){
+},{"../src/engine/collision-sub-system.js":34,"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":72,"../src/world.js":123}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2578,7 +2589,7 @@ var myLights = function () {
 };
 exports.myLights = myLights;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/utils.js":72,"../src/world.js":122}],11:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/utils.js":73,"../src/world.js":123}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2591,10 +2602,13 @@ var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _matrixClass = require("../src/engine/matrix-class.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
+    useJolt: true,
+    // test
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -2608,7 +2622,7 @@ var physicsPlayground = function () {
   }, () => {
     physicsPlayground.addLight();
     (0, _raycast.addRaycastsListener)();
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere.obj",
@@ -2616,7 +2630,7 @@ var physicsPlayground = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      // physicsPlayground.matrixAmmo.speedUpSimulation = 4;
+      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -2666,9 +2680,8 @@ var physicsPlayground = function () {
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
-        let b = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
-        const i = new Ammo.btVector3(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength);
-        b.applyCentralImpulse(i);
+        let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
+        app.matrixPhysics.applyImpulse(b, new _matrixClass.PVector(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength));
       });
     });
     async function onGround(m) {
@@ -2691,13 +2704,14 @@ var physicsPlayground = function () {
       // console.log('1myComplexGeometry', myComplexGeometry2)
 
       // Test complex geometry with ConvexHull
+      console.log('>>>>>>>>>>>>>>>>>>>', m.reel.vertices);
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {
           type: 'standard'
         },
         position: {
-          x: -12,
-          y: 3,
+          x: 0,
+          y: 4,
           z: -6
         },
         rotation: {
@@ -2707,7 +2721,7 @@ var physicsPlayground = function () {
         },
         scale: [2, 2, 2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'edgeTop',
+        name: 'MyHull',
         mesh: m.reel,
         physics: {
           enabled: true,
@@ -2727,8 +2741,8 @@ var physicsPlayground = function () {
         },
         position: {
           x: 0,
-          y: -1,
-          z: -20
+          y: 5,
+          z: -10
         },
         rotation: {
           x: 0,
@@ -2784,45 +2798,32 @@ var physicsPlayground = function () {
       //   {shape: MeshMorpher.cube(1), offset: [0, 0, 0]},
       // );
 
-      physicsPlayground.addProceduralMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 10,
-          y: 5,
-          z: -7
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1, 1, 1],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2),
-        meshB: _proceduralMesh.MeshMorpher.cube(1),
-        name: `morph_1`,
-        physics: {
-          enabled: true,
-          geometry: "Capsule",
-          mass: 5,
-          radius: 1.0,
-          height: 2.0
-        }
-      });
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 10, y: 15, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.capsule(1, 2),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_1`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Capsule",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0
+      //   }
+      // });
+
       physicsPlayground.addProceduralMeshObj({
         material: {
           type: 'standard'
         },
         position: {
           x: 6,
-          y: 5,
+          y: 15,
           z: -7
         },
         rotation: {
@@ -2843,7 +2844,7 @@ var physicsPlayground = function () {
         physics: {
           enabled: true,
           geometry: "Cylinder",
-          mass: 5,
+          mass: 1,
           radius: 1.0,
           height: 2.0
         }
@@ -2880,47 +2881,14 @@ var physicsPlayground = function () {
           height: 5
         }
       });
-      physicsPlayground.addProceduralMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: -4,
-          y: 3,
-          z: -7
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1, 1, 1],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher.coneX(1, 4, false),
-        meshB: _proceduralMesh.MeshMorpher.cube(1),
-        name: `morph_ConeX`,
-        physics: {
-          enabled: true,
-          geometry: "ConeX",
-          mass: 5,
-          radius: 1,
-          height: 4
-        }
-      });
-      app.physicsBodiesGeneratorWall("standard", {
-        x: -5,
-        y: 3,
-        z: -20
-      }, {
-        x: 0,
-        y: 0,
-        z: 0
-      }, ["./res/textures/rust.jpg"], 'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
+
+      // app.physicsBodiesGeneratorWall(
+      //   "standard",
+      //   {x: -5, y: 3, z: -20},
+      //   {x: 0, y: 0, z: 0},
+      //   ["./res/textures/rust.jpg",],
+      //   'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
+
       app.activateBloomEffect();
       physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
       physicsPlayground.lightContainer[0].behavior.value_ = -1;
@@ -2997,65 +2965,28 @@ var physicsPlayground = function () {
       var TEST = physicsPlayground.getSceneObjectByName('cube1');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
-        console.log('ray.hit.event detected', e.detail);
-        const body = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
-        // ------------------------------------------------------
-        // body.setAngularVelocity(new Ammo.btVector3(0, 9, 9));
-        // ------------------------------------------------------
-
-        // ------------------------------------------------------
-        const impulse = new Ammo.btVector3(0, 5, 0);
-        body.applyCentralImpulse(impulse);
-        // ------------------------------------------------------
-
-        // ------------------------------------------------------
-        // const torque = new Ammo.btVector3(0, 10, 0);
-        // body.applyTorqueImpulse(torque);
-        // ------------------------------------------------------
-
-        // ------------------------------------------------------
-        // const dir = e.detail.rayDirection;
+        console.log('ray.hit.event:', e.detail);
+        const physics = app.matrixPhysics; // The engine instance
+        const body = physics.getBodyByName(e.detail.hitObject.name);
+        if (!body) return;
+        // 1. Apply Impulse up
+        // physics.applyImpulse(body, new PVector(0, 5, 0));
+        // 2. Set Angular Velocity
+        // physics.setAngularVelocity(body, new PVector(0, 9, 9));
+        // 3. Directional hit based on ray
+        // const dir = e.detail.rayDirection; // assuming [x, y, z]
         // const strength = 20;
-
-        // const impulse = new Ammo.btVector3(
+        // physics.applyImpulse(body, new PVector(
         //   dir[0] * strength,
         //   dir[1] * strength,
         //   dir[2] * strength
-        // );
-
-        // body.applyCentralImpulse(impulse);
-        // // ------------------------------------------------------
-
-        // // ------------------------------------------------------
-        // body.activate(true);
-        // ------------------------------------------------------
-
-        //
-        // PhysicsMaterials = {
-        //   metal: {friction: 0.4, restitution: 0.1},
-        //   rubber: {friction: 1.0, restitution: 0.9},
-        //   ice: {friction: 0.01, restitution: 0.0}
-        // };
-        // body.setFriction(mat.friction);
-        // body.setRestitution(mat.restitution);
-
-        // explode(position, radius, strength) {
-        //   for(const body of this.bodies) {
-        //     const p = body.getWorldTransform().getOrigin();
-        //     const dx = p.x() - position[0];
-        //     const dy = p.y() - position[1];
-        //     const dz = p.z() - position[2];
-
-        //     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        //     if(dist > radius) continue;
-
-        //     const force = strength / (dist + 0.1);
-        //     body.activate(true);
-        //     body.applyCentralImpulse(
-        //       new Ammo.btVector3(dx * force, dy * force, dz * force)
-        //     );
-        //   }
-        // }
+        // ));
+        // 4. Explosion example
+        const hitPos = new _matrixClass.PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
+        physics.explode(hitPos, 10, 50);
+        // 5. Change Materials
+        // const metal = {friction: 0.4, restitution: 0.1};
+        // physics.setMaterial(body, metal.friction, metal.restitution);
       });
     }
   });
@@ -3063,7 +2994,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/procedural-mesh.js":68,"../src/engine/raycast.js":71,"../src/engine/utils.js":72,"../src/world.js":122}],12:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/matrix-class.js":58,"../src/engine/procedural-mesh.js":69,"../src/engine/raycast.js":72,"../src/engine/utils.js":73,"../src/world.js":123}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3264,7 +3195,7 @@ var procMesh = function () {
 };
 exports.procMesh = procMesh;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/procedural-mesh.js":68,"../src/engine/raycast.js":71,"../src/engine/utils.js":72,"../src/world.js":122}],13:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/procedural-mesh.js":69,"../src/engine/raycast.js":72,"../src/engine/utils.js":73,"../src/world.js":123}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3395,7 +3326,7 @@ var snakeLightsInstanced = function () {
 };
 exports.snakeLightsInstanced = snakeLightsInstanced;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/utils.js":72,"../src/world.js":122}],14:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/utils.js":73,"../src/world.js":123}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3633,7 +3564,7 @@ var snakeLights = function () {
 };
 exports.snakeLights = snakeLights;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/world.js":122}],15:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/world.js":123}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3667,7 +3598,7 @@ var loadVideoTexture = function () {
     videoTexture.canvas.addEventListener("ray.hit.event", e => {
       console.log('*********');
     });
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
         piramyd: "./res/meshes/blender/piramyd.obj",
         cube: "./res/meshes/blender/cube.obj"
@@ -3765,7 +3696,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":71,"../src/world.js":122}],16:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/raycast.js":72,"../src/world.js":123}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21661,7 +21592,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":72}],33:[function(require,module,exports){
+},{"./utils":73}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22741,7 +22672,7 @@ const MobileDOM = {
   }
 };
 
-},{"./utils":72,"wgpu-matrix":30}],34:[function(require,module,exports){
+},{"./utils":73,"wgpu-matrix":30}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23426,7 +23357,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":75,"wgpu-matrix":30}],37:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":76,"wgpu-matrix":30}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23599,7 +23530,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":76,"wgpu-matrix":30}],38:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":77,"wgpu-matrix":30}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23898,7 +23829,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":77,"../utils":72,"wgpu-matrix":30}],39:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":78,"../utils":73,"wgpu-matrix":30}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24220,7 +24151,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":78,"../geometry-factory":48,"wgpu-matrix":30}],40:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":79,"../geometry-factory":48,"wgpu-matrix":30}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24465,7 +24396,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":102,"../geometry-factory.js":48,"wgpu-matrix":30}],41:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":103,"../geometry-factory.js":48,"wgpu-matrix":30}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24724,7 +24655,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":102,"../geometry-factory.js":48,"wgpu-matrix":30}],42:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":103,"../geometry-factory.js":48,"wgpu-matrix":30}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24915,7 +24846,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":101,"../geometry-factory.js":48,"wgpu-matrix":30}],43:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":102,"../geometry-factory.js":48,"wgpu-matrix":30}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25373,7 +25304,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":89}],44:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":90}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25541,7 +25472,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":76,"wgpu-matrix":30}],45:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":77,"wgpu-matrix":30}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25691,7 +25622,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":103,"wgpu-matrix":30}],46:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":104,"wgpu-matrix":30}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25879,7 +25810,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":104}],47:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":105}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26173,7 +26104,7 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, text
                 },
                 raycast: RAY
               });
-              const b = app.matrixAmmo.getBodyByName(cubeName);
+              const b = app.matrixPhysics.getBodyByName(cubeName);
               stabilizeTowerBody(b);
               const o = app.getSceneObjectByName(cubeName);
               _fluxCodexVertex.runtimeCacheObjs.push(o);
@@ -26231,7 +26162,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePat
           },
           raycast: RAY
         });
-        const b = app.matrixAmmo.getBodyByName(cubeName);
+        const b = app.matrixPhysics.getBodyByName(cubeName);
         stabilizeTowerBody(b);
         // cache
         const o = app.getSceneObjectByName(cubeName);
@@ -26283,7 +26214,7 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
         },
         raycast: RAY
       });
-      // const b = app.matrixAmmo.getBodyByName(name);
+      // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
       _fluxCodexVertex.runtimeCacheObjs.push(o);
       resolve(o);
@@ -26294,7 +26225,7 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":118,"../loader-obj":53}],48:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":119,"../loader-obj":53}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28051,7 +27982,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":81,"../../shaders/fragment.wgsl":83,"../../shaders/fragment.wgsl.metal":84,"../../shaders/fragment.wgsl.noCut":85,"../../shaders/fragment.wgsl.normalmap":86,"../../shaders/fragment.wgsl.pong":87,"../../shaders/fragment.wgsl.power":88,"../../shaders/instanced/fragment.instanced.wgsl":90,"../../shaders/instanced/fragment.mirror.instanced.wgsl":91,"../../shaders/minimalist/color-a.wgsl":94,"../../shaders/minimalist/color-b.wgsl":95,"../../shaders/minimalist/mini.wgsl":99,"../../shaders/water/water-c.wgls":109,"../pipelineManager":64}],50:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":82,"../../shaders/fragment.wgsl":84,"../../shaders/fragment.wgsl.metal":85,"../../shaders/fragment.wgsl.noCut":86,"../../shaders/fragment.wgsl.normalmap":87,"../../shaders/fragment.wgsl.pong":88,"../../shaders/fragment.wgsl.power":89,"../../shaders/instanced/fragment.instanced.wgsl":91,"../../shaders/instanced/fragment.mirror.instanced.wgsl":92,"../../shaders/minimalist/color-a.wgsl":95,"../../shaders/minimalist/color-b.wgsl":96,"../../shaders/minimalist/mini.wgsl":100,"../../shaders/water/water-c.wgls":110,"../pipelineManager":65}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29177,7 +29108,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../me-config":73,"../../shaders/fragment.video.wgsl":82,"../../shaders/instanced/vertex.instanced.wgsl":92,"../effects/energy-bar":37,"../effects/flame":39,"../effects/flame-emmiter":38,"../effects/gen":42,"../effects/gen-tex":40,"../effects/gen-tex2":41,"../effects/mana-bar":44,"../effects/pointerEffect":45,"../literals":52,"../loaders/bvh-instaced":54,"../matrix-class":58,"../pipelineManager":64,"../utils":72,"./materials-instanced":49,"wgpu-matrix":30}],51:[function(require,module,exports){
+},{"../../me-config":74,"../../shaders/fragment.video.wgsl":83,"../../shaders/instanced/vertex.instanced.wgsl":93,"../effects/energy-bar":37,"../effects/flame":39,"../effects/flame-emmiter":38,"../effects/gen":42,"../effects/gen-tex":40,"../effects/gen-tex2":41,"../effects/mana-bar":44,"../effects/pointerEffect":45,"../literals":52,"../loaders/bvh-instaced":54,"../matrix-class":58,"../pipelineManager":65,"../utils":73,"./materials-instanced":49,"wgpu-matrix":30}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29806,7 +29737,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../me-config":73,"../shaders/instanced/vertexShadow.instanced.wgsl":93,"../shaders/vertex.procedural.wgsl":105,"../shaders/vertexShadow.wgsl":108,"./behavior":32,"./utils":72,"wgpu-matrix":30}],52:[function(require,module,exports){
+},{"../me-config":74,"../shaders/instanced/vertexShadow.instanced.wgsl":94,"../shaders/vertex.procedural.wgsl":106,"../shaders/vertexShadow.wgsl":109,"./behavior":32,"./utils":73,"wgpu-matrix":30}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30980,7 +30911,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../../me-config.js":73,"../instanced/mesh-obj-instances.js":50,"../utils.js":72,"./webgpu-gltf.js":56,"wgpu-matrix":30}],55:[function(require,module,exports){
+},{"../../me-config.js":74,"../instanced/mesh-obj-instances.js":50,"../utils.js":73,"./webgpu-gltf.js":56,"wgpu-matrix":30}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31639,7 +31570,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../../me-config.js":73,"../mesh-obj":59,"../utils.js":72,"./webgpu-gltf.js":56,"bvh-loader":16,"wgpu-matrix":30}],56:[function(require,module,exports){
+},{"../../me-config.js":74,"../mesh-obj":59,"../utils.js":73,"./webgpu-gltf.js":56,"bvh-loader":16,"wgpu-matrix":30}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33045,13 +32976,14 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":79,"../shaders/fragment.gpt.wgsl":80,"../shaders/fragment.mirror.wgsl":81,"../shaders/fragment.wgsl":83,"../shaders/fragment.wgsl.metal":84,"../shaders/fragment.wgsl.noCut":85,"../shaders/fragment.wgsl.normalmap":86,"../shaders/fragment.wgsl.pong":87,"../shaders/fragment.wgsl.power":88,"../shaders/minimalist/color-a.wgsl":94,"../shaders/minimalist/color-b.wgsl":95,"../shaders/minimalist/hybrid.wgsl":96,"../shaders/minimalist/mid-a.wgsl":97,"../shaders/minimalist/mini-a.wgsl":98,"../shaders/minimalist/mini.wgsl":99,"../shaders/mixed/fragmentMix1.wgsl":100,"../shaders/water/water-c.wgls":109,"./pipelineManager":64,"./utils":72}],58:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":80,"../shaders/fragment.gpt.wgsl":81,"../shaders/fragment.mirror.wgsl":82,"../shaders/fragment.wgsl":84,"../shaders/fragment.wgsl.metal":85,"../shaders/fragment.wgsl.noCut":86,"../shaders/fragment.wgsl.normalmap":87,"../shaders/fragment.wgsl.pong":88,"../shaders/fragment.wgsl.power":89,"../shaders/minimalist/color-a.wgsl":95,"../shaders/minimalist/color-b.wgsl":96,"../shaders/minimalist/hybrid.wgsl":97,"../shaders/minimalist/mid-a.wgsl":98,"../shaders/minimalist/mini-a.wgsl":99,"../shaders/minimalist/mini.wgsl":100,"../shaders/mixed/fragmentMix1.wgsl":101,"../shaders/water/water-c.wgls":110,"./pipelineManager":65,"./utils":73}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Rotation = exports.Position = void 0;
+exports.Rotation = exports.Position = exports.PVector = void 0;
+exports.buildConeVerts = buildConeVerts;
 exports.pairRepulsion = pairRepulsion;
 var _utils = require("./utils");
 /**
@@ -33532,8 +33464,31 @@ function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0) {
   }
   return false;
 }
+class PVector {
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+}
+exports.PVector = PVector;
+function buildConeVerts(radius, height, segments = 16) {
+  const verts = [];
+  const half = height / 2;
+  // base at -half, apex at +half
+  // COM will be at -half + height/4 = -height/4 from origin
+  // close enough for most cases, or compensate in addPhysicsCone
+  for (let i = 0; i < segments; i++) {
+    const a = i / segments * Math.PI * 2;
+    verts.push(Math.cos(a) * radius, -half,
+    // base at -height/2
+    Math.sin(a) * radius);
+  }
+  verts.push(0, half, 0); // apex at +height/2
+  return verts;
+}
 
-},{"./utils":72}],59:[function(require,module,exports){
+},{"./utils":73}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33834,7 +33789,7 @@ class MEMeshObj extends _materials.default {
 
     // new dummy for skin mesh
     if (!this.mesh.jointsBuffer) {
-      console.log('vvvvv', this.mesh.vertices.length);
+      // console.log('Dummy buffer size check:', this.mesh.vertices.length)
       const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -34631,10 +34586,10 @@ class MEMeshObj extends _materials.default {
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
-    let testPB = app.matrixAmmo.getBodyByName(this.name);
+    let testPB = app.matrixPhysics.getBodyByName(this.name);
     if (testPB !== null) {
       try {
-        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        app.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
       } catch (e) {
         console.warn("Physics cleanup err:", e);
       }
@@ -34644,7 +34599,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../me-config":73,"../shaders/fragment.video.wgsl":82,"../shaders/vertex.wgsl":106,"../shaders/vertex.wgsl.normalmap":107,"./effects/destruction":36,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./effects/pointerEffect":45,"./effects/topology-point":46,"./literals":52,"./materials":57,"./matrix-class":58,"./pipelineManager":64,"./procedures/procedural-textures":70,"./utils":72,"wgpu-matrix":30}],60:[function(require,module,exports){
+},{"../me-config":74,"../shaders/fragment.video.wgsl":83,"../shaders/vertex.wgsl":107,"../shaders/vertex.wgsl.normalmap":108,"./effects/destruction":36,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./effects/pointerEffect":45,"./effects/topology-point":46,"./literals":52,"./materials":57,"./matrix-class":58,"./pipelineManager":65,"./procedures/procedural-textures":71,"./utils":73,"wgpu-matrix":30}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34757,7 +34712,7 @@ let zeroPass = function () {
 };
 exports.zeroPass = zeroPass;
 
-},{"../utils":72}],61:[function(require,module,exports){
+},{"../utils":73}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34823,7 +34778,7 @@ let nanoPass = function () {
 };
 exports.nanoPass = nanoPass;
 
-},{"../utils":72}],62:[function(require,module,exports){
+},{"../utils":73}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34835,7 +34790,7 @@ var _utils = require("../utils");
 let noShadowPass = function () {};
 exports.noShadowPass = noShadowPass;
 
-},{"../utils":72}],63:[function(require,module,exports){
+},{"../utils":73}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34843,6 +34798,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _meConfig = require("../../me-config");
+var _matrixClass = require("../matrix-class");
 var _utils = require("../utils");
 class MatrixAmmo {
   constructor(options = {
@@ -34872,6 +34828,8 @@ class MatrixAmmo {
     this._origin = new Ammo.btVector3(0, 0, 0);
     this._quat = new Ammo.btQuaternion();
     this._axis = new Ammo.btVector3(0, 0, 0);
+    this._transform2 = new Ammo.btTransform();
+    this._origin2 = new Ammo.btVector3(0, 0, 0);
     this.maxSubSteps = 4;
   }
   init = () => {
@@ -34884,11 +34842,15 @@ class MatrixAmmo {
       console.log("%cAmmo core loaded.", _utils.LOG_FUNNY_ARCADE);
       this.initPhysics(_meConfig.MEConfig.PHYSICS_GROUND_Y);
       setTimeout(() => {
-        dispatchEvent(new CustomEvent('AmmoReady', {}));
+        dispatchEvent(new CustomEvent('PhysicsReady', {}));
       }, 200);
     });
   };
-  initPhysics(GROUND_Y = -4) {
+  setGravity(x, y, z) {
+    this._origin2.setValue(x, y, z);
+    this.dynamicsWorld.setGravity(this._origin2);
+  }
+  initPhysics(GROUND_Y) {
     let Ammo = this.Ammo;
     // Physics configuration
     var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration(),
@@ -34964,9 +34926,6 @@ class MatrixAmmo {
       body.setActivationState(4);
     }
   }
-
-  // ─── shared helper ────────────────────────────────────────────
-  // Registers body in world + rigidBodies list.
   _registerBody(body, MEObject, pOptions) {
     body.name = pOptions.name;
     MEObject.itIsPhysicsBody = true;
@@ -35493,6 +35452,14 @@ class MatrixAmmo {
     });
     return b;
   };
+  setBodyTransform(body, pVect) {
+    this._transform.setIdentity();
+    this._origin.setValue(pVect.x, pVect.y, pVect.z);
+    this._transform.setOrigin(this._origin);
+    body.setWorldTransform(this._transform);
+    const ms = body.getMotionState();
+    if (ms) ms.setWorldTransform(this._transform);
+  }
   deactivatePhysics = body => {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
@@ -35511,7 +35478,7 @@ class MatrixAmmo {
     body.setWorldTransform(currentTransform);
     body.getMotionState().setWorldTransform(currentTransform);
     // 5. Add back to physics world
-    this.matrixAmmo.dynamicsWorld.addRigidBody(body);
+    this.matrixPhysics.dynamicsWorld.addRigidBody(body);
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   };
@@ -35521,6 +35488,86 @@ class MatrixAmmo {
     let rayDirection = [to.x() - from.x(), to.y() - from.y(), to.z() - from.z()];
     let length = Math.sqrt(rayDirection[0] ** 2 + rayDirection[1] ** 2 + rayDirection[2] ** 2);
     return [rayDirection[0] / length, rayDirection[1] / length, rayDirection[2] / length];
+  }
+  shootBody = (body, lx, ly, lz, ax, ay, az) => {
+    // body.setLinearVelocity(new Ammo.btVector3(lx, ly, lz));
+    // body.setAngularVelocity(new Ammo.btVector3(ax, ay, az));
+    // Use pre-allocated scratch vector to avoid memory leaks
+    this._origin2.setValue(lx, ly, lz);
+    body.setLinearFactor(this._origin2);
+    this._origin2.setValue(ax, ay, az);
+    body.setAngularFactor(this._origin2);
+  };
+
+  // Inside MatrixAmmo class
+  applyImpulse(body, pVect) {
+    const v = new this.Ammo.btVector3(pVect.x, pVect.y, pVect.z);
+    body.activate(true);
+    body.applyCentralImpulse(v);
+    this.Ammo.destroy(v);
+  }
+  applyTorque(body, pVect) {
+    const v = new this.Ammo.btVector3(pVect.x, pVect.y, pVect.z);
+    body.activate(true);
+    body.applyTorqueImpulse(v);
+    this.Ammo.destroy(v);
+  }
+  setAngularVelocity(body, pVect) {
+    const v = new this.Ammo.btVector3(pVect.x, pVect.y, pVect.z);
+    body.setAngularVelocity(v);
+    this.Ammo.destroy(v);
+  }
+  setMaterial(body, friction, restitution) {
+    body.setFriction(friction);
+    body.setRestitution(restitution);
+  }
+  activate(body) {
+    body.activate(true);
+  }
+  explode(positionVect, radius, strength) {
+    this.rigidBodies.forEach(body => {
+      const p = body.getWorldTransform().getOrigin();
+      const dx = p.x() - positionVect.x;
+      const dy = p.y() - positionVect.y;
+      const dz = p.z() - positionVect.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist > radius || dist === 0) return;
+      const force = strength / (dist + 0.1);
+      this.applyImpulse(body, new _matrixClass.PVector(dx * force, dy * force, dz * force));
+    });
+  }
+  activatePhysics(body) {
+    const Ammo = this.Ammo;
+
+    // 1. Make it dynamic again
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // Remove CF_KINEMATIC_OBJECT
+    body.setActivationState(1); // ACTIVE_TAG
+    body.isKinematic = false;
+
+    // 2. Reset position above floor
+    const newX = (Math.random() - 0.5) * 4;
+    const newY = 3;
+    this._transform2.setIdentity();
+    this._origin2.setValue(newX, newY, 0);
+    this._transform2.setOrigin(this._origin2);
+    body.setWorldTransform(this._transform2);
+
+    // 3. Clear velocities
+    this._origin2.setValue(0, 0, 0);
+    body.setLinearVelocity(this._origin2);
+    body.setAngularVelocity(this._origin2);
+
+    // 4. Enable CCD (Continuous Collision Detection)
+    const size = 1;
+    body.setCcdMotionThreshold(1e-7);
+    body.setCcdSweptSphereRadius(size * 0.5);
+
+    // 5. Re-add to world to force state update
+    this.dynamicsWorld.removeRigidBody(body);
+    this.dynamicsWorld.addRigidBody(body);
+
+    // 6. Final activation
+    body.activate(true);
   }
   detectCollision() {
     let dispatcher = this.dynamicsWorld.getDispatcher();
@@ -35590,7 +35637,503 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../../me-config":73,"../utils":72}],64:[function(require,module,exports){
+},{"../../me-config":74,"../matrix-class":58,"../utils":73}],64:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MatrixJolt = void 0;
+var _meConfig = require("../../me-config");
+var _matrixClass = require("../matrix-class");
+var _utils = require("../utils");
+const LAYER_NON_MOVING = 0;
+const LAYER_MOVING = 1;
+const NUM_BROAD_PHASE_LAYERS = 2;
+class MatrixJolt {
+  constructor(options = {
+    roundDimension: 100,
+    gravity: 10
+  }) {
+    this.options = options;
+    this.rigidBodies = [];
+    this.bodyIds = [];
+    this.Jolt = null;
+    this.joltInterface = null;
+    this.physicsSystem = null;
+    this.bodyInterface = null;
+    this.ground = null;
+    this.speedUpSimulation = 1;
+    this._initJolt();
+  }
+  _initJolt() {
+    import('https://www.unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js').then(module => {
+      module.default().then(Jolt => {
+        this.Jolt = Jolt;
+        this.initPhysics(_meConfig.MEConfig.PHYSICS_GROUND_Y);
+        console.log("%c Jolt core loaded.", _utils.LOG_FUNNY_ARCADE);
+        setTimeout(() => {
+          dispatchEvent(new CustomEvent('PhysicsReady', {}));
+        }, 250);
+      });
+    });
+  }
+  setGravity(x, y, z) {
+    const Jolt = this.Jolt;
+    const gravityVect = new Jolt.Vec3(x, y, z);
+    this.physicsSystem.SetGravity(gravityVect);
+    Jolt.destroy(gravityVect);
+  }
+  initPhysics(GROUND_Y) {
+    const Jolt = this.Jolt;
+
+    // Layer setup — mirrors the standard Jolt hello world pattern
+    const objectFilter = new Jolt.ObjectLayerPairFilterTable(2);
+    objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_MOVING);
+    objectFilter.EnableCollision(LAYER_MOVING, LAYER_MOVING);
+    const bpLayerInterface = new Jolt.BroadPhaseLayerInterfaceTable(2, 2);
+    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_NON_MOVING, 0);
+    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_MOVING, 1);
+    const bpObjectFilter = new Jolt.ObjectVsBroadPhaseLayerFilterTable(bpLayerInterface, NUM_BROAD_PHASE_LAYERS, objectFilter, 2);
+    const settings = new Jolt.JoltSettings();
+    settings.mObjectLayerPairFilter = objectFilter;
+    settings.mBroadPhaseLayerInterface = bpLayerInterface;
+    settings.mObjectVsBroadPhaseLayerFilter = bpObjectFilter;
+    this.joltInterface = new Jolt.JoltInterface(settings);
+    Jolt.destroy(settings);
+    this.physicsSystem = this.joltInterface.GetPhysicsSystem();
+    this.bodyInterface = this.physicsSystem.GetBodyInterface();
+    this.physicsSystem.SetGravity(new Jolt.Vec3(0, -this.options.gravity, 0));
+
+    // Ground plane
+    const groundShape = new Jolt.BoxShape(new Jolt.Vec3(this.options.roundDimension, 1, this.options.roundDimension));
+    const groundSettings = new Jolt.BodyCreationSettings(groundShape, new Jolt.RVec3(0, GROUND_Y, 0), Jolt.Quat.prototype.sIdentity(), Jolt.EMotionType_Static, LAYER_NON_MOVING);
+    const groundBody = this.bodyInterface.CreateBody(groundSettings);
+    Jolt.destroy(groundSettings);
+    groundBody.name = 'ground';
+    this.ground = groundBody;
+    this.bodyInterface.AddBody(groundBody.GetID(), Jolt.EActivation_DontActivate);
+  }
+  addPhysics(MEObject, pOptions) {
+    switch (pOptions.geometry) {
+      case "Sphere":
+        return this.addPhysicsSphere(MEObject, pOptions);
+      case "Cube":
+        return this.addPhysicsBox(MEObject, pOptions);
+      case "Capsule":
+        return this.addPhysicsCapsule(MEObject, pOptions);
+      case "Cylinder":
+        return this.addPhysicsCylinder(MEObject, pOptions);
+      case "Cone":
+      case "ConeX":
+      case "ConeZ":
+        return this.addPhysicsCone(MEObject, pOptions);
+      case "ConvexHull":
+        return this.addPhysicsConvexHull(MEObject, pOptions);
+      case "StaticPlane":
+        // In Jolt, you usually use a very large Box or a Mesh for the floor
+        return this.addPhysicsStaticPlane(MEObject, pOptions);
+      case "BvhMesh":
+        return this.addPhysicsBvhMesh(MEObject, pOptions);
+      // Jolt handles axis orientation (X/Z) differently than Ammo.
+      case "CapsuleX":
+      case "CapsuleZ":
+        return this.addPhysicsCapsule(MEObject, pOptions);
+      case "CylinderX":
+      case "CylinderZ":
+        return this.addPhysicsCylinder(MEObject, pOptions);
+      default:
+        console.warn("Jolt addPhysics: unknown geometry type:", pOptions.geometry);
+        return null;
+    }
+  }
+  addPhysicsSphere(MEObject, pOptions) {
+    const Jolt = this.Jolt;
+    const radius = Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius;
+    const shape = new Jolt.SphereShape(radius);
+    const isKinematic = pOptions.mass === 0 && typeof pOptions.state === 'undefined';
+    const bodySettings = new Jolt.BodyCreationSettings(shape, new Jolt.RVec3(pOptions.position.x, pOptions.position.y, pOptions.position.z), Jolt.Quat.prototype.sIdentity(), isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic, LAYER_MOVING);
+    bodySettings.mRestitution = 0.3;
+    bodySettings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
+    bodySettings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
+    const body = this.bodyInterface.CreateBody(bodySettings);
+    Jolt.destroy(bodySettings);
+    body.name = pOptions.name;
+    body.MEObject = MEObject;
+    body.isKinematic = isKinematic;
+    MEObject.itIsPhysicsBody = true;
+    this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);
+    this.rigidBodies.push(body);
+    return body;
+  }
+  addPhysicsBox(MEObject, pOptions) {
+    const Jolt = this.Jolt;
+    const isKinematic = pOptions.mass === 0 && typeof pOptions.state === 'undefined';
+    const shape = new Jolt.BoxShape(new Jolt.Vec3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2]));
+
+    // FIX 1: Capture the return value of sEulerAngles! 
+    // The quat created by 'new Jolt.Quat()' is (0,0,0,0), which is INVALID.
+    const rx = (0, _utils.degToRad)(pOptions.rotation?.x || 0);
+    const ry = (0, _utils.degToRad)(pOptions.rotation?.y || 0);
+    const rz = (0, _utils.degToRad)(pOptions.rotation?.z || 0);
+    const v3 = new Jolt.Vec3(rx, ry, rz);
+    const quat = Jolt.Quat.prototype.sEulerAngles(v3);
+    Jolt.destroy(v3); // Clean up temp vector
+
+    const bodySettings = new Jolt.BodyCreationSettings(shape, new Jolt.RVec3(pOptions.position.x, pOptions.position.y, pOptions.position.z), quat,
+    // Now this is a valid normalized rotation
+    isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic, LAYER_MOVING);
+
+    // FIX 2: Correctly set the mass. Jolt ignores 'bodySettings.mMass'.
+    bodySettings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
+    bodySettings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
+    const body = this.bodyInterface.CreateBody(bodySettings);
+    Jolt.destroy(bodySettings);
+    body.name = pOptions.name;
+    body.MEObject = MEObject;
+    body.isKinematic = isKinematic;
+    MEObject.itIsPhysicsBody = true;
+    this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);
+    this.rigidBodies.push(body);
+    return body;
+  }
+  setBodyVelocity = (body, x, y, z) => {
+    this.bodyInterface.SetLinearVelocity(body.GetID(), new this.Jolt.Vec3(x, y, z));
+  };
+  setKinematicTransform = (body, x, y, z, rx = 0, ry = 0, rz = 0) => {
+    const Jolt = this.Jolt;
+    const pos = this.bodyInterface.GetPosition(body.GetID());
+    const newPos = new Jolt.RVec3(pos.GetX() + x, pos.GetY() + y, pos.GetZ() + z);
+    const quat = Jolt.Quat.prototype.sEulerAngles(new Jolt.Vec3(rx, ry, rz));
+    this.bodyInterface.MoveKinematic(body.GetID(), newPos, quat, 1 / 60);
+  };
+  getBodyByName = name => {
+    return this.rigidBodies.find(b => b.MEObject.name === name) || null;
+  };
+  setBodyTransform(body, pVect) {
+    const Jolt = this.Jolt;
+    const id = body.GetID();
+    const pos = new Jolt.RVec3(pVect.x, pVect.y, pVect.z);
+    const quat = Jolt.Quat.prototype.sIdentity();
+    this.bodyInterface.SetPositionAndRotation(id, pos, quat, Jolt.EActivation_DontActivate);
+    Jolt.destroy(pos);
+  }
+  deactivatePhysics = body => {
+    const Jolt = this.Jolt;
+    this.bodyInterface.RemoveBody(body.GetID());
+    this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_DontActivate);
+    this.bodyInterface.SetLinearVelocity(body.GetID(), new Jolt.Vec3(0, 0, 0));
+    this.bodyInterface.SetAngularVelocity(body.GetID(), new Jolt.Vec3(0, 0, 0));
+    body.isKinematic = true;
+  };
+  shootBody = (body, lx, ly, lz, ax, ay, az) => {
+    const Jolt = this.Jolt;
+    const id = body.GetID();
+    this.bodyInterface.SetLinearVelocity(id, new Jolt.Vec3(lx, ly, lz));
+    this.bodyInterface.SetAngularVelocity(id, new Jolt.Vec3(ax, ay, az));
+    this.bodyInterface.ActivateBody(id);
+  };
+
+  // Inside MatrixJolt class
+  applyImpulse(body, pVect) {
+    const id = body.GetID();
+    const jVect = new this.Jolt.Vec3(pVect.x, pVect.y, pVect.z);
+    this.bodyInterface.ActivateBody(id);
+    this.bodyInterface.AddImpulse(id, jVect);
+    this.Jolt.destroy(jVect);
+  }
+  applyTorque(body, pVect) {
+    const v = new this.Jolt.Vec3(pVect.x, pVect.y, pVect.z);
+    this.bodyInterface.ActivateBody(body.GetID());
+    this.bodyInterface.AddAngularImpulse(body.GetID(), v);
+  }
+  setAngularVelocity(body, pVect) {
+    const v = new this.Jolt.Vec3(pVect.x, pVect.y, pVect.z);
+    this.bodyInterface.SetAngularVelocity(body.GetID(), v);
+  }
+  setMaterial(body, friction, restitution) {
+    // Jolt usually sets these via Shape or BodySettings, but we can override:
+    body.SetFriction(friction);
+    body.SetRestitution(restitution);
+  }
+  activate(body) {
+    this.bodyInterface.ActivateBody(body.GetID());
+  }
+  explode(positionVect, radius, strength) {
+    this.rigidBodies.forEach(body => {
+      if (body.isKinematic) return;
+      const id = body.GetID();
+      const p = this.bodyInterface.GetPosition(id);
+      const dx = p.GetX() - positionVect.x;
+      const dy = p.GetY() - positionVect.y;
+      const dz = p.GetZ() - positionVect.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist > radius || dist === 0) return;
+
+      // Standard falloff formula
+      const force = strength / (dist + 0.1);
+      this.applyImpulse(body, new PVector(dx * force, dy * force, dz * force));
+    });
+  }
+
+  // ─── CAPSULE ──────────────────────────────────────────────────
+  addPhysicsCapsule(MEObject, pOptions) {
+    const Jolt = this.Jolt;
+    const radius = pOptions.radius || 1;
+    const halfHeight = (pOptions.height || 1) * 0.5;
+
+    // Jolt capsules are defined by half-height
+    const shape = new Jolt.CapsuleShape(halfHeight, radius);
+    return this._createJoltBody(MEObject, pOptions, shape);
+  }
+
+  // ─── SPHERE ───────────────────────────────────────────────────
+  addPhysicsSphere(MEObject, pOptions) {
+    const Jolt = this.Jolt;
+    const radius = Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius || 1;
+    const shape = new Jolt.SphereShape(radius);
+    return this._createJoltBody(MEObject, pOptions, shape);
+  }
+
+  // ─── CYLINDER ─────────────────────────────────────────────────
+  addPhysicsCylinder(MEObject, pOptions) {
+    const Jolt = this.Jolt;
+    const halfHeight = pOptions.height / 2 / 2;
+    const radius = pOptions.radius;
+    const shape = new Jolt.CylinderShape(halfHeight, radius);
+    console.log('cylinder COM:', shape.GetCenterOfMass().GetY());
+    let B = this._createJoltBody(MEObject, pOptions, shape);
+    console.log('cylinder layer:', pOptions.mass === 0 ? 'STATIC' : 'DYNAMIC');
+    console.log('cylinder bodyID:', B?.GetID?.());
+    console.log('cylinder valid:', shape.GetType());
+    console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLocalBounds().mMax.GetY());
+    return B;
+  }
+
+  // ─── CONE ─────────────────────────────────────────────────────
+  addPhysicsCone(MEObject, pOptions) {
+    const Jolt = this.Jolt;
+    const verts = (0, _matrixClass.buildConeVerts)(pOptions.radius, pOptions.height);
+    const settings = new Jolt.ConvexHullShapeSettings();
+    const points = settings.mPoints;
+    for (let i = 0; i < verts.length / 3; i++) {
+      const v = new Jolt.Vec3(verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
+      points.push_back(v);
+      Jolt.destroy(v);
+    }
+    const shapeResult = settings.Create();
+    if (shapeResult.HasError()) {
+      console.error(shapeResult.GetError().c_str());
+      Jolt.destroy(settings);
+      return null;
+    }
+    const shape = shapeResult.Get();
+    const com = shape.GetCenterOfMass();
+    pOptions.position.y += com.GetY();
+    return this._createJoltBody(MEObject, pOptions, shape);
+  }
+
+  // ─── CONVEX HULL ──────────────────────────────────────────────
+  addPhysicsConvexHull(MEObject, pOptions) {
+    const Jolt = this.Jolt;
+    const verts = new Float32Array(pOptions.vertices);
+    const numPoints = verts.length / 3;
+    const settings = new Jolt.ConvexHullShapeSettings();
+
+    // ✅ IMPORTANT: tweak tolerance (prevents vertex collapsing)
+    settings.mHullTolerance = 1e-6;
+    const points = settings.mPoints;
+
+    // Optional: scale fix (helps if your mesh is too small)
+    const sx = pOptions.scale?.[0] ?? 1;
+    const sy = pOptions.scale?.[1] ?? 1;
+    const sz = pOptions.scale?.[2] ?? 1;
+    for (let i = 0; i < numPoints; i++) {
+      const x = verts[i * 3] * sx;
+      const y = verts[i * 3 + 1] * sy;
+      const z = verts[i * 3 + 2] * sz;
+
+      // Skip invalid values (VERY important)
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+        continue;
+      }
+      const v = new Jolt.Vec3(x, y, z);
+      points.push_back(v);
+      Jolt.destroy(v);
+    }
+    console.log("Jolt hull input points:", points.size());
+
+    // 🚨 Safety check (prevents silent failure)
+    if (points.size() < 4) {
+      console.error("ConvexHull: not enough valid points");
+      Jolt.destroy(settings);
+      return null;
+    }
+    const shapeResult = settings.Create();
+    if (shapeResult.HasError()) {
+      console.error("Hull Error:", shapeResult.GetError().c_str());
+      Jolt.destroy(settings);
+      Jolt.destroy(shapeResult);
+      return null;
+    }
+    const shape = shapeResult.Get();
+    const com = shape.GetCenterOfMass();
+    console.log('Hull center of mass offset:', com.GetX(), com.GetY(), com.GetZ());
+    pOptions.position.x = pOptions.position.x - com.GetX();
+    pOptions.position.y = pOptions.position.y - com.GetY();
+    pOptions.position.z = pOptions.position.z - com.GetZ();
+    const body = this._createJoltBody(MEObject, pOptions, shape);
+    console.log('Hull body created:', body, body?.GetID?.());
+    Jolt.destroy(settings);
+    Jolt.destroy(shapeResult);
+    return body;
+  }
+
+  // ─── HINGE CONSTRAINT ─────────────────────────────────────────
+  addHingeConstraint(MEObjectA, MEObjectB, pOptions) {
+    const Jolt = this.Jolt;
+    const bodyA = this.getBodyByMEObject(MEObjectA);
+    const bodyB = this.getBodyByMEObject(MEObjectB);
+    if (!bodyA || !bodyB) return null;
+    const pivotA = pOptions.pivotA || [0, 0, 0];
+    const pivotB = pOptions.pivotB || [0, 0, 0];
+    const axis = pOptions.axis || [0, 1, 0];
+    const settings = new Jolt.HingeConstraintSettings();
+    settings.mPoint1 = new Jolt.RVec3(pivotA[0], pivotA[1], pivotA[2]);
+    settings.mPoint2 = new Jolt.RVec3(pivotB[0], pivotB[1], pivotB[2]);
+    settings.mHingeAxis1 = new Jolt.Vec3(axis[0], axis[1], axis[2]);
+    settings.mHingeAxis2 = new Jolt.Vec3(axis[0], axis[1], axis[2]);
+    if (pOptions.limits) {
+      settings.mLimitsMin = pOptions.limits[0];
+      settings.mLimitsMax = pOptions.limits[1];
+    }
+    const constraint = settings.Create(bodyA, bodyB);
+    this.physicsSystem.AddConstraint(constraint);
+    if (!this.constraints) this.constraints = [];
+    this.constraints.push(constraint);
+    return constraint;
+  }
+
+  // ─── INTERNAL HELPER FOR JOLT ─────────────────────────────────
+  _createJoltBody(MEObject, pOptions, shape) {
+    // const Jolt = this.Jolt;
+    // const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    // const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
+
+    // // Determine Motion Type (Static vs Dynamic)
+    // const motionType = (pOptions.mass === 0) ? Jolt.EMotionType_Static : Jolt.EMotionType_Dynamic;
+    // const layer = (pOptions.mass === 0) ? 0 : 1; // LAYER_NON_MOVING vs LAYER_MOVING
+
+    // const settings = new Jolt.BodyCreationSettings(
+    //   shape,
+    //   new Jolt.RVec3(pos.x, pos.y, pos.z),
+    //   Jolt.Quat.prototype.sRotation(new Jolt.Vec3(0, 1, 0), 0), // Use your degToRad helper for real rotation
+    //   motionType,
+    //   layer
+    // );
+
+    // // Physical Properties
+    // if(pOptions.restitution !== undefined) settings.mRestitution = pOptions.restitution;
+    // if(pOptions.friction !== undefined) settings.mFriction = pOptions.friction;
+
+    // const body = this.bodyInterface.CreateBody(settings);
+    // this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);
+
+    // // Link back to MEObject
+    // body.MEObject = MEObject;
+    // MEObject.itIsPhysicsBody = true;
+
+    // this.rigidBodies.push(body);
+    // Jolt.destroy(settings);
+    // return body;
+    const Jolt = this.Jolt;
+    const pos = pOptions.position || {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+    const isKinematic = pOptions.mass === 0 && typeof pOptions.state === 'undefined';
+    const settings = new Jolt.BodyCreationSettings(shape, new Jolt.RVec3(pos.x, pos.y, pos.z), Jolt.Quat.prototype.sIdentity(), isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic, isKinematic ? LAYER_NON_MOVING : LAYER_MOVING);
+
+    // ← this is what sphere has that _createJoltBody was missing
+    settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
+    settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
+    if (pOptions.restitution !== undefined) settings.mRestitution = pOptions.restitution;
+    if (pOptions.friction !== undefined) settings.mFriction = pOptions.friction;
+    const body = this.bodyInterface.CreateBody(settings);
+    Jolt.destroy(settings);
+    body.name = pOptions.name;
+    body.MEObject = MEObject;
+    body.isKinematic = isKinematic;
+    MEObject.itIsPhysicsBody = true;
+    this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);
+    this.rigidBodies.push(body);
+    return body;
+  }
+  getBodyByMEObject(meObj) {
+    return this.rigidBodies.find(b => b.MEObject === meObj);
+  }
+  updatePhysics() {
+    if (!this.joltInterface) return;
+    const Jolt = this.Jolt;
+    const bi = this.bodyInterface;
+
+    // Push kinematic bodies from MEObject → physics
+    this.rigidBodies.forEach(body => {
+      if (body.isKinematic) {
+        const {
+          x,
+          y,
+          z
+        } = body.MEObject.position;
+        const axis = body.MEObject.rotation.axis;
+        const angle = (0, _utils.degToRad)(body.MEObject.rotation.angle);
+        const quat = Jolt.Quat.prototype.sRotation(new Jolt.Vec3(axis.x, axis.y, axis.z), angle);
+        bi.MoveKinematic(body.GetID(), new Jolt.RVec3(x, y, z), quat, 1 / 60);
+      }
+    });
+
+    // Step
+    for (let i = 0; i < this.speedUpSimulation; i++) {
+      this.joltInterface.Step(1 / 60, 1);
+    }
+
+    // Read dynamic bodies back into MEObject
+    this.rigidBodies.forEach(body => {
+      if (!body.isKinematic) {
+        const id = body.GetID();
+        const pos = bi.GetPosition(id);
+        const rot = bi.GetRotation(id);
+        body.MEObject.position.setPosition(pos.GetX(), pos.GetY(), pos.GetZ());
+        body.MEObject.position.inMove = true;
+
+        // Quat → axis/angle + matrix, same as your Ammo pattern
+        const qx = rot.GetX(),
+          qy = rot.GetY(),
+          qz = rot.GetZ(),
+          qw = rot.GetW();
+        const sinHalfAngle = Math.sqrt(qx * qx + qy * qy + qz * qz);
+        const angle = 2 * Math.atan2(sinHalfAngle, qw);
+        if (sinHalfAngle > 0.0001) {
+          const s = 1 / sinHalfAngle;
+          body.MEObject.rotation.axis.x = qx * s;
+          body.MEObject.rotation.axis.y = qy * s;
+          body.MEObject.rotation.axis.z = qz * s;
+        } else {
+          // Identity rotation — default axis so renderer doesn't choke
+          body.MEObject.rotation.axis.x = 0;
+          body.MEObject.rotation.axis.y = 1;
+          body.MEObject.rotation.axis.z = 0;
+        }
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(angle);
+        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)([qw, qx, qy, qz]);
+      }
+    });
+  }
+}
+exports.MatrixJolt = MatrixJolt;
+
+},{"../../me-config":74,"../matrix-class":58,"../utils":73}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35686,7 +36229,7 @@ class MaterialBindGroupCache {
 }
 exports.MaterialBindGroupCache = MaterialBindGroupCache;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35728,7 +36271,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36129,7 +36672,7 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36688,7 +37231,7 @@ function compositeFragWGSL() {
   `;
 }
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38076,7 +38619,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/vertex.procedural.wgsl":105,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./geometry-factory":48,"./literals":52,"./materials":57,"./matrix-class":58,"./pipelineManager":64,"./utils":72,"wgpu-matrix":30}],69:[function(require,module,exports){
+},{"../shaders/vertex.procedural.wgsl":106,"./effects/flame":39,"./effects/flame-emmiter":38,"./effects/gizmo":43,"./geometry-factory":48,"./literals":52,"./materials":57,"./matrix-class":58,"./pipelineManager":65,"./utils":73,"wgpu-matrix":30}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38135,7 +38678,7 @@ function fountainBasinWaterConfig(MeshMorpher) {
 }
 const FOUNTAIN_COLUMN_TOP = exports.FOUNTAIN_COLUMN_TOP = 1.25; // half of cylinder height 2.5
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38174,7 +38717,7 @@ function createGroundTexture(device, size = 512) {
   return texture;
 }
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38432,7 +38975,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":30}],72:[function(require,module,exports){
+},{"wgpu-matrix":30}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39617,7 +40160,7 @@ const geoTypesForMorph = exports.geoTypesForMorph = {
   galaxySpiral: "galaxySpiral"
 };
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39693,7 +40236,7 @@ const MEConfig = exports.MEConfig = {
   }
 };
 
-},{"./engine/utils.js":72}],74:[function(require,module,exports){
+},{"./engine/utils.js":73}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39735,7 +40278,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":31,"../engine/utils":72}],75:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":31,"../engine/utils":73}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39905,7 +40448,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39951,7 +40494,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40085,7 +40628,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40245,7 +40788,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40787,7 +41330,7 @@ fn main(input: VertexInput) -> VertexOutput {
 }
 `;
 
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40991,7 +41534,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../me-config":73}],81:[function(require,module,exports){
+},{"../me-config":74}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41300,7 +41843,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../me-config":73}],82:[function(require,module,exports){
+},{"../me-config":74}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41386,7 +41929,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],83:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41632,7 +42175,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{"../me-config":73}],84:[function(require,module,exports){
+},{"../me-config":74}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41845,7 +42388,7 @@ let validLight = select(0.0, 1.0, NdotL > 0.0);
 }
 `;
 
-},{"../me-config":73}],85:[function(require,module,exports){
+},{"../me-config":74}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42091,7 +42634,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{"../me-config":73}],86:[function(require,module,exports){
+},{"../me-config":74}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42340,7 +42883,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{"../me-config":73}],87:[function(require,module,exports){
+},{"../me-config":74}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42566,7 +43109,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{"../me-config":73}],88:[function(require,module,exports){
+},{"../me-config":74}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42734,7 +43277,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../me-config":73}],89:[function(require,module,exports){
+},{"../me-config":74}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42803,7 +43346,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(input.color, 1.0);
 }`;
 
-},{}],90:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43020,7 +43563,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{"../../me-config":73}],91:[function(require,module,exports){
+},{"../../me-config":74}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43311,7 +43854,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../../me-config":73}],92:[function(require,module,exports){
+},{"../../me-config":74}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43553,7 +44096,7 @@ fn main(
   return output;
 }`;
 
-},{"../../me-config":73}],93:[function(require,module,exports){
+},{"../../me-config":74}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43747,7 +44290,7 @@ fn main(
 }
 `;
 
-},{"../../me-config":73}],94:[function(require,module,exports){
+},{"../../me-config":74}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43838,7 +44381,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],95:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44006,7 +44549,7 @@ let uv = fract(input.fragUV);
 // }
 // `;
 
-},{}],96:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44132,7 +44675,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../../me-config":73}],97:[function(require,module,exports){
+},{"../../me-config":74}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44246,7 +44789,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../../me-config":73}],98:[function(require,module,exports){
+},{"../../me-config":74}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44348,7 +44891,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../../me-config":73}],99:[function(require,module,exports){
+},{"../../me-config":74}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44430,7 +44973,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{"../../me-config":73}],100:[function(require,module,exports){
+},{"../../me-config":74}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44650,7 +45193,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],101:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44708,7 +45251,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],102:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44795,7 +45338,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],103:[function(require,module,exports){
+},{}],104:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44853,7 +45396,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],104:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44944,7 +45487,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],105:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45294,7 +45837,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
 }
 `;
 
-},{}],106:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45572,7 +46115,7 @@ fn main(
   return output;
 }`;
 
-},{"../me-config":73}],107:[function(require,module,exports){
+},{"../me-config":74}],108:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45685,7 +46228,7 @@ fn main(
   return output;
 }`;
 
-},{"../me-config":73}],108:[function(require,module,exports){
+},{"../me-config":74}],109:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45952,7 +46495,7 @@ fn main(
 }
 `;
 
-},{"../me-config":73}],109:[function(require,module,exports){
+},{"../me-config":74}],110:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46147,7 +46690,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
   return vec4f(vibrantColor, alpha);
 }`;
 
-},{"../../me-config":73}],110:[function(require,module,exports){
+},{"../../me-config":74}],111:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46234,7 +46777,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],111:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46304,7 +46847,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],112:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46641,7 +47184,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":72}],113:[function(require,module,exports){
+},{"../../engine/utils":73}],114:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47408,7 +47951,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":72}],114:[function(require,module,exports){
+},{"../../engine/utils":73}],115:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47582,7 +48125,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":65,"../../engine/utils":72,"./client":112,"./editor.provider":115,"./flexCodexShader":116,"./fluxCodexVertex":118,"./hud":120,"./methodsManager":121}],115:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":66,"../../engine/utils":73,"./client":113,"./editor.provider":116,"./flexCodexShader":117,"./fluxCodexVertex":119,"./hud":121,"./methodsManager":122}],116:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47810,7 +48353,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":53,"../../engine/loaders/webgpu-gltf":56}],116:[function(require,module,exports){
+},{"../../engine/loader-obj":53,"../../engine/loaders/webgpu-gltf":56}],117:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50004,7 +50547,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":72,"./flexCodexShaderAdapter.js":117}],117:[function(require,module,exports){
+},{"../../engine/utils.js":73,"./flexCodexShaderAdapter.js":118}],118:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50228,7 +50771,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{"../../me-config":73}],118:[function(require,module,exports){
+},{"../../me-config":74}],119:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -55460,7 +56003,7 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        let b = app.matrixAmmo.getBodyByName(objectName);
+        let b = app.matrixPhysics.getBodyByName(objectName);
         const i = new Ammo.btVector3(rayDirection[0] * strength, rayDirection[1] * strength, rayDirection[2] * strength);
         b.applyCentralImpulse(i);
         this.enqueueOutputs(n, "execOut");
@@ -56373,7 +56916,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/utils":72,"./curve-editor":113,"./generateAISchema.js":119}],119:[function(require,module,exports){
+},{"../../engine/utils":73,"./curve-editor":114,"./generateAISchema.js":120}],120:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56500,7 +57043,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -57539,7 +58082,7 @@ class SceneObjectProperty {
           }
         });
       } else if (propName == "itIsPhysicsBody") {
-        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for (let key in body) {
           if (typeof body[key] === 'string') {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
@@ -57862,7 +58405,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":72,"./flexCodexShader.js":116}],121:[function(require,module,exports){
+},{"../../engine/utils.js":73,"./flexCodexShader.js":117}],122:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -58179,7 +58722,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],122:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -58219,6 +58762,7 @@ var _minRender = require("./engine/overrides/min-render.js");
 var _noshadowRender = require("./engine/overrides/noshadow-render.js");
 var _pipelineManager = require("./engine/pipelineManager.js");
 var _nanoRender = require("./engine/overrides/nano-render.js");
+var _matrixJolt = require("./engine/physics/matrix-jolt.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
@@ -58326,18 +58870,24 @@ class MatrixEngineWGPU {
     }
     if (typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if (typeof options.dontUsePhysics === 'undefined') {
-      if (typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
-        this.matrixAmmo = new _matrixAmmo.default({
-          gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS,
-          roundDimensionX: options.PHYSICS_GROUND_BYX,
-          roundDimensionY: options.PHYSICS_GROUND_BYZ
-        });
+      // check jolt
+      if (typeof options.useJolt !== 'undefined') {
+        //
+        this.matrixPhysics = new _matrixJolt.MatrixJolt();
       } else {
-        this.matrixAmmo = new _matrixAmmo.default({
-          gravity: _meConfig.MEConfig.GRAVITY_Y_AXIS,
-          roundDimensionX: _meConfig.MEConfig.PHYSICS_GROUND_BYX,
-          roundDimensionY: _meConfig.MEConfig.PHYSICS_GROUND_BYZ
-        });
+        if (typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
+          this.matrixPhysics = new _matrixAmmo.default({
+            gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS,
+            roundDimensionX: options.PHYSICS_GROUND_BYX,
+            roundDimensionY: options.PHYSICS_GROUND_BYZ
+          });
+        } else {
+          this.matrixPhysics = new _matrixAmmo.default({
+            gravity: _meConfig.MEConfig.GRAVITY_Y_AXIS,
+            roundDimensionX: _meConfig.MEConfig.PHYSICS_GROUND_BYX,
+            roundDimensionY: _meConfig.MEConfig.PHYSICS_GROUND_BYZ
+          });
+        }
       }
     }
     // cache
@@ -58989,10 +59539,10 @@ class MatrixEngineWGPU {
       return false;
     }
     const obj = this.mainRenderBundle[index];
-    let testPB = app.matrixAmmo.getBodyByName(obj.name);
+    let testPB = app.matrixPhysics.getBodyByName(obj.name);
     if (testPB !== null) {
       try {
-        this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        this.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
       } catch (e) {
         console.warn("%cPhysics cleanup error:" + e, _utils.LOG_FUNNY_ARCADE);
       }
@@ -59142,7 +59692,7 @@ class MatrixEngineWGPU {
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;
-    if (o.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o.physics);
+    if (o.physics.enabled == true) this.matrixPhysics.addPhysics(myMesh1, o.physics);
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -59233,7 +59783,7 @@ class MatrixEngineWGPU {
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
-    if (o.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o.physics);
+    if (o.physics.enabled === true) this.matrixPhysics.addPhysics(myMesh, o.physics);
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -59513,8 +60063,8 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.length = 0;
 
     // 3️⃣ Physics
-    this.matrixAmmo?.destroy?.();
-    this.matrixAmmo = null;
+    this.matrixPhysics?.destroy?.();
+    this.matrixPhysics = null;
 
     // 4️⃣ Editor
     this.editor?.destroy?.();
@@ -59565,7 +60115,7 @@ class MatrixEngineWGPU {
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
-      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
+      if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
@@ -59951,7 +60501,7 @@ class MatrixEngineWGPU {
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         // if(o.physics.enabled == true) {
-        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+        //   this.matrixPhysics.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
         setTimeout(() => {
@@ -60006,4 +60556,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":33,"./engine/core-cache.js":35,"./engine/effects/energy-bar.js":37,"./engine/effects/flame-emmiter.js":38,"./engine/effects/flame.js":39,"./engine/effects/mana-bar.js":44,"./engine/effects/pointerEffect.js":45,"./engine/generators/generator.js":47,"./engine/instanced/mesh-obj-instances.js":50,"./engine/lights.js":51,"./engine/loader-obj.js":53,"./engine/loaders/bvh-instaced.js":54,"./engine/loaders/bvh.js":55,"./engine/mesh-obj.js":59,"./engine/overrides/min-render.js":60,"./engine/overrides/nano-render.js":61,"./engine/overrides/noshadow-render.js":62,"./engine/physics/matrix-ammo.js":63,"./engine/pipelineManager.js":64,"./engine/postprocessing/bloom.js":66,"./engine/postprocessing/volumetric.js":67,"./engine/procedural-mesh.js":68,"./engine/procedures/fontana.js":69,"./engine/raycast.js":71,"./engine/utils.js":72,"./me-config.js":73,"./multilang/lang.js":74,"./shaders/fontana/fontana.wgsl.js":79,"./sounds/audioAsset.js":110,"./sounds/sounds.js":111,"./tools/editor/editor.js":114,"./tools/editor/flexCodexShaderAdapter.js":117,"wgpu-matrix":30}]},{},[1]);
+},{"./engine/cameras.js":33,"./engine/core-cache.js":35,"./engine/effects/energy-bar.js":37,"./engine/effects/flame-emmiter.js":38,"./engine/effects/flame.js":39,"./engine/effects/mana-bar.js":44,"./engine/effects/pointerEffect.js":45,"./engine/generators/generator.js":47,"./engine/instanced/mesh-obj-instances.js":50,"./engine/lights.js":51,"./engine/loader-obj.js":53,"./engine/loaders/bvh-instaced.js":54,"./engine/loaders/bvh.js":55,"./engine/mesh-obj.js":59,"./engine/overrides/min-render.js":60,"./engine/overrides/nano-render.js":61,"./engine/overrides/noshadow-render.js":62,"./engine/physics/matrix-ammo.js":63,"./engine/physics/matrix-jolt.js":64,"./engine/pipelineManager.js":65,"./engine/postprocessing/bloom.js":67,"./engine/postprocessing/volumetric.js":68,"./engine/procedural-mesh.js":69,"./engine/procedures/fontana.js":70,"./engine/raycast.js":72,"./engine/utils.js":73,"./me-config.js":74,"./multilang/lang.js":75,"./shaders/fontana/fontana.wgsl.js":80,"./sounds/audioAsset.js":111,"./sounds/sounds.js":112,"./tools/editor/editor.js":115,"./tools/editor/flexCodexShaderAdapter.js":118,"wgpu-matrix":30}]},{},[1]);

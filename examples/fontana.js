@@ -14,7 +14,7 @@ export var fontana = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       addRaycastsAABBListener();
       downloadMeshes({
         ball: "./res/meshes/blender/sphere.obj",

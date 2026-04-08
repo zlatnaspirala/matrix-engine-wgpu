@@ -24,7 +24,7 @@ let app = new MatrixEngineWGPU(
   }
 
   , (app) => {
-    addEventListener('AmmoReady', async () => {
+    addEventListener('PhysicsReady', async () => {
 
       addRaycastsListener("canvas1", "mousedown");
       // app.canvas.addEventListener("ray.hit.event", (e) => {

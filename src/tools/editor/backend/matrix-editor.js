@@ -271,7 +271,7 @@ async function cnp(ws, msg) {
   content.addLine(`let app = new MatrixEngineWGPU(`);
   content.addLine(CBoptions(p, n, msg.name));
   content.addLine(`, (app) => {`);
-  if(p) content.addLine(`addEventListener('AmmoReady', async () => { `);
+  if(p) content.addLine(`addEventListener('PhysicsReady', async () => { `);
 
   content.addLine(`// [only fro projects created from editor]`);
   content.addLine(`app.graph = graph;`);

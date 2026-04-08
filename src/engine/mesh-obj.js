@@ -303,7 +303,7 @@ export default class MEMeshObj extends Materials {
 
     // new dummy for skin mesh
     if(!this.mesh.jointsBuffer) {
-      console.log('vvvvv', this.mesh.vertices.length)
+      // console.log('Dummy buffer size check:', this.mesh.vertices.length)
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -1080,10 +1080,10 @@ export default class MEMeshObj extends Materials {
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
 
-    let testPB = app.matrixAmmo.getBodyByName(this.name);
+    let testPB = app.matrixPhysics.getBodyByName(this.name);
     if(testPB !== null) {
       try {
-        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        app.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
       } catch(e) {
         console.warn("Physics cleanup err:", e);
       }
