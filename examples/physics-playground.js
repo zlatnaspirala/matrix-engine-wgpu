@@ -20,6 +20,8 @@ export var physicsPlayground = function() {
     addRaycastsListener();
 
     addEventListener('PhysicsReady', () => {
+
+      alert('P READY')
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere.obj",
@@ -127,20 +129,20 @@ export var physicsPlayground = function() {
       app.cameras.WASD.setY(3.76);
       app.cameras.WASD._dirtyAngle = true;
 
-      physicsPlayground.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 111, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'ball1',
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          geometry: "Sphere"
-        },
-        raycast: {enabled: true, radius: 1}
-      })
+      // physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 111, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'ball1',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Sphere"
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // })
 
       physicsPlayground.addMeshObj({
         position: {x: 0, y: 0, z: -10},
@@ -181,24 +183,24 @@ export var physicsPlayground = function() {
       //   }
       // });
 
-      physicsPlayground.addProceduralMeshObj({
-        material: {type: 'standard'},
-        position: {x: 6, y: 15, z: -7},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: MeshMorpher.cylinder(1, 2),
-        meshB: MeshMorpher.cube(1),
-        name: `morph_cylinder`,
-        physics: {
-          enabled: true,
-          geometry: "Cylinder",
-          mass: 1,
-          radius: 1.0,
-          height: 2.0
-        }
-      });
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 6, y: 15, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.cylinder(1, 2),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_cylinder`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cylinder",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0
+      //   }
+      // });
 
       physicsPlayground.addProceduralMeshObj({
         material: {type: 'standard'},

@@ -120,6 +120,7 @@ export class MatrixJolt {
         return null;
     }
   }
+
   addPhysicsSphere(MEObject, pOptions) {
     const Jolt = this.Jolt;
     const radius = Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius;
@@ -313,25 +314,16 @@ export class MatrixJolt {
   // ─── CYLINDER ─────────────────────────────────────────────────
   addPhysicsCylinder(MEObject, pOptions) {
     const Jolt = this.Jolt;
-    const halfHeight = pOptions.height / 2 / 2;
+    const halfHeight = pOptions.height;
     const radius = pOptions.radius;
     const shape = new Jolt.CylinderShape(halfHeight, radius);
     console.log('cylinder COM:', shape.GetCenterOfMass().GetY());
-
     let B = this._createJoltBody(MEObject, pOptions, shape);
-
-
-
     console.log('cylinder layer:', pOptions.mass === 0 ? 'STATIC' : 'DYNAMIC');
     console.log('cylinder bodyID:', B?.GetID?.());
-
-console.log('cylinder valid:', shape.GetType());
-console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLocalBounds().mMax.GetY());
-
-    return B
-
-
-
+    console.log('cylinder valid:', shape.GetType());
+    console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLocalBounds().mMax.GetY());
+    return B;
   }
 
   // ─── CONE ─────────────────────────────────────────────────────
@@ -365,18 +357,11 @@ console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLoc
   // ─── CONVEX HULL ──────────────────────────────────────────────
   addPhysicsConvexHull(MEObject, pOptions) {
     const Jolt = this.Jolt;
-
     const verts = new Float32Array(pOptions.vertices);
     const numPoints = verts.length / 3;
-
     const settings = new Jolt.ConvexHullShapeSettings();
-
-    // ✅ IMPORTANT: tweak tolerance (prevents vertex collapsing)
     settings.mHullTolerance = 1e-6;
-
     const points = settings.mPoints;
-
-    // Optional: scale fix (helps if your mesh is too small)
     const sx = pOptions.scale?.[0] ?? 1;
     const sy = pOptions.scale?.[1] ?? 1;
     const sz = pOptions.scale?.[2] ?? 1;
@@ -385,28 +370,19 @@ console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLoc
       const x = verts[i * 3] * sx;
       const y = verts[i * 3 + 1] * sy;
       const z = verts[i * 3 + 2] * sz;
-
       // Skip invalid values (VERY important)
-      if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
-        continue;
-      }
-
+      if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
       const v = new Jolt.Vec3(x, y, z);
       points.push_back(v);
       Jolt.destroy(v);
     }
-
-    console.log("Jolt hull input points:", points.size());
-
-    // 🚨 Safety check (prevents silent failure)
+    // console.log("Jolt hull input points:", points.size());
     if(points.size() < 4) {
       console.error("ConvexHull: not enough valid points");
       Jolt.destroy(settings);
       return null;
     }
-
     const shapeResult = settings.Create();
-
     if(shapeResult.HasError()) {
       console.error("Hull Error:", shapeResult.GetError().c_str());
       Jolt.destroy(settings);
@@ -415,23 +391,15 @@ console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLoc
     }
 
     const shape = shapeResult.Get();
-
     const com = shape.GetCenterOfMass();
     console.log('Hull center of mass offset:', com.GetX(), com.GetY(), com.GetZ());
-
-
     pOptions.position.x = pOptions.position.x - com.GetX()
     pOptions.position.y = pOptions.position.y - com.GetY()
     pOptions.position.z = pOptions.position.z - com.GetZ()
-
-
     const body = this._createJoltBody(MEObject, pOptions, shape);
-
     console.log('Hull body created:', body, body?.GetID?.());
-
     Jolt.destroy(settings);
     Jolt.destroy(shapeResult);
-
     return body;
   }
 
@@ -440,64 +408,27 @@ console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLoc
     const Jolt = this.Jolt;
     const bodyA = this.getBodyByMEObject(MEObjectA);
     const bodyB = this.getBodyByMEObject(MEObjectB);
-
     if(!bodyA || !bodyB) return null;
-
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
     const axis = pOptions.axis || [0, 1, 0];
-
     const settings = new Jolt.HingeConstraintSettings();
     settings.mPoint1 = new Jolt.RVec3(pivotA[0], pivotA[1], pivotA[2]);
     settings.mPoint2 = new Jolt.RVec3(pivotB[0], pivotB[1], pivotB[2]);
     settings.mHingeAxis1 = new Jolt.Vec3(axis[0], axis[1], axis[2]);
     settings.mHingeAxis2 = new Jolt.Vec3(axis[0], axis[1], axis[2]);
-
     if(pOptions.limits) {
       settings.mLimitsMin = pOptions.limits[0];
       settings.mLimitsMax = pOptions.limits[1];
     }
-
     const constraint = settings.Create(bodyA, bodyB);
     this.physicsSystem.AddConstraint(constraint);
-
     if(!this.constraints) this.constraints = [];
     this.constraints.push(constraint);
     return constraint;
   }
 
-  // ─── INTERNAL HELPER FOR JOLT ─────────────────────────────────
   _createJoltBody(MEObject, pOptions, shape) {
-    // const Jolt = this.Jolt;
-    // const pos = pOptions.position || {x: 0, y: 0, z: 0};
-    // const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
-
-    // // Determine Motion Type (Static vs Dynamic)
-    // const motionType = (pOptions.mass === 0) ? Jolt.EMotionType_Static : Jolt.EMotionType_Dynamic;
-    // const layer = (pOptions.mass === 0) ? 0 : 1; // LAYER_NON_MOVING vs LAYER_MOVING
-
-    // const settings = new Jolt.BodyCreationSettings(
-    //   shape,
-    //   new Jolt.RVec3(pos.x, pos.y, pos.z),
-    //   Jolt.Quat.prototype.sRotation(new Jolt.Vec3(0, 1, 0), 0), // Use your degToRad helper for real rotation
-    //   motionType,
-    //   layer
-    // );
-
-    // // Physical Properties
-    // if(pOptions.restitution !== undefined) settings.mRestitution = pOptions.restitution;
-    // if(pOptions.friction !== undefined) settings.mFriction = pOptions.friction;
-
-    // const body = this.bodyInterface.CreateBody(settings);
-    // this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);
-
-    // // Link back to MEObject
-    // body.MEObject = MEObject;
-    // MEObject.itIsPhysicsBody = true;
-
-    // this.rigidBodies.push(body);
-    // Jolt.destroy(settings);
-    // return body;
     const Jolt = this.Jolt;
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
     const isKinematic = pOptions.mass === 0 && typeof pOptions.state === 'undefined';
@@ -538,7 +469,6 @@ console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLoc
     if(!this.joltInterface) return;
     const Jolt = this.Jolt;
     const bi = this.bodyInterface;
-
     // Push kinematic bodies from MEObject → physics
     this.rigidBodies.forEach(body => {
       if(body.isKinematic) {
@@ -563,15 +493,12 @@ console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLoc
         const id = body.GetID();
         const pos = bi.GetPosition(id);
         const rot = bi.GetRotation(id);
-
         body.MEObject.position.setPosition(pos.GetX(), pos.GetY(), pos.GetZ());
         body.MEObject.position.inMove = true;
-
         // Quat → axis/angle + matrix, same as your Ammo pattern
         const qx = rot.GetX(), qy = rot.GetY(), qz = rot.GetZ(), qw = rot.GetW();
         const sinHalfAngle = Math.sqrt(qx * qx + qy * qy + qz * qz);
         const angle = 2 * Math.atan2(sinHalfAngle, qw);
-
         if(sinHalfAngle > 0.0001) {
           const s = 1 / sinHalfAngle;
           body.MEObject.rotation.axis.x = qx * s;
@@ -583,7 +510,6 @@ console.log('cylinder bounds:', shape.GetLocalBounds().mMin.GetY(), shape.GetLoc
           body.MEObject.rotation.axis.y = 1;
           body.MEObject.rotation.axis.z = 0;
         }
-
         body.MEObject.rotation.angle = radToDeg(angle);
         body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix([qw, qx, qy, qz]);
       }

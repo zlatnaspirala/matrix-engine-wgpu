@@ -33,7 +33,8 @@ import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
 import {nanoPass} from "./engine/overrides/nano-render.js";
-import{MatrixJolt} from "./engine/physics/matrix-jolt.js";
+import {MatrixJolt} from "./engine/physics/matrix-jolt.js";
+import {PhysicsBridge} from "./engine/physics/bridge.js";
 /**
  * @description
  * Main engine root class.
@@ -126,8 +127,12 @@ export default class MatrixEngineWGPU {
 
       // check jolt
       if(typeof options.useJolt !== 'undefined') {
-        //
-          this.matrixPhysics = new MatrixJolt();
+        // this.matrixPhysics = new MatrixJolt();
+        this.matrixPhysics = new PhysicsBridge('./engine/physics/matrix-jolt-worker.js');
+        this.matrixPhysics.init({gravity: 10, groundY: -1});
+        this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
+        console.log("TEST PHYS WORKER");
+
       } else {
         if(typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
           this.matrixPhysics = new MatrixAmmo({
@@ -1073,7 +1078,9 @@ export default class MatrixEngineWGPU {
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
+
       if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
+
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
