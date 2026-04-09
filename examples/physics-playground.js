@@ -18,10 +18,7 @@ export var physicsPlayground = function() {
   }, () => {
     physicsPlayground.addLight();
     addRaycastsListener();
-
     addEventListener('PhysicsReady', () => {
-
-      alert('P READY')
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere.obj",

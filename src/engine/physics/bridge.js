@@ -3,6 +3,15 @@ const FLOATS_PER_BODY = 8;
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = new Worker(workerUrl, {type: 'module'});
+
+    this._worker.onerror = (e) => {
+      console.error('Worker error:', e.message, e.filename, e.lineno);
+    };
+
+    this._worker.onmessageerror = (e) => {
+      console.error('Worker message error:', e);
+    };
+
     this._snapshot = null;
     this._pending = new Map();
     this._msgId = 0;

@@ -2,6 +2,8 @@ import {MEConfig} from "../../me-config";
 import {buildConeVerts} from "../matrix-class";
 import {LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../utils";
 
+// DEPLACED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 const LAYER_NON_MOVING = 0;
 const LAYER_MOVING = 1;
 const NUM_BROAD_PHASE_LAYERS = 2;

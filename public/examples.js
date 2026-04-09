@@ -2623,7 +2623,6 @@ var physicsPlayground = function () {
     physicsPlayground.addLight();
     (0, _raycast.addRaycastsListener)();
     addEventListener('PhysicsReady', () => {
-      alert('P READY');
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere.obj",
@@ -32956,7 +32955,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Rotation = exports.Position = exports.PVector = void 0;
-exports.buildConeVerts = buildConeVerts;
 exports.pairRepulsion = pairRepulsion;
 var _utils = require("./utils");
 /**
@@ -33445,21 +33443,6 @@ class PVector {
   }
 }
 exports.PVector = PVector;
-function buildConeVerts(radius, height, segments = 16) {
-  const verts = [];
-  const half = height / 2;
-  // base at -half, apex at +half
-  // COM will be at -half + height/4 = -height/4 from origin
-  // close enough for most cases, or compensate in addPhysicsCone
-  for (let i = 0; i < segments; i++) {
-    const a = i / segments * Math.PI * 2;
-    verts.push(Math.cos(a) * radius, -half,
-    // base at -height/2
-    Math.sin(a) * radius);
-  }
-  verts.push(0, half, 0); // apex at +height/2
-  return verts;
-}
 
 },{"./utils":74}],59:[function(require,module,exports){
 "use strict";
@@ -34776,6 +34759,12 @@ class PhysicsBridge {
     this._worker = new Worker(workerUrl, {
       type: 'module'
     });
+    this._worker.onerror = e => {
+      console.error('Worker error:', e.message, e.filename, e.lineno);
+    };
+    this._worker.onmessageerror = e => {
+      console.error('Worker message error:', e);
+    };
     this._snapshot = null;
     this._pending = new Map();
     this._msgId = 0;
@@ -35831,6 +35820,8 @@ exports.MatrixJolt = void 0;
 var _meConfig = require("../../me-config");
 var _matrixClass = require("../matrix-class");
 var _utils = require("../utils");
+// DEPLACED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 const LAYER_NON_MOVING = 0;
 const LAYER_MOVING = 1;
 const NUM_BROAD_PHASE_LAYERS = 2;
@@ -59015,7 +59006,7 @@ class MatrixEngineWGPU {
       // check jolt
       if (typeof options.useJolt !== 'undefined') {
         // this.matrixPhysics = new MatrixJolt();
-        this.matrixPhysics = new _bridge.PhysicsBridge('./engine/physics/matrix-jolt-worker.js');
+        this.matrixPhysics = new _bridge.PhysicsBridge('./joltjs/matrix-jolt-worker.js');
         this.matrixPhysics.init({
           gravity: 10,
           groundY: -1

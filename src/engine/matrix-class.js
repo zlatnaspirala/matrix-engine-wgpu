@@ -479,21 +479,3 @@ export class PVector {
     this.z = z;
   }
 }
-
-export function buildConeVerts(radius, height, segments = 16) {
-  const verts = [];
-  const half = height / 2;
-  // base at -half, apex at +half
-  // COM will be at -half + height/4 = -height/4 from origin
-  // close enough for most cases, or compensate in addPhysicsCone
-  for (let i = 0; i < segments; i++) {
-    const a = (i / segments) * Math.PI * 2;
-    verts.push(
-      Math.cos(a) * radius,
-      -half, // base at -height/2
-      Math.sin(a) * radius
-    );
-  }
-  verts.push(0, half, 0); // apex at +height/2
-  return verts;
-}

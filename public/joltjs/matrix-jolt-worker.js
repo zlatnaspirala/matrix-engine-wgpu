@@ -1,6 +1,4 @@
-import { degToRad, radToDeg, quaternion_rotation_matrix } from '../utils';
-import { MEConfig } from '../../me-config';
-import { buildConeVerts } from '../matrix-class';
+// import { degToRad, radToDeg, quaternion_rotation_matrix } from '../../src/engine/utils';
 
 const LAYER_NON_MOVING = 0;
 const LAYER_MOVING = 1;
@@ -32,11 +30,12 @@ class MatrixJolt {
 
   // ── INIT ────────────────────────────────────────────────────────
   async init(options = {}) {
+    console.log('>>>>>>>> init')
     Object.assign(this.options, options);
     const module = await import('https://www.unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js');
     const Jolt = await module.default();
     this.Jolt = Jolt;
-    this._initPhysics(options.groundY ?? MEConfig.PHYSICS_GROUND_Y);
+    this._initPhysics(options.groundY ?? 0);
   }
 
   _initPhysics(GROUND_Y) {
@@ -288,10 +287,32 @@ class MatrixJolt {
   }
 }
 
+function buildConeVerts(radius, height, segments = 16) {
+  const verts = [];
+  const half = height / 2;
+  // base at -half, apex at +half
+  // COM will be at -half + height/4 = -height/4 from origin
+  // close enough for most cases, or compensate in addPhysicsCone
+  for (let i = 0; i < segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    verts.push(
+      Math.cos(a) * radius,
+      -half, // base at -height/2
+      Math.sin(a) * radius
+    );
+  }
+  verts.push(0, half, 0); // apex at +height/2
+  return verts;
+}
+
 // ── WORKER MESSAGE LOOP ─────────────────────────────────────────────
 const jolt = new MatrixJolt();
 
+console.log('worker script started');
+
 self.onmessage = async ({ data }) => {
+
+  console.log('worker script started - msg', data);
   const { cmd, id } = data;
 
   switch (cmd) {

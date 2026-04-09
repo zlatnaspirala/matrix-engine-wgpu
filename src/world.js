@@ -128,7 +128,7 @@ export default class MatrixEngineWGPU {
       // check jolt
       if(typeof options.useJolt !== 'undefined') {
         // this.matrixPhysics = new MatrixJolt();
-        this.matrixPhysics = new PhysicsBridge('./engine/physics/matrix-jolt-worker.js');
+        this.matrixPhysics = new PhysicsBridge('./joltjs/matrix-jolt-worker.js');
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
         console.log("TEST PHYS WORKER");
