@@ -9,7 +9,7 @@ import {PVector} from "../src/engine/matrix-class.js";
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    useJolt: true, // test
+    // useJolt: true, // test
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -75,6 +75,7 @@ export var physicsPlayground = function() {
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
+        console.log(' vvv')
         app.matrixPhysics.applyImpulse(b, new PVector(
           e.detail.rayDirection[0] * strength,
           e.detail.rayDirection[1] * strength,
@@ -108,7 +109,7 @@ export var physicsPlayground = function() {
         material: {type: 'standard'},
         position: {x: 0, y: 4, z: -6},
         rotation: {x: 0, y: 0, z: 0.02},
-        scale: [2, 2, 2],
+        scale: [1, 1, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'MyHull',
         mesh: m.reel,
@@ -117,7 +118,8 @@ export var physicsPlayground = function() {
           mass: 2,
           geometry: "ConvexHull",
           vertices: m.reel.vertices
-        }
+        },
+        raycast: {enabled: true, radius: 1}
       });
 
       app.cameras.WASD.setYaw(-0.03);
@@ -212,10 +214,11 @@ export var physicsPlayground = function() {
         physics: {
           enabled: true,
           geometry: "Cone",
-          mass: 5,
+          mass: 1,
           radius: 1,
           height: 5
-        }
+        },
+        raycast: {enabled: true, radius: 1}
       });
 
       // app.physicsBodiesGeneratorWall(

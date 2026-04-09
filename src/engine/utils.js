@@ -710,7 +710,7 @@ export function getAxisRot3(Q) {
   return axis;
 }
 
-// NTO TESTED
+// Copied intro worker also.
 export function quaternion_rotation_matrix(Q) {
 
   // Covert a quaternion into a full three-dimensional rotation matrix.

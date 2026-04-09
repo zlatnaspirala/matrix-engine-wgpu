@@ -2607,8 +2607,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
-    useJolt: true,
-    // test
+    // useJolt: true, // test
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -2681,6 +2680,7 @@ var physicsPlayground = function () {
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
+        console.log(' vvv');
         app.matrixPhysics.applyImpulse(b, new _matrixClass.PVector(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength));
       });
     });
@@ -2719,7 +2719,7 @@ var physicsPlayground = function () {
           y: 0,
           z: 0.02
         },
-        scale: [2, 2, 2],
+        scale: [1, 1, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'MyHull',
         mesh: m.reel,
@@ -2728,6 +2728,10 @@ var physicsPlayground = function () {
           mass: 2,
           geometry: "ConvexHull",
           vertices: m.reel.vertices
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
         }
       });
       app.cameras.WASD.setYaw(-0.03);
@@ -2848,9 +2852,13 @@ var physicsPlayground = function () {
         physics: {
           enabled: true,
           geometry: "Cone",
-          mass: 5,
+          mass: 1,
           radius: 1,
           height: 5
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
         }
       });
 
@@ -34364,7 +34372,6 @@ class MEMeshObj extends _materials.default {
   updateModelUniformBuffer = () => {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    this.modelMatrix = modelMatrix;
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -34753,6 +34760,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.PhysicsBridge = void 0;
+var _utils = require("../utils");
 const FLOATS_PER_BODY = 8;
 class PhysicsBridge {
   constructor(workerUrl) {
@@ -34762,27 +34770,40 @@ class PhysicsBridge {
     this._worker.onerror = e => {
       console.error('Worker error:', e.message, e.filename, e.lineno);
     };
-    this._worker.onmessageerror = e => {
-      console.error('Worker message error:', e);
-    };
     this._snapshot = null;
     this._pending = new Map();
     this._msgId = 0;
     this._bodyIndexMap = new Map();
     this._ready = false;
-    this._queue = []; // buffered addPhysics calls before ready
-
+    this._queue = [];
     this._worker.onmessage = ({
       data
     }) => this._onMessage(data);
+
+    // cache
+    this.pCollisionEvent = new CustomEvent('pCollision', {
+      detail: {
+        // body0Name: data.body0Name,
+        // body1Name: data.body1Name,
+        // rayDirection: data.normal
+      }
+    });
+  }
+  getBodyByName(name) {
+    // console.log('[bridge] bodyIndexMap size:', this._bodyIndexMap.size);
+    // for(const [meObj, idx] of this._bodyIndexMap) {
+    //   // console.log(' -', meObj.name, idx);
+    // }
+    for (const [meObj, idx] of this._bodyIndexMap) {
+      if (meObj.name === name) return idx;
+    }
+    return -1;
   }
   async init(options = {}) {
     await this._send('init', {
       options
     });
     this._ready = true;
-
-    // drain queue
     for (const {
       MEObject,
       pOptions
@@ -34790,21 +34811,19 @@ class PhysicsBridge {
       this._doAddPhysics(MEObject, pOptions);
     }
     this._queue = [];
-
-    // defer one tick so all addEventListener('PhysicsReady') 
-    // calls in constructors finish registering first
     setTimeout(() => {
       dispatchEvent(new CustomEvent('PhysicsReady', {}));
-    }, 10);
+    }, 50);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
       this._queue.push({
         MEObject,
         pOptions
-      }); // buffer until ready
+      });
       return;
     }
+    console.log("ADD PHYSICSA MAINTHRED");
     this._doAddPhysics(MEObject, pOptions);
   }
   _doAddPhysics(MEObject, pOptions) {
@@ -34814,10 +34833,8 @@ class PhysicsBridge {
       this._bodyIndexMap.set(MEObject, idx);
     });
   }
-  // ── same signature as MatrixJolt.updatePhysics ───────────────────
   updatePhysics() {
-    if (!this._ready) return; // silent no-op until worker is up
-
+    if (!this._ready) return;
     for (const [meObj, idx] of this._bodyIndexMap) {
       if (meObj.itIsKinematic) {
         const {
@@ -34837,7 +34854,6 @@ class PhysicsBridge {
     this._worker.postMessage({
       cmd: 'step'
     });
-    this._syncToObjects();
   }
 
   // ── rest of MatrixJolt public API ────────────────────────────────
@@ -34849,9 +34865,10 @@ class PhysicsBridge {
       z
     });
   }
-  applyImpulse(MEObject, pVect) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  applyImpulse(idx, pVect) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
+    console.log('[bridge] applyImpulse', idx, pVect);
     this._worker.postMessage({
       cmd: 'applyImpulse',
       idx,
@@ -34902,16 +34919,6 @@ class PhysicsBridge {
       idx
     });
   }
-
-  // ── init — replaces _initJolt() + PhysicsReady event ────────────
-  async init(options = {}) {
-    await this._send('init', {
-      options
-    });
-    dispatchEvent(new CustomEvent('PhysicsReady', {}));
-  }
-
-  // ── internals ────────────────────────────────────────────────────
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -34925,8 +34932,7 @@ class PhysicsBridge {
       meObj.rotation.axis.y = snap[b + 4];
       meObj.rotation.axis.z = snap[b + 5];
       meObj.rotation.angle = snap[b + 6] * (180 / Math.PI);
-      meObj.rotation.matrixRotation = quaternion_rotation_matrix(_snapQuat(snap, b) // see below
-      );
+      meObj.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(_snapQuat(snap, b));
     }
   }
   _send(cmd, extra = {}) {
@@ -34947,6 +34953,18 @@ class PhysicsBridge {
         if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
+        this._syncToObjects();
+        break;
+      case 'snapshot':
+        this._snapshot = data.snap;
+        this._syncToObjects();
+        break;
+      case 'collision':
+        // re-dispatch as DOM event so existing listeners work unchanged
+        this.pCollisionEvent.detail.body0Name = data.body0Name;
+        this.pCollisionEvent.detail.body1Name = data.body1Name;
+        this.pCollisionEvent.detail.rayDirection = data.normal;
+        document.dispatchEvent(this.pCollisionEvent);
         break;
     }
   }
@@ -34963,7 +34981,7 @@ function _snapQuat(snap, b) {
   return [Math.cos(a / 2), ax * s, ay * s, az * s];
 }
 
-},{}],64:[function(require,module,exports){
+},{"../utils":74}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37408,6 +37426,7 @@ class ProceduralMeshObj extends _materials.default {
     }
     this.mType = _utils.MeshType.PROCEDURAL;
     //cache
+    this._scaleVec = new Float32Array(3);
     this._camVP = _wgpuMatrix.mat4.create();
     this.meshA = null;
     this.meshB = null;
@@ -38138,14 +38157,18 @@ class ProceduralMeshObj extends _materials.default {
       _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
     }
-    if (useScale == true) _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+    if (useScale == true) {
+      this._scaleVec[0] = this.scale[0];
+      this._scaleVec[1] = this.scale[1];
+      this._scaleVec[2] = this.scale[2];
+      _wgpuMatrix.mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+    }
     this.modelMatrix = modelMatrix;
     return modelMatrix;
   }
   updateModelUniformBuffer() {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    // this.modelMatrix = modelMatrix;
   }
   updateTime(time) {
     this.time += time * this.deltaTimeAdapter;
@@ -39853,7 +39876,7 @@ function getAxisRot3(Q) {
   return axis;
 }
 
-// NTO TESTED
+// Copied intro worker also.
 function quaternion_rotation_matrix(Q) {
   // Covert a quaternion into a full three-dimensional rotation matrix.
 
@@ -59005,28 +59028,23 @@ class MatrixEngineWGPU {
     if (typeof options.dontUsePhysics === 'undefined') {
       // check jolt
       if (typeof options.useJolt !== 'undefined') {
-        // this.matrixPhysics = new MatrixJolt();
         this.matrixPhysics = new _bridge.PhysicsBridge('./joltjs/matrix-jolt-worker.js');
         this.matrixPhysics.init({
           gravity: 10,
           groundY: -1
         });
         this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
-        console.log("TEST PHYS WORKER");
+        // console.log("");
       } else {
-        if (typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
-          this.matrixPhysics = new _matrixAmmo.default({
-            gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS,
-            roundDimensionX: options.PHYSICS_GROUND_BYX,
-            roundDimensionY: options.PHYSICS_GROUND_BYZ
-          });
-        } else {
-          this.matrixPhysics = new _matrixAmmo.default({
-            gravity: _meConfig.MEConfig.GRAVITY_Y_AXIS,
-            roundDimensionX: _meConfig.MEConfig.PHYSICS_GROUND_BYX,
-            roundDimensionY: _meConfig.MEConfig.PHYSICS_GROUND_BYZ
-          });
-        }
+        this.matrixPhysics = new _bridge.PhysicsBridge('./ammojs/matrix-ammo-worker.js');
+        const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS;
+        this.matrixPhysics.init({
+          gravity: G,
+          groundY: -1,
+          roundDimensionX: options.PHYSICS_GROUND_BYX ? options.PHYSICS_GROUND_BYX : _meConfig.MEConfig.PHYSICS_GROUND_BYX,
+          roundDimensionY: options.PHYSICS_GROUND_BYZ ? options.PHYSICS_GROUND_BYZ : _meConfig.MEConfig.PHYSICS_GROUND_BYX
+        });
+        this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
       }
     }
     // cache
@@ -59831,7 +59849,10 @@ class MatrixEngineWGPU {
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;
-    if (o.physics.enabled == true) this.matrixPhysics.addPhysics(myMesh1, o.physics);
+    if (o.physics.enabled == true) {
+      myMesh1.itIsPhysicsBody = true;
+      this.matrixPhysics.addPhysics(myMesh1, o.physics);
+    }
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -59920,9 +59941,11 @@ class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
-    if (o.physics.enabled === true) this.matrixPhysics.addPhysics(myMesh, o.physics);
+    if (o.physics.enabled === true) {
+      myMesh.itIsPhysicsBody = true;
+      this.matrixPhysics.addPhysics(myMesh, o.physics);
+    }
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();

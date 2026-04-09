@@ -37,6 +37,7 @@ export default class ProceduralMeshObj extends Materials {
     }
     this.mType = MeshType.PROCEDURAL;
     //cache
+    this._scaleVec = new Float32Array(3);
     this._camVP = mat4.create();
     this.meshA = null;
     this.meshB = null;
@@ -687,21 +688,19 @@ export default class ProceduralMeshObj extends Materials {
       mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
     }
-    if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
+    if(useScale == true) {
+      this._scaleVec[0] = this.scale[0];
+      this._scaleVec[1] = this.scale[1];
+      this._scaleVec[2] = this.scale[2];
+      mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+    }
     this.modelMatrix = modelMatrix;
     return modelMatrix;
   }
 
   updateModelUniformBuffer() {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(
-      this.modelUniformBuffer,
-      0,
-      modelMatrix.buffer,
-      modelMatrix.byteOffset,
-      modelMatrix.byteLength
-    );
-    // this.modelMatrix = modelMatrix;
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   }
 
   updateTime(time) {

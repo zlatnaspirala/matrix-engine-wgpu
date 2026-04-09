@@ -124,29 +124,21 @@ export default class MatrixEngineWGPU {
     }
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {
-
       // check jolt
       if(typeof options.useJolt !== 'undefined') {
-        // this.matrixPhysics = new MatrixJolt();
         this.matrixPhysics = new PhysicsBridge('./joltjs/matrix-jolt-worker.js');
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
-        console.log("TEST PHYS WORKER");
-
+        // console.log("");
       } else {
-        if(typeof options.PHYSICS_GROUND_BYX !== 'undefined' && typeof options.PHYSICS_GROUND_BYZ !== 'undefined') {
-          this.matrixPhysics = new MatrixAmmo({
-            gravity: options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
-            roundDimensionX: options.PHYSICS_GROUND_BYX,
-            roundDimensionY: options.PHYSICS_GROUND_BYZ
-          });
-        } else {
-          this.matrixPhysics = new MatrixAmmo({
-            gravity: MEConfig.GRAVITY_Y_AXIS,
-            roundDimensionX: MEConfig.PHYSICS_GROUND_BYX,
-            roundDimensionY: MEConfig.PHYSICS_GROUND_BYZ
-          });
-        }
+        this.matrixPhysics = new PhysicsBridge('./ammojs/matrix-ammo-worker.js');
+        const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS;
+        this.matrixPhysics.init({
+          gravity: G, groundY: -1,
+          roundDimensionX: options.PHYSICS_GROUND_BYX ? options.PHYSICS_GROUND_BYX : MEConfig.PHYSICS_GROUND_BYX,
+          roundDimensionY: options.PHYSICS_GROUND_BYZ ? options.PHYSICS_GROUND_BYZ : MEConfig.PHYSICS_GROUND_BYX
+        });
+        this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
       }
     }
     // cache
@@ -829,8 +821,10 @@ export default class MatrixEngineWGPU {
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;
-
-    if(o.physics.enabled == true) this.matrixPhysics.addPhysics(myMesh1, o.physics);
+    if(o.physics.enabled == true) {
+      myMesh1.itIsPhysicsBody = true;
+      this.matrixPhysics.addPhysics(myMesh1, o.physics);
+    }
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -886,9 +880,11 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    // myMesh.shadowDepthTextureView = this.shadowArrayView;
     myMesh.clearColor = clearColor;
-    if(o.physics.enabled === true) this.matrixPhysics.addPhysics(myMesh, o.physics);
+    if(o.physics.enabled === true) {
+      myMesh.itIsPhysicsBody = true;
+      this.matrixPhysics.addPhysics(myMesh, o.physics);
+    }
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();

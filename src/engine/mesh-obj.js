@@ -794,8 +794,8 @@ export default class MEMeshObj extends Materials {
       bindGroupLayouts: [
         this.sceneBGL,
         isVideo ? this.materialVideoBGL : this.materialBGL,
-        this.uniformBufferBindGroupLayout, 
-       (isMirror ? this.mirrorBindGroupLayout : (isWater ? this.waterBindGroupLayout : null)),
+        this.uniformBufferBindGroupLayout,
+        (isMirror ? this.mirrorBindGroupLayout : (isWater ? this.waterBindGroupLayout : null)),
       ].filter(Boolean)
     });
     // VERTEX STATE (SHARED)
@@ -885,7 +885,6 @@ export default class MEMeshObj extends Materials {
   updateModelUniformBuffer = () => {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    this.modelMatrix = modelMatrix;
   }
 
   createGPUBuffer(dataArray, usage) {
