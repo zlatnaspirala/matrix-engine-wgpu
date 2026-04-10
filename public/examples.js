@@ -319,17 +319,8 @@ var flipper = function () {
       });
       flipper.matrixPhysics.speedUpSimulation = 4;
     });
-    function onGround(m) {
-      // app.physicsBodiesGenerator("standard", {x : 0 , y: 0, z: -30} ,
-      //    {x : 0 , y: 0, z: 0}, "./res/meshes/blender/cube.png" ,
-      //     "nameaaaaa", "Cube", false, [1,1,1], 100, 1000);
-      // setTimeout(() => {
-      //   // you cna call setters for each but bettter
-
-      //   // app.cameras.WASD._dirtyAngle = true;
-      // }, 500);
-
-      // ball
+    async function onGround(m) {
+      // Ball
       const ball1 = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -406,7 +397,7 @@ var flipper = function () {
           geometry: "Cube"
         }
       });
-      let bigBoxFlipper = flipper.addMeshObj({
+      flipper.addMeshObj({
         position: {
           x: 0,
           y: 6,
@@ -496,16 +487,8 @@ var flipper = function () {
         },
         name: "flipperRightAnchor"
       });
-      let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
-      flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
-      // getLA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
-      // getLA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
-      let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
-      // getRA.setLinearFactor(new Ammo.btVector3(0, 0, 0));
-      // getRA.setAngularFactor(new Ammo.btVector3(0, 0, 0));
-      flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
       const commomBODYX = 0;
-      const L = flipper.addMeshObj({
+      flipper.addMeshObj({
         material: {
           type: 'standard'
         },
@@ -525,7 +508,7 @@ var flipper = function () {
           vertices: m.pin.vertices
         }
       });
-      const R = flipper.addMeshObj({
+      flipper.addMeshObj({
         material: {
           type: 'standard'
         },
@@ -545,20 +528,17 @@ var flipper = function () {
           vertices: m.pinR.vertices
         }
       });
-      const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-      const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-      leftBody.setActivationState(4);
-      leftBody.activate(true);
-      leftBody.setDamping(0.8, 0.8);
-      rightBody.setActivationState(4);
-      rightBody.activate(true);
-      rightBody.setDamping(0.8, 0.8);
-      leftBody.setDamping(0.95, 0.95);
-      rightBody.setDamping(0.95, 0.95);
-      leftBody.setRestitution(0.1);
-      rightBody.setRestitution(0.1);
-      leftBody.setFriction(1.5);
-      rightBody.setFriction(1.5);
+
+      // flipper.matrixPhysics.setActivationState(leftBody, 4);
+      // flipper.matrixPhysics.activate(leftBody, true);
+      // flipper.matrixPhysics.setActivationState(rightBody, 4);
+      // flipper.matrixPhysics.activate(rightBody, true);
+      // flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
+      // flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
+      // flipper.matrixPhysics.setRestitution(leftBody, 0.1);
+      // flipper.matrixPhysics.setRestitution(rightBody, 0.1);
+      // flipper.matrixPhysics.setFriction(leftBody, 1.5);
+      // flipper.matrixPhysics.setFriction(rightBody, 1.5);
 
       // BUMPERS
       const bumperPositions = [{
@@ -828,13 +808,76 @@ var flipper = function () {
         addressModeU: 'repeat',
         addressModeV: 'repeat'
       });
-      setTimeout(() => {
-        // REdge.changeTexture(checker2, samplerTest)
+
+      // 
+      setTimeout(async () => {
+        const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+        const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+        console.log('seup left right body ', leftBody);
+        flipper.matrixPhysics.setActivationState(leftBody, 4);
+        flipper.matrixPhysics.activate(leftBody, true);
+        flipper.matrixPhysics.setActivationState(rightBody, 4);
+        flipper.matrixPhysics.activate(rightBody, true);
+        flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
+        flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
+        flipper.matrixPhysics.setRestitution(leftBody, 0.1);
+        flipper.matrixPhysics.setRestitution(rightBody, 0.1);
+        flipper.matrixPhysics.setFriction(leftBody, 1.5);
+        flipper.matrixPhysics.setFriction(rightBody, 1.5);
+        let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+        flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
+        let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+        flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
+
+        // BALL PHYSICS TUNING
+        const ball = flipper.matrixPhysics.getBodyByName('ball1');
+        console.log(ball + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (ball) {
+          flipper.matrixPhysics.setRestitution(ball, 0.9);
+          flipper.matrixPhysics.setFriction(ball, 0.2);
+          // flipper.matrixPhysics.setRollingFriction(ball, 0.05);
+          flipper.matrixPhysics.setDamping(ball, 0.05, 0.05);
+        }
+
+        // FLIPPER SETUP
+        const commonX = 0.5;
+        const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
+        const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+        const hingeLeft = app.matrixPhysics.addHingeConstraint(BA, BB, {
+          name: "flipperLeftHinge",
+          pivotA: [-commonX, 0, 0],
+          pivotB: [0, 0, 0],
+          axis: [0, 1, 0],
+          limits: [-0.8, 0.5]
+        });
+        let hingeLeftID = 0;
+        let hingeRightID = 0;
+        hingeLeft.then(idx => {
+          console.log('_____hinge index___', idx);
+          hingeLeftID = idx;
+          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+        });
+        const BA1 = flipper.matrixPhysics.getBodyByName('flipperRight');
+        const BB1 = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+        const hingeRight = app.matrixPhysics.addHingeConstraint(BA1, BB1, {
+          name: "flipperRightHinge",
+          pivotA: [commonX, 0, 0],
+          pivotB: [0, 0, 0],
+          axis: [0, -1, 0],
+          limits: [-0.8, 0.5]
+        });
+        hingeRight.then(idx => {
+          console.log('_____hinge hingeRight index___', idx);
+          hingeRightID = idx;
+          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+        });
         REdge.setUVScale(1, 1);
         // LEdge.changeTexture(checker2, samplerTest)
         LEdge.setUVScale(1, 1);
         REdge2.setUVScale(1, 1);
-      }, 500);
+      }, 1000);
       flipper.canvas.addEventListener("ray.hit.event", e => {
         app.matrixSounds.play('click1');
         console.log('e.detail', e.detail);
@@ -856,15 +899,8 @@ var flipper = function () {
         console.log('collision : ', body1Name);
         if (body1Name.startsWith("bumper")) {
           const ball = app.matrixPhysics.getBodyByName('ball1');
-          const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
-          if (ball && bumperBody) {
-            // const impulse = new Ammo.btVector3(
-            //   rayDirection[0] * strength,
-            //   Math.abs(rayDirection[1]) * strength + 8,
-            //   rayDirection[2] * strength
-            // );
-            // ball.activate(true);
-            // ball.applyCentralImpulse(impulse);
+          // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
+          if (ball != -1) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength));
           }
         } else if (body1Name.startsWith("edgeRigth") && MYFLIPPER.STATUS_PUSH == 'wait') {
@@ -878,85 +914,52 @@ var flipper = function () {
       });
 
       // GRAVITY TILT (PINBALL FEEL)
-      // flipper.matrixPhysics.dynamicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 1));
       flipper.matrixPhysics.setGravity(0, -9.8, 1);
 
-      // BALL PHYSICS TUNING
-      const ball = flipper.matrixPhysics.getBodyByName('ball1');
-      if (ball) {
-        ball.setRestitution(0.9);
-        ball.setFriction(0.2);
-        ball.setRollingFriction(0.05);
-        ball.setDamping(0.05, 0.05);
-      }
+      // let leftBodycurrPos = 'unpressed';
+      // window.addEventListener("keydown", (e) => {
+      //   e.preventDefault();
+      //   if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
+      //     leftBodycurrPos = 'pressed';
+      //     const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+      //     leftBody.activate(true);
+      //     leftBody.setActivationState(4);
+      //     hingeLeft.enableAngularMotor(true, -25, 500);
+      //   }
+      //   if(e.code === "KeyM") {
+      //     const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+      //     rightBody.activate(true);
+      //     rightBody.setActivationState(4);
+      //     hingeRight.enableAngularMotor(true, -25, 500);
+      //   }
+      // });
 
-      // FLIPPER SETUP
-      const commonX = 0.5;
-      const hingeLeft = app.matrixPhysics.addHingeConstraint(L, LAnchor, {
-        name: "flipperLeftHinge",
-        pivotA: [-commonX, 0, 0],
-        pivotB: [0, 0, 0],
-        axis: [0, 1, 0],
-        limits: [-0.8, 0.5]
-      });
-      const hingeRight = app.matrixPhysics.addHingeConstraint(R, RAnchor, {
-        name: "flipperRightHinge",
-        pivotA: [commonX, 0, 0],
-        pivotB: [0, 0, 0],
-        axis: [0, -1, 0],
-        limits: [-0.8, 0.5]
-      });
-      hingeLeft.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
-      hingeRight.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
-      let leftBodycurrPos = 'unpressed';
-      window.addEventListener("keydown", e => {
-        e.preventDefault();
-        if (e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
-          leftBodycurrPos = 'pressed';
-          const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-          leftBody.activate(true);
-          leftBody.setActivationState(4);
-          hingeLeft.enableAngularMotor(true, -25, 500);
-        }
-        if (e.code === "KeyM") {
-          const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-          rightBody.activate(true);
-          rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, -25, 500);
-        }
-      });
-      hingeLeft.enableAngularMotor(true, 10, 500);
-      hingeRight.enableAngularMotor(true, 10, 500);
-      flipper.autoUpdate.push({
-        update: () => {
-          leftBody.activate(true);
-          rightBody.activate(true);
-        }
-      });
-      window.addEventListener("keyup", e => {
-        if (e.code === "KeyZ") {
-          leftBodycurrPos = 'unpressed';
-          // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-          // leftBody.activate(true);
-          // leftBody.setActivationState(4);
-          hingeLeft.enableAngularMotor(true, 10, 500);
-        }
-        if (e.code === "KeyM") {
-          // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-          // rightBody.activate(true);
-          // rightBody.setActivationState(4);
-          hingeRight.enableAngularMotor(true, 10, 500);
-        }
-        if (e.code == "Space") {
-          if (MYFLIPPER.STATUS_PUSH == 'free') {
-            MYFLIPPER.STATUS_PUSH = 'in action';
-            let ball = app.matrixPhysics.getBodyByName(ball1.name);
-            // const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
-            // ball.applyCentralImpulse(impulse);
-            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20)));
-          }
-        }
-      });
+      // ORIGIN enableHingeMotor
+      // hingeLeft.enableAngularMotor(true, 10, 500);
+      // hingeRight.enableAngularMotor(true, 10, 500);
+      // flipper.autoUpdate.push({
+      //   update: () => {
+      //     leftBody.activate(true);
+      //     rightBody.activate(true);
+      //   }
+      // })
+
+      // window.addEventListener("keyup", (e) => {
+      //   if(e.code === "KeyZ") {
+      //     leftBodycurrPos = 'unpressed';
+      //     hingeLeft.enableAngularMotor(true, 10, 500);
+      //   }
+      //   if(e.code === "KeyM") {
+      //     hingeRight.enableAngularMotor(true, 10, 500);
+      //   }
+      //   if(e.code == "Space") {
+      //     if(MYFLIPPER.STATUS_PUSH == 'free') {
+      //       MYFLIPPER.STATUS_PUSH = 'in action';
+      //       let ball = app.matrixPhysics.getBodyByName(ball1.name);
+      //       flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
+      //     }
+      //   }
+      // });
 
       // only render objs
       const leg1 = flipper.addMeshObj({
@@ -2601,13 +2604,14 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
-var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
+
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
-    // useJolt: true, // test
+    // useJolt: true, // Or ammojs by default...
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -2624,7 +2628,7 @@ var physicsPlayground = function () {
     addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
-        ball: "./res/meshes/shapes/sphere.obj",
+        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {
         scale: [1, 1, 1]
@@ -2656,32 +2660,31 @@ var physicsPlayground = function () {
       //   100
       // );
 
-      // physicsPlayground.physicsBodiesGeneratorPyramid(
-      //   "standard",
-      //   {x: 0, y: 1, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   "./res/meshes/blender/cube.png",
-      //   "pyr",
-      //   6,
-      //   true,
-      //   [1, 1, 1],
-      //   2
-      // );
+      physicsPlayground.physicsBodiesGeneratorDeepPyramid("standard", {
+        x: 0,
+        y: 1,
+        z: -20
+      }, {
+        x: 0,
+        y: 0,
+        z: 0
+      }, "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400);
 
       // Buildin options
-      // app.physicsBodiesGeneratorWall(
-      //   "standard",
-      //   {x: -4.5, y: 0, z: -10},
-      //   {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",], // "./res/textures/env-maps/sky1.webp"],
+      // app.physicsBodiesGeneratorWall("standard",
+      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
+      //   ["./res/textures/rust.jpg",],
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
-      let strength = 10;
+      let strength = 1;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
-        console.log(' vvv');
-        app.matrixPhysics.applyImpulse(b, new _matrixClass.PVector(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength));
+        // app.matrixPhysics.applyImpulse(b, new PVector(
+        //   e.detail.rayDirection[0] * strength,
+        //   e.detail.rayDirection[1] * strength,
+        //   e.detail.rayDirection[2] * strength));
+        app.matrixPhysics.explode(b, e.detail.hitObject.position.x * strength, e.detail.hitObject.position.y * strength, e.detail.hitObject.position.z * strength, 4, 1);
       });
     });
     async function onGround(m) {
@@ -2704,13 +2707,12 @@ var physicsPlayground = function () {
       // console.log('1myComplexGeometry', myComplexGeometry2)
 
       // Test complex geometry with ConvexHull
-      console.log('>>>>>>>>>>>>>>>>>>>', m.reel.vertices);
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {
           type: 'standard'
         },
         position: {
-          x: 0,
+          x: 8,
           y: 4,
           z: -6
         },
@@ -2719,8 +2721,8 @@ var physicsPlayground = function () {
           y: 0,
           z: 0.02
         },
-        scale: [1, 1, 1],
-        texturesPaths: ['./res/textures/blankgray2.webp'],
+        scale: [3, 3, 3],
+        texturesPaths: ['./res/textures/slot/reel1.webp'],
         name: 'MyHull',
         mesh: m.reel,
         physics: {
@@ -2739,22 +2741,38 @@ var physicsPlayground = function () {
       app.cameras.WASD.setZ(0);
       app.cameras.WASD.setY(3.76);
       app.cameras.WASD._dirtyAngle = true;
-
-      // physicsPlayground.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 5, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 111, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'ball1',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Sphere"
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // })
-
+      physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 1255,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 111,
+          z: 0
+        },
+        scale: [5, 5, 5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'ball1',
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          geometry: "Sphere"
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
       physicsPlayground.addMeshObj({
         position: {
           x: 0,
@@ -2787,44 +2805,70 @@ var physicsPlayground = function () {
       //   {shape: MeshMorpher.cube(1), offset: [0, 0, 0]},
       // );
 
-      // physicsPlayground.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 10, y: 15, z: -7},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher.capsule(1, 2),
-      //   meshB: MeshMorpher.cube(1),
-      //   name: `morph_1`,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Capsule",
-      //     mass: 1,
-      //     radius: 1.0,
-      //     height: 2.0
-      //   }
-      // });
-
-      // physicsPlayground.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 6, y: 15, z: -7},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher.cylinder(1, 2),
-      //   meshB: MeshMorpher.cube(1),
-      //   name: `morph_cylinder`,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Cylinder",
-      //     mass: 1,
-      //     radius: 1.0,
-      //     height: 2.0
-      //   }
-      // });
-
+      physicsPlayground.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 10,
+          y: 15,
+          z: -7
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        name: `morph_1`,
+        physics: {
+          enabled: true,
+          geometry: "Capsule",
+          mass: 1,
+          radius: 1.0,
+          height: 2.0
+        }
+      });
+      physicsPlayground.addProceduralMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 6,
+          y: 15,
+          z: -7
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: _proceduralMesh.MeshMorpher.cylinder(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        name: `morph_cylinder`,
+        physics: {
+          enabled: true,
+          geometry: "Cylinder",
+          mass: 1,
+          radius: 1.0,
+          height: 2.0
+        }
+      });
       physicsPlayground.addProceduralMeshObj({
         material: {
           type: 'standard'
@@ -2861,20 +2905,12 @@ var physicsPlayground = function () {
           radius: 1
         }
       });
-
-      // app.physicsBodiesGeneratorWall(
-      //   "standard",
-      //   {x: -5, y: 3, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
-
       app.activateBloomEffect();
-      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001);
-      physicsPlayground.lightContainer[0].behavior.value_ = -1;
-      physicsPlayground.lightContainer[0].updater.push(light => {
-        light.setPosX(light.behavior.setPath0());
-      });
+      // physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
+      // physicsPlayground.lightContainer[0].behavior.value_ = -1;
+      // physicsPlayground.lightContainer[0].updater.push((light) => {
+      //   light.setPosX(light.behavior.setPath0())
+      // })
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
     }
@@ -2962,8 +2998,8 @@ var physicsPlayground = function () {
         //   dir[2] * strength
         // ));
         // 4. Explosion example
-        const hitPos = new _matrixClass.PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
-        physics.explode(hitPos, 10, 50);
+        // const hitPos = new PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
+        // physics.explode(hitPos, 10, 50);
         // 5. Change Materials
         // const metal = {friction: 0.4, restitution: 0.1};
         // physics.setMaterial(body, metal.friction, metal.restitution);
@@ -2974,7 +3010,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":53,"../src/engine/loaders/webgpu-gltf.js":56,"../src/engine/matrix-class.js":58,"../src/engine/procedural-mesh.js":70,"../src/engine/raycast.js":73,"../src/engine/utils.js":74,"../src/world.js":124}],12:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":53,"../src/engine/matrix-class.js":58,"../src/engine/procedural-mesh.js":70,"../src/engine/raycast.js":73,"../src/engine/utils.js":74,"../src/world.js":124}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25806,12 +25842,12 @@ exports.stabilizeTowerBody = stabilizeTowerBody;
 var _fluxCodexVertex = require("../../tools/editor/fluxCodexVertex");
 var _loaderObj = require("../loader-obj");
 // general function for stabilisation 
-function stabilizeTowerBody(body) {
-  body.setDamping(0.8, 0.95);
-  body.setSleepingThresholds(0.4, 0.4);
-  body.setAngularFactor(new Ammo.btVector3(0.1, 0.1, 0.1));
-  body.setFriction(1.0);
-  body.setRollingFriction(0.8);
+function stabilizeTowerBody(body, root) {
+  root.matrixPhysics.setDamping(body, 0.8, 0.95);
+  root.matrixPhysics.setSleepingThresholds(0.4, 0.4);
+  root.matrixPhysics.setAngularFactor(new Ammo.btVector3(0.1, 0.1, 0.1));
+  root.matrixPhysics.setFriction(1.0);
+  root.matrixPhysics.setRollingFriction(0.8);
   // body.setSpinningFriction(0.8);
 }
 
@@ -25819,7 +25855,7 @@ function stabilizeTowerBody(body) {
  * @description Generator can be used also from visual scripting.
  * Work only for physics bodie variant.
  * @param {string} material 
- * @enum "standard", "power"
+ * @enum "standard", "power", "mirror"
  */
 function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, name = "gen1", geometry = "Cube", raycast = false, scale = [1, 1, 1], sum = 100, delay = 500, mesh = null) {
   let engine = this;
@@ -26034,6 +26070,7 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, textureP
  * @param {number} spacing
  */
 function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
+  const root = this;
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = {
@@ -26084,8 +26121,11 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, text
                 },
                 raycast: RAY
               });
-              const b = app.matrixPhysics.getBodyByName(cubeName);
-              stabilizeTowerBody(b);
+
+              // const b = app.matrixPhysics.getBodyByName(cubeName);
+              // not resolved for now
+              // setTimeout(() => stabilizeTowerBody(b, root) , 1000)
+
               const o = app.getSceneObjectByName(cubeName);
               _fluxCodexVertex.runtimeCacheObjs.push(o);
               objects.push(o.name);
@@ -26142,8 +26182,8 @@ function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePat
           },
           raycast: RAY
         });
-        const b = app.matrixPhysics.getBodyByName(cubeName);
-        stabilizeTowerBody(b);
+        // const b = app.matrixPhysics.getBodyByName(cubeName);
+        // setTimeout(() => stabilizeTowerBody(b, root) , 1000)
         // cache
         const o = app.getSceneObjectByName(cubeName);
         _fluxCodexVertex.runtimeCacheObjs.push(o);
@@ -34761,12 +34801,16 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.PhysicsBridge = void 0;
 var _utils = require("../utils");
-const FLOATS_PER_BODY = 8;
 class PhysicsBridge {
   constructor(workerUrl) {
-    this._worker = new Worker(workerUrl, {
-      type: 'module'
-    });
+    this._worker = null;
+    if (workerUrl.indexOf('ammo') != -1) {
+      this._worker = new Worker(workerUrl);
+    } else {
+      this._worker = new Worker(workerUrl, {
+        type: 'module'
+      });
+    }
     this._worker.onerror = e => {
       console.error('Worker error:', e.message, e.filename, e.lineno);
     };
@@ -34779,24 +34823,13 @@ class PhysicsBridge {
     this._worker.onmessage = ({
       data
     }) => this._onMessage(data);
-
-    // cache
     this.pCollisionEvent = new CustomEvent('pCollision', {
-      detail: {
-        // body0Name: data.body0Name,
-        // body1Name: data.body1Name,
-        // rayDirection: data.normal
-      }
+      detail: {}
     });
   }
   getBodyByName(name) {
-    // console.log('[bridge] bodyIndexMap size:', this._bodyIndexMap.size);
-    // for(const [meObj, idx] of this._bodyIndexMap) {
-    //   // console.log(' -', meObj.name, idx);
-    // }
-    for (const [meObj, idx] of this._bodyIndexMap) {
-      if (meObj.name === name) return idx;
-    }
+    for (const [meObj, idx] of this._bodyIndexMap) if (meObj.name === name) return idx;
+    console.log('[bridge] bodyIndexMap -1 :', name);
     return -1;
   }
   async init(options = {}) {
@@ -34823,13 +34856,13 @@ class PhysicsBridge {
       });
       return;
     }
-    console.log("ADD PHYSICSA MAINTHRED");
     this._doAddPhysics(MEObject, pOptions);
   }
   _doAddPhysics(MEObject, pOptions) {
     this._send('addBody', {
       pOptions
     }).then(idx => {
+      console.log("ADD TO _bodyIndexMap ");
       this._bodyIndexMap.set(MEObject, idx);
     });
   }
@@ -34856,7 +34889,7 @@ class PhysicsBridge {
     });
   }
 
-  // ── rest of MatrixJolt public API ────────────────────────────────
+  // MatrixJolt public API
   setGravity(x, y, z) {
     this._worker.postMessage({
       cmd: 'setGravity',
@@ -34865,18 +34898,82 @@ class PhysicsBridge {
       z
     });
   }
-  applyImpulse(idx, pVect) {
-    // const idx = this._bodyIndexMap.get(MEObject);
+  setHingeLimit(idx, v0, v1, v2, v3, v4) {
     if (idx === undefined) return;
-    console.log('[bridge] applyImpulse', idx, pVect);
+    this._worker.postMessage({
+      cmd: 'setHingeLimit',
+      idx,
+      v0,
+      v1,
+      v2,
+      v3,
+      v4
+    });
+  }
+  applyImpulse(idx, pVect) {
+    if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'applyImpulse',
       idx,
       ...pVect
     });
   }
-  applyTorque(MEObject, pVect) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  shootBody(idx, lx, ly, lz, ax, ay, az) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'shootBody',
+      idx,
+      lx,
+      ly,
+      lz,
+      ax,
+      ay,
+      az
+    });
+  }
+  setActivationState(idx, s) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'setActivationState',
+      idx,
+      s
+    });
+  }
+  activate(idx, s) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'activate',
+      idx,
+      s
+    });
+  }
+  setDamping(idx, l, a) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'activate',
+      idx,
+      l,
+      a
+    });
+  }
+  setRestitution(idx, s) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'activate',
+      idx,
+      s
+    });
+  }
+  setFriction(idx, s) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'setFriction',
+      idx,
+      s
+    });
+  }
+  applyTorque(idx, pVect) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'applyTorque',
@@ -34884,8 +34981,8 @@ class PhysicsBridge {
       ...pVect
     });
   }
-  setBodyVelocity(MEObject, x, y, z) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  setBodyVelocity(idx, x, y, z) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'setLinearVelocity',
@@ -34895,28 +34992,87 @@ class PhysicsBridge {
       z
     });
   }
-  activate(MEObject) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  activate(idx) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'activate',
       idx
     });
   }
-  explode(positionVect, radius, strength) {
+  explode(idx, x, y, z, radius, strength) {
+    if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'explode',
-      positionVect,
+      idx,
+      x,
+      y,
+      z,
       radius,
       strength
     });
   }
-  deactivatePhysics(MEObject) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  deactivatePhysics(idx) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'deactivate',
       idx
+    });
+  }
+  setDamping(idx, linear, angular) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'setDamping',
+      idx,
+      linear,
+      angular
+    });
+  }
+  setSleepingThresholds(idx, linear, angular) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'setSleepingThresholds',
+      idx,
+      linear,
+      angular
+    });
+  }
+  setAngularFactor(idx, x, y, z) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'setAngularFactor',
+      idx,
+      x,
+      y,
+      z
+    });
+  }
+  setRollingFriction(idx, friction) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'setRollingFriction',
+      idx,
+      friction
+    });
+  }
+  addHingeConstraint(idxA, idxB, options) {
+    if (idxA === undefined || idxB === undefined) return;
+    // this._worker.postMessage({cmd: 'addHingeConstraint', idxA, idxB, options});
+    return this._send('addHingeConstraint', {
+      idxA,
+      idxB,
+      options
+    });
+  }
+  enableAngularMotor(constraintIdx, enable, targetVelocity, maxMotorImpulse) {
+    if (constraintIdx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'enableAngularMotor',
+      constraintIdx,
+      enable,
+      targetVelocity,
+      maxMotorImpulse
     });
   }
   _syncToObjects() {
@@ -34960,7 +35116,7 @@ class PhysicsBridge {
         this._syncToObjects();
         break;
       case 'collision':
-        // re-dispatch as DOM event so existing listeners work unchanged
+        console.log('collision : ', data);
         this.pCollisionEvent.detail.body0Name = data.body0Name;
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;
@@ -35681,9 +35837,6 @@ class MatrixAmmo {
     return [rayDirection[0] / length, rayDirection[1] / length, rayDirection[2] / length];
   }
   shootBody = (body, lx, ly, lz, ax, ay, az) => {
-    // body.setLinearVelocity(new Ammo.btVector3(lx, ly, lz));
-    // body.setAngularVelocity(new Ammo.btVector3(ax, ay, az));
-    // Use pre-allocated scratch vector to avoid memory leaks
     this._origin2.setValue(lx, ly, lz);
     body.setLinearFactor(this._origin2);
     this._origin2.setValue(ax, ay, az);
@@ -39136,7 +39289,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.MeshType = exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_ARCADE = exports.LOG_FUNNY = exports.LOGO_FRAMES = exports.FullscreenManager = exports.FullScreenManagerElement = void 0;
+exports.MeshType = exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_BIG_TERMINAL = exports.LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_ARCADE = exports.LOG_FUNNY = exports.FullscreenManager = exports.FullScreenManagerElement = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -39925,7 +40078,25 @@ const LOG_FUNNY_ARCADE = exports.LOG_FUNNY_ARCADE = "font-family: system-ui; fon
 const LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;" + "color:#ffffff;" + "text-shadow: 2px 2px 6px #000;" + "background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
 const LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
 const LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
-const LOGO_FRAMES = exports.LOGO_FRAMES = [` M                 `, ` MA                 `, ` MAT                `, ` MATR               `, ` MATRI              `, ` MATRIX             `, ` MATRIX-E           `, ` MATRIX-ENG         `, ` MATRIX-ENGI        `, ` MATRIX-ENGIN       `, ` MATRIX-ENGINE      `, ` MATRIX-ENGINE-     `, ` MATRIX-ENGINE-W    `, ` MATRIX-ENGINE-WG   `, ` MATRIX-ENGINE-WGPU `];
+
+// export const LOGO_FRAMES = [
+//   ` M                 `,
+//   ` MA                 `,
+//   ` MAT                `,
+//   ` MATR               `,
+//   ` MATRI              `,
+//   ` MATRIX             `,
+//   ` MATRIX-E           `,
+//   ` MATRIX-ENG         `,
+//   ` MATRIX-ENGI        `,
+//   ` MATRIX-ENGIN       `,
+//   ` MATRIX-ENGINE      `,
+//   ` MATRIX-ENGINE-     `,
+//   ` MATRIX-ENGINE-W    `,
+//   ` MATRIX-ENGINE-WG   `,
+//   ` MATRIX-ENGINE-WGPU `
+// ];
+
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -40239,7 +40410,7 @@ class FullScreenManagerElement {
 exports.FullScreenManagerElement = FullScreenManagerElement;
 class FullscreenManager {
   constructor() {
-    this.target = document.documentElement; // fullscreen whole page / window
+    this.target = document.documentElement;
   }
   isFullscreen() {
     return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
@@ -58887,7 +59058,7 @@ exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _cameras = require("./engine/cameras.js");
 var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
-var _matrixAmmo = _interopRequireDefault(require("./engine/physics/matrix-ammo.js"));
+var _matrixAmmo_DEPLACED = _interopRequireDefault(require("./engine/physics/matrix-ammo_DEPLACED.js"));
 var _utils = require("./engine/utils.js");
 var _lang = require("./multilang/lang.js");
 var _sounds = require("./sounds/sounds.js");
@@ -58917,7 +59088,7 @@ var _minRender = require("./engine/overrides/min-render.js");
 var _noshadowRender = require("./engine/overrides/noshadow-render.js");
 var _pipelineManager = require("./engine/pipelineManager.js");
 var _nanoRender = require("./engine/overrides/nano-render.js");
-var _matrixJolt = require("./engine/physics/matrix-jolt.js");
+var _matrixJolt_DEPLACED = require("./engine/physics/matrix-jolt_DEPLACED.js");
 var _bridge = require("./engine/physics/bridge.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
@@ -60718,4 +60889,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":33,"./engine/core-cache.js":35,"./engine/effects/energy-bar.js":37,"./engine/effects/flame-emmiter.js":38,"./engine/effects/flame.js":39,"./engine/effects/mana-bar.js":44,"./engine/effects/pointerEffect.js":45,"./engine/generators/generator.js":47,"./engine/instanced/mesh-obj-instances.js":50,"./engine/lights.js":51,"./engine/loader-obj.js":53,"./engine/loaders/bvh-instaced.js":54,"./engine/loaders/bvh.js":55,"./engine/mesh-obj.js":59,"./engine/overrides/min-render.js":60,"./engine/overrides/nano-render.js":61,"./engine/overrides/noshadow-render.js":62,"./engine/physics/bridge.js":63,"./engine/physics/matrix-ammo.js":64,"./engine/physics/matrix-jolt.js":65,"./engine/pipelineManager.js":66,"./engine/postprocessing/bloom.js":68,"./engine/postprocessing/volumetric.js":69,"./engine/procedural-mesh.js":70,"./engine/procedures/fontana.js":71,"./engine/raycast.js":73,"./engine/utils.js":74,"./me-config.js":75,"./multilang/lang.js":76,"./shaders/fontana/fontana.wgsl.js":81,"./sounds/audioAsset.js":112,"./sounds/sounds.js":113,"./tools/editor/editor.js":116,"./tools/editor/flexCodexShaderAdapter.js":119,"wgpu-matrix":30}]},{},[1]);
+},{"./engine/cameras.js":33,"./engine/core-cache.js":35,"./engine/effects/energy-bar.js":37,"./engine/effects/flame-emmiter.js":38,"./engine/effects/flame.js":39,"./engine/effects/mana-bar.js":44,"./engine/effects/pointerEffect.js":45,"./engine/generators/generator.js":47,"./engine/instanced/mesh-obj-instances.js":50,"./engine/lights.js":51,"./engine/loader-obj.js":53,"./engine/loaders/bvh-instaced.js":54,"./engine/loaders/bvh.js":55,"./engine/mesh-obj.js":59,"./engine/overrides/min-render.js":60,"./engine/overrides/nano-render.js":61,"./engine/overrides/noshadow-render.js":62,"./engine/physics/bridge.js":63,"./engine/physics/matrix-ammo_DEPLACED.js":64,"./engine/physics/matrix-jolt_DEPLACED.js":65,"./engine/pipelineManager.js":66,"./engine/postprocessing/bloom.js":68,"./engine/postprocessing/volumetric.js":69,"./engine/procedural-mesh.js":70,"./engine/procedures/fontana.js":71,"./engine/raycast.js":73,"./engine/utils.js":74,"./me-config.js":75,"./multilang/lang.js":76,"./shaders/fontana/fontana.wgsl.js":81,"./sounds/audioAsset.js":112,"./sounds/sounds.js":113,"./tools/editor/editor.js":116,"./tools/editor/flexCodexShaderAdapter.js":119,"wgpu-matrix":30}]},{},[1]);

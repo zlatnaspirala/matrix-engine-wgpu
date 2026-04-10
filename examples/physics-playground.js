@@ -3,13 +3,13 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
-import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
+// import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 import {PVector} from "../src/engine/matrix-class.js";
 
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    // useJolt: true, // test
+    // useJolt: true, // Or ammojs by default...
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -21,7 +21,7 @@ export var physicsPlayground = function() {
     addEventListener('PhysicsReady', () => {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
-        ball: "./res/meshes/shapes/sphere.obj",
+        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
       // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
@@ -51,35 +51,29 @@ export var physicsPlayground = function() {
       //   100
       // );
 
-      // physicsPlayground.physicsBodiesGeneratorPyramid(
-      //   "standard",
-      //   {x: 0, y: 1, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   "./res/meshes/blender/cube.png",
-      //   "pyr",
-      //   6,
-      //   true,
-      //   [1, 1, 1],
-      //   2
-      // );
+      physicsPlayground.physicsBodiesGeneratorDeepPyramid(
+        "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
+        "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400
+      );
 
       // Buildin options
-      // app.physicsBodiesGeneratorWall(
-      //   "standard",
-      //   {x: -4.5, y: 0, z: -10},
-      //   {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",], // "./res/textures/env-maps/sky1.webp"],
+      // app.physicsBodiesGeneratorWall("standard",
+      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
+      //   ["./res/textures/rust.jpg",],
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
-      let strength = 10;
+      let strength = 1;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
-        console.log(' vvv')
-        app.matrixPhysics.applyImpulse(b, new PVector(
-          e.detail.rayDirection[0] * strength,
-          e.detail.rayDirection[1] * strength,
-          e.detail.rayDirection[2] * strength));
+        // app.matrixPhysics.applyImpulse(b, new PVector(
+        //   e.detail.rayDirection[0] * strength,
+        //   e.detail.rayDirection[1] * strength,
+        //   e.detail.rayDirection[2] * strength));
+        app.matrixPhysics.explode(b,
+          e.detail.hitObject.position.x * strength,
+          e.detail.hitObject.position.y * strength,
+          e.detail.hitObject.position.z * strength, 4, 1);
       });
     })
 
@@ -104,13 +98,12 @@ export var physicsPlayground = function() {
       // console.log('1myComplexGeometry', myComplexGeometry2)
 
       // Test complex geometry with ConvexHull
-      console.log('>>>>>>>>>>>>>>>>>>>', m.reel.vertices);
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 4, z: -6},
+        position: {x: 8, y: 4, z: -6},
         rotation: {x: 0, y: 0, z: 0.02},
-        scale: [1, 1, 1],
-        texturesPaths: ['./res/textures/blankgray2.webp'],
+        scale: [3, 3, 3],
+        texturesPaths: ['./res/textures/slot/reel1.webp'],
         name: 'MyHull',
         mesh: m.reel,
         physics: {
@@ -128,20 +121,21 @@ export var physicsPlayground = function() {
       app.cameras.WASD.setY(3.76);
       app.cameras.WASD._dirtyAngle = true;
 
-      // physicsPlayground.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 5, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 111, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'ball1',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Sphere"
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // })
+      physicsPlayground.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 1255, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 111, z: 0},
+        scale: [5, 5, 5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'ball1',
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          geometry: "Sphere"
+        },
+        raycast: {enabled: true, radius: 1}
+      })
 
       physicsPlayground.addMeshObj({
         position: {x: 0, y: 0, z: -10},
@@ -163,43 +157,43 @@ export var physicsPlayground = function() {
       //   {shape: MeshMorpher.cube(1), offset: [0, 0, 0]},
       // );
 
-      // physicsPlayground.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 10, y: 15, z: -7},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher.capsule(1, 2),
-      //   meshB: MeshMorpher.cube(1),
-      //   name: `morph_1`,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Capsule",
-      //     mass: 1,
-      //     radius: 1.0,
-      //     height: 2.0
-      //   }
-      // });
+      physicsPlayground.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: 10, y: 15, z: -7},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [1, 1, 1],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: MeshMorpher.capsule(1, 2),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_1`,
+        physics: {
+          enabled: true,
+          geometry: "Capsule",
+          mass: 1,
+          radius: 1.0,
+          height: 2.0
+        }
+      });
 
-      // physicsPlayground.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 6, y: 15, z: -7},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher.cylinder(1, 2),
-      //   meshB: MeshMorpher.cube(1),
-      //   name: `morph_cylinder`,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Cylinder",
-      //     mass: 1,
-      //     radius: 1.0,
-      //     height: 2.0
-      //   }
-      // });
+      physicsPlayground.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: 6, y: 15, z: -7},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [1, 1, 1],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: MeshMorpher.cylinder(1, 2),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_cylinder`,
+        physics: {
+          enabled: true,
+          geometry: "Cylinder",
+          mass: 1,
+          radius: 1.0,
+          height: 2.0
+        }
+      });
 
       physicsPlayground.addProceduralMeshObj({
         material: {type: 'standard'},
@@ -221,20 +215,12 @@ export var physicsPlayground = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      // app.physicsBodiesGeneratorWall(
-      //   "standard",
-      //   {x: -5, y: 3, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "6x5", true, [1, 1, 1], 2, 70);
-
       app.activateBloomEffect();
-
-      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
-      physicsPlayground.lightContainer[0].behavior.value_ = -1;
-      physicsPlayground.lightContainer[0].updater.push((light) => {
-        light.setPosX(light.behavior.setPath0())
-      })
+      // physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
+      // physicsPlayground.lightContainer[0].behavior.value_ = -1;
+      // physicsPlayground.lightContainer[0].updater.push((light) => {
+      //   light.setPosX(light.behavior.setPath0())
+      // })
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
     }
@@ -294,8 +280,8 @@ export var physicsPlayground = function() {
         //   dir[2] * strength
         // ));
         // 4. Explosion example
-        const hitPos = new PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
-        physics.explode(hitPos, 10, 50);
+        // const hitPos = new PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
+        // physics.explode(hitPos, 10, 50);
         // 5. Change Materials
         // const metal = {friction: 0.4, restitution: 0.1};
         // physics.setMaterial(body, metal.friction, metal.restitution);

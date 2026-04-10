@@ -814,9 +814,6 @@ export default class MatrixAmmo {
   }
 
   shootBody = (body, lx, ly, lz, ax, ay, az) => {
-    // body.setLinearVelocity(new Ammo.btVector3(lx, ly, lz));
-    // body.setAngularVelocity(new Ammo.btVector3(ax, ay, az));
-    // Use pre-allocated scratch vector to avoid memory leaks
     this._origin2.setValue(lx, ly, lz);
     body.setLinearFactor(this._origin2);
     this._origin2.setValue(ax, ay, az);

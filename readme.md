@@ -34,8 +34,7 @@ HOT: For 1.10.0 Firefox not FIXED Render
 
 - ✔️ Draw loop per pipeline not per mesh (PipelineManager) Power optimisation.
 - ✔️ Support for 3D objects and scene transformations.
-- ✔️ Ammo.js physics lib integration.
-- ✔️ Jolt physics lib integration.
+- ✔️ Ammo.js && Jolt Physics libs integration (maint<->bridge<->worker).
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
@@ -262,7 +261,7 @@ physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
   // ));
   // 4. Explosion example
   const hitPos = new PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
-  physics.explode(hitPos, 10, 50);
+  physics.explode(idx, hitPos, 10, 50);
   // 5. Change Materials
   // const metal = {friction: 0.4, restitution: 0.1};
   // physics.setMaterial(body, metal.friction, metal.restitution);

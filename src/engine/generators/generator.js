@@ -2,12 +2,12 @@ import {runtimeCacheObjs} from "../../tools/editor/fluxCodexVertex";
 import {downloadMeshes} from "../loader-obj";
 
 // general function for stabilisation 
-export function stabilizeTowerBody(body) {
-  body.setDamping(0.8, 0.95);
-  body.setSleepingThresholds(0.4, 0.4);
-  body.setAngularFactor(new Ammo.btVector3(0.1, 0.1, 0.1));
-  body.setFriction(1.0);
-  body.setRollingFriction(0.8);
+export function stabilizeTowerBody(body, root) {
+  root.matrixPhysics.setDamping(body, 0.8, 0.95);
+  root.matrixPhysics.setSleepingThresholds(0.4, 0.4);
+  root.matrixPhysics.setAngularFactor(new Ammo.btVector3(0.1, 0.1, 0.1));
+  root.matrixPhysics.setFriction(1.0);
+  root.matrixPhysics.setRollingFriction(0.8);
   // body.setSpinningFriction(0.8);
 }
 
@@ -15,7 +15,7 @@ export function stabilizeTowerBody(body) {
  * @description Generator can be used also from visual scripting.
  * Work only for physics bodie variant.
  * @param {string} material 
- * @enum "standard", "power"
+ * @enum "standard", "power", "mirror"
  */
 export function physicsBodiesGenerator(
   material = "standard",
@@ -230,6 +230,9 @@ export function physicsBodiesGeneratorDeepPyramid(
   spacing = 2,
   delay = 200
 ) {
+
+  const root = this;
+
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
@@ -270,8 +273,9 @@ export function physicsBodiesGeneratorDeepPyramid(
                 raycast: RAY
               });
 
-              const b = app.matrixPhysics.getBodyByName(cubeName);
-              stabilizeTowerBody(b);
+              // const b = app.matrixPhysics.getBodyByName(cubeName);
+              // not resolved for now
+              // setTimeout(() => stabilizeTowerBody(b, root) , 1000)
 
               const o = app.getSceneObjectByName(cubeName);
               runtimeCacheObjs.push(o);
@@ -332,8 +336,8 @@ export function physicsBodiesGeneratorTower(
           },
           raycast: RAY
         });
-        const b = app.matrixPhysics.getBodyByName(cubeName);
-        stabilizeTowerBody(b);
+        // const b = app.matrixPhysics.getBodyByName(cubeName);
+        // setTimeout(() => stabilizeTowerBody(b, root) , 1000)
         // cache
         const o = app.getSceneObjectByName(cubeName);
         runtimeCacheObjs.push(o);

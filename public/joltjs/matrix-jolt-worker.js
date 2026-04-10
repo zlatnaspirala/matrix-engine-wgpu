@@ -1,45 +1,3 @@
-// import { degToRad, radToDeg, quaternion_rotation_matrix } from '../../src/engine/utils';
-
-function quaternion_rotation_matrix(Q) {
-
-  // Covert a quaternion into a full three-dimensional rotation matrix.
-
-  // Input
-  // :param Q: A 4 element array representing the quaternion (q0,q1,q2,q3) 
-
-  // Output
-  // :return: A 3x3 element matrix representing the full 3D rotation matrix. 
-  //          This rotation matrix converts a point in the local reference 
-  //          frame to a point in the global reference frame.
-  // """
-  // # Extract the values from Q
-  var q0 = Q[0]
-  var q1 = Q[1]
-  var q2 = Q[2]
-  var q3 = Q[3]
-
-  // # First row of the rotation matrix
-  var r00 = 2 * (q0 * q0 + q1 * q1) - 1
-  var r01 = 2 * (q1 * q2 - q0 * q3)
-  var r02 = 2 * (q1 * q3 + q0 * q2)
-
-  // # Second row of the rotation matrix
-  var r10 = 2 * (q1 * q2 + q0 * q3)
-  var r11 = 2 * (q0 * q0 + q2 * q2) - 1
-  var r12 = 2 * (q2 * q3 - q0 * q1)
-
-  // # Third row of the rotation matrix
-  var r20 = 2 * (q1 * q3 - q0 * q2)
-  var r21 = 2 * (q2 * q3 + q0 * q1)
-  var r22 = 2 * (q0 * q0 + q3 * q3) - 1
-
-  // # 3x3 rotation matrix
-  var rot_matrix = [[r00, r01, r02],
-  [r10, r11, r12],
-  [r20, r21, r22]]
-
-  return rot_matrix;
-}
 
 const LAYER_NON_MOVING = 0;
 const LAYER_MOVING = 1;
@@ -55,7 +13,7 @@ class MatrixJolt {
     this.bodyInterface = null;
     this.speedUpSimulation = 1;
     this.options = {roundDimension: 100, gravity: 10};
-    // SAB snapshot buffer — grown as bodies are added
+    // SAB snapshot buffer
     this._sab = null;
     this._snapshot = null;
   }
@@ -130,9 +88,7 @@ class MatrixJolt {
     this.bodyInterface.AddBody(groundBody.GetID(), Jolt.EActivation_DontActivate);
   }
 
-  // ── BODY CREATION ───────────────────────────────────────────────
   addBody(pOptions) {
-    console.log('addBody(pOptions) !!!!!')
     let body = null;
     switch(pOptions.geometry) {
       case 'Sphere': body = this._addSphere(pOptions); break;
@@ -153,10 +109,7 @@ class MatrixJolt {
         return -1;
     }
     if(!body) return -1;
-
-    // Grow SAB to fit
     this._allocSAB(this.rigidBodies.length);
-
     return this.rigidBodies.length - 1;
   }
 
@@ -207,7 +160,7 @@ class MatrixJolt {
     const settings = new Jolt.ConvexHullShapeSettings();
     settings.mHullTolerance = 1e-6;
     const points = settings.mPoints;
-    console.log('pOptions.scale >>>>>>>>>>>>>>>>>>>>', pOptions.scale)
+    // console.log('pOptions.scale >>>>>>>>>>>>>>>>>>>>', pOptions.scale)
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
     for(let i = 0;i < verts.length / 3;i++) {
       const x = verts[i * 3] * sx, y = verts[i * 3 + 1] * sy, z = verts[i * 3 + 2] * sz;
@@ -233,7 +186,6 @@ class MatrixJolt {
     const Jolt = this.Jolt;
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
     const isKinematic = pOptions.mass === 0 && pOptions.state === undefined;
-
     const settings = new Jolt.BodyCreationSettings(
       shape,
       new Jolt.RVec3(pos.x, pos.y, pos.z),
@@ -245,19 +197,16 @@ class MatrixJolt {
     settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
     if(pOptions.restitution !== undefined) settings.mRestitution = pOptions.restitution;
     if(pOptions.friction !== undefined) settings.mFriction = pOptions.friction;
-
     const body = this.bodyInterface.CreateBody(settings);
     Jolt.destroy(settings);
-
     body.name = pOptions.name;
     body.isKinematic = isKinematic;
-
     this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);
     this.rigidBodies.push(body);
     return body;
   }
 
-  // ── COMMANDS (called from message handler) ───────────────────────
+  // COMMANDS
   applyImpulse(idx, x, y, z) {
     console.log('WORKER', idx)
     const body = this.rigidBodies[idx];
@@ -292,16 +241,14 @@ class MatrixJolt {
     this.Jolt.destroy(v);
   }
 
-  // ── STEP + SNAPSHOT WRITE ────────────────────────────────────────
+  // STEP + SNAPSHOT WRITE
   step() {
     if(!this.joltInterface) return;
     const Jolt = this.Jolt;
     const bi = this.bodyInterface;
-
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.joltInterface.Step(1 / 60, 1);
     }
-    // Write dynamic body state into SAB
     const snap = this._snapshot;
     if(!snap) return;
     this.rigidBodies.forEach((body, i) => {
@@ -312,19 +259,14 @@ class MatrixJolt {
       }
       const id = body.GetID();
       const pos = bi.GetPosition(id);
-
       // console.log('[worker] body', i, 'pos:', pos.GetX(), pos.GetY(), pos.GetZ());
-
       const rot = bi.GetRotation(id);
-
       snap[base + 0] = pos.GetX();
       snap[base + 1] = pos.GetY();
       snap[base + 2] = pos.GetZ();
-
       const qx = rot.GetX(), qy = rot.GetY(), qz = rot.GetZ(), qw = rot.GetW();
       const sinHalf = Math.sqrt(qx * qx + qy * qy + qz * qz);
       const angle = 2 * Math.atan2(sinHalf, qw);
-
       if(sinHalf > 0.0001) {
         const s = 1 / sinHalf;
         snap[base + 3] = qx * s;
@@ -334,7 +276,7 @@ class MatrixJolt {
         snap[base + 3] = 0; snap[base + 4] = 1; snap[base + 5] = 0;
       }
       snap[base + 6] = angle;
-      snap[base + 7] = 0; // pad
+      snap[base + 7] = 0;
     });
   }
 }
@@ -360,9 +302,7 @@ function buildConeVerts(radius, height, segments = 16) {
 const jolt = new MatrixJolt();
 
 self.onmessage = async ({data}) => {
-  // console.log('[worker] raw message:', data);
   const {cmd, id} = data;
-
   switch(cmd) {
     case 'init': {
       await jolt.init(data.options);

@@ -1,10 +1,13 @@
 import {quaternion_rotation_matrix} from "../utils";
 
-const FLOATS_PER_BODY = 8;
-
 export class PhysicsBridge {
   constructor(workerUrl) {
-    this._worker = new Worker(workerUrl, {type: 'module'});
+    this._worker = null;
+    if(workerUrl.indexOf('ammo') != -1) {
+      this._worker = new Worker(workerUrl);
+    } else {
+      this._worker = new Worker(workerUrl, {type: 'module'});
+    }
     this._worker.onerror = (e) => {
       console.error('Worker error:', e.message, e.filename, e.lineno);
     };
@@ -15,25 +18,12 @@ export class PhysicsBridge {
     this._ready = false;
     this._queue = [];
     this._worker.onmessage = ({data}) => this._onMessage(data);
-
-    // cache
-    this.pCollisionEvent = new CustomEvent('pCollision', {
-      detail: {
-        // body0Name: data.body0Name,
-        // body1Name: data.body1Name,
-        // rayDirection: data.normal
-      }
-    })
+    this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
   }
 
   getBodyByName(name) {
-    // console.log('[bridge] bodyIndexMap size:', this._bodyIndexMap.size);
-    // for(const [meObj, idx] of this._bodyIndexMap) {
-    //   // console.log(' -', meObj.name, idx);
-    // }
-    for(const [meObj, idx] of this._bodyIndexMap) {
-      if(meObj.name === name) return idx;
-    }
+    for(const [meObj, idx] of this._bodyIndexMap) if(meObj.name === name) return idx;
+    console.log('[bridge] bodyIndexMap -1 :', name);
     return -1;
   }
 
@@ -50,12 +40,12 @@ export class PhysicsBridge {
       this._queue.push({MEObject, pOptions});
       return;
     }
-    console.log("ADD PHYSICSA MAINTHRED")
     this._doAddPhysics(MEObject, pOptions);
   }
 
   _doAddPhysics(MEObject, pOptions) {
     this._send('addBody', {pOptions}).then(idx => {
+      console.log("ADD TO _bodyIndexMap ")
       this._bodyIndexMap.set(MEObject, idx);
     });
   }
@@ -71,44 +61,107 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'step'});
   }
 
-  // ── rest of MatrixJolt public API ────────────────────────────────
-  setGravity(x, y, z) {
-    this._worker.postMessage({cmd: 'setGravity', x, y, z});
+  // MatrixJolt public API
+  setGravity(x, y, z) {this._worker.postMessage({cmd: 'setGravity', x, y, z})}
+
+  setHingeLimit(idx, v0, v1, v2, v3, v4) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setHingeLimit', idx, v0, v1, v2, v3, v4});
   }
 
   applyImpulse(idx, pVect) {
-    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
-    console.log('[bridge] applyImpulse', idx, pVect);
     this._worker.postMessage({cmd: 'applyImpulse', idx, ...pVect});
   }
 
-  applyTorque(MEObject, pVect) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  shootBody(idx, lx, ly, lz, ax, ay, az) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'shootBody', idx, lx, ly, lz, ax, ay, az});
+  }
+
+  setActivationState(idx, s) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setActivationState', idx, s});
+  }
+
+  activate(idx, s) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'activate', idx, s});
+  }
+
+  setDamping(idx, l, a) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'activate', idx, l, a});
+  }
+
+  setRestitution(idx, s) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'activate', idx, s});
+  }
+
+  setFriction(idx, s) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setFriction', idx, s});
+  }
+
+  applyTorque(idx, pVect) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'applyTorque', idx, ...pVect});
   }
 
-  setBodyVelocity(MEObject, x, y, z) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  setBodyVelocity(idx, x, y, z) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'setLinearVelocity', idx, x, y, z});
   }
 
-  activate(MEObject) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  activate(idx) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'activate', idx});
   }
 
-  explode(positionVect, radius, strength) {
-    this._worker.postMessage({cmd: 'explode', positionVect, radius, strength});
+  explode(idx, x, y, z, radius, strength) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
   }
 
-  deactivatePhysics(MEObject) {
-    const idx = this._bodyIndexMap.get(MEObject);
+  deactivatePhysics(idx) {
+    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'deactivate', idx});
+  }
+
+  setDamping(idx, linear, angular) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setDamping', idx, linear, angular});
+  }
+
+  setSleepingThresholds(idx, linear, angular) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setSleepingThresholds', idx, linear, angular});
+  }
+
+  setAngularFactor(idx, x, y, z) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setAngularFactor', idx, x, y, z});
+  }
+
+  setRollingFriction(idx, friction) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setRollingFriction', idx, friction});
+  }
+
+  addHingeConstraint(idxA, idxB, options) {
+    if(idxA === undefined || idxB === undefined) return;
+    // this._worker.postMessage({cmd: 'addHingeConstraint', idxA, idxB, options});
+    return this._send('addHingeConstraint', {idxA, idxB, options});
+  }
+
+  enableAngularMotor(constraintIdx, enable, targetVelocity, maxMotorImpulse) {
+    if(constraintIdx === undefined) return;
+    this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
   }
 
   _syncToObjects() {
@@ -150,7 +203,7 @@ export class PhysicsBridge {
         this._syncToObjects();
         break;
       case 'collision':
-        // re-dispatch as DOM event so existing listeners work unchanged
+        console.log('collision : ', data)
         this.pCollisionEvent.detail.body0Name = data.body0Name;
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;
