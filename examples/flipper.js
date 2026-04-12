@@ -90,7 +90,7 @@ export var flipper = function() {
         onGround,
         {scale: [1, 1, 1]}
       );
-      flipper.matrixPhysics.speedUpSimulation = 4;
+      flipper.matrixPhysics.speedUpSimulation = 2;
     });
 
     async function onGround(m) {
@@ -192,10 +192,10 @@ export var flipper = function() {
 
       // BUMPERS
       const bumperPositions = [
-        {x: 0, y: 0.5, z: -22},
-        {x: 2, y: 0.5, z: -24},
-        {x: -2, y: 0.5, z: -26},
-        {x: -3, y: 0.5, z: -32}
+        {x: 0, y: 0.7, z: -22},
+        {x: 2, y: 0.7, z: -24},
+        {x: -2, y: 0.7, z: -26},
+        {x: -3, y: 0.7, z: -32}
       ];
 
       bumperPositions.forEach((p, i) => {
@@ -372,109 +372,109 @@ export var flipper = function() {
         addressModeV: 'repeat',
       });
 
-      // setTimeout(async () => {
-      //   const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-      //   const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+      setTimeout(async () => {
+        const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+        const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
 
-      //   flipper.matrixPhysics.setActivationState(leftBody, 4);
-      //   flipper.matrixPhysics.activate(leftBody, true);
-      //   flipper.matrixPhysics.setActivationState(rightBody, 4);
-      //   flipper.matrixPhysics.activate(rightBody, true);
-      //   flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
-      //   flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
-      //   flipper.matrixPhysics.setRestitution(leftBody, 0.1);
-      //   flipper.matrixPhysics.setRestitution(rightBody, 0.1);
-      //   flipper.matrixPhysics.setFriction(leftBody, 1.5);
-      //   flipper.matrixPhysics.setFriction(rightBody, 1.5);
+        flipper.matrixPhysics.setActivationState(leftBody, 4);
+        flipper.matrixPhysics.activate(leftBody, true);
+        flipper.matrixPhysics.setActivationState(rightBody, 4);
+        flipper.matrixPhysics.activate(rightBody, true);
+        flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
+        flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
+        flipper.matrixPhysics.setRestitution(leftBody, 0.1);
+        flipper.matrixPhysics.setRestitution(rightBody, 0.1);
+        flipper.matrixPhysics.setFriction(leftBody, 1.5);
+        flipper.matrixPhysics.setFriction(rightBody, 1.5);
 
-      //   let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
-      //   flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
-      //   let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
-      //   flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
+        let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+        flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
+        let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+        flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
 
-      //   // BALL PHYSICS TUNING
-      //   const ball = flipper.matrixPhysics.getBodyByName('ball1');
-      //   flipper.matrixPhysics.setRestitution(ball, 0.9);
-      //   flipper.matrixPhysics.setFriction(ball, 0.2);
-      //   flipper.matrixPhysics.setDamping(ball, 0.05, 0.05);
+        // BALL PHYSICS TUNING
+        const ball = flipper.matrixPhysics.getBodyByName('ball1');
+        // flipper.matrixPhysics.setRestitution(ball, 0.9);
+        flipper.matrixPhysics.setFriction(ball, 0.2);
+        // flipper.matrixPhysics.setDamping(ball, 0.05, 0.05);
 
-      //   // FLIPPER SETUP
-      //   const commonX = 1;
-      //   const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
-      //   const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+        // FLIPPER SETUP
+        const commonX = 1;
+        const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
+        const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
 
-      //   const hingeLeft = app.matrixPhysics.addHingeConstraint(BA, BB, {
-      //     name: "flipperLeftHinge",
-      //     pivotA: [-commonX, 0, 0],
-      //     pivotB: [0, 0, 0],
-      //     axis: [0, 1, 0],
-      //     limits: [-0.8, 0.5]
-      //   });
-      //   let hingeLeftID = 0;
-      //   let hingeRightID = 0;
-      //   hingeLeft.then((idx) => {
-      //     console.log('Hinge index (its is not regular rigidbody idx)', idx)
-      //     hingeLeftID = idx;
-      //     app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-      //     app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
-      //   })
+        const hingeLeft = app.matrixPhysics.addHingeConstraint(BA, BB, {
+          name: "flipperLeftHinge",
+          pivotA: [-commonX, 0, 0],
+          pivotB: [0, 0, 0],
+          axis: [0, 1, 0],
+          limits: [-0.8, 0.5]
+        });
+        let hingeLeftID = 0;
+        let hingeRightID = 0;
+        hingeLeft.then((idx) => {
+          console.log('Hinge index (its is not regular rigidbody idx)', idx)
+          hingeLeftID = idx;
+          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+        })
 
-      //   const BA1 = flipper.matrixPhysics.getBodyByName('flipperRight');
-      //   const BB1 = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+        const BA1 = flipper.matrixPhysics.getBodyByName('flipperRight');
+        const BB1 = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
 
-      //   const hingeRight = app.matrixPhysics.addHingeConstraint(BA1, BB1, {
-      //     name: "flipperRightHinge",
-      //     pivotA: [commonX, 0, 0],
-      //     pivotB: [0, 0, 0],
-      //     axis: [0, 1, 0],
-      //     limits: [-0.8, 0.5]
-      //   });
-      //   hingeRight.then((idx) => {
-      //     hingeRightID = idx;
-      //     app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-      //     app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
-      //   })
+        const hingeRight = app.matrixPhysics.addHingeConstraint(BA1, BB1, {
+          name: "flipperRightHinge",
+          pivotA: [commonX, 0, 0],
+          pivotB: [0, 0, 0],
+          axis: [0, 1, 0],
+          limits: [-0.8, 0.5]
+        });
+        hingeRight.then((idx) => {
+          hingeRightID = idx;
+          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+        })
 
-      //   REdge.setUVScale(1, 1);
-      //   // LEdge.changeTexture(checker2, samplerTest)
-      //   LEdge.setUVScale(1, 1);
-      //   REdge2.setUVScale(1, 1);
+        REdge.setUVScale(1, 1);
+        // LEdge.changeTexture(checker2, samplerTest)
+        LEdge.setUVScale(1, 1);
+        REdge2.setUVScale(1, 1);
 
-      //   let leftBodycurrPos = 'unpressed';
-      //   window.addEventListener("keydown", (e) => {
-      //     e.preventDefault();
-      //     if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
-      //       leftBodycurrPos = 'pressed';
-      //       flipper.matrixPhysics.activate(leftBody, true);
-      //       flipper.matrixPhysics.setActivationState(leftBody, 4);
-      //       flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 500);
-      //     }
-      //     if(e.code === "KeyM") {
-      //       console.log('SENT KEY ', rightBody)
-      //       flipper.matrixPhysics.activate(rightBody, true);
-      //       flipper.matrixPhysics.setActivationState(rightBody, 4);
-      //       flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 500);
-      //     }
-      //   });
+        let leftBodycurrPos = 'unpressed';
+        window.addEventListener("keydown", (e) => {
+          e.preventDefault();
+          if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
+            leftBodycurrPos = 'pressed';
+            flipper.matrixPhysics.activate(leftBody, true);
+            flipper.matrixPhysics.setActivationState(leftBody, 4);
+            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 500);
+          }
+          if(e.code === "KeyM") {
+            console.log('SENT KEY ', rightBody)
+            flipper.matrixPhysics.activate(rightBody, true);
+            flipper.matrixPhysics.setActivationState(rightBody, 4);
+            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 500);
+          }
+        });
 
-      //   window.addEventListener("keyup", (e) => {
-      //     if(e.code === "KeyZ") {
-      //       leftBodycurrPos = 'unpressed';
-      //       flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
-      //     }
-      //     if(e.code === "KeyM") {
-      //       flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
-      //     }
-      //     if(e.code == "Space") {
-      //       if(MYFLIPPER.STATUS_PUSH == 'free') {
-      //         MYFLIPPER.STATUS_PUSH = 'in action';
-      //         let ball = app.matrixPhysics.getBodyByName(ball1.name);
-      //         flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
-      //       }
-      //     }
-      //   });
+        window.addEventListener("keyup", (e) => {
+          if(e.code === "KeyZ") {
+            leftBodycurrPos = 'unpressed';
+            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
+          }
+          if(e.code === "KeyM") {
+            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
+          }
+          if(e.code == "Space") {
+            if(MYFLIPPER.STATUS_PUSH == 'free') {
+              MYFLIPPER.STATUS_PUSH = 'in action';
+              let ball = app.matrixPhysics.getBodyByName(ball1.name);
+              flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
+            }
+          }
+        });
 
-      // }, 500);
+      }, 500);
 
       const commonAchorX = 2.2;
       const commomBODYX = 0.8;
@@ -559,6 +559,7 @@ export var flipper = function() {
         }
       });
 
+      const ball = app.matrixPhysics.getBodyByName('ball1');
       const strength = 1;
       document.addEventListener("pCollision", (e) => {
         console.log('pCollision::', e);
@@ -567,7 +568,6 @@ export var flipper = function() {
         const rayDirection = e.detail.rayDirection;
         console.log('collision : ', body1Name)
         if(body1Name.startsWith("bumper")) {
-          const ball = app.matrixPhysics.getBodyByName('ball1');
           // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if(ball != -1) {
             flipper.matrixPhysics.applyImpulse(ball, new PVector(
@@ -579,7 +579,7 @@ export var flipper = function() {
         } else if(body1Name.startsWith("edgeRigth") && MYFLIPPER.STATUS_PUSH == 'wait') {
           MYFLIPPER.STATUS_PUSH = 'free';
         } else if(body1Name.startsWith('bottomEdge2')) {
-          console.log('collision XXXXX : ', MYFLIPPER.STATUS_PUSH)
+          console.log('collision XXMYFLIPPER.STATUS_PUSH freeX : ', MYFLIPPER.STATUS_PUSH)
           setTimeout(() => {
             MYFLIPPER.STATUS_PUSH = 'free';
           }, 3000);
@@ -587,16 +587,7 @@ export var flipper = function() {
       });
 
       // GRAVITY TILT (PINBALL FEEL)
-      flipper.matrixPhysics.setGravity(0, -9.8, 1);
-
-      // flipper.autoUpdate.push({
-      //   update: () => {
-      //     leftBody.activate(true);
-      //     rightBody.activate(true);
-      //   }
-      // })
-
-
+      flipper.matrixPhysics.setGravity(0, -9.8, 1.5);
 
       // only render objs
       const leg1 = flipper.addMeshObj({

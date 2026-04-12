@@ -714,12 +714,17 @@ class MatrixAmmoWorker {
   }
 
   _detectCollision() {
+       
+
     const dispatcher = this.dynamicsWorld.getDispatcher();
     const numManifolds = dispatcher.getNumManifolds();
     const currentCollisions = new Set();
     for(let i = 0;i < numManifolds;i++) {
       const manifold = dispatcher.getManifoldByIndexInternal(i);
       if(manifold.getNumContacts() === 0) continue;
+
+      console.log('worker - colisinion begin ', manifold.getNumContacts())
+
       const ptr0 = Ammo.getPointer(manifold.getBody0());
       const ptr1 = Ammo.getPointer(manifold.getBody1());
       let name0 = null;
@@ -729,14 +734,12 @@ class MatrixAmmoWorker {
         name1 = this.ptrToName.get(ptr1);
         if(!name0 || !name1) return;
         if(name0 === 'ground' || name1 === 'ground') return; // skip ground collisions
-
       } catch(e) {
         // console.log('err in collision e :', name0);
         return;
       }
 
-
-      // console.log('worker - name0', name0)
+      console.log('worker - colisin', name0)
       const key = `${name0}|${name1}`;
       currentCollisions.add(key);
       if(!this.lastCollisionState.has(key)) {
