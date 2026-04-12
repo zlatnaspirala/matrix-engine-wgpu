@@ -135,26 +135,50 @@ class MatrixAmmoWorker {
     return this.rigidBodies.length - 1;
   }
 
-  _applyBodyFlags(body, pOptions) {
-    const CF_KINEMATIC = 2;
-    const CF_STATIC = 1;
+  // _applyBodyFlags(body, pOptions) {
+  //   const CF_KINEMATIC = 2;
+  //   const CF_STATIC = 1;
 
+  //   if(pOptions.state === 4) {
+  //     // ✅ explicit kinematic
+  //     body.setCollisionFlags(CF_KINEMATIC);
+  //     body.setActivationState(4);
+  //     body.isKinematic = true;
+
+  //   } else if(pOptions.mass === 0) {
+  //     // ✅ true static
+  //     body.setCollisionFlags(CF_STATIC);
+  //     body.setActivationState(5);
+  //     body.isKinematic = false;
+  //   } else {
+  //     // ✅ dynamic
+  //     body.setActivationState(4);
+  //     body.isKinematic = false;
+  //   }
+  // }
+
+  _applyBodyFlags(body, pOptions) {
+    const CF_STATIC = 1;
+    const CF_KINEMATIC = 2;
+
+    // 🔴 STATIC BODY
+    if(pOptions.mass === 0 && !pOptions.state) {
+      body.setCollisionFlags(CF_STATIC);
+      body.setActivationState(4); // DISABLE_DEACTIVATION
+      body.isKinematic = false;
+      return;
+    }
+    // 🔵 KINEMATIC BODY
     if(pOptions.state === 4) {
-      // ✅ explicit kinematic
       body.setCollisionFlags(CF_KINEMATIC);
       body.setActivationState(4);
       body.isKinematic = true;
-
-    } else if(pOptions.mass === 0) {
-      // ✅ true static
-      body.setCollisionFlags(CF_STATIC);
-      body.setActivationState(5);
-      body.isKinematic = false;
-    } else {
-      // ✅ dynamic
-      body.setActivationState(4);
-      body.isKinematic = false;
+      return;
     }
+    // 🟢 DYNAMIC BODY
+    body.setCollisionFlags(0);
+    body.setActivationState(1); // ACTIVE_TAG
+    body.isKinematic = false;
   }
 
   _registerBody(body, pOptions) {
@@ -238,27 +262,35 @@ class MatrixAmmoWorker {
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
 
-    bodyA.setAngularFactor(new Ammo.btVector3(0,1,0));
+    bodyA.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+    // bodyA.setAngularFactor(new Ammo.btVector3(0, 1, 0));
+
     bodyA.setDamping(0.2, 0.9);
- 
     console.log("pivotA", pivotA);
     console.log("pivotB", pivotB);
-
     const axis = pOptions.axis || [0, 1, 0];
     const ammoPivotA = new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2]);
     const ammoPivotB = new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]);
-    const frameA = new Ammo.btTransform();
-    frameA.setIdentity();
-    frameA.setOrigin(new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2])); // offset here
-    const frameB = new Ammo.btTransform();
-    frameB.setIdentity();
-    frameB.setOrigin(new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]));
+    // const frameA = new Ammo.btTransform();
+    // frameA.setIdentity();
+    // frameA.setOrigin(new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2]));
+    // const frameB = new Ammo.btTransform();
+    // frameB.setIdentity();
+    // frameB.setOrigin(new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]));
+    // // ROTATION FIX
+    // const q = new Ammo.btQuaternion();
+    // q.setRotation(new Ammo.btVector3(0, 1, 0), 0);
+    // frameA.setRotation(q);
+    // frameB.setRotation(q);
+    // const hinge = new Ammo.btHingeConstraint(bodyA, bodyB, frameA, frameB, true);
     const ammoAxisA = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     // CREATE HINGE
     const hinge = new Ammo.btHingeConstraint(
       bodyA,
       bodyB,
+      // frameA,
+      // frameB, true
       ammoPivotA,
       ammoPivotB,
       ammoAxisA,
@@ -267,51 +299,27 @@ class MatrixAmmoWorker {
     );
     // LIMITS
     if(pOptions.limits) {
-      // hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
+      hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
-    // this.shootBody(0, 0, 0, 0, 0, 0);
+    // this.shootBody(idxA, 0, 0, 0, 0, 0, 0);
+    // bodyA.setAngularFactor(new Ammo.btVector3(0,1,0));
+    // bodyA.setLinearFactor(new Ammo.btVector3(1,1,1));
     hinge.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
-    hinge.enableAngularMotor(true, 10, 500);
-
     // hinge.enableAngularMotor(true, 10, 500);
-
-    // bodyA.setIgnoreCollisionCheck(bodyB, true);
-    // bodyB.setIgnoreCollisionCheck(bodyA, true);
-
     console.log('bodyA pos:', bodyA.getWorldTransform().getOrigin().x(), bodyA.getWorldTransform().getOrigin().y(), bodyA.getWorldTransform().getOrigin().z());
     console.log('bodyB pos:', bodyB.getWorldTransform().getOrigin().x(), bodyB.getWorldTransform().getOrigin().y(), bodyB.getWorldTransform().getOrigin().z());
-
     this.dynamicsWorld.addConstraint(hinge, true);
 
 
-    // reset bodyA to correct position relative to bodyB pivot
-    // const bTransform = bodyB.getWorldTransform();
-    // const origin = bTransform.getOrigin();
-    // const t = new Ammo.btTransform();
-    // t.setIdentity();
-    // t.setOrigin(new Ammo.btVector3(
-    //   origin.x() - pOptions.pivotA[0],
-    //   origin.y(),
-    //   origin.z()
-    // ));
-    // bodyA.setWorldTransform(t);
-    // bodyA.getMotionState()?.setWorldTransform(t);
-    // // zero velocities
-    // const zero = new Ammo.btVector3(0, 0, 0);
-    // bodyA.setLinearVelocity(zero);
-    // bodyA.setAngularVelocity(zero);
-    // bodyA.clearForces();
-    // Ammo.destroy(zero);
+     hinge.enableAngularMotor(true, 0, 0);
+     hinge.setLimit(-0.8, 0.5);
 
     const si = this.dynamicsWorld.getSolverInfo();
-    // si.set_m_numIterations(50); // crank up iterations to stabilize
-
-    // hinge.name = pOptions.name;
+    si.set_m_numIterations(50);
+    hinge.name = pOptions.name;
     this.constraints.push(hinge);
-
     const constraintIdx = this.constraints.length - 1;
-    console.log("hingle at index: ", constraintIdx)
-    console.log('[worker] constraintAdded posting', msgID, constraintIdx);
+    console.log("hingle at index: ", constraintIdx);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
 

@@ -216,7 +216,6 @@ var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {physicsBodiesGenerator} from "../src/engine/generators/generator.js";
 var flipper = function () {
   let MYFLIPPER = {
     STATUS_PUSH: 'wait'
@@ -236,7 +235,7 @@ var flipper = function () {
       a: 1
     }
   }, () => {
-    // Audios 
+    // Audios
     flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
     flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1);
     flipper.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
@@ -328,16 +327,16 @@ var flipper = function () {
         position: {
           x: 0,
           y: 2,
-          z: -10
+          z: -15
         },
-        scale: [0.2, 0.2, 0.2],
+        scale: [0.25, 0.25, 0.25],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
         mesh: m.ball,
         shadowsCast: false,
         physics: {
           enabled: true,
-          mass: 1,
+          mass: 5,
           geometry: "Sphere"
         },
         raycast: {
@@ -346,8 +345,7 @@ var flipper = function () {
         },
         pointerEffect: {
           enabled: true,
-          pointEffect: true,
-          pointer: true
+          pointer: (0, _utils.isMobile)() == true ? false : true
         }
       });
       flipper.ball1 = ball1;
@@ -453,7 +451,6 @@ var flipper = function () {
         }
       });
       glass.setBlend(0.1);
-      app.glass = glass;
 
       // BUMPERS
       const bumperPositions = [{
@@ -495,7 +492,7 @@ var flipper = function () {
         });
       });
 
-      // edges
+      // Edges
       const TEdge = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -516,7 +513,7 @@ var flipper = function () {
         }
       });
 
-      // inside flipper 
+      // Inside flipper
       const topCurveInLeft = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -562,7 +559,7 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: -3.3,
+          x: -3.5,
           y: 0.3,
           z: -10
         },
@@ -582,7 +579,7 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: 3.3,
+          x: 3.5,
           y: 0.3,
           z: -10
         },
@@ -602,9 +599,6 @@ var flipper = function () {
           vertices: m.bottomLeft.vertices
         }
       });
-      flipper.bottomRight = bottomRight;
-      // bottomRight.rotation.setRotationY(180)
-
       const BEdge = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -666,15 +660,12 @@ var flipper = function () {
         texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeRigth',
         mesh: m.cube,
-        // envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
           geometry: "Cube"
         }
       });
-
-      //
       const REdge2 = flipper.addMeshObj({
         material: {
           type: 'standard'
@@ -688,7 +679,6 @@ var flipper = function () {
         texturesPaths: ['./res/textures/cube-test.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeRigth2',
         mesh: m.cube,
-        // envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -708,7 +698,6 @@ var flipper = function () {
         texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'edgeLeft',
         mesh: m.cube,
-        // envMapParams: envMapParams,
         physics: {
           enabled: true,
           mass: 0,
@@ -723,117 +712,117 @@ var flipper = function () {
         addressModeV: 'repeat'
       });
 
-      // 
+      // setTimeout(async () => {
+      //   const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+      //   const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
 
-      setTimeout(async () => {
-        const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-        const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-        console.log('seup left right body ', leftBody);
-        flipper.matrixPhysics.setActivationState(leftBody, 4);
-        flipper.matrixPhysics.activate(leftBody, true);
-        flipper.matrixPhysics.setActivationState(rightBody, 4);
-        flipper.matrixPhysics.activate(rightBody, true);
-        flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
-        flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
-        flipper.matrixPhysics.setRestitution(leftBody, 0.1);
-        flipper.matrixPhysics.setRestitution(rightBody, 0.1);
-        flipper.matrixPhysics.setFriction(leftBody, 1.5);
-        flipper.matrixPhysics.setFriction(rightBody, 1.5);
-        let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
-        flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
-        let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
-        flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
+      //   flipper.matrixPhysics.setActivationState(leftBody, 4);
+      //   flipper.matrixPhysics.activate(leftBody, true);
+      //   flipper.matrixPhysics.setActivationState(rightBody, 4);
+      //   flipper.matrixPhysics.activate(rightBody, true);
+      //   flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
+      //   flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
+      //   flipper.matrixPhysics.setRestitution(leftBody, 0.1);
+      //   flipper.matrixPhysics.setRestitution(rightBody, 0.1);
+      //   flipper.matrixPhysics.setFriction(leftBody, 1.5);
+      //   flipper.matrixPhysics.setFriction(rightBody, 1.5);
 
-        // BALL PHYSICS TUNING
-        const ball = flipper.matrixPhysics.getBodyByName('ball1');
-        console.log(ball + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-        if (ball) {
-          flipper.matrixPhysics.setRestitution(ball, 0.9);
-          flipper.matrixPhysics.setFriction(ball, 0.2);
-          // flipper.matrixPhysics.setRollingFriction(ball, 0.05);
-          flipper.matrixPhysics.setDamping(ball, 0.05, 0.05);
-        }
+      //   let getLA = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+      //   flipper.matrixPhysics.shootBody(getLA, 0, 0, 0, 0, 0, 0);
+      //   let getRA = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+      //   flipper.matrixPhysics.shootBody(getRA, 0, 0, 0, 0, 0, 0);
 
-        // FLIPPER SETUP
-        const commonX = 2;
-        const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
-        const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
-        const hingeLeft = app.matrixPhysics.addHingeConstraint(BA, BB, {
-          name: "flipperLeftHinge",
-          pivotA: [-commonX, 0, 0],
-          pivotB: [0, 0, 0],
-          axis: [0, 1, 0],
-          limits: [-0.8, 0.5]
-        });
-        let hingeLeftID = 0;
-        let hingeRightID = 0;
-        hingeLeft.then(idx => {
-          console.log('_____hinge index___', idx);
-          hingeLeftID = idx;
-          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
-        });
-        const BA1 = flipper.matrixPhysics.getBodyByName('flipperRight');
-        const BB1 = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
-        const hingeRight = app.matrixPhysics.addHingeConstraint(BA1, BB1, {
-          name: "flipperRightHinge",
-          pivotA: [commonX, 0, 0],
-          pivotB: [0, 0, 0],
-          axis: [0, -1, 0],
-          limits: [-0.8, 0.5]
-        });
-        hingeRight.then(idx => {
-          console.log('_____hinge hingeRight index___', idx);
-          hingeRightID = idx;
-          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
-        });
-        REdge.setUVScale(1, 1);
-        // LEdge.changeTexture(checker2, samplerTest)
-        LEdge.setUVScale(1, 1);
-        REdge2.setUVScale(1, 1);
-        let leftBodycurrPos = 'unpressed';
-        window.addEventListener("keydown", e => {
-          e.preventDefault();
-          if (e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
-            leftBodycurrPos = 'pressed';
-            // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-            flipper.matrixPhysics.activate(leftBody, true);
-            flipper.matrixPhysics.setActivationState(leftBody, 4);
-            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 500);
-          }
-          if (e.code === "KeyM") {
-            // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-            console.log('SENT KEY ', rightBody);
-            flipper.matrixPhysics.activate(rightBody, true);
-            flipper.matrixPhysics.setActivationState(rightBody, 4);
-            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
-          }
-        });
-        window.addEventListener("keyup", e => {
-          if (e.code === "KeyZ") {
-            leftBodycurrPos = 'unpressed';
-            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
-          }
-          if (e.code === "KeyM") {
-            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 500);
-          }
-          if (e.code == "Space") {
-            if (MYFLIPPER.STATUS_PUSH == 'free') {
-              MYFLIPPER.STATUS_PUSH = 'in action';
-              let ball = app.matrixPhysics.getBodyByName(ball1.name);
-              flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20)));
-            }
-          }
-        });
-      }, 500);
-      const commonAchorX = 2;
-      const commomBODYX = 2;
+      //   // BALL PHYSICS TUNING
+      //   const ball = flipper.matrixPhysics.getBodyByName('ball1');
+      //   flipper.matrixPhysics.setRestitution(ball, 0.9);
+      //   flipper.matrixPhysics.setFriction(ball, 0.2);
+      //   flipper.matrixPhysics.setDamping(ball, 0.05, 0.05);
+
+      //   // FLIPPER SETUP
+      //   const commonX = 1;
+      //   const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
+      //   const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
+
+      //   const hingeLeft = app.matrixPhysics.addHingeConstraint(BA, BB, {
+      //     name: "flipperLeftHinge",
+      //     pivotA: [-commonX, 0, 0],
+      //     pivotB: [0, 0, 0],
+      //     axis: [0, 1, 0],
+      //     limits: [-0.8, 0.5]
+      //   });
+      //   let hingeLeftID = 0;
+      //   let hingeRightID = 0;
+      //   hingeLeft.then((idx) => {
+      //     console.log('Hinge index (its is not regular rigidbody idx)', idx)
+      //     hingeLeftID = idx;
+      //     app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+      //     app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+      //   })
+
+      //   const BA1 = flipper.matrixPhysics.getBodyByName('flipperRight');
+      //   const BB1 = flipper.matrixPhysics.getBodyByName('flipperRightAnchor');
+
+      //   const hingeRight = app.matrixPhysics.addHingeConstraint(BA1, BB1, {
+      //     name: "flipperRightHinge",
+      //     pivotA: [commonX, 0, 0],
+      //     pivotB: [0, 0, 0],
+      //     axis: [0, 1, 0],
+      //     limits: [-0.8, 0.5]
+      //   });
+      //   hingeRight.then((idx) => {
+      //     hingeRightID = idx;
+      //     app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+      //     app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+      //   })
+
+      //   REdge.setUVScale(1, 1);
+      //   // LEdge.changeTexture(checker2, samplerTest)
+      //   LEdge.setUVScale(1, 1);
+      //   REdge2.setUVScale(1, 1);
+
+      //   let leftBodycurrPos = 'unpressed';
+      //   window.addEventListener("keydown", (e) => {
+      //     e.preventDefault();
+      //     if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
+      //       leftBodycurrPos = 'pressed';
+      //       flipper.matrixPhysics.activate(leftBody, true);
+      //       flipper.matrixPhysics.setActivationState(leftBody, 4);
+      //       flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 500);
+      //     }
+      //     if(e.code === "KeyM") {
+      //       console.log('SENT KEY ', rightBody)
+      //       flipper.matrixPhysics.activate(rightBody, true);
+      //       flipper.matrixPhysics.setActivationState(rightBody, 4);
+      //       flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 500);
+      //     }
+      //   });
+
+      //   window.addEventListener("keyup", (e) => {
+      //     if(e.code === "KeyZ") {
+      //       leftBodycurrPos = 'unpressed';
+      //       flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
+      //     }
+      //     if(e.code === "KeyM") {
+      //       flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
+      //     }
+      //     if(e.code == "Space") {
+      //       if(MYFLIPPER.STATUS_PUSH == 'free') {
+      //         MYFLIPPER.STATUS_PUSH = 'in action';
+      //         let ball = app.matrixPhysics.getBodyByName(ball1.name);
+      //         flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
+      //       }
+      //     }
+      //   });
+
+      // }, 500);
+
+      const commonAchorX = 2.2;
+      const commomBODYX = 0.8;
       const LAnchor = flipper.addMeshObj({
         position: {
           x: -commonAchorX,
-          y: 0.6,
-          z: -9
+          y: 0.3,
+          z: -9.25
         },
         scale: [0.2, 0.2, 0.2],
         mesh: m.cube,
@@ -841,8 +830,7 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          state: 4,
-          collide: undefined,
+          // state: 4,
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -851,8 +839,8 @@ var flipper = function () {
       const RAnchor = flipper.addMeshObj({
         position: {
           x: commonAchorX,
-          y: 0.6,
-          z: -9
+          y: 0.3,
+          z: -9.25
         },
         scale: [0.2, 0.2, 0.2],
         mesh: m.cube,
@@ -860,8 +848,8 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          state: 4,
-          collide: undefined,
+          // state: 4,
+          // collide: undefined,
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -873,16 +861,16 @@ var flipper = function () {
         },
         position: {
           x: -commomBODYX,
-          y: 0.6,
+          y: 0.3,
           z: -9
         },
-        scale: [1, 0.1, 0.3],
+        scale: [0.85, 0.1, 0.3],
         texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'flipperLeft',
         mesh: m.pin,
         physics: {
           enabled: true,
-          mass: 5,
+          mass: 0.5,
           geometry: "ConvexHull",
           vertices: m.pin.vertices,
           group: 1,
@@ -895,16 +883,16 @@ var flipper = function () {
         },
         position: {
           x: commomBODYX,
-          y: 0.6,
+          y: 0.3,
           z: -9
         },
-        scale: [1, 0.1, 0.3],
+        scale: [0.85, 0.1, 0.3],
         texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'flipperRight',
         mesh: m.pinR,
         physics: {
           enabled: true,
-          mass: 5,
+          mass: 0.5,
           geometry: "ConvexHull",
           vertices: m.pinR.vertices,
           group: 1,
