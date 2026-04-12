@@ -19,6 +19,8 @@ export class PhysicsBridge {
     this._queue = [];
     this._worker.onmessage = ({data}) => this._onMessage(data);
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
+
+    this._paused = false;
   }
 
   getBodyByName(name) {
@@ -44,16 +46,23 @@ export class PhysicsBridge {
   }
 
   _doAddPhysics(MEObject, pOptions) {
+    MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then(idx => {
       console.log("ADD TO _bodyIndexMap ")
+      // 
+
       this._bodyIndexMap.set(MEObject, idx);
+      console.log('BODY ADDED', MEObject.name, idx, 'isKinematic:', MEObject.isKinematic, 'pos:', MEObject.position.x, MEObject.position.y, MEObject.position.z);
     });
   }
 
+  pause() {this._paused = true;}
+  resume() {this._paused = false;}
+
   updatePhysics() {
-    if(!this._ready) return;
+   if(!this._ready || this._paused) return;  // ← check paused
     for(const [meObj, idx] of this._bodyIndexMap) {
-      if(meObj.itIsKinematic) {
+      if(meObj.isKinematic) {
         const {x, y, z} = meObj.position;
         this._worker.postMessage({cmd: 'setKinematicTransform', idx, x, y, z});
       }
@@ -91,12 +100,12 @@ export class PhysicsBridge {
 
   setDamping(idx, l, a) {
     if(idx === undefined) return;
-    this._worker.postMessage({cmd: 'activate', idx, l, a});
+    this._worker.postMessage({cmd: 'setDamping', idx, l, a});
   }
 
   setRestitution(idx, s) {
     if(idx === undefined) return;
-    this._worker.postMessage({cmd: 'activate', idx, s});
+    this._worker.postMessage({cmd: 'setRestitution', idx, s});
   }
 
   setFriction(idx, s) {
@@ -114,12 +123,6 @@ export class PhysicsBridge {
     // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'setLinearVelocity', idx, x, y, z});
-  }
-
-  activate(idx) {
-    // const idx = this._bodyIndexMap.get(MEObject);
-    if(idx === undefined) return;
-    this._worker.postMessage({cmd: 'activate', idx});
   }
 
   explode(idx, x, y, z, radius, strength) {
@@ -154,7 +157,11 @@ export class PhysicsBridge {
   }
 
   addHingeConstraint(idxA, idxB, options) {
-    if(idxA === undefined || idxB === undefined) return;
+
+    if(idxA === undefined || idxB === undefined || idxA === -1 || idxB === -1) {
+      console.log('error in addHingeConstraint !!! ');
+      return Promise.resolve(-1);
+    }
     // this._worker.postMessage({cmd: 'addHingeConstraint', idxA, idxB, options});
     return this._send('addHingeConstraint', {idxA, idxB, options});
   }
@@ -164,13 +171,24 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
   }
 
+  clearBody(idx) {
+    this._worker.postMessage({cmd: 'clearBody', idx});
+  }
+
+  setCollisionFlags(idx, flags) {
+    if(idx === undefined || idx === -1) return;
+    this._worker.postMessage({cmd: 'setCollisionFlags', idx, flags});
+  }
+
   _syncToObjects() {
     const snap = this._snapshot;
     if(!snap) return;
     const FLOATS = 8;
     for(const [meObj, idx] of this._bodyIndexMap) {
-      if(meObj.itIsKinematic) continue;
       const b = idx * FLOATS;
+      // if(isNaN(snap[b])) console.log('SYNC', meObj.name, 'isKinematic:', meObj.isKinematic, snap[b], snap[b + 1], snap[b + 2]);
+      // if(meObj.isKinematic) continue;
+      // const b = idx * FLOATS;
       meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
       meObj.position.inMove = true;
       meObj.rotation.axis.x = snap[b + 3];
@@ -189,14 +207,24 @@ export class PhysicsBridge {
     });
   }
 
+  setBodyTransform(idx, x, y, z) {
+    if(idx === undefined || idx === -1) return;
+    this._worker.postMessage({cmd: 'setBodyTransform', idx, x, y, z});
+  }
+
+  setGravityScale(idx, scale) {
+    if(idx === undefined || idx === -1) return;
+    this._worker.postMessage({cmd: 'setGravityScale', idx, scale});
+  }
+
   _onMessage(data) {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
+        // if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
-        this._syncToObjects();
+        // this._syncToObjects();
         break;
       case 'snapshot':
         this._snapshot = data.snap;
@@ -208,6 +236,10 @@ export class PhysicsBridge {
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;
         document.dispatchEvent(this.pCollisionEvent);
+        break;
+      case 'constraintAdded':
+        this._pending.get(data.id)?.(data.idx);
+        this._pending.delete(data.id);
         break;
     }
   }

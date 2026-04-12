@@ -454,91 +454,6 @@ var flipper = function () {
       });
       glass.setBlend(0.1);
       app.glass = glass;
-      const commonAchorX = 2;
-      const LAnchor = flipper.addMeshObj({
-        position: {
-          x: -commonAchorX,
-          y: 0.2,
-          z: -9
-        },
-        scale: [0.2, 0.2, 0.2],
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          state: 4
-        },
-        name: "flipperLeftAnchor"
-      });
-      const RAnchor = flipper.addMeshObj({
-        position: {
-          x: commonAchorX,
-          y: 0.2,
-          z: -9
-        },
-        scale: [0.2, 0.2, 0.2],
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          state: 4
-        },
-        name: "flipperRightAnchor"
-      });
-      const commomBODYX = 0;
-      flipper.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: -commomBODYX,
-          y: 0.5,
-          z: -9
-        },
-        scale: [1, 0.1, 0.3],
-        texturesPaths: ['./res/textures/blankgray.webp'],
-        name: 'flipperLeft',
-        mesh: m.pin,
-        physics: {
-          enabled: true,
-          mass: 5,
-          geometry: "ConvexHull",
-          vertices: m.pin.vertices
-        }
-      });
-      flipper.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: commomBODYX,
-          y: 0.5,
-          z: -9
-        },
-        scale: [1, 0.1, 0.3],
-        texturesPaths: ['./res/textures/blankgray.webp'],
-        name: 'flipperRight',
-        mesh: m.pinR,
-        physics: {
-          enabled: true,
-          mass: 5,
-          geometry: "ConvexHull",
-          vertices: m.pinR.vertices
-        }
-      });
-
-      // flipper.matrixPhysics.setActivationState(leftBody, 4);
-      // flipper.matrixPhysics.activate(leftBody, true);
-      // flipper.matrixPhysics.setActivationState(rightBody, 4);
-      // flipper.matrixPhysics.activate(rightBody, true);
-      // flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
-      // flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
-      // flipper.matrixPhysics.setRestitution(leftBody, 0.1);
-      // flipper.matrixPhysics.setRestitution(rightBody, 0.1);
-      // flipper.matrixPhysics.setFriction(leftBody, 1.5);
-      // flipper.matrixPhysics.setFriction(rightBody, 1.5);
 
       // BUMPERS
       const bumperPositions = [{
@@ -565,7 +480,6 @@ var flipper = function () {
           },
           position: p,
           scale: [0.6, 0.6, 0.6],
-          // texturesPaths: ['./res/meshes/blender/cube.png'],
           texturesPaths: ['./res/textures/star1.png'],
           name: 'bumper' + i,
           mesh: m.ball,
@@ -810,6 +724,7 @@ var flipper = function () {
       });
 
       // 
+
       setTimeout(async () => {
         const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
         const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
@@ -840,7 +755,7 @@ var flipper = function () {
         }
 
         // FLIPPER SETUP
-        const commonX = 0.5;
+        const commonX = 2;
         const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
         const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
         const hingeLeft = app.matrixPhysics.addHingeConstraint(BA, BB, {
@@ -877,7 +792,125 @@ var flipper = function () {
         // LEdge.changeTexture(checker2, samplerTest)
         LEdge.setUVScale(1, 1);
         REdge2.setUVScale(1, 1);
-      }, 1000);
+        let leftBodycurrPos = 'unpressed';
+        window.addEventListener("keydown", e => {
+          e.preventDefault();
+          if (e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
+            leftBodycurrPos = 'pressed';
+            // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+            flipper.matrixPhysics.activate(leftBody, true);
+            flipper.matrixPhysics.setActivationState(leftBody, 4);
+            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 500);
+          }
+          if (e.code === "KeyM") {
+            // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+            console.log('SENT KEY ', rightBody);
+            flipper.matrixPhysics.activate(rightBody, true);
+            flipper.matrixPhysics.setActivationState(rightBody, 4);
+            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
+          }
+        });
+        window.addEventListener("keyup", e => {
+          if (e.code === "KeyZ") {
+            leftBodycurrPos = 'unpressed';
+            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
+          }
+          if (e.code === "KeyM") {
+            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 500);
+          }
+          if (e.code == "Space") {
+            if (MYFLIPPER.STATUS_PUSH == 'free') {
+              MYFLIPPER.STATUS_PUSH = 'in action';
+              let ball = app.matrixPhysics.getBodyByName(ball1.name);
+              flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20)));
+            }
+          }
+        });
+      }, 500);
+      const commonAchorX = 2;
+      const commomBODYX = 2;
+      const LAnchor = flipper.addMeshObj({
+        position: {
+          x: -commonAchorX,
+          y: 0.6,
+          z: -9
+        },
+        scale: [0.2, 0.2, 0.2],
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube",
+          state: 4,
+          collide: undefined,
+          group: 2,
+          mask: 1 // collide with world, NOT flipper
+        },
+        name: "flipperLeftAnchor"
+      });
+      const RAnchor = flipper.addMeshObj({
+        position: {
+          x: commonAchorX,
+          y: 0.6,
+          z: -9
+        },
+        scale: [0.2, 0.2, 0.2],
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube",
+          state: 4,
+          collide: undefined,
+          group: 2,
+          mask: 1 // collide with world, NOT flipper
+        },
+        name: "flipperRightAnchor"
+      });
+      flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -commomBODYX,
+          y: 0.6,
+          z: -9
+        },
+        scale: [1, 0.1, 0.3],
+        texturesPaths: ['./res/textures/blankgray.webp'],
+        name: 'flipperLeft',
+        mesh: m.pin,
+        physics: {
+          enabled: true,
+          mass: 5,
+          geometry: "ConvexHull",
+          vertices: m.pin.vertices,
+          group: 1,
+          mask: -1 // everything
+        }
+      });
+      flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: commomBODYX,
+          y: 0.6,
+          z: -9
+        },
+        scale: [1, 0.1, 0.3],
+        texturesPaths: ['./res/textures/blankgray.webp'],
+        name: 'flipperRight',
+        mesh: m.pinR,
+        physics: {
+          enabled: true,
+          mass: 5,
+          geometry: "ConvexHull",
+          vertices: m.pinR.vertices,
+          group: 1,
+          mask: -1 // everything
+        }
+      });
       flipper.canvas.addEventListener("ray.hit.event", e => {
         app.matrixSounds.play('click1');
         console.log('e.detail', e.detail);
@@ -916,50 +949,12 @@ var flipper = function () {
       // GRAVITY TILT (PINBALL FEEL)
       flipper.matrixPhysics.setGravity(0, -9.8, 1);
 
-      // let leftBodycurrPos = 'unpressed';
-      // window.addEventListener("keydown", (e) => {
-      //   e.preventDefault();
-      //   if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
-      //     leftBodycurrPos = 'pressed';
-      //     const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-      //     leftBody.activate(true);
-      //     leftBody.setActivationState(4);
-      //     hingeLeft.enableAngularMotor(true, -25, 500);
-      //   }
-      //   if(e.code === "KeyM") {
-      //     const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-      //     rightBody.activate(true);
-      //     rightBody.setActivationState(4);
-      //     hingeRight.enableAngularMotor(true, -25, 500);
-      //   }
-      // });
-
-      // ORIGIN enableHingeMotor
-      // hingeLeft.enableAngularMotor(true, 10, 500);
-      // hingeRight.enableAngularMotor(true, 10, 500);
       // flipper.autoUpdate.push({
       //   update: () => {
       //     leftBody.activate(true);
       //     rightBody.activate(true);
       //   }
       // })
-
-      // window.addEventListener("keyup", (e) => {
-      //   if(e.code === "KeyZ") {
-      //     leftBodycurrPos = 'unpressed';
-      //     hingeLeft.enableAngularMotor(true, 10, 500);
-      //   }
-      //   if(e.code === "KeyM") {
-      //     hingeRight.enableAngularMotor(true, 10, 500);
-      //   }
-      //   if(e.code == "Space") {
-      //     if(MYFLIPPER.STATUS_PUSH == 'free') {
-      //       MYFLIPPER.STATUS_PUSH = 'in action';
-      //       let ball = app.matrixPhysics.getBodyByName(ball1.name);
-      //       flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
-      //     }
-      //   }
-      // });
 
       // only render objs
       const leg1 = flipper.addMeshObj({
@@ -34826,6 +34821,7 @@ class PhysicsBridge {
     this.pCollisionEvent = new CustomEvent('pCollision', {
       detail: {}
     });
+    this._paused = false;
   }
   getBodyByName(name) {
     for (const [meObj, idx] of this._bodyIndexMap) if (meObj.name === name) return idx;
@@ -34859,17 +34855,27 @@ class PhysicsBridge {
     this._doAddPhysics(MEObject, pOptions);
   }
   _doAddPhysics(MEObject, pOptions) {
+    MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {
       pOptions
     }).then(idx => {
       console.log("ADD TO _bodyIndexMap ");
+      // 
+
       this._bodyIndexMap.set(MEObject, idx);
+      console.log('BODY ADDED', MEObject.name, idx, 'isKinematic:', MEObject.isKinematic, 'pos:', MEObject.position.x, MEObject.position.y, MEObject.position.z);
     });
   }
+  pause() {
+    this._paused = true;
+  }
+  resume() {
+    this._paused = false;
+  }
   updatePhysics() {
-    if (!this._ready) return;
+    if (!this._ready || this._paused) return; // ← check paused
     for (const [meObj, idx] of this._bodyIndexMap) {
-      if (meObj.itIsKinematic) {
+      if (meObj.isKinematic) {
         const {
           x,
           y,
@@ -34950,7 +34956,7 @@ class PhysicsBridge {
   setDamping(idx, l, a) {
     if (idx === undefined) return;
     this._worker.postMessage({
-      cmd: 'activate',
+      cmd: 'setDamping',
       idx,
       l,
       a
@@ -34959,7 +34965,7 @@ class PhysicsBridge {
   setRestitution(idx, s) {
     if (idx === undefined) return;
     this._worker.postMessage({
-      cmd: 'activate',
+      cmd: 'setRestitution',
       idx,
       s
     });
@@ -34990,14 +34996,6 @@ class PhysicsBridge {
       x,
       y,
       z
-    });
-  }
-  activate(idx) {
-    // const idx = this._bodyIndexMap.get(MEObject);
-    if (idx === undefined) return;
-    this._worker.postMessage({
-      cmd: 'activate',
-      idx
     });
   }
   explode(idx, x, y, z, radius, strength) {
@@ -35057,7 +35055,10 @@ class PhysicsBridge {
     });
   }
   addHingeConstraint(idxA, idxB, options) {
-    if (idxA === undefined || idxB === undefined) return;
+    if (idxA === undefined || idxB === undefined || idxA === -1 || idxB === -1) {
+      console.log('error in addHingeConstraint !!! ');
+      return Promise.resolve(-1);
+    }
     // this._worker.postMessage({cmd: 'addHingeConstraint', idxA, idxB, options});
     return this._send('addHingeConstraint', {
       idxA,
@@ -35075,13 +35076,29 @@ class PhysicsBridge {
       maxMotorImpulse
     });
   }
+  clearBody(idx) {
+    this._worker.postMessage({
+      cmd: 'clearBody',
+      idx
+    });
+  }
+  setCollisionFlags(idx, flags) {
+    if (idx === undefined || idx === -1) return;
+    this._worker.postMessage({
+      cmd: 'setCollisionFlags',
+      idx,
+      flags
+    });
+  }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
     const FLOATS = 8;
     for (const [meObj, idx] of this._bodyIndexMap) {
-      if (meObj.itIsKinematic) continue;
       const b = idx * FLOATS;
+      // if(isNaN(snap[b])) console.log('SYNC', meObj.name, 'isKinematic:', meObj.isKinematic, snap[b], snap[b + 1], snap[b + 2]);
+      // if(meObj.isKinematic) continue;
+      // const b = idx * FLOATS;
       meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
       meObj.position.inMove = true;
       meObj.rotation.axis.x = snap[b + 3];
@@ -35102,14 +35119,32 @@ class PhysicsBridge {
       });
     });
   }
+  setBodyTransform(idx, x, y, z) {
+    if (idx === undefined || idx === -1) return;
+    this._worker.postMessage({
+      cmd: 'setBodyTransform',
+      idx,
+      x,
+      y,
+      z
+    });
+  }
+  setGravityScale(idx, scale) {
+    if (idx === undefined || idx === -1) return;
+    this._worker.postMessage({
+      cmd: 'setGravityScale',
+      idx,
+      scale
+    });
+  }
   _onMessage(data) {
     switch (data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
+        // if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
-        this._syncToObjects();
+        // this._syncToObjects();
         break;
       case 'snapshot':
         this._snapshot = data.snap;
@@ -35121,6 +35156,10 @@ class PhysicsBridge {
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;
         document.dispatchEvent(this.pCollisionEvent);
+        break;
+      case 'constraintAdded':
+        this._pending.get(data.id)?.(data.idx);
+        this._pending.delete(data.id);
         break;
     }
   }
