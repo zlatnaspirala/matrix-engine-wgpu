@@ -10,6 +10,7 @@ export var flipper = function() {
   };
 
   let flipper = new MatrixEngineWGPU({
+    useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
@@ -502,7 +503,8 @@ export var flipper = function() {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          // state: 4,
+          // state: 4, // ammo kinematic
+          kinematic: true,
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -517,8 +519,7 @@ export var flipper = function() {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          // state: 4,
-          // collide: undefined,
+          kinematic: true, // ONLY JOLT
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -538,7 +539,8 @@ export var flipper = function() {
           geometry: "ConvexHull",
           vertices: m.pin.vertices,
           group: 1,
-          mask: -1 // everything
+          mask: -1, // everything,
+          layer: 3, // LAYER_FLIPPER
         }
       });
 
@@ -555,7 +557,8 @@ export var flipper = function() {
           geometry: "ConvexHull",
           vertices: m.pinR.vertices,
           group: 1,
-          mask: -1 // everything
+          mask: -1,  // everything
+          layer: 3, // LAYER_FLIPPER
         }
       });
 

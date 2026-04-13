@@ -1059,29 +1059,66 @@ export class MeshMorpher {
     };
   }
 
-  static capsule(radius = 0.5, height = 1) {
+  // static capsule(radius = 0.5, height = 1) {
+  //   const halfH = height / 2;
+  //   return (u, v) => {
+  //     if(v < 0.25) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) - halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else if(v > 0.75) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) + halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else {
+  //       const theta = u * Math.PI * 2;
+  //       const y = ((v - 0.25) / 0.5) * height - halfH;
+  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+  //     }
+  //   };
+  // }
+
+  static capsule(radius = 0.5, height = 1, fromZeroY = true) {
     const halfH = height / 2;
+    // If fromZeroY is true, shift everything up so the bottom hemisphere starts at 0
+    const yOffset = fromZeroY ? (halfH + radius) : 0;
+
     return (u, v) => {
       if(v < 0.25) {
+        // Lower Hemisphere
         const theta = -u * Math.PI * 2;
         const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) - halfH,
+          (radius * Math.cos(phi) - halfH) + yOffset,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else if(v > 0.75) {
+        // Upper Hemisphere
         const theta = -u * Math.PI * 2;
         const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) + halfH,
+          (radius * Math.cos(phi) + halfH) + yOffset,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else {
+        // Central Cylinder
         const theta = u * Math.PI * 2;
         const y = ((v - 0.25) / 0.5) * height - halfH;
-        return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+        return [
+          radius * Math.cos(theta),
+          y + yOffset,
+          radius * Math.sin(theta)
+        ];
       }
     };
   }

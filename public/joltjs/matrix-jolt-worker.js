@@ -1,7 +1,50 @@
 const LAYER_NON_MOVING = 0;
 const LAYER_MOVING = 1;
-const NUM_BROAD_PHASE_LAYERS = 2;
-const FLOATS_PER_BODY = 8; // px py pz ax ay az angle pad
+const LAYER_ANCHOR = 2;
+const LAYER_FLIPPER = 3;
+const NUM_OBJ_LAYERS = 4;
+
+const FLOATS_PER_BODY = 8;
+
+const NUM_BROAD_PHASE_LAYERS = 4;
+const BP_LAYER_STATIC = 0;
+const BP_LAYER_DYNAMIC = 1;
+
+function localToWorld(Jolt, body, localOffset) {
+  const rot = body.GetRotation(); // Jolt quaternion
+  // Rotate the offset vector by the quaternion: v' = q * v * q^-1
+  const ox = localOffset[0], oy = localOffset[1], oz = localOffset[2];
+  const qx = rot.GetX(), qy = rot.GetY(), qz = rot.GetZ(), qw = rot.GetW();
+
+  // q * v
+  const tx = qw * ox + qy * oz - qz * oy;
+  const ty = qw * oy + qz * ox - qx * oz;
+  const tz = qw * oz + qx * oy - qy * ox;
+  const tw = -qx * ox - qy * oy - qz * oz;
+
+  // (q*v) * q^-1
+  const rx = tx * qw + tw * (-qx) + ty * (-qz) - tz * (-qy);
+  const ry = ty * qw + tw * (-qy) + tz * (-qx) - tx * (-qz);
+  const rz = tz * qw + tw * (-qz) + tx * (-qy) - ty * (-qx);
+
+  const pos = body.GetPosition();
+  return new Jolt.RVec3(
+    pos.GetX() + rx,
+    pos.GetY() + ry,
+    pos.GetZ() + rz
+  );
+}
+
+function buildConeVerts(radius, height, segments = 16) {
+  const verts = [];
+  const half = height / 2;
+  for(let i = 0;i < segments;i++) {
+    const a = (i / segments) * Math.PI * 2;
+    verts.push(Math.cos(a) * radius, -half, Math.sin(a) * radius);
+  }
+  verts.push(0, half, 0);
+  return verts;
+}
 
 class MatrixJolt {
   constructor() {
@@ -18,11 +61,9 @@ class MatrixJolt {
     this._useSAB = false;
   }
 
-  // Mirrors Ammo _allocBuffer: grows buffer and copies existing data
   _allocBuffer(bodyCount) {
     const FLOATS = bodyCount * FLOATS_PER_BODY;
     const bytes = 4 + FLOATS * 4;
-
     if(typeof SharedArrayBuffer !== 'undefined') {
       const newSab = new SharedArrayBuffer(bytes);
       const newSnap = new Float32Array(newSab, 4);
@@ -49,16 +90,27 @@ class MatrixJolt {
 
   _initPhysics(GROUND_Y) {
     const Jolt = this.Jolt;
-    const objectFilter = new Jolt.ObjectLayerPairFilterTable(2);
+    const objectFilter = new Jolt.ObjectLayerPairFilterTable(NUM_OBJ_LAYERS);
+
+    // existing
     objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_MOVING);
     objectFilter.EnableCollision(LAYER_MOVING, LAYER_MOVING);
 
-    const bpLayerInterface = new Jolt.BroadPhaseLayerInterfaceTable(2, 2);
-    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_NON_MOVING, 0);
-    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_MOVING, 1);
+    // new - anchor collides with world/moving but NOT flipper
+    objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_ANCHOR);
+    objectFilter.EnableCollision(LAYER_MOVING, LAYER_ANCHOR);
+    objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_MOVING);
+    objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_NON_MOVING);
+    // LAYER_FLIPPER <-> LAYER_ANCHOR = omitted
+
+    const bpLayerInterface = new Jolt.BroadPhaseLayerInterfaceTable(NUM_OBJ_LAYERS, NUM_BROAD_PHASE_LAYERS);
+    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_NON_MOVING, BP_LAYER_STATIC);
+    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_MOVING, BP_LAYER_DYNAMIC);
+    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_ANCHOR, BP_LAYER_STATIC);  // kinematic = static BP bucket
+    bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_FLIPPER, BP_LAYER_DYNAMIC);
 
     const bpObjectFilter = new Jolt.ObjectVsBroadPhaseLayerFilterTable(
-      bpLayerInterface, NUM_BROAD_PHASE_LAYERS, objectFilter, 2
+      bpLayerInterface, NUM_BROAD_PHASE_LAYERS, objectFilter, NUM_OBJ_LAYERS
     );
 
     const settings = new Jolt.JoltSettings();
@@ -73,13 +125,10 @@ class MatrixJolt {
     this.bodyInterface = this.physicsSystem.GetBodyInterface();
     this.physicsSystem.SetGravity(new Jolt.Vec3(0, -this.options.gravity, 0));
 
-    // Ground
-    const groundShape = new Jolt.BoxShape(
-      new Jolt.Vec3(this.options.roundDimension, 1, this.options.roundDimension)
-    );
+    const groundShape = new Jolt.BoxShape(new Jolt.Vec3(this.options.roundDimension, 1, this.options.roundDimension));
     const groundSettings = new Jolt.BodyCreationSettings(
       groundShape,
-      new Jolt.RVec3(0, GROUND_Y, 0),
+      new Jolt.RVec3(0, GROUND_Y, 0), // Offset by 1 because box half-extent is 1
       Jolt.Quat.prototype.sIdentity(),
       Jolt.EMotionType_Static,
       LAYER_NON_MOVING
@@ -94,32 +143,21 @@ class MatrixJolt {
     switch(pOptions.geometry) {
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
-      case 'Capsule':
-      case 'CapsuleX':
-      case 'CapsuleZ': body = this._addCapsule(pOptions); break;
-      case 'Cylinder':
-      case 'CylinderX':
-      case 'CylinderZ': body = this._addCylinder(pOptions); break;
-      case 'Cone':
-      case 'ConeX':
-      case 'ConeZ': body = this._addCone(pOptions); break;
+      case 'Capsule': body = this._addCapsule(pOptions); break;
+      case 'Cylinder': body = this._addCylinder(pOptions); break;
+      case 'Cone': body = this._addCone(pOptions); break;
       case 'ConvexHull': body = this._addConvexHull(pOptions); break;
       case 'BvhMesh': body = this._addBvhMesh(pOptions); break;
-      default:
-        console.warn('Unknown geometry:', pOptions.geometry);
-        return -1;
+      default: return -1;
     }
-    if(!body) return -1;
-    return this.rigidBodies.length - 1;
+    return body ? this.rigidBodies.length - 1 : -1;
   }
 
-  // Central registration — mirrors Ammo _registerBody
   _registerBody(body, pOptions) {
     body.name = pOptions.name;
     this.rigidBodies.push(body);
     this._allocBuffer(this.rigidBodies.length);
     const idx = this.rigidBodies.length - 1;
-    // Seed initial position so snapshot is valid before first step
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
@@ -132,13 +170,20 @@ class MatrixJolt {
   _createBody(pOptions, shape) {
     const Jolt = this.Jolt;
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
-    const isKinematic = pOptions.state === 4;
-    const isStatic = pOptions.mass === 0 && !isKinematic;
-
-    const motionType = isStatic ? Jolt.EMotionType_Static
-      : isKinematic ? Jolt.EMotionType_Kinematic
-        : Jolt.EMotionType_Dynamic;
-    const layer = isStatic || isKinematic ? LAYER_NON_MOVING : LAYER_MOVING;
+    const isKinematic = pOptions.kinematic || pOptions.state === 4;
+    const isStatic = (pOptions.mass === 0 || pOptions.mass === undefined) && !isKinematic;
+    const motionType = isStatic ? Jolt.EMotionType_Static : (isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic);
+    // layer resolution
+    let layer;
+    if(pOptions.layer !== undefined) {
+      layer = pOptions.layer;
+    } else if(isKinematic) {
+      layer = LAYER_ANCHOR;
+    } else if(isStatic) {
+      layer = LAYER_NON_MOVING;
+    } else {
+      layer = LAYER_MOVING;
+    }
 
     const settings = new Jolt.BodyCreationSettings(
       shape,
@@ -158,30 +203,40 @@ class MatrixJolt {
     Jolt.destroy(settings);
 
     body.isKinematic = isKinematic;
-    const activation = isStatic ? Jolt.EActivation_DontActivate : Jolt.EActivation_Activate;
-    this.bodyInterface.AddBody(body.GetID(), activation);
-
+    this.bodyInterface.AddBody(body.GetID(), isStatic ? Jolt.EActivation_DontActivate : Jolt.EActivation_Activate);
     return this._registerBody(body, pOptions);
   }
 
   _addSphere(pOptions) {
-    const radius = Array.isArray(pOptions.radius) ? pOptions.radius[0] : (pOptions.radius || 1);
-    return this._createBody(pOptions, new this.Jolt.SphereShape(radius));
+    const r = Array.isArray(pOptions.radius) ? pOptions.radius[0] : (pOptions.radius || 1);
+    return this._createBody(pOptions, new this.Jolt.SphereShape(r));
   }
 
   _addBox(pOptions) {
-    const [sx, sy, sz] = pOptions.scale;
-    return this._createBody(pOptions, new this.Jolt.BoxShape(new this.Jolt.Vec3(sx, sy, sz)));
+    const s = pOptions.scale || [1, 1, 1];
+    return this._createBody(pOptions, new this.Jolt.BoxShape(new this.Jolt.Vec3(s[0], s[1], s[2])));
   }
 
   _addCapsule(pOptions) {
-    return this._createBody(pOptions,
-      new this.Jolt.CapsuleShape((pOptions.height || 2) * 0.5, pOptions.radius || 1));
+    // const h = (pOptions.height || 2) * 0.5; // Jolt uses half-height
+    // const r = pOptions.radius || 1;
+
+    const halfHeight = (pOptions.height || 2) * 0.5;
+    const radius = pOptions.radius || 1;
+
+    const shape = new this.Jolt.CapsuleShape(halfHeight, radius);
+    return this._createBody(pOptions, shape);
+
+    // return this._createBody(pOptions, new this.Jolt.CapsuleShape(h, r));
   }
 
   _addCylinder(pOptions) {
-    return this._createBody(pOptions,
-      new this.Jolt.CylinderShape(pOptions.height / 4, pOptions.radius));
+    const Jolt = this.Jolt;
+    const halfHeight = pOptions.scale ? pOptions.scale[1] : (pOptions.height || 2) * 0.5;
+    const radius = pOptions.scale ? pOptions.scale[0] : (pOptions.radius || 1);
+
+    const shape = new this.Jolt.CylinderShape(halfHeight, radius);
+    return this._createBody(pOptions, shape);
   }
 
   _addCone(pOptions) {
@@ -203,321 +258,259 @@ class MatrixJolt {
 
   _addConvexHull(pOptions) {
     const Jolt = this.Jolt;
-    const verts = new Float32Array(pOptions.vertices);
     const settings = new Jolt.ConvexHullShapeSettings();
-    settings.mHullTolerance = 1e-6;
-    const points = settings.mPoints;
-    const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
-    for(let i = 0;i < verts.length / 3;i++) {
-      const x = verts[i * 3] * sx, y = verts[i * 3 + 1] * sy, z = verts[i * 3 + 2] * sz;
-      if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-      const v = new Jolt.Vec3(x, y, z);
-      points.push_back(v);
-      Jolt.destroy(v);
+    const verts = pOptions.vertices;
+    for(let i = 0;i < verts.length;i += 3) {
+      settings.mPoints.push_back(new Jolt.Vec3(verts[i], verts[i + 1], verts[i + 2]));
     }
-    if(points.size() < 4) {Jolt.destroy(settings); return null;}
     const result = settings.Create();
-    if(result.HasError()) {Jolt.destroy(settings); return null;}
-    const shape = result.Get();
-    const com = shape.GetCenterOfMass();
-    pOptions.position.x -= com.GetX();
-    pOptions.position.y -= com.GetY();
-    pOptions.position.z -= com.GetZ();
-    const body = this._createBody(pOptions, shape);
+    const shape = result.Get(); // Critical for Hulls
     Jolt.destroy(settings);
-    return body;
+    return this._createBody(pOptions, shape);
   }
 
   _addBvhMesh(pOptions) {
     const Jolt = this.Jolt;
+    const settings = new Jolt.MeshShapeSettings();
     const v = pOptions.vertices;
     const idx = pOptions.indices;
-    const settings = new Jolt.MeshShapeSettings();
-    const triangles = settings.mTriangleVertices;
-    const indexed = settings.mIndexedTriangles;
-
-    // Push all vertices
-    for(let i = 0;i < v.length;i += 3) {
-      const jv = new Jolt.Float3(v[i], v[i + 1], v[i + 2]);
-      triangles.push_back(jv);
-      Jolt.destroy(jv);
-    }
-    // Push all triangles
-    for(let i = 0;i < idx.length;i += 3) {
-      const tri = new Jolt.IndexedTriangle(idx[i], idx[i + 1], idx[i + 2], 0);
-      indexed.push_back(tri);
-      Jolt.destroy(tri);
-    }
-
-    const result = settings.Create();
-    if(result.HasError()) {
-      console.error('[jolt] BvhMesh error:', result.GetError().c_str());
-      Jolt.destroy(settings);
-      return null;
-    }
-    const shape = result.Get();
+    for(let i = 0;i < v.length;i += 3) settings.mTriangleVertices.push_back(new Jolt.Float3(v[i], v[i + 1], v[i + 2]));
+    for(let i = 0;i < idx.length;i += 3) settings.mIndexedTriangles.push_back(new Jolt.IndexedTriangle(idx[i], idx[i + 1], idx[i + 2], 0));
+    const shape = settings.Create().Get();
     Jolt.destroy(settings);
-
-    // BvhMesh is always static
-    const origMass = pOptions.mass;
-    pOptions.mass = 0;
-    const body = this._createBody(pOptions, shape);
-    pOptions.mass = origMass;
-    return body;
+    return this._createBody(pOptions, shape);
   }
 
-  // COMMANDS
+  // --- COMMAND INTERFACE ---
 
   applyImpulse(idx, x, y, z) {
-    const body = this.rigidBodies[idx];
-    if(!body) return;
-    const v = new this.Jolt.Vec3(x, y, z);
-    this.bodyInterface.ActivateBody(body.GetID());
-    this.bodyInterface.AddImpulse(body.GetID(), v);
-    this.Jolt.destroy(v);
+    const b = this.rigidBodies[idx];
+    if(b) this.bodyInterface.AddImpulse(b.GetID(), new this.Jolt.Vec3(x, y, z));
+  }
+
+  applyTorque(idx, x, y, z) {
+    const b = this.rigidBodies[idx];
+    if(b) this.bodyInterface.AddTorque(b.GetID(), new this.Jolt.Vec3(x, y, z));
+  }
+
+  shootBody(idx, lx, ly, lz, ax, ay, az) {
+    const b = this.rigidBodies[idx];
+    if(b) {
+      this.bodyInterface.SetLinearVelocity(b.GetID(), new this.Jolt.Vec3(lx, ly, lz));
+      this.bodyInterface.SetAngularVelocity(b.GetID(), new this.Jolt.Vec3(ax, ay, az));
+    }
   }
 
   setLinearVelocity(idx, x, y, z) {
-    const body = this.rigidBodies[idx];
-    if(!body) return;
-    this.bodyInterface.SetLinearVelocity(body.GetID(), new this.Jolt.Vec3(x, y, z));
+    const b = this.rigidBodies[idx];
+    if(b) this.bodyInterface.SetLinearVelocity(b.GetID(), new this.Jolt.Vec3(x, y, z));
   }
 
-  setKinematicTransform(idx, x, y, z) {
-    const body = this.rigidBodies[idx];
-    if(!body || !body.isKinematic) return;
-    const Jolt = this.Jolt;
-    this.bodyInterface.MoveKinematic(
-      body.GetID(),
-      new Jolt.RVec3(x, y, z),
-      Jolt.Quat.prototype.sIdentity(),
-      1 / 60
-    );
+  setActivationState(idx, state) {
+    const b = this.rigidBodies[idx];
+    if(b && state === 1) this.bodyInterface.ActivateBody(b.GetID());
+  }
+
+  activate(idx, force) {
+    const b = this.rigidBodies[idx];
+    if(b) this.bodyInterface.ActivateBody(b.GetID());
+  }
+
+  setDamping(idx, linear, angular) {
+    const b = this.rigidBodies[idx];
+    const mp = b?.GetMotionProperties();
+    if(mp) {
+      mp.SetLinearDamping(linear);
+      mp.SetAngularDamping(angular);
+    }
+  }
+
+  setRestitution(idx, s) {
+    const b = this.rigidBodies[idx];
+    if(b) b.SetRestitution(s);
+  }
+
+  setFriction(idx, s) {
+    const b = this.rigidBodies[idx];
+    if(b) b.SetFriction(s);
   }
 
   setGravity(x, y, z) {
-    const v = new this.Jolt.Vec3(x, y, z);
-    this.physicsSystem.SetGravity(v);
-    this.Jolt.destroy(v);
-  }
-
-  setBodyTransform(idx, x, y, z) {
-    const body = this.rigidBodies[idx];
-    if(!body) return;
-    const Jolt = this.Jolt;
-    const pos = new Jolt.RVec3(x, y, z);
-    this.bodyInterface.SetPosition(body.GetID(), pos, Jolt.EActivation_Activate);
-    this.bodyInterface.SetLinearVelocity(body.GetID(), new Jolt.Vec3(0, 0, 0));
-    this.bodyInterface.SetAngularVelocity(body.GetID(), new Jolt.Vec3(0, 0, 0));
-    Jolt.destroy(pos);
+    this.physicsSystem.SetGravity(new this.Jolt.Vec3(x, y, z));
   }
 
   setGravityScale(idx, scale) {
-    const body = this.rigidBodies[idx];
-    if(!body) return;
-    // Jolt doesn't have per-body gravity scale directly; apply via override
-    // Approximate: set gravity factor via body motion properties
-    body.GetMotionProperties?.()?.SetGravityFactor?.(scale);
+    const b = this.rigidBodies[idx];
+    const mp = b?.GetMotionProperties();
+    if(mp) mp.SetGravityFactor(scale);
+  }
+
+  setBodyTransform(idx, x, y, z) {
+    const b = this.rigidBodies[idx];
+    if(b) this.bodyInterface.SetPosition(b.GetID(), new this.Jolt.RVec3(x, y, z), this.Jolt.EActivation_Activate);
+  }
+
+  setKinematicTransform(idx, x, y, z) {
+    const b = this.rigidBodies[idx];
+    if(b) this.bodyInterface.MoveKinematic(b.GetID(), new this.Jolt.RVec3(x, y, z), this.Jolt.Quat.prototype.sIdentity(), 1 / 60);
   }
 
   clearBody(idx) {
-    const body = this.rigidBodies[idx];
-    if(!body) return;
-    const Jolt = this.Jolt;
-    const zero = new Jolt.Vec3(0, 0, 0);
-    this.bodyInterface.SetLinearVelocity(body.GetID(), zero);
-    this.bodyInterface.SetAngularVelocity(body.GetID(), zero);
-    Jolt.destroy(zero);
+    const b = this.rigidBodies[idx];
+    if(b) {
+      const zero = new this.Jolt.Vec3(0, 0, 0);
+      this.bodyInterface.SetLinearVelocity(b.GetID(), zero);
+      this.bodyInterface.SetAngularVelocity(b.GetID(), zero);
+    }
   }
 
-  // lx/ly/lz = linear factor mask, ax/ay/az = angular factor mask
-  // Jolt doesn't have per-axis factor setters like Ammo, so we approximate:
-  // lock axes by setting the corresponding velocity components to zero after each step
-  // is not feasible here — instead store the factors and apply in step, or just set velocity directly.
-  // For the common use case (projectile: full linear, no angular), we just set the velocities.
-  shootBody(idx, lx, ly, lz, ax, ay, az) {
-    const body = this.rigidBodies[idx];
-    if(!body) return;
-    const Jolt = this.Jolt;
-    const id = body.GetID();
-    // Apply linear factor by zeroing out axes where lx/ly/lz == 0
-    const vel = this.bodyInterface.GetLinearVelocity(id);
-    this.bodyInterface.SetLinearVelocity(id, new Jolt.Vec3(
-      vel.GetX() * lx, vel.GetY() * ly, vel.GetZ() * lz
-    ));
-    const ang = this.bodyInterface.GetAngularVelocity(id);
-    this.bodyInterface.SetAngularVelocity(id, new Jolt.Vec3(
-      ang.GetX() * ax, ang.GetY() * ay, ang.GetZ() * az
-    ));
+  explode(idx, x, y, z, radius, strength) {
+    const b = this.rigidBodies[idx];
+    if(!b) return;
+    const bPos = this.bodyInterface.GetPosition(b.GetID());
+    const dx = bPos.GetX() - x, dy = bPos.GetY() - y, dz = bPos.GetZ() - z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if(dist < radius) {
+      const force = (1 - dist / radius) * strength;
+      this.applyImpulse(idx, (dx / dist) * force, (dy / dist) * force, (dz / dist) * force);
+    }
   }
 
   addHingeConstraint(idxA, idxB, pOptions, msgID) {
     const Jolt = this.Jolt;
+    if(!this.constraints) this.constraints = [];
+
     const bodyA = this.rigidBodies[idxA];
     const bodyB = this.rigidBodies[idxB];
-    if(!bodyA || !bodyB) {
-      console.warn('addHingeConstraint: bodies not found');
-      self.postMessage({cmd: 'constraintAdded', id: msgID, idx: -1});
-      return;
-    }
+
+    const groupFilter = new Jolt.GroupFilterTable(1);
+    // subgroup 0 members don't collide with each other
+    bodyA.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // anchor
+    bodyB.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // flipp
+
+    if(!bodyA || !bodyB) return null;
+
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
     const axis = pOptions.axis || [0, 1, 0];
 
-    const settings = new Jolt.HingeConstraintSettings();
-    settings.mPoint1 = new Jolt.RVec3(pivotA[0], pivotA[1], pivotA[2]);
-    settings.mPoint2 = new Jolt.RVec3(pivotB[0], pivotB[1], pivotB[2]);
-    settings.mHingeAxis1 = new Jolt.Vec3(axis[0], axis[1], axis[2]);
-    settings.mHingeAxis2 = new Jolt.Vec3(axis[0], axis[1], axis[2]);
+
+    console.log("hinge at index:", bodyA);
+    console.log("hinge at index:", bodyB);
+
+    // Jolt HingeConstraintSettings uses WORLD-space points.
+    // Convert local pivots → world space using each body's current transform.
+    const posA = bodyA.GetPosition();
+    const posB = bodyB.GetPosition();
+
+    const worldPivotA = localToWorld(Jolt, bodyA, pivotA);
+    const worldPivotB = localToWorld(Jolt, bodyB, pivotB);
+
+    // Build a guaranteed-perpendicular normal axis
+    const ax = axis[0], ay = axis[1], az = axis[2];
+    let nx, ny, nz;
+    if(Math.abs(ax) <= Math.abs(ay) && Math.abs(ax) <= Math.abs(az)) {
+      // X is smallest component — cross with X axis
+      nx = 0; ny = -az; nz = ay;
+    } else if(Math.abs(ay) <= Math.abs(az)) {
+      nx = az; ny = 0; nz = -ax;
+    } else {
+      nx = -ay; ny = ax; nz = 0;
+    }
+    // Normalize
+    const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    nx /= nLen; ny /= nLen; nz /= nLen;
+
+    const hingeSettings = new Jolt.HingeConstraintSettings();
+    hingeSettings.mPoint1 = worldPivotA;
+    hingeSettings.mPoint2 = worldPivotB;
+    hingeSettings.mHingeAxis1 = new Jolt.Vec3(ax, ay, az);
+    hingeSettings.mHingeAxis2 = new Jolt.Vec3(ax, ay, az);
+    hingeSettings.mNormalAxis1 = new Jolt.Vec3(nx, ny, nz);
+    hingeSettings.mNormalAxis2 = new Jolt.Vec3(nx, ny, nz);
 
     if(pOptions.limits) {
-      settings.mLimitsMin = pOptions.limits[0];
-      settings.mLimitsMax = pOptions.limits[1];
+      hingeSettings.mLimitsMin = pOptions.limits[0];
+      hingeSettings.mLimitsMax = pOptions.limits[1];
     }
 
-    const constraint = this.physicsSystem.AddConstraint(settings.Create(bodyA, bodyB));
-    Jolt.destroy(settings);
+    const constraint = hingeSettings.Create(bodyA, bodyB);
+
+    constraint.SetNumVelocityStepsOverride(0);
+
+
+    this.physicsSystem.AddConstraint(constraint);
 
     constraint.name = pOptions.name;
     this.constraints.push(constraint);
     const constraintIdx = this.constraints.length - 1;
+
+    console.log("hinge at index:", constraintIdx);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
 
-  enableAngularMotor(constraintIdx, enable, targetVelocity, maxMotorImpulse) {
-    const c = this.constraints[constraintIdx];
+  enableAngularMotor(cIdx, enable, targetVel, maxTorque) {
+    const Jolt = this.Jolt;
+    const c = this.constraints[cIdx];
     if(!c) return;
+
+    const hinge = Jolt.castObject(c, Jolt.HingeConstraint);
+    hinge.SetMotorState(enable ? Jolt.EMotorState_Velocity : Jolt.EMotorState_Off);
+
     if(enable) {
-      c.SetMotorState(this.Jolt.EMotorState_Velocity);
-      c.SetTargetAngularVelocity(targetVelocity);
-    } else {
-      c.SetMotorState(this.Jolt.EMotorState_Off);
+      hinge.SetTargetAngularVelocity(targetVel);
+      const ms = hinge.GetMotorSettings();
+      ms.mMaxTorqueLimit = Math.abs(maxTorque);
+      ms.mMinTorqueLimit = -Math.abs(maxTorque);
     }
   }
-
-  // STEP + SNAPSHOT WRITE
   step() {
     if(!this.joltInterface) return;
-    const Jolt = this.Jolt;
-    const bi = this.bodyInterface;
-    for(let i = 0;i < this.speedUpSimulation;i++) {
-      this.joltInterface.Step(1 / 60, 1);
-    }
+    for(let i = 0;i < this.speedUpSimulation;i++) this.joltInterface.Step(1 / 60, 1);
     const snap = this._snapshot;
     if(!snap) return;
     this.rigidBodies.forEach((body, i) => {
       const base = i * FLOATS_PER_BODY;
       const id = body.GetID();
-
-      if(body.isKinematic) {
-        // Mirror Ammo: kinematic bodies write their current transform so
-        // the main thread snapshot stays consistent
-        const pos = bi.GetPosition(id);
-        snap[base + 0] = pos.GetX();
-        snap[base + 1] = pos.GetY();
-        snap[base + 2] = pos.GetZ();
-        const rot = bi.GetRotation(id);
-        const qx = rot.GetX(), qy = rot.GetY(), qz = rot.GetZ(), qw = rot.GetW();
-        const sinHalf = Math.sqrt(qx * qx + qy * qy + qz * qz);
-        const angle = 2 * Math.atan2(sinHalf, qw);
-        if(sinHalf > 0.0001) {
-          const s = 1 / sinHalf;
-          snap[base + 3] = qx * s;
-          snap[base + 4] = qy * s;
-          snap[base + 5] = qz * s;
-        } else {
-          snap[base + 3] = 0; snap[base + 4] = 1; snap[base + 5] = 0;
-        }
-        snap[base + 6] = angle;
-        snap[base + 7] = 0;
-        return;
-      }
-
-      const pos = bi.GetPosition(id);
-      const px = pos.GetX();
-      if(isNaN(px)) return;
-      snap[base + 0] = px;
-      snap[base + 1] = pos.GetY();
-      snap[base + 2] = pos.GetZ();
-      const rot = bi.GetRotation(id);
+      const pos = this.bodyInterface.GetPosition(id);
+      snap[base + 0] = pos.GetX(); snap[base + 1] = pos.GetY(); snap[base + 2] = pos.GetZ();
+      const rot = this.bodyInterface.GetRotation(id);
       const qx = rot.GetX(), qy = rot.GetY(), qz = rot.GetZ(), qw = rot.GetW();
       const sinHalf = Math.sqrt(qx * qx + qy * qy + qz * qz);
-      const angle = 2 * Math.atan2(sinHalf, qw);
+      snap[base + 6] = 2 * Math.atan2(sinHalf, qw);
       if(sinHalf > 0.0001) {
-        const s = 1 / sinHalf;
-        snap[base + 3] = qx * s;
-        snap[base + 4] = qy * s;
-        snap[base + 5] = qz * s;
+        snap[base + 3] = qx / sinHalf; snap[base + 4] = qy / sinHalf; snap[base + 5] = qz / sinHalf;
       } else {
         snap[base + 3] = 0; snap[base + 4] = 1; snap[base + 5] = 0;
       }
-      snap[base + 6] = angle;
-      snap[base + 7] = 0;
     });
   }
 }
-
-function buildConeVerts(radius, height, segments = 16) {
-  const verts = [];
-  const half = height / 2;
-  for(let i = 0;i < segments;i++) {
-    const a = (i / segments) * Math.PI * 2;
-    verts.push(Math.cos(a) * radius, -half, Math.sin(a) * radius);
-  }
-  verts.push(0, half, 0);
-  return verts;
-}
-
-// ─── Worker message handler ───────────────────────────────────────────────────
 
 const jolt = new MatrixJolt();
 
 self.onmessage = async ({data}) => {
   const {cmd, id} = data;
   switch(cmd) {
-    case 'init': {
-      await jolt.init(data.options);
-      self.postMessage({cmd: 'ready', id});
-      break;
-    }
-    case 'getBodyIndexByName': {
-      const body = jolt.rigidBodies.find(b => b.name === data.name);
-      const idx = body ? jolt.rigidBodies.indexOf(body) : -1;
-      self.postMessage({cmd: 'bodyIndex', id: data.id, idx});
-      break;
-    }
-    case 'addBody': {
-      const idx = jolt.addBody(data.pOptions);
-      self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab});
-      break;
-    }
-    case 'step': {
-      jolt.step();
-      if(!jolt._useSAB && jolt._snapshot) {
-        const copy = jolt._snapshot.slice();
-        self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
-      }
-      break;
-    }
-    case 'applyImpulse':
-      jolt.applyImpulse(data.idx, data.x, data.y, data.z); break;
-    case 'setLinearVelocity':
-      jolt.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
-    case 'setKinematicTransform':
-      jolt.setKinematicTransform(data.idx, data.x, data.y, data.z); break;
-    case 'setGravity':
-      jolt.setGravity(data.x, data.y, data.z); break;
-    case 'setBodyTransform':
-      jolt.setBodyTransform(data.idx, data.x, data.y, data.z); break;
-    case 'setGravityScale':
-      jolt.setGravityScale(data.idx, data.scale); break;
-    case 'shootBody':
-      jolt.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
-    case 'clearBody':
-      jolt.clearBody(data.idx); break;
-    case 'addHingeConstraint':
-      jolt.addHingeConstraint(data.idxA, data.idxB, data.options, data.id); break;
-    case 'enableAngularMotor':
-      jolt.enableAngularMotor(data.constraintIdx, data.enable, data.targetVelocity, data.maxMotorImpulse); break;
+    case 'init': await jolt.init(data.options); self.postMessage({cmd: 'ready', id}); break;
+    case 'addBody': const idx = jolt.addBody(data.pOptions); self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab}); break;
+    case 'step': jolt.step(); if(!jolt._useSAB && jolt._snapshot) {const copy = jolt._snapshot.slice(); self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);} break;
+    case 'applyImpulse': jolt.applyImpulse(data.idx, data.x, data.y, data.z); break;
+    case 'shootBody': jolt.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
+    case 'setActivationState': jolt.setActivationState(data.idx, data.s); break;
+    case 'activate': jolt.activate(data.idx, data.s); break;
+    case 'setDamping': jolt.setDamping(data.idx, data.l, data.a); break;
+    case 'setRestitution': jolt.setRestitution(data.idx, data.s); break;
+    case 'setFriction': jolt.setFriction(data.idx, data.s); break;
+    case 'applyTorque': jolt.applyTorque(data.idx, data.x, data.y, data.z); break;
+    case 'setLinearVelocity': jolt.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setKinematicTransform': jolt.setKinematicTransform(data.idx, data.x, data.y, data.z); break;
+    case 'setGravity': jolt.setGravity(data.x, data.y, data.z); break;
+    case 'addHingeConstraint': jolt.addHingeConstraint(data.idxA, data.idxB, data.options, data.id); break;
+    case 'enableAngularMotor': jolt.enableAngularMotor(data.constraintIdx, data.enable, data.targetVelocity, data.maxMotorImpulse); break;
+    case 'clearBody': jolt.clearBody(data.idx); break;
+    case 'setBodyTransform': jolt.setBodyTransform(data.idx, data.x, data.y, data.z); break;
+    case 'setGravityScale': jolt.setGravityScale(data.idx, data.scale); break;
+    case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
   }
 };

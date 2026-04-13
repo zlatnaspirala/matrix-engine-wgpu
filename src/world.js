@@ -129,6 +129,7 @@ export default class MatrixEngineWGPU {
         this.matrixPhysics = new PhysicsBridge('./joltjs/matrix-jolt-worker.js');
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = 'JOLT';
       } else {
         this.matrixPhysics = new PhysicsBridge('./ammojs/matrix-ammo-worker.js');
         const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS;
@@ -138,6 +139,7 @@ export default class MatrixEngineWGPU {
           roundDimensionY: options.PHYSICS_GROUND_BYZ ? options.PHYSICS_GROUND_BYZ : MEConfig.PHYSICS_GROUND_BYX
         });
         this.matrixPhysics.bodyIndexMap = new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = 'AMMO';
       }
     }
     // cache

@@ -62,18 +62,18 @@ export var physicsPlayground = function() {
       //   ["./res/textures/rust.jpg",],
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
-      let strength = 1;
+      let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
-        // app.matrixPhysics.applyImpulse(b, new PVector(
-        //   e.detail.rayDirection[0] * strength,
-        //   e.detail.rayDirection[1] * strength,
-        //   e.detail.rayDirection[2] * strength));
-        app.matrixPhysics.explode(b,
-          e.detail.hitObject.position.x * strength,
-          e.detail.hitObject.position.y * strength,
-          e.detail.hitObject.position.z * strength, 4, 1);
+        app.matrixPhysics.applyImpulse(b, new PVector(
+          e.detail.rayDirection[0] * strength,
+          e.detail.rayDirection[1] * strength,
+          e.detail.rayDirection[2] * strength));
+      //   app.matrixPhysics.explode(b,
+      //     e.detail.hitObject.position.x * strength,
+      //     e.detail.hitObject.position.y * strength,
+      //     e.detail.hitObject.position.z * strength, 4, 1);
       });
     })
 
@@ -173,7 +173,8 @@ export var physicsPlayground = function() {
           mass: 1,
           radius: 1.0,
           height: 2.0
-        }
+        },
+        raycast: {enabled: true, radius: 1}
       });
 
       physicsPlayground.addProceduralMeshObj({
@@ -192,7 +193,8 @@ export var physicsPlayground = function() {
           mass: 1,
           radius: 1.0,
           height: 2.0
-        }
+        },
+        raycast: {enabled: true, radius: 1}
       });
 
       physicsPlayground.addProceduralMeshObj({

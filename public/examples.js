@@ -221,6 +221,7 @@ var flipper = function () {
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
+    useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -834,7 +835,8 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          // state: 4,
+          // state: 4, // ammo kinematic
+          kinematic: true,
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -852,8 +854,8 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          // state: 4,
-          // collide: undefined,
+          kinematic: true,
+          // ONLY JOLT
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -878,7 +880,9 @@ var flipper = function () {
           geometry: "ConvexHull",
           vertices: m.pin.vertices,
           group: 1,
-          mask: -1 // everything
+          mask: -1,
+          // everything,
+          layer: 3 // LAYER_FLIPPER
         }
       });
       flipper.addMeshObj({
@@ -900,7 +904,9 @@ var flipper = function () {
           geometry: "ConvexHull",
           vertices: m.pinR.vertices,
           group: 1,
-          mask: -1 // everything
+          mask: -1,
+          // everything
+          layer: 3 // LAYER_FLIPPER
         }
       });
       flipper.canvas.addEventListener("ray.hit.event", e => {
@@ -2649,15 +2655,15 @@ var physicsPlayground = function () {
       //   ["./res/textures/rust.jpg",],
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
-      let strength = 1;
+      let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
-        // app.matrixPhysics.applyImpulse(b, new PVector(
-        //   e.detail.rayDirection[0] * strength,
-        //   e.detail.rayDirection[1] * strength,
-        //   e.detail.rayDirection[2] * strength));
-        app.matrixPhysics.explode(b, e.detail.hitObject.position.x * strength, e.detail.hitObject.position.y * strength, e.detail.hitObject.position.z * strength, 4, 1);
+        app.matrixPhysics.applyImpulse(b, new _matrixClass.PVector(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength));
+        //   app.matrixPhysics.explode(b,
+        //     e.detail.hitObject.position.x * strength,
+        //     e.detail.hitObject.position.y * strength,
+        //     e.detail.hitObject.position.z * strength, 4, 1);
       });
     });
     async function onGround(m) {
@@ -2808,6 +2814,10 @@ var physicsPlayground = function () {
           mass: 1,
           radius: 1.0,
           height: 2.0
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
         }
       });
       physicsPlayground.addProceduralMeshObj({
@@ -2840,6 +2850,10 @@ var physicsPlayground = function () {
           mass: 1,
           radius: 1.0,
           height: 2.0
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
         }
       });
       physicsPlayground.addProceduralMeshObj({
@@ -38681,21 +38695,54 @@ class MeshMorpher {
       return [h, r * Math.cos(theta), r * Math.sin(theta)];
     };
   }
-  static capsule(radius = 0.5, height = 1) {
+
+  // static capsule(radius = 0.5, height = 1) {
+  //   const halfH = height / 2;
+  //   return (u, v) => {
+  //     if(v < 0.25) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) - halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else if(v > 0.75) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) + halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else {
+  //       const theta = u * Math.PI * 2;
+  //       const y = ((v - 0.25) / 0.5) * height - halfH;
+  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+  //     }
+  //   };
+  // }
+
+  static capsule(radius = 0.5, height = 1, fromZeroY = true) {
     const halfH = height / 2;
+    // If fromZeroY is true, shift everything up so the bottom hemisphere starts at 0
+    const yOffset = fromZeroY ? halfH + radius : 0;
     return (u, v) => {
       if (v < 0.25) {
+        // Lower Hemisphere
         const theta = -u * Math.PI * 2;
         const phi = v / 0.25 * (Math.PI / 2) + Math.PI / 2;
-        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) - halfH, radius * Math.sin(phi) * Math.sin(theta)];
+        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) - halfH + yOffset, radius * Math.sin(phi) * Math.sin(theta)];
       } else if (v > 0.75) {
+        // Upper Hemisphere
         const theta = -u * Math.PI * 2;
         const phi = (v - 0.75) / 0.25 * (Math.PI / 2);
-        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) + halfH, radius * Math.sin(phi) * Math.sin(theta)];
+        return [radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi) + halfH + yOffset, radius * Math.sin(phi) * Math.sin(theta)];
       } else {
+        // Central Cylinder
         const theta = u * Math.PI * 2;
         const y = (v - 0.25) / 0.5 * height - halfH;
-        return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+        return [radius * Math.cos(theta), y + yOffset, radius * Math.sin(theta)];
       }
     };
   }
@@ -59212,6 +59259,7 @@ class MatrixEngineWGPU {
           groundY: -1
         });
         this.matrixPhysics.bodyIndexMap = new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = 'JOLT';
       } else {
         this.matrixPhysics = new _bridge.PhysicsBridge('./ammojs/matrix-ammo-worker.js');
         const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS;
@@ -59222,6 +59270,7 @@ class MatrixEngineWGPU {
           roundDimensionY: options.PHYSICS_GROUND_BYZ ? options.PHYSICS_GROUND_BYZ : _meConfig.MEConfig.PHYSICS_GROUND_BYX
         });
         this.matrixPhysics.bodyIndexMap = new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = 'AMMO';
       }
     }
     // cache
