@@ -90,7 +90,7 @@ export var flipper = function() {
         onGround,
         {scale: [1, 1, 1]}
       );
-      flipper.matrixPhysics.speedUpSimulation = 2;
+      flipper.matrixPhysics.speedUpSimulation = 3;
     });
 
     async function onGround(m) {
@@ -106,7 +106,9 @@ export var flipper = function() {
         physics: {
           enabled: true,
           mass: 5,
-          geometry: "Sphere"
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
         },
         raycast: {enabled: false, radius: 1},
         pointerEffect: {
@@ -176,7 +178,7 @@ export var flipper = function() {
       let glass = flipper.addMeshObj({
         material: {type: 'mirror'},
         position: {x: 0, y: 2.1, z: -20.5},
-        scale: [6, 0.05, 15],
+        scale: [6, 0.05, 14.5],
         texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'glass',
         mesh: m.glass,
@@ -195,7 +197,7 @@ export var flipper = function() {
         {x: 0, y: 0.7, z: -22},
         {x: 2, y: 0.7, z: -24},
         {x: -2, y: 0.7, z: -26},
-        {x: -3, y: 0.7, z: -32}
+        {x: -2.9, y: 0.7, z: -31.5}
       ];
 
       bumperPositions.forEach((p, i) => {
@@ -209,7 +211,9 @@ export var flipper = function() {
           physics: {
             enabled: true,
             mass: 0,
-            geometry: "Sphere"
+            geometry: "Sphere",
+            group: 2,
+            mask: -1 & ~1, // collide with everything EXCEPT group 1 (ground)
           },
           raycast: {enabled: true, radius: 1}
         });
@@ -226,14 +230,16 @@ export var flipper = function() {
         physics: {
           enabled: true,
           mass: 0,
-          geometry: "Cube"
+          geometry: "Cube",
+          group: 2,
+          mask: -1 & ~1, // collide with everything EXCEPT group 1 (ground)
         }
       });
 
       // Inside flipper
       const topCurveInLeft = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 5.2, y: 0.9, z: -36},
+        position: {x: 4.5, y: 0.9, z: -36},
         scale: [1, 0.8, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'vrc-left',
@@ -248,7 +254,7 @@ export var flipper = function() {
 
       const jumper1 = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: -4.5, y: 0.4, z: -29.5},
+        position: {x: -4.8, y: 0.4, z: -29.3},
         scale: [1, 1, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'jumper1',
@@ -257,7 +263,9 @@ export var flipper = function() {
           enabled: true,
           mass: 0,
           geometry: "ConvexHull",
-          vertices: m.jumper.vertices
+          vertices: m.jumper.vertices,
+          group: 2,
+          mask: -1 & ~1, // collide with everything EXCEPT group 1 (ground)
         }
       });
 
@@ -303,22 +311,26 @@ export var flipper = function() {
         physics: {
           enabled: true,
           mass: 0,
-          geometry: "Cube"
+          geometry: "Cube",
+          group: 2,
+          mask: -1 & ~1, // collide with everything EXCEPT group 1 (ground)
         }
       });
 
       const BEdgeYAngle = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 0.5, z: -6.5},
+        position: {x: -0.5, y: 0.5, z: -6.5},
         rotation: {x: 0, y: -1.9, z: 0},
-        scale: [5.95, 0.4, 0.1],
+        scale: [4.5, 0.4, 0.1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bottomEdge2',
         mesh: m.cube,
         physics: {
           enabled: true,
           mass: 0,
-          geometry: "Cube"
+          geometry: "Cube",
+          group: 1,
+          mask: -1 & ~1, // collide with everything EXCEPT group 1 (ground)
         }
       });
 
@@ -432,7 +444,7 @@ export var flipper = function() {
         hingeRight.then((idx) => {
           hingeRightID = idx;
           app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+          app.matrixPhysics.enableAngularMotor(idx, true, -25, 500);
         })
 
         REdge.setUVScale(1, 1);
@@ -566,7 +578,7 @@ export var flipper = function() {
         const body0Name = e.detail.body0Name;
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
-        console.log('collision : ', body1Name)
+        // console.log('collision : ', body1Name)
         if(body1Name.startsWith("bumper")) {
           // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if(ball != -1) {

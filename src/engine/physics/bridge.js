@@ -157,12 +157,10 @@ export class PhysicsBridge {
   }
 
   addHingeConstraint(idxA, idxB, options) {
-
     if(idxA === undefined || idxB === undefined || idxA === -1 || idxB === -1) {
       console.log('error in addHingeConstraint !!! ');
       return Promise.resolve(-1);
     }
-    // this._worker.postMessage({cmd: 'addHingeConstraint', idxA, idxB, options});
     return this._send('addHingeConstraint', {idxA, idxB, options});
   }
 
@@ -186,9 +184,7 @@ export class PhysicsBridge {
     const FLOATS = 8;
     for(const [meObj, idx] of this._bodyIndexMap) {
       const b = idx * FLOATS;
-      // if(isNaN(snap[b])) console.log('SYNC', meObj.name, 'isKinematic:', meObj.isKinematic, snap[b], snap[b + 1], snap[b + 2]);
       // if(meObj.isKinematic) continue;
-      // const b = idx * FLOATS;
       meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
       meObj.position.inMove = true;
       meObj.rotation.axis.x = snap[b + 3];
@@ -221,17 +217,15 @@ export class PhysicsBridge {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        // if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
-        // this._syncToObjects();
         break;
       case 'snapshot':
         this._snapshot = data.snap;
         this._syncToObjects();
         break;
       case 'collision':
-        console.log('collision : ', data)
+        // console.log('collision : ', data)
         this.pCollisionEvent.detail.body0Name = data.body0Name;
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;

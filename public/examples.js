@@ -316,7 +316,7 @@ var flipper = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      flipper.matrixPhysics.speedUpSimulation = 2;
+      flipper.matrixPhysics.speedUpSimulation = 3;
     });
     async function onGround(m) {
       // Ball
@@ -337,7 +337,9 @@ var flipper = function () {
         physics: {
           enabled: true,
           mass: 5,
-          geometry: "Sphere"
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
         },
         raycast: {
           enabled: false,
@@ -438,7 +440,7 @@ var flipper = function () {
           y: 2.1,
           z: -20.5
         },
-        scale: [6, 0.05, 15],
+        scale: [6, 0.05, 14.5],
         texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'glass',
         mesh: m.glass,
@@ -466,9 +468,9 @@ var flipper = function () {
         y: 0.7,
         z: -26
       }, {
-        x: -3,
+        x: -2.9,
         y: 0.7,
-        z: -32
+        z: -31.5
       }];
       bumperPositions.forEach((p, i) => {
         flipper.addMeshObj({
@@ -483,7 +485,9 @@ var flipper = function () {
           physics: {
             enabled: true,
             mass: 0,
-            geometry: "Sphere"
+            geometry: "Sphere",
+            group: 2,
+            mask: -1 & ~1 // collide with everything EXCEPT group 1 (ground)
           },
           raycast: {
             enabled: true,
@@ -509,7 +513,9 @@ var flipper = function () {
         physics: {
           enabled: true,
           mass: 0,
-          geometry: "Cube"
+          geometry: "Cube",
+          group: 2,
+          mask: -1 & ~1 // collide with everything EXCEPT group 1 (ground)
         }
       });
 
@@ -519,7 +525,7 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: 5.2,
+          x: 4.5,
           y: 0.9,
           z: -36
         },
@@ -539,9 +545,9 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: -4.5,
+          x: -4.8,
           y: 0.4,
-          z: -29.5
+          z: -29.3
         },
         scale: [1, 1, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -551,7 +557,9 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "ConvexHull",
-          vertices: m.jumper.vertices
+          vertices: m.jumper.vertices,
+          group: 2,
+          mask: -1 & ~1 // collide with everything EXCEPT group 1 (ground)
         }
       });
       const bottomLeft = flipper.addMeshObj({
@@ -620,7 +628,9 @@ var flipper = function () {
         physics: {
           enabled: true,
           mass: 0,
-          geometry: "Cube"
+          geometry: "Cube",
+          group: 2,
+          mask: -1 & ~1 // collide with everything EXCEPT group 1 (ground)
         }
       });
       const BEdgeYAngle = flipper.addMeshObj({
@@ -628,7 +638,7 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: 0,
+          x: -0.5,
           y: 0.5,
           z: -6.5
         },
@@ -637,14 +647,16 @@ var flipper = function () {
           y: -1.9,
           z: 0
         },
-        scale: [5.95, 0.4, 0.1],
+        scale: [4.5, 0.4, 0.1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bottomEdge2',
         mesh: m.cube,
         physics: {
           enabled: true,
           mass: 0,
-          geometry: "Cube"
+          geometry: "Cube",
+          group: 1,
+          mask: -1 & ~1 // collide with everything EXCEPT group 1 (ground)
         }
       });
       const REdge = flipper.addMeshObj({
@@ -766,7 +778,7 @@ var flipper = function () {
         hingeRight.then(idx => {
           hingeRightID = idx;
           app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
+          app.matrixPhysics.enableAngularMotor(idx, true, -25, 500);
         });
         REdge.setUVScale(1, 1);
         // LEdge.changeTexture(checker2, samplerTest)
@@ -907,7 +919,7 @@ var flipper = function () {
         const body0Name = e.detail.body0Name;
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
-        console.log('collision : ', body1Name);
+        // console.log('collision : ', body1Name)
         if (body1Name.startsWith("bumper")) {
           // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if (ball != -1) {
@@ -35029,7 +35041,6 @@ class PhysicsBridge {
       console.log('error in addHingeConstraint !!! ');
       return Promise.resolve(-1);
     }
-    // this._worker.postMessage({cmd: 'addHingeConstraint', idxA, idxB, options});
     return this._send('addHingeConstraint', {
       idxA,
       idxB,
@@ -35066,9 +35077,7 @@ class PhysicsBridge {
     const FLOATS = 8;
     for (const [meObj, idx] of this._bodyIndexMap) {
       const b = idx * FLOATS;
-      // if(isNaN(snap[b])) console.log('SYNC', meObj.name, 'isKinematic:', meObj.isKinematic, snap[b], snap[b + 1], snap[b + 2]);
       // if(meObj.isKinematic) continue;
-      // const b = idx * FLOATS;
       meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
       meObj.position.inMove = true;
       meObj.rotation.axis.x = snap[b + 3];
@@ -35111,17 +35120,15 @@ class PhysicsBridge {
     switch (data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        // if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
-        // this._syncToObjects();
         break;
       case 'snapshot':
         this._snapshot = data.snap;
         this._syncToObjects();
         break;
       case 'collision':
-        console.log('collision : ', data);
+        // console.log('collision : ', data)
         this.pCollisionEvent.detail.body0Name = data.body0Name;
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;
@@ -60838,8 +60845,6 @@ class MatrixEngineWGPU {
         o.materialBGL = this.materialBGL;
         o.uniformBufferBindGroupLayoutInstanced = this.uniformBufferBindGroupLayoutInstanced;
         const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-        // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         // if(o.physics.enabled == true) {

@@ -1383,8 +1383,7 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-        // bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+
         bvhPlayer.clearColor = clearColor;
 
         results.push(bvhPlayer);

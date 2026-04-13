@@ -65,22 +65,13 @@ class MatrixAmmoWorker {
       new Ammo.btRigidBodyConstructionInfo(0, new Ammo.btDefaultMotionState(groundTransform), groundShape, new Ammo.btVector3(0, 0, 0))
     );
     groundBody.name = 'ground';
-    this.dynamicsWorld.addRigidBody(groundBody);
+    const group = 1;
+    const mask = -1;
+    this.dynamicsWorld.addRigidBody(groundBody, group, mask);
     // this.rigidBodies.push(groundBody);
     // this._allocBuffer(this.rigidBodies.length);
-    // const idx = this.rigidBodies.length - 1;
-    // if(this._snapshot) {
-    //   const base = idx * FLOATS_PER_BODY;
-    //   this._snapshot[base + 0] = 0;
-    //   this._snapshot[base + 1] = 0;
-    //   this._snapshot[base + 2] = 0;
-    // }
-    // console.log('registered ground:');
-
     if(!this.ptrToName) this.ptrToName = new Map();
     this.ptrToName.set(Ammo.getPointer(groundBody), 'ground');
-    // this._registerBody(groundBody, pOptions);
-    // this. .set(Ammo.getPointer(groundBody), 'ground');
   }
 
   _allocBuffer(bodyCount) {
@@ -89,23 +80,17 @@ class MatrixAmmoWorker {
     if(typeof SharedArrayBuffer !== 'undefined') {
       const newSab = new SharedArrayBuffer(bytes);
       const newSnap = new Float32Array(newSab, 4);
-      if(this._snapshot) newSnap.set(this._snapshot); // ← copy old data
+      if(this._snapshot) newSnap.set(this._snapshot);
       this._sab = newSab;
       this._snapshot = newSnap;
       this._useSAB = true;
       new Uint32Array(this._sab, 0, 1)[0] = bodyCount;
     } else {
       const newSnap = new Float32Array(FLOATS);
-      if(this._snapshot) newSnap.set(this._snapshot); // ← copy old data
+      if(this._snapshot) newSnap.set(this._snapshot);
       this._snapshot = newSnap;
       this._useSAB = false;
     }
-    // const FLOATS = bodyCount * FLOATS_PER_BODY;
-    // const newSnap = new Float32Array(FLOATS);
-    // if(this._snapshot) newSnap.set(this._snapshot);
-    // this._snapshot = newSnap;
-    // this._useSAB = false;
-    // this._sab = null
   }
 
   addBody(pOptions) {
@@ -131,68 +116,38 @@ class MatrixAmmoWorker {
         return -1;
     }
     if(!body) return -1;
-    // this._allocBuffer(this.rigidBodies.length);
     return this.rigidBodies.length - 1;
   }
-
-  // _applyBodyFlags(body, pOptions) {
-  //   const CF_KINEMATIC = 2;
-  //   const CF_STATIC = 1;
-
-  //   if(pOptions.state === 4) {
-  //     // ✅ explicit kinematic
-  //     body.setCollisionFlags(CF_KINEMATIC);
-  //     body.setActivationState(4);
-  //     body.isKinematic = true;
-
-  //   } else if(pOptions.mass === 0) {
-  //     // ✅ true static
-  //     body.setCollisionFlags(CF_STATIC);
-  //     body.setActivationState(5);
-  //     body.isKinematic = false;
-  //   } else {
-  //     // ✅ dynamic
-  //     body.setActivationState(4);
-  //     body.isKinematic = false;
-  //   }
-  // }
 
   _applyBodyFlags(body, pOptions) {
     const CF_STATIC = 1;
     const CF_KINEMATIC = 2;
-
-    // 🔴 STATIC BODY
     if(pOptions.mass === 0 && !pOptions.state) {
       body.setCollisionFlags(CF_STATIC);
-      body.setActivationState(4); // DISABLE_DEACTIVATION
+      body.setActivationState(4);
       body.isKinematic = false;
       return;
     }
-    // 🔵 KINEMATIC BODY
     if(pOptions.state === 4) {
       body.setCollisionFlags(CF_KINEMATIC);
       body.setActivationState(4);
       body.isKinematic = true;
       return;
     }
-    // 🟢 DYNAMIC BODY
     body.setCollisionFlags(0);
-    body.setActivationState(1); // ACTIVE_TAG
+    body.setActivationState(1);
     body.isKinematic = false;
   }
 
   _registerBody(body, pOptions) {
     body.name = pOptions.name;
-
     const group = pOptions.group ?? 1;
     const mask = pOptions.mask ?? -1;
-
     this.dynamicsWorld.addRigidBody(body, group, mask);
     this.rigidBodies.push(body);
     if(!this.ptrToName) this.ptrToName = new Map();
     this.ptrToName.set(Ammo.getPointer(body), pOptions.name);
     this._allocBuffer(this.rigidBodies.length);
-
     const idx = this.rigidBodies.length - 1;
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
@@ -200,9 +155,7 @@ class MatrixAmmoWorker {
       this._snapshot[base + 1] = pOptions.position?.y ?? 0;
       this._snapshot[base + 2] = pOptions.position?.z ?? 0;
     }
-
-    console.log('registered:', pOptions.name, 'at index:', this.rigidBodies.length - 1);
-
+    // console.log('registered:', pOptions.name, 'at index:', this.rigidBodies.length - 1);
     return body;
   }
 
@@ -249,7 +202,7 @@ class MatrixAmmoWorker {
   }
 
   addHingeConstraint(idxA, idxB, pOptions, msgID) {
-    console.info("addHingeConstraint: INPUTS WORKER", idxA, idxB, pOptions, msgID);
+    // console.info("addHingeConstraint: INPUTS WORKER", idxA, idxB, pOptions, msgID);
     let Ammo = this.Ammo;
     if(!this.constraints) this.constraints = [];
     const bodyA = this.rigidBodies[idxA];
@@ -258,61 +211,37 @@ class MatrixAmmoWorker {
       console.warn("addHingeConstraint: bodies not found for MEObjects");
       return null;
     }
-    // PIVOTS & AXIS
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
-
     bodyA.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
-    // bodyA.setAngularFactor(new Ammo.btVector3(0, 1, 0));
-
     bodyA.setDamping(0.2, 0.9);
-    console.log("pivotA", pivotA);
-    console.log("pivotB", pivotB);
+    // console.log("pivotA", pivotA);
+    // console.log("pivotB", pivotB);
     const axis = pOptions.axis || [0, 1, 0];
     const ammoPivotA = new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2]);
     const ammoPivotB = new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]);
-    // const frameA = new Ammo.btTransform();
-    // frameA.setIdentity();
-    // frameA.setOrigin(new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2]));
-    // const frameB = new Ammo.btTransform();
-    // frameB.setIdentity();
-    // frameB.setOrigin(new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]));
-    // // ROTATION FIX
-    // const q = new Ammo.btQuaternion();
-    // q.setRotation(new Ammo.btVector3(0, 1, 0), 0);
-    // frameA.setRotation(q);
-    // frameB.setRotation(q);
-    // const hinge = new Ammo.btHingeConstraint(bodyA, bodyB, frameA, frameB, true);
     const ammoAxisA = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
-    // CREATE HINGE
+
     const hinge = new Ammo.btHingeConstraint(
-      bodyA,
-      bodyB,
-      // frameA,
-      // frameB, true
-      ammoPivotA,
-      ammoPivotB,
-      ammoAxisA,
-      ammoAxisB,
+      bodyA, bodyB,
+      ammoPivotA, ammoPivotB,
+      ammoAxisA, ammoAxisB,
       true
     );
-    // LIMITS
     if(pOptions.limits) {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
-    // this.shootBody(idxA, 0, 0, 0, 0, 0, 0);
     // bodyA.setAngularFactor(new Ammo.btVector3(0,1,0));
     // bodyA.setLinearFactor(new Ammo.btVector3(1,1,1));
     hinge.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
-    // hinge.enableAngularMotor(true, 10, 500);
-    console.log('bodyA pos:', bodyA.getWorldTransform().getOrigin().x(), bodyA.getWorldTransform().getOrigin().y(), bodyA.getWorldTransform().getOrigin().z());
-    console.log('bodyB pos:', bodyB.getWorldTransform().getOrigin().x(), bodyB.getWorldTransform().getOrigin().y(), bodyB.getWorldTransform().getOrigin().z());
+    // console.log('bodyA pos:', bodyA.getWorldTransform().getOrigin().x(), bodyA.getWorldTransform().getOrigin().y(), bodyA.getWorldTransform().getOrigin().z());
+    // console.log('bodyB pos:', bodyB.getWorldTransform().getOrigin().x(), bodyB.getWorldTransform().getOrigin().y(), bodyB.getWorldTransform().getOrigin().z());
     this.dynamicsWorld.addConstraint(hinge, true);
 
 
-     hinge.enableAngularMotor(true, 0, 0);
-     hinge.setLimit(-0.8, 0.5);
+    hinge.enableAngularMotor(true, 0, 0);
+    hinge.setLimit(-0.8, 0.5);
 
     const si = this.dynamicsWorld.getSolverInfo();
     si.set_m_numIterations(50);
@@ -323,59 +252,6 @@ class MatrixAmmoWorker {
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
 
-
-  // addHingeConstraint(idxA, idxB, pOptions, msgID) {
-  //   const Ammo = this.Ammo;
-  //   if(!this.constraints) this.constraints = [];
-
-  //   const bodyA = this.rigidBodies[idxA];
-  //   const bodyB = this.rigidBodies[idxB];
-
-  //   const axis = pOptions.axis || [0, 1, 0];
-  //   const len = Math.hypot(axis[0], axis[1], axis[2]) || 1;
-  //   const n = [axis[0] / len, axis[1] / len, axis[2] / len];
-
-  //   // 🔥 WORLD pivot (IMPORTANT)
-  //   const pivotWorld = pOptions.pivotWorld;
-
-  //   const toLocal = (body, wp) => {
-  //     const t = body.getWorldTransform();
-  //     const inv = new Ammo.btTransform();
-  //     inv.setIdentity();
-  //     inv.setOrigin(t.getOrigin());
-  //     inv.setRotation(t.getRotation());
-  //     inv.inverse();
-
-  //     const v = new Ammo.btVector3(wp[0], wp[1], wp[2]);
-  //     return inv.op_mul(v);
-  //   };
-
-  //   const pivotA = toLocal(bodyA, pivotWorld);
-  //   const pivotB = toLocal(bodyB, pivotWorld);
-
-  //   const axisA = new Ammo.btVector3(...n);
-  //   const axisB = new Ammo.btVector3(...n);
-
-  //   const hinge = new Ammo.btHingeConstraint(
-  //     bodyA,
-  //     bodyB,
-  //     pivotA,
-  //     pivotB,
-  //     axisA,
-  //     axisB,
-  //     true
-  //   );
-
-  //   hinge.setLimit(-0.5, 0.5);
-  //   hinge.enableAngularMotor(true, 5, 50);
-
-  //   this.dynamicsWorld.addConstraint(hinge, true);
-
-  //   this.constraints.push(hinge);
-
-  //   const idx = this.constraints.length - 1;
-  //   self.postMessage({cmd: 'constraintAdded', id: msgID, idx});
-  // }
   enableAngularMotor(constraintIdx, enable, targetVelocity, maxMotorImpulse) {
     this.constraints[constraintIdx].enableAngularMotor(enable, targetVelocity, maxMotorImpulse);
   }
@@ -617,35 +493,6 @@ class MatrixAmmoWorker {
     }
     const snap = this._snapshot;
     if(!snap) return;
-
-    // console.log('snap size:', this._snapshot?.length, 'bodies:', this.rigidBodies.length);
-
-    // this.rigidBodies.forEach((body, i) => {
-
-    //   const base = i * FLOATS_PER_BODY;
-    //   if(body.isKinematic == true) {
-    //     const t = body.getWorldTransform();
-    //     snap[base + 0] = t.getOrigin().x();
-    //     snap[base + 1] = t.getOrigin().y();
-    //     snap[base + 2] = t.getOrigin().z();
-    //     return;
-    //   }
-    //   if(!body.getMotionState()) return;
-    //   // const base = i * FLOATS_PER_BODY;
-    //   body.getMotionState().getWorldTransform(this._trans);
-    //   snap[base + 0] = this._trans.getOrigin().x();
-    //   snap[base + 1] = this._trans.getOrigin().y();
-    //   snap[base + 2] = this._trans.getOrigin().z();
-    //   const rot = this._trans.getRotation();
-    //   rot.normalize();
-    //   const axis = rot.getAxis();
-    //   snap[base + 3] = axis.x();
-    //   snap[base + 4] = axis.y();
-    //   snap[base + 5] = axis.z();
-    //   snap[base + 6] = rot.getAngle();
-    //   snap[base + 7] = 0;
-    // });
-
     this.rigidBodies.forEach((body, i) => {
       const base = i * FLOATS_PER_BODY;
       if(body.isKinematic == true) {
@@ -668,10 +515,7 @@ class MatrixAmmoWorker {
       const x = this._trans.getOrigin().x();
       const y = this._trans.getOrigin().y();
       const z = this._trans.getOrigin().z();
-      if(isNaN(x)) {
-        // console.log('NaN body:', body.name, 'index:', i);
-        return; // ← skip writing NaN
-      }
+      if(isNaN(x)) return;
       snap[base + 0] = x;
       snap[base + 1] = y;
       snap[base + 2] = z;
@@ -684,7 +528,6 @@ class MatrixAmmoWorker {
       snap[base + 6] = rot.getAngle();
       snap[base + 7] = 0;
     });
-    // collision detection — post events to main thread
     this._detectCollision();
   }
 
@@ -706,7 +549,6 @@ class MatrixAmmoWorker {
     t.setOrigin(this._origin2);
     body.setWorldTransform(t);
     body.getMotionState()?.setWorldTransform(t);
-    // zero velocities
     this._origin3.setValue(0, 0, 0);
     body.setLinearVelocity(this._origin3);
     body.setAngularVelocity(this._origin3);
@@ -714,17 +556,12 @@ class MatrixAmmoWorker {
   }
 
   _detectCollision() {
-       
-
     const dispatcher = this.dynamicsWorld.getDispatcher();
     const numManifolds = dispatcher.getNumManifolds();
     const currentCollisions = new Set();
     for(let i = 0;i < numManifolds;i++) {
       const manifold = dispatcher.getManifoldByIndexInternal(i);
       if(manifold.getNumContacts() === 0) continue;
-
-      console.log('worker - colisinion begin ', manifold.getNumContacts())
-
       const ptr0 = Ammo.getPointer(manifold.getBody0());
       const ptr1 = Ammo.getPointer(manifold.getBody1());
       let name0 = null;
@@ -733,12 +570,11 @@ class MatrixAmmoWorker {
         name0 = this.ptrToName.get(ptr0);
         name1 = this.ptrToName.get(ptr1);
         if(!name0 || !name1) return;
-        if(name0 === 'ground' || name1 === 'ground') return; // skip ground collisions
+        if(name0 === 'ground' || name1 === 'ground') return;
       } catch(e) {
         // console.log('err in collision e :', name0);
         return;
       }
-
       console.log('worker - colisin', name0)
       const key = `${name0}|${name1}`;
       currentCollisions.add(key);
@@ -777,11 +613,7 @@ self.onmessage = async ({data}) => {
       break;
     }
     case 'step': {
-      // ammo.step();
       if(!ammo._useSAB && ammo._snapshot) {
-        //   const copy = ammo._snapshot.slice();
-        //   self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
-        // }
         ammo.step();
         const copy = ammo._snapshot.slice();
         self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
@@ -808,10 +640,7 @@ self.onmessage = async ({data}) => {
     case 'enableAngularMotor': ammo.enableAngularMotor(data.constraintIdx, data.enable, data.targetVelocity, data.maxMotorImpulse); break;
     case 'setCollisionFlags': ammo.setCollisionFlags(data.idx, data.flags); break;
     case 'clearBody': ammo.clearBody(data.idx); break;
-
     case 'setBodyTransform': ammo.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': ammo.setGravityScale(data.idx, data.scale); break;
-
-
   }
 };
