@@ -48,11 +48,7 @@ export class PhysicsBridge {
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then(idx => {
-      console.log("ADD TO _bodyIndexMap ")
-      // 
-
       this._bodyIndexMap.set(MEObject, idx);
-      console.log('BODY ADDED', MEObject.name, idx, 'isKinematic:', MEObject.isKinematic, 'pos:', MEObject.position.x, MEObject.position.y, MEObject.position.z);
     });
   }
 

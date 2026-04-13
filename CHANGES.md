@@ -1,5 +1,11 @@
 ## CHANGES [Started from feb 2026]
 
+[1.11.0]
+  [MOBILE OPTIMISATION]
+  Physics added JOLT support,
+  Added bridge for physics -> physics worker
+  Physics from 1.11.0 running intro worker
+
 
 [1.10.0]
   New main loop logic

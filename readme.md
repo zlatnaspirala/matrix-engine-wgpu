@@ -34,7 +34,7 @@ HOT: For 1.10.0 Firefox not FIXED Render
 
 - ✔️ Draw loop per pipeline not per mesh (PipelineManager) Power optimisation.
 - ✔️ Support for 3D objects and scene transformations.
-- ✔️ Ammo.js && Jolt Physics libs integration (maint<->bridge<->worker).
+- ✔️ Ammo.js && Jolt Physics libs integration (app<->bridge<->worker).
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
@@ -43,16 +43,13 @@ HOT: For 1.10.0 Firefox not FIXED Render
 - ✔️ Dynamic shadow cast (done also for skinned meshes).
 - ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect.
 - ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/).
-- ✔️ Trace from V8.GC_MC_BACKGROUND_MARKING (67.9ms) to V8.GCScavenger (7.7ms).
-  GC is no longer a factor. ✅
 - ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.
 
 ## Roadmap
 
 - (Preparing API DOCs)[https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API]
 - 🎯 Test linux OS -> Editor creates and manages files internally (Windows tested only!)
-- 🎯 Add editor nav arrows in editor mode
-- 🎯 Test others physics libraries [same interface/drive system]
+- 🎯 Improve gizmo feature
 - 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
 

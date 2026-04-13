@@ -575,7 +575,7 @@ class MatrixAmmoWorker {
         // console.log('err in collision e :', name0);
         return;
       }
-      console.log('worker - colisin', name0)
+      // console.log('worker - colisin', name0)
       const key = `${name0}|${name1}`;
       currentCollisions.add(key);
       if(!this.lastCollisionState.has(key)) {

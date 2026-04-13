@@ -97,7 +97,7 @@ export var flipper = function() {
       // Ball
       const ball1 = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 2, z: -15},
+        position: {x: 0, y: 2, z: -12},
         scale: [0.25, 0.25, 0.25],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
@@ -425,7 +425,7 @@ export var flipper = function() {
         let hingeLeftID = 0;
         let hingeRightID = 0;
         hingeLeft.then((idx) => {
-          console.log('Hinge index (its is not regular rigidbody idx)', idx)
+          // console.log('Hinge index (its is not regular rigidbody idx)', idx)
           hingeLeftID = idx;
           app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
           app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
@@ -443,8 +443,11 @@ export var flipper = function() {
         });
         hingeRight.then((idx) => {
           hingeRightID = idx;
-          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          app.matrixPhysics.enableAngularMotor(idx, true, -25, 500);
+          // app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          // app.matrixPhysics.enableAngularMotor(idx, true, -10, 500);
+          app.matrixPhysics.setHingeLimit(idx, -0.5, 0.8, 0.0, 0.5, 1.0);   // swapped + clean
+          // Stronger negative motor so it moves in the opposite visual direction
+          app.matrixPhysics.enableAngularMotor(idx, true, -25, 800);   // increased strength
         })
 
         REdge.setUVScale(1, 1);
@@ -574,7 +577,7 @@ export var flipper = function() {
       const ball = app.matrixPhysics.getBodyByName('ball1');
       const strength = 1;
       document.addEventListener("pCollision", (e) => {
-        console.log('pCollision::', e);
+        // console.log('pCollision::', e);
         const body0Name = e.detail.body0Name;
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
@@ -588,13 +591,6 @@ export var flipper = function() {
               rayDirection[2] * strength
             ));
           }
-        } else if(body1Name.startsWith("edgeRigth") && MYFLIPPER.STATUS_PUSH == 'wait') {
-          MYFLIPPER.STATUS_PUSH = 'free';
-        } else if(body1Name.startsWith('bottomEdge2')) {
-          console.log('collision XXMYFLIPPER.STATUS_PUSH freeX : ', MYFLIPPER.STATUS_PUSH)
-          setTimeout(() => {
-            MYFLIPPER.STATUS_PUSH = 'free';
-          }, 3000);
         }
       });
 

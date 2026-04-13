@@ -738,9 +738,7 @@ export default class MEMeshObj extends Materials {
             console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE); return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-
-          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); return;
-
+          // console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); return;
         });
         this.setupPipeline()
       } else {

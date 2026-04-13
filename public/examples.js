@@ -327,7 +327,7 @@ var flipper = function () {
         position: {
           x: 0,
           y: 2,
-          z: -15
+          z: -12
         },
         scale: [0.25, 0.25, 0.25],
         texturesPaths: ['./res/meshes/blender/cube.png'],
@@ -761,7 +761,7 @@ var flipper = function () {
         let hingeLeftID = 0;
         let hingeRightID = 0;
         hingeLeft.then(idx => {
-          console.log('Hinge index (its is not regular rigidbody idx)', idx);
+          // console.log('Hinge index (its is not regular rigidbody idx)', idx)
           hingeLeftID = idx;
           app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
           app.matrixPhysics.enableAngularMotor(idx, true, 10, 500);
@@ -777,8 +777,11 @@ var flipper = function () {
         });
         hingeRight.then(idx => {
           hingeRightID = idx;
-          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          app.matrixPhysics.enableAngularMotor(idx, true, -25, 500);
+          // app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          // app.matrixPhysics.enableAngularMotor(idx, true, -10, 500);
+          app.matrixPhysics.setHingeLimit(idx, -0.5, 0.8, 0.0, 0.5, 1.0); // swapped + clean
+          // Stronger negative motor so it moves in the opposite visual direction
+          app.matrixPhysics.enableAngularMotor(idx, true, -25, 800); // increased strength
         });
         REdge.setUVScale(1, 1);
         // LEdge.changeTexture(checker2, samplerTest)
@@ -915,7 +918,7 @@ var flipper = function () {
       const ball = app.matrixPhysics.getBodyByName('ball1');
       const strength = 1;
       document.addEventListener("pCollision", e => {
-        console.log('pCollision::', e);
+        // console.log('pCollision::', e);
         const body0Name = e.detail.body0Name;
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
@@ -925,13 +928,6 @@ var flipper = function () {
           if (ball != -1) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength));
           }
-        } else if (body1Name.startsWith("edgeRigth") && MYFLIPPER.STATUS_PUSH == 'wait') {
-          MYFLIPPER.STATUS_PUSH = 'free';
-        } else if (body1Name.startsWith('bottomEdge2')) {
-          console.log('collision XXMYFLIPPER.STATUS_PUSH freeX : ', MYFLIPPER.STATUS_PUSH);
-          setTimeout(() => {
-            MYFLIPPER.STATUS_PUSH = 'free';
-          }, 3000);
         }
       });
 
@@ -34248,8 +34244,7 @@ class MEMeshObj extends _materials.default {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, _utils.LOG_FUNNY_ARCADE);
-          return;
+          // console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); return;
         });
         this.setupPipeline();
       } else {
@@ -34841,11 +34836,7 @@ class PhysicsBridge {
     this._send('addBody', {
       pOptions
     }).then(idx => {
-      console.log("ADD TO _bodyIndexMap ");
-      // 
-
       this._bodyIndexMap.set(MEObject, idx);
-      console.log('BODY ADDED', MEObject.name, idx, 'isKinematic:', MEObject.isKinematic, 'pos:', MEObject.position.x, MEObject.position.y, MEObject.position.z);
     });
   }
   pause() {
@@ -59220,8 +59211,7 @@ class MatrixEngineWGPU {
           gravity: 10,
           groundY: -1
         });
-        this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
-        // console.log("");
+        this.matrixPhysics.bodyIndexMap = new Map();
       } else {
         this.matrixPhysics = new _bridge.PhysicsBridge('./ammojs/matrix-ammo-worker.js');
         const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS;
@@ -59231,7 +59221,7 @@ class MatrixEngineWGPU {
           roundDimensionX: options.PHYSICS_GROUND_BYX ? options.PHYSICS_GROUND_BYX : _meConfig.MEConfig.PHYSICS_GROUND_BYX,
           roundDimensionY: options.PHYSICS_GROUND_BYZ ? options.PHYSICS_GROUND_BYZ : _meConfig.MEConfig.PHYSICS_GROUND_BYX
         });
-        this.matrixPhysics.bodyIndexMap = new Map(); // MEObject → workerBodyIdx
+        this.matrixPhysics.bodyIndexMap = new Map();
       }
     }
     // cache
@@ -59342,7 +59332,6 @@ class MatrixEngineWGPU {
       responseCoef: this.options.mainCameraParams.responseCoef
     };
     this.cameras = {
-      // arcball: new ArcballCamera({position: initialCameraPosition, canvas: canvas}),
       firstPersonCamera: new _cameras.FirstPersonCamera({
         position: initialCameraPosition,
         canvas: canvas,
@@ -59382,7 +59371,7 @@ class MatrixEngineWGPU {
     });
   }
   createGlobalsForEntities() {
-    // TYPE "MESH" --------------------------------------------
+    // TYPE "MESH"
     this.materialBGL = this.device.createBindGroupLayout({
       label: 'MaterialBGL[mesh]',
       entries: [{
@@ -59477,9 +59466,8 @@ class MatrixEngineWGPU {
         }
       }]
     });
-    // TYPE "MESH" --------------------------------------------
-
-    // type GLBINSTANCED
+    // TYPE "MESH"
+    // type GLBINSsTANCED
     this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout in mesh [instanced]',
       entries: [{
@@ -59549,19 +59537,15 @@ class MatrixEngineWGPU {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = null;
     this.createGlobalStuff(callback);
-
-    // global layouts per sceneObj TYPE
-    // test meshObj first
     this.createGlobalsForEntities();
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = _wgpuMatrix.mat4.create();
-
     // console.clear();
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.10.0 [FasterThanRabbit] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.11.0 [FasterThanRabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
@@ -59690,7 +59674,6 @@ class MatrixEngineWGPU {
       }
     });
     this.createBloomBindGroup();
-
     // global
     this.globalSceneUniformBuffer = this.device.createBuffer({
       label: 'Shared[sceneUniformBuffer]',
@@ -59907,10 +59890,7 @@ class MatrixEngineWGPU {
       }
       const isTransparent = mesh.material.useBlend == true;
       const pipeline = isTransparent ? mesh.pipelineTransparent : mesh.pipeline;
-      if (!pipeline) {
-        // console.warn("❌ Pipeline undefined:", mesh.name);
-        continue;
-      }
+      if (!pipeline) continue;
       const buckets = isTransparent ? this.transparentBuckets : this.opaqueBuckets;
       let bucket = buckets.get(pipeline);
       if (!bucket) {
@@ -59941,9 +59921,6 @@ class MatrixEngineWGPU {
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length, this.shadowPassViews[this.lightContainer.length], this.shadowSampler);
     this.lightContainer.push(newLight);
-    // for(const mesh of this.mainRenderBundle) {
-    //   mesh.shadowDepthTextureView = this.shadowArrayView;
-    // }
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -60138,6 +60115,8 @@ class MatrixEngineWGPU {
     if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh;
   };
+
+  // THIS MUST BE ELIMINATED FROM WORLD.JS
   addFontana = (o, clearColor = this.options.clearColor) => {
     const px = o.position.x;
     const py = o.position.y;
@@ -60347,13 +60326,6 @@ class MatrixEngineWGPU {
         i.color = [0, (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(50, 200)];
       });
     }, 1000);
-
-    // m4.morphTo(1, 2000)
-    // m4.morphAnimation.onComplete = (e) => {
-    //   // console.log("ssssssssssssssssssssssssssssssssssssss", e)
-    //   if(e == 1) m4.morphTo(0, 2000)
-    //   if(e == 0) m4.morphTo(1, 2000)
-    // }
   };
   createBloomBindGroup() {
     this.bloomBindGroup = this.device.createBindGroup({
@@ -60379,7 +60351,7 @@ class MatrixEngineWGPU {
   }
   async run(callback) {
     this._lastPipeline = null;
-    // render setup
+    // Render setup
     if (this.overrideRender !== null) {
       console.log(`%cOverride render. Use zero configuraion.`, _utils.LOG_FUNNY_ARCADE);
       this.frame = this.overrideRender;
