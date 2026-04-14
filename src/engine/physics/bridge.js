@@ -56,7 +56,7 @@ export class PhysicsBridge {
   resume() {this._paused = false;}
 
   updatePhysics() {
-   if(!this._ready || this._paused) return;  // ← check paused
+    if(!this._ready || this._paused) return;  // ← check paused
     for(const [meObj, idx] of this._bodyIndexMap) {
       if(meObj.isKinematic) {
         const {x, y, z} = meObj.position;
@@ -126,6 +126,11 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
   }
 
+  // getPosition(idx, ) {
+  //   if(idx === undefined) return;
+  //   this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
+  // }
+
   deactivatePhysics(idx) {
     // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
@@ -163,6 +168,10 @@ export class PhysicsBridge {
   enableAngularMotor(constraintIdx, enable, targetVelocity, maxMotorImpulse) {
     if(constraintIdx === undefined) return;
     this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
+  }
+
+  getPosition(idx) {
+    return this._send('getPosition', {idx: idx});
   }
 
   clearBody(idx) {
@@ -229,6 +238,10 @@ export class PhysicsBridge {
         break;
       case 'constraintAdded':
         this._pending.get(data.id)?.(data.idx);
+        this._pending.delete(data.id);
+        break;
+      case 'getPosition':
+        this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;
     }

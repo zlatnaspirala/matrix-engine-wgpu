@@ -164,7 +164,7 @@ export var physicsPlayground = function() {
         scale: [1, 1, 1],
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: MeshMorpher.capsule(1, 2),
+        meshA: MeshMorpher.capsule(1, 2, false),
         meshB: MeshMorpher.cube(1),
         name: `morph_1`,
         physics: {

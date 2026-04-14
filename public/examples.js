@@ -221,7 +221,7 @@ var flipper = function () {
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
-    useJolt: true,
+    // useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -317,7 +317,8 @@ var flipper = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      flipper.matrixPhysics.speedUpSimulation = 3;
+      flipper.matrixPhysics.speedUpSimulation = (0, _utils.isMobile)() == true ? 2 : 4;
+      // flipper.matrixPhysics.speedUpSimulation = 3;
     });
     async function onGround(m) {
       // Ball
@@ -327,7 +328,7 @@ var flipper = function () {
         },
         position: {
           x: 0,
-          y: 2,
+          y: 1,
           z: -12
         },
         scale: [0.25, 0.25, 0.25],
@@ -337,7 +338,7 @@ var flipper = function () {
         shadowsCast: false,
         physics: {
           enabled: true,
-          mass: 5,
+          mass: 1,
           geometry: "Sphere",
           group: 2,
           mask: -1
@@ -345,15 +346,10 @@ var flipper = function () {
         raycast: {
           enabled: false,
           radius: 1
-        },
-        pointerEffect: {
-          enabled: true,
-          pointer: (0, _utils.isMobile)() == true ? false : true
         }
       });
-      flipper.ball1 = ball1;
 
-      // Shooter ball
+      // Shooter btn
       let pushBtn = flipper.addMeshObj({
         position: {
           x: 5,
@@ -469,9 +465,9 @@ var flipper = function () {
         y: 0.7,
         z: -26
       }, {
-        x: -2.9,
+        x: -2,
         y: 0.7,
-        z: -31.5
+        z: -29
       }];
       bumperPositions.forEach((p, i) => {
         flipper.addMeshObj({
@@ -488,7 +484,7 @@ var flipper = function () {
             mass: 0,
             geometry: "Sphere",
             group: 2,
-            mask: -1 & ~1 // collide with everything EXCEPT group 1 (ground)
+            mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
           },
           raycast: {
             enabled: true,
@@ -639,16 +635,16 @@ var flipper = function () {
           type: 'standard'
         },
         position: {
-          x: -0.5,
+          x: -0.6,
           y: 0.5,
           z: -6.5
         },
         rotation: {
           x: 0,
-          y: -1.95,
+          y: -2,
           z: 0
         },
-        scale: [4.6, 0.4, 0.1],
+        scale: [4.8, 0.4, 0.1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bottomEdge2',
         mesh: m.cube,
@@ -749,7 +745,7 @@ var flipper = function () {
         // flipper.matrixPhysics.setDamping(ball, 0.05, 0.05);
 
         // FLIPPER SETUP
-        const commonX = 1;
+        const commonX = 0.75;
         const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
         const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
         const hingeLeft = app.matrixPhysics.addHingeConstraint(BA, BB, {
@@ -798,13 +794,12 @@ var flipper = function () {
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 500);
           }
           if (e.code === "KeyM") {
-            console.log('SENT KEY ', rightBody);
             flipper.matrixPhysics.activate(rightBody, true);
             flipper.matrixPhysics.setActivationState(rightBody, 4);
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 500);
           }
         });
-        window.addEventListener("keyup", e => {
+        window.addEventListener("keyup", async e => {
           if (e.code === "KeyZ") {
             leftBodycurrPos = 'unpressed';
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
@@ -813,11 +808,10 @@ var flipper = function () {
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
           }
           if (e.code == "Space") {
-            if (MYFLIPPER.STATUS_PUSH == 'free') {
-              MYFLIPPER.STATUS_PUSH = 'in action';
-              let ball = app.matrixPhysics.getBodyByName(ball1.name);
-              flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20)));
-            }
+            MYFLIPPER.STATUS_PUSH = 'in action';
+            let ball = app.matrixPhysics.getBodyByName(ball1.name);
+            const pos = await app.matrixPhysics.getPosition(ball);
+            if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
           }
         });
       }, 500);
@@ -828,7 +822,7 @@ var flipper = function () {
         position: {
           x: -commonAchorX,
           y: 0.3,
-          z: -9.25
+          z: -9.2
         },
         scale: [0.2, 0.2, 0.2],
         mesh: m.cube,
@@ -836,10 +830,7 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          // state: 4, // ammo kinematic
-          // kinematic: true,
           sensor: true,
-          // add this flag
           collisionGroup: 0,
           collisionSubGroup: 0,
           layer: 2,
@@ -852,7 +843,7 @@ var flipper = function () {
         position: {
           x: commonAchorX,
           y: 0.3,
-          z: -9.25
+          z: -9.2
         },
         scale: [0.2, 0.2, 0.2],
         mesh: m.cube,
@@ -948,7 +939,12 @@ var flipper = function () {
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
         // console.log('collision : ', body1Name)
-        if (body1Name.startsWith("bumper")) {
+
+        if (body1Name.startsWith("bumper") || body0Name.startsWith("bumper")) {
+          // console.log('collision with bumper!!!!!!!!!!!!!!: ', body1Name)
+        }
+        if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
+          console.log('collision with bumper: ', body1Name);
           // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if (ball != -1) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength));
@@ -957,7 +953,7 @@ var flipper = function () {
       });
 
       // GRAVITY TILT (PINBALL FEEL)
-      flipper.matrixPhysics.setGravity(0, -9.8, 1.5);
+      flipper.matrixPhysics.setGravity(0, -9.8, 1.8);
 
       // only render objs
       const leg1 = flipper.addMeshObj({
@@ -2824,7 +2820,7 @@ var physicsPlayground = function () {
           z: 0
         },
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2),
+        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2, false),
         meshB: _proceduralMesh.MeshMorpher.cube(1),
         name: `morph_1`,
         physics: {
@@ -35016,6 +35012,12 @@ class PhysicsBridge {
       strength
     });
   }
+
+  // getPosition(idx, ) {
+  //   if(idx === undefined) return;
+  //   this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
+  // }
+
   deactivatePhysics(idx) {
     // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
@@ -35079,6 +35081,11 @@ class PhysicsBridge {
       enable,
       targetVelocity,
       maxMotorImpulse
+    });
+  }
+  getPosition(idx) {
+    return this._send('getPosition', {
+      idx: idx
     });
   }
   clearBody(idx) {
@@ -35160,6 +35167,10 @@ class PhysicsBridge {
         break;
       case 'constraintAdded':
         this._pending.get(data.id)?.(data.idx);
+        this._pending.delete(data.id);
+        break;
+      case 'getPosition':
+        this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;
     }
@@ -38742,7 +38753,7 @@ class MeshMorpher {
   //   };
   // }
 
-  static capsule(radius = 0.5, height = 1, fromZeroY = true) {
+  static capsule(radius = 1, height = 1, fromZeroY = true) {
     const halfH = height / 2;
     // If fromZeroY is true, shift everything up so the bottom hemisphere starts at 0
     const yOffset = fromZeroY ? halfH + radius : 0;

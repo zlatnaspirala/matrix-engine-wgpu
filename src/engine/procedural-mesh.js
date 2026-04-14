@@ -1086,7 +1086,7 @@ export class MeshMorpher {
   //   };
   // }
 
-  static capsule(radius = 0.5, height = 1, fromZeroY = true) {
+  static capsule(radius = 1, height = 1, fromZeroY = true) {
     const halfH = height / 2;
     // If fromZeroY is true, shift everything up so the bottom hemisphere starts at 0
     const yOffset = fromZeroY ? (halfH + radius) : 0;

@@ -10,7 +10,7 @@ export var flipper = function() {
   };
 
   let flipper = new MatrixEngineWGPU({
-    useJolt: true,
+    // useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
@@ -91,14 +91,18 @@ export var flipper = function() {
         onGround,
         {scale: [1, 1, 1]}
       );
-      flipper.matrixPhysics.speedUpSimulation = 3;
+
+
+      flipper.matrixPhysics.speedUpSimulation = isMobile() == true ? 2 : 4;
+      // flipper.matrixPhysics.speedUpSimulation = 3;
+
     });
 
     async function onGround(m) {
       // Ball
       const ball1 = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 2, z: -12},
+        position: {x: 0, y: 1, z: -12},
         scale: [0.25, 0.25, 0.25],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'ball1',
@@ -106,20 +110,15 @@ export var flipper = function() {
         shadowsCast: false,
         physics: {
           enabled: true,
-          mass: 5,
+          mass: 1,
           geometry: "Sphere",
           group: 2,
           mask: -1
         },
         raycast: {enabled: false, radius: 1},
-        pointerEffect: {
-          enabled: true,
-          pointer: isMobile() == true ? false : true
-        }
       });
-      flipper.ball1 = ball1;
 
-      // Shooter ball
+      // Shooter btn
       let pushBtn = flipper.addMeshObj({
         position: {x: 5, y: 0.7, z: -5.7},
         scale: [0.3, 0.3, 0.3],
@@ -198,7 +197,7 @@ export var flipper = function() {
         {x: 0, y: 0.7, z: -22},
         {x: 2, y: 0.7, z: -24},
         {x: -2, y: 0.7, z: -26},
-        {x: -2.9, y: 0.7, z: -31.5}
+        {x: -2, y: 0.7, z: -29}
       ];
 
       bumperPositions.forEach((p, i) => {
@@ -214,7 +213,7 @@ export var flipper = function() {
             mass: 0,
             geometry: "Sphere",
             group: 2,
-            mask: -1 & ~1, // collide with everything EXCEPT group 1 (ground)
+            mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
           },
           raycast: {enabled: true, radius: 1}
         });
@@ -320,9 +319,9 @@ export var flipper = function() {
 
       const BEdgeYAngle = flipper.addMeshObj({
         material: {type: 'standard'},
-        position: {x: -0.5, y: 0.5, z: -6.5},
-        rotation: {x: 0, y: -1.95, z: 0},
-        scale: [4.6, 0.4, 0.1],
+        position: {x: -0.6, y: 0.5, z: -6.5},
+        rotation: {x: 0, y: -2, z: 0},
+        scale: [4.8, 0.4, 0.1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bottomEdge2',
         mesh: m.cube,
@@ -412,7 +411,7 @@ export var flipper = function() {
         // flipper.matrixPhysics.setDamping(ball, 0.05, 0.05);
 
         // FLIPPER SETUP
-        const commonX = 1;
+        const commonX = 0.75;
         const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
         const BB = flipper.matrixPhysics.getBodyByName('flipperLeftAnchor');
 
@@ -466,14 +465,13 @@ export var flipper = function() {
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 500);
           }
           if(e.code === "KeyM") {
-            console.log('SENT KEY ', rightBody)
             flipper.matrixPhysics.activate(rightBody, true);
             flipper.matrixPhysics.setActivationState(rightBody, 4);
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 500);
           }
         });
 
-        window.addEventListener("keyup", (e) => {
+        window.addEventListener("keyup", async(e) => {
           if(e.code === "KeyZ") {
             leftBodycurrPos = 'unpressed';
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
@@ -482,11 +480,11 @@ export var flipper = function() {
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
           }
           if(e.code == "Space") {
-            if(MYFLIPPER.STATUS_PUSH == 'free') {
-              MYFLIPPER.STATUS_PUSH = 'in action';
-              let ball = app.matrixPhysics.getBodyByName(ball1.name);
-              flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
-            }
+            MYFLIPPER.STATUS_PUSH = 'in action';
+            let ball = app.matrixPhysics.getBodyByName(ball1.name);
+            const pos = await app.matrixPhysics.getPosition(ball);
+            if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
+              new PVector(0, 2, -randomIntFromTo(11, 15)));
           }
         });
 
@@ -496,20 +494,17 @@ export var flipper = function() {
       // const commomBODYX = 0.8; ammo working
       const commomBODYX = 0.8;
       const LAnchor = flipper.addMeshObj({
-        position: {x: -commonAchorX, y: 0.3, z: -9.25},
+        position: {x: -commonAchorX, y: 0.3, z: -9.2},
         scale: [0.2, 0.2, 0.2],
         mesh: m.cube,
         physics: {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          // state: 4, // ammo kinematic
-          // kinematic: true,
-          sensor: true,    // add this flag
+          sensor: true,
           collisionGroup: 0,
           collisionSubGroup: 0,
           layer: 2,
-
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -517,7 +512,7 @@ export var flipper = function() {
       });
 
       const RAnchor = flipper.addMeshObj({
-        position: {x: commonAchorX, y: 0.3, z: -9.25},
+        position: {x: commonAchorX, y: 0.3, z: -9.2},
         scale: [0.2, 0.2, 0.2],
         mesh: m.cube,
         physics: {
@@ -603,7 +598,12 @@ export var flipper = function() {
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
         // console.log('collision : ', body1Name)
-        if(body1Name.startsWith("bumper")) {
+
+        if(body1Name.startsWith("bumper") || body0Name.startsWith("bumper") ) {
+          // console.log('collision with bumper!!!!!!!!!!!!!!: ', body1Name)
+        }
+        if(  (body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
+          console.log('collision with bumper: ', body1Name)
           // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if(ball != -1) {
             flipper.matrixPhysics.applyImpulse(ball, new PVector(
@@ -616,7 +616,7 @@ export var flipper = function() {
       });
 
       // GRAVITY TILT (PINBALL FEEL)
-      flipper.matrixPhysics.setGravity(0, -9.8, 1.5);
+      flipper.matrixPhysics.setGravity(0, -9.8, 1.8);
 
       // only render objs
       const leg1 = flipper.addMeshObj({

@@ -161,9 +161,12 @@ class MatrixAmmoWorker {
 
   _addSphere(pOptions) {
     const Ammo = this.Ammo;
+    const radius = (pOptions.radius ?? 1) * (pOptions.scale?.[0] ?? 1);
+  //  const shape = new Ammo.btSphereShape(radius);
     const shape = new Ammo.btSphereShape(
-      Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius
+      Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.scale?.[0]
     );
+
     const t = new Ammo.btTransform();
     t.setIdentity();
     t.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
@@ -202,7 +205,6 @@ class MatrixAmmoWorker {
   }
 
   addHingeConstraint(idxA, idxB, pOptions, msgID) {
-    // console.info("addHingeConstraint: INPUTS WORKER", idxA, idxB, pOptions, msgID);
     let Ammo = this.Ammo;
     if(!this.constraints) this.constraints = [];
     const bodyA = this.rigidBodies[idxA];
@@ -216,13 +218,11 @@ class MatrixAmmoWorker {
     bodyA.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
     bodyA.setDamping(0.2, 0.9);
     // console.log("pivotA", pivotA);
-    // console.log("pivotB", pivotB);
     const axis = pOptions.axis || [0, 1, 0];
     const ammoPivotA = new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2]);
     const ammoPivotB = new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]);
     const ammoAxisA = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
-
     const hinge = new Ammo.btHingeConstraint(
       bodyA, bodyB,
       ammoPivotA, ammoPivotB,
@@ -232,14 +232,8 @@ class MatrixAmmoWorker {
     if(pOptions.limits) {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
-    // bodyA.setAngularFactor(new Ammo.btVector3(0,1,0));
-    // bodyA.setLinearFactor(new Ammo.btVector3(1,1,1));
     hinge.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
-    // console.log('bodyA pos:', bodyA.getWorldTransform().getOrigin().x(), bodyA.getWorldTransform().getOrigin().y(), bodyA.getWorldTransform().getOrigin().z());
-    // console.log('bodyB pos:', bodyB.getWorldTransform().getOrigin().x(), bodyB.getWorldTransform().getOrigin().y(), bodyB.getWorldTransform().getOrigin().z());
     this.dynamicsWorld.addConstraint(hinge, true);
-
-
     hinge.enableAngularMotor(true, 0, 0);
     hinge.setLimit(-0.8, 0.5);
 
@@ -248,7 +242,7 @@ class MatrixAmmoWorker {
     hinge.name = pOptions.name;
     this.constraints.push(hinge);
     const constraintIdx = this.constraints.length - 1;
-    console.log("hingle at index: ", constraintIdx);
+    // console.log("hingle at index: ", constraintIdx);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
 
@@ -476,6 +470,16 @@ class MatrixAmmoWorker {
     }
   }
 
+  getPosition(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) {
+      self.postMessage({cmd: 'getPosition', id: msgID, position: null});
+      return;
+    }
+    const origin = body.getWorldTransform().getOrigin();
+    self.postMessage({cmd: 'getPosition', id: msgID, position: {x: origin.x(), y: origin.y(), z: origin.z()}});
+  }
+
   setGravity(x, y, z) {
     this._origin2.setValue(x, y, z);
     this.dynamicsWorld.setGravity(this._origin2);
@@ -642,5 +646,6 @@ self.onmessage = async ({data}) => {
     case 'clearBody': ammo.clearBody(data.idx); break;
     case 'setBodyTransform': ammo.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': ammo.setGravityScale(data.idx, data.scale); break;
+    case 'getPosition': ammo.getPosition(data.idx, data.id); break;
   }
 };

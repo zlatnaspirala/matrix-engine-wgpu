@@ -256,7 +256,7 @@ class MatrixJolt {
   }
 
   _addCapsule(pOptions) {
-    const halfHeight = (pOptions.height || 2) * 0.5;
+    const halfHeight = (pOptions.height || 1) * 0.5;
     const radius = pOptions.radius || 1;
     const shape = new this.Jolt.CapsuleShape(halfHeight, radius);
     return this._createBody(pOptions, shape);
@@ -525,6 +525,21 @@ class MatrixJolt {
       ms.mMinTorqueLimit = -Math.abs(maxTorque);
     }
   }
+
+  getPosition(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) {
+      self.postMessage({cmd: 'getPosition', id: msgID, position: null});
+      return;
+    }
+    const t = body.GetWorldTransform().GetTranslation();
+    self.postMessage({
+      cmd: 'getPosition',
+      id: msgID,
+      position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}
+    });
+  }
+  
   step() {
     if(!this.joltInterface) return;
     for(let i = 0;i < this.speedUpSimulation;i++) this.joltInterface.Step(1 / 60, 1);
@@ -573,5 +588,6 @@ self.onmessage = async ({data}) => {
     case 'setBodyTransform': jolt.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': jolt.setGravityScale(data.idx, data.scale); break;
     case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
+    case 'getPosition': jolt.getPosition(data.idx, data.id); break;
   }
 };
