@@ -837,12 +837,12 @@ var flipper = function () {
           mass: 0,
           geometry: "Cube",
           // state: 4, // ammo kinematic
-          kinematic: true,
+          // kinematic: true,
           sensor: true,
           // add this flag
           collisionGroup: 0,
           collisionSubGroup: 0,
-          layer: 3,
+          layer: 2,
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -860,13 +860,16 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          kinematic: true,
-          // ONLY JOLT
+          // kinematic: true,  // ONLY JOLT
           sensor: true,
-          // add this flag
+          // ONLY JOLT
           collisionGroup: 0,
+          // ONLY JOLT
           collisionSubGroup: 0,
-          layer: 3,
+          // ONLY JOLT
+          layer: 2,
+          // ONLY JOLT
+
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },

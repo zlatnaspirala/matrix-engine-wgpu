@@ -495,9 +495,6 @@ export var flipper = function() {
       const commonAchorX = 2.2;
       // const commomBODYX = 0.8; ammo working
       const commomBODYX = 0.8;
-
-
-
       const LAnchor = flipper.addMeshObj({
         position: {x: -commonAchorX, y: 0.3, z: -9.25},
         scale: [0.2, 0.2, 0.2],
@@ -507,11 +504,12 @@ export var flipper = function() {
           mass: 0,
           geometry: "Cube",
           // state: 4, // ammo kinematic
-          kinematic: true,
+          // kinematic: true,
           sensor: true,    // add this flag
           collisionGroup: 0,
           collisionSubGroup: 0,
-          layer: 3,
+          layer: 2,
+
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -526,11 +524,12 @@ export var flipper = function() {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          kinematic: true, // ONLY JOLT
-          sensor: true,    // add this flag
-          collisionGroup: 0,
-          collisionSubGroup: 0,
-          layer: 3,
+          // kinematic: true,  // ONLY JOLT
+          sensor: true,        // ONLY JOLT
+          collisionGroup: 0,   // ONLY JOLT
+          collisionSubGroup: 0,// ONLY JOLT
+          layer: 2,            // ONLY JOLT
+
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },

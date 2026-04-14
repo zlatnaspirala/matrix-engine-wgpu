@@ -6,7 +6,7 @@ const NUM_OBJ_LAYERS = 4;
 
 const FLOATS_PER_BODY = 8;
 
-const NUM_BROAD_PHASE_LAYERS = 4;
+const NUM_BROAD_PHASE_LAYERS = 5;
 const BP_LAYER_STATIC = 0;
 const BP_LAYER_DYNAMIC = 1;
 
@@ -95,12 +95,10 @@ class MatrixJolt {
     // existing
     objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_MOVING);
     objectFilter.EnableCollision(LAYER_MOVING, LAYER_MOVING);
-
-    // new - anchor collides with world/moving but NOT flipper
-    objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_ANCHOR);
-    objectFilter.EnableCollision(LAYER_MOVING, LAYER_ANCHOR);
+    // objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_ANCHOR);
+    // objectFilter.EnableCollision(LAYER_MOVING, LAYER_ANCHOR);
     objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_MOVING);
-    objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_NON_MOVING);
+    // objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_NON_MOVING);
     // LAYER_FLIPPER <-> LAYER_ANCHOR = omitted
 
     const bpLayerInterface = new Jolt.BroadPhaseLayerInterfaceTable(NUM_OBJ_LAYERS, NUM_BROAD_PHASE_LAYERS);
@@ -185,6 +183,8 @@ class MatrixJolt {
       layer = LAYER_MOVING;
     }
 
+
+
     const settings = new Jolt.BodyCreationSettings(
       shape,
       new Jolt.RVec3(pos.x, pos.y, pos.z),
@@ -201,6 +201,12 @@ class MatrixJolt {
 
     const body = this.bodyInterface.CreateBody(settings);
     Jolt.destroy(settings);
+
+    if(pOptions.sensor) {
+      body.SetIsSensor(true);
+      console.log("SENSOR :", pOptions.name, body.IsSensor());
+      console.log("KINEMATIC  :", pOptions.name, body.IsKinematic());
+    }
 
     body.isKinematic = isKinematic;
     this.bodyInterface.AddBody(body.GetID(), isStatic ? Jolt.EActivation_DontActivate : Jolt.EActivation_Activate);
@@ -379,34 +385,33 @@ class MatrixJolt {
   addHingeConstraint(idxA, idxB, pOptions, msgID) {
     const Jolt = this.Jolt;
     if(!this.constraints) this.constraints = [];
-
     const bodyA = this.rigidBodies[idxA];
     const bodyB = this.rigidBodies[idxB];
 
-    const groupFilter = new Jolt.GroupFilterTable(1);
-    // // subgroup 0 members don't collide with each other
-    // bodyA.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // anchor
-    // bodyB.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // flipp
+    if(bodyB.IsSensor()) {
+      bodyB.SetIsSensor(true);
+      console.log("SET SENSOR ON:", pOptions.name, bodyB.IsSensor());
+    }
+
 
     if(!bodyA || !bodyB) return null;
-
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
     const axis = pOptions.axis || [0, 1, 0];
-
-
     console.log("hinge at index:", bodyA);
     console.log("hinge at index:", bodyB);
-
-    // Jolt HingeConstraintSettings uses WORLD-space points.
-    // Convert local pivots → world space using each body's current transform.
-    const posA = bodyA.GetPosition();
-    const posB = bodyB.GetPosition();
-
     const worldPivotA = localToWorld(Jolt, bodyA, pivotA);
     const worldPivotB = localToWorld(Jolt, bodyB, pivotB);
 
-    // Build a guaranteed-perpendicular normal axis
+
+    console.log(
+  "pivot diff:",
+  worldPivotA.GetX() - worldPivotB.GetX(),
+  worldPivotA.GetY() - worldPivotB.GetY(),
+  worldPivotA.GetZ() - worldPivotB.GetZ()
+);
+
+
     const ax = axis[0], ay = axis[1], az = axis[2];
     let nx, ny, nz;
     if(Math.abs(ax) <= Math.abs(ay) && Math.abs(ax) <= Math.abs(az)) {
@@ -424,6 +429,7 @@ class MatrixJolt {
     const hingeSettings = new Jolt.HingeConstraintSettings();
     hingeSettings.mPoint1 = worldPivotA;
     hingeSettings.mPoint2 = worldPivotB;
+    // hingeSettings.mPoint2 = worldPivotB;
     hingeSettings.mHingeAxis1 = new Jolt.Vec3(ax, ay, az);
     hingeSettings.mHingeAxis2 = new Jolt.Vec3(ax, ay, az);
     hingeSettings.mNormalAxis1 = new Jolt.Vec3(nx, ny, nz);
@@ -436,11 +442,10 @@ class MatrixJolt {
 
     const constraint = hingeSettings.Create(bodyA, bodyB);
 
-    constraint.SetNumVelocityStepsOverride(0);
-
+    // constraint.SetCollisionEnabled(false);
+    // constraint.SetNumVelocityStepsOverride(0);
 
     this.physicsSystem.AddConstraint(constraint);
-
     constraint.name = pOptions.name;
     this.constraints.push(constraint);
     const constraintIdx = this.constraints.length - 1;
