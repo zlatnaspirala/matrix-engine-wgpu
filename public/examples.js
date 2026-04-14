@@ -822,6 +822,7 @@ var flipper = function () {
         });
       }, 500);
       const commonAchorX = 2.2;
+      // const commomBODYX = 0.8; ammo working
       const commomBODYX = 0.8;
       const LAnchor = flipper.addMeshObj({
         position: {
@@ -837,6 +838,11 @@ var flipper = function () {
           geometry: "Cube",
           // state: 4, // ammo kinematic
           kinematic: true,
+          sensor: true,
+          // add this flag
+          collisionGroup: 0,
+          collisionSubGroup: 0,
+          layer: 3,
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -856,6 +862,11 @@ var flipper = function () {
           geometry: "Cube",
           kinematic: true,
           // ONLY JOLT
+          sensor: true,
+          // add this flag
+          collisionGroup: 0,
+          collisionSubGroup: 0,
+          layer: 3,
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -879,6 +890,8 @@ var flipper = function () {
           mass: 0.5,
           geometry: "ConvexHull",
           vertices: m.pin.vertices,
+          collisionGroup: 0,
+          collisionSubGroup: 0,
           group: 1,
           mask: -1,
           // everything,
@@ -903,7 +916,10 @@ var flipper = function () {
           mass: 0.5,
           geometry: "ConvexHull",
           vertices: m.pinR.vertices,
+          collisionGroup: 0,
+          collisionSubGroup: 0,
           group: 1,
+          //
           mask: -1,
           // everything
           layer: 3 // LAYER_FLIPPER

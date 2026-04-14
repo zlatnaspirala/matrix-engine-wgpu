@@ -384,9 +384,9 @@ class MatrixJolt {
     const bodyB = this.rigidBodies[idxB];
 
     const groupFilter = new Jolt.GroupFilterTable(1);
-    // subgroup 0 members don't collide with each other
-    bodyA.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // anchor
-    bodyB.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // flipp
+    // // subgroup 0 members don't collide with each other
+    // bodyA.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // anchor
+    // bodyB.SetCollisionGroup(new Jolt.CollisionGroup(groupFilter, 0, 0)); // flipp
 
     if(!bodyA || !bodyB) return null;
 
