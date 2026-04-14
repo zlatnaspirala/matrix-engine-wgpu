@@ -10,6 +10,9 @@ const NUM_BROAD_PHASE_LAYERS = 5;
 const BP_LAYER_STATIC = 0;
 const BP_LAYER_DYNAMIC = 1;
 
+
+const degToRad = d => d * (Math.PI / 180);
+
 function localToWorld(Jolt, body, localOffset) {
   const rot = body.GetRotation(); // Jolt quaternion
   // Rotate the offset vector by the quaternion: v' = q * v * q^-1
@@ -168,10 +171,36 @@ class MatrixJolt {
   _createBody(pOptions, shape) {
     const Jolt = this.Jolt;
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
+
+    const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
+
+    const rx = degToRad(rot.x || 0);
+    const ry = degToRad(rot.y || 0);
+    const rz = degToRad(rot.z || 0);
+
+    // half angles
+    const cx = Math.cos(rx * 0.5);
+    const sx = Math.sin(rx * 0.5);
+    const cy = Math.cos(ry * 0.5);
+    const sy = Math.sin(ry * 0.5);
+    const cz = Math.cos(rz * 0.5);
+    const sz = Math.sin(rz * 0.5);
+
+    // Euler (XYZ) → quaternion
+    const q = new Jolt.Quat(
+      sx * cy * cz + cx * sy * sz,
+      cx * sy * cz - sx * cy * sz,
+      cx * cy * sz + sx * sy * cz,
+      cx * cy * cz - sx * sy * sz
+    );
+
     const isKinematic = pOptions.kinematic || pOptions.state === 4;
     const isStatic = (pOptions.mass === 0 || pOptions.mass === undefined) && !isKinematic;
-    const motionType = isStatic ? Jolt.EMotionType_Static : (isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic);
-    // layer resolution
+
+    const motionType = isStatic
+      ? Jolt.EMotionType_Static
+      : (isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic);
+
     let layer;
     if(pOptions.layer !== undefined) {
       layer = pOptions.layer;
@@ -183,19 +212,19 @@ class MatrixJolt {
       layer = LAYER_MOVING;
     }
 
-
-
     const settings = new Jolt.BodyCreationSettings(
       shape,
       new Jolt.RVec3(pos.x, pos.y, pos.z),
-      Jolt.Quat.prototype.sIdentity(),
+      q, // ✅ use computed quaternion
       motionType,
       layer
     );
+
     if(!isStatic) {
       settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
       settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
     }
+
     if(pOptions.restitution !== undefined) settings.mRestitution = pOptions.restitution;
     if(pOptions.friction !== undefined) settings.mFriction = pOptions.friction;
 
@@ -204,12 +233,15 @@ class MatrixJolt {
 
     if(pOptions.sensor) {
       body.SetIsSensor(true);
-      console.log("SENSOR :", pOptions.name, body.IsSensor());
-      console.log("KINEMATIC  :", pOptions.name, body.IsKinematic());
     }
 
     body.isKinematic = isKinematic;
-    this.bodyInterface.AddBody(body.GetID(), isStatic ? Jolt.EActivation_DontActivate : Jolt.EActivation_Activate);
+
+    this.bodyInterface.AddBody(
+      body.GetID(),
+      isStatic ? Jolt.EActivation_DontActivate : Jolt.EActivation_Activate
+    );
+
     return this._registerBody(body, pOptions);
   }
 
@@ -224,16 +256,10 @@ class MatrixJolt {
   }
 
   _addCapsule(pOptions) {
-    // const h = (pOptions.height || 2) * 0.5; // Jolt uses half-height
-    // const r = pOptions.radius || 1;
-
     const halfHeight = (pOptions.height || 2) * 0.5;
     const radius = pOptions.radius || 1;
-
     const shape = new this.Jolt.CapsuleShape(halfHeight, radius);
     return this._createBody(pOptions, shape);
-
-    // return this._createBody(pOptions, new this.Jolt.CapsuleShape(h, r));
   }
 
   _addCylinder(pOptions) {
@@ -262,39 +288,58 @@ class MatrixJolt {
     return this._createBody(pOptions, shape);
   }
 
-_addConvexHull(pOptions) {
-  const Jolt = this.Jolt;
-  const settings = new Jolt.ConvexHullShapeSettings();
+  _addConvexHull(pOptions) {
+    const Jolt = this.Jolt;
+    const settings = new Jolt.ConvexHullShapeSettings();
 
-  const verts = pOptions.vertices;
-  const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
+    const verts = pOptions.vertices;
+    const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
 
-  for(let i = 0; i < verts.length; i += 3) {
-    settings.mPoints.push_back(
-      new Jolt.Vec3(
-        verts[i] * sx,
-        verts[i + 1] * sy,
-        verts[i + 2] * sz
-      )
-    );
+    for(let i = 0;i < verts.length;i += 3) {
+      settings.mPoints.push_back(
+        new Jolt.Vec3(
+          verts[i] * sx,
+          verts[i + 1] * sy,
+          verts[i + 2] * sz
+        )
+      );
+    }
+    const result = settings.Create();
+    const shape = result.Get();
+    Jolt.destroy(settings);
+    return this._createBody(pOptions, shape);
   }
 
-  const result = settings.Create();
-  const shape = result.Get();
-
-  Jolt.destroy(settings);
-
-  return this._createBody(pOptions, shape);
-}
   _addBvhMesh(pOptions) {
     const Jolt = this.Jolt;
     const settings = new Jolt.MeshShapeSettings();
+
     const v = pOptions.vertices;
     const idx = pOptions.indices;
-    for(let i = 0;i < v.length;i += 3) settings.mTriangleVertices.push_back(new Jolt.Float3(v[i], v[i + 1], v[i + 2]));
-    for(let i = 0;i < idx.length;i += 3) settings.mIndexedTriangles.push_back(new Jolt.IndexedTriangle(idx[i], idx[i + 1], idx[i + 2], 0));
-    const shape = settings.Create().Get();
+    const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
+
+    // ✅ APPLY SCALE HERE
+    for(let i = 0;i < v.length;i += 3) {
+      settings.mTriangleVertices.push_back(
+        new Jolt.Float3(
+          v[i] * sx,
+          v[i + 1] * sy,
+          v[i + 2] * sz
+        )
+      );
+    }
+
+    for(let i = 0;i < idx.length;i += 3) {
+      settings.mIndexedTriangles.push_back(
+        new Jolt.IndexedTriangle(idx[i], idx[i + 1], idx[i + 2], 0)
+      );
+    }
+
+    const result = settings.Create();
+    const shape = result.Get();
+
     Jolt.destroy(settings);
+
     return this._createBody(pOptions, shape);
   }
 

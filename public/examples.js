@@ -2896,7 +2896,7 @@ var physicsPlayground = function () {
           z: 0
         },
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher.cone(1, 5, false),
+        meshA: _proceduralMesh.MeshMorpher.cone(1, 3, false),
         meshB: _proceduralMesh.MeshMorpher.cube(1),
         name: `morph_cone`,
         physics: {
@@ -2904,7 +2904,7 @@ var physicsPlayground = function () {
           geometry: "Cone",
           mass: 1,
           radius: 1,
-          height: 5
+          height: 3
         },
         raycast: {
           enabled: true,
