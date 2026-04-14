@@ -262,19 +262,30 @@ class MatrixJolt {
     return this._createBody(pOptions, shape);
   }
 
-  _addConvexHull(pOptions) {
-    const Jolt = this.Jolt;
-    const settings = new Jolt.ConvexHullShapeSettings();
-    const verts = pOptions.vertices;
-    for(let i = 0;i < verts.length;i += 3) {
-      settings.mPoints.push_back(new Jolt.Vec3(verts[i], verts[i + 1], verts[i + 2]));
-    }
-    const result = settings.Create();
-    const shape = result.Get(); // Critical for Hulls
-    Jolt.destroy(settings);
-    return this._createBody(pOptions, shape);
+_addConvexHull(pOptions) {
+  const Jolt = this.Jolt;
+  const settings = new Jolt.ConvexHullShapeSettings();
+
+  const verts = pOptions.vertices;
+  const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
+
+  for(let i = 0; i < verts.length; i += 3) {
+    settings.mPoints.push_back(
+      new Jolt.Vec3(
+        verts[i] * sx,
+        verts[i + 1] * sy,
+        verts[i + 2] * sz
+      )
+    );
   }
 
+  const result = settings.Create();
+  const shape = result.Get();
+
+  Jolt.destroy(settings);
+
+  return this._createBody(pOptions, shape);
+}
   _addBvhMesh(pOptions) {
     const Jolt = this.Jolt;
     const settings = new Jolt.MeshShapeSettings();
@@ -405,11 +416,11 @@ class MatrixJolt {
 
 
     console.log(
-  "pivot diff:",
-  worldPivotA.GetX() - worldPivotB.GetX(),
-  worldPivotA.GetY() - worldPivotB.GetY(),
-  worldPivotA.GetZ() - worldPivotB.GetZ()
-);
+      "pivot diff:",
+      worldPivotA.GetX() - worldPivotB.GetX(),
+      worldPivotA.GetY() - worldPivotB.GetY(),
+      worldPivotA.GetZ() - worldPivotB.GetZ()
+    );
 
 
     const ax = axis[0], ay = axis[1], az = axis[2];

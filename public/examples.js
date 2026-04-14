@@ -645,10 +645,10 @@ var flipper = function () {
         },
         rotation: {
           x: 0,
-          y: -1.9,
+          y: -1.95,
           z: 0
         },
-        scale: [4.5, 0.4, 0.1],
+        scale: [4.6, 0.4, 0.1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bottomEdge2',
         mesh: m.cube,

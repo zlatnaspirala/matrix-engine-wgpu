@@ -321,8 +321,8 @@ export var flipper = function() {
       const BEdgeYAngle = flipper.addMeshObj({
         material: {type: 'standard'},
         position: {x: -0.5, y: 0.5, z: -6.5},
-        rotation: {x: 0, y: -1.9, z: 0},
-        scale: [4.5, 0.4, 0.1],
+        rotation: {x: 0, y: -1.95, z: 0},
+        scale: [4.6, 0.4, 0.1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bottomEdge2',
         mesh: m.cube,
