@@ -1,8 +1,10 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from "../src/engine/loader-obj.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {byId, isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {PVector} from "../src/engine/matrix-class.js";
+import {pointerEffect} from "../src/shaders/standalone/pointer.effect.js";
+import {MobileDOM} from "../src/engine/cameras.js";
 
 export var flipper = function() {
   let MYFLIPPER = {
@@ -10,7 +12,7 @@ export var flipper = function() {
   };
 
   let flipper = new MatrixEngineWGPU({
-    // useJolt: true,
+    useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
@@ -27,6 +29,18 @@ export var flipper = function() {
     flipper.matrixSounds.audios.music.loop = true;
     flipper.matrixSounds.play('music');
 
+    byId('mobileControls').style.marginRight = '20%';
+    MobileDOM.addButton("PIN", () => {}, {left: '5'});
+    MobileDOM.addButton("PIN", () => {}, {left: '80'});
+
+    MobileDOM.addButton("PUSH", async() => {
+
+      let ball = app.matrixPhysics.getBodyByName('ball1');
+      const pos = await app.matrixPhysics.getPosition(ball);
+      if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
+        new PVector(0, 2, -randomIntFromTo(11, 15)));
+
+    }, {left: '80', bottom: '45'});
     // Lights
     const NUM_LIGHTS = isMobile() == true ? 2 : 4;
     const ORBIT_RADIUS = 12;
@@ -156,11 +170,13 @@ export var flipper = function() {
         texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'bigBox',
         mesh: m.bigBox,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        }
+        },
+        //    
       });
 
       let envMapParams = {
@@ -175,22 +191,46 @@ export var flipper = function() {
         usePlanarReflection: false,       // ✅ Env map mode
       }
 
-      let glass = flipper.addMeshObj({
-        material: {type: 'mirror'},
-        position: {x: 0, y: 2.1, z: -20.5},
-        scale: [6, 0.05, 14.5],
-        texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
-        name: 'glass',
-        mesh: m.glass,
-        shadowsCast: false,
-        envMapParams: envMapParams,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
-      glass.setBlend(0.1);
+      if(flipper.matrixPhysics._PHYSICS_DRIVE == "AMMO") {
+        let glass = flipper.addMeshObj({
+          material: {type: 'mirror'},
+          position: {x: 0, y: 2.1, z: -20.5},
+          scale: [6, 0.05, 14.5],
+          texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+          name: 'glass',
+          mesh: m.glass,
+          shadowsCast: false,
+          envMapParams: envMapParams,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+        glass.setBlend(0.1);
+
+      } else {
+
+        let glass = flipper.addMeshObj({
+          material: {type: 'standard'},
+          position: {x: 0, y: 2.1, z: -20.5},
+          scale: [6, 0.05, 14.5],
+          texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+          name: 'glass',
+          mesh: m.glass,
+          shadowsCast: false,
+          // envMapParams: envMapParams,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+
+        glass.setBlend(0.01);
+      }
+
+
 
       // BUMPERS
       const bumperPositions = [
@@ -221,7 +261,7 @@ export var flipper = function() {
 
       // Edges
       const TEdge = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 0, y: 1, z: -36},
         scale: [6.2, 1, 0.5],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -238,7 +278,7 @@ export var flipper = function() {
 
       // Inside flipper
       const topCurveInLeft = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 4.5, y: 0.9, z: -36},
         scale: [1, 0.8, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -253,7 +293,7 @@ export var flipper = function() {
       });
 
       const jumper1 = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: -4.8, y: 0.4, z: -29.3},
         scale: [1, 1, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -270,7 +310,7 @@ export var flipper = function() {
       });
 
       const bottomLeft = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: -3.5, y: 0.3, z: -10},
         scale: [1, 1.2, 1],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -285,7 +325,7 @@ export var flipper = function() {
       });
 
       const bottomRight = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 3.5, y: 0.3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         scale: [-1, 1.2, 1],
@@ -301,7 +341,7 @@ export var flipper = function() {
       });
 
       const BEdge = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 0, y: 1, z: -6},
         rotation: {x: 0, y: 0, z: 0},
         scale: [6, 1.02, 0.2],
@@ -318,7 +358,7 @@ export var flipper = function() {
       });
 
       const BEdgeYAngle = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: -0.6, y: 0.5, z: -6.5},
         rotation: {x: 0, y: -2, z: 0},
         scale: [4.8, 0.4, 0.1],
@@ -471,7 +511,7 @@ export var flipper = function() {
           }
         });
 
-        window.addEventListener("keyup", async(e) => {
+        window.addEventListener("keyup", async (e) => {
           if(e.code === "KeyZ") {
             leftBodycurrPos = 'unpressed';
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
@@ -599,10 +639,10 @@ export var flipper = function() {
         const rayDirection = e.detail.rayDirection;
         // console.log('collision : ', body1Name)
 
-        if(body1Name.startsWith("bumper") || body0Name.startsWith("bumper") ) {
+        if(body1Name.startsWith("bumper") || body0Name.startsWith("bumper")) {
           // console.log('collision with bumper!!!!!!!!!!!!!!: ', body1Name)
         }
-        if(  (body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
+        if((body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
           console.log('collision with bumper: ', body1Name)
           // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
           if(ball != -1) {
@@ -620,7 +660,7 @@ export var flipper = function() {
 
       // only render objs
       const leg1 = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: -5.5, y: -5, z: -6.1},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -635,7 +675,7 @@ export var flipper = function() {
       });
 
       const leg2 = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 5.5, y: -5, z: -6.1},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -650,7 +690,7 @@ export var flipper = function() {
       });
 
       const leg3 = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: -5.5, y: -5, z: -36},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -665,7 +705,7 @@ export var flipper = function() {
       });
 
       const leg4 = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 5.5, y: -5, z: -36},
         scale: [0.2, 7, 0.2],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -680,7 +720,7 @@ export var flipper = function() {
       });
       // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
-        app.activateBloomEffect();
+        if(isMobile() == false) app.activateBloomEffect();
         app.cameras.WASD.setYaw(-0.03);
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);

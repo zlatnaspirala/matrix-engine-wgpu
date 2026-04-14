@@ -15,6 +15,7 @@ import {createGroundTexture} from './procedures/procedural-textures';
 import {MEConfig} from '../me-config';
 import {PointerEffect} from './effects/pointerEffect';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
+import {MSDFTextEffect} from './effects/msdfText';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -682,6 +683,9 @@ export default class MEMeshObj extends Materials {
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch');
+        }
+        if(typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
+          this.effects.gpuText = new MSDFTextEffect(device, pf, "rgba16float", 'torch');
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");

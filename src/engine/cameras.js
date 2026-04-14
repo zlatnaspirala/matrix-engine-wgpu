@@ -45,7 +45,7 @@ export class WASDCamera {
 
     if(isMobile() == true && options.isActive == 'init active cam') {
       console.log('CONTROLER MOBILE WASDCAMERA')
-      MobileDOM.createWASD(this, {margin: 0});
+      MobileDOM.createWASD(this, {marginR: 0, marginD: 0});
     }
   }
 
@@ -759,19 +759,21 @@ export class FirstPersonCamera {
   }
 }
 
-const MobileDOM = {
+export const MobileDOM = {
 
   createWASD(camera, options = {}) {
     const size = options.size ?? 60;
-    const margin = options.margin ?? 20;
+    const marginR = options.marginR ?? 0;
+    const marginB = options.marginB ?? 0;
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#ffffff';
 
     const wrap = document.createElement('div');
+    wrap.id = "mobileControls";
     Object.assign(wrap.style, {
       position: 'fixed',
-      bottom: `${margin}px`,
-      right: `${margin}px`,
+      bottom: `${marginB}px`,
+      right: `${marginR}px`,
       width: `${size * 3 + 8}px`,
       userSelect: 'none',
       zIndex: '9999',
@@ -816,6 +818,7 @@ const MobileDOM = {
         if(camera._keyInterval === null) {
           camera._keyInterval = setInterval(() => {
             camera._dirty = true;
+            camera._dirtyAngle = true;
             camera._applyDigitalMovement();
           }, 16);
         }
@@ -845,14 +848,15 @@ const MobileDOM = {
 
   addButton(label, onClick, options = {}) {
     const size = options.size ?? 56;
-    const margin = options.margin ?? 20;
+    const bottom = options.bottom ?? 0;
+    const left = options.left ?? 0;
     const opacity = options.opacity ?? 0.35;
 
     const btn = document.createElement('div');
     Object.assign(btn.style, {
       position: 'fixed',
-      bottom: options.bottom ?? `${margin}px`,
-      right: options.right ?? `${margin}px`,
+      bottom: `${bottom}%`,
+      left: `${left}%`,
       width: `${size}px`,
       height: `${size}px`,
       display: 'flex',

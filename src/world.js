@@ -35,6 +35,7 @@ import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.
 import {nanoPass} from "./engine/overrides/nano-render.js";
 import {MatrixJolt} from "./engine/physics/matrix-jolt_DEPLACED.js";
 import {PhysicsBridge} from "./engine/physics/bridge.js";
+import {mobile1} from "./engine/overrides/mobile-1.js";
 /**
  * @description
  * Main engine root class.
@@ -181,6 +182,8 @@ export default class MatrixEngineWGPU {
         this.overrideRender = nanoPass.bind(this);
       } else if(options.render == 'no-shadows') {
         this.overrideRender = noShadowPass.bind(this);
+      } else if(options.render == 'mobile1') {
+        this.overrideRender = mobile1.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -1051,7 +1054,7 @@ export default class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
-      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+      // this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
 
