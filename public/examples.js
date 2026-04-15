@@ -223,7 +223,7 @@ var flipper = function () {
   };
   let flipper = new _world.default({
     render: 'mobile1',
-    // useJolt: true,
+    useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -344,7 +344,7 @@ var flipper = function () {
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
         pin: "./res/meshes/blender/pin-for-pinball.obj",
         pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
-        // pushBtn: "./res/meshes/shapes/pushBtn.obj",
+        pushBtn: "./res/meshes/shapes/pushBtn.obj",
         vrcLeft: "./res/meshes/blender/vrc-left.obj",
         jumper: "./res/meshes/blender/jumper-up.obj",
         bottomLeft: "./res/meshes/blender/bottom-left.obj",
@@ -353,7 +353,7 @@ var flipper = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      flipper.matrixPhysics.speedUpSimulation = (0, _utils.isMobile)() == true ? 11 : 4;
+      flipper.matrixPhysics.speedUpSimulation = (0, _utils.isMobile)() == true ? 1 : 4;
       // flipper.matrixPhysics.speedUpSimulation = 3;
     });
     async function onGround(m) {

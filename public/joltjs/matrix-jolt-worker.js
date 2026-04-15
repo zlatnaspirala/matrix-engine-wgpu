@@ -57,7 +57,7 @@ class MatrixJolt {
     this.joltInterface = null;
     this.physicsSystem = null;
     this.bodyInterface = null;
-    this.speedUpSimulation = 1;
+    this.speedUpSimulation = 3;
     this.options = {roundDimension: 100, gravity: 10};
     this._sab = null;
     this._snapshot = null;
@@ -88,6 +88,9 @@ class MatrixJolt {
     const module = await import('https://www.unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js');
     const Jolt = await module.default();
     this.Jolt = Jolt;
+
+    // cache
+
     this._initPhysics(options.groundY ?? 0);
   }
 
@@ -157,6 +160,7 @@ class MatrixJolt {
   _registerBody(body, pOptions) {
     body.name = pOptions.name;
     this.rigidBodies.push(body);
+    this.bodyIDs = this.rigidBodies.map(b => b.GetID());
     this._allocBuffer(this.rigidBodies.length);
     const idx = this.rigidBodies.length - 1;
     if(this._snapshot) {
@@ -246,8 +250,7 @@ class MatrixJolt {
   }
 
   _addSphere(pOptions) {
-    const r = Array.isArray(pOptions.radius) ? pOptions.radius[0] : (pOptions.radius || 1);
-    return this._createBody(pOptions, new this.Jolt.SphereShape(r));
+    return this._createBody(pOptions, new this.Jolt.SphereShape(pOptions.scale[0]));
   }
 
   _addBox(pOptions) {
@@ -539,27 +542,37 @@ class MatrixJolt {
       position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}
     });
   }
-  
+
   step() {
     if(!this.joltInterface) return;
-    for(let i = 0;i < this.speedUpSimulation;i++) this.joltInterface.Step(1 / 60, 1);
+
+    // --- physics step ---
+    for(let i = 0;i < this.speedUpSimulation;i++) {
+      this.joltInterface.Step(1 / 30, 1);
+    }
     const snap = this._snapshot;
     if(!snap) return;
-    this.rigidBodies.forEach((body, i) => {
+    const bi = this.bodyInterface;
+    const ids = this.bodyIDs;
+    const count = ids.length;
+    for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
-      const id = body.GetID();
-      const pos = this.bodyInterface.GetPosition(id);
-      snap[base + 0] = pos.GetX(); snap[base + 1] = pos.GetY(); snap[base + 2] = pos.GetZ();
-      const rot = this.bodyInterface.GetRotation(id);
-      const qx = rot.GetX(), qy = rot.GetY(), qz = rot.GetZ(), qw = rot.GetW();
-      const sinHalf = Math.sqrt(qx * qx + qy * qy + qz * qz);
-      snap[base + 6] = 2 * Math.atan2(sinHalf, qw);
-      if(sinHalf > 0.0001) {
-        snap[base + 3] = qx / sinHalf; snap[base + 4] = qy / sinHalf; snap[base + 5] = qz / sinHalf;
-      } else {
-        snap[base + 3] = 0; snap[base + 4] = 1; snap[base + 5] = 0;
-      }
-    });
+      const id = ids[i];
+      // --- WASM calls ---
+      const pos = bi.GetPosition(id);
+      const rot = bi.GetRotation(id);
+      // --- position ---
+      snap[base + 0] = pos.GetX();
+      snap[base + 1] = pos.GetY();
+      snap[base + 2] = pos.GetZ();
+      // --- quaternion DIRECT (NO CONVERSION)
+      snap[base + 3] = rot.GetX();
+      snap[base + 4] = rot.GetY();
+      snap[base + 5] = rot.GetZ();
+      snap[base + 6] = rot.GetW();
+      // optional flag
+      snap[base + 7] = 1;
+    }
   }
 }
 

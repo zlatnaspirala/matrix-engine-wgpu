@@ -12,7 +12,7 @@ export var flipper = function() {
 
   let flipper = new MatrixEngineWGPU({
     render: 'mobile1',
-    // useJolt: true,
+    useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
@@ -120,7 +120,7 @@ export var flipper = function() {
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
         pin: "./res/meshes/blender/pin-for-pinball.obj",
         pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
-        // pushBtn: "./res/meshes/shapes/pushBtn.obj",
+        pushBtn: "./res/meshes/shapes/pushBtn.obj",
         vrcLeft: "./res/meshes/blender/vrc-left.obj",
         jumper: "./res/meshes/blender/jumper-up.obj",
         bottomLeft: "./res/meshes/blender/bottom-left.obj",
@@ -132,7 +132,7 @@ export var flipper = function() {
       );
 
 
-      flipper.matrixPhysics.speedUpSimulation = isMobile() == true ? 11 : 4;
+      flipper.matrixPhysics.speedUpSimulation = isMobile() == true ? 1 : 4;
       // flipper.matrixPhysics.speedUpSimulation = 3;
 
     });
