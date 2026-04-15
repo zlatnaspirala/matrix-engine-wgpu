@@ -542,7 +542,8 @@ var flipper = function () {
           physics: {
             enabled: true,
             mass: 0,
-            geometry: "Sphere",
+            // geometry: "Sphere",
+            geometry: 'Cylinder',
             group: 2,
             mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
           }
@@ -879,6 +880,24 @@ var flipper = function () {
             if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
           }
         });
+
+        // const ball = app.matrixPhysics.getBodyByName('ball1');
+        console.info('BALL ID ', ball);
+        const strength = 1;
+        document.addEventListener("pCollision", e => {
+          // console.log('pCollision::', e);
+          const body0Name = e.detail.body0Name;
+          const body1Name = e.detail.body1Name;
+          const rayDirection = e.detail.rayDirection;
+          console.log('collision : ', body1Name);
+          if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
+            console.log('collision with bumper: ', body1Name);
+            // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
+            if (ball != -1) {
+              flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength));
+            }
+          }
+        });
       }, 1000);
       const commonAchorX = 2.2;
       // const commomBODYX = 0.8; ammo working
@@ -997,22 +1016,6 @@ var flipper = function () {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
           const pos = await app.matrixPhysics.getPosition(ball);
           if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
-        }
-      });
-      const ball = app.matrixPhysics.getBodyByName('ball1');
-      const strength = 1;
-      document.addEventListener("pCollision", e => {
-        // console.log('pCollision::', e);
-        const body0Name = e.detail.body0Name;
-        const body1Name = e.detail.body1Name;
-        const rayDirection = e.detail.rayDirection;
-        // console.log('collision : ', body1Name)
-        if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
-          console.log('collision with bumper: ', body1Name);
-          // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
-          if (ball != -1) {
-            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, Math.abs(rayDirection[1]) * strength + 8, rayDirection[2] * strength));
-          }
         }
       });
 
@@ -35154,7 +35157,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.PhysicsBridge = void 0;
-var _utils = require("../utils");
 var _wgpuMatrix = require("wgpu-matrix");
 class PhysicsBridge {
   constructor(workerUrl) {
@@ -35167,7 +35169,7 @@ class PhysicsBridge {
       });
     }
     this._worker.onerror = e => {
-      console.error('Worker error:', e.message, e.filename, e.lineno);
+      console.error('MEWorker error:', e.message, e.filename, e.lineno);
     };
     this._snapshot = null;
     this._pending = new Map();
@@ -35183,10 +35185,15 @@ class PhysicsBridge {
     });
     this.tempRot = _wgpuMatrix.mat4.create();
     this._paused = false;
+    this.updates = [];
+    this._kinematicIdx = new Uint16Array(1024); // or max bodies
+    this._kinematicPos = new Float32Array(1024 * 3);
+    this._kinematicCount = 0;
+    this.c = 0;
   }
   getBodyByName(name) {
     for (const [meObj, idx] of this._bodyIndexMap) if (meObj.name === name) return idx;
-    console.log('[bridge] bodyIndexMap -1 :', name);
+    console.info('[bridge] Body not found -1 :', name);
     return -1;
   }
   async init(options = {}) {
@@ -35224,31 +35231,31 @@ class PhysicsBridge {
     });
   }
   updatePhysics() {
-    const updates = [];
+    let count = 0;
+    const idxArr = this._kinematicIdx;
+    const posArr = this._kinematicPos;
     for (const [meObj, idx] of this._bodyIndexMap) {
-      if (meObj.isKinematic) {
-        const {
-          x,
-          y,
-          z
-        } = meObj.position;
-        updates.push({
-          idx,
-          x,
-          y,
-          z
-        });
-      }
+      if (!meObj.isKinematic) continue;
+      const base = count * 3;
+      idxArr[count] = idx;
+      posArr[base + 0] = meObj.position.x;
+      posArr[base + 1] = meObj.position.y;
+      posArr[base + 2] = meObj.position.z;
+      count++;
     }
-    if (updates.length > 0) {
+    this._kinematicCount = count;
+    if (count > 0) {
       this._worker.postMessage({
         cmd: 'setKinematicBatch',
-        updates
+        count,
+        idx: idxArr,
+        pos: posArr
       });
     }
-    this._worker.postMessage({
+    if (this.c % 2 === 0) this._worker.postMessage({
       cmd: 'step'
     });
+    this.c++;
   }
 
   // MatrixJolt public API
@@ -35429,6 +35436,7 @@ class PhysicsBridge {
     });
   }
   getPosition(idx) {
+    console.log('ADD', idx);
     return this._send('getPosition', {
       idx: idx
     });
@@ -35496,6 +35504,7 @@ class PhysicsBridge {
   _onMessage(data) {
     switch (data.cmd) {
       case 'ready':
+      // this._worker.onmessage = ({data}) => this._onMessage(data);
       case 'bodyAdded':
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
@@ -35515,6 +35524,7 @@ class PhysicsBridge {
         this._pending.delete(data.id);
         break;
       case 'getPosition':
+        console.info(">>>>>>>>>>>>>>>>>>>>>>" + data.position);
         this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;
@@ -35533,7 +35543,7 @@ function _snapQuat(snap, b) {
   return [Math.cos(a / 2), ax * s, ay * s, az * s];
 }
 
-},{"../utils":74,"wgpu-matrix":30}],66:[function(require,module,exports){
+},{"wgpu-matrix":30}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

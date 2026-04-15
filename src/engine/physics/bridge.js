@@ -1,4 +1,3 @@
-import {quaternion_rotation_matrix} from "../utils";
 import {mat4} from 'wgpu-matrix';
 
 export class PhysicsBridge {
@@ -10,7 +9,7 @@ export class PhysicsBridge {
       this._worker = new Worker(workerUrl, {type: 'module'});
     }
     this._worker.onerror = (e) => {
-      console.error('Worker error:', e.message, e.filename, e.lineno);
+      console.error('MEWorker error:', e.message, e.filename, e.lineno);
     };
     this._snapshot = null;
     this._pending = new Map();
@@ -20,14 +19,18 @@ export class PhysicsBridge {
     this._queue = [];
     this._worker.onmessage = ({data}) => this._onMessage(data);
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
-
     this.tempRot = mat4.create();
     this._paused = false;
+    this.updates = [];
+    this._kinematicIdx = new Uint16Array(1024); // or max bodies
+    this._kinematicPos = new Float32Array(1024 * 3);
+    this._kinematicCount = 0;
+    this.c = 0;
   }
 
   getBodyByName(name) {
     for(const [meObj, idx] of this._bodyIndexMap) if(meObj.name === name) return idx;
-    console.log('[bridge] bodyIndexMap -1 :', name);
+    console.info('[bridge] Body not found -1 :', name);
     return -1;
   }
 
@@ -55,18 +58,25 @@ export class PhysicsBridge {
   }
 
   updatePhysics() {
-    const updates = [];
+    let count = 0;
+    const idxArr = this._kinematicIdx;
+    const posArr = this._kinematicPos;
     for(const [meObj, idx] of this._bodyIndexMap) {
-      if(meObj.isKinematic) {
-        const {x, y, z} = meObj.position;
-        updates.push({idx, x, y, z});
-      }
+      if(!meObj.isKinematic) continue;
+      const base = count * 3;
+      idxArr[count] = idx;
+      posArr[base + 0] = meObj.position.x;
+      posArr[base + 1] = meObj.position.y;
+      posArr[base + 2] = meObj.position.z;
+      count++;
+    }
+    this._kinematicCount = count;
+    if(count > 0) {
+      this._worker.postMessage({cmd: 'setKinematicBatch', count, idx: idxArr, pos: posArr});
     }
 
-    if(updates.length > 0) {
-      this._worker.postMessage({cmd: 'setKinematicBatch', updates});
-    }
-    this._worker.postMessage({cmd: 'step'});
+    if (this.c % 2 === 0)  this._worker.postMessage({cmd: 'step'});
+    this.c++;
   }
 
   // MatrixJolt public API
@@ -166,6 +176,7 @@ export class PhysicsBridge {
   }
 
   getPosition(idx) {
+    console.log('ADD', idx)
     return this._send('getPosition', {idx: idx});
   }
 
@@ -217,6 +228,7 @@ export class PhysicsBridge {
   _onMessage(data) {
     switch(data.cmd) {
       case 'ready':
+      // this._worker.onmessage = ({data}) => this._onMessage(data);
       case 'bodyAdded':
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
@@ -236,6 +248,7 @@ export class PhysicsBridge {
         this._pending.delete(data.id);
         break;
       case 'getPosition':
+        console.info(">>>>>>>>>>>>>>>>>>>>>>" +data.position)
         this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;

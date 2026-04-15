@@ -277,7 +277,8 @@ export var flipper = function() {
           physics: {
             enabled: true,
             mass: 0,
-            geometry: "Sphere",
+            // geometry: "Sphere",
+            geometry: 'Cylinder',
             group: 2,
             mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
           },
@@ -553,6 +554,28 @@ export var flipper = function() {
           }
         });
 
+        // const ball = app.matrixPhysics.getBodyByName('ball1');
+        console.info('BALL ID ', ball)
+        const strength = 1;
+        document.addEventListener("pCollision", (e) => {
+          // console.log('pCollision::', e);
+          const body0Name = e.detail.body0Name;
+          const body1Name = e.detail.body1Name;
+          const rayDirection = e.detail.rayDirection;
+          console.log('collision : ', body1Name)
+          if((body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
+            console.log('collision with bumper: ', body1Name)
+            // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
+            if(ball != -1) {
+              flipper.matrixPhysics.applyImpulse(ball, new PVector(
+                rayDirection[0] * strength,
+                Math.abs(rayDirection[1]) * strength + 8,
+                rayDirection[2] * strength
+              ));
+            }
+          }
+        });
+
       }, 1000);
 
       const commonAchorX = 2.2;
@@ -641,7 +664,7 @@ export var flipper = function() {
         }
       });
 
-      flipper.canvas.addEventListener("ray.hit.event", async(e) => {
+      flipper.canvas.addEventListener("ray.hit.event", async (e) => {
         app.matrixSounds.play('click1');
         console.log('e.detail', e.detail);
         if(e.detail.hitObject.name == "pushBtn") {
@@ -653,26 +676,7 @@ export var flipper = function() {
         }
       });
 
-      const ball = app.matrixPhysics.getBodyByName('ball1');
-      const strength = 1;
-      document.addEventListener("pCollision", (e) => {
-        // console.log('pCollision::', e);
-        const body0Name = e.detail.body0Name;
-        const body1Name = e.detail.body1Name;
-        const rayDirection = e.detail.rayDirection;
-        // console.log('collision : ', body1Name)
-        if((body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
-          console.log('collision with bumper: ', body1Name)
-          // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
-          if(ball != -1) {
-            flipper.matrixPhysics.applyImpulse(ball, new PVector(
-              rayDirection[0] * strength,
-              Math.abs(rayDirection[1]) * strength + 8,
-              rayDirection[2] * strength
-            ));
-          }
-        }
-      });
+
 
       // GRAVITY TILT (PINBALL FEEL)
       flipper.matrixPhysics.setGravity(0, -9.8, 1.8);

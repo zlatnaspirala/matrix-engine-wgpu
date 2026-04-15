@@ -126,6 +126,29 @@ class MatrixJolt {
     this.bodyInterface = this.physicsSystem.GetBodyInterface();
     this._vector0.Set(0, -this.options.gravity, 0);
     this.physicsSystem.SetGravity(this._vector0);
+
+    const contactListener = new Jolt.ContactListenerJS();
+    contactListener.OnContactValidate = (body1Ptr, body2Ptr, baseOffsetPtr, collideShapeResultPtr) => {
+      // Usually return AcceptAllContactsForThisBodyPair (value 0)
+      return Jolt.ValidateResult_AcceptAllContactsForThisBodyPair;
+    };
+    // 2. OnContactAdded
+    contactListener.OnContactAdded = (body1Ptr, body2Ptr, manifoldPtr, settingsPtr) => {
+      // Your collision logic here
+    };
+    // 3. OnContactPersisted
+    contactListener.OnContactPersisted = (body1Ptr, body2Ptr, manifoldPtr, settingsPtr) => {
+      // Triggered every step the bodies remain in contact
+    };
+    // 4. OnContactRemoved
+    contactListener.OnContactRemoved = (subShapePairPtr) => {
+      // Your cleanup logic here
+    };
+    contactListener.OnContactAdded = (bodyA, bodyB, manifold) => {
+      self.postMessage({cmd: "collision", body0Name: bodyA.name, body1Name: bodyB.name})
+    };
+    this.physicsSystem.SetContactListener(contactListener);
+
     this._vector1.Set(this.options.roundDimension, 1, this.options.roundDimension);
     const groundShape = new Jolt.BoxShape(this._vector1);
     const groundSettings = new Jolt.BodyCreationSettings(
@@ -217,7 +240,7 @@ class MatrixJolt {
     const settings = new Jolt.BodyCreationSettings(
       shape,
       new Jolt.RVec3(pos.x, pos.y, pos.z),
-      q, // ✅ use computed quaternion
+      q,
       motionType,
       layer
     );
@@ -238,12 +261,10 @@ class MatrixJolt {
     }
 
     body.isKinematic = isKinematic;
-
     this.bodyInterface.AddBody(
       body.GetID(),
       isStatic ? Jolt.EActivation_DontActivate : Jolt.EActivation_Activate
     );
-
     return this._registerBody(body, pOptions);
   }
 
@@ -253,7 +274,8 @@ class MatrixJolt {
 
   _addBox(pOptions) {
     const s = pOptions.scale || [1, 1, 1];
-    return this._createBody(pOptions, new this.Jolt.BoxShape(new this.Jolt.Vec3(s[0], s[1], s[2])));
+    this._vector2.Set(s[0], s[1], s[2])
+    return this._createBody(pOptions, new this.Jolt.BoxShape(this._vector2));
   }
 
   _addCapsule(pOptions) {
@@ -277,7 +299,6 @@ class MatrixJolt {
     const verts = buildConeVerts(pOptions.radius, pOptions.height);
     const settings = new Jolt.ConvexHullShapeSettings();
     const points = settings.mPoints;
-    // this._vector0.Set()
     for(let i = 0;i < verts.length / 3;i++) {
       const v = new Jolt.Vec3(verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
       points.push_back(v);
@@ -293,10 +314,8 @@ class MatrixJolt {
   _addConvexHull(pOptions) {
     const Jolt = this.Jolt;
     const settings = new Jolt.ConvexHullShapeSettings();
-
     const verts = pOptions.vertices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
-
     for(let i = 0;i < verts.length;i += 3) {
       settings.mPoints.push_back(
         new Jolt.Vec3(
@@ -315,12 +334,9 @@ class MatrixJolt {
   _addBvhMesh(pOptions) {
     const Jolt = this.Jolt;
     const settings = new Jolt.MeshShapeSettings();
-
     const v = pOptions.vertices;
     const idx = pOptions.indices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
-
-    // ✅ APPLY SCALE HERE
     for(let i = 0;i < v.length;i += 3) {
       settings.mTriangleVertices.push_back(
         new Jolt.Float3(
@@ -330,44 +346,43 @@ class MatrixJolt {
         )
       );
     }
-
     for(let i = 0;i < idx.length;i += 3) {
       settings.mIndexedTriangles.push_back(
         new Jolt.IndexedTriangle(idx[i], idx[i + 1], idx[i + 2], 0)
       );
     }
-
     const result = settings.Create();
     const shape = result.Get();
-
     Jolt.destroy(settings);
-
     return this._createBody(pOptions, shape);
   }
 
-  // --- COMMAND INTERFACE ---
-
   applyImpulse(idx, x, y, z) {
     const b = this.rigidBodies[idx];
-    if(b) this.bodyInterface.AddImpulse(b.GetID(), new this.Jolt.Vec3(x, y, z));
+    this._vector0.Set(x, y, z);
+    if(b) this.bodyInterface.AddImpulse(b.GetID(), this._vector0);
   }
 
   applyTorque(idx, x, y, z) {
     const b = this.rigidBodies[idx];
-    if(b) this.bodyInterface.AddTorque(b.GetID(), new this.Jolt.Vec3(x, y, z));
+    this._vector0.Set(x, y, z);
+    if(b) this.bodyInterface.AddTorque(b.GetID(), this._vector0);
   }
 
   shootBody(idx, lx, ly, lz, ax, ay, az) {
     const b = this.rigidBodies[idx];
     if(b) {
-      this.bodyInterface.SetLinearVelocity(b.GetID(), new this.Jolt.Vec3(lx, ly, lz));
-      this.bodyInterface.SetAngularVelocity(b.GetID(), new this.Jolt.Vec3(ax, ay, az));
+      this._vector0.Set(lx, ly, lz);
+      this._vector1.Set(ax, ay, az);
+      this.bodyInterface.SetLinearVelocity(b.GetID(), this._vector0);
+      this.bodyInterface.SetAngularVelocity(b.GetID(), this._vector1);
     }
   }
 
   setLinearVelocity(idx, x, y, z) {
     const b = this.rigidBodies[idx];
-    if(b) this.bodyInterface.SetLinearVelocity(b.GetID(), new this.Jolt.Vec3(x, y, z));
+    this._vector0.Set(x, y, z);
+    if(b) this.bodyInterface.SetLinearVelocity(b.GetID(), this._vector0);
   }
 
   setActivationState(idx, state) {
@@ -400,7 +415,8 @@ class MatrixJolt {
   }
 
   setGravity(x, y, z) {
-    this.physicsSystem.SetGravity(new this.Jolt.Vec3(x, y, z));
+    this._vector0.Set(x, y, z);
+    this.physicsSystem.SetGravity(this._vector0);
   }
 
   setGravityScale(idx, scale) {
@@ -411,20 +427,22 @@ class MatrixJolt {
 
   setBodyTransform(idx, x, y, z) {
     const b = this.rigidBodies[idx];
-    if(b) this.bodyInterface.SetPosition(b.GetID(), new this.Jolt.RVec3(x, y, z), this.Jolt.EActivation_Activate);
+    this._vector0.Set(x, y, z);
+    if(b) this.bodyInterface.SetPosition(b.GetID(), this._vector0, this.Jolt.EActivation_Activate);
   }
 
   setKinematicTransform(idx, x, y, z) {
     const b = this.rigidBodies[idx];
-    if(b) this.bodyInterface.MoveKinematic(b.GetID(), new this.Jolt.RVec3(x, y, z), this.Jolt.Quat.prototype.sIdentity(), 1 / 60);
+    this._vector0.Set(x, y, z);
+    if(b) this.bodyInterface.MoveKinematic(b.GetID(), this._vector0, this.Jolt.Quat.prototype.sIdentity(), 1 / 60);
   }
 
   clearBody(idx) {
     const b = this.rigidBodies[idx];
     if(b) {
-      const zero = new this.Jolt.Vec3(0, 0, 0);
-      this.bodyInterface.SetLinearVelocity(b.GetID(), zero);
-      this.bodyInterface.SetAngularVelocity(b.GetID(), zero);
+      this._vector0.Set(0, 0, 0);
+      this.bodyInterface.SetLinearVelocity(b.GetID(), this._vector0);
+      this.bodyInterface.SetAngularVelocity(b.GetID(), this._vector0);
     }
   }
 
@@ -445,13 +463,10 @@ class MatrixJolt {
     if(!this.constraints) this.constraints = [];
     const bodyA = this.rigidBodies[idxA];
     const bodyB = this.rigidBodies[idxB];
-
     if(bodyB.IsSensor()) {
-      bodyB.SetIsSensor(true);
+      // bodyB.SetIsSensor(true);
       console.log("SET SENSOR ON:", pOptions.name, bodyB.IsSensor());
     }
-
-
     if(!bodyA || !bodyB) return null;
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
@@ -460,7 +475,6 @@ class MatrixJolt {
     console.log("hinge at index:", bodyB);
     const worldPivotA = localToWorld(Jolt, bodyA, pivotA);
     const worldPivotB = localToWorld(Jolt, bodyB, pivotB);
-
 
     console.log(
       "pivot diff:",
@@ -522,11 +536,15 @@ class MatrixJolt {
 
   getPosition(idx, msgID) {
     const body = this.rigidBodies[idx];
+    
     if(!body) {
       self.postMessage({cmd: 'getPosition', id: msgID, position: null});
       return;
     }
     const t = body.GetWorldTransform().GetTranslation();
+    console.info('get pos  t.GetX() ',  t.GetX())
+    console.info('get pos  t.GetX() ',  t.GetY())
+    console.info('get pos  t.GetX() ',  t.GetZ())
     self.postMessage({
       cmd: 'getPosition',
       id: msgID,
@@ -547,6 +565,11 @@ class MatrixJolt {
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
       const id = ids[i];
+      // OPTIMIZATION TEST
+      if(!bi.IsActive(id)) {
+        snap[base + 7] = 0;
+        continue;
+      }
       // --- WASM calls ---
       const pos = bi.GetPosition(id);
       const rot = bi.GetRotation(id);
@@ -570,7 +593,14 @@ const jolt = new MatrixJolt();
 self.onmessage = async ({data}) => {
   const {cmd, id} = data;
   switch(cmd) {
-    case 'init': await jolt.init(data.options); self.postMessage({cmd: 'ready', id}); break;
+    case 'init': {
+      await jolt.init(data.options);
+      self.postMessage({cmd: 'ready', id});
+      // setInterval(() => {
+      //   console.log("Jolt initialized. Heap size:", jolt.Jolt.HEAPU8.length);
+      // }, 2000); 
+      break;
+    }
     case 'addBody': const idx = jolt.addBody(data.pOptions); self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab}); break;
     case 'step': jolt.step(); if(!jolt._useSAB && jolt._snapshot) {const copy = jolt._snapshot.slice(); self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);} break;
     case 'applyImpulse': jolt.applyImpulse(data.idx, data.x, data.y, data.z); break;
@@ -590,6 +620,10 @@ self.onmessage = async ({data}) => {
     case 'setBodyTransform': jolt.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': jolt.setGravityScale(data.idx, data.scale); break;
     case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
-    case 'getPosition': jolt.getPosition(data.idx, data.id); break;
+    case 'getPosition': {
+      console.log('TETETETTE')
+      jolt.getPosition(data.idx, data.id);
+      break;
+    }
   }
 };
