@@ -1,4 +1,5 @@
 import {quaternion_rotation_matrix} from "../utils";
+import {mat4} from 'wgpu-matrix';
 
 export class PhysicsBridge {
   constructor(workerUrl) {
@@ -20,6 +21,7 @@ export class PhysicsBridge {
     this._worker.onmessage = ({data}) => this._onMessage(data);
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
 
+    this.tempRot = mat4.create();
     this._paused = false;
   }
 
@@ -184,19 +186,35 @@ export class PhysicsBridge {
   }
 
   _syncToObjects() {
+    // const snap = this._snapshot;
+    // if(!snap) return;
+    // const FLOATS = 8;
+    // for(const [meObj, idx] of this._bodyIndexMap) {
+    //   const b = idx * FLOATS;
+    //   // if(meObj.isKinematic) continue;
+    //   meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
+    //   meObj.position.inMove = true;
+    //   meObj.rotation.axis.x = snap[b + 3];
+    //   meObj.rotation.axis.y = snap[b + 4];
+    //   meObj.rotation.axis.z = snap[b + 5];
+    //   meObj.rotation.angle = snap[b + 6] * (180 / Math.PI);
+    //   meObj.rotation.matrixRotation = quaternion_rotation_matrix(_snapQuat(snap, b));
+    // }
+    // When you do meObj.modelMatrix[12] = pos[0], you are building a "Pure Isometric" matrix
     const snap = this._snapshot;
     if(!snap) return;
-    const FLOATS = 8;
+    const STRIDE = 8;
     for(const [meObj, idx] of this._bodyIndexMap) {
-      const b = idx * FLOATS;
-      // if(meObj.isKinematic) continue;
-      meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
+      const b = idx * STRIDE;
+      const pos = snap.subarray(b, b + 3);
+      const quat = snap.subarray(b + 3, b + 7);
+      mat4.fromQuat(quat, meObj.modelMatrix);
+      mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
+      meObj.modelMatrix[12] = pos[0];
+      meObj.modelMatrix[13] = pos[1];
+      meObj.modelMatrix[14] = pos[2];
+      meObj.modelMatrix[15] = 1;
       meObj.position.inMove = true;
-      meObj.rotation.axis.x = snap[b + 3];
-      meObj.rotation.axis.y = snap[b + 4];
-      meObj.rotation.axis.z = snap[b + 5];
-      meObj.rotation.angle = snap[b + 6] * (180 / Math.PI);
-      meObj.rotation.matrixRotation = quaternion_rotation_matrix(_snapQuat(snap, b));
     }
   }
 

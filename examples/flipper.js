@@ -3,7 +3,6 @@ import {downloadMeshes} from "../src/engine/loader-obj.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {byId, isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {PVector} from "../src/engine/matrix-class.js";
-import {pointerEffect} from "../src/shaders/standalone/pointer.effect.js";
 import {MobileDOM} from "../src/engine/cameras.js";
 
 export var flipper = function() {
@@ -12,7 +11,7 @@ export var flipper = function() {
   };
 
   let flipper = new MatrixEngineWGPU({
-    // render: 'mobile1',
+    render: 'mobile1',
     // useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},

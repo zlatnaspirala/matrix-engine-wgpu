@@ -1,7 +1,7 @@
 import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
-import MatrixAmmo from "./engine/physics/matrix-ammo_DEPLACED.js";
+// import MatrixAmmo from "./engine/physics/matrix-ammo_DEPLACED.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
@@ -33,7 +33,7 @@ import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
 import {nanoPass} from "./engine/overrides/nano-render.js";
-import {MatrixJolt} from "./engine/physics/matrix-jolt_DEPLACED.js";
+// import {MatrixJolt} from "./engine/physics/matrix-jolt_DEPLACED.js";
 import {PhysicsBridge} from "./engine/physics/bridge.js";
 import {mobile1} from "./engine/overrides/mobile-1.js";
 /**

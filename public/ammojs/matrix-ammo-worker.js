@@ -19,7 +19,7 @@ class MatrixAmmoWorker {
     this.dynamicsWorld = null;
     this.rigidBodies = [];
     this.speedUpSimulation = 1;
-    this.maxSubSteps = 4;
+    this.maxSubSteps = 1;
     this.options = {roundDimensionX: 100, roundDimensionY: 100, gravity: -10};
     this._snapshot = null;
     this._useSAB = false;
@@ -29,7 +29,10 @@ class MatrixAmmoWorker {
     this._origin = null;
     this._quat = null;
     this._axis = null;
-    this.lastCollisionState = new Map();
+    this.lastCollisionState = new Set();
+    this._currentCollisions = new Set();
+
+    this._keyColl = '';
   }
 
   async init(options = {}) {
@@ -500,27 +503,20 @@ class MatrixAmmoWorker {
     this.rigidBodies.forEach((body, i) => {
       const base = i * FLOATS_PER_BODY;
       if(body.isKinematic == true) {
-        const t = body.getWorldTransform();
-        const orig = t.getOrigin();
-        const x = orig.x(), y = orig.y(), z = orig.z();
-        snap[base + 0] = x;
-        snap[base + 1] = y;
-        snap[base + 2] = z;
-        const rot = t.getRotation();
-        rot.normalize();
-        const axis = rot.getAxis();
-        snap[base + 3] = axis.x();
-        snap[base + 4] = axis.y();
-        snap[base + 5] = axis.z();
-        snap[base + 6] = rot.getAngle();
+        body.getWorldTransform(this._trans);
+        const origin = this._trans.getOrigin();
+        const rot = this._trans.getRotation();
+        snap[base + 0] = origin.x();
+        snap[base + 1] = origin.y();
+        snap[base + 2] = origin.z();
+        snap[base + 3] = rot.x();
+        snap[base + 4] = rot.y();
+        snap[base + 5] = rot.z();
+        snap[base + 6] = rot.w();
         snap[base + 7] = 0;
         return;
       }
       if(!body.getMotionState()) return;
-      body.getMotionState().getWorldTransform(this._trans);
-      // const orig = this._trans.getOrigin();
-      // const x = orig.x(), y = orig.y(), z = orig.z();
-      // if(isNaN(x)) return;
       body.getMotionState().getWorldTransform(this._trans);
       const origin = this._trans.getOrigin();
       const rot = this._trans.getRotation();
@@ -530,7 +526,7 @@ class MatrixAmmoWorker {
       snap[base + 3] = rot.x();
       snap[base + 4] = rot.y();
       snap[base + 5] = rot.z();
-      snap[base + 6] = rot.w(); // Pass the W component!
+      snap[base + 6] = rot.w();
       snap[base + 7] = 0;
     });
     this._detectCollision();
@@ -563,29 +559,35 @@ class MatrixAmmoWorker {
   _detectCollision() {
     const dispatcher = this.dynamicsWorld.getDispatcher();
     const numManifolds = dispatcher.getNumManifolds();
-    const currentCollisions = new Set();
+
+    // Clear the "current" set for this frame (reuses the object)
+    this._currentCollisions.clear();
+
     for(let i = 0;i < numManifolds;i++) {
       const manifold = dispatcher.getManifoldByIndexInternal(i);
       if(manifold.getNumContacts() === 0) continue;
+
       const ptr0 = Ammo.getPointer(manifold.getBody0());
       const ptr1 = Ammo.getPointer(manifold.getBody1());
-      let name0 = null;
-      let name1 = null;
-      try {
-        name0 = this.ptrToName.get(ptr0);
-        name1 = this.ptrToName.get(ptr1);
-        if(!name0 || !name1) return;
-        if(name0 === 'ground' || name1 === 'ground') return;
-      } catch(e) {
-        // console.log('err in collision e :', name0);
-        return;
-      }
-      // console.log('worker - colisin', name0)
-      const key = `${name0}|${name1}`;
-      currentCollisions.add(key);
+
+      const name0 = this.ptrToName.get(ptr0);
+      const name1 = this.ptrToName.get(ptr1);
+
+      if(!name0 || !name1) continue; // Use continue instead of return to check other manifolds
+      if(name0 === 'ground' || name1 === 'ground') continue;
+
+      // Use a consistent key order (e.g. alphabetical) so A|B is same as B|A
+      // const key = name0 < name1 ? `${name0}|${name1}` : `${name1}|${name0}`;
+      this._keyColl = name0+name1;
+      const key = this._keyColl;
+
+      this._currentCollisions.add(key);
+
+      // Check against LAST frame's set
       if(!this.lastCollisionState.has(key)) {
-        const contact = manifold.getContactPoint();
+        const contact = manifold.getContactPoint(0);
         const normal = contact.get_m_normalWorldOnB();
+
         self.postMessage({
           cmd: 'collision',
           body0Name: name0,
@@ -594,7 +596,9 @@ class MatrixAmmoWorker {
         });
       }
     }
-    this.lastCollisionState = currentCollisions;
+    let temp = this.lastCollisionState;
+    this.lastCollisionState = this._currentCollisions;
+    this._currentCollisions = temp;
   }
 }
 
