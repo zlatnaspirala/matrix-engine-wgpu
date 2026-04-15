@@ -344,7 +344,7 @@ var flipper = function () {
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
         pin: "./res/meshes/blender/pin-for-pinball.obj",
         pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
-        pushBtn: "./res/meshes/shapes/pushBtn.obj",
+        // pushBtn: "./res/meshes/shapes/pushBtn.obj",
         vrcLeft: "./res/meshes/blender/vrc-left.obj",
         jumper: "./res/meshes/blender/jumper-up.obj",
         bottomLeft: "./res/meshes/blender/bottom-left.obj",
@@ -360,7 +360,8 @@ var flipper = function () {
       // Ball
       const ball1 = flipper.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -384,34 +385,35 @@ var flipper = function () {
           radius: 1
         }
       });
-
-      // Shooter btn
-      let pushBtn = flipper.addMeshObj({
-        position: {
-          x: 5,
-          y: 0.7,
-          z: -5.7
-        },
-        scale: [0.3, 0.3, 0.3],
-        rotation: {
-          x: 90,
-          y: -90,
-          z: 0
-        },
-        texturesPaths: ['res/textures/pushBtn.webp'],
-        name: 'pushBtn',
-        mesh: m.pushBtn,
-        physics: {
-          enabled: false,
-          mass: 5,
-          geometry: "Cube"
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      pushBtn.setUVScale(-1, -1);
+      if ((0, _utils.isMobile)() == false) {
+        // Shooter btn
+        let pushBtn = flipper.addMeshObj({
+          position: {
+            x: 5,
+            y: 0.7,
+            z: -5.7
+          },
+          scale: [0.3, 0.3, 0.3],
+          rotation: {
+            x: 90,
+            y: -90,
+            z: 0
+          },
+          texturesPaths: ['res/textures/pushBtn.webp'],
+          name: 'pushBtn',
+          mesh: m.pushBtn,
+          physics: {
+            enabled: false,
+            mass: 5,
+            geometry: "Cube"
+          },
+          raycast: {
+            enabled: true,
+            radius: 1
+          }
+        });
+        pushBtn.setUVScale(-1, -1);
+      }
 
       // GROUND
       flipper.addMeshObj({
@@ -446,7 +448,6 @@ var flipper = function () {
           mass: 0,
           geometry: "Cube"
         }
-        //    
       });
       let envMapParams = {
         baseColorMix: 0.1,
@@ -490,29 +491,24 @@ var flipper = function () {
         });
         glass.setBlend(0.1);
       } else {
-        let glass = flipper.addMeshObj({
-          material: {
-            type: 'standard'
-          },
-          position: {
-            x: 0,
-            y: 2.1,
-            z: -20.5
-          },
-          scale: [6, 0.05, 14.5],
-          texturesPaths: ['./res/textures/tex01.webp'],
-          //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
-          name: 'glass',
-          mesh: m.glass,
-          shadowsCast: false,
-          // envMapParams: envMapParams,
-          physics: {
-            enabled: true,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-        glass.setBlend(0.01);
+
+        // let glass = flipper.addMeshObj({
+        //   material: {type: 'standard'},
+        //   position: {x: 0, y: 2.1, z: -20.5},
+        //   scale: [6, 0.05, 14.5],
+        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        //   name: 'glass',
+        //   mesh: m.glass,
+        //   shadowsCast: false,
+        //   // envMapParams: envMapParams,
+        //   physics: {
+        //     enabled: true,
+        //     mass: 0,
+        //     geometry: "Cube"
+        //   }
+        // });
+
+        // glass.setBlend(0.01);
       }
 
       // BUMPERS
@@ -988,7 +984,6 @@ var flipper = function () {
           geometry: "Cube",
           // geometry: "ConvexHull",
           // vertices: m.pinR.vertices,
-
           collisionGroup: 0,
           collisionSubGroup: 0,
           group: 1,
@@ -33153,36 +33148,22 @@ class Materials {
         }));
         this.materialBindGroup = this.materialBindGroupCache.get(key);
       } else {
-        console.log('[no share] materialBindGroup [key] = ', key);
+        console.log('[share] materialBindGroup [key] = ', key);
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
         // console.log('[CREATE NEW] materialBindGroup = ', key);
-        this.materialBindGroup = this.device.createBindGroup({
-          label: 'materialBindGroup normal',
-          layout: this.materialBGL,
-          entries: [{
-            binding: 0,
-            resource: textureResource
-          }, {
-            binding: 1,
-            resource: this.imageSampler
-          }, {
-            binding: 2,
-            resource: this.metallicRoughnessTextureView
-          }, {
-            binding: 3,
-            resource: this.metallicRoughnessSampler
-          }, {
-            binding: 4,
-            resource: {
-              buffer: this.materialPBRBuffer
-            }
-          }, {
-            binding: 5,
-            resource: this.normalTextureView
-          }, {
-            binding: 6,
-            resource: this.normalSampler
-          }]
-        });
+        // this.materialBindGroup = this.device.createBindGroup({
+        //   label: 'materialBindGroup normal',
+        //   layout: this.materialBGL,
+        //   entries: [
+        //     {binding: 0, resource: textureResource},
+        //     {binding: 1, resource: this.imageSampler},
+        //     {binding: 2, resource: this.metallicRoughnessTextureView},
+        //     {binding: 3, resource: this.metallicRoughnessSampler},
+        //     {binding: 4, resource: {buffer: this.materialPBRBuffer}},
+        //     {binding: 5, resource: this.normalTextureView},
+        //     {binding: 6, resource: this.normalSampler},
+        //   ]
+        // });
       }
     } else {
       // console.log('[CREATE NEW] materialBindGroup = ', key);
@@ -34973,7 +34954,7 @@ var _utils = require("../utils");
 // no integrated yet
 let mobile1 = function () {
   const now2 = performance.now();
-  // this.now = now2 * 0.001;
+  this.now = now2 * 0.001;
   this.lastFrameMS = this.now;
   this.autoUpdate.forEach(_ => _.update());
   requestAnimationFrame(this.frame);
@@ -34982,8 +34963,9 @@ let mobile1 = function () {
     if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
     this.updateLights();
     const camera = this.getCamera();
-    // this._sceneData[44] = (performance.now() - this.startTime) / 1000;
+    //  this._sceneData[44] = (performance.now() - this.startTime) / 1000;
     // this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    //  if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
     if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
     camera.update();
     for (let i = 0; i < this.lightContainer.length; i++) {
@@ -35002,96 +34984,80 @@ let mobile1 = function () {
     const len = this.mainRenderBundle.length;
     for (let i = 0; i < len; i++) {
       const mesh = this.mainRenderBundle[i];
-      // if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
-      // if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
+      //  if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+      //  if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
       if (mesh.position.inMove === true) {
         mesh.updateModelUniformBuffer(i);
       }
       mesh.position.update();
-      // if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-      if (mesh.update) mesh.update(now2);
-      // if(mesh.isVideo) mesh.updateVideoTexture();
+      //  if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+      //  if(mesh.update) mesh.update(now2);
     }
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
     for (const [pipeline, meshes] of this.opaqueBuckets) {
       pass.setPipeline(pipeline);
-      let l = null;
+      //  let l = null;
       for (const mesh of meshes) {
-        if (mesh.materialBindGroup !== l) {
-          pass.setBindGroup(1, mesh.materialBindGroup);
-          l = mesh.materialBindGroup;
-        } else {
-          console.log('same BIND GROUP!');
-        }
+        //  if(mesh.materialBindGroup !== l) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        //    l = mesh.materialBindGroup;
+        //  } else {
+        //    console.log('same BIND GROUP!')
+        //  }
         // pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        // if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        // if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        //  if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
     for (const [pipeline, meshes] of this.transparentBuckets) {
-      // meshes.sort((a, b) => {
-      //   const dx1 = camera.position[0] - a.position[0];
-      //   const dz1 = camera.position[2] - a.position[2];
-      //   const da = dx1 * dx1 + dz1 * dz1;
-      //   const dx2 = camera.position[0] - b.position[0];
-      //   const dz2 = camera.position[2] - b.position[2];
-      //   const db = dx2 * dx2 + dz2 * dz2;
-      //   return db - da;
-      // });
+      meshes.sort((a, b) => {
+        const dx1 = camera.position[0] - a.position[0];
+        const dz1 = camera.position[2] - a.position[2];
+        const da = dx1 * dx1 + dz1 * dz1;
+        const dx2 = camera.position[0] - b.position[0];
+        const dz2 = camera.position[2] - b.position[2];
+        const db = dx2 * dx2 + dz2 * dz2;
+        return db - da;
+      });
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        // if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        // if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        //  if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
     pass.end();
 
-    // const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-    // const viewProjMatrix = camera.VP;
-    // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-    //   const mesh = this.mainRenderBundle[meshIndex];
-    //   if(mesh.effects) {
-    //     for(const effectName in mesh.effects) {
-    //       const effect = mesh.effects[effectName];
-    //       if(effect == null || effect.enabled === false) continue;
-    //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-    //       effect.render(transPass, mesh, viewProjMatrix);
-    //     }
-    //   }
-    // }
-    // transPass.end();
-
-    // if(this.volumetricPass.enabled === true) {
-    //   mat4.invert(camera.VP, this._invViewProj);
-    //   const light = this.lightContainer[0];
-    //   this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
-    //   this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
-    //   this._volumetricLightUniforms.direction = light.direction;
-    //   this.volumetricPass.render(commandEncoder,
-    //     this.sceneTextureView,
-    //     this.mainDepthView,
-    //     this.shadowArrayView,
-    //     this._volumetricUniforms,
-    //     this._volumetricLightUniforms
-    //   );
-    // }
+    //  const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
+    //  const viewProjMatrix = camera.VP;
+    //  for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
+    //    const mesh = this.mainRenderBundle[meshIndex];
+    //    if(mesh.effects) {
+    //      for(const effectName in mesh.effects) {
+    //        const effect = mesh.effects[effectName];
+    //        if(effect == null || effect.enabled === false) continue;
+    //        if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+    //        effect.render(transPass, mesh, viewProjMatrix);
+    //      }
+    //    }
+    //  }
+    //  transPass.end();
 
     const canvasTexture = this.context.getCurrentTexture();
     if (this._lastCanvasTex !== canvasTexture) {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    // if(this.bloomPass.enabled == true) {
-    //   // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-    //   this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-    // }
+    if (this.bloomPass.enabled == true) {
+      // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+      this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    }
     this.finalPS.colorAttachments[0].view = this._canvasView;
     pass = commandEncoder.beginRenderPass(this.finalPS);
     pass.setPipeline(this.presentPipeline);
@@ -35101,9 +35067,9 @@ let mobile1 = function () {
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
-    // if(this.collisionSystem) this.collisionSystem.update();
-    // this.graphUpdate(this.now);
-    this.blendQueue.length = 0;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+    //  this.blendQueue.length = 0;
   } catch (err) {
     if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, _utils.LOG_WARN);
   }
@@ -35264,14 +35230,8 @@ class PhysicsBridge {
       this._bodyIndexMap.set(MEObject, idx);
     });
   }
-  pause() {
-    this._paused = true;
-  }
-  resume() {
-    this._paused = false;
-  }
   updatePhysics() {
-    if (!this._ready || this._paused) return; // ← check paused
+    const updates = [];
     for (const [meObj, idx] of this._bodyIndexMap) {
       if (meObj.isKinematic) {
         const {
@@ -35279,14 +35239,19 @@ class PhysicsBridge {
           y,
           z
         } = meObj.position;
-        this._worker.postMessage({
-          cmd: 'setKinematicTransform',
+        updates.push({
           idx,
           x,
           y,
           z
         });
       }
+    }
+    if (updates.length > 0) {
+      this._worker.postMessage({
+        cmd: 'setKinematicBatch',
+        updates
+      });
     }
     this._worker.postMessage({
       cmd: 'step'
@@ -35377,7 +35342,6 @@ class PhysicsBridge {
     });
   }
   applyTorque(idx, pVect) {
-    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'applyTorque',
@@ -35386,7 +35350,6 @@ class PhysicsBridge {
     });
   }
   setBodyVelocity(idx, x, y, z) {
-    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'setLinearVelocity',
@@ -35408,14 +35371,7 @@ class PhysicsBridge {
       strength
     });
   }
-
-  // getPosition(idx, ) {
-  //   if(idx === undefined) return;
-  //   this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
-  // }
-
   deactivatePhysics(idx) {
-    // const idx = this._bodyIndexMap.get(MEObject);
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'deactivate',
@@ -35499,21 +35455,6 @@ class PhysicsBridge {
     });
   }
   _syncToObjects() {
-    // const snap = this._snapshot;
-    // if(!snap) return;
-    // const FLOATS = 8;
-    // for(const [meObj, idx] of this._bodyIndexMap) {
-    //   const b = idx * FLOATS;
-    //   // if(meObj.isKinematic) continue;
-    //   meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
-    //   meObj.position.inMove = true;
-    //   meObj.rotation.axis.x = snap[b + 3];
-    //   meObj.rotation.axis.y = snap[b + 4];
-    //   meObj.rotation.axis.z = snap[b + 5];
-    //   meObj.rotation.angle = snap[b + 6] * (180 / Math.PI);
-    //   meObj.rotation.matrixRotation = quaternion_rotation_matrix(_snapQuat(snap, b));
-    // }
-    // When you do meObj.modelMatrix[12] = pos[0], you are building a "Pure Isometric" matrix
     const snap = this._snapshot;
     if (!snap) return;
     const STRIDE = 8;
@@ -35571,7 +35512,6 @@ class PhysicsBridge {
         this._syncToObjects();
         break;
       case 'collision':
-        // console.log('collision : ', data)
         this.pCollisionEvent.detail.body0Name = data.body0Name;
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;

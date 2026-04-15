@@ -87,7 +87,7 @@ export var flipper = function() {
     ];
 
     for(let i = 0;i < NUM_LIGHTS;i++) {flipper.addLight()}
-    if (isMobile() == false) for(let i = 0;i < NUM_LIGHTS;i++) {
+    if(isMobile() == false) for(let i = 0;i < NUM_LIGHTS;i++) {
       const light = flipper.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
@@ -120,7 +120,7 @@ export var flipper = function() {
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
         pin: "./res/meshes/blender/pin-for-pinball.obj",
         pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
-        pushBtn: "./res/meshes/shapes/pushBtn.obj",
+        // pushBtn: "./res/meshes/shapes/pushBtn.obj",
         vrcLeft: "./res/meshes/blender/vrc-left.obj",
         jumper: "./res/meshes/blender/jumper-up.obj",
         bottomLeft: "./res/meshes/blender/bottom-left.obj",
@@ -140,7 +140,7 @@ export var flipper = function() {
     async function onGround(m) {
       // Ball
       const ball1 = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 0, y: 1, z: -12},
         scale: [0.25, 0.25, 0.25],
         texturesPaths: ['./res/textures/blankgray2.webp'],
@@ -157,23 +157,25 @@ export var flipper = function() {
         raycast: {enabled: false, radius: 1},
       });
 
-      // Shooter btn
-      let pushBtn = flipper.addMeshObj({
-        position: {x: 5, y: 0.7, z: -5.7},
-        scale: [0.3, 0.3, 0.3],
-        rotation: {x: 90, y: -90, z: 0},
-        texturesPaths: ['res/textures/pushBtn.webp'],
-        name: 'pushBtn',
-        mesh: m.pushBtn,
-        physics: {
-          enabled: false,
-          mass: 5,
-          geometry: "Cube"
-        },
-        raycast: {enabled: true, radius: 1}
-      });
+      if(isMobile() == false) {
+        // Shooter btn
+        let pushBtn = flipper.addMeshObj({
+          position: {x: 5, y: 0.7, z: -5.7},
+          scale: [0.3, 0.3, 0.3],
+          rotation: {x: 90, y: -90, z: 0},
+          texturesPaths: ['res/textures/pushBtn.webp'],
+          name: 'pushBtn',
+          mesh: m.pushBtn,
+          physics: {
+            enabled: false,
+            mass: 5,
+            geometry: "Cube"
+          },
+          raycast: {enabled: true, radius: 1}
+        });
 
-      pushBtn.setUVScale(-1, -1);
+        pushBtn.setUVScale(-1, -1);
+      }
 
       // GROUND
       flipper.addMeshObj({
@@ -201,7 +203,6 @@ export var flipper = function() {
           mass: 0,
           geometry: "Cube"
         },
-        //    
       });
 
       let envMapParams = {
@@ -236,23 +237,23 @@ export var flipper = function() {
 
       } else {
 
-        let glass = flipper.addMeshObj({
-          material: {type: 'standard'},
-          position: {x: 0, y: 2.1, z: -20.5},
-          scale: [6, 0.05, 14.5],
-          texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
-          name: 'glass',
-          mesh: m.glass,
-          shadowsCast: false,
-          // envMapParams: envMapParams,
-          physics: {
-            enabled: true,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
+        // let glass = flipper.addMeshObj({
+        //   material: {type: 'standard'},
+        //   position: {x: 0, y: 2.1, z: -20.5},
+        //   scale: [6, 0.05, 14.5],
+        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        //   name: 'glass',
+        //   mesh: m.glass,
+        //   shadowsCast: false,
+        //   // envMapParams: envMapParams,
+        //   physics: {
+        //     enabled: true,
+        //     mass: 0,
+        //     geometry: "Cube"
+        //   }
+        // });
 
-        glass.setBlend(0.01);
+        // glass.setBlend(0.01);
       }
 
 
@@ -632,10 +633,8 @@ export var flipper = function() {
           geometry: "Cube",
           // geometry: "ConvexHull",
           // vertices: m.pinR.vertices,
-
           collisionGroup: 0,
           collisionSubGroup: 0,
-
           group: 1,  //
           mask: -1,  // everything
           layer: 3, // LAYER_FLIPPER

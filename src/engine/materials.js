@@ -699,21 +699,22 @@ export default class Materials {
         );
         this.materialBindGroup = this.materialBindGroupCache.get(key);
       } else {
-        console.log('[no share] materialBindGroup [key] = ', key);
+        console.log('[share] materialBindGroup [key] = ', key);
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
         // console.log('[CREATE NEW] materialBindGroup = ', key);
-        this.materialBindGroup = this.device.createBindGroup({
-          label: 'materialBindGroup normal',
-          layout: this.materialBGL,
-          entries: [
-            {binding: 0, resource: textureResource},
-            {binding: 1, resource: this.imageSampler},
-            {binding: 2, resource: this.metallicRoughnessTextureView},
-            {binding: 3, resource: this.metallicRoughnessSampler},
-            {binding: 4, resource: {buffer: this.materialPBRBuffer}},
-            {binding: 5, resource: this.normalTextureView},
-            {binding: 6, resource: this.normalSampler},
-          ]
-        });
+        // this.materialBindGroup = this.device.createBindGroup({
+        //   label: 'materialBindGroup normal',
+        //   layout: this.materialBGL,
+        //   entries: [
+        //     {binding: 0, resource: textureResource},
+        //     {binding: 1, resource: this.imageSampler},
+        //     {binding: 2, resource: this.metallicRoughnessTextureView},
+        //     {binding: 3, resource: this.metallicRoughnessSampler},
+        //     {binding: 4, resource: {buffer: this.materialPBRBuffer}},
+        //     {binding: 5, resource: this.normalTextureView},
+        //     {binding: 6, resource: this.normalSampler},
+        //   ]
+        // });
       }
     } else {
       // console.log('[CREATE NEW] materialBindGroup = ', key);

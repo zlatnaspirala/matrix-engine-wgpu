@@ -54,16 +54,17 @@ export class PhysicsBridge {
     });
   }
 
-  pause() {this._paused = true;}
-  resume() {this._paused = false;}
-
   updatePhysics() {
-    if(!this._ready || this._paused) return;  // ← check paused
+    const updates = [];
     for(const [meObj, idx] of this._bodyIndexMap) {
       if(meObj.isKinematic) {
         const {x, y, z} = meObj.position;
-        this._worker.postMessage({cmd: 'setKinematicTransform', idx, x, y, z});
+        updates.push({idx, x, y, z});
       }
+    }
+
+    if(updates.length > 0) {
+      this._worker.postMessage({cmd: 'setKinematicBatch', updates});
     }
     this._worker.postMessage({cmd: 'step'});
   }
@@ -112,13 +113,11 @@ export class PhysicsBridge {
   }
 
   applyTorque(idx, pVect) {
-    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'applyTorque', idx, ...pVect});
   }
 
   setBodyVelocity(idx, x, y, z) {
-    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'setLinearVelocity', idx, x, y, z});
   }
@@ -128,13 +127,7 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
   }
 
-  // getPosition(idx, ) {
-  //   if(idx === undefined) return;
-  //   this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
-  // }
-
   deactivatePhysics(idx) {
-    // const idx = this._bodyIndexMap.get(MEObject);
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'deactivate', idx});
   }
@@ -186,21 +179,6 @@ export class PhysicsBridge {
   }
 
   _syncToObjects() {
-    // const snap = this._snapshot;
-    // if(!snap) return;
-    // const FLOATS = 8;
-    // for(const [meObj, idx] of this._bodyIndexMap) {
-    //   const b = idx * FLOATS;
-    //   // if(meObj.isKinematic) continue;
-    //   meObj.position.setPosition(snap[b], snap[b + 1], snap[b + 2]);
-    //   meObj.position.inMove = true;
-    //   meObj.rotation.axis.x = snap[b + 3];
-    //   meObj.rotation.axis.y = snap[b + 4];
-    //   meObj.rotation.axis.z = snap[b + 5];
-    //   meObj.rotation.angle = snap[b + 6] * (180 / Math.PI);
-    //   meObj.rotation.matrixRotation = quaternion_rotation_matrix(_snapQuat(snap, b));
-    // }
-    // When you do meObj.modelMatrix[12] = pos[0], you are building a "Pure Isometric" matrix
     const snap = this._snapshot;
     if(!snap) return;
     const STRIDE = 8;
@@ -248,7 +226,6 @@ export class PhysicsBridge {
         this._syncToObjects();
         break;
       case 'collision':
-        // console.log('collision : ', data)
         this.pCollisionEvent.detail.body0Name = data.body0Name;
         this.pCollisionEvent.detail.body1Name = data.body1Name;
         this.pCollisionEvent.detail.rayDirection = data.normal;

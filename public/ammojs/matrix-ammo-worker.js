@@ -29,6 +29,10 @@ class MatrixAmmoWorker {
     this._origin = null;
     this._quat = null;
     this._axis = null;
+
+    this._pivotsA = null;
+    this._pivotsB = null;
+
     this.lastCollisionState = new Set();
     this._currentCollisions = new Set();
 
@@ -41,11 +45,16 @@ class MatrixAmmoWorker {
     this.Ammo = self.Ammo;
     this._trans = new Ammo.btTransform();
     this._transform = new Ammo.btTransform();
+    this._transform2 = new Ammo.btTransform();
+    this._zero = new Ammo.btVector3(0, 0, 0);
     this._origin = new Ammo.btVector3(0, 0, 0);
     this._quat = new Ammo.btQuaternion();
     this._axis = new Ammo.btVector3(0, 0, 0);
     this._origin2 = new Ammo.btVector3(0, 0, 0);
     this._origin3 = new Ammo.btVector3(0, 0, 0);
+    this._pivotsA = new Ammo.btVector3(0, 0, 0);
+    this._pivotsB = new Ammo.btVector3(0, 0, 0);
+    this.inertia = new Ammo.btVector3(0, 0, 0);
     this._initPhysics(options.groundY ?? -1);
   }
 
@@ -71,8 +80,6 @@ class MatrixAmmoWorker {
     const group = 1;
     const mask = -1;
     this.dynamicsWorld.addRigidBody(groundBody, group, mask);
-    // this.rigidBodies.push(groundBody);
-    // this._allocBuffer(this.rigidBodies.length);
     if(!this.ptrToName) this.ptrToName = new Map();
     this.ptrToName.set(Ammo.getPointer(groundBody), 'ground');
   }
@@ -164,45 +171,43 @@ class MatrixAmmoWorker {
 
   _addSphere(pOptions) {
     const Ammo = this.Ammo;
-    const radius = (pOptions.radius ?? 1) * (pOptions.scale?.[0] ?? 1);
-    //  const shape = new Ammo.btSphereShape(radius);
     const shape = new Ammo.btSphereShape(
       Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.scale?.[0]
     );
-
-    const t = new Ammo.btTransform();
-    t.setIdentity();
-    t.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    const inertia = new Ammo.btVector3(0, 0, 0);
+    this._transform.setIdentity();
+    this._origin.setValue(pOptions.position.x, pOptions.position.y, pOptions.position.z);
+    this._transform.setOrigin(this._origin);
+    this.inertia.setValue(0, 0, 0);
     const mass = pOptions.mass ?? 1;
-    if(mass > 0) shape.calculateLocalInertia(mass, inertia);
-    const body = new Ammo.btRigidBody(
-      new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(t), shape, inertia)
-    );
+    if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
+    const motionState = new Ammo.btDefaultMotionState(this._transform);
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, this.inertia);
+    const body = new Ammo.btRigidBody(rbInfo);
+    Ammo.destroy(rbInfo);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, pOptions);
   }
 
   _addBox(pOptions) {
     const Ammo = this.Ammo;
-    const shape = new Ammo.btBoxShape(
-      new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])
+    this._origin.setValue(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2]);
+    const shape = new Ammo.btBoxShape(this._origin);
+    this._transform2.setIdentity();
+    this._origin.setValue(pOptions.position.x, pOptions.position.y, pOptions.position.z);
+    this._transform2.setOrigin(this._origin);
+    this._quat.setEulerZYX(
+      degToRad(pOptions.rotation?.z ?? 0),
+      degToRad(pOptions.rotation?.y ?? 0),
+      degToRad(pOptions.rotation?.x ?? 0)
     );
-    const t = new Ammo.btTransform();
-    t.setIdentity();
-    t.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    const rot = t.getRotation();
-    rot.setX(degToRad(pOptions.rotation?.x ?? 0));
-    rot.setY(degToRad(pOptions.rotation?.y ?? 0));
-    rot.setZ(degToRad(pOptions.rotation?.z ?? 0));
-    t.setRotation(rot);
-
+    this._transform2.setRotation(this._quat);
     const mass = pOptions.mass ?? 1;
-    const inertia = new Ammo.btVector3(0, 0, 0);
-    if(mass > 0) shape.calculateLocalInertia(mass, inertia);
-    const body = new Ammo.btRigidBody(
-      new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(t), shape, inertia)
-    );
+    this.inertia.setValue(0, 0, 0);
+    if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
+    const motionState = new Ammo.btDefaultMotionState(this._transform2);
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, this.inertia);
+    const body = new Ammo.btRigidBody(rbInfo);
+    Ammo.destroy(rbInfo);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, pOptions);
   }
@@ -218,12 +223,14 @@ class MatrixAmmoWorker {
     }
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
-    bodyA.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+    bodyA.setAngularVelocity(this._zero);
     bodyA.setDamping(0.2, 0.9);
     // console.log("pivotA", pivotA);
     const axis = pOptions.axis || [0, 1, 0];
-    const ammoPivotA = new Ammo.btVector3(pivotA[0], pivotA[1], pivotA[2]);
-    const ammoPivotB = new Ammo.btVector3(pivotB[0], pivotB[1], pivotB[2]);
+    this._pivotsA.setValue(pivotA[0], pivotA[1], pivotA[2]);
+    this._pivotsB.setValue(pivotB[0], pivotB[1], pivotB[2]);
+    const ammoPivotA = this._pivotsA;
+    const ammoPivotB = this._pivotsB;
     const ammoAxisA = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     const ammoAxisB = new Ammo.btVector3(axis[0], axis[1], axis[2]);
     const hinge = new Ammo.btHingeConstraint(
@@ -241,7 +248,7 @@ class MatrixAmmoWorker {
     hinge.setLimit(-0.8, 0.5);
 
     const si = this.dynamicsWorld.getSolverInfo();
-    si.set_m_numIterations(50);
+    si.set_m_numIterations(5);
     hinge.name = pOptions.name;
     this.constraints.push(hinge);
     const constraintIdx = this.constraints.length - 1;
@@ -260,10 +267,11 @@ class MatrixAmmoWorker {
     t.setIdentity();
     t.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
     const mass = pOptions.mass ?? 1;
-    const inertia = new Ammo.btVector3(0, 0, 0);
-    if(mass > 0) shape.calculateLocalInertia(mass, inertia);
+    // const inertia = new Ammo.btVector3(0, 0, 0);
+    this.inertia.setValue(0, 0, 0);
+    if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
     const body = new Ammo.btRigidBody(
-      new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(t), shape, inertia)
+      new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(t), shape, this.inertia)
     );
     body.setDamping(pOptions.damping ?? 0.8, pOptions.damping ?? 1);
     body.setRestitution(pOptions.restitution ?? 0.1);
@@ -274,18 +282,20 @@ class MatrixAmmoWorker {
 
   _addCylinder(pOptions) {
     const Ammo = this.Ammo;
-    const shape = new Ammo.btCylinderShape(
-      new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])
-    );
+    this._pivotsA.setValue(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2]);
+    const shape = new Ammo.btCylinderShape(this._pivotsA);
     const t = new Ammo.btTransform();
-    t.setIdentity();
-    t.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    this._transform2.setIdentity();
+    this._origin.setValue(pOptions.position.x, pOptions.position.y, pOptions.position.z);
+    this._transform2.setOrigin(this._origin);
     const mass = pOptions.mass ?? 1;
-    const inertia = new Ammo.btVector3(0, 0, 0);
-    if(mass > 0) shape.calculateLocalInertia(mass, inertia);
-    const body = new Ammo.btRigidBody(
-      new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(t), shape, inertia)
-    );
+    // const inertia = new Ammo.btVector3(0, 0, 0);
+    this.inertia.setValue(0,0,0);
+    if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
+    const motionState = new Ammo.btDefaultMotionState(this._transform2);
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, this.inertia);
+    const body = new Ammo.btRigidBody(rbInfo);
+    Ammo.destroy(rbInfo);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, pOptions);
   }
@@ -312,33 +322,36 @@ class MatrixAmmoWorker {
     const verts = pOptions.vertices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
     for(let i = 0;i < verts.length;i += 3) {
-      shape.addPoint(new Ammo.btVector3(verts[i] * sx, verts[i + 1] * sy, verts[i + 2] * sz), true);
+      this._origin.setValue(verts[i] * sx, verts[i + 1] * sy, verts[i + 2] * sz);
+      shape.addPoint(this._origin, false);
     }
-    const t = new Ammo.btTransform();
-    t.setIdentity();
-    t.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    const rot = t.getRotation();
-    rot.setX(degToRad(pOptions.rotation?.x ?? 0));
-    rot.setY(degToRad(pOptions.rotation?.y ?? 0));
-    rot.setZ(degToRad(pOptions.rotation?.z ?? 0));
-    t.setRotation(rot);
-    const mass = pOptions.mass ?? 1;
-    const inertia = new Ammo.btVector3(0, 0, 0);
-    if(mass > 0) shape.calculateLocalInertia(mass, inertia);
-    const body = new Ammo.btRigidBody(
-      new Ammo.btRigidBodyConstructionInfo(mass, new Ammo.btDefaultMotionState(t), shape, inertia)
+    shape.recalcLocalAabb();
+    this._transform2.setIdentity();
+    this._origin.setValue(pOptions.position.x, pOptions.position.y, pOptions.position.z);
+    this._transform2.setOrigin(this._origin);
+    this._quat.setEulerZYX(
+      degToRad(pOptions.rotation?.z ?? 0),
+      degToRad(pOptions.rotation?.y ?? 0),
+      degToRad(pOptions.rotation?.x ?? 0)
     );
+    this._transform2.setRotation(this._quat);
+    const mass = pOptions.mass ?? 1;
+    this.inertia.setValue(0, 0, 0);
+    if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
+    const motionState = new Ammo.btDefaultMotionState(this._transform2);
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, this.inertia);
+    const body = new Ammo.btRigidBody(rbInfo);
+    Ammo.destroy(rbInfo);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, pOptions);
   }
 
   clearBody(idx) {
     const body = this.rigidBodies[idx];
-    const zero = new this.Ammo.btVector3(0, 0, 0);
-    body.setAngularVelocity(zero);
-    body.setLinearVelocity(zero);
+    body.setAngularVelocity(this._zero);
+    body.setLinearVelocity(this._zero);
     body.clearForces();
-    Ammo.destroy(zero);
+    // Ammo.destroy(zero);
   }
 
   _addBvhMesh(pOptions) {
@@ -383,7 +396,7 @@ class MatrixAmmoWorker {
   }
 
   explode(idx, x, y, z, radius, strength) {
-    console.log('worker  explode')
+    // console.log('worker  explode')
     const body = this.rigidBodies[idx];
     if(!body) return;
     this.rigidBodies.forEach(body => {
@@ -532,10 +545,49 @@ class MatrixAmmoWorker {
     this._detectCollision();
   }
 
+  // step() {
+  //   const deltaTime = 1 / 30;
+  //   for(let i = 0;i < this.speedUpSimulation;i++) {
+  //     this.dynamicsWorld.stepSimulation(deltaTime, this.maxSubSteps);
+  //   }
+  //   const snap = this._snapshot;
+  //   if(!snap) return;
+  //   const bodies = this.rigidBodies;
+  //   const numBodies = bodies.length;
+  //   for(let i = 0;i < numBodies;i++) {
+  //     const body = bodies[i];
+  //     const base = i * FLOATS_PER_BODY;
+  //     if(!body.isActive() && !body.isKinematic) {
+  //       snap[base + 7] = 0;
+  //       continue;
+  //     }
+  //     if(body.isKinematic) {
+  //       body.getWorldTransform(this._trans);
+  //     } else {
+  //       const ms = body.getMotionState();
+  //       if(!ms) continue;
+  //       ms.getWorldTransform(this._trans);
+  //     }
+  //     const origin = this._trans.getOrigin();
+  //     const rot = this._trans.getRotation();
+  //     snap[base + 0] = origin.x();
+  //     snap[base + 1] = origin.y();
+  //     snap[base + 2] = origin.z();
+  //     snap[base + 3] = rot.x();
+  //     snap[base + 4] = rot.y();
+  //     snap[base + 5] = rot.z();
+  //     snap[base + 6] = rot.w();
+  //     snap[base + 7] = 1; // Mark as 'Active/Dirty' for the renderer
+  //   }
+
+  //   this._detectCollision();
+  // }
+
   setGravityScale(idx, scale) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    body.setGravity(new this.Ammo.btVector3(0, scale, 0));
+    this._origin2.setValue(0, scale, 0);
+    body.setGravity(this._origin2);
   }
 
   setCollisionFlags(idx, flags) {
@@ -578,7 +630,7 @@ class MatrixAmmoWorker {
 
       // Use a consistent key order (e.g. alphabetical) so A|B is same as B|A
       // const key = name0 < name1 ? `${name0}|${name1}` : `${name1}|${name0}`;
-      this._keyColl = name0+name1;
+      this._keyColl = name0 + name1;
       const key = this._keyColl;
 
       this._currentCollisions.add(key);
@@ -587,11 +639,8 @@ class MatrixAmmoWorker {
       if(!this.lastCollisionState.has(key)) {
         const contact = manifold.getContactPoint(0);
         const normal = contact.get_m_normalWorldOnB();
-
         self.postMessage({
-          cmd: 'collision',
-          body0Name: name0,
-          body1Name: name1,
+          cmd: 'collision', body0Name: name0, body1Name: name1,
           normal: [normal.x(), normal.y(), normal.z()]
         });
       }
