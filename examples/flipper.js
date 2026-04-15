@@ -11,7 +11,7 @@ export var flipper = function() {
   };
 
   let flipper = new MatrixEngineWGPU({
-    render: 'mobile1',
+    render: isMobile() == true ? 'mobile1' : undefined,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
@@ -62,7 +62,7 @@ export var flipper = function() {
 
       let ball = app.matrixPhysics.getBodyByName('ball1');
       const pos = await app.matrixPhysics.getPosition(ball);
-      if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
+      if(pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball,
         new PVector(0, 2, -randomIntFromTo(11, 15)));
 
     }, () => {}, {left: '80', bottom: '45'});
@@ -281,7 +281,7 @@ export var flipper = function() {
             group: 2,
             mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
           },
-          raycast: {enabled: true, radius: 1}
+          // raycast: {enabled: true, radius: 1}
         });
       });
 
@@ -641,17 +641,14 @@ export var flipper = function() {
         }
       });
 
-
-      flipper.canvas.addEventListener("ray.hit.event", (e) => {
+      flipper.canvas.addEventListener("ray.hit.event", async(e) => {
         app.matrixSounds.play('click1');
         console.log('e.detail', e.detail);
-        if(e.detail.hitObject.name == "pushBtn" && MYFLIPPER.STATUS_PUSH == 'free') {
-          console.log('e.detail pushBtn123 ', e.detail);
-          MYFLIPPER.STATUS_PUSH = 'in action';
+        if(e.detail.hitObject.name == "pushBtn") {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
-          // const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
-          // ball.applyCentralImpulse(impulse);
-          flipper.matrixPhysics.applyImpulse(ball, new PVector(0, 0.2, -randomIntFromTo(10, 20)));
+          const pos = await app.matrixPhysics.getPosition(ball);
+          if(pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball,
+            new PVector(0, 2, -randomIntFromTo(11, 15)));
 
         }
       });

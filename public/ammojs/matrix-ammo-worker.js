@@ -1,14 +1,5 @@
 importScripts('ammo.js');
 
-function quaternion_rotation_matrix(Q) {
-  var q0 = Q[0], q1 = Q[1], q2 = Q[2], q3 = Q[3];
-  return [
-    [2 * (q0 * q0 + q1 * q1) - 1, 2 * (q1 * q2 - q0 * q3), 2 * (q1 * q3 + q0 * q2)],
-    [2 * (q1 * q2 + q0 * q3), 2 * (q0 * q0 + q2 * q2) - 1, 2 * (q2 * q3 - q0 * q1)],
-    [2 * (q1 * q3 - q0 * q2), 2 * (q2 * q3 + q0 * q1), 2 * (q0 * q0 + q3 * q3) - 1]
-  ];
-}
-
 const degToRad = d => d * (Math.PI / 180);
 const radToDeg = r => r * (180 / Math.PI);
 const FLOATS_PER_BODY = 8;
@@ -506,68 +497,31 @@ class MatrixAmmoWorker {
   }
 
   // Step + Snapshot
-  step() {
-    if(!this.dynamicsWorld) return;
-    for(let i = 0;i < this.speedUpSimulation;i++) {
-      this.dynamicsWorld.stepSimulation(1 / 30, this.maxSubSteps);
-    }
-    const snap = this._snapshot;
-    if(!snap) return;
-    this.rigidBodies.forEach((body, i) => {
-      const base = i * FLOATS_PER_BODY;
-      if(body.isKinematic == true) {
-        body.getWorldTransform(this._trans);
-        const origin = this._trans.getOrigin();
-        const rot = this._trans.getRotation();
-        snap[base + 0] = origin.x();
-        snap[base + 1] = origin.y();
-        snap[base + 2] = origin.z();
-        snap[base + 3] = rot.x();
-        snap[base + 4] = rot.y();
-        snap[base + 5] = rot.z();
-        snap[base + 6] = rot.w();
-        snap[base + 7] = 0;
-        return;
-      }
-      if(!body.getMotionState()) return;
-      body.getMotionState().getWorldTransform(this._trans);
-      const origin = this._trans.getOrigin();
-      const rot = this._trans.getRotation();
-      snap[base + 0] = origin.x();
-      snap[base + 1] = origin.y();
-      snap[base + 2] = origin.z();
-      snap[base + 3] = rot.x();
-      snap[base + 4] = rot.y();
-      snap[base + 5] = rot.z();
-      snap[base + 6] = rot.w();
-      snap[base + 7] = 0;
-    });
-    this._detectCollision();
-  }
-
   // step() {
-  //   const deltaTime = 1 / 30;
+  //   if(!this.dynamicsWorld) return;
   //   for(let i = 0;i < this.speedUpSimulation;i++) {
-  //     this.dynamicsWorld.stepSimulation(deltaTime, this.maxSubSteps);
+  //     this.dynamicsWorld.stepSimulation(1 / 30, this.maxSubSteps);
   //   }
   //   const snap = this._snapshot;
   //   if(!snap) return;
-  //   const bodies = this.rigidBodies;
-  //   const numBodies = bodies.length;
-  //   for(let i = 0;i < numBodies;i++) {
-  //     const body = bodies[i];
+  //   this.rigidBodies.forEach((body, i) => {
   //     const base = i * FLOATS_PER_BODY;
-  //     if(!body.isActive() && !body.isKinematic) {
-  //       snap[base + 7] = 0;
-  //       continue;
-  //     }
-  //     if(body.isKinematic) {
+  //     if(body.isKinematic == true) {
   //       body.getWorldTransform(this._trans);
-  //     } else {
-  //       const ms = body.getMotionState();
-  //       if(!ms) continue;
-  //       ms.getWorldTransform(this._trans);
+  //       const origin = this._trans.getOrigin();
+  //       const rot = this._trans.getRotation();
+  //       snap[base + 0] = origin.x();
+  //       snap[base + 1] = origin.y();
+  //       snap[base + 2] = origin.z();
+  //       snap[base + 3] = rot.x();
+  //       snap[base + 4] = rot.y();
+  //       snap[base + 5] = rot.z();
+  //       snap[base + 6] = rot.w();
+  //       snap[base + 7] = 0;
+  //       return;
   //     }
+  //     if(!body.getMotionState()) return;
+  //     body.getMotionState().getWorldTransform(this._trans);
   //     const origin = this._trans.getOrigin();
   //     const rot = this._trans.getRotation();
   //     snap[base + 0] = origin.x();
@@ -577,11 +531,47 @@ class MatrixAmmoWorker {
   //     snap[base + 4] = rot.y();
   //     snap[base + 5] = rot.z();
   //     snap[base + 6] = rot.w();
-  //     snap[base + 7] = 1; // Mark as 'Active/Dirty' for the renderer
-  //   }
-
+  //     snap[base + 7] = 0;
+  //   });
   //   this._detectCollision();
   // }
+
+  step() {
+    const deltaTime = 1 / 30;
+    for(let i = 0;i < this.speedUpSimulation;i++) {
+      this.dynamicsWorld.stepSimulation(deltaTime, this.maxSubSteps);
+    }
+    const snap = this._snapshot;
+    if(!snap) return;
+    const bodies = this.rigidBodies;
+    const numBodies = bodies.length;
+    for(let i = 0;i < numBodies;i++) {
+      const body = bodies[i];
+      const base = i * FLOATS_PER_BODY;
+      if(!body.isActive() && !body.isKinematic) {
+        snap[base + 7] = 0;
+        continue;
+      }
+      if(body.isKinematic) {
+        body.getWorldTransform(this._trans);
+      } else {
+        const ms = body.getMotionState();
+        if(!ms) continue;
+        ms.getWorldTransform(this._trans);
+      }
+      const origin = this._trans.getOrigin();
+      const rot = this._trans.getRotation();
+      snap[base + 0] = origin.x();
+      snap[base + 1] = origin.y();
+      snap[base + 2] = origin.z();
+      snap[base + 3] = rot.x();
+      snap[base + 4] = rot.y();
+      snap[base + 5] = rot.z();
+      snap[base + 6] = rot.w();
+      snap[base + 7] = 1;
+    }
+    this._detectCollision();
+  }
 
   setGravityScale(idx, scale) {
     const body = this.rigidBodies[idx];
@@ -611,31 +601,20 @@ class MatrixAmmoWorker {
   _detectCollision() {
     const dispatcher = this.dynamicsWorld.getDispatcher();
     const numManifolds = dispatcher.getNumManifolds();
-
-    // Clear the "current" set for this frame (reuses the object)
     this._currentCollisions.clear();
-
     for(let i = 0;i < numManifolds;i++) {
       const manifold = dispatcher.getManifoldByIndexInternal(i);
       if(manifold.getNumContacts() === 0) continue;
-
       const ptr0 = Ammo.getPointer(manifold.getBody0());
       const ptr1 = Ammo.getPointer(manifold.getBody1());
-
       const name0 = this.ptrToName.get(ptr0);
       const name1 = this.ptrToName.get(ptr1);
-
-      if(!name0 || !name1) continue; // Use continue instead of return to check other manifolds
+      if(!name0 || !name1) continue;
       if(name0 === 'ground' || name1 === 'ground') continue;
-
-      // Use a consistent key order (e.g. alphabetical) so A|B is same as B|A
       // const key = name0 < name1 ? `${name0}|${name1}` : `${name1}|${name0}`;
       this._keyColl = name0 + name1;
       const key = this._keyColl;
-
       this._currentCollisions.add(key);
-
-      // Check against LAST frame's set
       if(!this.lastCollisionState.has(key)) {
         const contact = manifold.getContactPoint(0);
         const normal = contact.get_m_normalWorldOnB();

@@ -3,13 +3,10 @@ const LAYER_MOVING = 1;
 const LAYER_ANCHOR = 2;
 const LAYER_FLIPPER = 3;
 const NUM_OBJ_LAYERS = 4;
-
 const FLOATS_PER_BODY = 8;
-
 const NUM_BROAD_PHASE_LAYERS = 5;
 const BP_LAYER_STATIC = 0;
 const BP_LAYER_DYNAMIC = 1;
-
 
 const degToRad = d => d * (Math.PI / 180);
 
@@ -88,10 +85,12 @@ class MatrixJolt {
     const module = await import('https://www.unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js');
     const Jolt = await module.default();
     this.Jolt = Jolt;
-
     // cache
-
+    this._vector0 = new Jolt.Vec3();
+    this._vector1 = new Jolt.Vec3();
+    this._vector2 = new Jolt.Vec3();
     this._initPhysics(options.groundY ?? 0);
+    console.log('PHYSICS[JOLT]')
   }
 
   _initPhysics(GROUND_Y) {
@@ -121,18 +120,17 @@ class MatrixJolt {
     settings.mObjectLayerPairFilter = objectFilter;
     settings.mBroadPhaseLayerInterface = bpLayerInterface;
     settings.mObjectVsBroadPhaseLayerFilter = bpObjectFilter;
-
     this.joltInterface = new Jolt.JoltInterface(settings);
     Jolt.destroy(settings);
-
     this.physicsSystem = this.joltInterface.GetPhysicsSystem();
     this.bodyInterface = this.physicsSystem.GetBodyInterface();
-    this.physicsSystem.SetGravity(new Jolt.Vec3(0, -this.options.gravity, 0));
-
-    const groundShape = new Jolt.BoxShape(new Jolt.Vec3(this.options.roundDimension, 1, this.options.roundDimension));
+    this._vector0.Set(0, -this.options.gravity, 0);
+    this.physicsSystem.SetGravity(this._vector0);
+    this._vector1.Set(this.options.roundDimension, 1, this.options.roundDimension);
+    const groundShape = new Jolt.BoxShape(this._vector1);
     const groundSettings = new Jolt.BodyCreationSettings(
       groundShape,
-      new Jolt.RVec3(0, GROUND_Y, 0), // Offset by 1 because box half-extent is 1
+      new Jolt.RVec3(0, GROUND_Y, 0),
       Jolt.Quat.prototype.sIdentity(),
       Jolt.EMotionType_Static,
       LAYER_NON_MOVING
@@ -279,6 +277,7 @@ class MatrixJolt {
     const verts = buildConeVerts(pOptions.radius, pOptions.height);
     const settings = new Jolt.ConvexHullShapeSettings();
     const points = settings.mPoints;
+    // this._vector0.Set()
     for(let i = 0;i < verts.length / 3;i++) {
       const v = new Jolt.Vec3(verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
       points.push_back(v);
@@ -488,27 +487,19 @@ class MatrixJolt {
     const hingeSettings = new Jolt.HingeConstraintSettings();
     hingeSettings.mPoint1 = worldPivotA;
     hingeSettings.mPoint2 = worldPivotB;
-    // hingeSettings.mPoint2 = worldPivotB;
     hingeSettings.mHingeAxis1 = new Jolt.Vec3(ax, ay, az);
     hingeSettings.mHingeAxis2 = new Jolt.Vec3(ax, ay, az);
     hingeSettings.mNormalAxis1 = new Jolt.Vec3(nx, ny, nz);
     hingeSettings.mNormalAxis2 = new Jolt.Vec3(nx, ny, nz);
-
     if(pOptions.limits) {
       hingeSettings.mLimitsMin = pOptions.limits[0];
       hingeSettings.mLimitsMax = pOptions.limits[1];
     }
-
     const constraint = hingeSettings.Create(bodyA, bodyB);
-
-    // constraint.SetCollisionEnabled(false);
-    // constraint.SetNumVelocityStepsOverride(0);
-
     this.physicsSystem.AddConstraint(constraint);
     constraint.name = pOptions.name;
     this.constraints.push(constraint);
     const constraintIdx = this.constraints.length - 1;
-
     console.log("hinge at index:", constraintIdx);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
@@ -544,9 +535,7 @@ class MatrixJolt {
   }
 
   step() {
-    if(!this.joltInterface) return;
-
-    // --- physics step ---
+    // if(!this.joltInterface) return;
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.joltInterface.Step(1 / 30, 1);
     }

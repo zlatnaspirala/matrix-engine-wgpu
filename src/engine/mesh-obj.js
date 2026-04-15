@@ -48,6 +48,9 @@ export default class MEMeshObj extends Materials {
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
 
+    this._modelMatrix = mat4.create();
+    this.modelMatrix = mat4.create();
+
     if(typeof o.material.useBlend === 'undefined' ||
       typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
@@ -339,9 +342,6 @@ export default class MEMeshObj extends Materials {
       //   buffer: weightsBuffer,
       //   stride: 16
       // };
-
-      this._modelMatrix = mat4.create();
-      this.modelMatrix = mat4.create();
     }
 
     this.runProgram = () => {

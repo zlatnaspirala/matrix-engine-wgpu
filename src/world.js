@@ -25,15 +25,12 @@ import {PointerEffect} from "./engine/effects/pointerEffect.js";
 import {FlameEffect} from "./engine/effects/flame.js";
 import ProceduralMeshObj, {MeshMorpher} from "./engine/procedural-mesh.js";
 import {FOUNTAIN_COLUMN_TOP, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainStructureConfig} from "./engine/procedures/fontana.js";
-
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
-
 import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
 import {nanoPass} from "./engine/overrides/nano-render.js";
-// import {MatrixJolt} from "./engine/physics/matrix-jolt_DEPLACED.js";
 import {PhysicsBridge} from "./engine/physics/bridge.js";
 import {mobile1} from "./engine/overrides/mobile-1.js";
 /**
@@ -1110,10 +1107,7 @@ export default class MatrixEngineWGPU {
           if(mesh.materialBindGroup !== l) {
             pass.setBindGroup(1, mesh.materialBindGroup);
             l = mesh.materialBindGroup;
-          } else {
-            console.log('same BIND GROUP!')
           }
-          // pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
           if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);

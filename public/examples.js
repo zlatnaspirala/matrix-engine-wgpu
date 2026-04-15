@@ -222,7 +222,7 @@ var flipper = function () {
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
-    render: 'mobile1',
+    render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -277,7 +277,7 @@ var flipper = function () {
     _cameras.MobileDOM.addButton("PUSH", async () => {
       let ball = app.matrixPhysics.getBodyByName('ball1');
       const pos = await app.matrixPhysics.getPosition(ball);
-      if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
+      if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
     }, () => {}, {
       left: '80',
       bottom: '45'
@@ -545,11 +545,8 @@ var flipper = function () {
             geometry: "Sphere",
             group: 2,
             mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
-          },
-          raycast: {
-            enabled: true,
-            radius: 1
           }
+          // raycast: {enabled: true, radius: 1}
         });
       });
 
@@ -993,16 +990,13 @@ var flipper = function () {
           layer: 3 // LAYER_FLIPPER
         }
       });
-      flipper.canvas.addEventListener("ray.hit.event", e => {
+      flipper.canvas.addEventListener("ray.hit.event", async e => {
         app.matrixSounds.play('click1');
         console.log('e.detail', e.detail);
-        if (e.detail.hitObject.name == "pushBtn" && MYFLIPPER.STATUS_PUSH == 'free') {
-          console.log('e.detail pushBtn123 ', e.detail);
-          MYFLIPPER.STATUS_PUSH = 'in action';
+        if (e.detail.hitObject.name == "pushBtn") {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
-          // const impulse = new Ammo.btVector3(0, 0.2, -randomIntFromTo(10, 20));
-          // ball.applyCentralImpulse(impulse);
-          flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(10, 20)));
+          const pos = await app.matrixPhysics.getPosition(ball);
+          if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
         }
       });
       const ball = app.matrixPhysics.getBodyByName('ball1');
@@ -33777,6 +33771,8 @@ class MEMeshObj extends _materials.default {
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
+    this._modelMatrix = _wgpuMatrix.mat4.create();
+    this.modelMatrix = _wgpuMatrix.mat4.create();
     if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
@@ -34053,9 +34049,6 @@ class MEMeshObj extends _materials.default {
       //   buffer: weightsBuffer,
       //   stride: 16
       // };
-
-      this._modelMatrix = _wgpuMatrix.mat4.create();
-      this.modelMatrix = _wgpuMatrix.mat4.create();
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
@@ -37399,29 +37392,29 @@ class ProceduralMeshObj extends _materials.default {
     }
   }
   getModelMatrix(pos, useScale = false) {
-    let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
-    this._posArray[0] = pos.x;
-    this._posArray[1] = pos.y;
-    this._posArray[2] = pos.z;
-    _wgpuMatrix.mat4.translate(modelMatrix, this._posArray, modelMatrix);
-    if (this.itIsPhysicsBody) {
-      this._rotAxisVec[0] = this.rotation.axis.x;
-      this._rotAxisVec[1] = this.rotation.axis.y;
-      this._rotAxisVec[2] = this.rotation.axis.z;
-      _wgpuMatrix.mat4.rotate(modelMatrix, this._rotAxisVec, (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
-    } else {
+    if (!this.itIsPhysicsBody) {
+      let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
+      this._translateVec[0] = pos.x;
+      this._translateVec[1] = pos.y;
+      this._translateVec[2] = pos.z;
+      _wgpuMatrix.mat4.translate(modelMatrix, this._translateVec, modelMatrix);
       _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+      if (useScale == true) {
+        this._scaleVec[0] = this.scale[0];
+        this._scaleVec[1] = this.scale[1];
+        this._scaleVec[2] = this.scale[2];
+        _wgpuMatrix.mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+      }
+      this.modelMatrix = modelMatrix;
+      return this.modelMatrix;
     }
-    if (useScale == true) {
-      this._scaleVec[0] = this.scale[0];
-      this._scaleVec[1] = this.scale[1];
-      this._scaleVec[2] = this.scale[2];
-      _wgpuMatrix.mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+    if (!this.modelMatrix) {
+      let modelMatrix = _wgpuMatrix.mat4.identity(this._modelMatrix);
+      this.modelMatrix = modelMatrix;
     }
-    this.modelMatrix = modelMatrix;
-    return modelMatrix;
+    return this.modelMatrix;
   }
   updateModelUniformBuffer() {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
@@ -58230,8 +58223,6 @@ function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import MatrixAmmo from "./engine/physics/matrix-ammo_DEPLACED.js";
 
-// import {MatrixJolt} from "./engine/physics/matrix-jolt_DEPLACED.js";
-
 /**
  * @description
  * Main engine root class.
@@ -59632,10 +59623,7 @@ class MatrixEngineWGPU {
           if (mesh.materialBindGroup !== l) {
             pass.setBindGroup(1, mesh.materialBindGroup);
             l = mesh.materialBindGroup;
-          } else {
-            console.log('same BIND GROUP!');
           }
-          // pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
           if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);

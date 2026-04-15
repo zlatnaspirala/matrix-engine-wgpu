@@ -675,27 +675,29 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   getModelMatrix(pos, useScale = false) {
-    let modelMatrix = mat4.identity(this._modelMatrix);
-    this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
-    mat4.translate(modelMatrix, this._posArray, modelMatrix);
-    if(this.itIsPhysicsBody) {
-      this._rotAxisVec[0] = this.rotation.axis.x;
-      this._rotAxisVec[1] = this.rotation.axis.y;
-      this._rotAxisVec[2] = this.rotation.axis.z;
-      mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-    } else {
+    if(!this.itIsPhysicsBody) {
+      let modelMatrix = mat4.identity(this._modelMatrix);
+      this._translateVec[0] = pos.x;
+      this._translateVec[1] = pos.y;
+      this._translateVec[2] = pos.z;
+      mat4.translate(modelMatrix, this._translateVec, modelMatrix);
       mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+      if(useScale == true) {
+        this._scaleVec[0] = this.scale[0];
+        this._scaleVec[1] = this.scale[1];
+        this._scaleVec[2] = this.scale[2];
+        mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+      }
+      this.modelMatrix = modelMatrix;
+      return this.modelMatrix;
     }
-    if(useScale == true) {
-      this._scaleVec[0] = this.scale[0];
-      this._scaleVec[1] = this.scale[1];
-      this._scaleVec[2] = this.scale[2];
-      mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+    if(!this.modelMatrix) {
+      let modelMatrix = mat4.identity(this._modelMatrix);
+      this.modelMatrix = modelMatrix;
     }
-    this.modelMatrix = modelMatrix;
-    return modelMatrix;
+    return this.modelMatrix;
   }
 
   updateModelUniformBuffer() {
