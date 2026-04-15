@@ -223,7 +223,8 @@ var flipper = function () {
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
-    useJolt: true,
+    // render: 'mobile1',
+    // useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -238,32 +239,52 @@ var flipper = function () {
       a: 1
     }
   }, () => {
+    let hingeLeftID = 0;
+    let hingeRightID = 0;
+
     // Audios
-    flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
-    flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1);
+    // flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+    // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
     flipper.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
     flipper.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
     flipper.matrixSounds.audios.click1.volume = 0.8;
     flipper.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
-    flipper.matrixSounds.audios.music.loop = true;
-    flipper.matrixSounds.play('music');
-    (0, _utils.byId)('mobileControls').style.marginRight = '20%';
-    _cameras.MobileDOM.addButton("PIN", () => {}, {
+    // flipper.matrixSounds.audios.music2.loop = true;
+    // flipper.matrixSounds.play('music2');
+
+    if ((0, _utils.isMobile)()) (0, _utils.byId)('mobileControls').style.marginRight = '20%';
+    _cameras.MobileDOM.addButton("PIN", () => {
+      const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+      // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+      flipper.matrixPhysics.activate(leftBody, true);
+      flipper.matrixPhysics.setActivationState(leftBody, 4);
+      flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, 600);
+    }, () => {
+      flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 600);
+    }, {
       left: '5'
     });
-    _cameras.MobileDOM.addButton("PIN", () => {}, {
+    _cameras.MobileDOM.addButton("PIN", () => {
+      const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+      // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+      flipper.matrixPhysics.activate(rightBody, true);
+      flipper.matrixPhysics.setActivationState(rightBody, 4);
+      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, 600);
+    }, () => {
+      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 600);
+    }, {
       left: '80'
     });
     _cameras.MobileDOM.addButton("PUSH", async () => {
       let ball = app.matrixPhysics.getBodyByName('ball1');
       const pos = await app.matrixPhysics.getPosition(ball);
       if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
-    }, {
+    }, () => {}, {
       left: '80',
       bottom: '45'
     });
     // Lights
-    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 2 : 4;
+    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 1 : 4;
     const ORBIT_RADIUS = 12;
     const ORBIT_SPEED = 0.6;
     const TARGET = {
@@ -296,7 +317,7 @@ var flipper = function () {
     for (let i = 0; i < NUM_LIGHTS; i++) {
       flipper.addLight();
     }
-    for (let i = 0; i < NUM_LIGHTS; i++) {
+    if ((0, _utils.isMobile)() == false) for (let i = 0; i < NUM_LIGHTS; i++) {
       const light = flipper.lightContainer[i];
       const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
       const color = LIGHT_COLORS[i];
@@ -333,7 +354,7 @@ var flipper = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      flipper.matrixPhysics.speedUpSimulation = (0, _utils.isMobile)() == true ? 2 : 4;
+      flipper.matrixPhysics.speedUpSimulation = (0, _utils.isMobile)() == true ? 11 : 4;
       // flipper.matrixPhysics.speedUpSimulation = 3;
     });
     async function onGround(m) {
@@ -348,7 +369,7 @@ var flipper = function () {
           z: -12
         },
         scale: [0.25, 0.25, 0.25],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'ball1',
         mesh: m.ball,
         shadowsCast: false,
@@ -401,7 +422,7 @@ var flipper = function () {
           z: -21
         },
         scale: [6, 0.1, 15],
-        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -417,7 +438,7 @@ var flipper = function () {
           z: -36
         },
         scale: [2.95, 3, 1],
-        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'bigBox',
         mesh: m.bigBox,
         shadowsCast: false,
@@ -446,7 +467,7 @@ var flipper = function () {
         envLodBias: 1.5,
         usePlanarReflection: false // ✅ Env map mode
       };
-      if (flipper.matrixPhysics._PHYSICS_DRIVE == "AMMO") {
+      if ((0, _utils.isMobile)() == false) {
         let glass = flipper.addMeshObj({
           material: {
             type: 'mirror'
@@ -457,7 +478,7 @@ var flipper = function () {
             z: -20.5
           },
           scale: [6, 0.05, 14.5],
-          texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+          texturesPaths: ['./res/textures/default2.png', './res/icons/editor/chatgpt-gen-bg-inv.webp'],
           name: 'glass',
           mesh: m.glass,
           shadowsCast: false,
@@ -709,7 +730,8 @@ var flipper = function () {
       });
       const REdge = flipper.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 5.8,
@@ -717,7 +739,7 @@ var flipper = function () {
           z: -21
         },
         scale: [0.2, 1, 15],
-        texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'edgeRigth',
         mesh: m.cube,
         physics: {
@@ -728,7 +750,8 @@ var flipper = function () {
       });
       const REdge2 = flipper.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 4.5,
@@ -736,7 +759,7 @@ var flipper = function () {
           z: -19.5
         },
         scale: [0.05, 1, 12.5],
-        texturesPaths: ['./res/textures/cube-test.png', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'edgeRigth2',
         mesh: m.cube,
         physics: {
@@ -747,7 +770,8 @@ var flipper = function () {
       });
       const LEdge = flipper.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: -5.7,
@@ -755,7 +779,7 @@ var flipper = function () {
           z: -21
         },
         scale: [0.3, 1, 15],
-        texturesPaths: ['./res/textures/blankgray.webp', './res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['./res/textures/blankgray.webp'],
         name: 'edgeLeft',
         mesh: m.cube,
         physics: {
@@ -806,8 +830,6 @@ var flipper = function () {
           axis: [0, 1, 0],
           limits: [-0.8, 0.5]
         });
-        let hingeLeftID = 0;
-        let hingeRightID = 0;
         hingeLeft.then(idx => {
           // console.log('Hinge index (its is not regular rigidbody idx)', idx)
           hingeLeftID = idx;
@@ -865,11 +887,12 @@ var flipper = function () {
             if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
           }
         });
-      }, 500);
+      }, 1000);
       const commonAchorX = 2.2;
       // const commomBODYX = 0.8; ammo working
       const commomBODYX = 0.8;
       const LAnchor = flipper.addMeshObj({
+        texturesPaths: ['./res/textures/blankgray.webp'],
         position: {
           x: -commonAchorX,
           y: 0.3,
@@ -891,6 +914,7 @@ var flipper = function () {
         name: "flipperLeftAnchor"
       });
       const RAnchor = flipper.addMeshObj({
+        texturesPaths: ['./res/textures/blankgray.webp'],
         position: {
           x: commonAchorX,
           y: 0.3,
@@ -919,7 +943,8 @@ var flipper = function () {
       });
       flipper.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: -commomBODYX,
@@ -933,8 +958,9 @@ var flipper = function () {
         physics: {
           enabled: true,
           mass: 0.5,
-          geometry: "ConvexHull",
-          vertices: m.pin.vertices,
+          geometry: "Cube",
+          // vertices: m.pin.vertices,
+
           collisionGroup: 0,
           collisionSubGroup: 0,
           group: 1,
@@ -945,7 +971,8 @@ var flipper = function () {
       });
       flipper.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: commomBODYX,
@@ -959,8 +986,10 @@ var flipper = function () {
         physics: {
           enabled: true,
           mass: 0.5,
-          geometry: "ConvexHull",
-          vertices: m.pinR.vertices,
+          geometry: "Cube",
+          // geometry: "ConvexHull",
+          // vertices: m.pinR.vertices,
+
           collisionGroup: 0,
           collisionSubGroup: 0,
           group: 1,
@@ -990,10 +1019,6 @@ var flipper = function () {
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
         // console.log('collision : ', body1Name)
-
-        if (body1Name.startsWith("bumper") || body0Name.startsWith("bumper")) {
-          // console.log('collision with bumper!!!!!!!!!!!!!!: ', body1Name)
-        }
         if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
           console.log('collision with bumper: ', body1Name);
           // const bumperBody = app.matrixPhysics.getBodyByName(body1Name);
@@ -1005,92 +1030,93 @@ var flipper = function () {
 
       // GRAVITY TILT (PINBALL FEEL)
       flipper.matrixPhysics.setGravity(0, -9.8, 1.8);
-
-      // only render objs
-      const leg1 = flipper.addMeshObj({
-        material: {
-          type: 'standard',
-          share: true
-        },
-        position: {
-          x: -5.5,
-          y: -5,
-          z: -6.1
-        },
-        scale: [0.2, 7, 0.2],
-        texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'leg1',
-        mesh: m.cube,
-        shadowsCast: false,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
-      const leg2 = flipper.addMeshObj({
-        material: {
-          type: 'standard',
-          share: true
-        },
-        position: {
-          x: 5.5,
-          y: -5,
-          z: -6.1
-        },
-        scale: [0.2, 7, 0.2],
-        texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'leg2',
-        mesh: m.cube,
-        shadowsCast: false,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
-      const leg3 = flipper.addMeshObj({
-        material: {
-          type: 'standard',
-          share: true
-        },
-        position: {
-          x: -5.5,
-          y: -5,
-          z: -36
-        },
-        scale: [0.2, 7, 0.2],
-        texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'leg3',
-        mesh: m.cube,
-        shadowsCast: false,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
-      const leg4 = flipper.addMeshObj({
-        material: {
-          type: 'standard',
-          share: true
-        },
-        position: {
-          x: 5.5,
-          y: -5,
-          z: -36
-        },
-        scale: [0.2, 7, 0.2],
-        texturesPaths: ['./res/textures/blankgray2.webp'],
-        name: 'leg4',
-        mesh: m.cube,
-        shadowsCast: false,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
+      if ((0, _utils.isMobile)() == false) {
+        // only render objs
+        const leg1 = flipper.addMeshObj({
+          material: {
+            type: 'standard',
+            share: true
+          },
+          position: {
+            x: -5.5,
+            y: -5,
+            z: -6.1
+          },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ['./res/textures/blankgray2.webp'],
+          name: 'leg1',
+          mesh: m.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+        const leg2 = flipper.addMeshObj({
+          material: {
+            type: 'standard',
+            share: true
+          },
+          position: {
+            x: 5.5,
+            y: -5,
+            z: -6.1
+          },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ['./res/textures/blankgray2.webp'],
+          name: 'leg2',
+          mesh: m.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+        const leg3 = flipper.addMeshObj({
+          material: {
+            type: 'standard',
+            share: true
+          },
+          position: {
+            x: -5.5,
+            y: -5,
+            z: -36
+          },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ['./res/textures/blankgray2.webp'],
+          name: 'leg3',
+          mesh: m.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+        const leg4 = flipper.addMeshObj({
+          material: {
+            type: 'standard',
+            share: true
+          },
+          position: {
+            x: 5.5,
+            y: -5,
+            z: -36
+          },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ['./res/textures/blankgray2.webp'],
+          name: 'leg4',
+          mesh: m.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+      }
       // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
         if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
@@ -22701,7 +22727,7 @@ const MobileDOM = exports.MobileDOM = {
     document.body.appendChild(wrap);
     return wrap; // caller can hide/remove later
   },
-  addButton(label, onClick, options = {}) {
+  addButton(label, onClick, onRelease, options = {}) {
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
@@ -22735,13 +22761,15 @@ const MobileDOM = exports.MobileDOM = {
     }, {
       passive: true
     });
-    btn.addEventListener('pointerup', () => {
-      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+    btn.addEventListener('pointerup', e => {
+      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
     }, {
       passive: true
     });
     btn.addEventListener('pointercancel', () => {
-      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
     }, {
       passive: true
     });
@@ -34945,7 +34973,7 @@ var _utils = require("../utils");
 // no integrated yet
 let mobile1 = function () {
   const now2 = performance.now();
-  this.now = now2 * 0.001;
+  // this.now = now2 * 0.001;
   this.lastFrameMS = this.now;
   this.autoUpdate.forEach(_ => _.update());
   requestAnimationFrame(this.frame);
@@ -34969,22 +34997,6 @@ let mobile1 = function () {
           m.drawShadows(pass, light);
         }
       }
-      // if(this.shadowBuckets.instanced.length) {
-      //   pass.setPipeline(light.shadowPipelineInstanced);
-      //   for(let m of this.shadowBuckets.instanced) {
-      //     pass.setBindGroup(0, light.getShadowBindGroup(m));
-      //     pass.setBindGroup(1, m.modelBindGroup);
-      //     m.drawShadows(pass, light);
-      //   }
-      // }
-      // if(this.shadowBuckets.procedural.length) {
-      //   pass.setPipeline(light.shadowPipelineMorph);
-      //   for(let m of this.shadowBuckets.procedural) {
-      //     pass.setBindGroup(0, light.getShadowBindGroup(m));
-      //     pass.setBindGroup(1, m.modelBindGroup);
-      //     m.drawShadows(pass, light);
-      //   }
-      // }
       pass.end();
     }
     const len = this.mainRenderBundle.length;
@@ -34997,7 +35009,7 @@ let mobile1 = function () {
       }
       mesh.position.update();
       // if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
-      // if(mesh.update) mesh.update(now2);
+      if (mesh.update) mesh.update(now2);
       // if(mesh.isVideo) mesh.updateVideoTexture();
     }
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
@@ -35011,66 +35023,75 @@ let mobile1 = function () {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
         } else {
-          // console.log('same BIND GROUP!')
+          console.log('same BIND GROUP!');
         }
         // pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        // if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        // if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
     for (const [pipeline, meshes] of this.transparentBuckets) {
-      meshes.sort((a, b) => {
-        const dx1 = camera.position[0] - a.position[0];
-        const dz1 = camera.position[2] - a.position[2];
-        const da = dx1 * dx1 + dz1 * dz1;
-        const dx2 = camera.position[0] - b.position[0];
-        const dz2 = camera.position[2] - b.position[2];
-        const db = dx2 * dx2 + dz2 * dz2;
-        return db - da;
-      });
+      // meshes.sort((a, b) => {
+      //   const dx1 = camera.position[0] - a.position[0];
+      //   const dz1 = camera.position[2] - a.position[2];
+      //   const da = dx1 * dx1 + dz1 * dz1;
+      //   const dx2 = camera.position[0] - b.position[0];
+      //   const dz2 = camera.position[2] - b.position[2];
+      //   const db = dx2 * dx2 + dz2 * dz2;
+      //   return db - da;
+      // });
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        // if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        // if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
     pass.end();
-    const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-    const viewProjMatrix = camera.VP;
-    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if (mesh.effects) {
-        for (const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if (effect == null || effect.enabled === false) continue;
-          if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-          effect.render(transPass, mesh, viewProjMatrix);
-        }
-      }
-    }
-    transPass.end();
-    if (this.volumetricPass.enabled === true) {
-      mat4.invert(camera.VP, this._invViewProj);
-      const light = this.lightContainer[0];
-      this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
-      this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
-      this._volumetricLightUniforms.direction = light.direction;
-      this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
-    }
+
+    // const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
+    // const viewProjMatrix = camera.VP;
+    // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
+    //   const mesh = this.mainRenderBundle[meshIndex];
+    //   if(mesh.effects) {
+    //     for(const effectName in mesh.effects) {
+    //       const effect = mesh.effects[effectName];
+    //       if(effect == null || effect.enabled === false) continue;
+    //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+    //       effect.render(transPass, mesh, viewProjMatrix);
+    //     }
+    //   }
+    // }
+    // transPass.end();
+
+    // if(this.volumetricPass.enabled === true) {
+    //   mat4.invert(camera.VP, this._invViewProj);
+    //   const light = this.lightContainer[0];
+    //   this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
+    //   this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+    //   this._volumetricLightUniforms.direction = light.direction;
+    //   this.volumetricPass.render(commandEncoder,
+    //     this.sceneTextureView,
+    //     this.mainDepthView,
+    //     this.shadowArrayView,
+    //     this._volumetricUniforms,
+    //     this._volumetricLightUniforms
+    //   );
+    // }
+
     const canvasTexture = this.context.getCurrentTexture();
     if (this._lastCanvasTex !== canvasTexture) {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled == true) {
-      // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-      this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-    }
+    // if(this.bloomPass.enabled == true) {
+    //   // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
+    //   this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    // }
     this.finalPS.colorAttachments[0].view = this._canvasView;
     pass = commandEncoder.beginRenderPass(this.finalPS);
     pass.setPipeline(this.presentPipeline);
@@ -35080,8 +35101,8 @@ let mobile1 = function () {
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
-    if (this.collisionSystem) this.collisionSystem.update();
-    this.graphUpdate(this.now);
+    // if(this.collisionSystem) this.collisionSystem.update();
+    // this.graphUpdate(this.now);
     this.blendQueue.length = 0;
   } catch (err) {
     if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, _utils.LOG_WARN);

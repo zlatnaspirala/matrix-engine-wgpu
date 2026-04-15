@@ -162,7 +162,7 @@ class MatrixAmmoWorker {
   _addSphere(pOptions) {
     const Ammo = this.Ammo;
     const radius = (pOptions.radius ?? 1) * (pOptions.scale?.[0] ?? 1);
-  //  const shape = new Ammo.btSphereShape(radius);
+    //  const shape = new Ammo.btSphereShape(radius);
     const shape = new Ammo.btSphereShape(
       Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.scale?.[0]
     );
@@ -501,9 +501,11 @@ class MatrixAmmoWorker {
       const base = i * FLOATS_PER_BODY;
       if(body.isKinematic == true) {
         const t = body.getWorldTransform();
-        snap[base + 0] = t.getOrigin().x();
-        snap[base + 1] = t.getOrigin().y();
-        snap[base + 2] = t.getOrigin().z();
+        const orig = t.getOrigin();
+        const x = orig.x(), y = orig.y(), z = orig.z();
+        snap[base + 0] = x;
+        snap[base + 1] = y;
+        snap[base + 2] = z;
         const rot = t.getRotation();
         rot.normalize();
         const axis = rot.getAxis();
@@ -516,20 +518,19 @@ class MatrixAmmoWorker {
       }
       if(!body.getMotionState()) return;
       body.getMotionState().getWorldTransform(this._trans);
-      const x = this._trans.getOrigin().x();
-      const y = this._trans.getOrigin().y();
-      const z = this._trans.getOrigin().z();
-      if(isNaN(x)) return;
-      snap[base + 0] = x;
-      snap[base + 1] = y;
-      snap[base + 2] = z;
+      // const orig = this._trans.getOrigin();
+      // const x = orig.x(), y = orig.y(), z = orig.z();
+      // if(isNaN(x)) return;
+      body.getMotionState().getWorldTransform(this._trans);
+      const origin = this._trans.getOrigin();
       const rot = this._trans.getRotation();
-      rot.normalize();
-      const axis = rot.getAxis();
-      snap[base + 3] = axis.x();
-      snap[base + 4] = axis.y();
-      snap[base + 5] = axis.z();
-      snap[base + 6] = rot.getAngle();
+      snap[base + 0] = origin.x();
+      snap[base + 1] = origin.y();
+      snap[base + 2] = origin.z();
+      snap[base + 3] = rot.x();
+      snap[base + 4] = rot.y();
+      snap[base + 5] = rot.z();
+      snap[base + 6] = rot.w(); // Pass the W component!
       snap[base + 7] = 0;
     });
     this._detectCollision();

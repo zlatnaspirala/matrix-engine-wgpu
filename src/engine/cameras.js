@@ -846,7 +846,7 @@ export const MobileDOM = {
     return wrap; // caller can hide/remove later
   },
 
-  addButton(label, onClick, options = {}) {
+  addButton(label, onClick, onRelease, options = {}) {
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
@@ -880,8 +880,14 @@ export const MobileDOM = {
       btn.style.background = `rgba(255,255,255,${opacity})`;
       onClick(e);
     }, {passive: true});
-    btn.addEventListener('pointerup', () => {btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;}, {passive: true});
-    btn.addEventListener('pointercancel', () => {btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;}, {passive: true});
+    btn.addEventListener('pointerup', (e) => {
+      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
+    }, {passive: true});
+    btn.addEventListener('pointercancel', () => {
+      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
+    }, {passive: true});
 
     document.body.appendChild(btn);
     return btn;
