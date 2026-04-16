@@ -590,7 +590,7 @@ export var flipper = function() {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          sensor: true,
+          // sensor: true,
           collisionGroup: 0,
           collisionSubGroup: 0,
           layer: 2,
@@ -610,11 +610,10 @@ export var flipper = function() {
           mass: 0,
           geometry: "Cube",
           // kinematic: true,  // ONLY JOLT
-          sensor: true,        // ONLY JOLT
+          // sensor: true,     // ONLY JOLT
           collisionGroup: 0,   // ONLY JOLT
           collisionSubGroup: 0,// ONLY JOLT
           layer: 2,            // ONLY JOLT
-
           group: 2,
           mask: 1 // collide with world, NOT flipper
         },
@@ -633,10 +632,8 @@ export var flipper = function() {
           mass: 0.5,
           geometry: "Cube",
           // vertices: m.pin.vertices,
-
           collisionGroup: 0,
           collisionSubGroup: 0,
-
           group: 1,
           mask: -1, // everything,
           layer: 3, // LAYER_FLIPPER

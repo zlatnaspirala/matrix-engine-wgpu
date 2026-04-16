@@ -132,20 +132,24 @@ class MatrixJolt {
       // Usually return AcceptAllContactsForThisBodyPair (value 0)
       return Jolt.ValidateResult_AcceptAllContactsForThisBodyPair;
     };
-    // 2. OnContactAdded
-    contactListener.OnContactAdded = (body1Ptr, body2Ptr, manifoldPtr, settingsPtr) => {
-      // Your collision logic here
-    };
-    // 3. OnContactPersisted
+
     contactListener.OnContactPersisted = (body1Ptr, body2Ptr, manifoldPtr, settingsPtr) => {
       // Triggered every step the bodies remain in contact
     };
-    // 4. OnContactRemoved
+
     contactListener.OnContactRemoved = (subShapePairPtr) => {
       // Your cleanup logic here
     };
-    contactListener.OnContactAdded = (bodyA, bodyB, manifold) => {
-      self.postMessage({cmd: "collision", body0Name: bodyA.name, body1Name: bodyB.name})
+
+    contactListener.OnContactAdded = (bodyA, bodyB, manifold, settings) => {
+      const b1 = Jolt.wrapPointer(bodyA, Jolt.Body);
+      const b2 = Jolt.wrapPointer(bodyB, Jolt.Body);
+      console.log(`Collision added between Body ${b1.GetID().GetIndex()} and Body ${b2.GetID().GetIndex()}`);
+      if(!b1.name) {b1.name = "NO_NAME"}
+      if(!b2.name) {b2.name = "NO_NAME"}
+      const m  = Jolt.wrapPointer(manifold, Jolt.ContactManifold);
+      console.log(`Collision m `, m);
+      self.postMessage({cmd: "collision", body0Name: b1.name, body1Name: b2.name, manifold: manifold})
     };
     this.physicsSystem.SetContactListener(contactListener);
 
@@ -536,15 +540,15 @@ class MatrixJolt {
 
   getPosition(idx, msgID) {
     const body = this.rigidBodies[idx];
-    
+
     if(!body) {
       self.postMessage({cmd: 'getPosition', id: msgID, position: null});
       return;
     }
     const t = body.GetWorldTransform().GetTranslation();
-    console.info('get pos  t.GetX() ',  t.GetX())
-    console.info('get pos  t.GetX() ',  t.GetY())
-    console.info('get pos  t.GetX() ',  t.GetZ())
+    console.info('get pos  t.GetX() ', t.GetX())
+    console.info('get pos  t.GetX() ', t.GetY())
+    console.info('get pos  t.GetX() ', t.GetZ())
     self.postMessage({
       cmd: 'getPosition',
       id: msgID,
