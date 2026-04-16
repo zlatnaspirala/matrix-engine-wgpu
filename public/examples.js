@@ -871,6 +871,7 @@ var flipper = function () {
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, 500);
           }
           if (e.code === "KeyM") {
+            // flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, 500);
           }
           if (e.code == "Space") {
@@ -888,7 +889,7 @@ var flipper = function () {
           // console.log('pCollision::', e);
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
-          const rayDirection = e.detail.rayDirection;
+          const rayDirection = e.detail.man;
           console.log('collision : ', body1Name);
           if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
             console.log('collision with bumper: ', body1Name);
@@ -915,7 +916,6 @@ var flipper = function () {
           enabled: true,
           mass: 0,
           geometry: "Cube",
-          // sensor: true,
           collisionGroup: 0,
           collisionSubGroup: 0,
           layer: 2,
@@ -966,7 +966,7 @@ var flipper = function () {
         mesh: m.pin,
         physics: {
           enabled: true,
-          mass: 0.5,
+          mass: 1,
           geometry: "Cube",
           // vertices: m.pin.vertices,
           collisionGroup: 0,

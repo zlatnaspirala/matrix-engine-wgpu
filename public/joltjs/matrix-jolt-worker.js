@@ -89,6 +89,7 @@ class MatrixJolt {
     this._vector0 = new Jolt.Vec3();
     this._vector1 = new Jolt.Vec3();
     this._vector2 = new Jolt.Vec3();
+    this._arr = [0, 0, 0];
     this._initPhysics(options.groundY ?? 0);
     console.log('PHYSICS[JOLT]')
   }
@@ -147,9 +148,19 @@ class MatrixJolt {
       console.log(`Collision added between Body ${b1.GetID().GetIndex()} and Body ${b2.GetID().GetIndex()}`);
       if(!b1.name) {b1.name = "NO_NAME"}
       if(!b2.name) {b2.name = "NO_NAME"}
-      const m  = Jolt.wrapPointer(manifold, Jolt.ContactManifold);
-      console.log(`Collision m `, m);
-      self.postMessage({cmd: "collision", body0Name: b1.name, body1Name: b2.name, manifold: manifold})
+      const m = Jolt.wrapPointer(manifold, Jolt.ContactManifold);
+      const p = m.GetWorldSpaceContactPointOn1(0);
+      console.log(`Collision m `, p);
+      this._arr[0] = p.GetX();
+      this._arr[1] = p.GetY();
+      this._arr[2] = p.GetZ();
+      self.postMessage({
+        cmd: "collision",
+        body0Name: b1.name,
+        body1Name: b2.name,
+        normal: this.arr, manifold: manifold
+      });
+      this.Jolt.destroy(p);
     };
     this.physicsSystem.SetContactListener(contactListener);
 
@@ -489,26 +500,28 @@ class MatrixJolt {
 
 
     const ax = axis[0], ay = axis[1], az = axis[2];
-    let nx, ny, nz;
-    if(Math.abs(ax) <= Math.abs(ay) && Math.abs(ax) <= Math.abs(az)) {
-      // X is smallest component — cross with X axis
-      nx = 0; ny = -az; nz = ay;
-    } else if(Math.abs(ay) <= Math.abs(az)) {
-      nx = az; ny = 0; nz = -ax;
-    } else {
-      nx = -ay; ny = ax; nz = 0;
-    }
-    // Normalize
-    const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    nx /= nLen; ny /= nLen; nz /= nLen;
+    // let nx, ny, nz;
+    // if(Math.abs(ax) <= Math.abs(ay) && Math.abs(ax) <= Math.abs(az)) {
+    //   // X is smallest component — cross with X axis
+    //   nx = 0; ny = -az; nz = ay;
+    // } else if(Math.abs(ay) <= Math.abs(az)) {
+    //   nx = az; ny = 0; nz = -ax;
+    // } else {
+    //   nx = -ay; ny = ax; nz = 0;
+    // }
+    // // Normalize
+    // const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    // nx /= nLen; ny /= nLen; nz /= nLen;
 
     const hingeSettings = new Jolt.HingeConstraintSettings();
     hingeSettings.mPoint1 = worldPivotA;
     hingeSettings.mPoint2 = worldPivotB;
     hingeSettings.mHingeAxis1 = new Jolt.Vec3(ax, ay, az);
     hingeSettings.mHingeAxis2 = new Jolt.Vec3(ax, ay, az);
-    hingeSettings.mNormalAxis1 = new Jolt.Vec3(nx, ny, nz);
-    hingeSettings.mNormalAxis2 = new Jolt.Vec3(nx, ny, nz);
+    hingeSettings.mNormalAxis1 = new Jolt.Vec3(ax, ay, az);
+    hingeSettings.mNormalAxis2 = new Jolt.Vec3(ax, ay, az);
+    // hingeSettings.mNormalAxis1 = new Jolt.Vec3(nx, ny, nz);
+    // hingeSettings.mNormalAxis2 = new Jolt.Vec3(nx, ny, nz);
     if(pOptions.limits) {
       hingeSettings.mLimitsMin = pOptions.limits[0];
       hingeSettings.mLimitsMax = pOptions.limits[1];
