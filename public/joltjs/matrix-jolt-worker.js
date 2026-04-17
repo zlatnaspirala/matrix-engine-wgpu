@@ -85,7 +85,6 @@ class MatrixJolt {
     const module = await import('https://www.unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js');
     const Jolt = await module.default();
     this.Jolt = Jolt;
-    // cache
     this._vector0 = new Jolt.Vec3();
     this._vector1 = new Jolt.Vec3();
     this._vector2 = new Jolt.Vec3();
@@ -106,7 +105,6 @@ class MatrixJolt {
     objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_MOVING);
     // objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_NON_MOVING);
     // LAYER_FLIPPER <-> LAYER_ANCHOR = omitted
-
     const bpLayerInterface = new Jolt.BroadPhaseLayerInterfaceTable(NUM_OBJ_LAYERS, NUM_BROAD_PHASE_LAYERS);
     bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_NON_MOVING, BP_LAYER_STATIC);
     bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_MOVING, BP_LAYER_DYNAMIC);
@@ -145,12 +143,11 @@ class MatrixJolt {
     contactListener.OnContactAdded = (bodyA, bodyB, manifold, settings) => {
       const b1 = Jolt.wrapPointer(bodyA, Jolt.Body);
       const b2 = Jolt.wrapPointer(bodyB, Jolt.Body);
-      console.log(`Collision added between Body ${b1.GetID().GetIndex()} and Body ${b2.GetID().GetIndex()}`);
       if(!b1.name) {b1.name = "NO_NAME"}
       if(!b2.name) {b2.name = "NO_NAME"}
       const m = Jolt.wrapPointer(manifold, Jolt.ContactManifold);
       const p = m.GetWorldSpaceContactPointOn1(0);
-      console.log(`Collision m `, p);
+      // console.log(`Collision m `, p);
       this._arr[0] = p.GetX();
       this._arr[1] = p.GetY();
       this._arr[2] = p.GetZ();
@@ -158,7 +155,7 @@ class MatrixJolt {
         cmd: "collision",
         body0Name: b1.name,
         body1Name: b2.name,
-        normal: this.arr, manifold: manifold
+        normal: this._arr, manifold: manifold
       });
       this.Jolt.destroy(p);
     };
@@ -204,20 +201,24 @@ class MatrixJolt {
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
       this._snapshot[base + 1] = pOptions.position?.y ?? 0;
       this._snapshot[base + 2] = pOptions.position?.z ?? 0;
+      const bodyID = body.GetID();
+      const q = this.bodyInterface.GetRotation(bodyID);
+      this._snapshot[base + 3] = q.GetX();
+      this._snapshot[base + 4] = q.GetY();
+      this._snapshot[base + 5] = q.GetZ();
+      this._snapshot[base + 6] = q.GetW();
     }
     return body;
   }
 
   _createBody(pOptions, shape) {
+    console.info('test rot')
     const Jolt = this.Jolt;
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
-
     const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
-
-    const rx = degToRad(rot.x || 0);
-    const ry = degToRad(rot.y || 0);
-    const rz = degToRad(rot.z || 0);
-
+    const rx = degToRad(rot.x);
+    const ry = degToRad(rot.y);
+    const rz = degToRad(rot.z);
     // half angles
     const cx = Math.cos(rx * 0.5);
     const sx = Math.sin(rx * 0.5);
@@ -225,7 +226,6 @@ class MatrixJolt {
     const sy = Math.sin(ry * 0.5);
     const cz = Math.cos(rz * 0.5);
     const sz = Math.sin(rz * 0.5);
-
     // Euler (XYZ) → quaternion
     const q = new Jolt.Quat(
       sx * cy * cz + cx * sy * sz,
@@ -236,10 +236,7 @@ class MatrixJolt {
 
     const isKinematic = pOptions.kinematic || pOptions.state === 4;
     const isStatic = (pOptions.mass === 0 || pOptions.mass === undefined) && !isKinematic;
-
-    const motionType = isStatic
-      ? Jolt.EMotionType_Static
-      : (isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic);
+    const motionType = isStatic ? Jolt.EMotionType_Static : (isKinematic ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic);
 
     let layer;
     if(pOptions.layer !== undefined) {
@@ -284,7 +281,7 @@ class MatrixJolt {
   }
 
   _addSphere(pOptions) {
-    return this._createBody(pOptions, new this.Jolt.SphereShape(pOptions.scale[0]));
+    return this._createBody(pOptions, new this.Jolt.SphereShape(pOptions.scale[0], null));
   }
 
   _addBox(pOptions) {
@@ -301,10 +298,9 @@ class MatrixJolt {
   }
 
   _addCylinder(pOptions) {
-    const Jolt = this.Jolt;
+    // const Jolt = this.Jolt;
     const halfHeight = pOptions.scale ? pOptions.scale[1] : (pOptions.height || 2) * 0.5;
     const radius = pOptions.scale ? pOptions.scale[0] : (pOptions.radius || 1);
-
     const shape = new this.Jolt.CylinderShape(halfHeight, radius);
     return this._createBody(pOptions, shape);
   }

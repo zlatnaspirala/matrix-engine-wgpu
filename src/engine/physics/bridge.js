@@ -18,7 +18,15 @@ export class PhysicsBridge {
     this._ready = false;
     this._queue = [];
     this._worker.onmessage = ({data}) => this._onMessage(data);
+
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
+    this.pCollisionEventArg = { detail: {
+      body0Name: '',
+      body1Name: '',
+      rayDirection: [0,0,0]
+    }};
+
+    this.detectCollision = (e) => {};
     this.tempRot = mat4.create();
     this._paused = false;
     this.updates = [];
@@ -198,10 +206,10 @@ export class PhysicsBridge {
       const pos = snap.subarray(b, b + 3);
       const quat = snap.subarray(b + 3, b + 7);
       mat4.fromQuat(quat, meObj.modelMatrix);
-      mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
       meObj.modelMatrix[12] = pos[0];
       meObj.modelMatrix[13] = pos[1];
       meObj.modelMatrix[14] = pos[2];
+      mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
       meObj.modelMatrix[15] = 1;
       meObj.position.inMove = true;
     }
@@ -238,17 +246,18 @@ export class PhysicsBridge {
         this._syncToObjects();
         break;
       case 'collision':
-        this.pCollisionEvent.detail.body0Name = data.body0Name;
-        this.pCollisionEvent.detail.body1Name = data.body1Name;
-        this.pCollisionEvent.detail.rayDirection = data.normal;
-        document.dispatchEvent(this.pCollisionEvent);
+        this.pCollisionEventArg.detail.body0Name = data.body0Name;
+        this.pCollisionEventArg.detail.body1Name = data.body1Name;
+        this.pCollisionEventArg.detail.rayDirection = data.normal;
+        // document.dispatchEvent(this.pCollisionEvent);
+        this.detectCollision(this.pCollisionEventArg);
         break;
       case 'constraintAdded':
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
         break;
       case 'getPosition':
-        console.info(">>>>>>>>>>>>>>>>>>>>>>" +data.position)
+        
         this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;
