@@ -5,7 +5,7 @@ import {byId, isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {PVector} from "../src/engine/matrix-class.js";
 import {MobileDOM} from "../src/engine/cameras.js";
 
-export var flipper = function() {
+export var flipperJolt = function() {
   let MYFLIPPER = {
     STATUS_PUSH: 'wait'
   };
@@ -13,7 +13,8 @@ export var flipper = function() {
   let flipper = new MatrixEngineWGPU({
     render: isMobile() == true ? 'mobile1' : undefined,
     fastRender: 0.5,
-    useJolt: true,
+    // useJolt: true,
+    useCannon: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,

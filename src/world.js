@@ -128,6 +128,11 @@ export default class MatrixEngineWGPU {
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'JOLT';
+      }else if(typeof options.useCannon !== 'undefined') {
+        this.matrixPhysics = new PhysicsBridge('./ammojs/cannon-es-worker.js');
+        this.matrixPhysics.init({gravity: 10, groundY: -1});
+        this.matrixPhysics.bodyIndexMap = new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = 'CANNON';
       } else {
         this.matrixPhysics = new PhysicsBridge('./ammojs/matrix-ammo-worker.js');
         const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS;

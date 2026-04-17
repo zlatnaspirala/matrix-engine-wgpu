@@ -24,7 +24,7 @@ class MatrixCannon {
     this.constraints = [];
     this.CANNON = null;
     this.world = null;
-    this.speedUpSimulation = 3;
+    this.speedUpSimulation = 1;
     this.options = {roundDimension: 100, gravity: 10};
     this._snapshot = null;
     this._useSAB = false;
@@ -54,15 +54,14 @@ class MatrixCannon {
   async init(options = {}) {
     Object.assign(this.options, options);
     const module = await import('https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js');
-    this.CANNON = module.default;
-    
+    this.CANNON = module;
     this._initPhysics(options.groundY ?? 0);
     console.log('PHYSICS[CANNON-ES]');
   }
 
   _initPhysics(GROUND_Y) {
     const CANNON = this.CANNON;
-    
+
     this.world = new CANNON.World();
     this.world.gravity.set(0, -this.options.gravity, 0);
     this.world.defaultContactMaterial.friction = 0.3;
@@ -81,11 +80,10 @@ class MatrixCannon {
     groundBody.collisionFilterMask = (1 << LAYER_MOVING) | (1 << LAYER_FLIPPER);
     this.world.addBody(groundBody);
 
-    // Set up contact event listener
-    this.world.on('beginContact', (e) => {
+    this.world.addEventListener('beginContact', (e) => {
       const b1Idx = this.bodyMap.get(e.body);
       const b2Idx = this.bodyMap.get(e.target);
-      
+
       if(b1Idx !== undefined && b2Idx !== undefined) {
         const b1 = this.rigidBodies[b1Idx];
         const b2 = this.rigidBodies[b2Idx];
@@ -123,7 +121,7 @@ class MatrixCannon {
     this.rigidBodies.push(cannonBody);
     this.bodyMap.set(cannonBody, idx);
     this._allocBuffer(this.rigidBodies.length);
-    
+
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
@@ -180,7 +178,7 @@ class MatrixCannon {
     }
 
     body.collisionFilterGroup = 1 << layer;
-    
+
     // Collision masks
     if(layer === LAYER_NON_MOVING) {
       body.collisionFilterMask = (1 << LAYER_MOVING) | (1 << LAYER_FLIPPER);
@@ -194,7 +192,7 @@ class MatrixCannon {
 
     body.isKinematic = isKinematic;
     this.world.addBody(body);
-    
+
     return this._registerBody(body, pOptions);
   }
 
@@ -215,22 +213,22 @@ class MatrixCannon {
     const CANNON = this.CANNON;
     const halfHeight = (pOptions.height || 1) * 0.5;
     const radius = pOptions.radius || 1;
-    
+
     // Cannon doesn't have native capsule, use compound body
     const body = new CANNON.Body({
       mass: pOptions.mass || 1
     });
-    
+
     // Sphere at top
     body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, halfHeight, 0));
     // Sphere at bottom
     body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, -halfHeight, 0));
     // Cylinder in middle
     body.addShape(new CANNON.Cylinder(radius, radius, halfHeight * 2, 8), new CANNON.Vec3(0, 0, 0));
-    
+
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
     body.position.set(pos.x, pos.y, pos.z);
-    
+
     return this._createBody(pOptions, null); // Will need custom handling
   }
 
@@ -238,7 +236,7 @@ class MatrixCannon {
     const CANNON = this.CANNON;
     const halfHeight = pOptions.scale ? pOptions.scale[1] : (pOptions.height || 2) * 0.5;
     const radius = pOptions.scale ? pOptions.scale[0] : (pOptions.radius || 1);
-    
+
     const shape = new CANNON.Cylinder(radius, radius, halfHeight * 2, 8);
     return this._createBody(pOptions, shape);
   }
@@ -246,13 +244,13 @@ class MatrixCannon {
   _addCone(pOptions) {
     const CANNON = this.CANNON;
     const verts = buildConeVerts(pOptions.radius, pOptions.height);
-    
+
     // Build cone convex hull from vertices
     const vertices = [];
     for(let i = 0;i < verts.length;i += 3) {
       vertices.push(new CANNON.Vec3(verts[i], verts[i + 1], verts[i + 2]));
     }
-    
+
     const shape = new CANNON.ConvexPolyhedron({vertices});
     shape.computeNormals();
     return this._createBody(pOptions, shape);
@@ -262,7 +260,7 @@ class MatrixCannon {
     const CANNON = this.CANNON;
     const verts = pOptions.vertices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
-    
+
     const vertices = [];
     for(let i = 0;i < verts.length;i += 3) {
       vertices.push(new CANNON.Vec3(
@@ -271,7 +269,7 @@ class MatrixCannon {
         verts[i + 2] * sz
       ));
     }
-    
+
     const shape = new CANNON.ConvexPolyhedron({vertices});
     shape.computeNormals();
     return this._createBody(pOptions, shape);
@@ -282,17 +280,17 @@ class MatrixCannon {
     const v = pOptions.vertices;
     const idx = pOptions.indices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
-    
+
     const vertices = [];
     for(let i = 0;i < v.length;i += 3) {
       vertices.push(v[i] * sx, v[i + 1] * sy, v[i + 2] * sz);
     }
-    
+
     const indices = [];
     for(let i = 0;i < idx.length;i += 3) {
       indices.push([idx[i], idx[i + 1], idx[i + 2]]);
     }
-    
+
     const shape = new CANNON.Trimesh(vertices, indices);
     const body = new CANNON.Body({mass: 0});
     body.addShape(shape);
@@ -414,12 +412,12 @@ class MatrixCannon {
   explode(idx, x, y, z, radius, strength) {
     const b = this.rigidBodies[idx];
     if(!b) return;
-    
+
     const dx = b.position.x - x;
     const dy = b.position.y - y;
     const dz = b.position.z - z;
     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    
+
     if(dist < radius && dist > 0) {
       const force = (1 - dist / radius) * strength;
       this.applyImpulse(idx, (dx / dist) * force, (dy / dist) * force, (dz / dist) * force);
@@ -429,16 +427,16 @@ class MatrixCannon {
   addHingeConstraint(idxA, idxB, pOptions, msgID) {
     const CANNON = this.CANNON;
     if(!this.constraints) this.constraints = [];
-    
+
     const bodyA = this.rigidBodies[idxA];
     const bodyB = this.rigidBodies[idxB];
-    
+
     if(!bodyA || !bodyB) return null;
-    
+
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
     const axis = pOptions.axis || [0, 1, 0];
-    
+
     console.log("hinge at index:", idxA, idxB);
 
     // Create hinge constraint
@@ -448,7 +446,7 @@ class MatrixCannon {
       bodyB,
       new CANNON.Vec3(pivotB[0], pivotB[1], pivotB[2])
     );
-    
+
     this.world.addConstraint(constraint);
     constraint.name = pOptions.name;
     constraint.axis = axis;
@@ -456,10 +454,10 @@ class MatrixCannon {
     constraint.motorState = false;
     constraint.targetVelocity = 0;
     constraint.maxTorque = 0;
-    
+
     this.constraints.push(constraint);
     const constraintIdx = this.constraints.length - 1;
-    
+
     console.log("hinge constraint at index:", constraintIdx);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
@@ -467,11 +465,11 @@ class MatrixCannon {
   enableAngularMotor(cIdx, enable, targetVel, maxTorque) {
     const c = this.constraints[cIdx];
     if(!c) return;
-    
+
     c.motorState = enable;
     c.targetVelocity = targetVel;
     c.maxTorque = Math.abs(maxTorque);
-    
+
     // Apply motor by modifying constraint each step
     if(enable) {
       console.log(`Motor enabled on constraint ${cIdx}: vel=${targetVel}, torque=${maxTorque}`);
@@ -485,7 +483,7 @@ class MatrixCannon {
       self.postMessage({cmd: 'getPosition', id: msgID, position: null});
       return;
     }
-    
+
     const pos = body.position;
     console.info('get pos x:', pos.x, 'y:', pos.y, 'z:', pos.z);
     self.postMessage({
@@ -497,36 +495,36 @@ class MatrixCannon {
 
   step() {
     if(!this.world) return;
-    
+
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.world.step(1 / 30);
     }
 
     const snap = this._snapshot;
     if(!snap) return;
-    
+
     const count = this.rigidBodies.length;
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
       const body = this.rigidBodies[i];
-      
+
       // Check if body is sleeping
       if(body.sleepState === body.SLEEPING) {
         snap[base + 7] = 0;
         continue;
       }
-      
+
       // --- position ---
       snap[base + 0] = body.position.x;
       snap[base + 1] = body.position.y;
       snap[base + 2] = body.position.z;
-      
+
       // --- quaternion DIRECT (NO CONVERSION)
       snap[base + 3] = body.quaternion.x;
       snap[base + 4] = body.quaternion.y;
       snap[base + 5] = body.quaternion.z;
       snap[base + 6] = body.quaternion.w;
-      
+
       // --- active flag
       snap[base + 7] = 1;
     }

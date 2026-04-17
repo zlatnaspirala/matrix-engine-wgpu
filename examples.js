@@ -17,7 +17,8 @@ import {snakeLights} from "./examples/snake-lights.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId, urlQuery} from "./src/engine/utils.js";
 import {mazeGame} from "./examples/maze.js";
-import {flipper} from "./examples/flipper.js";
+import {flipperJolt} from "./examples/flipper-jolt.js";
+import {flipperCannon} from "./examples/flipper-cannon.js";
 
 window.urlQ = urlQuery;
 
@@ -49,53 +50,42 @@ byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 byId('maze').addEventListener("click", () => switchDemo('12'));
-byId('flipper').addEventListener("click", () => switchDemo('13'));
+byId('flipper-jolt').addEventListener("click", () => switchDemo('13'));
+byId('flipper-cannon').addEventListener("click", () => switchDemo('14'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
 
 if(urlQ['demo'] === '1') {
   loadObjFile();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '2') {
   physicsPlayground();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '3') {
   loadCameraTexture();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '4') {
   loadVideoTexture();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '5') {
   loadObjsSequence();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '6') {
   loadGLBLoader();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '7') {
   procMesh();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '8') {
   fontana();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '9') {
   myLights();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '10') {
   snakeLights();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '11') {
   snakeLightsInstanced();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '12') {
   mazeGame();
-  setTimeout(()=> {hideMenu()}, 2000);
 } else if(urlQ['demo'] === '13') {
-  flipper();
-  setTimeout(()=> {hideMenu()}, 2000);
+  flipperJolt();
 } else if(urlQ['demo'] === '14') {
-  //
+  flipperCannon();
 } else {
-  flipper();
-  setTimeout(()=> {hideMenu()}, 2000);
+  flipperCannon();
 }
+
+setTimeout(()=> {hideMenu()}, 2000);
