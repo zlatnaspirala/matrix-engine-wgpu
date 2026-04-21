@@ -519,7 +519,7 @@ export var flipperAmmo = function() {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
-            if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
+            if(pos.x > 4.7 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
               new PVector(0, 0.1, -randomIntFromTo(1, 2)));
           }
         });

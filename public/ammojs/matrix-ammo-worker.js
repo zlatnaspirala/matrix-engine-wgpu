@@ -141,11 +141,10 @@ class MatrixAmmoWorker {
   }
 
   _registerBody(body, pOptions) {
-    console.log('_registerBody:', pOptions.name, 'group:', pOptions.group, 'mask:', pOptions.mask);
+    // console.log('_registerBody:', pOptions.name, 'group:', pOptions.group, 'mask:', pOptions.mask);
     body.name = pOptions.name;
     const group = pOptions.group ?? 1;
     const mask = pOptions.mask ?? -1;
-    console.log('addRigidBody:', pOptions.name, group, mask, typeof group, typeof mask);
     this.dynamicsWorld.addRigidBody(body, group, mask);
     this.rigidBodies.push(body);
     if(!this.ptrToName) this.ptrToName = new Map();
@@ -159,7 +158,6 @@ class MatrixAmmoWorker {
       this._snapshot[base + 2] = pOptions.position?.z ?? 0;
       this._snapshot[base + 7] = 1; // ← mark as active
     }
-    // console.log('registered:', pOptions.name, 'at index:', this.rigidBodies.length - 1);
     return body;
   }
 
