@@ -791,7 +791,6 @@ var flipperAmmo = function () {
           limits: [-0.8, 0.5]
         });
         hingeLeft.then(idx => {
-          // console.log('Hinge index (its is not regular rigidbody idx)', idx)
           hingeLeftID = idx;
           app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
           app.matrixPhysics.enableAngularMotor(idx, true, 10, POWERPIN);
@@ -807,11 +806,8 @@ var flipperAmmo = function () {
         });
         hingeRight.then(idx => {
           hingeRightID = idx;
-          // app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          // app.matrixPhysics.enableAngularMotor(idx, true, -10, 500);
-          // app.matrixPhysics.setHingeLimit(idx, 0.8, 0.5, 0.0, 0.5, 1.0);   // swapped + clean
-          // Stronger negative motor so it moves in the opposite visual direction
-          app.matrixPhysics.enableAngularMotor(idx, true, -10, POWERPIN); // increased strength
+          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          app.matrixPhysics.enableAngularMotor(idx, true, -10, POWERPIN);
         });
         REdge.setUVScale(1, 1);
         // LEdge.changeTexture(checker2, samplerTest)
@@ -848,14 +844,14 @@ var flipperAmmo = function () {
 
         // const ball = app.matrixPhysics.getBodyByName('ball1');
         console.info('BALL ID ', app.matrixPhysics.detectCollision);
-        const strength = 0.01;
+        const strength = 0.5;
         app.matrixPhysics.detectCollision = e => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
           console.log('collision : ', body1Name);
           if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
-            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * 0.01, 0, rayDirection[2] * 0.01));
+            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, 0, rayDirection[2] * strength));
           } else if (body1Name == 'bottomEdge2') {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(4, 0, 0));
           }
