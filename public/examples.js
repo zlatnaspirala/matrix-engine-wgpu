@@ -51535,6 +51535,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.runtimeCacheObjs = exports.default = void 0;
+var _matrixClass = require("../../engine/matrix-class.js");
 var _utils = require("../../engine/utils");
 var _curveEditor = require("./curve-editor");
 var _generateAISchema = require("./generateAISchema.js");
@@ -56761,8 +56762,8 @@ LIST OF INTEREST OBJECT:
           return;
         }
         let b = app.matrixPhysics.getBodyByName(objectName);
-        const i = new Ammo.btVector3(rayDirection[0] * strength, rayDirection[1] * strength, rayDirection[2] * strength);
-        b.applyCentralImpulse(i);
+        const i = new _matrixClass.PVector(rayDirection[0] * strength, rayDirection[1] * strength, rayDirection[2] * strength);
+        app.matrixPhysics.applyImpulse(b, i);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Set Video Texture") {
@@ -57673,7 +57674,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/utils":76,"./curve-editor":117,"./generateAISchema.js":123}],123:[function(require,module,exports){
+},{"../../engine/matrix-class.js":61,"../../engine/utils":76,"./curve-editor":117,"./generateAISchema.js":123}],123:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

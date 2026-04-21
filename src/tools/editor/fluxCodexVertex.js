@@ -35,6 +35,7 @@
  *
  * - MPL applies ONLY to this file
  */
+import {PVector} from "../../engine/matrix-class.js";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 // import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
@@ -4255,13 +4256,14 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
+
         let b = app.matrixPhysics.getBodyByName(objectName);
-        const i = new Ammo.btVector3(
+            const i = new PVector(
           rayDirection[0] * strength,
           rayDirection[1] * strength,
           rayDirection[2] * strength
         );
-        b.applyCentralImpulse(i);
+        app.matrixPhysics.applyImpulse(b, i);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Set Video Texture") {
