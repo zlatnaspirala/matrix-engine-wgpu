@@ -9,7 +9,7 @@ class MatrixAmmoWorker {
     this.Ammo = null;
     this.dynamicsWorld = null;
     this.rigidBodies = [];
-    this.speedUpSimulation = 1;
+    this.speedUpSimulation = 2;
     this.maxSubSteps = 1;
     this.options = {roundDimensionX: 100, roundDimensionY: 100, gravity: -10};
     this._snapshot = null;
@@ -125,7 +125,7 @@ class MatrixAmmoWorker {
     const CF_KINEMATIC = 2;
     if(pOptions.mass === 0 && !pOptions.state) {
       body.setCollisionFlags(CF_STATIC);
-      body.setActivationState(4);
+      body.setActivationState(1);
       body.isKinematic = false;
       return;
     }
@@ -141,9 +141,11 @@ class MatrixAmmoWorker {
   }
 
   _registerBody(body, pOptions) {
+    console.log('_registerBody:', pOptions.name, 'group:', pOptions.group, 'mask:', pOptions.mask);
     body.name = pOptions.name;
     const group = pOptions.group ?? 1;
     const mask = pOptions.mask ?? -1;
+    console.log('addRigidBody:', pOptions.name, group, mask, typeof group, typeof mask);
     this.dynamicsWorld.addRigidBody(body, group, mask);
     this.rigidBodies.push(body);
     if(!this.ptrToName) this.ptrToName = new Map();
@@ -155,6 +157,7 @@ class MatrixAmmoWorker {
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
       this._snapshot[base + 1] = pOptions.position?.y ?? 0;
       this._snapshot[base + 2] = pOptions.position?.z ?? 0;
+      this._snapshot[base + 7] = 1; // ← mark as active
     }
     // console.log('registered:', pOptions.name, 'at index:', this.rigidBodies.length - 1);
     return body;
@@ -174,6 +177,10 @@ class MatrixAmmoWorker {
     const motionState = new Ammo.btDefaultMotionState(this._transform);
     const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, this.inertia);
     const body = new Ammo.btRigidBody(rbInfo);
+
+    body.setCcdMotionThreshold(0.1);
+    body.setCcdSweptSphereRadius(0.05);
+
     Ammo.destroy(rbInfo);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, pOptions);
@@ -215,7 +222,7 @@ class MatrixAmmoWorker {
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
     bodyA.setAngularVelocity(this._zero);
-    bodyA.setDamping(0.2, 0.9);
+    bodyA.setDamping(0.05, 0.1);
     // console.log("pivotA", pivotA);
     const axis = pOptions.axis || [0, 1, 0];
     this._pivotsA.setValue(pivotA[0], pivotA[1], pivotA[2]);
@@ -234,12 +241,12 @@ class MatrixAmmoWorker {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
     hinge.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
+    // addHingeConstraint
     this.dynamicsWorld.addConstraint(hinge, true);
-    hinge.enableAngularMotor(true, 0, 0);
-    hinge.setLimit(-0.8, 0.5);
-
-    const si = this.dynamicsWorld.getSolverInfo();
-    si.set_m_numIterations(5);
+    hinge.enableAngularMotor(true, 0, 100);
+    // hinge.setLimit(-0.8, 0.5);
+    // const si = this.dynamicsWorld.getSolverInfo();
+    // si.set_m_numIterations(20);
     hinge.name = pOptions.name;
     this.constraints.push(hinge);
     const constraintIdx = this.constraints.length - 1;
@@ -281,7 +288,7 @@ class MatrixAmmoWorker {
     this._transform2.setOrigin(this._origin);
     const mass = pOptions.mass ?? 1;
     // const inertia = new Ammo.btVector3(0, 0, 0);
-    this.inertia.setValue(0,0,0);
+    this.inertia.setValue(0, 0, 0);
     if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
     const motionState = new Ammo.btDefaultMotionState(this._transform2);
     const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, this.inertia);
@@ -366,8 +373,8 @@ class MatrixAmmoWorker {
     const body = new Ammo.btRigidBody(
       new Ammo.btRigidBodyConstructionInfo(0, new Ammo.btDefaultMotionState(t), shape, new Ammo.btVector3(0, 0, 0))
     );
-    body.setCollisionFlags(2);
-    body.setActivationState(2);
+    // body.setCollisionFlags(2);
+    // body.setActivationState(2);
     return this._registerBody(body, pOptions);
   }
 
@@ -381,8 +388,8 @@ class MatrixAmmoWorker {
     const body = new Ammo.btRigidBody(
       new Ammo.btRigidBodyConstructionInfo(0, new Ammo.btDefaultMotionState(t), shape, new Ammo.btVector3(0, 0, 0))
     );
-    body.setCollisionFlags(2);
-    body.setActivationState(2);
+    // body.setCollisionFlags(2);
+    // body.setActivationState(2);
     return this._registerBody(body, pOptions);
   }
 
@@ -464,6 +471,13 @@ class MatrixAmmoWorker {
     body.setLinearVelocity(this._origin2);
   }
 
+  setBodyAngularVelocity(idx, x, y, z) {
+    const body = this.rigidBodies[idx];
+    if(!body) return;
+    this._origin2.setValue(x, y, z);
+    body.setAngularVelocity(this._origin2);
+  }
+
   setKinematicTransform(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body || !body.isKinematic) return;
@@ -537,6 +551,7 @@ class MatrixAmmoWorker {
   // }
 
   step() {
+    if(!this.dynamicsWorld) return;
     const deltaTime = 1 / 30;
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.dynamicsWorld.stepSimulation(deltaTime, this.maxSubSteps);
@@ -548,10 +563,10 @@ class MatrixAmmoWorker {
     for(let i = 0;i < numBodies;i++) {
       const body = bodies[i];
       const base = i * FLOATS_PER_BODY;
-      if(!body.isActive() && !body.isKinematic) {
-        snap[base + 7] = 0;
-        continue;
-      }
+      // if(!body.isActive() && !body.isKinematic) {
+      //   snap[base + 7] = 0;
+      //   continue;
+      // }
       if(body.isKinematic) {
         body.getWorldTransform(this._trans);
       } else {
@@ -612,8 +627,9 @@ class MatrixAmmoWorker {
       if(!name0 || !name1) continue;
       if(name0 === 'ground' || name1 === 'ground') continue;
       // const key = name0 < name1 ? `${name0}|${name1}` : `${name1}|${name0}`;
-      this._keyColl = name0 + name1;
-      const key = this._keyColl;
+      const key = name0 < name1
+        ? name0 + "|" + name1
+        : name1 + "|" + name0;
       this._currentCollisions.add(key);
       if(!this.lastCollisionState.has(key)) {
         const contact = manifold.getContactPoint(0);
@@ -650,8 +666,8 @@ self.onmessage = async ({data}) => {
       break;
     }
     case 'step': {
+      ammo.step();
       if(!ammo._useSAB && ammo._snapshot) {
-        ammo.step();
         const copy = ammo._snapshot.slice();
         self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
       }
@@ -668,6 +684,7 @@ self.onmessage = async ({data}) => {
     case 'explode': ammo.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'applyTorque': ammo.applyTorque(data.idx, data.x, data.y, data.z); break;
     case 'setLinearVelocity': ammo.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setBodyAngularVelocity': ammo.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
     case 'setKinematicTransform': ammo.setKinematicTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravity': ammo.setGravity(data.x, data.y, data.z); break;
     case 'setSleepingThresholds': ammo.setSleepingThresholds(data.idx, data.linear, data.angular); break;

@@ -5,16 +5,14 @@ import {byId, isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {PVector} from "../src/engine/matrix-class.js";
 import {MobileDOM} from "../src/engine/cameras.js";
 
-export var flipperCannon = function() {
+export var flipperAmmo = function() {
   let MYFLIPPER = {
     STATUS_PUSH: 'wait'
   };
 
   let flipper = new MatrixEngineWGPU({
     render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: 0.5,
-    // useJolt: true,
-    useCannon: true,
+    fastRender: 0.7,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
@@ -23,7 +21,7 @@ export var flipperCannon = function() {
   }, () => {
     let hingeLeftID = 0;
     let hingeRightID = 0;
-    const POWERPIN = 30;
+    const POWERPIN = 10;
     // Audios
     flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
     // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
@@ -540,7 +538,7 @@ export var flipperCannon = function() {
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
             if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
-              new PVector(0, 2, -randomIntFromTo(11, 15)));
+              new PVector(0, 0.1, -randomIntFromTo(1, 2)));
           }
         });
 

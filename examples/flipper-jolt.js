@@ -13,8 +13,7 @@ export var flipperJolt = function() {
   let flipper = new MatrixEngineWGPU({
     render: isMobile() == true ? 'mobile1' : undefined,
     fastRender: 0.5,
-    // useJolt: true,
-    useCannon: true,
+    useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,

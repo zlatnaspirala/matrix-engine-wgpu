@@ -80,7 +80,7 @@ export class PhysicsBridge {
     }
     this._kinematicCount = count;
     if(count > 0) {
-      this._worker.postMessage({cmd: 'setKinematicBatch', count, idx: idxArr, pos: posArr});
+      this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
 
     if (this.c % 2 === 0)  this._worker.postMessage({cmd: 'step'});
@@ -138,6 +138,11 @@ export class PhysicsBridge {
   setBodyVelocity(idx, x, y, z) {
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'setLinearVelocity', idx, x, y, z});
+  }
+
+  setBodyAngularVelocity(idx, x, y, z) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'setBodyAngularVelocity', idx, x, y, z});
   }
 
   explode(idx, x, y, z, radius, strength) {
@@ -203,6 +208,7 @@ export class PhysicsBridge {
     const STRIDE = 8;
     for(const [meObj, idx] of this._bodyIndexMap) {
       const b = idx * STRIDE;
+      
       const pos = snap.subarray(b, b + 3);
       const quat = snap.subarray(b + 3, b + 7);
       mat4.fromQuat(quat, meObj.modelMatrix);

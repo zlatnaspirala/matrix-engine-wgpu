@@ -15,7 +15,7 @@ var _videoTexture = require("./examples/video-texture.js");
 var _utils = require("./src/engine/utils.js");
 var _maze = require("./examples/maze.js");
 var _flipperJolt = require("./examples/flipper-jolt.js");
-var _flipperCannon = require("./examples/flipper-cannon.js");
+var _flipperAmmo = require("./examples/flipper-ammo.js");
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
@@ -49,7 +49,7 @@ const hideMenu = () => {
 (0, _utils.byId)('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 (0, _utils.byId)('maze').addEventListener("click", () => switchDemo('12'));
 (0, _utils.byId)('flipper-jolt').addEventListener("click", () => switchDemo('13'));
-(0, _utils.byId)('flipper-cannon').addEventListener("click", () => switchDemo('14'));
+(0, _utils.byId)('flipper-ammo').addEventListener("click", () => switchDemo('14'));
 (0, _utils.byId)('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 (0, _utils.byId)('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 if (urlQ['demo'] === '1') {
@@ -79,15 +79,15 @@ if (urlQ['demo'] === '1') {
 } else if (urlQ['demo'] === '13') {
   (0, _flipperJolt.flipperJolt)();
 } else if (urlQ['demo'] === '14') {
-  (0, _flipperCannon.flipperCannon)();
+  (0, _flipperAmmo.flipperAmmo)();
 } else {
-  (0, _flipperCannon.flipperCannon)();
+  (0, _flipperAmmo.flipperAmmo)();
 }
 setTimeout(() => {
   hideMenu();
 }, 2000);
 
-},{"./examples/camera-texture.js":2,"./examples/flipper-cannon.js":3,"./examples/flipper-jolt.js":4,"./examples/fontana.js":5,"./examples/glb-loader.js":7,"./examples/load-obj-file.js":8,"./examples/load-objs-sequence.js":9,"./examples/maze.js":10,"./examples/my-lights.js":11,"./examples/physics-playground.js":12,"./examples/procedural-mesh.js":13,"./examples/snake-lights-instanced.js":14,"./examples/snake-lights.js":15,"./examples/video-texture.js":16,"./src/engine/utils.js":75}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/flipper-ammo.js":3,"./examples/flipper-jolt.js":4,"./examples/fontana.js":5,"./examples/glb-loader.js":7,"./examples/load-obj-file.js":8,"./examples/load-objs-sequence.js":9,"./examples/maze.js":10,"./examples/my-lights.js":11,"./examples/physics-playground.js":12,"./examples/procedural-mesh.js":13,"./examples/snake-lights-instanced.js":14,"./examples/snake-lights.js":15,"./examples/video-texture.js":16,"./src/engine/utils.js":75}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -172,7 +172,7 @@ exports.loadCameraTexture = loadCameraTexture;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.flipperCannon = void 0;
+exports.flipperAmmo = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
@@ -180,15 +180,13 @@ var _utils = require("../src/engine/utils.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
 var _cameras = require("../src/engine/cameras.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-var flipperCannon = function () {
+var flipperAmmo = function () {
   let MYFLIPPER = {
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
     render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
-    fastRender: 0.5,
-    // useJolt: true,
-    useCannon: true,
+    fastRender: 0.7,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -205,7 +203,7 @@ var flipperCannon = function () {
   }, () => {
     let hingeLeftID = 0;
     let hingeRightID = 0;
-    const POWERPIN = 30;
+    const POWERPIN = 10;
     // Audios
     flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
     // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
@@ -844,7 +842,7 @@ var flipperCannon = function () {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
-            if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
+            if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.1, -(0, _utils.randomIntFromTo)(1, 2)));
           }
         });
 
@@ -1081,7 +1079,7 @@ var flipperCannon = function () {
   });
   window.app = flipper;
 };
-exports.flipperCannon = flipperCannon;
+exports.flipperAmmo = flipperAmmo;
 
 },{"../src/engine/cameras.js":34,"../src/engine/loader-obj.js":55,"../src/engine/matrix-class.js":60,"../src/engine/raycast.js":74,"../src/engine/utils.js":75,"../src/world.js":125}],4:[function(require,module,exports){
 "use strict";
@@ -1104,8 +1102,7 @@ var flipperJolt = function () {
   let flipper = new _world.default({
     render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
     fastRender: 0.5,
-    // useJolt: true,
-    useCannon: true,
+    useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -36131,7 +36128,7 @@ class PhysicsBridge {
     this._kinematicCount = count;
     if (count > 0) {
       this._worker.postMessage({
-        cmd: 'setKinematicBatch',
+        cmd: 'setKinematicTransform',
         count,
         idx: idxArr,
         pos: posArr
@@ -36238,6 +36235,16 @@ class PhysicsBridge {
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'setLinearVelocity',
+      idx,
+      x,
+      y,
+      z
+    });
+  }
+  setBodyAngularVelocity(idx, x, y, z) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'setBodyAngularVelocity',
       idx,
       x,
       y,

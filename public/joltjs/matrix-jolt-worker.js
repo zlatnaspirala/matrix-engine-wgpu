@@ -396,6 +396,12 @@ class MatrixJolt {
     if(b) this.bodyInterface.SetLinearVelocity(b.GetID(), this._vector0);
   }
 
+  setBodyAngularVelocity(idx, x, y, z) {
+    const b = this.rigidBodies[idx];
+    this._vector0.Set(x, y, z);
+    if(b) this.bodyInterface.SetAngularVelocity(b.GetID(), this._vector0);
+  }
+
   setActivationState(idx, state) {
     const b = this.rigidBodies[idx];
     if(b && state === 1) this.bodyInterface.ActivateBody(b.GetID());
@@ -566,7 +572,7 @@ class MatrixJolt {
   }
 
   step() {
-    // if(!this.joltInterface) return;
+    if(!this.joltInterface) return;
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.joltInterface.Step(1 / 30, 1);
     }
@@ -625,6 +631,7 @@ self.onmessage = async ({data}) => {
     case 'setFriction': jolt.setFriction(data.idx, data.s); break;
     case 'applyTorque': jolt.applyTorque(data.idx, data.x, data.y, data.z); break;
     case 'setLinearVelocity': jolt.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setBodyAngularVelocity': jolt.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
     case 'setKinematicTransform': jolt.setKinematicTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravity': jolt.setGravity(data.x, data.y, data.z); break;
     case 'addHingeConstraint': jolt.addHingeConstraint(data.idxA, data.idxB, data.options, data.id); break;

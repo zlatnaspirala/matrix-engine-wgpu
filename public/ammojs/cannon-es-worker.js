@@ -1,9 +1,23 @@
-const LAYER_NON_MOVING = 0;
-const LAYER_MOVING = 1;
-const LAYER_ANCHOR = 2;
-const LAYER_FLIPPER = 3;
-const NUM_OBJ_LAYERS = 4;
+// const LAYER_NON_MOVING = 0;
+// const LAYER_MOVING = 1;
+// const LAYER_ANCHOR = 2;
+// const LAYER_FLIPPER = 3;
+// const NUM_OBJ_LAYERS = 4;
 const FLOATS_PER_BODY = 8;
+// Layers as bits — single source of truth
+const LAYER_WORLD = 1;   // 1 << 0
+const LAYER_MOVING = 2;   // 1 << 1
+const LAYER_ANCHOR = 4;   // 1 << 2
+const LAYER_FLIPPER = 8;   // 1 << 3
+const LAYER_BALL = 16;  // 1 << 4
+
+const MASK = {
+  [LAYER_WORLD]: LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING,
+  [LAYER_MOVING]: LAYER_WORLD | LAYER_MOVING | LAYER_BALL,
+  [LAYER_ANCHOR]: 0,
+  [LAYER_FLIPPER]: LAYER_BALL | LAYER_WORLD,
+  [LAYER_BALL]: LAYER_WORLD | LAYER_FLIPPER | LAYER_MOVING,
+};
 
 const degToRad = d => d * (Math.PI / 180);
 
@@ -18,13 +32,29 @@ function buildConeVerts(radius, height, segments = 16) {
   return verts;
 }
 
+function getHingeAngle(bodyA, bodyB, axis) {
+  const qA = bodyA.quaternion;
+  const qB = bodyB.quaternion;
+
+  // relative rotation
+  const qRel = qA.inverse().mult(qB);
+
+  // extract angle around axis (approx)
+  const axisWorld = axis.clone();
+  bodyA.quaternion.vmult(axisWorld, axisWorld);
+
+  const angle = 2 * Math.acos(qRel.w);
+
+  return angle;
+}
+
 class MatrixCannon {
   constructor() {
     this.rigidBodies = [];
     this.constraints = [];
     this.CANNON = null;
     this.world = null;
-    this.speedUpSimulation = 1;
+    this.speedUpSimulation = 2;
     this.options = {roundDimension: 100, gravity: 10};
     this._snapshot = null;
     this._useSAB = false;
@@ -76,11 +106,12 @@ class MatrixCannon {
       shape: groundShape
     });
     groundBody.position.set(0, GROUND_Y, 0);
-    groundBody.collisionFilterGroup = 1 << LAYER_NON_MOVING;
-    groundBody.collisionFilterMask = (1 << LAYER_MOVING) | (1 << LAYER_FLIPPER);
+    groundBody.collisionFilterGroup = LAYER_WORLD;
+    groundBody.collisionFilterMask = LAYER_MOVING | LAYER_FLIPPER | LAYER_BALL;
     this.world.addBody(groundBody);
 
     this.world.addEventListener('beginContact', (e) => {
+      console.log(`Collision ...`);
       const b1Idx = this.bodyMap.get(e.body);
       const b2Idx = this.bodyMap.get(e.target);
 
@@ -98,6 +129,13 @@ class MatrixCannon {
         });
       }
     });
+
+    // ets helper
+    this.restQuaternion = new CANNON.Quaternion();
+    this.restQuaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -15);
+
+    this.restQuaternion2 = new CANNON.Quaternion();
+    this.restQuaternion2.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), 15);
   }
 
   addBody(pOptions) {
@@ -112,6 +150,7 @@ class MatrixCannon {
       case 'BvhMesh': body = this._addBvhMesh(pOptions); break;
       default: return -1;
     }
+
     return body ? this.rigidBodies.length - 1 : -1;
   }
 
@@ -150,8 +189,8 @@ class MatrixCannon {
     const bodyOptions = {
       mass: mass,
       shape: shape,
-      linearDamping: pOptions.linearDamping ?? 0.01,
-      angularDamping: pOptions.angularDamping ?? 0.01
+      linearDamping: pOptions.linearDamping ?? 0.2,
+      angularDamping: pOptions.angularDamping ?? 0.2
     };
 
     if(pOptions.restitution !== undefined) bodyOptions.restitution = pOptions.restitution;
@@ -165,30 +204,18 @@ class MatrixCannon {
       body.isSensor = true;
     }
 
-    // Set collision layers
-    let layer;
-    if(pOptions.layer !== undefined) {
-      layer = pOptions.layer;
-    } else if(isKinematic) {
-      layer = LAYER_ANCHOR;
-    } else if(mass === 0) {
-      layer = LAYER_NON_MOVING;
-    } else {
-      layer = LAYER_MOVING;
-    }
 
-    body.collisionFilterGroup = 1 << layer;
+    // Collision layer — explicit from caller, no inference
+    const group = pOptions.layer ?? LAYER_WORLD;
+    const mask = pOptions.mask ?? MASK[group] ?? 0;
 
-    // Collision masks
-    if(layer === LAYER_NON_MOVING) {
-      body.collisionFilterMask = (1 << LAYER_MOVING) | (1 << LAYER_FLIPPER);
-    } else if(layer === LAYER_MOVING) {
-      body.collisionFilterMask = (1 << LAYER_NON_MOVING) | (1 << LAYER_MOVING) | (1 << LAYER_FLIPPER);
-    } else if(layer === LAYER_ANCHOR) {
-      body.collisionFilterMask = 0; // kinematic doesn't collide
-    } else if(layer === LAYER_FLIPPER) {
-      body.collisionFilterMask = (1 << LAYER_NON_MOVING) | (1 << LAYER_MOVING);
-    }
+    body.collisionFilterGroup = group;
+    body.collisionFilterMask = mask;
+
+    console.log('[body]', pOptions.name,
+      'group:', body.collisionFilterGroup,
+      'mask:', body.collisionFilterMask
+    );
 
     body.isKinematic = isKinematic;
     this.world.addBody(body);
@@ -258,21 +285,31 @@ class MatrixCannon {
 
   _addConvexHull(pOptions) {
     const CANNON = this.CANNON;
-    const verts = pOptions.vertices;
+
+    const v = pOptions.vertices;
+    const idx = pOptions.indices; // ← YOU MUST HAVE THIS
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
 
     const vertices = [];
-    for(let i = 0;i < verts.length;i += 3) {
-      vertices.push(new CANNON.Vec3(
-        verts[i] * sx,
-        verts[i + 1] * sy,
-        verts[i + 2] * sz
-      ));
+    for(let i = 0;i < v.length;i += 3) {
+      vertices.push(
+        v[i] * sx,
+        v[i + 1] * sy,
+        v[i + 2] * sz
+      );
     }
 
-    const shape = new CANNON.ConvexPolyhedron({vertices});
-    shape.computeNormals();
-    return this._createBody(pOptions, shape);
+    const shape = new CANNON.Trimesh(vertices, idx);
+
+    const body = new CANNON.Body({mass: 0});
+    body.addShape(shape);
+
+    const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    body.position.set(pos.x, pos.y, pos.z);
+
+    this.world.addBody(body);
+
+    return this._registerBody(body, pOptions);
   }
 
   _addBvhMesh(pOptions) {
@@ -301,6 +338,7 @@ class MatrixCannon {
   }
 
   applyImpulse(idx, x, y, z) {
+    console.log("ApplyIMpulse ", z)
     const b = this.rigidBodies[idx];
     if(b) {
       b.applyImpulse(
@@ -331,6 +369,13 @@ class MatrixCannon {
     const b = this.rigidBodies[idx];
     if(b) {
       b.velocity.set(x, y, z);
+    }
+  }
+
+  setBodyAngularVelocity(idx, x, y, z) {
+    const b = this.rigidBodies[idx];
+    if(b) {
+      b.angularVelocity.set(x, y, z);
     }
   }
 
@@ -424,66 +469,65 @@ class MatrixCannon {
     }
   }
 
-  addHingeConstraint(idxA, idxB, pOptions, msgID) {
+  addHingeConstraint(idxA, idxB, opts, msgID) {
     const CANNON = this.CANNON;
-    if(!this.constraints) this.constraints = [];
+    const bodyA = this.rigidBodies[idxA]; // anchor
+    const bodyB = this.rigidBodies[idxB]; // flipper
+    if(!bodyA || !bodyB) return;
+    bodyA.velocity.set(0, 0, 0);
+    bodyA.angularVelocity.set(0, 0, 0);
+    bodyA.angularDamping = 0.9;
+    bodyA.linearDamping = 0.2;
+    const pivotA = new CANNON.Vec3(...opts.pivotA); // local to bodyA
+    const pivotB = new CANNON.Vec3(...opts.pivotB); // local to bodyB
 
-    const bodyA = this.rigidBodies[idxA];
-    const bodyB = this.rigidBodies[idxB];
-
-    if(!bodyA || !bodyB) return null;
-
-    const pivotA = pOptions.pivotA || [0, 0, 0];
-    const pivotB = pOptions.pivotB || [0, 0, 0];
-    const axis = pOptions.axis || [0, 1, 0];
-
-    console.log("hinge at index:", idxA, idxB);
-
-    // Create hinge constraint
     const constraint = new CANNON.PointToPointConstraint(
       bodyA,
-      new CANNON.Vec3(pivotA[0], pivotA[1], pivotA[2]),
+      new CANNON.Vec3(0, 0, 0),
       bodyB,
-      new CANNON.Vec3(pivotB[0], pivotB[1], pivotB[2])
+      new CANNON.Vec3(0, 0, 0),
+      {
+        collideConnected: false
+      }
     );
 
+    // const constraint = new CANNON.HingeConstraint(bodyA, bodyB, {
+    //   pivotA: new CANNON.Vec3(0, 0, 0),
+    //   pivotB: new CANNON.Vec3(0, 0, 0),
+    //   axisA: new CANNON.Vec3(0, 1, 0),
+    //   axisB: new CANNON.Vec3(0, 1, 0),
+    //   collideConnected: false,
+    // });
     this.world.addConstraint(constraint);
-    constraint.name = pOptions.name;
-    constraint.axis = axis;
-    constraint.limits = pOptions.limits || null;
-    constraint.motorState = false;
-    constraint.targetVelocity = 0;
-    constraint.maxTorque = 0;
-
+    // constraint.enableMotor();
+    // constraint.setMotorMaxForce(1000);
+    // constraint.setMotorSpeed(5);
+    this.world.addConstraint(constraint);
+    console.log('HINGLE constraint.setMotorMaxForce ', constraint.setMotorMaxForce)
     this.constraints.push(constraint);
-    const constraintIdx = this.constraints.length - 1;
-
-    console.log("hinge constraint at index:", constraintIdx);
-    self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
+    self.postMessage({cmd: 'constraintAdded', id: msgID, idx: this.constraints.length - 1});
   }
 
-  enableAngularMotor(cIdx, enable, targetVel, maxTorque) {
-    const c = this.constraints[cIdx];
-    if(!c) return;
-
-    c.motorState = enable;
-    c.targetVelocity = targetVel;
-    c.maxTorque = Math.abs(maxTorque);
-
-    // Apply motor by modifying constraint each step
+  enableAngularMotor(idx, enable, targetVel, maxTorque) {
+    const c = this.constraints[idx];
+    if(!c || !c.enableMotor) return;
     if(enable) {
-      console.log(`Motor enabled on constraint ${cIdx}: vel=${targetVel}, torque=${maxTorque}`);
+      c.enableMotor();
+    } else {
+      c.bodyA.quaternion.copy(this.restQuaternion2);
+      c.disableMotor();
     }
+    c.setMotorSpeed(targetVel);
+    console.log('C props:', c);
+    if(maxTorque != null) c.setMotorMaxForce(maxTorque);
   }
 
   getPosition(idx, msgID) {
     const body = this.rigidBodies[idx];
-
     if(!body) {
       self.postMessage({cmd: 'getPosition', id: msgID, position: null});
       return;
     }
-
     const pos = body.position;
     console.info('get pos x:', pos.x, 'y:', pos.y, 'z:', pos.z);
     self.postMessage({
@@ -495,36 +539,26 @@ class MatrixCannon {
 
   step() {
     if(!this.world) return;
-
     for(let i = 0;i < this.speedUpSimulation;i++) {
       this.world.step(1 / 30);
     }
-
     const snap = this._snapshot;
     if(!snap) return;
-
     const count = this.rigidBodies.length;
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
       const body = this.rigidBodies[i];
-
-      // Check if body is sleeping
       if(body.sleepState === body.SLEEPING) {
         snap[base + 7] = 0;
         continue;
       }
-
-      // --- position ---
       snap[base + 0] = body.position.x;
       snap[base + 1] = body.position.y;
       snap[base + 2] = body.position.z;
-
-      // --- quaternion DIRECT (NO CONVERSION)
       snap[base + 3] = body.quaternion.x;
       snap[base + 4] = body.quaternion.y;
       snap[base + 5] = body.quaternion.z;
       snap[base + 6] = body.quaternion.w;
-
       // --- active flag
       snap[base + 7] = 1;
     }
@@ -563,6 +597,7 @@ self.onmessage = async ({data}) => {
     case 'setFriction': cannon.setFriction(data.idx, data.s); break;
     case 'applyTorque': cannon.applyTorque(data.idx, data.x, data.y, data.z); break;
     case 'setLinearVelocity': cannon.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setBodyAngularVelocity': cannon.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
     case 'setKinematicTransform': cannon.setKinematicTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravity': cannon.setGravity(data.x, data.y, data.z); break;
     case 'addHingeConstraint': cannon.addHingeConstraint(data.idxA, data.idxB, data.options, data.id); break;
