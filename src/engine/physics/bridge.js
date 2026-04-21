@@ -197,6 +197,10 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'clearBody', idx});
   }
 
+  speedUpSimulation(value) {
+    this._worker.postMessage({cmd: 'speedUpSimulation', value});
+  }
+
   setCollisionFlags(idx, flags) {
     if(idx === undefined || idx === -1) return;
     this._worker.postMessage({cmd: 'setCollisionFlags', idx, flags});

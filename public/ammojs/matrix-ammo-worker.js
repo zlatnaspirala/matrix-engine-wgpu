@@ -75,6 +75,10 @@ class MatrixAmmoWorker {
     this.ptrToName.set(Ammo.getPointer(groundBody), 'ground');
   }
 
+  speedUpSimulation(v) {
+    this.speedUpSimulation = v;
+  }
+
   _allocBuffer(bodyCount) {
     const FLOATS = bodyCount * FLOATS_PER_BODY;
     const bytes = 4 + FLOATS * 4;
@@ -695,5 +699,7 @@ self.onmessage = async ({data}) => {
     case 'setBodyTransform': ammo.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': ammo.setGravityScale(data.idx, data.scale); break;
     case 'getPosition': ammo.getPosition(data.idx, data.id); break;
+
+    case 'speedUpSimulation': ammo.speedUpSimulation(data.value); break;
   }
 };

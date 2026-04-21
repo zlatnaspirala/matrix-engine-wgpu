@@ -1,6 +1,5 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 // import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
@@ -26,31 +25,6 @@ export var testJolt = function() {
       }, onGround, {scale: [1, 1, 1]})
       // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
 
-      // physicsPlayground.physicsBodiesGenerator(
-      //   "standard",
-      //   {x: 0, y: 0, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   "res/textures/star1.png",
-      //   "testGen",
-      //   "Cube",
-      //   false,
-      //   [1, 1, 1],
-      //   100
-      // );
-
-      // physicsPlayground.physicsBodiesGeneratorWall(
-      //   "standard",
-      //   {x: -10, y: 1, z: -20},
-      //   {x: 0, y: 0, z: 0},
-      //   "res/textures/star1.png",
-      //   "cube",
-      //   "10x3",
-      //   true,
-      //   [1, 1, 1],
-      //   2,
-      //   100
-      // );
-
       physicsPlayground.physicsBodiesGeneratorDeepPyramid(
         "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
         "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400
@@ -61,7 +35,6 @@ export var testJolt = function() {
       //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
       //   ["./res/textures/rust.jpg",],
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
-
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
@@ -69,35 +42,12 @@ export var testJolt = function() {
         app.matrixPhysics.applyImpulse(b, new PVector(
           e.detail.rayDirection[0] * strength,
           e.detail.rayDirection[1] * strength,
-          e.detail.rayDirection[2] * strength));
-      //   app.matrixPhysics.explode(b,
-      //     e.detail.hitObject.position.x * strength,
-      //     e.detail.hitObject.position.y * strength,
-      //     e.detail.hitObject.position.z * strength, 4, 1);
+          e.detail.rayDirection[2] * strength))
       });
     })
 
     async function onGround(m) {
 
-      // Not tested
-      // var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, physicsPlayground.device)));
-      // let myComplexGeometry2 = physicsPlayground.addGlbObj({
-      //   material: {type: 'pong', useTextureFromGlb: true},
-      //   useScale: true,
-      //   scale: [10, 10, 10],
-      //   position: {x: -10, y: 6, z: -10},
-      //   name: 'firstGlb',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-      //   physics: {
-      //     enabled: true,
-      //     mass: 2,
-      //     geometry: "Cube",
-      //     vertices: m.reel.vertices
-      //   }
-      // }, null, glbFile01);
-      // console.log('1myComplexGeometry', myComplexGeometry2)
-
-      // Test complex geometry with ConvexHull
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
         position: {x: 8, y: 4, z: -6},
@@ -151,11 +101,6 @@ export var testJolt = function() {
           geometry: "Cube"
         }
       });
-
-      // let test = MeshMorpher.compose(
-      //   {shape: MeshMorpher.capsule(1), offset: [0, 0, 0]},
-      //   {shape: MeshMorpher.cube(1), offset: [0, 0, 0]},
-      // );
 
       physicsPlayground.addProceduralMeshObj({
         material: {type: 'standard'},
@@ -218,76 +163,8 @@ export var testJolt = function() {
       });
 
       app.activateBloomEffect();
-      // physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
-      // physicsPlayground.lightContainer[0].behavior.value_ = -1;
-      // physicsPlayground.lightContainer[0].updater.push((light) => {
-      //   light.setPosX(light.behavior.setPath0())
-      // })
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
-    }
-
-    function onLoadObj(m) {
-      physicsPlayground.myLoadedMeshes = m;
-      physicsPlayground.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 2, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'cube1',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          geometry: "Cube",
-        },
-        raycast: {enabled: true, radius: 1}
-      })
-
-      physicsPlayground.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 2, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'cube2',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          geometry: "Cube",
-        },
-        raycast: {enabled: true, radius: 1}
-      })
-
-
-
-      var TEST = physicsPlayground.getSceneObjectByName('cube1');
-      console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
-
-      physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
-        console.log('ray.hit.event:', e.detail);
-        const physics = app.matrixPhysics; // The engine instance
-        const body = physics.getBodyByName(e.detail.hitObject.name);
-        if(!body) return;
-        // 1. Apply Impulse up
-        // physics.applyImpulse(body, new PVector(0, 5, 0));
-        // 2. Set Angular Velocity
-        // physics.setAngularVelocity(body, new PVector(0, 9, 9));
-        // 3. Directional hit based on ray
-        // const dir = e.detail.rayDirection; // assuming [x, y, z]
-        // const strength = 20;
-        // physics.applyImpulse(body, new PVector(
-        //   dir[0] * strength,
-        //   dir[1] * strength,
-        //   dir[2] * strength
-        // ));
-        // 4. Explosion example
-        // const hitPos = new PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
-        // physics.explode(hitPos, 10, 50);
-        // 5. Change Materials
-        // const metal = {friction: 0.4, restitution: 0.1};
-        // physics.setMaterial(body, metal.friction, metal.restitution);
-      });
     }
   })
   window.app = physicsPlayground;

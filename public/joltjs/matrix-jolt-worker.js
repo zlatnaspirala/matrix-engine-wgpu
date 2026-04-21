@@ -571,6 +571,10 @@ class MatrixJolt {
     });
   }
 
+  speedUpSimulation(v) {
+    this.speedUpSimulation = v;
+  }
+
   step() {
     if(!this.joltInterface) return;
     for(let i = 0;i < this.speedUpSimulation;i++) {
@@ -615,9 +619,6 @@ self.onmessage = async ({data}) => {
     case 'init': {
       await jolt.init(data.options);
       self.postMessage({cmd: 'ready', id});
-      // setInterval(() => {
-      //   console.log("Jolt initialized. Heap size:", jolt.Jolt.HEAPU8.length);
-      // }, 2000); 
       break;
     }
     case 'addBody': const idx = jolt.addBody(data.pOptions); self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab}); break;
@@ -640,10 +641,7 @@ self.onmessage = async ({data}) => {
     case 'setBodyTransform': jolt.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': jolt.setGravityScale(data.idx, data.scale); break;
     case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
-    case 'getPosition': {
-      console.log('TETETETTE')
-      jolt.getPosition(data.idx, data.id);
-      break;
-    }
+    case 'getPosition': jolt.getPosition(data.idx, data.id); break;
+    case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
   }
 };
