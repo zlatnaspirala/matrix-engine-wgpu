@@ -90,7 +90,6 @@ class MatrixJolt {
     this._vector2 = new Jolt.Vec3();
     this._arr = [0, 0, 0];
     this._initPhysics(options.groundY ?? 0);
-    console.log('PHYSICS[JOLT]')
   }
 
   _initPhysics(GROUND_Y) {
@@ -487,33 +486,9 @@ class MatrixJolt {
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
     const axis = pOptions.axis || [0, 1, 0];
-    console.log("hinge at index:", bodyA);
-    console.log("hinge at index:", bodyB);
     const worldPivotA = localToWorld(Jolt, bodyA, pivotA);
     const worldPivotB = localToWorld(Jolt, bodyB, pivotB);
-
-    console.log(
-      "pivot diff:",
-      worldPivotA.GetX() - worldPivotB.GetX(),
-      worldPivotA.GetY() - worldPivotB.GetY(),
-      worldPivotA.GetZ() - worldPivotB.GetZ()
-    );
-
-
     const ax = axis[0], ay = axis[1], az = axis[2];
-    // let nx, ny, nz;
-    // if(Math.abs(ax) <= Math.abs(ay) && Math.abs(ax) <= Math.abs(az)) {
-    //   // X is smallest component — cross with X axis
-    //   nx = 0; ny = -az; nz = ay;
-    // } else if(Math.abs(ay) <= Math.abs(az)) {
-    //   nx = az; ny = 0; nz = -ax;
-    // } else {
-    //   nx = -ay; ny = ax; nz = 0;
-    // }
-    // // Normalize
-    // const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    // nx /= nLen; ny /= nLen; nz /= nLen;
-
     const hingeSettings = new Jolt.HingeConstraintSettings();
     hingeSettings.mPoint1 = worldPivotA;
     hingeSettings.mPoint2 = worldPivotB;
@@ -521,8 +496,6 @@ class MatrixJolt {
     hingeSettings.mHingeAxis2 = new Jolt.Vec3(ax, ay, az);
     hingeSettings.mNormalAxis1 = new Jolt.Vec3(ax, ay, az);
     hingeSettings.mNormalAxis2 = new Jolt.Vec3(ax, ay, az);
-    // hingeSettings.mNormalAxis1 = new Jolt.Vec3(nx, ny, nz);
-    // hingeSettings.mNormalAxis2 = new Jolt.Vec3(nx, ny, nz);
     if(pOptions.limits) {
       hingeSettings.mLimitsMin = pOptions.limits[0];
       hingeSettings.mLimitsMax = pOptions.limits[1];
@@ -532,7 +505,7 @@ class MatrixJolt {
     constraint.name = pOptions.name;
     this.constraints.push(constraint);
     const constraintIdx = this.constraints.length - 1;
-    console.log("hinge at index:", constraintIdx);
+    // console.log("hinge at index:", constraintIdx);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
 

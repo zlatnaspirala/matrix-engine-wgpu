@@ -502,6 +502,7 @@ export default class MaterialsInstanced {
       minFilter: 'linear',
     });
     this.createMaterialBindGroupVideo();
+    this.setupPipeline();
   }
 
   updateVideoTexture() {

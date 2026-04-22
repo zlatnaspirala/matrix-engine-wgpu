@@ -178,12 +178,213 @@ export var flipperJolt = function() {
       });
 
       let TEST = flipper.addMeshObj({
+        material: {type: 'standard'},
         position: {x: 0, y: 6, z: -36},
         scale: [2.95, 3, 1],
         texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'bigBox',
         mesh: m.bigBox,
         shadowsCast: false,
+        // isVideo: {
+        //   type: 'canvas2d-inline',
+        //   canvaInlineProgram: (() => {
+        //     const COLS = Math.floor(512 / 16);
+        //     const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -30));
+        //     const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
+        //     let frame = 0;
+
+        //     // ── panel anchors ──────────────────────────────────────────
+        //     const BALANCE = {x: 12, y: 12, w: 230, h: 120, r: 10};
+        //     const BALLS = {x: 270, y: 12, w: 230, h: 120, r: 10};
+
+        //     const PALETTE = [
+        //       [255, 0, 180],   // magenta
+        //       [0, 220, 255],   // cyan
+        //       [255, 200, 0],   // gold
+        //       [0, 255, 120],   // green
+        //       [180, 0, 255],   // purple
+        //     ];
+
+        //     function hue(i, t) {
+        //       const [r, g, b] = PALETTE[i % PALETTE.length];
+        //       const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
+        //       return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
+        //     }
+
+        //     function roundRect(ctx, x, y, w, h, r) {
+        //       ctx.beginPath();
+        //       ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+        //       ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        //       ctx.lineTo(x + w, y + h - r);
+        //       ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        //       ctx.lineTo(x + r, y + h);
+        //       ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        //       ctx.lineTo(x, y + r);
+        //       ctx.quadraticCurveTo(x, y, x + r, y);
+        //       ctx.closePath();
+        //     }
+
+        //     function drawPanel(ctx, p, [r, g, b], pulse) {
+        //       // gradient fill
+        //       const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+        //       grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
+        //       grad.addColorStop(1, `rgba(0,0,0,0.75)`);
+        //       ctx.fillStyle = grad;
+        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.fill();
+
+        //       // glowing border
+        //       ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+        //       ctx.lineWidth = 1.5;
+        //       ctx.shadowColor = `rgb(${r},${g},${b})`;
+        //       ctx.shadowBlur = 12 * pulse;
+        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.stroke();
+        //       ctx.shadowBlur = 0;
+
+        //       // corner ticks
+        //       const tk = 10;
+        //       ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
+        //       ctx.lineWidth = 2;
+        //       [
+        //         [p.x, p.y, 1, 1],
+        //         [p.x + p.w, p.y, -1, 1],
+        //         [p.x, p.y + p.h, 1, -1],
+        //         [p.x + p.w, p.y + p.h, -1, -1],
+        //       ].forEach(([cx, cy, sx, sy]) => {
+        //         ctx.beginPath();
+        //         ctx.moveTo(cx + sx * tk, cy);
+        //         ctx.lineTo(cx, cy);
+        //         ctx.lineTo(cx, cy + sy * tk);
+        //         ctx.stroke();
+        //       });
+        //     }
+
+        //     return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
+        //       const W = ctx.canvas.width, H = ctx.canvas.height;
+        //       const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
+        //       const t = frame;
+
+        //       // fade + scanlines
+        //       ctx.fillStyle = 'rgba(2,0,12,0.22)';
+        //       ctx.fillRect(0, 0, W, H);
+        //       for(let y = 0;y < H;y += 4) {
+        //         ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        //         ctx.fillRect(0, y, W, 1);
+        //       }
+
+        //       // multi-color rain
+        //       ctx.font = 'bold 13px monospace';
+        //       for(let i = 0;i < COLS;i++) {
+        //         const ch = chars[Math.floor(Math.random() * chars.length)];
+        //         const [r, g, b] = PALETTE[i % PALETTE.length];
+        //         const br = Math.random();
+        //         ctx.fillStyle = br > 0.93 ? '#ffffff'
+        //           : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
+        //         ctx.fillText(ch, i * 16, drops[i] * 16);
+        //         if(drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;
+        //         else drops[i]++;
+        //       }
+
+        //       ctx.save();
+
+        //       // ── BALANCE panel ────────────────────────────────────────
+        //       const B = BALANCE;
+        //       const bc = hue(1, t);
+        //       drawPanel(ctx, B, bc, pulse);
+
+        //       ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
+        //       ctx.shadowBlur = 10 * pulse;
+
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
+        //       ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
+
+        //       ctx.font = 'bold 12px monospace';
+        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
+        //       ctx.fillText('BALANCE', B.x + 12, B.y + 46);
+
+        //       // per-digit color cycling
+        //       const val = balance.toLocaleString();
+        //       ctx.font = 'bold 36px monospace';
+        //       let dx = B.x + 12;
+        //       for(let i = 0;i < val.length;i++) {
+        //         const [r, g, b] = hue(i, t);
+        //         ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+        //         ctx.shadowColor = `rgb(${r},${g},${b})`;
+        //         ctx.shadowBlur = 14 * pulse;
+        //         ctx.fillText(val[i], dx, B.y + 88);
+        //         dx += ctx.measureText(val[i]).width;
+        //       }
+
+        //       // score bar
+        //       const barW = B.w - 24;
+        //       ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        //       roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3); ctx.fill();
+        //       const filled = barW * (balance / 999999);
+        //       const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
+        //       barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
+        //       barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
+        //       barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
+        //       ctx.fillStyle = barGrad;
+        //       ctx.shadowBlur = 6; ctx.shadowColor = '#ff00cc';
+        //       roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3); ctx.fill();
+
+        //       // ── BALLS panel ──────────────────────────────────────────
+        //       const BL = BALLS;
+        //       const mc = hue(0, t);
+        //       drawPanel(ctx, BL, mc, pulse);
+
+        //       ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
+        //       ctx.shadowBlur = 10 * pulse;
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
+        //       ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
+        //       ctx.font = 'bold 12px monospace';
+        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
+        //       ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
+
+        //       for(let b = 0;b < maxBalls;b++) {
+        //         const bx = BL.x + 24 + b * 40;
+        //         const by = BL.y + 80;
+        //         const [r, g, b2] = hue(b, t);
+        //         ctx.beginPath();
+        //         ctx.arc(bx, by, 14, 0, Math.PI * 2);
+        //         if(b < balls) {
+        //           const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
+        //           bg.addColorStop(0, 'rgba(255,255,255,0.9)');
+        //           bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
+        //           bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
+        //           ctx.fillStyle = bg;
+        //           ctx.shadowColor = `rgb(${r},${g},${b2})`;
+        //           ctx.shadowBlur = 18 * pulse;
+        //         } else {
+        //           ctx.fillStyle = 'rgba(30,10,40,0.8)';
+        //           ctx.shadowBlur = 0;
+        //         }
+        //         ctx.fill();
+        //         if(b < balls) {
+        //           ctx.font = 'bold 10px monospace';
+        //           ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        //           ctx.shadowBlur = 0;
+        //           ctx.fillText(b + 1, bx - 4, by + 4);
+        //         }
+        //       }
+
+        //       ctx.restore();
+
+        //       // footer
+        //       const ft = hue(2, t);
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
+        //       ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
+        //       ctx.shadowBlur = 6;
+        //       ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
+        //       ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
+        //       ctx.shadowBlur = 0;
+
+        //       frame++;
+        //     };
+        //   })()
+        // },
         physics: {
           enabled: false,
           mass: 0,
@@ -191,122 +392,11 @@ export var flipperJolt = function() {
         },
       });
 
-      // canvas2d-inline
-      TEST.loadVideoTexture({
-        type: 'canvas2d-inline',
-        canvaInlineProgram: (() => {
+      // // canvas2d-inline
+      // TEST.loadVideoTexture({
+      //   type: 'canvas2d-inline',
 
-          // ── matrix rain state ──────────────────────────────────────
-          const COLS = Math.floor(512 / 14);
-          const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -40));
-          const chars = 'アイウエオカキクケコ01アイウエオ';
-          let frame = 0;
-
-          // ── panel anchors — change x/y to move entire panel ────────
-          const BALANCE = {x: 18, y: 18, w: 220, h: 108, r: 8};
-          const BALLS = {x: 274, y: 18, w: 220, h: 108, r: 8};
-
-          // ── helpers ────────────────────────────────────────────────
-          function roundRect(ctx, x, y, w, h, r) {
-            ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.lineTo(x + w - r, y);
-            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-            ctx.lineTo(x + w, y + h - r);
-            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-            ctx.lineTo(x + r, y + h);
-            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-            ctx.lineTo(x, y + r);
-            ctx.quadraticCurveTo(x, y, x + r, y);
-            ctx.closePath();
-          }
-
-          function drawPanel(ctx, p, pulse) {
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-            ctx.fill();
-            ctx.strokeStyle = `rgba(0,${Math.floor(200 * pulse)},50,0.7)`;
-            ctx.lineWidth = 1;
-            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-            ctx.stroke();
-          }
-
-          // ── main draw — called every frame by loadVideoTexture ─────
-          return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
-            const W = ctx.canvas.width;
-            const H = ctx.canvas.height;
-            const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
-
-            // fade trail
-            ctx.fillStyle = 'rgba(0,0,0,0.18)';
-            ctx.fillRect(0, 0, W, H);
-
-            // matrix rain
-            ctx.font = '12px monospace';
-            for(let i = 0;i < COLS;i++) {
-              const ch = chars[Math.floor(Math.random() * chars.length)];
-              const br = Math.random();
-              ctx.fillStyle = br > 0.92
-                ? '#ffffff'
-                : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
-              ctx.fillText(ch, i * 14, drops[i] * 14);
-              if(drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;
-              else drops[i]++;
-            }
-
-            ctx.save();
-            ctx.shadowColor = '#00ff41';
-            ctx.shadowBlur = 18 * pulse;
-
-            // ── BALANCE panel ─────────────────────────────────────────
-            const B = BALANCE;
-            drawPanel(ctx, B, pulse);
-
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = 'rgba(0,200,60,0.55)';
-            ctx.fillText('MATRIX ENGINE // PINBALL', B.x + 12, B.y + 18);
-
-            ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-            ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-
-            ctx.font = 'bold 32px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-            ctx.fillText(balance.toLocaleString(), B.x + 12, B.y + 82);
-
-            // ── BALLS panel ───────────────────────────────────────────
-            const BL = BALLS;
-            drawPanel(ctx, BL, pulse);
-
-            ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-            ctx.fillText('BALLS', BL.x + 12, BL.y + 46);
-
-            for(let b = 0;b < maxBalls;b++) {
-              ctx.beginPath();
-              ctx.arc(BL.x + 24 + b * 34, BL.y + 70, 12, 0, Math.PI * 2);
-              if(b < balls) {
-                ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-                ctx.shadowBlur = 14 * pulse;
-              } else {
-                ctx.fillStyle = 'rgba(0,60,20,0.5)';
-                ctx.shadowBlur = 0;
-              }
-              ctx.fill();
-            }
-
-            ctx.restore();
-
-            // ── footer ────────────────────────────────────────────────
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
-            ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
-            ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
-
-            frame++;
-          };
-        })()
-      });
+      // });
 
       let envMapParams = {
         baseColorMix: 0.1,                // CLEAR SKY
@@ -682,7 +772,209 @@ export var flipperJolt = function() {
               new PVector(0.2, 0, 0));
           }
         };
-      }, 1000);
+
+        TEST.loadVideoTexture({
+          type: 'canvas2d-inline',
+          canvaInlineProgram: (() => {
+            const COLS = Math.floor(512 / 16);
+            const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -30));
+            const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
+            let frame = 0;
+
+            // ── panel anchors ──────────────────────────────────────────
+            const BALANCE = {x: 12, y: 12, w: 230, h: 120, r: 10};
+            const BALLS = {x: 270, y: 12, w: 230, h: 120, r: 10};
+
+            const PALETTE = [
+              [255, 0, 180],   // magenta
+              [0, 220, 255],   // cyan
+              [255, 200, 0],   // gold
+              [0, 255, 120],   // green
+              [180, 0, 255],   // purple
+            ];
+
+            function hue(i, t) {
+              const [r, g, b] = PALETTE[i % PALETTE.length];
+              const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
+              return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
+            }
+
+            function roundRect(ctx, x, y, w, h, r) {
+              ctx.beginPath();
+              ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+              ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+              ctx.lineTo(x + w, y + h - r);
+              ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+              ctx.lineTo(x + r, y + h);
+              ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+              ctx.lineTo(x, y + r);
+              ctx.quadraticCurveTo(x, y, x + r, y);
+              ctx.closePath();
+            }
+
+            function drawPanel(ctx, p, [r, g, b], pulse) {
+              // gradient fill
+              const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+              grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
+              grad.addColorStop(1, `rgba(0,0,0,0.75)`);
+              ctx.fillStyle = grad;
+              roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.fill();
+
+              // glowing border
+              ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+              ctx.lineWidth = 1.5;
+              ctx.shadowColor = `rgb(${r},${g},${b})`;
+              ctx.shadowBlur = 12 * pulse;
+              roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.stroke();
+              ctx.shadowBlur = 0;
+
+              // corner ticks
+              const tk = 10;
+              ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
+              ctx.lineWidth = 2;
+              [
+                [p.x, p.y, 1, 1],
+                [p.x + p.w, p.y, -1, 1],
+                [p.x, p.y + p.h, 1, -1],
+                [p.x + p.w, p.y + p.h, -1, -1],
+              ].forEach(([cx, cy, sx, sy]) => {
+                ctx.beginPath();
+                ctx.moveTo(cx + sx * tk, cy);
+                ctx.lineTo(cx, cy);
+                ctx.lineTo(cx, cy + sy * tk);
+                ctx.stroke();
+              });
+            }
+
+            return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
+              const W = ctx.canvas.width, H = ctx.canvas.height;
+              const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
+              const t = frame;
+
+              // fade + scanlines
+              ctx.fillStyle = 'rgba(2,0,12,0.22)';
+              ctx.fillRect(0, 0, W, H);
+              for(let y = 0;y < H;y += 4) {
+                ctx.fillStyle = 'rgba(0,0,0,0.08)';
+                ctx.fillRect(0, y, W, 1);
+              }
+
+              // multi-color rain
+              ctx.font = 'bold 13px monospace';
+              for(let i = 0;i < COLS;i++) {
+                const ch = chars[Math.floor(Math.random() * chars.length)];
+                const [r, g, b] = PALETTE[i % PALETTE.length];
+                const br = Math.random();
+                ctx.fillStyle = br > 0.93 ? '#ffffff'
+                  : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
+                ctx.fillText(ch, i * 16, drops[i] * 16);
+                if(drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;
+                else drops[i]++;
+              }
+
+              ctx.save();
+
+              // ── BALANCE panel ────────────────────────────────────────
+              const B = BALANCE;
+              const bc = hue(1, t);
+              drawPanel(ctx, B, bc, pulse);
+
+              ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
+              ctx.shadowBlur = 10 * pulse;
+
+              ctx.font = 'bold 10px monospace';
+              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
+              ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
+
+              ctx.font = 'bold 12px monospace';
+              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
+              ctx.fillText('BALANCE', B.x + 12, B.y + 46);
+
+              // per-digit color cycling
+              const val = balance.toLocaleString();
+              ctx.font = 'bold 36px monospace';
+              let dx = B.x + 12;
+              for(let i = 0;i < val.length;i++) {
+                const [r, g, b] = hue(i, t);
+                ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+                ctx.shadowColor = `rgb(${r},${g},${b})`;
+                ctx.shadowBlur = 14 * pulse;
+                ctx.fillText(val[i], dx, B.y + 88);
+                dx += ctx.measureText(val[i]).width;
+              }
+
+              // score bar
+              const barW = B.w - 24;
+              ctx.fillStyle = 'rgba(255,255,255,0.06)';
+              roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3); ctx.fill();
+              const filled = barW * (balance / 999999);
+              const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
+              barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
+              barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
+              barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
+              ctx.fillStyle = barGrad;
+              ctx.shadowBlur = 6; ctx.shadowColor = '#ff00cc';
+              roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3); ctx.fill();
+
+              // ── BALLS panel ──────────────────────────────────────────
+              const BL = BALLS;
+              const mc = hue(0, t);
+              drawPanel(ctx, BL, mc, pulse);
+
+              ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
+              ctx.shadowBlur = 10 * pulse;
+              ctx.font = 'bold 10px monospace';
+              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
+              ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
+              ctx.font = 'bold 12px monospace';
+              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
+              ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
+
+              for(let b = 0;b < maxBalls;b++) {
+                const bx = BL.x + 24 + b * 40;
+                const by = BL.y + 80;
+                const [r, g, b2] = hue(b, t);
+                ctx.beginPath();
+                ctx.arc(bx, by, 14, 0, Math.PI * 2);
+                if(b < balls) {
+                  const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
+                  bg.addColorStop(0, 'rgba(255,255,255,0.9)');
+                  bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
+                  bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
+                  ctx.fillStyle = bg;
+                  ctx.shadowColor = `rgb(${r},${g},${b2})`;
+                  ctx.shadowBlur = 18 * pulse;
+                } else {
+                  ctx.fillStyle = 'rgba(30,10,40,0.8)';
+                  ctx.shadowBlur = 0;
+                }
+                ctx.fill();
+                if(b < balls) {
+                  ctx.font = 'bold 10px monospace';
+                  ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                  ctx.shadowBlur = 0;
+                  ctx.fillText(b + 1, bx - 4, by + 4);
+                }
+              }
+
+              ctx.restore();
+
+              // footer
+              const ft = hue(2, t);
+              ctx.font = 'bold 10px monospace';
+              ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
+              ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
+              ctx.shadowBlur = 6;
+              ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
+              ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
+              ctx.shadowBlur = 0;
+
+              frame++;
+            };
+          })()
+        })
+
+      }, 1500);
 
       const commonAchorX = 2.3;
       const commomBODYX = 0;

@@ -353,8 +353,8 @@ var canvasInline = function () {
         loadObjFile.lightContainer[0].setTarget(0, 0, -10);
       }
       setTimeout(() => {
-        let TEST = app.getSceneObjectByName('cube');
-        TEST.loadVideoTexture({
+        // let TEST = app.getSceneObjectByName('cube')
+        MYCUBE.loadVideoTexture({
           type: 'canvas2d-inline',
           canvaInlineProgram: (() => {
             // ── matrix rain state ──────────────────────────────────────
@@ -485,7 +485,7 @@ var canvasInline = function () {
         cam.setY(10);
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
-      }, 400);
+      }, 800);
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       // console.log('ray.hit.event detected');
@@ -1607,6 +1607,9 @@ var flipperJolt = function () {
         }
       });
       let TEST = flipper.addMeshObj({
+        material: {
+          type: 'standard'
+        },
         position: {
           x: 0,
           y: 6,
@@ -1617,6 +1620,206 @@ var flipperJolt = function () {
         name: 'bigBox',
         mesh: m.bigBox,
         shadowsCast: false,
+        // isVideo: {
+        //   type: 'canvas2d-inline',
+        //   canvaInlineProgram: (() => {
+        //     const COLS = Math.floor(512 / 16);
+        //     const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -30));
+        //     const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
+        //     let frame = 0;
+
+        //     // ── panel anchors ──────────────────────────────────────────
+        //     const BALANCE = {x: 12, y: 12, w: 230, h: 120, r: 10};
+        //     const BALLS = {x: 270, y: 12, w: 230, h: 120, r: 10};
+
+        //     const PALETTE = [
+        //       [255, 0, 180],   // magenta
+        //       [0, 220, 255],   // cyan
+        //       [255, 200, 0],   // gold
+        //       [0, 255, 120],   // green
+        //       [180, 0, 255],   // purple
+        //     ];
+
+        //     function hue(i, t) {
+        //       const [r, g, b] = PALETTE[i % PALETTE.length];
+        //       const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
+        //       return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
+        //     }
+
+        //     function roundRect(ctx, x, y, w, h, r) {
+        //       ctx.beginPath();
+        //       ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+        //       ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        //       ctx.lineTo(x + w, y + h - r);
+        //       ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        //       ctx.lineTo(x + r, y + h);
+        //       ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        //       ctx.lineTo(x, y + r);
+        //       ctx.quadraticCurveTo(x, y, x + r, y);
+        //       ctx.closePath();
+        //     }
+
+        //     function drawPanel(ctx, p, [r, g, b], pulse) {
+        //       // gradient fill
+        //       const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+        //       grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
+        //       grad.addColorStop(1, `rgba(0,0,0,0.75)`);
+        //       ctx.fillStyle = grad;
+        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.fill();
+
+        //       // glowing border
+        //       ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+        //       ctx.lineWidth = 1.5;
+        //       ctx.shadowColor = `rgb(${r},${g},${b})`;
+        //       ctx.shadowBlur = 12 * pulse;
+        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.stroke();
+        //       ctx.shadowBlur = 0;
+
+        //       // corner ticks
+        //       const tk = 10;
+        //       ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
+        //       ctx.lineWidth = 2;
+        //       [
+        //         [p.x, p.y, 1, 1],
+        //         [p.x + p.w, p.y, -1, 1],
+        //         [p.x, p.y + p.h, 1, -1],
+        //         [p.x + p.w, p.y + p.h, -1, -1],
+        //       ].forEach(([cx, cy, sx, sy]) => {
+        //         ctx.beginPath();
+        //         ctx.moveTo(cx + sx * tk, cy);
+        //         ctx.lineTo(cx, cy);
+        //         ctx.lineTo(cx, cy + sy * tk);
+        //         ctx.stroke();
+        //       });
+        //     }
+
+        //     return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
+        //       const W = ctx.canvas.width, H = ctx.canvas.height;
+        //       const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
+        //       const t = frame;
+
+        //       // fade + scanlines
+        //       ctx.fillStyle = 'rgba(2,0,12,0.22)';
+        //       ctx.fillRect(0, 0, W, H);
+        //       for(let y = 0;y < H;y += 4) {
+        //         ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        //         ctx.fillRect(0, y, W, 1);
+        //       }
+
+        //       // multi-color rain
+        //       ctx.font = 'bold 13px monospace';
+        //       for(let i = 0;i < COLS;i++) {
+        //         const ch = chars[Math.floor(Math.random() * chars.length)];
+        //         const [r, g, b] = PALETTE[i % PALETTE.length];
+        //         const br = Math.random();
+        //         ctx.fillStyle = br > 0.93 ? '#ffffff'
+        //           : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
+        //         ctx.fillText(ch, i * 16, drops[i] * 16);
+        //         if(drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;
+        //         else drops[i]++;
+        //       }
+
+        //       ctx.save();
+
+        //       // ── BALANCE panel ────────────────────────────────────────
+        //       const B = BALANCE;
+        //       const bc = hue(1, t);
+        //       drawPanel(ctx, B, bc, pulse);
+
+        //       ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
+        //       ctx.shadowBlur = 10 * pulse;
+
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
+        //       ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
+
+        //       ctx.font = 'bold 12px monospace';
+        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
+        //       ctx.fillText('BALANCE', B.x + 12, B.y + 46);
+
+        //       // per-digit color cycling
+        //       const val = balance.toLocaleString();
+        //       ctx.font = 'bold 36px monospace';
+        //       let dx = B.x + 12;
+        //       for(let i = 0;i < val.length;i++) {
+        //         const [r, g, b] = hue(i, t);
+        //         ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+        //         ctx.shadowColor = `rgb(${r},${g},${b})`;
+        //         ctx.shadowBlur = 14 * pulse;
+        //         ctx.fillText(val[i], dx, B.y + 88);
+        //         dx += ctx.measureText(val[i]).width;
+        //       }
+
+        //       // score bar
+        //       const barW = B.w - 24;
+        //       ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        //       roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3); ctx.fill();
+        //       const filled = barW * (balance / 999999);
+        //       const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
+        //       barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
+        //       barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
+        //       barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
+        //       ctx.fillStyle = barGrad;
+        //       ctx.shadowBlur = 6; ctx.shadowColor = '#ff00cc';
+        //       roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3); ctx.fill();
+
+        //       // ── BALLS panel ──────────────────────────────────────────
+        //       const BL = BALLS;
+        //       const mc = hue(0, t);
+        //       drawPanel(ctx, BL, mc, pulse);
+
+        //       ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
+        //       ctx.shadowBlur = 10 * pulse;
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
+        //       ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
+        //       ctx.font = 'bold 12px monospace';
+        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
+        //       ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
+
+        //       for(let b = 0;b < maxBalls;b++) {
+        //         const bx = BL.x + 24 + b * 40;
+        //         const by = BL.y + 80;
+        //         const [r, g, b2] = hue(b, t);
+        //         ctx.beginPath();
+        //         ctx.arc(bx, by, 14, 0, Math.PI * 2);
+        //         if(b < balls) {
+        //           const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
+        //           bg.addColorStop(0, 'rgba(255,255,255,0.9)');
+        //           bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
+        //           bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
+        //           ctx.fillStyle = bg;
+        //           ctx.shadowColor = `rgb(${r},${g},${b2})`;
+        //           ctx.shadowBlur = 18 * pulse;
+        //         } else {
+        //           ctx.fillStyle = 'rgba(30,10,40,0.8)';
+        //           ctx.shadowBlur = 0;
+        //         }
+        //         ctx.fill();
+        //         if(b < balls) {
+        //           ctx.font = 'bold 10px monospace';
+        //           ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        //           ctx.shadowBlur = 0;
+        //           ctx.fillText(b + 1, bx - 4, by + 4);
+        //         }
+        //       }
+
+        //       ctx.restore();
+
+        //       // footer
+        //       const ft = hue(2, t);
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
+        //       ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
+        //       ctx.shadowBlur = 6;
+        //       ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
+        //       ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
+        //       ctx.shadowBlur = 0;
+
+        //       frame++;
+        //     };
+        //   })()
+        // },
         physics: {
           enabled: false,
           mass: 0,
@@ -1624,127 +1827,12 @@ var flipperJolt = function () {
         }
       });
 
-      // canvas2d-inline
-      TEST.loadVideoTexture({
-        type: 'canvas2d-inline',
-        canvaInlineProgram: (() => {
-          // ── matrix rain state ──────────────────────────────────────
-          const COLS = Math.floor(512 / 14);
-          const drops = Array.from({
-            length: COLS
-          }, () => Math.floor(Math.random() * -40));
-          const chars = 'アイウエオカキクケコ01アイウエオ';
-          let frame = 0;
+      // // canvas2d-inline
+      // TEST.loadVideoTexture({
+      //   type: 'canvas2d-inline',
 
-          // ── panel anchors — change x/y to move entire panel ────────
-          const BALANCE = {
-            x: 18,
-            y: 18,
-            w: 220,
-            h: 108,
-            r: 8
-          };
-          const BALLS = {
-            x: 274,
-            y: 18,
-            w: 220,
-            h: 108,
-            r: 8
-          };
+      // });
 
-          // ── helpers ────────────────────────────────────────────────
-          function roundRect(ctx, x, y, w, h, r) {
-            ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.lineTo(x + w - r, y);
-            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-            ctx.lineTo(x + w, y + h - r);
-            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-            ctx.lineTo(x + r, y + h);
-            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-            ctx.lineTo(x, y + r);
-            ctx.quadraticCurveTo(x, y, x + r, y);
-            ctx.closePath();
-          }
-          function drawPanel(ctx, p, pulse) {
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-            ctx.fill();
-            ctx.strokeStyle = `rgba(0,${Math.floor(200 * pulse)},50,0.7)`;
-            ctx.lineWidth = 1;
-            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-            ctx.stroke();
-          }
-
-          // ── main draw — called every frame by loadVideoTexture ─────
-          return (ctx, {
-            balance = 99840,
-            balls = 3,
-            maxBalls = 5
-          } = {}) => {
-            const W = ctx.canvas.width;
-            const H = ctx.canvas.height;
-            const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
-
-            // fade trail
-            ctx.fillStyle = 'rgba(0,0,0,0.18)';
-            ctx.fillRect(0, 0, W, H);
-
-            // matrix rain
-            ctx.font = '12px monospace';
-            for (let i = 0; i < COLS; i++) {
-              const ch = chars[Math.floor(Math.random() * chars.length)];
-              const br = Math.random();
-              ctx.fillStyle = br > 0.92 ? '#ffffff' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
-              ctx.fillText(ch, i * 14, drops[i] * 14);
-              if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
-            }
-            ctx.save();
-            ctx.shadowColor = '#00ff41';
-            ctx.shadowBlur = 18 * pulse;
-
-            // ── BALANCE panel ─────────────────────────────────────────
-            const B = BALANCE;
-            drawPanel(ctx, B, pulse);
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = 'rgba(0,200,60,0.55)';
-            ctx.fillText('MATRIX ENGINE // PINBALL', B.x + 12, B.y + 18);
-            ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-            ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-            ctx.font = 'bold 32px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-            ctx.fillText(balance.toLocaleString(), B.x + 12, B.y + 82);
-
-            // ── BALLS panel ───────────────────────────────────────────
-            const BL = BALLS;
-            drawPanel(ctx, BL, pulse);
-            ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-            ctx.fillText('BALLS', BL.x + 12, BL.y + 46);
-            for (let b = 0; b < maxBalls; b++) {
-              ctx.beginPath();
-              ctx.arc(BL.x + 24 + b * 34, BL.y + 70, 12, 0, Math.PI * 2);
-              if (b < balls) {
-                ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-                ctx.shadowBlur = 14 * pulse;
-              } else {
-                ctx.fillStyle = 'rgba(0,60,20,0.5)';
-                ctx.shadowBlur = 0;
-              }
-              ctx.fill();
-            }
-            ctx.restore();
-
-            // ── footer ────────────────────────────────────────────────
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
-            ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
-            ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
-            frame++;
-          };
-        })()
-      });
       let envMapParams = {
         baseColorMix: 0.1,
         // CLEAR SKY
@@ -2204,7 +2292,215 @@ var flipperJolt = function () {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.2, 0, 0));
           }
         };
-      }, 1000);
+        TEST.loadVideoTexture({
+          type: 'canvas2d-inline',
+          canvaInlineProgram: (() => {
+            const COLS = Math.floor(512 / 16);
+            const drops = Array.from({
+              length: COLS
+            }, () => Math.floor(Math.random() * -30));
+            const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
+            let frame = 0;
+
+            // ── panel anchors ──────────────────────────────────────────
+            const BALANCE = {
+              x: 12,
+              y: 12,
+              w: 230,
+              h: 120,
+              r: 10
+            };
+            const BALLS = {
+              x: 270,
+              y: 12,
+              w: 230,
+              h: 120,
+              r: 10
+            };
+            const PALETTE = [[255, 0, 180],
+            // magenta
+            [0, 220, 255],
+            // cyan
+            [255, 200, 0],
+            // gold
+            [0, 255, 120],
+            // green
+            [180, 0, 255] // purple
+            ];
+            function hue(i, t) {
+              const [r, g, b] = PALETTE[i % PALETTE.length];
+              const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
+              return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
+            }
+            function roundRect(ctx, x, y, w, h, r) {
+              ctx.beginPath();
+              ctx.moveTo(x + r, y);
+              ctx.lineTo(x + w - r, y);
+              ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+              ctx.lineTo(x + w, y + h - r);
+              ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+              ctx.lineTo(x + r, y + h);
+              ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+              ctx.lineTo(x, y + r);
+              ctx.quadraticCurveTo(x, y, x + r, y);
+              ctx.closePath();
+            }
+            function drawPanel(ctx, p, [r, g, b], pulse) {
+              // gradient fill
+              const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+              grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
+              grad.addColorStop(1, `rgba(0,0,0,0.75)`);
+              ctx.fillStyle = grad;
+              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
+              ctx.fill();
+
+              // glowing border
+              ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+              ctx.lineWidth = 1.5;
+              ctx.shadowColor = `rgb(${r},${g},${b})`;
+              ctx.shadowBlur = 12 * pulse;
+              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+
+              // corner ticks
+              const tk = 10;
+              ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
+              ctx.lineWidth = 2;
+              [[p.x, p.y, 1, 1], [p.x + p.w, p.y, -1, 1], [p.x, p.y + p.h, 1, -1], [p.x + p.w, p.y + p.h, -1, -1]].forEach(([cx, cy, sx, sy]) => {
+                ctx.beginPath();
+                ctx.moveTo(cx + sx * tk, cy);
+                ctx.lineTo(cx, cy);
+                ctx.lineTo(cx, cy + sy * tk);
+                ctx.stroke();
+              });
+            }
+            return (ctx, {
+              balance = 99840,
+              balls = 3,
+              maxBalls = 5
+            } = {}) => {
+              const W = ctx.canvas.width,
+                H = ctx.canvas.height;
+              const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
+              const t = frame;
+
+              // fade + scanlines
+              ctx.fillStyle = 'rgba(2,0,12,0.22)';
+              ctx.fillRect(0, 0, W, H);
+              for (let y = 0; y < H; y += 4) {
+                ctx.fillStyle = 'rgba(0,0,0,0.08)';
+                ctx.fillRect(0, y, W, 1);
+              }
+
+              // multi-color rain
+              ctx.font = 'bold 13px monospace';
+              for (let i = 0; i < COLS; i++) {
+                const ch = chars[Math.floor(Math.random() * chars.length)];
+                const [r, g, b] = PALETTE[i % PALETTE.length];
+                const br = Math.random();
+                ctx.fillStyle = br > 0.93 ? '#ffffff' : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
+                ctx.fillText(ch, i * 16, drops[i] * 16);
+                if (drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;else drops[i]++;
+              }
+              ctx.save();
+
+              // ── BALANCE panel ────────────────────────────────────────
+              const B = BALANCE;
+              const bc = hue(1, t);
+              drawPanel(ctx, B, bc, pulse);
+              ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
+              ctx.shadowBlur = 10 * pulse;
+              ctx.font = 'bold 10px monospace';
+              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
+              ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
+              ctx.font = 'bold 12px monospace';
+              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
+              ctx.fillText('BALANCE', B.x + 12, B.y + 46);
+
+              // per-digit color cycling
+              const val = balance.toLocaleString();
+              ctx.font = 'bold 36px monospace';
+              let dx = B.x + 12;
+              for (let i = 0; i < val.length; i++) {
+                const [r, g, b] = hue(i, t);
+                ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+                ctx.shadowColor = `rgb(${r},${g},${b})`;
+                ctx.shadowBlur = 14 * pulse;
+                ctx.fillText(val[i], dx, B.y + 88);
+                dx += ctx.measureText(val[i]).width;
+              }
+
+              // score bar
+              const barW = B.w - 24;
+              ctx.fillStyle = 'rgba(255,255,255,0.06)';
+              roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3);
+              ctx.fill();
+              const filled = barW * (balance / 999999);
+              const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
+              barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
+              barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
+              barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
+              ctx.fillStyle = barGrad;
+              ctx.shadowBlur = 6;
+              ctx.shadowColor = '#ff00cc';
+              roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3);
+              ctx.fill();
+
+              // ── BALLS panel ──────────────────────────────────────────
+              const BL = BALLS;
+              const mc = hue(0, t);
+              drawPanel(ctx, BL, mc, pulse);
+              ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
+              ctx.shadowBlur = 10 * pulse;
+              ctx.font = 'bold 10px monospace';
+              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
+              ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
+              ctx.font = 'bold 12px monospace';
+              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
+              ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
+              for (let b = 0; b < maxBalls; b++) {
+                const bx = BL.x + 24 + b * 40;
+                const by = BL.y + 80;
+                const [r, g, b2] = hue(b, t);
+                ctx.beginPath();
+                ctx.arc(bx, by, 14, 0, Math.PI * 2);
+                if (b < balls) {
+                  const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
+                  bg.addColorStop(0, 'rgba(255,255,255,0.9)');
+                  bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
+                  bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
+                  ctx.fillStyle = bg;
+                  ctx.shadowColor = `rgb(${r},${g},${b2})`;
+                  ctx.shadowBlur = 18 * pulse;
+                } else {
+                  ctx.fillStyle = 'rgba(30,10,40,0.8)';
+                  ctx.shadowBlur = 0;
+                }
+                ctx.fill();
+                if (b < balls) {
+                  ctx.font = 'bold 10px monospace';
+                  ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                  ctx.shadowBlur = 0;
+                  ctx.fillText(b + 1, bx - 4, by + 4);
+                }
+              }
+              ctx.restore();
+
+              // footer
+              const ft = hue(2, t);
+              ctx.font = 'bold 10px monospace';
+              ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
+              ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
+              ctx.shadowBlur = 6;
+              ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
+              ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
+              ctx.shadowBlur = 0;
+              frame++;
+            };
+          })()
+        });
+      }, 1500);
       const commonAchorX = 2.3;
       const commomBODYX = 0;
       const LAnchor = flipper.addMeshObj({
@@ -30063,6 +30359,7 @@ class MaterialsInstanced {
       minFilter: 'linear'
     });
     this.createMaterialBindGroupVideo();
+    this.setupPipeline();
   }
   updateVideoTexture() {
     this.externalTexture = this.device.importExternalTexture({
@@ -34918,7 +35215,6 @@ class Materials {
     };
   }
   async loadVideoTexture(arg) {
-    // console.log('100000000000000000000000000000000')
     this.videoIsReady = 'MAYBE';
     this.isVideo = true;
     this.drawElements = this.drawVideoElements;
@@ -35007,8 +35303,8 @@ class Materials {
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
       canvas.style.position = 'absolute';
-      canvas.style.left = '-1000px';
-      canvas.style.top = '0';
+      canvas.style.left = '0px';
+      canvas.style.top = '-225px';
       // canvas.style.zIndex = '10000';
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
@@ -35044,13 +35340,13 @@ class Materials {
         check();
       });
       // console.log('Canvas video stream READY');
-      this.isVideo = true;
     }
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear'
     });
     this.createMaterialBindGroupVideo();
+    setTimeout(() => this.setupPipeline(), 1200);
   }
   updateVideoTexture() {
     // if(!this.video || this.video.readyState < 2) return;
@@ -35155,7 +35451,7 @@ class Materials {
   }
   createMaterialBindGroupVideo() {
     if (!this.externalTexture) return;
-    // console.log('SET VIDEO BIND GROUP')
+    console.log('SET VIDEO BIND GROUP');
     this.materialBindGroup = this.device.createBindGroup({
       label: 'materialVideoBGL',
       layout: this.materialVideoBGL,
@@ -36151,7 +36447,8 @@ class MEMeshObj extends _materials.default {
         this.setupPipeline();
       };
 
-      // 'back' typical for shadow passes
+      // this.setTopology(this.topology)
+      console.log('TEST primitive setup for ', this.name);
       this.primitive = {
         topology: this.topology,
         cullMode: 'none',
@@ -36187,17 +36484,6 @@ class MEMeshObj extends _materials.default {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-
-      // this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      //   label: 'uniformBufferBindGroupLayout in mesh',
-      //   entries: [
-      //     {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //     {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //     {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //     {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //   ],
-      // });
-
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
@@ -36213,8 +36499,6 @@ class MEMeshObj extends _materials.default {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
-      // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
@@ -36475,7 +36759,13 @@ class MEMeshObj extends _materials.default {
   setUVScale(x, y = x) {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
-  setupPipeline = () => {
+  setupPipeline() {
+    // this.primitive = {
+    //   topology: this.topology,
+    //   cullMode: 'none',
+    //   frontFace: 'ccw'
+    // }
+
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -36588,7 +36878,7 @@ class MEMeshObj extends _materials.default {
       }
     });
     dispatchEvent(this.buildPipelineBucketsEvent);
-  };
+  }
   getMainPipeline = () => {
     return this.pipeline;
   };
@@ -41697,6 +41987,10 @@ const MEConfig = exports.MEConfig = {
     if (urlQ['MAX_LIGHTS']) {
       this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
       console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
+    }
+    if (urlQ['MAX_BONES']) {
+      this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
+      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
     }
     if (urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
@@ -60713,7 +61007,7 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.11.0 [FasterThanRabbit] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.11.0 [FasterThanARabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
@@ -61851,6 +62145,7 @@ class MatrixEngineWGPU {
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
+        bvhPlayer.itIsPhysicsBody = false;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer);

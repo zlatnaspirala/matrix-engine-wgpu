@@ -509,9 +509,7 @@ export default class Materials {
   }
 
   async loadVideoTexture(arg) {
-    // console.log('100000000000000000000000000000000')
     this.videoIsReady = 'MAYBE';
-
     this.isVideo = true;
     this.drawElements = this.drawVideoElements;
 
@@ -590,8 +588,8 @@ export default class Materials {
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
       canvas.style.position = 'absolute';
-      canvas.style.left = '-1000px';
-      canvas.style.top = '0';
+      canvas.style.left = '0px';
+      canvas.style.top = '-225px';
       // canvas.style.zIndex = '10000';
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
@@ -629,13 +627,13 @@ export default class Materials {
         check();
       });
       // console.log('Canvas video stream READY');
-      this.isVideo = true;
     }
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
     });
     this.createMaterialBindGroupVideo();
+    setTimeout(() => this.setupPipeline() ,1200)
   }
 
   updateVideoTexture() {
@@ -720,7 +718,7 @@ export default class Materials {
 
   createMaterialBindGroupVideo() {
     if(!this.externalTexture) return;
-    // console.log('SET VIDEO BIND GROUP')
+    console.log('SET VIDEO BIND GROUP')
     this.materialBindGroup = this.device.createBindGroup({
       label: 'materialVideoBGL',
       layout: this.materialVideoBGL,

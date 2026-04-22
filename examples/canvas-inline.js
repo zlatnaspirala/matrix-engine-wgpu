@@ -104,9 +104,8 @@ export var canvasInline = function() {
       }
 
       setTimeout(() => {
-
-        let TEST = app.getSceneObjectByName('cube')
-        TEST.loadVideoTexture({
+        // let TEST = app.getSceneObjectByName('cube')
+        MYCUBE.loadVideoTexture({
           type: 'canvas2d-inline',
           canvaInlineProgram: (() => {
 
@@ -232,7 +231,7 @@ export var canvasInline = function() {
         cam.setY(10);
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
-      }, 400);
+      }, 800);
     }
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {

@@ -45,6 +45,11 @@ export const MEConfig = {
       this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
       console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
     }
+    if(urlQ['MAX_BONES']) {
+      this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
+      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+    }
+
     if(urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);

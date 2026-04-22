@@ -47,7 +47,6 @@ export default class MEMeshObj extends Materials {
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
-
     this._modelMatrix = mat4.create();
     this.modelMatrix = mat4.create();
 
@@ -62,9 +61,7 @@ export default class MEMeshObj extends Materials {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
-
     this.useScale = o.useScale || false;
-
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -470,7 +467,8 @@ export default class MEMeshObj extends Materials {
         this.setupPipeline();
       };
 
-      // 'back' typical for shadow passes
+      // this.setTopology(this.topology)
+      console.log('TEST primitive setup for ', this.name);
       this.primitive = {
         topology: this.topology,
         cullMode: 'none',
@@ -491,18 +489,7 @@ export default class MEMeshObj extends Materials {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      // this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      //   label: 'uniformBufferBindGroupLayout in mesh',
-      //   entries: [
-      //     {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //     {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //     {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //     {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      //   ],
-      // });
-
       function alignTo256(n) {return Math.ceil(n / 256) * 256;}
-
       let MAX_BONES = MEConfig.MAX_BONES;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device.createBuffer({
@@ -516,8 +503,6 @@ export default class MEMeshObj extends Materials {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
-      // vertex Anim
       this.vertexAnimParams = new Float32Array([
         0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
       ]);
@@ -761,7 +746,14 @@ export default class MEMeshObj extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
-  setupPipeline = () => {
+  setupPipeline() {
+
+    // this.primitive = {
+    //   topology: this.topology,
+    //   cullMode: 'none',
+    //   frontFace: 'ccw'
+    // }
+
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
