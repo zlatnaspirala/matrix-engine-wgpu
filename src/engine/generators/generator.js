@@ -17,7 +17,7 @@ export function stabilizeTowerBody(body, root) {
  * @param {string} material 
  * @enum "standard", "power", "mirror"
  */
-export function physicsBodiesGenerator(
+export async function physicsBodiesGenerator(
   material = "standard",
   pos,
   rot,
@@ -26,41 +26,57 @@ export function physicsBodiesGenerator(
   geometry = "Cube",
   raycast = false,
   scale = [1, 1, 1],
-  sum = 100,
+  sum = 20,
   delay = 500,
   mesh = null) {
-  let engine = this;
-  const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
-  const inputSphere = {mesh: "./res/meshes/blender/sphere.obj"};
-  function handler(m) {
-    let RAY = {enabled: (raycast == true ? true : false), radius: 1};
-    for(var x = 0;x < sum;x++) {
-      setTimeout(() => {
-        engine.addMeshObj({
-          material: {type: material},
-          position: pos,
-          rotation: rot,
-          rotationSpeed: {x: 0, y: 0, z: 0},
-          texturesPaths: [texturePath],
-          name: name + '_' + x,
-          mesh: m.mesh,
-          physics: {
-            enabled: true,
-            geometry: geometry,
-          },
-          raycast: RAY
-        });
-        // cache
-        const o = app.getSceneObjectByName(cubeName);
-        runtimeCacheObjs.push(o);
-      }, x * delay)
+
+  // return new Promise((resolve) => {
+
+    let engine = this;
+    const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
+    const inputSphere = {mesh: "./res/meshes/blender/sphere.obj"};
+    function handler(m) {
+      let ALL = [];
+      let RAY = {enabled: (raycast == true ? true : false), radius: 1};
+      for(var x = 0;x < sum;x++) {
+        const cubeName = name + '_' + x;
+        setTimeout(() => {
+          
+          engine.addMeshObj({
+            material: {type: material},
+            position: pos,
+            rotation: rot,
+            rotationSpeed: {x: 0, y: 0, z: 0},
+            texturesPaths: [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: true,
+              geometry: geometry,
+            },
+            raycast: RAY
+          });
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          const o1 = app.matrixPhysics.getBodyByName(cubeName);
+          ALL.push(o1);
+          console.log('.......', o)
+          runtimeCacheObjs.push(o);
+          if(x == sum - 1) {
+            alert()
+            // resolve(ALL);
+            // return ALL;
+          }
+        }, x * delay)
+      }
     }
-  }
-  if(geometry == "Cube") {
-    downloadMeshes(inputCube, handler, {scale: scale})
-  } else if(geometry == "Sphere") {
-    downloadMeshes(inputSphere, handler, {scale: scale})
-  }
+    if(geometry == "Cube") {
+      downloadMeshes(inputCube, handler, {scale: scale})
+    } else if(geometry == "Sphere") {
+      downloadMeshes(inputSphere, handler, {scale: scale})
+    }
+
+  // })
 }
 
 /**
@@ -394,4 +410,63 @@ export function addOBJ(
     }
     downloadMeshes(inputCube, handler, {scale});
   });
+}
+
+
+export function physicsBodiesChain(
+  material = "standard",
+  pos = {x: 10, y: 30, z: -6},
+  rot = {x: 0, y: 0, z: 0},
+  texturePath = ['./res/textures/slot/reel1.webp'],
+  name = "chain",
+  size = 10,
+  raycast = false,
+  scale = [1, 1, 1],
+  spacing = 1,
+  mass = 1
+) {
+  const engine = this;
+  const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
+
+  function handler(m) {
+    const RAY = {enabled: !!raycast, radius: 1};
+
+    for(let y = 0;y < size;y++) {
+      const cubeName = `${name}_${y}`;
+
+      engine.addMeshObj({
+        material: {type: material},
+        position: {
+          x: pos.x,
+          y: pos.y + y * spacing,
+          z: pos.z
+        },
+        rotation: rot,
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: [texturePath],
+        name: cubeName,
+        mesh: m.mesh,
+        physics: {
+          scale: scale,
+          mass: y == 0 ? 0 : mass,
+          enabled: true,
+          geometry: "Cube",
+        },
+        raycast: RAY
+      });
+    }
+    const ids = [];
+    setTimeout(() => {
+      for(let y = 0;y < size;y++) {
+        const cubeName = `${name}_${y}`;
+        const id = engine.matrixPhysics.getBodyByName(cubeName);
+        const o = app.getSceneObjectByName(cubeName);
+        runtimeCacheObjs.push(o);
+        ids.push(id);
+      }
+      engine.matrixPhysics.createChain(ids, spacing, 0.5);
+    }, 500)
+  }
+
+  downloadMeshes(inputCube, handler, {scale});
 }

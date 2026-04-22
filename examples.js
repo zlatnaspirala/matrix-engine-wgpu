@@ -20,6 +20,7 @@ import {mazeGame} from "./examples/maze.js";
 import {flipperJolt} from "./examples/flipper-jolt.js";
 import {flipperAmmo} from "./examples/flipper-ammo.js";
 import {testJolt} from "./examples/physics-test-jolt.js";
+import {testCannonES} from "./examples/physics-test-cannones.js";
 
 window.urlQ = urlQuery;
 
@@ -54,6 +55,7 @@ byId('maze').addEventListener("click", () => switchDemo('12'));
 byId('flipper-jolt').addEventListener("click", () => switchDemo('13'));
 byId('flipper-ammo').addEventListener("click", () => switchDemo('14'));
 byId('test-jolt').addEventListener("click", () => switchDemo('15'));
+byId('test-cannones').addEventListener("click", () => switchDemo('16'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
@@ -88,6 +90,8 @@ if(urlQ['demo'] === '1') {
   flipperAmmo();
 } else if(urlQ['demo'] === '15') {
   testJolt();
+} else if(urlQ['demo'] === '16') {
+  testCannonES();
 } else {
   flipperAmmo();
 }

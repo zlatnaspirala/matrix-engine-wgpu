@@ -20,11 +20,13 @@ export class PhysicsBridge {
     this._worker.onmessage = ({data}) => this._onMessage(data);
 
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
-    this.pCollisionEventArg = { detail: {
-      body0Name: '',
-      body1Name: '',
-      rayDirection: [0,0,0]
-    }};
+    this.pCollisionEventArg = {
+      detail: {
+        body0Name: '',
+        body1Name: '',
+        rayDirection: [0, 0, 0]
+      }
+    };
 
     this.detectCollision = (e) => {};
     this.tempRot = mat4.create();
@@ -83,7 +85,7 @@ export class PhysicsBridge {
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
 
-    if (this.c % 2 === 0)  this._worker.postMessage({cmd: 'step'});
+    if(this.c % 2 === 0) this._worker.postMessage({cmd: 'step'});
     this.c++;
   }
 
@@ -206,13 +208,32 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'setCollisionFlags', idx, flags});
   }
 
+  // cannones ,
+  createChain(ids, size = 0.5, mass = 0.3, marginSpace = 0.1) {
+    this._worker.postMessage({cmd: 'createChain', ids, size, mass, marginSpace});
+  }
+
+  createBoundedSpace(ids, pos = {x: 0, y: 0, z: 0}, size = {x: 5, y: 5, z: 5}) {
+    this._worker.postMessage({cmd: 'createBoundedSpace', ids, pos, size});
+  }
+
+  physicsBoundedSpace(
+    pos = {x: 0, y: 0, z: 0},
+    size = {x: 5, y: 5, z: 5},
+    name = "bounded_space",
+    withFloor = true
+  ) {
+    this._worker.postMessage({cmd: 'createBoundedSpace', pos, size, name, withFloor});
+  }
+
   _syncToObjects() {
     const snap = this._snapshot;
     if(!snap) return;
     const STRIDE = 8;
     for(const [meObj, idx] of this._bodyIndexMap) {
+      if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
-      
+
       const pos = snap.subarray(b, b + 3);
       const quat = snap.subarray(b + 3, b + 7);
       mat4.fromQuat(quat, meObj.modelMatrix);
@@ -267,7 +288,7 @@ export class PhysicsBridge {
         this._pending.delete(data.id);
         break;
       case 'getPosition':
-        
+
         this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;
