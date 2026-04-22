@@ -7366,7 +7366,6 @@ var Materials = class {
     };
   }
   async loadVideoTexture(arg) {
-    console.log("100000000000000000000000000000000");
     this.videoIsReady = "MAYBE";
     this.isVideo = true;
     this.drawElements = this.drawVideoElements;
@@ -7447,11 +7446,7 @@ var Materials = class {
       const ctx = canvas.getContext("2d");
       if (typeof arg.canvaInlineProgram === "function") {
         const drawLoop = () => {
-          ctx.save();
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
           arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
-          ctx.restore();
           requestAnimationFrame(drawLoop);
         };
         drawLoop();
@@ -7461,12 +7456,12 @@ var Materials = class {
       }
       this.video = document.createElement("video");
       this.video.style.position = "absolute";
-      this.video.style.left = "0px";
+      this.video.style.left = "-600px";
       this.video.style.top = "0";
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(60);
+      this.video.srcObject = canvas.captureStream(18);
       document.body.append(this.video);
       this.video.play();
       await new Promise((resolve) => {
@@ -7555,7 +7550,6 @@ var Materials = class {
   }
   createMaterialBindGroupVideo() {
     if (!this.externalTexture) return;
-    console.log("SET VIDEO BIND GROUP");
     this.materialBindGroup = this.device.createBindGroup({
       label: "materialVideoBGL",
       layout: this.materialVideoBGL,
@@ -34208,7 +34202,6 @@ var PhysicsBridge = class {
     this._worker.postMessage({ cmd: "enableAngularMotor", constraintIdx, enable, targetVelocity, maxMotorImpulse });
   }
   getPosition(idx) {
-    console.log("ADD", idx);
     return this._send("getPosition", { idx });
   }
   clearBody(idx) {

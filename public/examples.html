@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <link rel="manifest" href="manifest.web" />
   <title>Matrix Engine Powered by webGPU. Created by Nikola Lukic zlatnaspirala@gmail.com </title>
   <meta name="description" content="The benefits of this project is offering an overview of the entire application logic, easy native implementations (hybrid app), object structural. " />
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <!-- <link defer rel="stylesheet" href="css/style.css" /> -->
-   <link defer rel="stylesheet" href="css/mobile.css" />
+  <link defer rel="stylesheet" href="css/mobile.css" />
   <link rel="apple-touch-icon" href="res/icons/512.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,13 +14,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="icon" type="image/png" sizes="256x256" href="res/icons/512.webp" />
 </head>
-
 <body allow="autoplay">
   <div class="header" style="display: contents;text-align: center;font-size: large;">
     MATRIX-ENGINE-WGPU WORKSPACE 2026 <span>Tested on chrome, android chrome.</span> <a style="font-size: x-small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
   </div>
-  <div id="examples" style="left: 0;display: flex; flex-direction: column;width: 180px;position: absolute;">
-    <button class="btn" style="font-size: 15px;width: 210px;text-align: end;" id="sliderMenu1">Matrix EngineWGPU 👉🏼</button>
+  <button class="btn" style="top: 25px;left: 0;position:absolute;font-size: 13px;width: 200px;" id="sliderMenu1">Matrix EngineWGPU 👉🏼</button>
+  <div id="examples" style="top: 100px;left: 0;display: flex; flex-direction: column;width: 180px;position: absolute;height: 80%;overflow-y: scroll;overflow-x: hidden;">
     <button class="btn" id="loadObjFile">Load meshes</button>
     <button class="btn" id="physicsPlayground">Physics AMMO</button>
     <button class="btn" id="test-jolt">Physics JOLT</button>
@@ -38,6 +36,7 @@
     <button class="btn" id="flipper-jolt">Flipper (Jolt)</button>
     <button class="btn" id="flipper-ammo">Flipper (Ammo)</button>
     <button class="btn" id="maze">Maze game</button>
+    <button class="btn" id="canvas-inline">Canvas inline</button>
     <button class="btn" id="jamb">Jamb game</button>
     <button class="btn" id="moba">MOBA game</button>
   </div>
@@ -52,5 +51,4 @@
     }, {passive: true});
   </script>
 </body>
-
 </html>

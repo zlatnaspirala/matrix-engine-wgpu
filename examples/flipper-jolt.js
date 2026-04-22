@@ -177,7 +177,7 @@ export var flipperJolt = function() {
         }
       });
 
-      flipper.addMeshObj({
+      let TEST = flipper.addMeshObj({
         position: {x: 0, y: 6, z: -36},
         scale: [2.95, 3, 1],
         texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
@@ -189,6 +189,123 @@ export var flipperJolt = function() {
           mass: 0,
           geometry: "Cube"
         },
+      });
+
+      // canvas2d-inline
+      TEST.loadVideoTexture({
+        type: 'canvas2d-inline',
+        canvaInlineProgram: (() => {
+
+          // ── matrix rain state ──────────────────────────────────────
+          const COLS = Math.floor(512 / 14);
+          const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -40));
+          const chars = 'アイウエオカキクケコ01アイウエオ';
+          let frame = 0;
+
+          // ── panel anchors — change x/y to move entire panel ────────
+          const BALANCE = {x: 18, y: 18, w: 220, h: 108, r: 8};
+          const BALLS = {x: 274, y: 18, w: 220, h: 108, r: 8};
+
+          // ── helpers ────────────────────────────────────────────────
+          function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+          }
+
+          function drawPanel(ctx, p, pulse) {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
+            ctx.fill();
+            ctx.strokeStyle = `rgba(0,${Math.floor(200 * pulse)},50,0.7)`;
+            ctx.lineWidth = 1;
+            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
+            ctx.stroke();
+          }
+
+          // ── main draw — called every frame by loadVideoTexture ─────
+          return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
+            const W = ctx.canvas.width;
+            const H = ctx.canvas.height;
+            const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
+
+            // fade trail
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.fillRect(0, 0, W, H);
+
+            // matrix rain
+            ctx.font = '12px monospace';
+            for(let i = 0;i < COLS;i++) {
+              const ch = chars[Math.floor(Math.random() * chars.length)];
+              const br = Math.random();
+              ctx.fillStyle = br > 0.92
+                ? '#ffffff'
+                : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
+              ctx.fillText(ch, i * 14, drops[i] * 14);
+              if(drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;
+              else drops[i]++;
+            }
+
+            ctx.save();
+            ctx.shadowColor = '#00ff41';
+            ctx.shadowBlur = 18 * pulse;
+
+            // ── BALANCE panel ─────────────────────────────────────────
+            const B = BALANCE;
+            drawPanel(ctx, B, pulse);
+
+            ctx.font = 'bold 11px monospace';
+            ctx.fillStyle = 'rgba(0,200,60,0.55)';
+            ctx.fillText('MATRIX ENGINE // PINBALL', B.x + 12, B.y + 18);
+
+            ctx.font = 'bold 13px monospace';
+            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
+            ctx.fillText('BALANCE', B.x + 12, B.y + 46);
+
+            ctx.font = 'bold 32px monospace';
+            ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
+            ctx.fillText(balance.toLocaleString(), B.x + 12, B.y + 82);
+
+            // ── BALLS panel ───────────────────────────────────────────
+            const BL = BALLS;
+            drawPanel(ctx, BL, pulse);
+
+            ctx.font = 'bold 13px monospace';
+            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
+            ctx.fillText('BALLS', BL.x + 12, BL.y + 46);
+
+            for(let b = 0;b < maxBalls;b++) {
+              ctx.beginPath();
+              ctx.arc(BL.x + 24 + b * 34, BL.y + 70, 12, 0, Math.PI * 2);
+              if(b < balls) {
+                ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
+                ctx.shadowBlur = 14 * pulse;
+              } else {
+                ctx.fillStyle = 'rgba(0,60,20,0.5)';
+                ctx.shadowBlur = 0;
+              }
+              ctx.fill();
+            }
+
+            ctx.restore();
+
+            // ── footer ────────────────────────────────────────────────
+            ctx.font = 'bold 11px monospace';
+            ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
+            ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
+            ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
+
+            frame++;
+          };
+        })()
       });
 
       let envMapParams = {
@@ -241,8 +358,6 @@ export var flipperJolt = function() {
 
         // glass.setBlend(0.01);
       }
-
-
 
       // BUMPERS
       const bumperPositions = [
@@ -543,10 +658,10 @@ export var flipperJolt = function() {
             const pos = await app.matrixPhysics.getPosition(ball);
             if(pos.x > 5 && pos.z < -6) {
               flipper.matrixPhysics.applyImpulse(ball,
-              new PVector(0, 0, -randomFloatFromTo(0.8, 1)));
-            } else if (pos.x < 5.1 && pos.z < -5.5) {
+                new PVector(0, 0, -randomFloatFromTo(0.8, 1)));
+            } else if(pos.x < 5.1 && pos.z < -5.5) {
               flipper.matrixPhysics.applyImpulse(ball,
-              new PVector(randomFloatFromTo(0.1, 0.15), 0, 0));
+                new PVector(randomFloatFromTo(0.1, 0.15), 0, 0));
             }
           }
         });

@@ -509,7 +509,7 @@ export default class Materials {
   }
 
   async loadVideoTexture(arg) {
-    console.log('100000000000000000000000000000000')
+    // console.log('100000000000000000000000000000000')
     this.videoIsReady = 'MAYBE';
 
     this.isVideo = true;
@@ -597,11 +597,11 @@ export default class Materials {
       const ctx = canvas.getContext('2d');
       if(typeof arg.canvaInlineProgram === 'function') {
         const drawLoop = () => {
-          ctx.save();
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
+          // ctx.save();
+          // ctx.translate(canvas.width, 0);
+          // ctx.scale(-1, 1);
           arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
-          ctx.restore();
+          // ctx.restore();
           requestAnimationFrame(drawLoop);
         };
         drawLoop();
@@ -613,12 +613,12 @@ export default class Materials {
       this.video = document.createElement('video');
       this.video.style.position = 'absolute';
       // this.video.style.zIndex = '1';
-      this.video.style.left = '0px';
+      this.video.style.left = '-600px';
       this.video.style.top = '0';
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(60);
+      this.video.srcObject = canvas.captureStream(18);
       document.body.append(this.video);
       this.video.play();
       await new Promise(resolve => {
@@ -716,13 +716,11 @@ export default class Materials {
         ]
       });
     }
-
-
   }
 
   createMaterialBindGroupVideo() {
     if(!this.externalTexture) return;
-    console.log('SET VIDEO BIND GROUP')
+    // console.log('SET VIDEO BIND GROUP')
     this.materialBindGroup = this.device.createBindGroup({
       label: 'materialVideoBGL',
       layout: this.materialVideoBGL,

@@ -1,6 +1,8 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
+ * @version 1.11.0
+ * @www maximumroulette.com
  * 2026
  */
 
@@ -21,6 +23,7 @@ import {flipperJolt} from "./examples/flipper-jolt.js";
 import {flipperAmmo} from "./examples/flipper-ammo.js";
 import {testJolt} from "./examples/physics-test-jolt.js";
 import {testCannonES} from "./examples/physics-test-cannones.js";
+import {canvasInline} from "./examples/canvas-inline.js";
 
 window.urlQ = urlQuery;
 
@@ -56,6 +59,8 @@ byId('flipper-jolt').addEventListener("click", () => switchDemo('13'));
 byId('flipper-ammo').addEventListener("click", () => switchDemo('14'));
 byId('test-jolt').addEventListener("click", () => switchDemo('15'));
 byId('test-cannones').addEventListener("click", () => switchDemo('16'));
+byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
+
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
@@ -92,6 +97,8 @@ if(urlQ['demo'] === '1') {
   testJolt();
 } else if(urlQ['demo'] === '16') {
   testCannonES();
+} else if(urlQ['demo'] === '17') {
+  canvasInline();
 } else {
   flipperAmmo();
 }
