@@ -37,6 +37,8 @@ export default class ProceduralMeshObj extends Materials {
     }
     this.mType = MeshType.PROCEDURAL;
     //cache
+    this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
     this._camVP = mat4.create();
     this.meshA = null;

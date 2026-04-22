@@ -38704,6 +38704,8 @@ class ProceduralMeshObj extends _materials.default {
     }
     this.mType = _utils.MeshType.PROCEDURAL;
     //cache
+    this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
     this._camVP = _wgpuMatrix.mat4.create();
     this.meshA = null;
@@ -61182,6 +61184,8 @@ class MatrixEngineWGPU {
     if (o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh1, o.physics);
+    } else {
+      myMesh1.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
@@ -61275,6 +61279,8 @@ class MatrixEngineWGPU {
     if (o.physics.enabled === true) {
       myMesh.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh, o.physics);
+    } else {
+      myMesh.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();

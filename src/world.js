@@ -810,6 +810,8 @@ export default class MatrixEngineWGPU {
     if(o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh1, o.physics);
+    }else {
+      myMesh1.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
@@ -870,6 +872,8 @@ export default class MatrixEngineWGPU {
     if(o.physics.enabled === true) {
       myMesh.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh, o.physics);
+    } else {
+      myMesh.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
