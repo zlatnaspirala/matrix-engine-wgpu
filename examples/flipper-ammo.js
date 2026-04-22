@@ -484,7 +484,7 @@ export var flipperAmmo = function() {
         });
         hingeRight.then((idx) => {
           hingeRightID = idx;
-          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          app.matrixPhysics.setHingeLimit(idx, -0.5, 0.8, 0.0, 0.5, 1.0);
           app.matrixPhysics.enableAngularMotor(idx, true, -10, POWERPIN);
         })
 
@@ -525,15 +525,14 @@ export var flipperAmmo = function() {
         });
 
         // const ball = app.matrixPhysics.getBodyByName('ball1');
-        console.info('BALL ID ', app.matrixPhysics.detectCollision)
+        // console.info('BALL ID ', app.matrixPhysics.detectCollision)
         const strength = 0.5;
 
         app.matrixPhysics.detectCollision = (e) => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          console.log('collision : ', body1Name)
-
+          // console.log('collision : ', body1Name)
           if((body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
             flipper.matrixPhysics.applyImpulse(ball, new PVector(
               rayDirection[0] * strength, 0, rayDirection[2] * strength));
@@ -542,7 +541,6 @@ export var flipperAmmo = function() {
               new PVector(4, 0, 0));
           }
         };
-
       }, 1000);
 
       const commonAchorX = 2.3;

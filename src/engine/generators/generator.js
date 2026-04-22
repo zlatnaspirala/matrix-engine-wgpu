@@ -17,6 +17,7 @@ export function stabilizeTowerBody(body, root) {
  * @param {string} material 
  * @enum "standard", "power", "mirror"
  */
+let local = [];
 export async function physicsBodiesGenerator(
   material = "standard",
   pos,
@@ -30,8 +31,7 @@ export async function physicsBodiesGenerator(
   delay = 500,
   mesh = null) {
 
-  // return new Promise((resolve) => {
-
+  return new Promise((resolve) => {
     let engine = this;
     const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
     const inputSphere = {mesh: "./res/meshes/blender/sphere.obj"};
@@ -41,7 +41,7 @@ export async function physicsBodiesGenerator(
       for(var x = 0;x < sum;x++) {
         const cubeName = name + '_' + x;
         setTimeout(() => {
-          
+
           engine.addMeshObj({
             material: {type: material},
             position: pos,
@@ -58,25 +58,30 @@ export async function physicsBodiesGenerator(
           });
           // cache
           const o = app.getSceneObjectByName(cubeName);
-          const o1 = app.matrixPhysics.getBodyByName(cubeName);
-          ALL.push(o1);
-          console.log('.......', o)
           runtimeCacheObjs.push(o);
-          if(x == sum - 1) {
-            alert()
-            // resolve(ALL);
-            // return ALL;
-          }
+          local.push(o.name);
         }, x * delay)
       }
+
+      setTimeout(() => {
+        for(let x = 0;x < local.length;x++) {
+          const o1 = app.matrixPhysics.getBodyByName(local[x]);
+          ALL.push(o1);
+          if(x == local.length - 1) {
+            resolve(ALL);
+          }
+        }
+      }, delay * sum)
+
     }
+
     if(geometry == "Cube") {
       downloadMeshes(inputCube, handler, {scale: scale})
     } else if(geometry == "Sphere") {
       downloadMeshes(inputSphere, handler, {scale: scale})
     }
 
-  // })
+  })
 }
 
 /**

@@ -804,7 +804,7 @@ var flipperAmmo = function () {
         });
         hingeRight.then(idx => {
           hingeRightID = idx;
-          app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
+          app.matrixPhysics.setHingeLimit(idx, -0.5, 0.8, 0.0, 0.5, 1.0);
           app.matrixPhysics.enableAngularMotor(idx, true, -10, POWERPIN);
         });
         REdge.setUVScale(1, 1);
@@ -841,13 +841,13 @@ var flipperAmmo = function () {
         });
 
         // const ball = app.matrixPhysics.getBodyByName('ball1');
-        console.info('BALL ID ', app.matrixPhysics.detectCollision);
+        // console.info('BALL ID ', app.matrixPhysics.detectCollision)
         const strength = 0.5;
         app.matrixPhysics.detectCollision = e => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          console.log('collision : ', body1Name);
+          // console.log('collision : ', body1Name)
           if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * strength, 0, rayDirection[2] * strength));
           } else if (body1Name == 'bottomEdge2') {
@@ -1738,14 +1738,13 @@ var flipperJolt = function () {
           }
         });
 
-        // const ball = app.matrixPhysics.getBodyByName('ball1');
-        console.info('BALL ID ', app.matrixPhysics.detectCollision);
+        // console.info('BALL ID ', app.matrixPhysics.detectCollision)
         const strength = 0.01;
         app.matrixPhysics.detectCollision = e => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          console.log('collision : ', body1Name);
+          // console.log('collision : ', body1Name)
           if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * 0.01, 0, rayDirection[2] * 0.01));
           } else if (body1Name == 'bottomEdge2') {
@@ -3946,8 +3945,6 @@ var _raycast = require("../src/engine/raycast.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-
 var testCannonES = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
@@ -3973,7 +3970,7 @@ var testCannonES = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
+      // physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
       physicsPlayground.physicsBodiesChain();
       physicsPlayground.physicsBodiesGeneratorDeepPyramid("standard", {
@@ -3999,16 +3996,6 @@ var testCannonES = function () {
       });
     });
     async function onGround(m) {
-      let T = await physicsPlayground.physicsBodiesGenerator("standard", {
-        x: -20,
-        y: 10,
-        z: -20
-      }, {
-        x: 0,
-        y: 0,
-        z: 0
-      }, "res/textures/star1.png", "testGen", "Cube", false, [1, 1, 1], 10);
-      console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>");
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {
           type: 'standard'
@@ -4220,6 +4207,24 @@ var testCannonES = function () {
           radius: 1
         }
       });
+
+      // not isolated bug yet - selecting not precise!
+      // setTimeout(async () => {
+      //   let T = await physicsPlayground.physicsBodiesGenerator(
+      //     "standard",
+      //     {x: -20, y: 10, z: -20},
+      //     {x: 0, y: 0, z: 0},
+      //     "res/textures/star1.png",
+      //     "testGen",
+      //     "Cube",
+      //     false,
+      //     [1, 1, 1],
+      //     10
+      //   )
+      //   app.matrixPhysics.createBoundedSpace(T, {x: -20, y: 3, z: -20}, {x: 3, y: 3, z: 3});
+      //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
+      // }, 2500)
+
       app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
@@ -5106,7 +5111,9 @@ var loadVideoTexture = function () {
     videoTexture.addLight();
     (0, _raycast.addRaycastsAABBListener)();
     videoTexture.canvas.addEventListener("ray.hit.event", e => {
-      console.log('*********');
+      if (videoTexture.getSceneObjectByName('MyVideoTex').video.paused == true) {
+        videoTexture.getSceneObjectByName('MyVideoTex').video.play();
+      }
     });
     addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
@@ -5167,32 +5174,48 @@ var loadVideoTexture = function () {
           radius: 12
         }
       });
+      videoTexture.addMeshObj({
+        position: {
+          x: 0,
+          y: 7,
+          z: -20
+        },
+        rotation: {
+          x: 90,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'MyVideoTex',
+        mesh: m.piramyd,
+        scale: [5, 5, 5],
+        isVideo: {
+          type: 'video',
+          src: 'res/videos/tunel.mp4'
+        },
+        physics: {
+          enabled: false,
+          geometry: "piramyd"
+        },
+        raycast: {
+          enabled: true,
+          radius: 12
+        }
+      });
 
-      // videoTexture.addMeshObj({
-      //   position: {x: 0, y: 7, z: -20},
-      //   rotation: {x: 90, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'MyVideoTex',
-      //   mesh: m.piramyd,
-      //   scale: [5, 5, 5],
-      //   isVideo: {
-      //     type: 'video',
-      //     src: 'res/videos/tunel.mp4'
-      //   },
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "piramyd"
-      //   },
-      //   raycast: {enabled: true, radius: 12}
-      // })
-      // also possibole to switch in runtime
+      // Also possibole to switch in runtime (Used in visual scripting)
       // var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
       // console.log(`%c Test video-texture...`, LOG_MATRIX);
       // TEST.loadVideoTexture({
       //   type: 'video',
       //   src: 'res/videos/tunel.mp4'
       // });
+
       setTimeout(() => {
         videoTexture.cameras.WASD.setYaw(-0.03);
         videoTexture.cameras.WASD.setPitch(-0.49);
@@ -27513,70 +27536,71 @@ function stabilizeTowerBody(body, root) {
  * @param {string} material 
  * @enum "standard", "power", "mirror"
  */
+let local = [];
 async function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, name = "gen1", geometry = "Cube", raycast = false, scale = [1, 1, 1], sum = 20, delay = 500, mesh = null) {
-  // return new Promise((resolve) => {
-
-  let engine = this;
-  const inputCube = {
-    mesh: "./res/meshes/blender/cube.obj"
-  };
-  const inputSphere = {
-    mesh: "./res/meshes/blender/sphere.obj"
-  };
-  function handler(m) {
-    let ALL = [];
-    let RAY = {
-      enabled: raycast == true ? true : false,
-      radius: 1
+  return new Promise(resolve => {
+    let engine = this;
+    const inputCube = {
+      mesh: "./res/meshes/blender/cube.obj"
     };
-    for (var x = 0; x < sum; x++) {
-      const cubeName = name + '_' + x;
+    const inputSphere = {
+      mesh: "./res/meshes/blender/sphere.obj"
+    };
+    function handler(m) {
+      let ALL = [];
+      let RAY = {
+        enabled: raycast == true ? true : false,
+        radius: 1
+      };
+      for (var x = 0; x < sum; x++) {
+        const cubeName = name + '_' + x;
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: {
+              type: material
+            },
+            position: pos,
+            rotation: rot,
+            rotationSpeed: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            texturesPaths: [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: true,
+              geometry: geometry
+            },
+            raycast: RAY
+          });
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          _fluxCodexVertex.runtimeCacheObjs.push(o);
+          local.push(o.name);
+        }, x * delay);
+      }
       setTimeout(() => {
-        engine.addMeshObj({
-          material: {
-            type: material
-          },
-          position: pos,
-          rotation: rot,
-          rotationSpeed: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          texturesPaths: [texturePath],
-          name: cubeName,
-          mesh: m.mesh,
-          physics: {
-            enabled: true,
-            geometry: geometry
-          },
-          raycast: RAY
-        });
-        // cache
-        const o = app.getSceneObjectByName(cubeName);
-        const o1 = app.matrixPhysics.getBodyByName(cubeName);
-        ALL.push(o1);
-        console.log('.......', o);
-        _fluxCodexVertex.runtimeCacheObjs.push(o);
-        if (x == sum - 1) {
-          alert();
-          // resolve(ALL);
-          // return ALL;
+        for (let x = 0; x < local.length; x++) {
+          const o1 = app.matrixPhysics.getBodyByName(local[x]);
+          ALL.push(o1);
+          if (x == local.length - 1) {
+            resolve(ALL);
+          }
         }
-      }, x * delay);
+      }, delay * sum);
     }
-  }
-  if (geometry == "Cube") {
-    (0, _loaderObj.downloadMeshes)(inputCube, handler, {
-      scale: scale
-    });
-  } else if (geometry == "Sphere") {
-    (0, _loaderObj.downloadMeshes)(inputSphere, handler, {
-      scale: scale
-    });
-  }
-
-  // })
+    if (geometry == "Cube") {
+      (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+        scale: scale
+      });
+    } else if (geometry == "Sphere") {
+      (0, _loaderObj.downloadMeshes)(inputSphere, handler, {
+        scale: scale
+      });
+    }
+  });
 }
 
 /**
@@ -34456,11 +34480,10 @@ class Materials {
       this.video.style.position = 'absolute';
       this.video.style.width = '640px';
       this.video.style.height = '480px';
-      this.video.style.top = '-20px';
+      this.video.style.top = '-465px';
       this.video.style.left = '50%';
       this.video.play();
       this.video.addEventListener('canplaythrough', () => {
-        // console.log('_cideo can playt +++++++++++++++++++++++++++');
         if (this.video.readyState >= 3) {
           this.externalTexture = this.device.importExternalTexture({
             source: this.video
@@ -34643,25 +34666,10 @@ class Materials {
         }));
         this.materialBindGroup = this.materialBindGroupCache.get(key);
       } else {
-        console.log('[share] materialBindGroup [key] = ', key);
+        // console.log('[share] materialBindGroup [key] = ', key);
         this.materialBindGroup = this.materialBindGroupCache.get(key);
-        // console.log('[CREATE NEW] materialBindGroup = ', key);
-        // this.materialBindGroup = this.device.createBindGroup({
-        //   label: 'materialBindGroup normal',
-        //   layout: this.materialBGL,
-        //   entries: [
-        //     {binding: 0, resource: textureResource},
-        //     {binding: 1, resource: this.imageSampler},
-        //     {binding: 2, resource: this.metallicRoughnessTextureView},
-        //     {binding: 3, resource: this.metallicRoughnessSampler},
-        //     {binding: 4, resource: {buffer: this.materialPBRBuffer}},
-        //     {binding: 5, resource: this.normalTextureView},
-        //     {binding: 6, resource: this.normalSampler},
-        //   ]
-        // });
       }
     } else {
-      // console.log('[CREATE NEW] materialBindGroup = ', key);
       this.materialBindGroup = this.device.createBindGroup({
         label: 'materialBindGroup normal',
         layout: this.materialBGL,

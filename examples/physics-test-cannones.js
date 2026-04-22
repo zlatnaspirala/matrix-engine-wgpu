@@ -2,7 +2,6 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
-// import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 import {PVector} from "../src/engine/matrix-class.js";
 
 export var testCannonES = function() {
@@ -15,6 +14,7 @@ export var testCannonES = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
+
     physicsPlayground.addLight();
     addRaycastsListener();
     addEventListener('PhysicsReady', () => {
@@ -23,7 +23,7 @@ export var testCannonES = function() {
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
-      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
+      // physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
       physicsPlayground.physicsBodiesChain();
 
@@ -49,23 +49,6 @@ export var testCannonES = function() {
     })
 
     async function onGround(m) {
-
-      
-
-      let T = await physicsPlayground.physicsBodiesGenerator(
-        "standard",
-        {x: -20, y: 10, z: -20},
-        {x: 0, y: 0, z: 0},
-        "res/textures/star1.png",
-        "testGen",
-        "Cube",
-        false,
-        [1, 1, 1],
-        10
-      )
-       console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
-
-
 
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
@@ -191,6 +174,23 @@ export var testCannonES = function() {
         },
         raycast: {enabled: true, radius: 1}
       });
+
+      // not isolated bug yet - selecting not precise!
+      // setTimeout(async () => {
+      //   let T = await physicsPlayground.physicsBodiesGenerator(
+      //     "standard",
+      //     {x: -20, y: 10, z: -20},
+      //     {x: 0, y: 0, z: 0},
+      //     "res/textures/star1.png",
+      //     "testGen",
+      //     "Cube",
+      //     false,
+      //     [1, 1, 1],
+      //     10
+      //   )
+      //   app.matrixPhysics.createBoundedSpace(T, {x: -20, y: 3, z: -20}, {x: 3, y: 3, z: 3});
+      //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
+      // }, 2500)
 
       app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);

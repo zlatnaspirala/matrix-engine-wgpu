@@ -74,27 +74,23 @@ class MatrixCannon {
     Object.assign(this.options, options);
     const module = await import('https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js');
     this.CANNON = module;
-    this._initPhysics(options.groundY ?? 0);
-    console.log('PHYSICS[CANNON-ES]');
+    this._initPhysics(options.groundY ?? 0, options.iterations ?? 7, options.tolerance ?? 0.1);
   }
 
-  _initPhysics(GROUND_Y) {
+  _initPhysics(GROUND_Y, iterations, tolerance) {
     const CANNON = this.CANNON;
     this.world = new CANNON.World();
     this.world.gravity.set(0, -this.options.gravity, 0);
-
-    // Tweak contact properties.
-    // Contact stiffness - use to make softer/harder contacts
+    // Tweak contact properties. Contact stiffness - use to make softer/harder contacts
     this.world.defaultContactMaterial.contactEquationStiffness = 1e9
     // Stabilization time in number of timesteps
     this.world.defaultContactMaterial.contactEquationRelaxation = 4;
     // // Since we have many bodies and they don't move very much, we can use the less accurate quaternion normalization
     // world.quatNormalizeFast = true
-    // world.quatNormalizeSkip = 8 // ...and we do not have to normalize every step.
-
+    // world.quatNormalizeSkip = 8    // ...and we do not have to normalize every step.
     const solver = new CANNON.GSSolver()
-    solver.iterations = 7
-    solver.tolerance = 0.1
+    solver.iterations = iterations;
+    solver.tolerance = tolerance;
     this.world.solver = new CANNON.SplitSolver(solver)
 
     const groundShape = new CANNON.Box(
@@ -179,19 +175,16 @@ class MatrixCannon {
     quat.setFromEuler(rx, ry, rz);
     const isKinematic = pOptions.kinematic || pOptions.state === 4;
     const mass = isKinematic ? 0 : (pOptions.mass !== 0 ? (pOptions.mass || 1) : 0);
-
     const group = pOptions.group ?? 2;
     const mask = pOptions.mask ?? -1;
-    // body.collisionFilterGroup = 1;
-    // body.collisionFilterMask = -1;
+
     const bodyOptions = {
       mass: mass,
       shape: shape,
       collisionFilterGroup: group,
       collisionFilterMask: mask
-      // linearDamping: pOptions.linearDamping ?? 0.2,
-      // angularDamping: pOptions.angularDamping ?? 0.2
     };
+
     if(pOptions.restitution !== undefined) bodyOptions.restitution = pOptions.restitution;
     if(pOptions.friction !== undefined) bodyOptions.friction = pOptions.friction;
 
@@ -244,18 +237,6 @@ class MatrixCannon {
     const shape = new CANNON.Cylinder(radius, radius, halfHeight * 2, 8);
     return this._createBody(pOptions, shape);
   }
-
-  // _addCone(pOptions) {
-  //   const CANNON = this.CANNON;
-  //   const verts = buildConeVerts(pOptions.radius, pOptions.height);
-  //   const vertices = [];
-  //   for(let i = 0;i < verts.length;i += 3) {
-  //     vertices.push(new CANNON.Vec3(verts[i], verts[i + 1], verts[i + 2]));
-  //   }
-  //   const shape = new CANNON.ConvexPolyhedron({vertices});
-  //   shape.computeNormals();
-  //   return this._createBody(pOptions, shape);
-  // }
 
   _addCone(pOptions) {
     const CANNON = this.CANNON;
@@ -535,19 +516,17 @@ class MatrixCannon {
     const space = marginSpace * size;
 
     for(let i = 1;i < ids.length;i++) {
-      const bodyA = this.rigidBodies[ids[i]];      // current (lower)
-      const bodyB = this.rigidBodies[ids[i - 1]];  // previous (higher/anchor)
+      const bodyA = this.rigidBodies[ids[i]];
+      const bodyB = this.rigidBodies[ids[i - 1]];
       if(!bodyA || !bodyB) continue;
-
       const c1 = new CANNON.PointToPointConstraint(
-        bodyA, new CANNON.Vec3(-size, size + space, 0),  // top of current
-        bodyB, new CANNON.Vec3(-size, -size - space, 0)   // bottom of previous
+        bodyA, new CANNON.Vec3(-size, size + space, 0),
+        bodyB, new CANNON.Vec3(-size, -size - space, 0)
       );
       const c2 = new CANNON.PointToPointConstraint(
         bodyA, new CANNON.Vec3(size, size + space, 0),
         bodyB, new CANNON.Vec3(size, -size - space, 0)
       );
-
       this.world.addConstraint(c1);
       this.world.addConstraint(c2);
       this.constraints.push(c1, c2);
@@ -567,12 +546,18 @@ class MatrixCannon {
   createBoundedSpace(ids, pos, size) {
     const CANNON = this.CANNON;
 
+    // Assign a unique group bit for this bounded space
+    const wallGroup = 1 << this._boundedSpaceCount || 1;
+    this._boundedSpaceCount = (this._boundedSpaceCount || 0) + 1;
+
     const addPlane = (eulerX, eulerY, eulerZ, px, py, pz) => {
       const shape = new CANNON.Plane();
       const body = new CANNON.Body({mass: 0});
       body.addShape(shape);
       body.quaternion.setFromEuler(eulerX, eulerY, eulerZ);
       body.position.set(pos.x + px, pos.y + py, pos.z + pz);
+      body.collisionFilterGroup = wallGroup;
+      body.collisionFilterMask = wallGroup; // only collide with bodies in same group
       this.world.addBody(body);
       return body;
     };
@@ -586,18 +571,12 @@ class MatrixCannon {
       addPlane(0, Math.PI, 0, 0, 0, size.z),
     ];
 
-    // Create contact material only between these ids and the planes
+    // Tag each selected body to also use this group
     ids.forEach(id => {
       const body = this.rigidBodies[id];
       if(!body) return;
-      planes.forEach(plane => {
-        const cm = new CANNON.ContactMaterial(
-          body.material || new CANNON.Material(),
-          plane.material || new CANNON.Material(),
-          {friction: 0.3, restitution: 0.3}
-        );
-        this.world.addContactMaterial(cm);
-      });
+      body.collisionFilterGroup |= wallGroup;
+      body.collisionFilterMask |= wallGroup;
     });
   }
 
@@ -674,7 +653,7 @@ self.onmessage = async ({data}) => {
     case 'speedUpSimulation': cannon.speedUpSimulation(data.value); break;
     // new
     case 'createChain': cannon.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
-    case 'createBoundedSpace': cannon.createBoundedSpace(data.pos, data.size); break;
+    case 'createBoundedSpace': cannon.createBoundedSpace(data.ids, data.pos, data.size); break;
 
   }
 };

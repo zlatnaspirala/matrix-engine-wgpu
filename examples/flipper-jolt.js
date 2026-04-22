@@ -543,16 +543,13 @@ export var flipperJolt = function() {
           }
         });
 
-        // const ball = app.matrixPhysics.getBodyByName('ball1');
-        console.info('BALL ID ', app.matrixPhysics.detectCollision)
+        // console.info('BALL ID ', app.matrixPhysics.detectCollision)
         const strength = 0.01;
-
         app.matrixPhysics.detectCollision = (e) => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          console.log('collision : ', body1Name)
-
+          // console.log('collision : ', body1Name)
           if((body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
             flipper.matrixPhysics.applyImpulse(ball, new PVector(
               rayDirection[0] * 0.01, 0, rayDirection[2] * 0.01));
@@ -561,7 +558,6 @@ export var flipperJolt = function() {
               new PVector(4, 0, 0));
           }
         };
-
       }, 1000);
 
       const commonAchorX = 2.3;

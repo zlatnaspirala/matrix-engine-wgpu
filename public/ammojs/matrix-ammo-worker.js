@@ -242,7 +242,7 @@ class MatrixAmmoWorker {
     if(pOptions.limits) {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
-    hinge.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
+    // hinge.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
     // addHingeConstraint
     this.dynamicsWorld.addConstraint(hinge, true);
     hinge.enableAngularMotor(true, 0, 100);
