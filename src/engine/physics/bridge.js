@@ -186,7 +186,6 @@ export class PhysicsBridge {
   }
 
   getPosition(idx) {
-    console.log('ADD', idx)
     return this._send('getPosition', {idx: idx});
   }
 

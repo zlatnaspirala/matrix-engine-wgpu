@@ -34184,10 +34184,6 @@ var PhysicsBridge = class {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "deactivate", idx });
   }
-  setDamping(idx, linear, angular) {
-    if (idx === void 0) return;
-    this._worker.postMessage({ cmd: "setDamping", idx, linear, angular });
-  }
   setSleepingThresholds(idx, linear, angular) {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "setSleepingThresholds", idx, linear, angular });

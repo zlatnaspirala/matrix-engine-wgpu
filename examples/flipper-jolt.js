@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from "../src/engine/loader-obj.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {byId, isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {byId, isMobile, randomFloatFromTo, randomIntFromTo} from "../src/engine/utils.js";
 import {PVector} from "../src/engine/matrix-class.js";
 import {MobileDOM} from "../src/engine/cameras.js";
 
@@ -286,7 +286,7 @@ export var flipperJolt = function() {
           mass: 0,
           geometry: "Cube",
           group: 2,
-          mask: -1 & ~1, // collide with everything EXCEPT group 1 (ground)
+          mask: -1 & ~1
         }
       });
 
@@ -302,7 +302,9 @@ export var flipperJolt = function() {
           enabled: true,
           mass: 0,
           geometry: "ConvexHull",
-          vertices: m.vrcLeft.vertices
+          vertices: m.vrcLeft.vertices,
+          group: 2,
+          mask: -1 & ~1
         }
       });
 
@@ -540,7 +542,7 @@ export var flipperJolt = function() {
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
             if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
-              new PVector(0, 0, -randomIntFromTo(1, 2)));
+              new PVector(0, 0, -randomFloatFromTo(0.8, 1)));
           }
         });
 

@@ -1422,7 +1422,7 @@ var flipperJolt = function () {
           mass: 0,
           geometry: "Cube",
           group: 2,
-          mask: -1 & ~1 // collide with everything EXCEPT group 1 (ground)
+          mask: -1 & ~1
         }
       });
 
@@ -1445,7 +1445,9 @@ var flipperJolt = function () {
           enabled: true,
           mass: 0,
           geometry: "ConvexHull",
-          vertices: m.vrcLeft.vertices
+          vertices: m.vrcLeft.vertices,
+          group: 2,
+          mask: -1 & ~1
         }
       });
       const jumper1 = flipper.addMeshObj({
@@ -1735,7 +1737,7 @@ var flipperJolt = function () {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
-            if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomIntFromTo)(1, 2)));
+            if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
           }
         });
 
@@ -36952,7 +36954,6 @@ class PhysicsBridge {
     });
   }
   getPosition(idx) {
-    console.log('ADD', idx);
     return this._send('getPosition', {
       idx: idx
     });
