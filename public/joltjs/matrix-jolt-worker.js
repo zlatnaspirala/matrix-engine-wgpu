@@ -212,7 +212,6 @@ class MatrixJolt {
   }
 
   _createBody(pOptions, shape) {
-    console.info('test rot')
     const Jolt = this.Jolt;
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
     const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
@@ -561,9 +560,9 @@ class MatrixJolt {
       return;
     }
     const t = body.GetWorldTransform().GetTranslation();
-    console.info('get pos  t.GetX() ', t.GetX())
-    console.info('get pos  t.GetX() ', t.GetY())
-    console.info('get pos  t.GetX() ', t.GetZ())
+    // console.info('get pos  t.GetX() ', t.GetX())
+    // console.info('get pos  t.GetX() ', t.GetY())
+    // console.info('get pos  t.GetX() ', t.GetZ())
     self.postMessage({
       cmd: 'getPosition',
       id: msgID,

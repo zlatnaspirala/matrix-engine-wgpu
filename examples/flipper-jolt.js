@@ -12,7 +12,7 @@ export var flipperJolt = function() {
 
   let flipper = new MatrixEngineWGPU({
     render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: 0.5,
+    fastRender: isMobile() == true ? 0.5 : 0.9,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
@@ -22,7 +22,7 @@ export var flipperJolt = function() {
   }, () => {
     let hingeLeftID = 0;
     let hingeRightID = 0;
-    const POWERPIN = 30;
+    const POWERPIN = 50;
     // Audios
     flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
     // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
@@ -36,7 +36,7 @@ export var flipperJolt = function() {
     MobileDOM.addButton("PIN", function() {
       const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
       flipper.matrixPhysics.activate(leftBody, true);
-      flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, POWERPIN*2);
+      flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, POWERPIN * 2);
     }, () => {
       flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN)
     },
@@ -45,9 +45,9 @@ export var flipperJolt = function() {
     MobileDOM.addButton("PIN", function() {
       const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
       flipper.matrixPhysics.activate(rightBody, true);
-      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 25, POWERPIN*2);
+      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 25, POWERPIN * 2);
     }, () => {
-      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, POWERPIN*2)
+      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, POWERPIN * 2)
     }, {left: '80'});
 
     MobileDOM.addButton("PUSH", async () => {
@@ -169,6 +169,7 @@ export var flipperJolt = function() {
         texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -539,7 +540,7 @@ export var flipperJolt = function() {
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
             if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
-              new PVector(0, 2, -randomIntFromTo(11, 15)));
+              new PVector(0, 0, -randomIntFromTo(1, 2)));
           }
         });
 
@@ -549,13 +550,14 @@ export var flipperJolt = function() {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          // console.log('collision : ', body1Name)
+
           if((body0Name == "ball1" && body1Name.startsWith("bumper")) || (body1Name == "ball1" && body0Name.startsWith("bumper"))) {
             flipper.matrixPhysics.applyImpulse(ball, new PVector(
               rayDirection[0] * 0.01, 0, rayDirection[2] * 0.01));
           } else if(body1Name == 'bottomEdge2') {
+            console.log('collision FORCE : ', body1Name)
             flipper.matrixPhysics.applyImpulse(ball,
-              new PVector(4, 0, 0));
+              new PVector(0.2, 0, 0));
           }
         };
       }, 1000);
@@ -635,9 +637,9 @@ export var flipperJolt = function() {
           // vertices: m.pinR.vertices,
           collisionGroup: 0,
           collisionSubGroup: 0,
-          group: 1,  //
-          mask: -1,  // everything
-          layer: 3, // LAYER_FLIPPER
+          group: 1,
+          mask: -1,
+          layer: 3
         }
       });
 
@@ -648,13 +650,13 @@ export var flipperJolt = function() {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
           const pos = await app.matrixPhysics.getPosition(ball);
           if(pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball,
-            new PVector(0, 2, -randomIntFromTo(11, 15)));
+            new PVector(0, 0, -randomIntFromTo(1, 2)));
         }
       });
 
       // GRAVITY TILT (PINBALL FEEL)
       // flipper.matrixPhysics.setGravity(0, -9.8, 1.8);
-      flipper.matrixPhysics.setGravity(0, -9.8, .6);
+      flipper.matrixPhysics.setGravity(0, -9.8, 2);
 
       if(isMobile() == false) {
         // only render objs
@@ -718,9 +720,12 @@ export var flipperJolt = function() {
           }
         });
       }
-      // ball1.effects.pointer.yOffset = 3;
+
       setTimeout(() => {
-        if(isMobile() == false) app.activateBloomEffect();
+        if(isMobile() == false) {
+          app.activateBloomEffect();
+          app.bloomPass.setBlurRadius(3);
+        }
         app.cameras.WASD.setYaw(-0.03);
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);

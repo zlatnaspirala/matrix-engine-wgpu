@@ -1077,7 +1077,7 @@ var flipperJolt = function () {
   };
   let flipper = new _world.default({
     render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
-    fastRender: 0.5,
+    fastRender: (0, _utils.isMobile)() == true ? 0.5 : 0.9,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -1095,7 +1095,7 @@ var flipperJolt = function () {
   }, () => {
     let hingeLeftID = 0;
     let hingeRightID = 0;
-    const POWERPIN = 30;
+    const POWERPIN = 50;
     // Audios
     flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
     // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
@@ -1275,6 +1275,7 @@ var flipperJolt = function () {
         texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.cube,
+        shadowsCast: false,
         physics: {
           enabled: false,
           mass: 0,
@@ -1734,7 +1735,7 @@ var flipperJolt = function () {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
-            if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
+            if (pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomIntFromTo)(1, 2)));
           }
         });
 
@@ -1744,11 +1745,11 @@ var flipperJolt = function () {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          // console.log('collision : ', body1Name)
           if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * 0.01, 0, rayDirection[2] * 0.01));
           } else if (body1Name == 'bottomEdge2') {
-            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(4, 0, 0));
+            console.log('collision FORCE : ', body1Name);
+            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.2, 0, 0));
           }
         };
       }, 1000);
@@ -1851,10 +1852,8 @@ var flipperJolt = function () {
           collisionGroup: 0,
           collisionSubGroup: 0,
           group: 1,
-          //
           mask: -1,
-          // everything
-          layer: 3 // LAYER_FLIPPER
+          layer: 3
         }
       });
       flipper.canvas.addEventListener("ray.hit.event", async e => {
@@ -1863,13 +1862,13 @@ var flipperJolt = function () {
         if (e.detail.hitObject.name == "pushBtn") {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
           const pos = await app.matrixPhysics.getPosition(ball);
-          if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
+          if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomIntFromTo)(1, 2)));
         }
       });
 
       // GRAVITY TILT (PINBALL FEEL)
       // flipper.matrixPhysics.setGravity(0, -9.8, 1.8);
-      flipper.matrixPhysics.setGravity(0, -9.8, .6);
+      flipper.matrixPhysics.setGravity(0, -9.8, 2);
       if ((0, _utils.isMobile)() == false) {
         // only render objs
         const leg1 = flipper.addMeshObj({
@@ -1957,9 +1956,11 @@ var flipperJolt = function () {
           }
         });
       }
-      // ball1.effects.pointer.yOffset = 3;
       setTimeout(() => {
-        if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
+        if ((0, _utils.isMobile)() == false) {
+          app.activateBloomEffect();
+          app.bloomPass.setBlurRadius(3);
+        }
         app.cameras.WASD.setYaw(-0.03);
         app.cameras.WASD.setPitch(-0.49);
         app.cameras.WASD.setZ(0);
@@ -36900,15 +36901,6 @@ class PhysicsBridge {
     this._worker.postMessage({
       cmd: 'deactivate',
       idx
-    });
-  }
-  setDamping(idx, linear, angular) {
-    if (idx === undefined) return;
-    this._worker.postMessage({
-      cmd: 'setDamping',
-      idx,
-      linear,
-      angular
     });
   }
   setSleepingThresholds(idx, linear, angular) {
