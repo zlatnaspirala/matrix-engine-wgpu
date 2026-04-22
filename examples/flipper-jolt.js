@@ -541,8 +541,13 @@ export var flipperJolt = function() {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
-            if(pos.x > 5 && pos.z < -6) flipper.matrixPhysics.applyImpulse(ball,
+            if(pos.x > 5 && pos.z < -6) {
+              flipper.matrixPhysics.applyImpulse(ball,
               new PVector(0, 0, -randomFloatFromTo(0.8, 1)));
+            } else if (pos.x < 5.1 && pos.z < -5.5) {
+              flipper.matrixPhysics.applyImpulse(ball,
+              new PVector(randomFloatFromTo(0.1, 0.15), 0, 0));
+            }
           }
         });
 
