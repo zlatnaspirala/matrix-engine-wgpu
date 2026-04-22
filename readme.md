@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.10.0 2026
+📅 Version: 1.11.0 2026
 
 ---
 
@@ -26,15 +26,16 @@ Published on npm as: **`matrix-engine-wgpu`**
 Backend editor (works in local env - desktop browsers) support list:
 - Chrome, Edge, Opera
 
-HOT: For 1.10.0 Firefox not FIXED Render
+HOT: For 1.1x.0 Firefox not FIXED Render
 
 ---
 
 ## Done list []
 
-- ✔️ Draw loop per pipeline not per mesh (PipelineManager) Power optimisation.
+- ✔️ Draw loop per pipeline not per mesh (PipelineManager) with share material. Power optimisation.
 - ✔️ Support for 3D objects and scene transformations.
-- ✔️ Ammo.js && Jolt Physics libs integration (app<->bridge<->worker).
+- ✔️ Ammo.js, cannonES && Jolt Physics libs integration (app<->bridge<->worker).
+  Physics use webworkers by default.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
@@ -52,6 +53,7 @@ HOT: For 1.10.0 Firefox not FIXED Render
 - 🎯 Improve gizmo feature
 - 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
+- Add fully physics options. soft bodies etc...
 
 ## FluxCodexVertex Web Graph Editor 🚀 (since version 1.8.0)
 
@@ -195,7 +197,7 @@ https://maximumroulette.com/apps/webgpu/api-docs/
 
 For now translation is only with `WASD` keyboard keys.
 
-Supported types: `WASD`, `RPGCamera`
+Supported types: `WASD`, `RPGCamera`, `FirstPersonCamera`
 
 `WASD` also use 'c' and 'v' for up and down camera position.
 
@@ -236,6 +238,10 @@ app.mainRenderBundle[0].position.thrust = 0.1;
 ```
 
 > ⚠️ For physics-enabled objects, use matrixPhysics functions — `.position` and `.rotation` are not visually applied but can be read.
+>
+> from 1.11.0 physics works from webworkers
+> getBodyByName on cleaver way return body id not body inself but all funck now use ids not real body ref. interface stay same.
+> see examples for physics like flipper game.
 
 Example for `apply physics on scene object click`.
 ```js
@@ -307,10 +313,10 @@ app.cameras.WASD.setPitch(0.2);
 Matrix Engine WGPU now supports independent light entities, meaning lights are no longer tied to the camera. You can freely place and configure lights in the scene, and they will affect objects based on their type and parameters.
 
 Supported Light Types
-
+Ambient global also per material
 SpotLight – Emits light in a cone shape with configurable cutoff angles.
 
-(Planned: PointLight, DirectionalLight, AmbientLight)
+(Planned: PointLight)
 
 Features
 
