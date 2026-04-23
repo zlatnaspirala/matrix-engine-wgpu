@@ -9,6 +9,7 @@ import {FlameEmitter} from './effects/flame-emmiter';
 import {GizmoEffect} from './effects/gizmo';
 import {FlameEffect} from './effects/flame';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
+import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -508,9 +509,9 @@ export default class ProceduralMeshObj extends Materials {
     // this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
-    const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
+    const fragmentId = this.fragmentWGSL ? 'custom_frag' :  this.isVideo == true ? 'video' : this.material.type;
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
     const isNormalMap = this.material.type === 'normalmap';

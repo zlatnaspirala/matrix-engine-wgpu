@@ -11,7 +11,7 @@ export var flipperJolt = function() {
   };
 
   let flipper = new MatrixEngineWGPU({
-    render: isMobile() == true ? 'mobile1' : undefined,
+    // render: isMobile() == true ? 'mobile1' : undefined,
     fastRender: isMobile() == true ? 0.5 : 0.9,
     useJolt: true,
     canvasSize: 'fullscreen',
@@ -178,7 +178,7 @@ export var flipperJolt = function() {
       });
 
       let TEST = flipper.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'standard', share: true},
         position: {x: 0, y: 6, z: -36},
         scale: [2.95, 3, 1],
         texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
@@ -974,7 +974,7 @@ export var flipperJolt = function() {
           })()
         })
 
-      }, 1500);
+      }, 1000);
 
       const commonAchorX = 2.3;
       const commomBODYX = 0;

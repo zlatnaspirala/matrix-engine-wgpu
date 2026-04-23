@@ -626,14 +626,17 @@ export default class Materials {
         };
         check();
       });
-      // console.log('Canvas video stream READY');
+      console.log('Canvas video stream READY');
+      // setTimeout(() => this.setupPipeline() ,1000)
+      this.createMaterialBindGroupVideo();
+     this.setupPipeline()
     }
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
     });
     this.createMaterialBindGroupVideo();
-    setTimeout(() => this.setupPipeline() ,1200)
+
   }
 
   updateVideoTexture() {
@@ -717,8 +720,8 @@ export default class Materials {
   }
 
   createMaterialBindGroupVideo() {
-    if(!this.externalTexture) return;
-    console.log('SET VIDEO BIND GROUP')
+    // if(!this.externalTexture) return;
+    // console.log('SET VIDEO BIND GROUP')
     this.materialBindGroup = this.device.createBindGroup({
       label: 'materialVideoBGL',
       layout: this.materialVideoBGL,
