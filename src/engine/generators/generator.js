@@ -1,5 +1,6 @@
 import {runtimeCacheObjs} from "../../tools/editor/fluxCodexVertex";
 import {downloadMeshes} from "../loader-obj";
+import {MeshMorpher} from "../procedural-mesh";
 
 // general function for stabilisation 
 export function stabilizeTowerBody(body, root) {
@@ -408,6 +409,74 @@ export function addOBJ(
         },
         raycast: RAY
       });
+      // const b = app.matrixPhysics.getBodyByName(name);
+      const o = app.getSceneObjectByName(name);
+      // console.log(o.name);
+      runtimeCacheObjs.push(o);
+      resolve(o);
+    }
+    downloadMeshes(inputCube, handler, {scale});
+  });
+}
+
+export function addProceduralOBJ(
+  path,
+  material = "standard",
+  pos,
+  rot,
+  texturePath,
+  name,
+  isPhysicsBody = false,
+  raycast = false,
+  scale = [1, 1, 1],
+  isInstancedObj = false
+) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = {mesh: path};
+    function handler(m) {
+      const RAY = {enabled: !!raycast, radius: 1};
+      // console.info('add cube form graph..')
+      engine.addMeshObj({
+        material: {type: material},
+        position: {
+          x: pos.x,
+          y: pos.y,
+          z: pos.z
+        },
+        rotation: rot,
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: [texturePath],
+        name: name,
+        meshA: MeshMorpher.capsule(1, 2, false),
+        meshB: MeshMorpher.cube(1),
+        physics: {
+          scale: scale,
+          enabled: isPhysicsBody,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
+
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 10, y: 15, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.capsule(1, 2, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_1`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Capsule",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
       // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
       // console.log(o.name);
