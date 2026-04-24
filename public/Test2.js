@@ -2327,38 +2327,38 @@ var WASDCamera = class _WASDCamera {
     this._recalculateViewVP();
     this._dirtyAngle = false;
   }
-  setX(x2) {
+  setX = (x2) => {
     this.position[0] = x2;
     this._dirtyAngle = true;
-  }
-  setY(y2) {
+  };
+  setY = (y2) => {
     this.position[1] = y2;
     this._dirtyAngle = true;
-  }
-  setZ(z) {
+  };
+  setZ = (z) => {
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setPosition(x2, y2, z) {
+  };
+  setPosition = (x2, y2, z) => {
     this.position[0] = x2;
     this.position[1] = y2;
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setPitch(p) {
+  };
+  setPitch = (p) => {
     this.pitch = p;
     this._dirtyAngle = true;
-  }
-  setYaw(y2) {
+  };
+  setYaw = (y2) => {
     this.yaw = y2;
     this._dirtyAngle = true;
-  }
-  setTarget(x2, y2, z) {
+  };
+  setTarget = (x2, y2, z) => {
     this.target[0] = x2;
     this.target[1] = y2;
     this.target[2] = z;
     this._dirtyAngle = true;
-  }
+  };
 };
 var RPGCamera = class _RPGCamera {
   pitch = -0.88;
@@ -2536,36 +2536,36 @@ var FirstPersonCamera = class _FirstPersonCamera {
       MobileDOM.createWASD(this, { margin: 50 });
     }
   }
-  setPitch(p) {
+  setPitch = (p) => {
     this.pitch = p;
     this._dirtyAngle = true;
-  }
-  setYaw(y2) {
+  };
+  setYaw = (y2) => {
     this.yaw = y2;
     this._dirtyAngle = true;
-  }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
+  };
+  setProjection = (fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) => {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
-  }
-  setPosition(x2, y2, z) {
+  };
+  setPosition = (x2, y2, z) => {
     this.position[0] = x2;
     this.position[1] = y2;
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setX(x2) {
+  };
+  setX = (x2) => {
     this.position[0] = x2;
     this._dirtyAngle = true;
-  }
-  setY(y2) {
+  };
+  setY = (y2) => {
     this.position[1] = y2;
     this._dirtyAngle = true;
-  }
-  setZ(z) {
+  };
+  setZ = (z) => {
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
+  };
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
@@ -3238,6 +3238,10 @@ var MEConfig = {
     if (urlQ["MAX_LIGHTS"]) {
       this.MAX_LIGHTS = parseInt(urlQ["MAX_LIGHTS"]);
       console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+    }
+    if (urlQ["MAX_BONES"]) {
+      this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
+      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["fs"]) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
@@ -7440,8 +7444,8 @@ var Materials = class {
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
       canvas.style.position = "absolute";
-      canvas.style.left = "-1000px";
-      canvas.style.top = "0";
+      canvas.style.left = "0px";
+      canvas.style.top = "-225px";
       document.body.appendChild(canvas);
       const ctx = canvas.getContext("2d");
       if (typeof arg.canvaInlineProgram === "function") {
@@ -7471,7 +7475,9 @@ var Materials = class {
         };
         check();
       });
-      this.isVideo = true;
+      console.log("Canvas video stream READY");
+      this.createMaterialBindGroupVideo();
+      this.setupPipeline();
     }
     this.sampler = this.device.createSampler({
       magFilter: "linear",
@@ -7549,7 +7555,6 @@ var Materials = class {
     }
   }
   createMaterialBindGroupVideo() {
-    if (!this.externalTexture) return;
     this.materialBindGroup = this.device.createBindGroup({
       label: "materialVideoBGL",
       layout: this.materialVideoBGL,
@@ -12136,7 +12141,7 @@ var MEMeshObj = class extends Materials {
   setUVScale(x2, y2 = x2) {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x2, y2]));
   }
-  setupPipeline = () => {
+  setupPipeline() {
     const pm = PipelineManager.get();
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
@@ -12247,7 +12252,7 @@ var MEMeshObj = class extends Materials {
       }
     });
     dispatchEvent(this.buildPipelineBucketsEvent);
-  };
+  }
   getMainPipeline = () => {
     return this.pipeline;
   };
@@ -18876,6 +18881,7 @@ var MaterialsInstanced = class {
       minFilter: "linear"
     });
     this.createMaterialBindGroupVideo();
+    this.setupPipeline();
   }
   updateVideoTexture() {
     this.externalTexture = this.device.importExternalTexture({ source: this.video });
@@ -29058,7 +29064,11 @@ LIST OF INTEREST OBJECT:
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (sceneObjectName) {
         let obj2 = app.getSceneObjectByName(sceneObjectName);
-        obj2.setBlend(a);
+        if (typeof obj2 === "undefined") {
+          console.warn("fluxCodexVertex: no obj with name: ", sceneObjectName);
+        } else {
+          obj2.setBlend(a);
+        }
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -32617,6 +32627,8 @@ var ProceduralMeshObj = class extends Materials {
       o2.material.useBlend = false;
     }
     this.mType = MeshType.PROCEDURAL;
+    this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
     this._camVP = mat4Impl.create();
     this.meshA = null;
@@ -33071,9 +33083,9 @@ var ProceduralMeshObj = class extends Materials {
   setupPipeline() {
     const pm = PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? "custom_proc" : "proc_morph";
-    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.material.type;
+    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.isVideo == true ? "video" : this.material.type;
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
     const isNormalMap = this.material.type === "normalmap";
@@ -34680,7 +34692,7 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.11.0 [FasterThanRabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.11.0 [FasterThanARabbit] ", LOG_FUNNY);
     console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNo tracking. No hype. Just solutions and high performance. \u{1F525}",
@@ -35129,6 +35141,8 @@ var MatrixEngineWGPU = class {
     if (o2.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh1, o2.physics);
+    } else {
+      myMesh1.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
@@ -35199,6 +35213,8 @@ var MatrixEngineWGPU = class {
     if (o2.physics.enabled === true) {
       myMesh.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh, o2.physics);
+    } else {
+      myMesh.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
@@ -35644,6 +35660,7 @@ var MatrixEngineWGPU = class {
           this.globalAmbient.slice()
         );
         bvhPlayer.clearColor = clearColor;
+        bvhPlayer.itIsPhysicsBody = false;
         this.mainRenderBundle.push(bvhPlayer);
         r2.push(bvhPlayer);
         this.sortRenderBundle();

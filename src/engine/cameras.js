@@ -204,39 +204,39 @@ export class WASDCamera {
     this._dirtyAngle = false;
   }
 
-  setX(x) {
+  setX = (x) => {
     this.position[0] = x;
     this._dirtyAngle = true;
   }
 
-  setY(y) {
+  setY = (y) => {
     this.position[1] = y;
     this._dirtyAngle = true;
   }
 
-  setZ(z) {
+  setZ = (z) => {
     this.position[2] = z;
     this._dirtyAngle = true;
   }
 
-  setPosition(x, y, z) {
+  setPosition = (x, y, z) => {
     this.position[0] = x;
     this.position[1] = y;
     this.position[2] = z;
     this._dirtyAngle = true;
   }
 
-  setPitch(p) {
+  setPitch = (p) => {
     this.pitch = p;
     this._dirtyAngle = true;
   }
 
-  setYaw(y) {
+  setYaw = (y) => {
     this.yaw = y;
     this._dirtyAngle = true;
   }
 
-  setTarget(x, y, z) {
+  setTarget = (x, y, z) => {
     this.target[0] = x;
     this.target[1] = y;
     this.target[2] = z;
@@ -581,39 +581,39 @@ export class FirstPersonCamera {
     }
   }
 
-  setPitch(p) {
+  setPitch = (p) => {
     this.pitch = p;
     this._dirtyAngle = true;
   }
 
-  setYaw(y) {
+  setYaw = (y) => {
     this.yaw = y;
     this._dirtyAngle = true;
   }
 
-  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+  setProjection = (fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) => {
     mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
   }
 
-  setPosition(x, y, z) {
+  setPosition = (x, y, z) => {
     this.position[0] = x;
     this.position[1] = y;
     this.position[2] = z;
     this._dirtyAngle = true;
   }
 
-  setX(x) {
+  setX = (x) => {
     this.position[0] = x;
     this._dirtyAngle = true;
   }
 
-  setY(y) {
+  setY = (y) => {
     this.position[1] = y;
     this._dirtyAngle = true;
   }
 
-  setZ(z) {
+  setZ = (z) => {
     this.position[2] = z;
     this._dirtyAngle = true;
   }

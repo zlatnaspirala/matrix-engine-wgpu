@@ -574,6 +574,7 @@ export default class EditorHud {
       document.head.appendChild(style);
     }
     const setMode = (e) => {
+      if (byId('graph-status'). innerHTML !== "⚫") return;
       let m = parseInt(e.target.getAttribute("data-mode"));
       dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: m}}))
       if(m == 0) {

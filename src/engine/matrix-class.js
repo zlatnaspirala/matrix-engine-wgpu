@@ -327,7 +327,7 @@ export class Rotation {
       }
       return this._cachedRadX;
     } else {
-      this.x = this.x + this.rotationSpeed.x * 0.01;
+      this.x = this.x + this.rotationSpeed.x;
       this._cachedRadX = degToRad(this.x);
       this._lastX = this.x;
       return this._cachedRadX;

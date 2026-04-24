@@ -467,8 +467,6 @@ export default class MEMeshObj extends Materials {
         this.setupPipeline();
       };
 
-      // this.setTopology(this.topology)
-      console.log('TEST primitive setup for ', this.name);
       this.primitive = {
         topology: this.topology,
         cullMode: 'none',

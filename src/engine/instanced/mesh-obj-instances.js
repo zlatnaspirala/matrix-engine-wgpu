@@ -278,9 +278,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 512;
+        this.shadowDepthTextureSize = 512; // HARDCODE REMOVE LATER !!!
         this.modelViewProjectionMatrix = mat4.create();
-        this.loadTex0(this.texturesPaths).then(() => {resolve()})
+        this.loadTex0(this.texturesPaths).then(() => {resolve(this)})
       })
     }
 

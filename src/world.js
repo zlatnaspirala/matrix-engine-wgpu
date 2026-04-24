@@ -1100,7 +1100,8 @@ export default class MatrixEngineWGPU {
         const mesh = this.mainRenderBundle[i];
         if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
-        if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
+        // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
+        mesh.updateModelUniformBuffer(i);
         mesh.position.update();
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);

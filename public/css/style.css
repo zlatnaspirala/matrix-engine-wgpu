@@ -1343,7 +1343,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
   display: flex;
   flex-direction: column;
   z-index: 10;
-  height: 81vh;
+  height: 74vh;
   overflow: scroll;
   overflow-x: hidden;
   -webkit-text-stroke-width: 0.2px;

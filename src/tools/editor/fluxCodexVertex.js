@@ -4257,8 +4257,10 @@ LIST OF INTEREST OBJECT:
           return;
         }
 
+
+        console.log('Set Force On Hit - getBodyByName ');
         let b = app.matrixPhysics.getBodyByName(objectName);
-            const i = new PVector(
+        const i = new PVector(
           rayDirection[0] * strength,
           rayDirection[1] * strength,
           rayDirection[2] * strength
@@ -4602,7 +4604,11 @@ LIST OF INTEREST OBJECT:
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(sceneObjectName) {
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.setBlend(a);
+        if(typeof obj === 'undefined') {
+          console.warn('fluxCodexVertex: no obj with name: ', sceneObjectName);
+        } else {
+          obj.setBlend(a);
+        }
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -4610,10 +4616,12 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(texpath) {
-        // console.log('sceneObjectName', sceneObjectName)
+        console.log('SET TECTURE : sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.loadTex0([texpath]).then(() => {
-          setTimeout(() => obj.changeTexture(obj.texture0), 200);
+        obj.loadTex0([texpath]).then((_) => {
+          setTimeout(() => {
+            _.changeTexture(_.texture0)
+          }, 100);
         })
       }
       this.enqueueOutputs(n, "execOut");
@@ -4648,6 +4656,7 @@ LIST OF INTEREST OBJECT:
       return;
     } else if(n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
+      console.log('TEST ROTATE X')
       if(rot?.setRotateX) {
         rot.setRotateX(this.getValue(nodeId, "x"));
       }

@@ -241,8 +241,8 @@ export default class Materials {
     this.isVideo = false;
     if(sampler) this.imageSampler = sampler;
     // Recreate bind group only
-    // this.createBindGroupForRender();
-    // MAYBE SETYPPIPELINE !
+    this.createBindGroupForRender();
+    // MAYBE SETYPPIPELINE ! NOW NEEDED 
   }
 
   changeMaterial(newType = 'graph', graphShader) {
@@ -496,7 +496,7 @@ export default class Materials {
       const {texture, sampler} = await this.textureCache.get(path, this.getFormat());
       this.texture0 = texture;
       this.sampler = sampler;
-      resolve();
+      resolve(this);
     });
   }
 
