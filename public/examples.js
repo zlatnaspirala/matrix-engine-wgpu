@@ -24305,38 +24305,38 @@ class WASDCamera {
     this._recalculateViewVP();
     this._dirtyAngle = false;
   }
-  setX(x) {
+  setX = x => {
     this.position[0] = x;
     this._dirtyAngle = true;
-  }
-  setY(y) {
+  };
+  setY = y => {
     this.position[1] = y;
     this._dirtyAngle = true;
-  }
-  setZ(z) {
+  };
+  setZ = z => {
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setPosition(x, y, z) {
+  };
+  setPosition = (x, y, z) => {
     this.position[0] = x;
     this.position[1] = y;
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setPitch(p) {
+  };
+  setPitch = p => {
     this.pitch = p;
     this._dirtyAngle = true;
-  }
-  setYaw(y) {
+  };
+  setYaw = y => {
     this.yaw = y;
     this._dirtyAngle = true;
-  }
-  setTarget(x, y, z) {
+  };
+  setTarget = (x, y, z) => {
     this.target[0] = x;
     this.target[1] = y;
     this.target[2] = z;
     this._dirtyAngle = true;
-  }
+  };
 }
 exports.WASDCamera = WASDCamera;
 class ArcballCamera {
@@ -24697,36 +24697,36 @@ class FirstPersonCamera {
       });
     }
   }
-  setPitch(p) {
+  setPitch = p => {
     this.pitch = p;
     this._dirtyAngle = true;
-  }
-  setYaw(y) {
+  };
+  setYaw = y => {
     this.yaw = y;
     this._dirtyAngle = true;
-  }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
+  };
+  setProjection = (fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) => {
     _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
-  }
-  setPosition(x, y, z) {
+  };
+  setPosition = (x, y, z) => {
     this.position[0] = x;
     this.position[1] = y;
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setX(x) {
+  };
+  setX = x => {
     this.position[0] = x;
     this._dirtyAngle = true;
-  }
-  setY(y) {
+  };
+  setY = y => {
     this.position[1] = y;
     this._dirtyAngle = true;
-  }
-  setZ(z) {
+  };
+  setZ = z => {
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
+  };
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0],
       a01 = a[4],
@@ -28801,6 +28801,7 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
       });
       // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
+      // console.log(o.name);
       _fluxCodexVertex.runtimeCacheObjs.push(o);
       resolve(o);
     }
@@ -30911,10 +30912,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
-        this.shadowDepthTextureSize = 512;
+        this.shadowDepthTextureSize = 512; // HARDCODE REMOVE LATER !!!
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
-          resolve();
+          resolve(this);
         });
       });
     };
@@ -34841,6 +34842,7 @@ class Materials {
     this.glb = glb;
     this.material = material;
     if (typeof isVideo !== 'undefined') {
+      console.log("WHAT IS isvideo ", this.isVideo);
       this.isVideo = true;
     } else {
       this.isVideo = false;
@@ -35057,8 +35059,7 @@ class Materials {
     this.isVideo = false;
     if (sampler) this.imageSampler = sampler;
     // Recreate bind group only
-    // this.createBindGroupForRender();
-    // MAYBE SETYPPIPELINE !
+    this.createBindGroupForRender();
   }
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
@@ -35322,7 +35323,7 @@ class Materials {
       } = await this.textureCache.get(path, this.getFormat());
       this.texture0 = texture;
       this.sampler = sampler;
-      resolve();
+      resolve(this);
     });
   }
   async loadEnvMap(texturesPaths, isEnvMap = false) {
@@ -35339,7 +35340,10 @@ class Materials {
   async loadVideoTexture(arg) {
     this.videoIsReady = 'MAYBE';
     this.isVideo = true;
-    this.drawElements = this.drawVideoElements;
+    this.sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
     if (arg.type === 'video') {
       this.video = document.createElement('video');
       this.video.src = arg.src || 'res/videos/tunel.mp4';
@@ -35376,6 +35380,11 @@ class Materials {
     } else if (arg.type === 'camera') {
       if (!(0, _utils.byId)(`core-${this.name}`)) {
         this.video = document.createElement('video');
+        this.video.style.position = 'absolute';
+        this.video.style.width = '640px';
+        this.video.style.height = '480px';
+        this.video.style.top = '-465px';
+        this.video.style.left = '50%';
         this.video.id = `core-${this.name}`;
         this.video.autoplay = true;
         this.video.muted = true;
@@ -35397,6 +35406,20 @@ class Materials {
           this.video.srcObject = stream;
           await this.video.play();
           this.isVideo = true;
+          await new Promise(resolve => {
+            this.video.requestVideoFrameCallback(() => {
+              // setTimeout(() => {
+              // this.createMaterialBindGroupVideo();
+              // this.setupPipeline();
+              // }, 10)
+              resolve();
+            });
+          });
+          setTimeout(() => {
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+          }, 1);
+          return;
         } catch (err) {
           console.info("❌ Failed to access camera:", err);
           // return;
@@ -35419,8 +35442,7 @@ class Materials {
       this.video.play();
       this.isVideo = true;
     } else if (arg.type === 'canvas2d-inline') {
-      // console.log('what is arg', arg);
-      // Miniature inline-drawn canvas created dynamically
+      // console.log('what is arg VIDEO', arg);
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
@@ -35431,14 +35453,22 @@ class Materials {
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
       if (typeof arg.canvaInlineProgram === 'function') {
-        const drawLoop = () => {
-          // ctx.save();
-          // ctx.translate(canvas.width, 0);
-          // ctx.scale(-1, 1);
-          arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
-          // ctx.restore();
-          requestAnimationFrame(drawLoop);
-        };
+        let drawLoop;
+        if (arg.specialCanvas2dArg && arg.specialCanvas2dArg.middle) {
+          drawLoop = () => {
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+            ctx.restore();
+            requestAnimationFrame(drawLoop);
+          };
+        } else {
+          drawLoop = () => {
+            arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+            requestAnimationFrame(drawLoop);
+          };
+        }
         drawLoop();
       } else {
         ctx.fillStyle = '#0ce325ff';
@@ -35452,31 +35482,25 @@ class Materials {
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(18);
+      this.video.srcObject = canvas.captureStream(24);
       document.body.append(this.video);
       this.video.play();
-      await new Promise(resolve => {
-        const check = () => {
-          if (this.video.readyState >= 2) resolve();else requestAnimationFrame(check);
-        };
-        check();
-      });
-      console.log('Canvas video stream READY');
-      // setTimeout(() => this.setupPipeline() ,1000)
-      this.createMaterialBindGroupVideo();
-      this.setupPipeline();
     }
-    this.sampler = this.device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear'
+    await new Promise(resolve => {
+      this.video.requestVideoFrameCallback(() => {
+        this.updateVideoTexture();
+        this.createMaterialBindGroupVideo();
+        this.setupPipeline();
+        resolve();
+      });
     });
-    this.createMaterialBindGroupVideo();
   }
   updateVideoTexture() {
-    // if(!this.video || this.video.readyState < 2) return;
+    if (!this.video || this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({
       source: this.video
     });
+    if (!this.externalTexture) return;
     this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
@@ -35945,7 +35969,7 @@ class Rotation {
       }
       return this._cachedRadX;
     } else {
-      this.x = this.x + this.rotationSpeed.x * 0.01;
+      this.x = this.x + this.rotationSpeed.x;
       this._cachedRadX = (0, _utils.degToRad)(this.x);
       this._lastX = this.x;
       return this._cachedRadX;
@@ -36371,6 +36395,7 @@ class MEMeshObj extends _materials.default {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if (typeof o.isVideo !== 'undefined') {
+      console.log('MESH what i s isvideo ', o.isVideo);
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if (this.material.type != 'mirror' && this.material.type != 'water') {
@@ -36881,12 +36906,6 @@ class MEMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline() {
-    // this.primitive = {
-    //   topology: this.topology,
-    //   cullMode: 'none',
-    //   frontFace: 'ccw'
-    // }
-
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -37183,15 +37202,17 @@ class MEMeshObj extends _materials.default {
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
-    let testPB = app.matrixPhysics.getBodyByName(this.name);
-    if (testPB !== null) {
-      try {
-        app.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
-      } catch (e) {
-        console.warn("Physics cleanup err:", e);
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if (testPB !== null) {
+        try {
+          app.matrixPhysics.removeRigidBody(testPB);
+        } catch (e) {
+          console.warn("Physics cleanup err:", e);
+        }
       }
     }
-    console.info(`🧹Destroyed: ${this.name}`);
+    // console.info(`🧹Destroyed: ${this.name}`);
   };
 }
 exports.default = MEMeshObj;
@@ -37570,7 +37591,7 @@ class PhysicsBridge {
     this.c = 0;
   }
   getBodyByName(name) {
-    for (const [meObj, idx] of this._bodyIndexMap) if (meObj.name === name) return idx;
+    for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name) return idx;
     console.info('[bridge] Body not found -1 :', name);
     return -1;
   }
@@ -37605,14 +37626,14 @@ class PhysicsBridge {
     this._send('addBody', {
       pOptions
     }).then(idx => {
-      this._bodyIndexMap.set(MEObject, idx);
+      this._bodyIndexMap.set(idx, MEObject);
     });
   }
   updatePhysics() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
-    for (const [meObj, idx] of this._bodyIndexMap) {
+    for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.isKinematic) continue;
       const base = count * 3;
       idxArr[count] = idx;
@@ -37839,6 +37860,14 @@ class PhysicsBridge {
       flags
     });
   }
+  removeRigidBody(idx) {
+    if (idx === undefined || idx === -1) return;
+    this._worker.postMessage({
+      cmd: 'removeRigidBody',
+      idx
+    });
+    this._bodyIndexMap.delete(idx);
+  }
 
   // cannones ,
   createChain(ids, size = 0.5, mass = 0.3, marginSpace = 0.1) {
@@ -37887,7 +37916,7 @@ class PhysicsBridge {
     const snap = this._snapshot;
     if (!snap) return;
     const STRIDE = 8;
-    for (const [meObj, idx] of this._bodyIndexMap) {
+    for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
       const pos = snap.subarray(b, b + 3);
@@ -49888,7 +49917,7 @@ class Editor {
       this.client = new _client.MEEditorClient(this.check(a), projName);
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
-        console.log("123 MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
+        // console.log("123 MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
         this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager, projName, this.toolTip);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
@@ -52687,6 +52716,8 @@ var _generateAISchema = require("./generateAISchema.js");
 /**
  * @description
  * Flux Codex Vertex use visual scripting model.
+ * It is pragmatic and intuitive.
+ * Avoid casting with adaptive expectation logic.
  *
  * @filename
  * fluxCodexVertex.js
@@ -52758,8 +52789,14 @@ class FluxCodexVertex {
     this.state = {
       draggingNode: null,
       dragOffset: [0, 0],
+      // offset for the PRIMARY dragged node
       connecting: null,
       selectedNode: null,
+      // keep for backward compat (single-select APIs)
+      selectedNodes: new Set(),
+      // NEW: multi-select set of node IDs
+      rubberBand: null,
+      // NEW: { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
@@ -52776,9 +52813,14 @@ class FluxCodexVertex {
         value: null
       }
     });
+    this.saveGraphEvent = new CustomEvent('save-graph', {
+      detail: {}
+    });
+    this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {
+      detail: {}
+    });
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
-      // stop sepcial onDraw node
       console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter(n => n.title == "On Draw"), _utils.LOG_FUNNY_ARCADE);
       let allOnDraws = Object.values(this.nodes).filter(n => n.title == "On Draw");
       for (var x = 0; x < allOnDraws.length; x++) {
@@ -52797,9 +52839,7 @@ class FluxCodexVertex {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
-      document.dispatchEvent(new CustomEvent('updateSceneContainer', {
-        detail: {}
-      }));
+      document.dispatchEvent(this.updateSceneContainerEvent);
       (0, _utils.byId)("graph-status").innerHTML = '⚫';
     };
     this.setZoom = z => {
@@ -52841,10 +52881,13 @@ class FluxCodexVertex {
         e.preventDefault();
         this.runGraph();
       } else if (e.key === "Delete") {
-        if (this.state.selectedNode) {
-          this.deleteNode(this.state.selectedNode);
-          this.state.selectedNode = null;
-        }
+        // if(this.state.selectedNode) {
+        //   this.deleteNode(this.state.selectedNode);
+        //   this.state.selectedNode = null;
+        // }
+        const toDelete = this.state.selectedNodes.size > 0 ? [...this.state.selectedNodes] : this.state.selectedNode ? [this.state.selectedNode] : [];
+        toDelete.forEach(id => this.deleteNode(id));
+        this._selectClear();
       }
     });
     this.createContextMenu();
@@ -53224,7 +53267,7 @@ class FluxCodexVertex {
           console.info('gen ai tool call PREVENT ');
           return;
         } else {
-          console.info('gen ai tool call !!!!!!!!!!!!!!!! else ');
+          console.info('gen ai tool call else ');
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, _utils.LOG_FUNNY_ARCADE);
@@ -53709,7 +53752,6 @@ class FluxCodexVertex {
         node.accessObject = [];
       }
     }
-
     // Ensure fields exist
     if (!node.fields) node.fields = [];
     if (!node.fields.find(f => f.key === "selectedObject")) {
@@ -53718,7 +53760,6 @@ class FluxCodexVertex {
         value: ""
       });
     }
-
     // Ensure pins exist
     if (!node.inputs || node.inputs.length === 0) {
       node.inputs = [{
@@ -53732,7 +53773,6 @@ class FluxCodexVertex {
         type: "action"
       }];
     }
-
     // Rebuild DOM select for this node
     let select = dom.querySelector("select");
     if (select == null) {
@@ -53745,7 +53785,6 @@ class FluxCodexVertex {
     if (select && node.accessObject) {
       const numOptions = select.options.length;
       const newLength = Object.keys(node.accessObject).filter(key => typeof node.accessObject[key] === "function");
-
       // Only repopulate if length differs // +1 for placeholder
       if (numOptions !== newLength.length + 1) {
         select.innerHTML = "";
@@ -53759,12 +53798,10 @@ class FluxCodexVertex {
           opt.textContent = fnName;
           select.appendChild(opt);
         });
-
         // restore previously selected
         const selected = node.fields.find(f => f.key === "selectedObject")?.value;
         if (selected) select.value = selected;
       }
-
       // Attach onchange
       select.onchange = e => {
         const val = e.target.value;
@@ -53864,7 +53901,6 @@ class FluxCodexVertex {
     }
     getSubNode._needsRebuild = false;
     getSubNode._pinsBuilt = true;
-    // console.log("[ADAPT SUB OBJECT]", getSubNode.id, "path:", path, "target:", target);
     this.updateNodeDOM(getSubNode.id);
   }
   onPinsConnected(sourceNode, sourcePin, targetNode) {
@@ -53952,17 +53988,14 @@ class FluxCodexVertex {
     el.style.left = spec.x + "px";
     el.style.top = spec.y + "px";
     el.dataset.id = spec.id;
-
     // --- Header ---
     const header = document.createElement("div");
     header.className = "header";
     header.textContent = spec.title;
     el.appendChild(header);
-
     // --- Body ---
     const body = document.createElement("div");
     body.className = "body";
-
     // --- Pin row ---
     const row = document.createElement("div");
     if (spec.title == "Comment") {
@@ -53999,17 +54032,39 @@ class FluxCodexVertex {
       });
     }
     if (spec.comment) {
+      // const textarea = document.createElement("textarea");
+      // // textarea.style
+      // textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
+      // textarea.style.boxShadow =
+      //   "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
+      // textarea.style.backgroundColor = "gray";
+      // textarea.style.color = "black";
+
+      // textarea.value = spec.fields.find(f => f.key === "text").value;
+
+      // textarea.oninput = () => {
+      //   spec.fields.find(f => f.key === "text").value = textarea.value;
+      //   row.textContent = textarea.value || "Comment";
+      // };
+
+      // body.appendChild(textarea);
       const textarea = document.createElement("textarea");
-      // textarea.style
       textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
       textarea.style.boxShadow = "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
       textarea.style.backgroundColor = "gray";
       textarea.style.color = "black";
       textarea.value = spec.fields.find(f => f.key === "text").value;
+
+      // Add a separate label div for display
+      const commentLabel = document.createElement("div");
+      commentLabel.className = "comment-label";
+      commentLabel.textContent = textarea.value || "Comment";
+      commentLabel.style.cssText = "padding:4px;opacity:0.8;pointer-events:none;white-space:pre-wrap;word-break:break-word;";
       textarea.oninput = () => {
         spec.fields.find(f => f.key === "text").value = textarea.value;
-        row.textContent = textarea.value || "Comment";
+        commentLabel.textContent = textarea.value || "Comment";
       };
+      body.appendChild(commentLabel);
       body.appendChild(textarea);
     }
     // 🔴 FIELD INPUTS
@@ -54027,7 +54082,6 @@ class FluxCodexVertex {
       });
       body.appendChild(fieldsWrap);
     }
-
     // Value display
     if (spec.fields && spec.title === "GenRandInt") {
       const container = document.createElement("div");
@@ -54161,16 +54215,36 @@ class FluxCodexVertex {
     // --- Dragging ---
     header.addEventListener("mousedown", e => {
       e.preventDefault();
+
+      // If clicking a node not in selection, clear and select just this one
+      if (!this.state.selectedNodes.has(spec.id)) {
+        this._selectClear();
+        this._selectAdd(spec.id);
+      }
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
       this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
+
+      // Snapshot start positions for ALL selected nodes (for group drag)
+      this.state.dragStartPositions = {};
+      this.state.selectedNodes.forEach(nid => {
+        const n = this.nodes[nid];
+        if (n) this.state.dragStartPositions[nid] = {
+          x: n.x,
+          y: n.y
+        };
+      });
+      // Also store the primary node's starting pixel position
+      this.state.dragPrimaryStart = {
+        x: rect.left - bx.left,
+        y: rect.top - bx.top
+      };
       document.body.style.cursor = "grabbing";
     });
-    // --- Selecting ---
     el.addEventListener("click", e => {
       e.stopPropagation();
-      this.selectNode(spec.id);
+      this._selectToggle(spec.id, e.shiftKey);
       this.updateNodeDOM(spec.id);
     });
     el.addEventListener("dblclick", e => {
@@ -54181,11 +54255,19 @@ class FluxCodexVertex {
     return el;
   }
   selectNode(id) {
+    // Called on single click without shift — still works as before
     if (this.state.selectedNode) {
       document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove("selected");
     }
+    // Clear others only if not already part of multi-select
+    if (!this.state.selectedNodes.has(id)) {
+      this._selectClear();
+    }
     this.state.selectedNode = id;
-    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    if (id) {
+      this.state.selectedNodes.add(id);
+      document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    }
   }
   populateDynamicFunctionSelect(select, spec) {
     select.innerHTML = "";
@@ -56856,7 +56938,7 @@ LIST OF INTEREST OBJECT:
       this.fluxcodexFieldChange.detail.fieldKey = field.key;
       this.fluxcodexFieldChange.detail.fieldType = field.type;
       this.fluxcodexFieldChange.detail.value = field.value;
-      document.dispatchEvent(this, this.fluxcodexFieldChange);
+      document.dispatchEvent(this.fluxcodexFieldChange);
     };
     input.onkeydown = e => {
       if (e.key === "Enter") {
@@ -57545,7 +57627,7 @@ LIST OF INTEREST OBJECT:
         return;
       }
       const detail = this.getValue(nodeId, "detail");
-      console.log('*************window.dispatchEvent****************', name);
+      // console.log('*************window.dispatchEvent****************', name)
       window.dispatchEvent(new CustomEvent(name, {
         detail: detail ?? {}
       }));
@@ -57906,6 +57988,7 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
+        console.log('Set Force On Hit - getBodyByName ');
         let b = app.matrixPhysics.getBodyByName(objectName);
         const i = new _matrixClass.PVector(rayDirection[0] * strength, rayDirection[1] * strength, rayDirection[2] * strength);
         app.matrixPhysics.applyImpulse(b, i);
@@ -58239,7 +58322,11 @@ LIST OF INTEREST OBJECT:
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (sceneObjectName) {
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.setBlend(a);
+        if (typeof obj === 'undefined') {
+          console.warn('fluxCodexVertex: no obj with name: ', sceneObjectName);
+        } else {
+          obj.setBlend(a);
+        }
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -58247,10 +58334,12 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (texpath) {
-        // console.log('sceneObjectName', sceneObjectName)
+        console.log('SET TECTURE : sceneObjectName', sceneObjectName);
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.loadTex0([texpath]).then(() => {
-          setTimeout(() => obj.changeTexture(obj.texture0), 200);
+        obj.loadTex0([texpath]).then(_ => {
+          setTimeout(() => {
+            _.changeTexture(_.texture0);
+          }, 100);
         });
       }
       this.enqueueOutputs(n, "execOut");
@@ -58285,6 +58374,7 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
+      console.log('TEST ROTATE X');
       if (rot?.setRotateX) {
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
@@ -58478,17 +58568,29 @@ LIST OF INTEREST OBJECT:
       const el = this.state.draggingNode;
       const newX = e.clientX - this.state.dragOffset[0];
       const newY = e.clientY - this.state.dragOffset[1];
-      el.style.left = newX + "px";
-      el.style.top = newY + "px";
-      const id = el.dataset.id;
-      if (this.nodes[id]) {
-        this.nodes[id].x = newX;
-        this.nodes[id].y = newY;
-      }
+      const dx = newX - this.state.dragPrimaryStart.x;
+      const dy = newY - this.state.dragPrimaryStart.y;
+
+      // Move ALL selected nodes by the same delta
+      this.state.selectedNodes.forEach(nid => {
+        const n = this.nodes[nid];
+        const domEl = document.querySelector(`.node[data-id="${nid}"]`);
+        if (!n || !domEl) return;
+        const start = this.state.dragStartPositions[nid];
+        if (!start) return;
+        const nx = start.x + dx;
+        const ny = start.y + dy;
+        domEl.style.left = nx + "px";
+        domEl.style.top = ny + "px";
+        n.x = nx;
+        n.y = ny;
+      });
       this.updateLinks();
+    } else if (this.state.rubberBand) {
+      this._updateRubberBand(e);
     } else if (this.state.panning) {
-      const dx = e.clientX - this.state.panStart[0],
-        dy = e.clientY - this.state.panStart[1];
+      const dx = e.clientX - this.state.panStart[0];
+      const dy = e.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
       this.state.pan[1] += dy;
       this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
@@ -58496,18 +58598,33 @@ LIST OF INTEREST OBJECT:
       this.updateLinks();
     }
   }
-  handleMouseUp() {
-    // if(this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
+  handleMouseUp(e) {
+    if (this.state.rubberBand) {
+      const rb = this.state.rubberBand;
+      const r = rb.rect;
+      const isRealDrag = r && (r.w > 6 || r.h > 6);
+      if (isRealDrag) this.state.panning = false;
+      this._commitRubberBand(e.shiftKey);
+    }
     this.state.draggingNode = null;
+    this.state.dragStartPositions = null;
+    this.state.dragPrimaryStart = null;
     this.state.panning = false;
     document.body.style.cursor = "default";
   }
   handleBoardWrapMouseDown(e) {
     if (!e.target.closest(".node")) {
-      this.state.panning = true;
-      this.state.panStart = [e.clientX, e.clientY];
-      document.body.style.cursor = "grabbing";
-      this.selectNode(null);
+      if (e.shiftKey) {
+        // Shift held — rubber-band mode
+        this._startRubberBand(e);
+        document.body.style.cursor = "crosshair";
+      } else {
+        // Normal pan
+        if (!e.shiftKey) this._selectClear();
+        this.state.panning = true;
+        this.state.panStart = [e.clientX, e.clientY];
+        document.body.style.cursor = "grabbing";
+      }
     }
   }
   updateLinks() {
@@ -58545,8 +58662,8 @@ LIST OF INTEREST OBJECT:
     (0, _utils.byId)("graph-status").innerHTML = '🔴';
   }
   compileGraph() {
-    // this is save !!!
-    console.log(">>>>>SAVE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", this.nodes);
+    // This is save !!!
+    // console.log("SAVE:", this.nodes)
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -58568,9 +58685,8 @@ LIST OF INTEREST OBJECT:
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    document.dispatchEvent(new CustomEvent('save-graph', {
-      detail: d
-    }));
+    this.saveGraphEvent.detail = d;
+    document.dispatchEvent(this.saveGraphEvent);
     // this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
@@ -58673,7 +58789,7 @@ LIST OF INTEREST OBJECT:
   }
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph);
+    // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph)
     if (saved || app.graph) {
       try {
         let data;
@@ -58767,7 +58883,6 @@ LIST OF INTEREST OBJECT:
         y: (node.y || 0) + 100
       };
       this.nodes[newId] = newNode;
-
       // Create DOM element
       const domEl = this.createNodeDOM(newNode);
       this.board.appendChild(domEl);
@@ -58775,7 +58890,6 @@ LIST OF INTEREST OBJECT:
         newNode.displayEl = domEl.querySelector(".value-display");
       }
     });
-
     // 2. Map and Create Links
     if (Array.isArray(data.links)) {
       data.links.forEach(link => {
@@ -58792,29 +58906,127 @@ LIST OF INTEREST OBJECT:
             node: nodeIdMap[link.to.node]
           }
         };
-
         // Only add link if BOTH nodes were successfully remapped
         if (this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
           this.links.push(newLink);
         }
       });
     }
-
     // 3. Critical UI Refresh Sequence
-    // First, update the DOM positions for the new nodes
     Object.keys(nodeIdMap).forEach(oldId => {
       this.updateNodeDOM(nodeIdMap[oldId]);
     });
-
-    // Second, tell the engine to draw the lines
     this.updateLinks();
-
-    // Third, if your engine requires runtime binding (like events/logic)
-    if (this.restoreConnectionsRuntime) {
-      this.restoreConnectionsRuntime();
-    }
+    if (this.restoreConnectionsRuntime) this.restoreConnectionsRuntime();
     this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
-    this.compileGraph(); // Save to LocalStorage
+    this.compileGraph();
+  }
+
+  // Multi-select helpers
+  _selectAdd(id) {
+    this.state.selectedNodes.add(id);
+    this.state.selectedNode = id;
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  }
+  _selectRemove(id) {
+    this.state.selectedNodes.delete(id);
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.remove("selected");
+    // keep selectedNode pointing at something still selected
+    this.state.selectedNode = this.state.selectedNodes.size ? [...this.state.selectedNodes].at(-1) : null;
+  }
+  _selectClear() {
+    this.state.selectedNodes.forEach(id => {
+      document.querySelector(`.node[data-id="${id}"]`)?.classList.remove("selected");
+    });
+    this.state.selectedNodes.clear();
+    this.state.selectedNode = null;
+  }
+  _selectToggle(id, additive) {
+    if (additive) {
+      if (this.state.selectedNodes.has(id)) {
+        this._selectRemove(id);
+      } else {
+        this._selectAdd(id);
+      }
+    } else {
+      if (!this.state.selectedNodes.has(id)) {
+        this._selectClear();
+      }
+      this._selectAdd(id);
+    }
+  }
+  _startRubberBand(e) {
+    const pos = this._getBoardPos(e.clientX, e.clientY);
+    const el = document.createElement("div");
+    el.id = "fc-rubber-band";
+    Object.assign(el.style, {
+      position: "absolute",
+      border: "1px dashed var(--color-text-info, #4a9eff)",
+      background: "rgba(74,158,255,0.06)",
+      pointerEvents: "none",
+      zIndex: 999,
+      left: pos.x + "px",
+      top: pos.y + "px",
+      width: "0px",
+      height: "0px"
+    });
+    this.board.appendChild(el);
+    this.state.rubberBand = {
+      startX: pos.x,
+      startY: pos.y,
+      el
+    };
+  }
+  _updateRubberBand(e) {
+    const rb = this.state.rubberBand;
+    if (!rb) return;
+    const pos = this._getBoardPos(e.clientX, e.clientY);
+    const x = Math.min(rb.startX, pos.x);
+    const y = Math.min(rb.startY, pos.y);
+    const w = Math.abs(pos.x - rb.startX);
+    const h = Math.abs(pos.y - rb.startY);
+    Object.assign(rb.el.style, {
+      left: x + "px",
+      top: y + "px",
+      width: w + "px",
+      height: h + "px"
+    });
+    rb.rect = {
+      x,
+      y,
+      w,
+      h
+    };
+  }
+  _commitRubberBand(additive) {
+    const rb = this.state.rubberBand;
+    if (!rb) return;
+    rb.el.remove();
+    const r = rb.rect;
+    if (!r || r.w < 4 && r.h < 4) {
+      if (!additive) this._selectClear();
+      this.state.rubberBand = null;
+      return;
+    }
+    if (!additive) this._selectClear();
+    for (const id in this.nodes) {
+      const n = this.nodes[id];
+      const nx = n.x,
+        ny = n.y;
+      // rough node size estimate — good enough for hit test
+      const nw = 180,
+        nh = 80;
+      const overlaps = nx < r.x + r.w && nx + nw > r.x && ny < r.y + r.h && ny + nh > r.y;
+      if (overlaps) this._selectAdd(id);
+    }
+    this.state.rubberBand = null;
+  }
+  _getBoardPos(clientX, clientY) {
+    const bRect = this.board.getBoundingClientRect();
+    return {
+      x: (clientX - bRect.left) / this.state.zoom,
+      y: (clientY - bRect.top) / this.state.zoom
+    };
   }
 }
 exports.default = FluxCodexVertex;
@@ -59496,6 +59708,7 @@ class EditorHud {
       document.head.appendChild(style);
     }
     const setMode = e => {
+      if ((0, _utils.byId)('graph-status').innerHTML !== "⚫") return;
       let m = parseInt(e.target.getAttribute("data-mode"));
       dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {
         detail: {
@@ -59985,6 +60198,7 @@ class SceneObjectProperty {
           }
         });
       } else if (propName == "itIsPhysicsBody") {
+        if (!this.core.matrixPhysics) return;
         let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for (let key in body) {
           if (typeof body[key] === 'string') {
@@ -61450,15 +61664,19 @@ class MatrixEngineWGPU {
       return false;
     }
     const obj = this.mainRenderBundle[index];
-    let testPB = app.matrixPhysics.getBodyByName(obj.name);
-    if (testPB !== null) {
-      try {
-        this.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
-      } catch (e) {
-        console.warn("%cPhysics cleanup error:" + e, _utils.LOG_FUNNY_ARCADE);
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(obj.name);
+      if (testPB !== null) {
+        try {
+          this.matrixPhysics.removeRigidBody(testPB);
+        } catch (e) {
+          console.warn("%cPhysics cleanup error:" + e, _utils.LOG_FUNNY_ARCADE);
+        }
       }
     }
+    obj.destroy();
     this.mainRenderBundle.splice(index, 1);
+    this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };
   buildRenderBuckets(sceneMeshes) {
@@ -62065,9 +62283,8 @@ class MatrixEngineWGPU {
         const mesh = this.mainRenderBundle[i];
         if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
-        if (mesh.position.inMove === true) {
-          mesh.updateModelUniformBuffer(i);
-        }
+        // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
+        mesh.updateModelUniformBuffer(i);
         mesh.position.update();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
