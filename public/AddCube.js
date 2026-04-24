@@ -29697,13 +29697,11 @@ LIST OF INTEREST OBJECT:
       this.updateNodeDOM(nodeIdMap[oldId]);
     });
     this.updateLinks();
-    if (this.restoreConnectionsRuntime) {
-      this.restoreConnectionsRuntime();
-    }
+    if (this.restoreConnectionsRuntime) this.restoreConnectionsRuntime();
     this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
     this.compileGraph();
   }
-  // ── Multi-select helpers ──────────────────────────────────────────
+  // Multi-select helpers
   _selectAdd(id2) {
     this.state.selectedNodes.add(id2);
     this.state.selectedNode = id2;
@@ -29735,27 +29733,6 @@ LIST OF INTEREST OBJECT:
       this._selectAdd(id2);
     }
   }
-  // ── Rubber-band ───────────────────────────────────────────────────
-  // _startRubberBand(e) {
-  //   const bRect = this.board.getBoundingClientRect();
-  //   const startX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
-  //   const startY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
-  //   const el = document.createElement("div");
-  //   el.id = "fc-rubber-band";
-  //   Object.assign(el.style, {
-  //     position: "absolute",
-  //     border: "1px dashed var(--color-text-info, #4a9eff)",
-  //     background: "rgba(74,158,255,0.06)",
-  //     pointerEvents: "none",
-  //     zIndex: 999,
-  //     left: startX + "px",
-  //     top: startY + "px",
-  //     width: "0px",
-  //     height: "0px",
-  //   });
-  //   this.board.appendChild(el);
-  //   this.state.rubberBand = {startX, startY, el};
-  // }
   _startRubberBand(e2) {
     const pos2 = this._getBoardPos(e2.clientX, e2.clientY);
     const el2 = document.createElement("div");
@@ -29774,24 +29751,6 @@ LIST OF INTEREST OBJECT:
     this.board.appendChild(el2);
     this.state.rubberBand = { startX: pos2.x, startY: pos2.y, el: el2 };
   }
-  // _updateRubberBand(e) {
-  //   const rb = this.state.rubberBand;
-  //   if(!rb) return;
-  //   const bRect = this.board.getBoundingClientRect();
-  //   const curX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
-  //   const curY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
-  //   const x = Math.min(rb.startX, curX);
-  //   const y = Math.min(rb.startY, curY);
-  //   const w = Math.abs(curX - rb.startX);
-  //   const h = Math.abs(curY - rb.startY);
-  //   Object.assign(rb.el.style, {
-  //     left: x + "px",
-  //     top: y + "px",
-  //     width: w + "px",
-  //     height: h + "px",
-  //   });
-  //   rb.rect = {x, y, w, h}; // store for commit
-  // }
   _updateRubberBand(e2) {
     const rb = this.state.rubberBand;
     if (!rb) return;

@@ -1092,13 +1092,11 @@ export default class FluxCodexVertex {
         node.accessObject = [];
       }
     }
-
     // Ensure fields exist
     if(!node.fields) node.fields = [];
     if(!node.fields.find(f => f.key === "selectedObject")) {
       node.fields.push({key: "selectedObject", value: ""});
     }
-
     // Ensure pins exist
     if(!node.inputs || node.inputs.length === 0) {
       node.inputs = [{name: "exec", type: "action"}];
@@ -1106,10 +1104,8 @@ export default class FluxCodexVertex {
     if(!node.outputs || node.outputs.length === 0) {
       node.outputs = [{name: "execOut", type: "action"}];
     }
-
     // Rebuild DOM select for this node
     let select = dom.querySelector("select");
-
     if(select == null) {
       select = document.createElement("select");
       select.id = node.id;
@@ -1122,7 +1118,6 @@ export default class FluxCodexVertex {
       const numOptions = select.options.length;
       const newLength = Object.keys(node.accessObject)
         .filter(key => typeof node.accessObject[key] === "function")
-
       // Only repopulate if length differs // +1 for placeholder
       if(numOptions !== newLength.length + 1) {
         select.innerHTML = "";
@@ -1130,7 +1125,6 @@ export default class FluxCodexVertex {
         placeholder.value = "";
         placeholder.textContent = "-- Select Function --";
         select.appendChild(placeholder);
-
         Object.keys(node.accessObject)
           .filter(key => typeof node.accessObject[key] === "function")
           .forEach(fnName => {
@@ -1139,13 +1133,10 @@ export default class FluxCodexVertex {
             opt.textContent = fnName;
             select.appendChild(opt);
           });
-
-
         // restore previously selected
         const selected = node.fields.find(f => f.key === "selectedObject")?.value;
         if(selected) select.value = selected;
       }
-
       // Attach onchange
       select.onchange = e => {
         const val = e.target.value;
@@ -1250,7 +1241,6 @@ export default class FluxCodexVertex {
     }
     getSubNode._needsRebuild = false;
     getSubNode._pinsBuilt = true;
-    // console.log("[ADAPT SUB OBJECT]", getSubNode.id, "path:", path, "target:", target);
     this.updateNodeDOM(getSubNode.id);
   }
 
@@ -1347,21 +1337,17 @@ export default class FluxCodexVertex {
     } else {
       el.className = "node " + (spec.category || "");
     }
-
     el.style.left = spec.x + "px";
     el.style.top = spec.y + "px";
     el.dataset.id = spec.id;
-
     // --- Header ---
     const header = document.createElement("div");
     header.className = "header";
     header.textContent = spec.title;
     el.appendChild(header);
-
     // --- Body ---
     const body = document.createElement("div");
     body.className = "body";
-
     // --- Pin row ---
     const row = document.createElement("div");
     if(spec.title == "Comment") {
@@ -1439,12 +1425,10 @@ export default class FluxCodexVertex {
       });
       body.appendChild(fieldsWrap);
     }
-
     // Value display
     if(spec.fields && spec.title === "GenRandInt") {
       const container = document.createElement("div");
       container.className = "genrand-inputs";
-
       spec.fields.forEach(f => {
         const input = document.createElement("input");
         input.type = "number";
@@ -4965,21 +4949,22 @@ LIST OF INTEREST OBJECT:
     }
   }
 
- handleMouseUp(e) {
-  if (this.state.rubberBand) {
-    const rb = this.state.rubberBand;
-    const r = rb.rect;
-    const isRealDrag = r && (r.w > 6 || r.h > 6);
-    if (isRealDrag) this.state.panning = false;
-    this._commitRubberBand(e.shiftKey);
+  handleMouseUp(e) {
+    if(this.state.rubberBand) {
+      const rb = this.state.rubberBand;
+      const r = rb.rect;
+      const isRealDrag = r && (r.w > 6 || r.h > 6);
+      if(isRealDrag) this.state.panning = false;
+      this._commitRubberBand(e.shiftKey);
+    }
+
+    this.state.draggingNode = null;
+    this.state.dragStartPositions = null;
+    this.state.dragPrimaryStart = null;
+    this.state.panning = false;
+    document.body.style.cursor = "default";
   }
 
-  this.state.draggingNode = null;
-  this.state.dragStartPositions = null;
-  this.state.dragPrimaryStart = null;
-  this.state.panning = false;
-  document.body.style.cursor = "default";
-}
   handleBoardWrapMouseDown(e) {
     if(!e.target.closest(".node")) {
       if(e.shiftKey) {
@@ -5315,35 +5300,25 @@ LIST OF INTEREST OBJECT:
             node: nodeIdMap[link.to.node]
           }
         };
-
         // Only add link if BOTH nodes were successfully remapped
         if(this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
           this.links.push(newLink);
         }
       });
     }
-
     // 3. Critical UI Refresh Sequence
-    // First, update the DOM positions for the new nodes
     Object.keys(nodeIdMap).forEach(oldId => {
       this.updateNodeDOM(nodeIdMap[oldId]);
     });
 
-    // Second, tell the engine to draw the lines
     this.updateLinks();
-
-    // Third, if your engine requires runtime binding (like events/logic)
-    if(this.restoreConnectionsRuntime) {
-      this.restoreConnectionsRuntime();
-    }
-
+    if(this.restoreConnectionsRuntime) this.restoreConnectionsRuntime();
     this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
-    this.compileGraph(); // Save to LocalStorage
+    this.compileGraph();
   }
 
 
-  // ── Multi-select helpers ──────────────────────────────────────────
-
+  // Multi-select helpers
   _selectAdd(id) {
     this.state.selectedNodes.add(id);
     this.state.selectedNode = id;
@@ -5382,30 +5357,6 @@ LIST OF INTEREST OBJECT:
     }
   }
 
-  // ── Rubber-band ───────────────────────────────────────────────────
-
-  // _startRubberBand(e) {
-  //   const bRect = this.board.getBoundingClientRect();
-  //   const startX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
-  //   const startY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
-
-  //   const el = document.createElement("div");
-  //   el.id = "fc-rubber-band";
-  //   Object.assign(el.style, {
-  //     position: "absolute",
-  //     border: "1px dashed var(--color-text-info, #4a9eff)",
-  //     background: "rgba(74,158,255,0.06)",
-  //     pointerEvents: "none",
-  //     zIndex: 999,
-  //     left: startX + "px",
-  //     top: startY + "px",
-  //     width: "0px",
-  //     height: "0px",
-  //   });
-  //   this.board.appendChild(el);
-
-  //   this.state.rubberBand = {startX, startY, el};
-  // }
   _startRubberBand(e) {
     const pos = this._getBoardPos(e.clientX, e.clientY);
 
@@ -5423,36 +5374,12 @@ LIST OF INTEREST OBJECT:
       height: "0px",
     });
     this.board.appendChild(el);
-
     this.state.rubberBand = {startX: pos.x, startY: pos.y, el};
   }
 
-  // _updateRubberBand(e) {
-  //   const rb = this.state.rubberBand;
-  //   if(!rb) return;
-
-  //   const bRect = this.board.getBoundingClientRect();
-  //   const curX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
-  //   const curY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
-
-  //   const x = Math.min(rb.startX, curX);
-  //   const y = Math.min(rb.startY, curY);
-  //   const w = Math.abs(curX - rb.startX);
-  //   const h = Math.abs(curY - rb.startY);
-
-  //   Object.assign(rb.el.style, {
-  //     left: x + "px",
-  //     top: y + "px",
-  //     width: w + "px",
-  //     height: h + "px",
-  //   });
-
-  //   rb.rect = {x, y, w, h}; // store for commit
-  // }
   _updateRubberBand(e) {
     const rb = this.state.rubberBand;
     if(!rb) return;
-
     const pos = this._getBoardPos(e.clientX, e.clientY);
     const x = Math.min(rb.startX, pos.x);
     const y = Math.min(rb.startY, pos.y);
@@ -5465,7 +5392,6 @@ LIST OF INTEREST OBJECT:
       width: w + "px",
       height: h + "px",
     });
-
     rb.rect = {x, y, w, h};
   }
 
@@ -5473,17 +5399,14 @@ LIST OF INTEREST OBJECT:
     const rb = this.state.rubberBand;
     if(!rb) return;
     rb.el.remove();
-
     const r = rb.rect;
     if(!r || (r.w < 4 && r.h < 4)) {
-      // too small — treat as a click, clear selection unless additive
       if(!additive) this._selectClear();
       this.state.rubberBand = null;
       return;
     }
 
     if(!additive) this._selectClear();
-
     for(const id in this.nodes) {
       const n = this.nodes[id];
       const nx = n.x, ny = n.y;
@@ -5496,15 +5419,11 @@ LIST OF INTEREST OBJECT:
         ny + nh > r.y;
       if(overlaps) this._selectAdd(id);
     }
-
     this.state.rubberBand = null;
   }
 
   _getBoardPos(clientX, clientY) {
     const bRect = this.board.getBoundingClientRect();
-    // clientX/Y are already in screen space — just subtract board's screen origin
-    // board's transform (translate+scale) is baked into getBoundingClientRect,
-    // so we need to go into board's LOCAL coordinate space
     return {
       x: (clientX - bRect.left) / this.state.zoom,
       y: (clientY - bRect.top) / this.state.zoom,

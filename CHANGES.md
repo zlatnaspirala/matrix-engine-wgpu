@@ -3,9 +3,11 @@
 [1.11.0]
   [MOBILE OPTIMISATION]
   Physics added JOLT support,
-  Added bridge for physics -> physics worker
-  Physics from 1.11.0 running intro worker
-
+  Added bridge for physics -> physics worker.
+  Physics from 1.11.0 running intro worker by default.
+  Added multi-select node graphs for app graph(FluxCodexVertex)
+  Added new examples PinBall demo fot jolt.
+  All examples are portable on mobile devices now.
 
 [1.10.0]
   New main loop logic
