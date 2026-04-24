@@ -12460,12 +12460,14 @@ var MEMeshObj = class extends Materials {
     };
     this.drawShadows = () => {
     };
-    let testPB = app.matrixPhysics.getBodyByName(this.name);
-    if (testPB !== null) {
-      try {
-        app.matrixPhysics.removeRigidBody(testPB);
-      } catch (e2) {
-        console.warn("Physics cleanup err:", e2);
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if (testPB !== null) {
+        try {
+          app.matrixPhysics.removeRigidBody(testPB);
+        } catch (e2) {
+          console.warn("Physics cleanup err:", e2);
+        }
       }
     }
   };
@@ -35943,6 +35945,9 @@ var app2 = new MatrixEngineWGPU(
     }, { scale: [25, 1, 25] });
     setTimeout(() => {
       app3.getSceneObjectByName("FLOOR").position.SetX(0);
+    }, 800);
+    setTimeout(() => {
+      app3.getSceneObjectByName("FLOOR").position.SetY(0);
     }, 800);
   }
 );

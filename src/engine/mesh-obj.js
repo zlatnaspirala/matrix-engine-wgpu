@@ -1066,12 +1066,10 @@ export default class MEMeshObj extends Materials {
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
 
-    let testPB = app.matrixPhysics.getBodyByName(this.name);
-    if(testPB !== null) {
-      try {
-        app.matrixPhysics.removeRigidBody(testPB);
-      } catch(e) {
-        console.warn("Physics cleanup err:", e);
+    if(app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if(testPB !== null) {
+        try {app.matrixPhysics.removeRigidBody(testPB)} catch(e) {console.warn("Physics cleanup err:", e)}
       }
     }
     // console.info(`🧹Destroyed: ${this.name}`);

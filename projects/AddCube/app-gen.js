@@ -62,6 +62,12 @@ app.addLight();
  }, 800);
  // ME END FLOOR updatePosx
  
+  // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(0);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
  // [MAIN_REPLACE2]
 })
 window.app = app;
