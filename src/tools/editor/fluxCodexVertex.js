@@ -1,6 +1,8 @@
 /**
  * @description
  * Flux Codex Vertex use visual scripting model.
+ * It is pragmatic and intuitive.
+ * Avoid casting with adaptive expectation logic.
  *
  * @filename
  * fluxCodexVertex.js
@@ -4950,9 +4952,8 @@ LIST OF INTEREST OBJECT:
   }
 
   compileGraph() {
-    // this is save !!!
-    console.log(">>>>>SAVE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", this.nodes)
-
+    // This is save !!!
+    // console.log("SAVE:", this.nodes)
     const bundle = {
       nodes: this.nodes,
       links: this.links,
