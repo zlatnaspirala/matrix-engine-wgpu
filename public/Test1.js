@@ -12468,7 +12468,6 @@ var MEMeshObj = class extends Materials {
         console.warn("Physics cleanup err:", e2);
       }
     }
-    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
   };
 };
 
@@ -29520,7 +29519,6 @@ LIST OF INTEREST OBJECT:
   }
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph);
     if (saved || app.graph) {
       try {
         let data;
@@ -34121,7 +34119,6 @@ var PhysicsBridge = class {
     this.c = 0;
   }
   getBodyByName(name2) {
-    console.info("[bridge] Body search :", name2);
     for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
     console.info("[bridge] Body not found -1 :", name2);
     return -1;
@@ -35052,7 +35049,6 @@ var MatrixEngineWGPU = class {
     }
     obj2.destroy();
     this.mainRenderBundle.splice(index, 1);
-    console.log("DESTROY ");
     this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };

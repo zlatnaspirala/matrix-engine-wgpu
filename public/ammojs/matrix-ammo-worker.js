@@ -602,11 +602,8 @@ class MatrixAmmoWorker {
   }
 
   removeRigidBody(idx) {
-    console.log('remove rigid body')
     const b = this.rigidBodies[idx];
-    if(b) {
-      this.dynamicsWorld.removeRigidBody(b)
-    }
+    if(b) this.dynamicsWorld.removeRigidBody(b);
     this.rigidBodies.slice(idx, 1);
   }
 

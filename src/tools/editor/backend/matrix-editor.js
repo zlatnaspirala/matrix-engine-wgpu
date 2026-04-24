@@ -273,7 +273,7 @@ async function cnp(ws, msg) {
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('PhysicsReady', async () => { `);
 
-  content.addLine(`// [only fro projects created from editor]`);
+  content.addLine(`// [only for projects created from editor]`);
   content.addLine(`app.graph = graph;`);
   content.addLine(` shaderGraphsProdc.forEach((gShader) => {`);
   content.addLine(`   let shaderReady = JSON.parse(gShader.content);`);
@@ -284,6 +284,9 @@ async function cnp(ws, msg) {
   // not sure for now - for prodc final...
   content.addLine(`addRaycastsListener("canvas1", "mousedown");`);
 
+  content.addLine(`// Avoid position y 0 vs floor zero !`);
+  content.addLine(`app.cameras.WASD.setPosition(0,4,0)`);
+  
   // graph
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);
@@ -291,10 +294,11 @@ async function cnp(ws, msg) {
   content.addLine(`
       // ME START FLOOR addCube\n
       downloadMeshes({mesh: "./res/meshes/blender/plane.obj"}, (m) => {
-          let texturesPaths = ['./res/meshes/blender/cube.png'];
+          let texturesPaths = ['./res/textures/floor1.webp'];
           app.addMeshObj({
-            position: {x: 0, y: -1, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-            texturesPaths: [texturesPaths],
+            material: { type: 'standard' },
+            position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+            texturesPaths: texturesPaths,
             name: 'FLOOR',
             mesh: m.mesh,
             raycast: {enabled: true, radius: 2},

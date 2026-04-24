@@ -12463,12 +12463,11 @@ var MEMeshObj = class extends Materials {
     let testPB = app.matrixPhysics.getBodyByName(this.name);
     if (testPB !== null) {
       try {
-        app.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
+        app.matrixPhysics.removeRigidBody(testPB);
       } catch (e2) {
         console.warn("Physics cleanup err:", e2);
       }
     }
-    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
   };
 };
 
@@ -29520,7 +29519,6 @@ LIST OF INTEREST OBJECT:
   }
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph);
     if (saved || app.graph) {
       try {
         let data;
@@ -32040,6 +32038,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, i
         raycast: RAY
       });
       const o2 = app.getSceneObjectByName(name2);
+      console.log(o2.name);
       runtimeCacheObjs.push(o2);
       resolve(o2);
     }
@@ -34120,7 +34119,7 @@ var PhysicsBridge = class {
     this.c = 0;
   }
   getBodyByName(name2) {
-    for (const [meObj, idx] of this._bodyIndexMap) if (meObj.name === name2) return idx;
+    for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
     console.info("[bridge] Body not found -1 :", name2);
     return -1;
   }
@@ -34145,14 +34144,14 @@ var PhysicsBridge = class {
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((idx) => {
-      this._bodyIndexMap.set(MEObject, idx);
+      this._bodyIndexMap.set(idx, MEObject);
     });
   }
   updatePhysics() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
-    for (const [meObj, idx] of this._bodyIndexMap) {
+    for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.isKinematic) continue;
       const base = count * 3;
       idxArr[count] = idx;
@@ -34260,6 +34259,11 @@ var PhysicsBridge = class {
     if (idx === void 0 || idx === -1) return;
     this._worker.postMessage({ cmd: "setCollisionFlags", idx, flags });
   }
+  removeRigidBody(idx) {
+    if (idx === void 0 || idx === -1) return;
+    this._worker.postMessage({ cmd: "removeRigidBody", idx });
+    this._bodyIndexMap.delete(idx);
+  }
   // cannones ,
   createChain(ids, size2 = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({ cmd: "createChain", ids, size: size2, mass, marginSpace });
@@ -34274,7 +34278,7 @@ var PhysicsBridge = class {
     const snap = this._snapshot;
     if (!snap) return;
     const STRIDE = 8;
-    for (const [meObj, idx] of this._bodyIndexMap) {
+    for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
       const pos2 = snap.subarray(b, b + 3);
@@ -35038,12 +35042,14 @@ var MatrixEngineWGPU = class {
     let testPB = app.matrixPhysics.getBodyByName(obj2.name);
     if (testPB !== null) {
       try {
-        this.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
+        this.matrixPhysics.removeRigidBody(testPB);
       } catch (e2) {
         console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
       }
     }
+    obj2.destroy();
     this.mainRenderBundle.splice(index, 1);
+    this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };
   buildRenderBuckets(sceneMeshes) {

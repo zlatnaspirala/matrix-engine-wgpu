@@ -3141,7 +3141,7 @@ LIST OF INTEREST OBJECT:
       this.fluxcodexFieldChange.detail.fieldKey = field.key;
       this.fluxcodexFieldChange.detail.fieldType = field.type;
       this.fluxcodexFieldChange.detail.value = field.value;
-      document.dispatchEvent(this, this.fluxcodexFieldChange);
+      document.dispatchEvent(this.fluxcodexFieldChange);
     };
 
     input.onkeydown = e => {
@@ -4257,7 +4257,6 @@ LIST OF INTEREST OBJECT:
           return;
         }
 
-
         console.log('Set Force On Hit - getBodyByName ');
         let b = app.matrixPhysics.getBodyByName(objectName);
         const i = new PVector(
@@ -5093,7 +5092,7 @@ LIST OF INTEREST OBJECT:
 
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph)
+    // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph)
     if(saved || app.graph) {
       try {
         let data;

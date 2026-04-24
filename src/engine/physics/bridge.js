@@ -39,7 +39,6 @@ export class PhysicsBridge {
   }
 
   getBodyByName(name) {
-    console.info('[bridge] Body search :', name);
     for(const [idx,meObj] of this._bodyIndexMap) if(meObj.name === name) return idx;
     console.info('[bridge] Body not found -1 :', name);
     return -1;

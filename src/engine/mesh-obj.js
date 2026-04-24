@@ -1074,6 +1074,6 @@ export default class MEMeshObj extends Materials {
         console.warn("Physics cleanup err:", e);
       }
     }
-    console.info(`🧹Destroyed: ${this.name}`);
+    // console.info(`🧹Destroyed: ${this.name}`);
   }
 }

@@ -12468,7 +12468,6 @@ var MEMeshObj = class extends Materials {
         console.warn("Physics cleanup err:", e2);
       }
     }
-    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
   };
 };
 
@@ -27791,7 +27790,7 @@ LIST OF INTEREST OBJECT:
       this.fluxcodexFieldChange.detail.fieldKey = field.key;
       this.fluxcodexFieldChange.detail.fieldType = field.type;
       this.fluxcodexFieldChange.detail.value = field.value;
-      document.dispatchEvent(this, this.fluxcodexFieldChange);
+      document.dispatchEvent(this.fluxcodexFieldChange);
     };
     input.onkeydown = (e2) => {
       if (e2.key === "Enter") {
@@ -29520,7 +29519,6 @@ LIST OF INTEREST OBJECT:
   }
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph);
     if (saved || app.graph) {
       try {
         let data;
@@ -34121,7 +34119,6 @@ var PhysicsBridge = class {
     this.c = 0;
   }
   getBodyByName(name2) {
-    console.info("[bridge] Body search :", name2);
     for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
     console.info("[bridge] Body not found -1 :", name2);
     return -1;
@@ -35042,17 +35039,18 @@ var MatrixEngineWGPU = class {
       return false;
     }
     const obj2 = this.mainRenderBundle[index];
-    let testPB = app.matrixPhysics.getBodyByName(obj2.name);
-    if (testPB !== null) {
-      try {
-        this.matrixPhysics.removeRigidBody(testPB);
-      } catch (e2) {
-        console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(obj2.name);
+      if (testPB !== null) {
+        try {
+          this.matrixPhysics.removeRigidBody(testPB);
+        } catch (e2) {
+          console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
+        }
       }
     }
     obj2.destroy();
     this.mainRenderBundle.splice(index, 1);
-    console.log("DESTROY ");
     this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };
@@ -35879,7 +35877,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/AddCube/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 107.34375, "y": 192.5625, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "title": "Print", "x": 732.6875, "y": 383.5625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Wait for object...." }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_3": { "id": "node_3", "title": "Comment", "x": 357.515625, "y": -4.796875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "WHO TO ADD CUBE FROM VISAL SCRIPTING GRAPH\nUSE: ADD OBJ NODE\n\n\n" }] }, "node_4": { "id": "node_4", "x": 409.234375, "y": 186.1875, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false, "value": "true" }, { "key": "isInstancedObj", "type": false, "value": "false" }, { "key": "created", "value": "false" }], "noselfExec": "true" }, "node_5": { "id": "node_5", "title": "Print", "x": 735.953125, "y": 184.28125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Dont wait exec next..." }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_4", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_4", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }], "nodeCounter": 6, "linkCounter": 4, "pan": [30, -106], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 271.34375, "y": 82.5625, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 583.71875, "y": 102, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_3": { "id": "node_3", "title": "Comment", "x": 593.375, "y": -45.40625, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "THIS NON PHYSICS WORLD\nADD SIMPLE CUBE\n" }] }, "node_4": { "id": "node_4", "title": "Print", "x": 948.1875, "y": 119.734375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_5": { "id": "node_5", "title": "Print", "x": 947.03125, "y": 279.328125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_6": { "id": "node_6", "title": "Print", "x": 945.390625, "y": 440.078125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_2", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_2", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_4", "from": { "node": "node_2", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_6", "pin": "exec" }, "type": "action" }], "nodeCounter": 7, "linkCounter": 5, "pan": [-333, 198], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/AddCube/shader-graphs.js
 var shaderGraphsProdc = [
@@ -35904,6 +35902,7 @@ var shaderGraphsProdc = [
 // ../../../../projects/AddCube/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
+    dontUsePhysics: true,
     useEditor: true,
     projectType: "created from editor",
     projectName: "AddCube",
@@ -35915,33 +35914,36 @@ var app2 = new MatrixEngineWGPU(
     clearColor: { r: 0, b: 0.1, g: 0.1, a: 1 }
   },
   (app3) => {
-    addEventListener("PhysicsReady", async () => {
-      app3.graph = graph_default;
-      shaderGraphsProdc.forEach((gShader) => {
-        let shaderReady = JSON.parse(gShader.content);
-        app3.shadersPack[gShader.name] = shaderReady.final;
-        if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
-      });
-      addRaycastsListener("canvas1", "mousedown");
-      app3.addLight();
-      downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: -1, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "FLOOR",
-          mesh: m.mesh,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" },
-          pointerEffect: {
-            enabled: true,
-            gizmoEffect: true
-          }
-        });
-      }, { scale: [25, 1, 25] });
+    app3.graph = graph_default;
+    shaderGraphsProdc.forEach((gShader) => {
+      let shaderReady = JSON.parse(gShader.content);
+      app3.shadersPack[gShader.name] = shaderReady.final;
+      if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
     });
+    addRaycastsListener("canvas1", "mousedown");
+    app3.cameras.WASD.setPosition(0, 4, 0);
+    app3.addLight();
+    downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
+      let texturesPaths = ["./res/textures/floor1.webp"];
+      app3.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 0, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths,
+        name: "FLOOR",
+        mesh: m.mesh,
+        raycast: { enabled: true, radius: 2 },
+        physics: { enabled: false, geometry: "Cube" },
+        pointerEffect: {
+          enabled: true,
+          gizmoEffect: true
+        }
+      });
+    }, { scale: [25, 1, 25] });
+    setTimeout(() => {
+      app3.getSceneObjectByName("FLOOR").position.SetX(0);
+    }, 800);
   }
 );
 window.app = app2;

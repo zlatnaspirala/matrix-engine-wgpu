@@ -8,7 +8,7 @@ import {addRaycastsListener} from "../../src/engine/raycast.js";
 let app = new MatrixEngineWGPU(
 
   {
-  
+  dontUsePhysics: true,
   useEditor: true,
   projectType: "created from editor",
   projectName: 'AddCube',
@@ -21,8 +21,7 @@ let app = new MatrixEngineWGPU(
 }
   
 , (app) => {
-addEventListener('PhysicsReady', async () => { 
-// [only fro projects created from editor]
+// [only for projects created from editor]
 app.graph = graph;
  shaderGraphsProdc.forEach((gShader) => {
    let shaderReady = JSON.parse(gShader.content);
@@ -30,16 +29,19 @@ app.graph = graph;
    if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
  });
 addRaycastsListener("canvas1", "mousedown");
+// Avoid position y 0 vs floor zero !
+app.cameras.WASD.setPosition(0,4,0)
 // [light]
 app.addLight();
 
       // ME START FLOOR addCube
 
       downloadMeshes({mesh: "./res/meshes/blender/plane.obj"}, (m) => {
-          let texturesPaths = ['./res/meshes/blender/cube.png'];
+          let texturesPaths = ['./res/textures/floor1.webp'];
           app.addMeshObj({
-            position: {x: 0, y: -1, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-            texturesPaths: [texturesPaths],
+            material: { type: 'standard' },
+            position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+            texturesPaths: texturesPaths,
             name: 'FLOOR',
             mesh: m.mesh,
             raycast: {enabled: true, radius: 2},
@@ -54,7 +56,12 @@ app.addLight();
       // ME END FLOOR addCube
 
   
-// [MAIN_REPLACE2]
- })
+ // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(0);
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+ // [MAIN_REPLACE2]
 })
 window.app = app;

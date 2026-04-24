@@ -129,7 +129,7 @@ export default class MatrixEngineWGPU {
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'JOLT';
-      }else if(typeof options.useCannon !== 'undefined') {
+      } else if(typeof options.useCannon !== 'undefined') {
         this.matrixPhysics = new PhysicsBridge('./ammojs/cannon-es-worker.js');
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map();
@@ -690,17 +690,16 @@ export default class MatrixEngineWGPU {
       return false;
     }
     const obj = this.mainRenderBundle[index];
-    let testPB = app.matrixPhysics.getBodyByName(obj.name);
-    if(testPB !== null) {
-      try {
-        this.matrixPhysics.removeRigidBody(testPB);
-      } catch(e) {
-        console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
+    if(app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(obj.name);
+      if(testPB !== null) {
+        try {this.matrixPhysics.removeRigidBody(testPB)} catch(e) {
+          console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
+        }
       }
     }
     obj.destroy();
     this.mainRenderBundle.splice(index, 1);
-    console.log('DESTROY ');
     this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   }
@@ -813,7 +812,7 @@ export default class MatrixEngineWGPU {
     if(o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh1, o.physics);
-    }else {
+    } else {
       myMesh1.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh1);
