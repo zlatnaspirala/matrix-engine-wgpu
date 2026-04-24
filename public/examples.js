@@ -35454,7 +35454,7 @@ class Materials {
       const ctx = canvas.getContext('2d');
       if (typeof arg.canvaInlineProgram === 'function') {
         let drawLoop;
-        if (typeof arg.specialCanvas2dArg.middle !== 'undefined') {
+        if (arg.specialCanvas2dArg && arg.specialCanvas2dArg.middle) {
           drawLoop = () => {
             ctx.save();
             ctx.translate(canvas.width, 0);
