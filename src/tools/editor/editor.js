@@ -26,7 +26,7 @@ export class Editor {
       this.client = new MEEditorClient(this.check(a), projName);
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
-        console.log("123 MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
+        // console.log("123 MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
         this.fluxCodexVertex = new FluxCodexVertex('board', 'boardWrap', 'log', this.methodsManager, projName, this.toolTip);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();

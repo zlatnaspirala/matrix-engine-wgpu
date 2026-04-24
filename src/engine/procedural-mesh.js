@@ -9,6 +9,7 @@ import {FlameEmitter} from './effects/flame-emmiter';
 import {GizmoEffect} from './effects/gizmo';
 import {FlameEffect} from './effects/flame';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
+import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -37,6 +38,9 @@ export default class ProceduralMeshObj extends Materials {
     }
     this.mType = MeshType.PROCEDURAL;
     //cache
+    this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
+    this._scaleVec = new Float32Array(3);
     this._camVP = mat4.create();
     this.meshA = null;
     this.meshB = null;
@@ -44,6 +48,8 @@ export default class ProceduralMeshObj extends Materials {
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
     this.shadowsCast = true;
     this.sceneBGL = o.sceneBGL;
+    this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
 
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
@@ -378,16 +384,6 @@ export default class ProceduralMeshObj extends Materials {
       ]
     });
 
-    // this.modelBindGroup = this.device.createBindGroup({
-    //   layout: this.shadowBindGroupLayout,
-    //   entries: [
-    //     {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-    //     {binding: 1, resource: {buffer: this.bonesBuffer}},
-    //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-    //     {binding: 3, resource: {buffer: this.morphBlendBuffer}},
-    //   ]
-    // });
-
     this.vertexAnim = {
       active: false,
       enableWave: () => {
@@ -510,17 +506,36 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   setupPipeline() {
-    this.createLayoutForRender();
-    this.createBindGroupForRender();
+    // this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
-    const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.material.type;
+    const fragmentId = this.fragmentWGSL ? 'custom_frag' :  this.isVideo == true ? 'video' : this.material.type;
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
     const isNormalMap = this.material.type === 'normalmap';
     const isVideo = this.isVideo === true;
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "procedural",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
+
     const layout = this.device.createPipelineLayout({
       bindGroupLayouts: [
         this.sceneBGL,
@@ -535,19 +550,6 @@ export default class ProceduralMeshObj extends Materials {
       buffers: this.vertexBuffers,
     };
     const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-    const baseKey = {
-      vertexId,
-      fragmentId,
-      type: "procedural",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: 'rgba16float',
-      morph: !this.vertexWGSL ? 1 : 0,
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
     // OPAQUE
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
@@ -676,34 +678,34 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   getModelMatrix(pos, useScale = false) {
-    let modelMatrix = mat4.identity(this._modelMatrix);
-    this._posArray[0] = pos.x; this._posArray[1] = pos.y; this._posArray[2] = pos.z;
-    mat4.translate(modelMatrix, this._posArray, modelMatrix);
-    if(this.itIsPhysicsBody) {
-      this._rotAxisVec[0] = this.rotation.axis.x;
-      this._rotAxisVec[1] = this.rotation.axis.y;
-      this._rotAxisVec[2] = this.rotation.axis.z;
-      mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-    } else {
+    if(!this.itIsPhysicsBody) {
+      let modelMatrix = mat4.identity(this._modelMatrix);
+      this._translateVec[0] = pos.x;
+      this._translateVec[1] = pos.y;
+      this._translateVec[2] = pos.z;
+      mat4.translate(modelMatrix, this._translateVec, modelMatrix);
       mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+      if(useScale == true) {
+        this._scaleVec[0] = this.scale[0];
+        this._scaleVec[1] = this.scale[1];
+        this._scaleVec[2] = this.scale[2];
+        mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+      }
+      this.modelMatrix = modelMatrix;
+      return this.modelMatrix;
     }
-    if(useScale == true) mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix)
-    this.modelMatrix = modelMatrix;
-    return modelMatrix;
+    if(!this.modelMatrix) {
+      let modelMatrix = mat4.identity(this._modelMatrix);
+      this.modelMatrix = modelMatrix;
+    }
+    return this.modelMatrix;
   }
 
   updateModelUniformBuffer() {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(
-      this.modelUniformBuffer,
-      0,
-      modelMatrix.buffer,
-      modelMatrix.byteOffset,
-      modelMatrix.byteLength
-    );
-    // this.modelMatrix = modelMatrix;
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   }
 
   updateTime(time) {
@@ -1062,29 +1064,66 @@ export class MeshMorpher {
     };
   }
 
-  static capsule(radius = 0.5, height = 1) {
+  // static capsule(radius = 0.5, height = 1) {
+  //   const halfH = height / 2;
+  //   return (u, v) => {
+  //     if(v < 0.25) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) - halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else if(v > 0.75) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) + halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else {
+  //       const theta = u * Math.PI * 2;
+  //       const y = ((v - 0.25) / 0.5) * height - halfH;
+  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+  //     }
+  //   };
+  // }
+
+  static capsule(radius = 1, height = 1, fromZeroY = true) {
     const halfH = height / 2;
+    // If fromZeroY is true, shift everything up so the bottom hemisphere starts at 0
+    const yOffset = fromZeroY ? (halfH + radius) : 0;
+
     return (u, v) => {
       if(v < 0.25) {
+        // Lower Hemisphere
         const theta = -u * Math.PI * 2;
         const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) - halfH,
+          (radius * Math.cos(phi) - halfH) + yOffset,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else if(v > 0.75) {
+        // Upper Hemisphere
         const theta = -u * Math.PI * 2;
         const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) + halfH,
+          (radius * Math.cos(phi) + halfH) + yOffset,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else {
+        // Central Cylinder
         const theta = u * Math.PI * 2;
         const y = ((v - 0.25) / 0.5) * height - halfH;
-        return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+        return [
+          radius * Math.cos(theta),
+          y + yOffset,
+          radius * Math.sin(theta)
+        ];
       }
     };
   }

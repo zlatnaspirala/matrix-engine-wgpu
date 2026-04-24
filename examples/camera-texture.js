@@ -17,7 +17,7 @@ export var loadCameraTexture = function() {
 
     cameraTexture.addLight();
 
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       downloadMeshes({
         welcomeText: "./res/meshes/blender/piramyd.obj",
         armor: "./res/meshes/obj/armor.obj",

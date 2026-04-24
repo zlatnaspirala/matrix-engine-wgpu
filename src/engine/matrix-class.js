@@ -327,7 +327,7 @@ export class Rotation {
       }
       return this._cachedRadX;
     } else {
-      this.x = this.x + this.rotationSpeed.x * 0.01;
+      this.x = this.x + this.rotationSpeed.x;
       this._cachedRadX = degToRad(this.x);
       this._lastX = this.x;
       return this._cachedRadX;
@@ -439,7 +439,7 @@ export class Rotation {
 
 // array type of pos obj
 export function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0) {
-  const dx = Apos[0] - Bpos.x;  
+  const dx = Apos[0] - Bpos.x;
   const dz = Apos[2] - Bpos.z;
   const distSq = dx * dx + dz * dz;
   const minDistSq = minDistance * minDistance;
@@ -455,19 +455,27 @@ export function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0)
     Apos[2] += nz * overlap * pushStrength;
 
     // sync target so WASD doesn't snap back next frame
- 
+
     return true;
   }
 
   if(distSq <= 1e-8) {
     Apos[0] += (Math.random() - 0.5) * 0.1;
     Apos[2] += (Math.random() - 0.5) * 0.1;
-    if(Apos.targetX !== undefined) {
-      Apos.targetX = Apos[0];
-      Apos.targetZ = Apos[2];
-    }
+    // if(Apos.targetX !== undefined) {
+    Apos.targetX = Apos[0];
+    Apos.targetZ = Apos[2];
+    // }
     return true;
   }
 
   return false;
+}
+
+export class PVector {
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
 }

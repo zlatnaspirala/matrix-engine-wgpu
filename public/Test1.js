@@ -1797,60 +1797,6 @@ function radToDeg(r2) {
   var pi = Math.PI;
   return r2 * (180 / pi);
 }
-var scriptManager = {
-  SCRIPT_ID: 0,
-  LOAD: function addScript(src, id2, type2, parent, callback) {
-    var s = document.createElement("script");
-    s.onload = function() {
-      if (typeof callback != "undefined") callback();
-    };
-    if (typeof type2 !== "undefined") {
-      s.setAttribute("type", type2);
-      s.innerHTML = src;
-    } else {
-      s.setAttribute("src", src);
-    }
-    if (typeof id2 !== "undefined") {
-      s.setAttribute("id", id2);
-    }
-    if (typeof parent !== "undefined") {
-      document.getElementById(parent).appendChild(s);
-      if (typeof callback != "undefined") callback();
-    } else {
-      document.body.appendChild(s);
-    }
-  },
-  loadModule: function addScript2(src, id2, type2, parent) {
-    console.log("Script id load called ");
-    var s = document.createElement("script");
-    s.onload = function() {
-      scriptManager.SCRIPT_ID++;
-    };
-    if (typeof type2 === "undefined") {
-      s.setAttribute("type", "module");
-      s.setAttribute("src", src);
-    } else {
-      s.setAttribute("type", type2);
-      s.innerHTML = src;
-    }
-    s.setAttribute("src", src);
-    if (typeof id2 !== "undefined") {
-      s.setAttribute("id", id2);
-    }
-    if (typeof parent !== "undefined") {
-      document.getElementById(parent).appendChild(s);
-    } else {
-      document.body.appendChild(s);
-    }
-  },
-  loadGLSL: function(src) {
-    return new Promise((resolve) => {
-      fetch(src).then((data) => {
-        resolve(data.text());
-      });
-    });
-  }
-};
 function OSCILLATOR(min2, max2, step, options2) {
   if (min2 == null || max2 == null || step == null) {
     console.log("OSCILLATOR ERROR");
@@ -1999,31 +1945,10 @@ var urlQuery = (function() {
   }
   return query_string;
 })();
-function quaternion_rotation_matrix(Q) {
-  var q0 = Q[0];
-  var q1 = Q[1];
-  var q2 = Q[2];
-  var q3 = Q[3];
-  var r00 = 2 * (q0 * q0 + q1 * q1) - 1;
-  var r01 = 2 * (q1 * q2 - q0 * q3);
-  var r02 = 2 * (q1 * q3 + q0 * q2);
-  var r10 = 2 * (q1 * q2 + q0 * q3);
-  var r11 = 2 * (q0 * q0 + q2 * q2) - 1;
-  var r12 = 2 * (q2 * q3 - q0 * q1);
-  var r20 = 2 * (q1 * q3 - q0 * q2);
-  var r21 = 2 * (q2 * q3 + q0 * q1);
-  var r22 = 2 * (q0 * q0 + q3 * q3) - 1;
-  var rot_matrix = [
-    [r00, r01, r02],
-    [r10, r11, r12],
-    [r20, r21, r22]
-  ];
-  return rot_matrix;
-}
 var LOG_WARN = "background: gray; color: yellow; font-size:10px";
 var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
 var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
-var LOG_FUNNY_ARCADE2 = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
 var LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
 var LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
 var LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
@@ -2207,6 +2132,10 @@ var WASDCamera = class _WASDCamera {
     this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1e3);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
+    if (isMobile() == true && options2.isActive == "init active cam") {
+      console.log("CONTROLER MOBILE WASDCAMERA");
+      MobileDOM.createWASD(this, { marginR: 0, marginD: 0 });
+    }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
@@ -2273,19 +2202,19 @@ var WASDCamera = class _WASDCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
-    canvas.addEventListener("pointerdown", (e) => {
+    canvas.addEventListener("pointerdown", (e2) => {
       this._mouseDown = true;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
+      this._lastX = e2.clientX;
+      this._lastY = e2.clientY;
+      canvas.setPointerCapture(e2.pointerId);
     }, { passive: true });
-    const pointerUp = (e) => {
+    const pointerUp = (e2) => {
       this._mouseDown = false;
     };
     canvas.addEventListener("pointerup", pointerUp, { passive: true });
     canvas.addEventListener("pointercancel", pointerUp, { passive: true });
-    canvas.addEventListener("pointermove", (e) => {
-      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    canvas.addEventListener("pointermove", (e2) => {
+      const events = e2.getCoalescedEvents ? e2.getCoalescedEvents() : [e2];
       for (const ce of events) {
         let dx = 0, dy = 0;
         if (ce.pointerType === "mouse") {
@@ -2306,8 +2235,8 @@ var WASDCamera = class _WASDCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e, value) => {
-      switch (e.code) {
+    const setDigital = (e2, value) => {
+      switch (e2.code) {
         case "KeyW":
           this._digital.forward = value;
           break;
@@ -2344,8 +2273,8 @@ var WASDCamera = class _WASDCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
-    window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
+    window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
+    window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
   }
   _applyDigitalMovement() {
     const d = this._digital;
@@ -2398,38 +2327,38 @@ var WASDCamera = class _WASDCamera {
     this._recalculateViewVP();
     this._dirtyAngle = false;
   }
-  setX(x2) {
+  setX = (x2) => {
     this.position[0] = x2;
     this._dirtyAngle = true;
-  }
-  setY(y2) {
+  };
+  setY = (y2) => {
     this.position[1] = y2;
     this._dirtyAngle = true;
-  }
-  setZ(z) {
+  };
+  setZ = (z) => {
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setPosition(x2, y2, z) {
+  };
+  setPosition = (x2, y2, z) => {
     this.position[0] = x2;
     this.position[1] = y2;
     this.position[2] = z;
     this._dirtyAngle = true;
-  }
-  setPitch(p) {
+  };
+  setPitch = (p) => {
     this.pitch = p;
     this._dirtyAngle = true;
-  }
-  setYaw(y2) {
+  };
+  setYaw = (y2) => {
     this.yaw = y2;
     this._dirtyAngle = true;
-  }
-  setTarget(x2, y2, z) {
+  };
+  setTarget = (x2, y2, z) => {
     this.target[0] = x2;
     this.target[1] = y2;
     this.target[2] = z;
     this._dirtyAngle = true;
-  }
+  };
 };
 var RPGCamera = class _RPGCamera {
   pitch = -0.88;
@@ -2494,14 +2423,13 @@ var RPGCamera = class _RPGCamera {
     return out;
   }
   _setupEvents() {
-    addEventListener("wheel", (e) => {
+    addEventListener("wheel", (e2) => {
       this.mousRollInAction = true;
-      this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+      this.scrollY -= e2.deltaY * this.scrollSpeed * 0.01;
       this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
       this._dirty = true;
     });
   }
-  // 🔥 SAME AS WASD (no matrices)
   _updateOrientation() {
     const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
@@ -2603,14 +2531,41 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
-    if (isMobile() == true) {
-      MobileDOM.createWASD(this);
+    if (isMobile() == true && options2.isActive == "init active cam") {
+      console.log("FPCAMERA");
+      MobileDOM.createWASD(this, { margin: 50 });
     }
   }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
+  setPitch = (p) => {
+    this.pitch = p;
+    this._dirtyAngle = true;
+  };
+  setYaw = (y2) => {
+    this.yaw = y2;
+    this._dirtyAngle = true;
+  };
+  setProjection = (fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) => {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
-  }
+  };
+  setPosition = (x2, y2, z) => {
+    this.position[0] = x2;
+    this.position[1] = y2;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setX = (x2) => {
+    this.position[0] = x2;
+    this._dirtyAngle = true;
+  };
+  setY = (y2) => {
+    this.position[1] = y2;
+    this._dirtyAngle = true;
+  };
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
@@ -2672,23 +2627,22 @@ var FirstPersonCamera = class _FirstPersonCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
-    canvas.addEventListener("pointerdown", (e) => {
+    canvas.addEventListener("pointerdown", (e2) => {
       this._mouseDown = true;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
+      this._lastX = e2.clientX;
+      this._lastY = e2.clientY;
+      canvas.setPointerCapture(e2.pointerId);
     }, { passive: true });
-    const pointerUp = (e) => {
+    const pointerUp = (e2) => {
       this._mouseDown = false;
     };
     canvas.addEventListener("pointerup", pointerUp, { passive: true });
     canvas.addEventListener("pointercancel", pointerUp, { passive: true });
-    canvas.addEventListener("pointermove", (e) => {
-      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    canvas.addEventListener("pointermove", (e2) => {
+      const events = e2.getCoalescedEvents ? e2.getCoalescedEvents() : [e2];
       for (const ce of events) {
         let dx = 0, dy = 0;
         if (ce.pointerType === "mouse") {
-          if ((ce.buttons & 1) === 0) continue;
           dx = ce.movementX * this.MOUSE_SENS;
           dy = ce.movementY * this.MOUSE_SENS;
         } else {
@@ -2705,8 +2659,8 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e, value) => {
-      switch (e.code) {
+    const setDigital = (e2, value) => {
+      switch (e2.code) {
         case "KeyW":
           this._digital.forward = value;
           break;
@@ -2734,8 +2688,8 @@ var FirstPersonCamera = class _FirstPersonCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
-    window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
+    window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
+    window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
   }
   _applyDigitalMovement() {
     const d = this._digital;
@@ -2781,14 +2735,16 @@ var FirstPersonCamera = class _FirstPersonCamera {
 var MobileDOM = {
   createWASD(camera, options2 = {}) {
     const size2 = options2.size ?? 60;
-    const margin = options2.margin ?? 20;
+    const marginR = options2.marginR ?? 0;
+    const marginB = options2.marginB ?? 0;
     const opacity = options2.opacity ?? 0.35;
     const color = options2.color ?? "#ffffff";
     const wrap = document.createElement("div");
+    wrap.id = "mobileControls";
     Object.assign(wrap.style, {
       position: "fixed",
-      bottom: `${margin}px`,
-      left: `${margin}px`,
+      bottom: `${marginB}px`,
+      right: `${marginR}px`,
       width: `${size2 * 3 + 8}px`,
       userSelect: "none",
       zIndex: "9999",
@@ -2829,6 +2785,7 @@ var MobileDOM = {
         if (camera._keyInterval === null) {
           camera._keyInterval = setInterval(() => {
             camera._dirty = true;
+            camera._dirtyAngle = true;
             camera._applyDigitalMovement();
           }, 16);
         }
@@ -2843,15 +2800,15 @@ var MobileDOM = {
           camera._dirty = false;
         }
       };
-      btn.addEventListener("pointerdown", (e) => {
-        e.stopPropagation();
+      btn.addEventListener("pointerdown", (e2) => {
+        e2.stopPropagation();
         press();
-        btn.setPointerCapture(e.pointerId);
+        btn.setPointerCapture(e2.pointerId);
       }, { passive: true });
-      btn.addEventListener("pointerup", (e) => {
+      btn.addEventListener("pointerup", (e2) => {
         release();
       }, { passive: true });
-      btn.addEventListener("pointercancel", (e) => {
+      btn.addEventListener("pointercancel", (e2) => {
         release();
       }, { passive: true });
       wrap.appendChild(btn);
@@ -2859,15 +2816,16 @@ var MobileDOM = {
     document.body.appendChild(wrap);
     return wrap;
   },
-  addButton(label, onClick, options2 = {}) {
+  addButton(label, onClick, onRelease, options2 = {}) {
     const size2 = options2.size ?? 56;
-    const margin = options2.margin ?? 20;
+    const bottom = options2.bottom ?? 0;
+    const left2 = options2.left ?? 0;
     const opacity = options2.opacity ?? 0.35;
     const btn = document.createElement("div");
     Object.assign(btn.style, {
       position: "fixed",
-      bottom: options2.bottom ?? `${margin}px`,
-      right: options2.right ?? `${margin}px`,
+      bottom: `${bottom}%`,
+      left: `${left2}%`,
       width: `${size2}px`,
       height: `${size2}px`,
       display: "flex",
@@ -2885,16 +2843,16 @@ var MobileDOM = {
       touchAction: "none"
     });
     btn.textContent = label;
-    btn.addEventListener("pointerdown", (e) => {
-      e.stopPropagation();
+    btn.addEventListener("pointerdown", (e2) => {
+      e2.stopPropagation();
       btn.style.background = `rgba(255,255,255,${opacity})`;
-      onClick(e);
+      onClick(e2);
     }, { passive: true });
-    btn.addEventListener("pointerup", () => {
-      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+    btn.addEventListener("pointerup", (e2) => {
+      onRelease(e2);
     }, { passive: true });
     btn.addEventListener("pointercancel", () => {
-      btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
     }, { passive: true });
     document.body.appendChild(btn);
     return btn;
@@ -3170,7 +3128,7 @@ var Rotation = class {
       }
       return this._cachedRadX;
     } else {
-      this.x = this.x + this.rotationSpeed.x * 0.01;
+      this.x = this.x + this.rotationSpeed.x;
       this._cachedRadX = degToRad(this.x);
       this._lastX = this.x;
       return this._cachedRadX;
@@ -3240,6 +3198,13 @@ var Rotation = class {
     }
   };
 };
+var PVector = class {
+  constructor(x2 = 0, y2 = 0, z = 0) {
+    this.x = x2;
+    this.y = y2;
+    this.z = z;
+  }
+};
 
 // ../../../me-config.js
 window.urlQ = urlQuery;
@@ -3256,27 +3221,31 @@ var MEConfig = {
   construct: function() {
     if (urlQ["GRAVITY_Y_AXIS"]) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
-      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYX"]) {
       this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
-      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYZ"]) {
       this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
-      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["SHADOW_RES"]) {
       this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
-      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["MAX_LIGHTS"]) {
       this.MAX_LIGHTS = parseInt(urlQ["MAX_LIGHTS"]);
-      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+    }
+    if (urlQ["MAX_BONES"]) {
+      this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
+      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["fs"]) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
-      console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
@@ -3286,14 +3255,14 @@ var MEConfig = {
     }
     if (urlQ["PHYSICS_GROUND_Y"] != null) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
-      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }
   },
   checkOffScreen: function() {
     if ("OffscreenCanvas" in window) {
-      console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE2);
+      console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
     } else {
-      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE2);
+      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
     }
   }
 };
@@ -5399,14 +5368,14 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-
-// PBR textures
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -5538,7 +5507,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/fragment.wgsl.noCut.js
-var fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+var fragmentWGSLDark = `
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -5587,11 +5557,10 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
-    alpha     : f32,  // \u2705 Added alpha
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -5601,115 +5570,180 @@ const MAX_SPOTLIGHTS = 20u;
 @group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
 @group(1) @binding(3) var metallicRoughnessSampler: sampler;
 @group(1) @binding(4) var<uniform> material: MaterialPBR;
-// @group(1) @binding(5) var normalTexture: texture_2d<f32>;
-// @group(1) @binding(6) var normalSampler: sampler;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-  @location(0) shadowPos : vec4f,
-  @location(1) fragPos   : vec3f,
-  @location(2) fragNorm  : vec3f,
-  @location(3) uv        : vec2f,
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-  let texColor = textureSample(meshTexture, meshSampler, uv);
-  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-  let metallic = mrTex.b * material.metallicFactor;
-  let roughness = mrTex.g * material.roughnessFactor;
-  let alpha = texColor.a * material.baseColorFactor.a;
-  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha = material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-  let a = roughness * roughness;
-  let a2 = a * a;
-  let NdotH = max(dot(N, H), 0.0);
-  let NdotH2 = NdotH * NdotH;
-  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-  return a2 / (PI * denom * denom);
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-  let r = (roughness + 1.0);
-  let k = (r * r) / 8.0;
-  return NdotV / (NdotV * (1.0 - k) + k);
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-  let NdotV = max(dot(N, V), 0.0);
-  let NdotL = max(dot(N, L), 0.0);
-  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-  let L = normalize(light.position - fragPos);
-  let theta = dot(L, normalize(-light.direction));
-  let epsilon = light.innerCutoff - light.outerCutoff;
-  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-// PCF shadow sampling
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+    return material.baseColor * light.color * light.intensity * NdotL;
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-  var visibility: f32 = 0.0;
-  let biasConstant: f32 = 0.001;
-  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-  let bias = biasConstant + slopeBias;
-  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-  let offsets: array<vec2f, 9> = array<vec2f, 9>(
-      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-  );
-  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
-  }
-  return visibility / 9.0;
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    var weight: f32 = 0.0;
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        let sampleUV = shadowUV + offsets[i] * oneOverSize;
+        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+        let s = textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            sampleUV, layer, depthRef - bias
+        );
+        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+        visibility += select(1.0, s, inBounds);
+        weight += 1.0;
+    }
+    return visibility / weight;
 }
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-  let materialData = getPBRMaterial(input.uv);
-  if (materialData.alpha < 0.01) {
-      discard;
-  }
-  let N = normalize(input.fragNorm);
-  let V = normalize(scene.cameraPos - input.fragPos);
-  var Lo = vec3f(0.0);
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-      let L = normalize(spotlights[i].position - input.fragPos);
-      let H = normalize(V + L);
-      let distance = length(spotlights[i].position - input.fragPos);
-      let dist        = length(spotlights[i].position - input.fragPos);
-      let r           = dist / max(spotlights[i].range, 0.001);
-      let attenuation = 1.0 / (1.0 + r * r);
-      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-      let NDF = distributionGGX(N, H, materialData.roughness);
-      let G   = geometrySmith(N, V, L, materialData.roughness);
-      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-      let kS = F;
-      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-      let diffuse  = kD * materialData.baseColor / PI;
-      let NdotL = max(dot(N, L), 0.0);
-      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-      Lo += (diffuse + specular) * radiance * NdotL;
-  }
+    let materialData = getPBRMaterial(input.uv);
+    // if (materialData.alpha < 0.01) {
+    //     discard;
+    // }
 
-  let maxIntensity = max(length(Lo), 0.0);
-  let ambientScale = clamp(maxIntensity * 0.5 + 0.05, 0.0, 1.0);
-  let ambient = scene.globalAmbient * materialData.baseColor * ambientScale;
-  var color = ambient + Lo;
-
-  color = pow(max(color, vec3f(0.0)), vec3f(1.0 / 2.2));
-  return vec4f(color, 1.0);
-}
-`;
+    var lightContribution = vec3f(0.0);
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+        let depthRef = p.z;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        // let inFrustum =
+        //     p.z >= 0.0 && p.z <= 1.0 &&
+        //     p.x >= -1.0 && p.x <= 1.0 &&
+        //     p.y >= -1.0 && p.y <= 1.0;
+        let inDepth = p.z >= 0.0 && p.z <= 1.0;
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+        let shadowFactor = select(1.0, visibility, inDepth);
+        let contrib = computeSpotLight(
+            spotlights[i],
+            norm,
+            input.fragPos,
+            viewDir,
+            materialData
+        );
+        lightContribution += contrib * shadowFactor;
+    }
+    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+    // -- from dark next feature
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    // like fog interest
+    // var ambientTerm = material.ambientColor + scene.globalAmbient;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    return vec4f(finalColor, alpha);
+}`;
 
 // ../../../shaders/minimalist/mini.wgsl.js
 var miniWGSL = `
@@ -6670,9 +6704,9 @@ struct VertexAnimParams {
 }
 
 @group(0) @binding(0) var<uniform> scene: Scene;
-@group(1) @binding(0) var<uniform> model: Model;
-@group(1) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(1) @binding(3) var<uniform> morphBlend: f32;
+@group(2) @binding(0) var<uniform> model: Model;
+@group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
+@group(2) @binding(3) var<uniform> morphBlend: f32;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -6790,14 +6824,100 @@ fn main(input: VertexInput) -> VertexOutput {
 `
 );
 
+// ../../../engine/pipelineManager.js
+function buildPipelineKey({
+  vertexId,
+  fragmentId,
+  type: type2,
+  transparent,
+  depthWrite,
+  format,
+  topology,
+  cullMode,
+  frontFace,
+  mirror,
+  normalMap,
+  isWater
+}) {
+  return JSON.stringify({
+    v: vertexId,
+    f: fragmentId,
+    t: type2,
+    tr: transparent,
+    dw: depthWrite,
+    fmt: format,
+    topo: topology,
+    cull: cullMode,
+    face: frontFace,
+    mirror,
+    normalMap,
+    isWater
+  });
+}
+var PipelineManager = class _PipelineManager {
+  constructor(device2) {
+    this.device = device2;
+    this.cache = /* @__PURE__ */ new Map();
+  }
+  getPipeline({ key, pipeline }) {
+    if (this.cache.has(key)) return this.cache.get(key);
+    const p = this.device.createRenderPipeline(pipeline);
+    this.cache.set(key, p);
+    return p;
+  }
+  static instance;
+  static init(device2) {
+    this.instance = new _PipelineManager(device2);
+  }
+  static get() {
+    return this.instance;
+  }
+  invalidate(key) {
+    this.cache.delete(key);
+  }
+  static invalidateAll() {
+    this.instance.cache.clear();
+  }
+};
+var MaterialBindGroupCache = class _MaterialBindGroupCache {
+  constructor(device2) {
+    this.device = device2;
+    this._cache = /* @__PURE__ */ new Map();
+  }
+  static instance;
+  static init(device2) {
+    this.instance = new _MaterialBindGroupCache(device2);
+  }
+  static get() {
+    return this.instance;
+  }
+  get(pipelineKey) {
+    return this._cache.get(pipelineKey);
+  }
+  set(pipelineKey, bindGroup) {
+    this._cache.set(pipelineKey, bindGroup);
+  }
+  has(pipelineKey) {
+    return this._cache.has(pipelineKey);
+  }
+  invalidate(pipelineKey) {
+    this._cache.delete(pipelineKey);
+  }
+  static invalidateAll() {
+    this.instance._cache.clear();
+  }
+};
+
 // ../../../engine/materials.js
 var Materials = class {
   constructor(device2, material, glb, textureCache, isVideo) {
     this.device = device2;
     this.textureCache = textureCache;
+    this.materialBindGroupCache = MaterialBindGroupCache.get();
     this.glb = glb;
     this.material = material;
     if (typeof isVideo !== "undefined") {
+      console.log("WHAT IS isvideo ", this.isVideo);
       this.isVideo = true;
     } else {
       this.isVideo = false;
@@ -6891,6 +7011,14 @@ var Materials = class {
         minFilter: "linear"
       });
     }
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: "MaterialVideoBGL[mesh]",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
     if (this.material.type == "water") {
       this.createBufferForWater();
     }
@@ -7135,8 +7263,8 @@ var Materials = class {
       return fragmentWGSLMix1;
     } else if (this.material.type === "mirror") {
       return mirrorIlluminateFragmentWGSL;
-    } else if (this.material.type === "free") {
-      return fragmentWGSLNoCut;
+    } else if (this.material.type === "dark" || this.material.type === "free") {
+      return fragmentWGSLDark;
     } else if (this.material.type === "fontana") {
       return fountainBasinFragmentWGSL;
     } else if (this.material.type === "mini") {
@@ -7232,7 +7360,7 @@ var Materials = class {
       const { texture, sampler } = await this.textureCache.get(path2, this.getFormat());
       this.texture0 = texture;
       this.sampler = sampler;
-      resolve();
+      resolve(this);
     });
   }
   async loadEnvMap(texturesPaths, isEnvMap = false) {
@@ -7244,10 +7372,12 @@ var Materials = class {
     };
   }
   async loadVideoTexture(arg) {
-    console.log("100000000000000000000000000000000");
     this.videoIsReady = "MAYBE";
     this.isVideo = true;
-    this.drawElements = this.drawVideoElements;
+    this.sampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
+    });
     if (arg.type === "video") {
       this.video = document.createElement("video");
       this.video.src = arg.src || "res/videos/tunel.mp4";
@@ -7258,25 +7388,17 @@ var Materials = class {
       this.video.style.position = "absolute";
       this.video.style.width = "640px";
       this.video.style.height = "480px";
-      this.video.style.top = "-20px";
+      this.video.style.top = "-465px";
       this.video.style.left = "50%";
       this.video.play();
-      this.video.addEventListener("canplay", () => {
-        if (this.video.readyState >= 3) {
-          alert("++++ > 3 ");
-        }
-      }, { once: true });
       this.video.addEventListener("canplaythrough", () => {
-        console.log("_cideo can playt +++++++++++++++++++++++++++");
         if (this.video.readyState >= 3) {
           this.externalTexture = this.device.importExternalTexture({ source: this.video });
-          console.log("++++ > 3   ++++  " + this.externalTexture);
           if (!this.externalTexture) alert("ERROR " + this.externalTexture);
           this.sampler = this.device.createSampler({
             magFilter: "linear",
             minFilter: "linear"
           });
-          this.createLayoutForRender();
           this.createMaterialBindGroupVideo();
         }
       }, { once: false });
@@ -7286,6 +7408,11 @@ var Materials = class {
     } else if (arg.type === "camera") {
       if (!byId(`core-${this.name}`)) {
         this.video = document.createElement("video");
+        this.video.style.position = "absolute";
+        this.video.style.width = "640px";
+        this.video.style.height = "480px";
+        this.video.style.top = "-465px";
+        this.video.style.left = "50%";
         this.video.id = `core-${this.name}`;
         this.video.autoplay = true;
         this.video.muted = true;
@@ -7303,6 +7430,16 @@ var Materials = class {
           this.video.srcObject = stream;
           await this.video.play();
           this.isVideo = true;
+          await new Promise((resolve) => {
+            this.video.requestVideoFrameCallback(() => {
+              resolve();
+            });
+          });
+          setTimeout(() => {
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+          }, 1);
+          return;
         } catch (err) {
           console.info("\u274C Failed to access camera:", err);
         }
@@ -7327,19 +7464,27 @@ var Materials = class {
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
       canvas.style.position = "absolute";
-      canvas.style.left = "-1000px";
-      canvas.style.top = "0";
+      canvas.style.left = "0px";
+      canvas.style.top = "-225px";
       document.body.appendChild(canvas);
       const ctx = canvas.getContext("2d");
       if (typeof arg.canvaInlineProgram === "function") {
-        const drawLoop = () => {
-          ctx.save();
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-          arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
-          ctx.restore();
-          requestAnimationFrame(drawLoop);
-        };
+        let drawLoop;
+        if (typeof arg.specialCanvas2dArg.middle !== "undefined") {
+          drawLoop = () => {
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+            ctx.restore();
+            requestAnimationFrame(drawLoop);
+          };
+        } else {
+          drawLoop = () => {
+            arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+            requestAnimationFrame(drawLoop);
+          };
+        }
         drawLoop();
       } else {
         ctx.fillStyle = "#0ce325ff";
@@ -7347,32 +7492,28 @@ var Materials = class {
       }
       this.video = document.createElement("video");
       this.video.style.position = "absolute";
-      this.video.style.left = "0px";
+      this.video.style.left = "-600px";
       this.video.style.top = "0";
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(60);
+      this.video.srcObject = canvas.captureStream(24);
       document.body.append(this.video);
       this.video.play();
-      await new Promise((resolve) => {
-        const check = () => {
-          if (this.video.readyState >= 2) resolve();
-          else requestAnimationFrame(check);
-        };
-        check();
-      });
-      this.isVideo = true;
     }
-    this.sampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
+    await new Promise((resolve) => {
+      this.video.requestVideoFrameCallback(() => {
+        this.updateVideoTexture();
+        this.createMaterialBindGroupVideo();
+        this.setupPipeline();
+        resolve();
+      });
     });
-    this.createLayoutForRender();
-    this.createMaterialBindGroupVideo();
   }
   updateVideoTexture() {
+    if (!this.video || this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({ source: this.video });
+    if (!this.externalTexture) return;
     this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
@@ -7394,52 +7535,53 @@ var Materials = class {
     const texIndex = texInfo.index;
     return this.glb.glbTextures[texIndex].createView();
   }
-  createBindGroupForRender() {
+  createBindGroupForRender(key) {
     let textureResource = this.texture0.createView();
     if (this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
       textureResource = material.baseColorTexture.imageView;
     }
     if (this.isVideo == true) return;
-    this.materialBindGroup = this.device.createBindGroup({
-      label: "materialBindGroup normal",
-      layout: this.materialBGL,
-      entries: [
-        { binding: 0, resource: textureResource },
-        { binding: 1, resource: this.imageSampler },
-        { binding: 2, resource: this.metallicRoughnessTextureView },
-        { binding: 3, resource: this.metallicRoughnessSampler },
-        { binding: 4, resource: { buffer: this.materialPBRBuffer } },
-        { binding: 5, resource: this.normalTextureView },
-        { binding: 6, resource: this.normalSampler }
-      ]
-    });
-  }
-  createLayoutForRender() {
-    this.materialBGL = this.device.createBindGroupLayout({
-      label: "MaterialBGL",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
-      ]
-    });
-    this.materialVideoBGL = this.device.createBindGroupLayout({
-      label: "MaterialVideoBGL",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-      ]
-    });
+    key = JSON.stringify(key);
+    if (typeof this.material.share !== "undefined" && this.material.share == true) {
+      if (!this.materialBindGroupCache._cache.has(key)) {
+        this.materialBindGroupCache._cache.set(
+          key,
+          this.device.createBindGroup({
+            label: "materialBindGroup normal",
+            layout: this.materialBGL,
+            entries: [
+              { binding: 0, resource: textureResource },
+              { binding: 1, resource: this.imageSampler },
+              { binding: 2, resource: this.metallicRoughnessTextureView },
+              { binding: 3, resource: this.metallicRoughnessSampler },
+              { binding: 4, resource: { buffer: this.materialPBRBuffer } },
+              { binding: 5, resource: this.normalTextureView },
+              { binding: 6, resource: this.normalSampler }
+            ]
+          })
+        );
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
+      } else {
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
+      }
+    } else {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: "materialBindGroup normal",
+        layout: this.materialBGL,
+        entries: [
+          { binding: 0, resource: textureResource },
+          { binding: 1, resource: this.imageSampler },
+          { binding: 2, resource: this.metallicRoughnessTextureView },
+          { binding: 3, resource: this.metallicRoughnessSampler },
+          { binding: 4, resource: { buffer: this.materialPBRBuffer } },
+          { binding: 5, resource: this.normalTextureView },
+          { binding: 6, resource: this.normalSampler }
+        ]
+      });
+    }
   }
   createMaterialBindGroupVideo() {
-    if (!this.externalTexture) return;
-    console.log("SET VIDEO BIND GROUP");
     this.materialBindGroup = this.device.createBindGroup({
       label: "materialVideoBGL",
       layout: this.materialVideoBGL,
@@ -7939,9 +8081,9 @@ var GizmoEffect = class {
     this.initialPosition = null;
     this._initPipeline();
     this._setupEventListeners();
-    addEventListener("editor-set-gizmo-mode", (e) => {
-      console.log("MODE:", e.detail.mode);
-      this.setMode(e.detail.mode);
+    addEventListener("editor-set-gizmo-mode", (e2) => {
+      console.log("MODE:", e2.detail.mode);
+      this.setMode(e2.detail.mode);
     });
   }
   _initPipeline() {
@@ -8201,22 +8343,22 @@ var GizmoEffect = class {
     this.vertexCount = positions.length / 3;
   }
   _setupEventListeners() {
-    app.canvas.addEventListener("ray.hit.mousedown", (e) => {
-      const detail = e.detail;
+    app.canvas.addEventListener("ray.hit.mousedown", (e2) => {
+      const detail = e2.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
         this._handleRayHit(detail);
       } else {
-        e.detail.hitObject.effects.gizmoEffect = this;
+        e2.detail.hitObject.effects.gizmoEffect = this;
         this.parentMesh.effects.gizmoEffect = null;
-        this.parentMesh = e.detail.hitObject;
+        this.parentMesh = e2.detail.hitObject;
         app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
       }
     });
-    app.canvas.addEventListener("mousemove", (e) => {
-      if (this.isDragging && e.buttons === 1) {
-        this._handleDrag(e);
+    app.canvas.addEventListener("mousemove", (e2) => {
+      if (this.isDragging && e2.buttons === 1) {
+        this._handleDrag(e2);
         if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
-      } else if (this.isDragging && e.buttons === 0) {
+      } else if (this.isDragging && e2.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
@@ -8423,11 +8565,11 @@ var GizmoEffect = class {
     const b = ray[0] * line[0] + ray[1] * line[1] + ray[2] * line[2];
     const c = line[0] ** 2 + line[1] ** 2 + line[2] ** 2;
     const d = ray[0] * w[0] + ray[1] * w[1] + ray[2] * w[2];
-    const e = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
+    const e2 = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
     const denom = a * c - b * b;
     if (Math.abs(denom) < 1e-4) return false;
-    const sc = (b * e - c * d) / denom;
-    const tc = (a * e - b * d) / denom;
+    const sc = (b * e2 - c * d) / denom;
+    const tc = (a * e2 - b * d) / denom;
     if (tc < 0 || tc > 1) return false;
     const closestOnRay = [
       ro[0] + sc * ray[0],
@@ -8891,9 +9033,9 @@ var DestructionEffect = class {
    * Called by parent object before rendering
    */
   updateInstanceData(baseModelMatrix) {
-    const local = mat4Impl.identity();
+    const local2 = mat4Impl.identity();
     const finalMat = mat4Impl.identity();
-    mat4Impl.multiply(baseModelMatrix, local, finalMat);
+    mat4Impl.multiply(baseModelMatrix, local2, finalMat);
     const timeBuffer = new Float32Array([this.time]);
     const intensityBuffer = new Float32Array([this.intensity]);
     this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
@@ -10543,24 +10685,24 @@ var FlameEffect = class {
     return buf;
   }
   updateInstanceData(baseModelMatrix) {
-    const local = this._localMatrix;
+    const local2 = this._localMatrix;
     const finalMat = this._finalMatrix;
-    mat4Impl.identity(local);
+    mat4Impl.identity(local2);
     mat4Impl.identity(finalMat);
-    mat4Impl.translate(local, this.localOffset, local);
-    mat4Impl.rotateX(local, this.localRotation[0], local);
-    mat4Impl.rotateY(local, this.localRotation[1], local);
-    mat4Impl.rotateZ(local, this.localRotation[2], local);
+    mat4Impl.translate(local2, this.localOffset, local2);
+    mat4Impl.rotateX(local2, this.localRotation[0], local2);
+    mat4Impl.rotateY(local2, this.localRotation[1], local2);
+    mat4Impl.rotateZ(local2, this.localRotation[2], local2);
     if (this.activeRotate[0] !== 0) {
-      mat4Impl.rotateX(local, this.activeRotate[0] * this.time, local);
+      mat4Impl.rotateX(local2, this.activeRotate[0] * this.time, local2);
     }
     if (this.activeRotate[1] !== 0) {
-      mat4Impl.rotateY(local, this.activeRotate[1] * this.time, local);
+      mat4Impl.rotateY(local2, this.activeRotate[1] * this.time, local2);
     }
     if (this.activeRotate[2] !== 0) {
-      mat4Impl.rotateZ(local, this.activeRotate[2] * this.time, local);
+      mat4Impl.rotateZ(local2, this.activeRotate[2] * this.time, local2);
     }
-    mat4Impl.multiply(baseModelMatrix, local, finalMat);
+    mat4Impl.multiply(baseModelMatrix, local2, finalMat);
     const ts = this._timeSpeed;
     ts[0] = this.time;
     ts[1] = this.speed;
@@ -10821,7 +10963,7 @@ var FlameEmitter = class {
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S);
     this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE2);
+    console.info(`Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([
       memory1,
       memory2,
@@ -10912,13 +11054,13 @@ var FlameEmitter = class {
       for (let j = 0; j < 3; j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
-      const local = this._localMatrix;
-      mat4Impl.identity(local);
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.rotateY(local, t.rotation, local);
-      mat4Impl.scale(local, t.currentScale, local);
+      const local2 = this._localMatrix;
+      mat4Impl.identity(local2);
+      mat4Impl.translate(local2, t.currentPosition, local2);
+      mat4Impl.rotateY(local2, t.rotation, local2);
+      mat4Impl.scale(local2, t.currentScale, local2);
       mat4Impl.identity(this._finalMatrix);
-      mat4Impl.multiply(baseModelMatrix, local, this._finalMatrix);
+      mat4Impl.multiply(baseModelMatrix, local2, this._finalMatrix);
       const offset = i * floatsPerInstance;
       this.instanceData.set(this._finalMatrix, offset);
       this.instanceData[offset + 16] = t.time;
@@ -11207,61 +11349,132 @@ var PointerEffect = class {
   }
 };
 
-// ../../../engine/pipelineManager.js
-function buildPipelineKey({
-  vertexId,
-  fragmentId,
-  type: type2,
-  transparent,
-  depthWrite,
-  format,
-  topology,
-  cullMode,
-  frontFace,
-  mirror,
-  normalMap,
-  isWater
-}) {
-  return JSON.stringify({
-    v: vertexId,
-    f: fragmentId,
-    t: type2,
-    tr: transparent,
-    dw: depthWrite,
-    fmt: format,
-    topo: topology,
-    cull: cullMode,
-    face: frontFace,
-    mirror,
-    normalMap,
-    isWater
-  });
-}
-var PipelineManager = class _PipelineManager {
-  constructor(device2) {
+// ../../../engine/effects/msdfText.js
+var MSDFTextEffect = class {
+  constructor(device2, format, msdfTexture, sampler) {
     this.device = device2;
-    this.cache = /* @__PURE__ */ new Map();
+    this.format = format;
+    this.msdfTexture = msdfTexture;
+    this.sampler = sampler;
+    this.glyphs = [];
+    this._init();
   }
-  getPipeline({ key, pipeline }) {
-    if (this.cache.has(key)) {
-      return this.cache.get(key);
-    }
-    const p = this.device.createRenderPipeline(pipeline);
-    this.cache.set(key, p);
-    return p;
+  _init() {
+    const vertexData = new Float32Array([
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5
+    ]);
+    const uvData = new Float32Array([
+      0,
+      1,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0
+    ]);
+    const indexData = new Uint16Array([
+      0,
+      2,
+      1,
+      1,
+      2,
+      3
+    ]);
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: indexData.byteLength,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.glyphBuffer = this.device.createBuffer({
+      size: 1024 * 64,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.glyphBuffer } },
+        { binding: 2, resource: this.msdfTexture.createView() },
+        { binding: 3, resource: this.sampler }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: MSDF_SHADER
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          {
+            arrayStride: 2 * 4,
+            attributes: [{ shaderLocation: 0, format: "float32x2" }]
+          },
+          {
+            arrayStride: 2 * 4,
+            attributes: [{ shaderLocation: 1, format: "float32x2" }]
+          }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{ format: this.format }]
+      },
+      primitive: {
+        topology: "triangle-list"
+      }
+    });
   }
-  static instance;
-  static init(device2) {
-    this.instance = new _PipelineManager(device2);
+  setText(text) {
+    this.text = text;
+    this._updateGlyphs(text);
   }
-  static get() {
-    return this.instance;
+  _updateGlyphs(text) {
   }
-  invalidate(key) {
-    this.cache.delete(key);
-  }
-  static invalidateAll() {
-    this.instance.cache.clear();
+  render(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.glyphs.length);
   }
 };
 
@@ -11296,6 +11509,8 @@ var MEMeshObj = class extends Materials {
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
+    this._modelMatrix = mat4Impl.create();
+    this.modelMatrix = mat4Impl.create();
     if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
       o2.material.useBlend = false;
     }
@@ -11303,10 +11518,11 @@ var MEMeshObj = class extends Materials {
       this.envMapParams = o2.envMapParams;
     }
     this.sceneBGL = o2.sceneBGL;
+    this.materialBGL = o2.materialBGL;
+    this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
     this.useScale = o2.useScale || false;
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8,
-      // vec2f
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1, 1]));
@@ -11486,6 +11702,7 @@ var MEMeshObj = class extends Materials {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if (typeof o2.isVideo !== "undefined") {
+      console.log("MESH what i s isvideo ", o2.isVideo);
       this.loadVideoTexture(o2.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if (this.material.type != "mirror" && this.material.type != "water") {
@@ -11536,7 +11753,6 @@ var MEMeshObj = class extends Materials {
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
       this.mesh.weightsBuffer = weightsBuffer;
-      this._modelMatrix = mat4Impl.create();
     }
     this.runProgram = () => {
       return new Promise(async (resolve) => {
@@ -11659,20 +11875,10 @@ var MEMeshObj = class extends Materials {
           { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
       });
-      this.createLayoutForRender();
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: "uniformBufferBindGroupLayout in mesh",
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-          { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-        ]
       });
       function alignTo2562(n2) {
         return Math.ceil(n2 / 256) * 256;
@@ -11885,6 +12091,9 @@ var MEMeshObj = class extends Materials {
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device2, pf, "rgba16float", "torch");
         }
+        if (typeof this.pointerEffect.gpuText !== "undefined" && this.pointerEffect.gpuText == true) {
+          this.effects.gpuText = new MSDFTextEffect(device2, pf, "rgba16float", "torch");
+        }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float");
         }
@@ -11897,29 +12106,29 @@ var MEMeshObj = class extends Materials {
         }
       }
       this.getModelMatrix = (pos2, useScale = false) => {
-        let modelMatrix2 = mat4Impl.identity(this._modelMatrix);
-        this._translateVec[0] = pos2.x;
-        this._translateVec[1] = pos2.y;
-        this._translateVec[2] = pos2.z;
-        mat4Impl.translate(modelMatrix2, this._translateVec, modelMatrix2);
-        if (this.itIsPhysicsBody) {
-          this._rotAxisVec[0] = this.rotation.axis.x;
-          this._rotAxisVec[1] = this.rotation.axis.y;
-          this._rotAxisVec[2] = this.rotation.axis.z;
-          mat4Impl.rotate(modelMatrix2, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix2);
-        } else {
+        if (!this.itIsPhysicsBody) {
+          let modelMatrix2 = mat4Impl.identity(this._modelMatrix);
+          this._translateVec[0] = pos2.x;
+          this._translateVec[1] = pos2.y;
+          this._translateVec[2] = pos2.z;
+          mat4Impl.translate(modelMatrix2, this._translateVec, modelMatrix2);
           mat4Impl.rotateX(modelMatrix2, this.rotation.getRotX(), modelMatrix2);
           mat4Impl.rotateY(modelMatrix2, this.rotation.getRotY(), modelMatrix2);
           mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
+          if (useScale == true) {
+            this._scaleVec[0] = this.scale[0];
+            this._scaleVec[1] = this.scale[1];
+            this._scaleVec[2] = this.scale[2];
+            mat4Impl.scale(modelMatrix2, this._scaleVec, modelMatrix2);
+          }
+          this.modelMatrix = modelMatrix2;
+          return this.modelMatrix;
         }
-        if (useScale == true) {
-          this._scaleVec[0] = this.scale[0];
-          this._scaleVec[1] = this.scale[1];
-          this._scaleVec[2] = this.scale[2];
-          mat4Impl.scale(modelMatrix2, this._scaleVec, modelMatrix2);
+        if (!this.modelMatrix) {
+          let modelMatrix2 = mat4Impl.identity(this._modelMatrix);
+          this.modelMatrix = modelMatrix2;
         }
-        this.modelMatrix = modelMatrix2;
-        return modelMatrix2;
+        return this.modelMatrix;
       };
       const modelMatrix = mat4Impl.translation([0, 0, 0]);
       const modelData = modelMatrix;
@@ -11937,12 +12146,10 @@ var MEMeshObj = class extends Materials {
           try {
             this.envMapParams.envTexture = envTexture;
           } catch (err) {
-            console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE2);
+            console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE);
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE2);
-          return;
         });
         this.setupPipeline();
       } else {
@@ -11962,8 +12169,7 @@ var MEMeshObj = class extends Materials {
   setUVScale(x2, y2 = x2) {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x2, y2]));
   }
-  setupPipeline = () => {
-    this.createBindGroupForRender();
+  setupPipeline() {
     const pm = PipelineManager.get();
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
@@ -11973,6 +12179,23 @@ var MEMeshObj = class extends Materials {
     const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
     const vertexModule = this.device.createShaderModule({ code: vertexCode });
     const fragmentModule = this.device.createShaderModule({ code: fragmentCode });
+    let baseKey = {
+      vertexId: isNormalMap ? "mesh_nm" : "mesh_basic",
+      fragmentId: isVideo ? "video" : this.material.type,
+      type: "mesh",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: "rgba16float",
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    this.createBindGroupForRender(MKEY);
     const layout = this.device.createPipelineLayout({
       label: "PipelineLayout Mesh",
       bindGroupLayouts: [
@@ -11988,18 +12211,6 @@ var MEMeshObj = class extends Materials {
       buffers: this.vertexBuffers
     };
     const fragmentConstants = { shadowDepthTextureSize: this.shadowDepthTextureSize };
-    const baseKey = {
-      vertexId: isNormalMap ? "mesh_nm" : "mesh_basic",
-      fragmentId: isVideo ? "video" : this.material.type,
-      type: "mesh",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: "rgba16float",
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
@@ -12069,14 +12280,13 @@ var MEMeshObj = class extends Materials {
       }
     });
     dispatchEvent(this.buildPipelineBucketsEvent);
-  };
+  }
   getMainPipeline = () => {
     return this.pipeline;
   };
   updateModelUniformBuffer = () => {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    this.modelMatrix = modelMatrix;
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== "number") {
@@ -12250,882 +12460,15 @@ var MEMeshObj = class extends Materials {
     };
     this.drawShadows = () => {
     };
-    let testPB = app.matrixAmmo.getBodyByName(this.name);
+    let testPB = app.matrixPhysics.getBodyByName(this.name);
     if (testPB !== null) {
       try {
-        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
-      } catch (e) {
-        console.warn("Physics cleanup err:", e);
+        app.matrixPhysics.removeRigidBody(testPB);
+      } catch (e2) {
+        console.warn("Physics cleanup err:", e2);
       }
-    }
-    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
-  };
-};
-
-// ../../../engine/physics/matrix-ammo.js
-var MatrixAmmo = class {
-  constructor(options2 = { roundDimensionX: 10, roundDimensionY: 10, gravity: -10 }) {
-    this.options = options2;
-    if (!this.options.gravity) this.options.gravity = -10;
-    scriptManager.LOAD(
-      "ammojs/ammo.js",
-      "ammojs",
-      void 0,
-      void 0,
-      this.init
-    );
-    this.lastRoll = "";
-    this.presentScore = "";
-    this.speedUpSimulation = 1;
-    this.collisionEvent = new CustomEvent("pCollision", {
-      detail: { body0Name: null, body1Name: null, contactCount: 0 }
-    });
-    this.lastCollisionState = /* @__PURE__ */ new Map();
-  }
-  initPhysicsScratch() {
-    this._trans = new Ammo.btTransform();
-    this._transform = new Ammo.btTransform();
-    this._origin = new Ammo.btVector3(0, 0, 0);
-    this._quat = new Ammo.btQuaternion();
-    this._axis = new Ammo.btVector3(0, 0, 0);
-    this.maxSubSteps = 4;
-  }
-  init = () => {
-    Ammo().then((Ammo2) => {
-      this.initPhysicsScratch();
-      this.dynamicsWorld = null;
-      this.rigidBodies = [];
-      this.Ammo = Ammo2;
-      this.lastUpdate = 0;
-      console.log("%cAmmo core loaded.", LOG_FUNNY_ARCADE2);
-      this.initPhysics(MEConfig.PHYSICS_GROUND_Y);
-      setTimeout(() => {
-        dispatchEvent(new CustomEvent("AmmoReady", {}));
-      }, 200);
-    });
-  };
-  initPhysics(GROUND_Y = -4) {
-    let Ammo2 = this.Ammo;
-    var collisionConfiguration = new Ammo2.btDefaultCollisionConfiguration(), dispatcher = new Ammo2.btCollisionDispatcher(collisionConfiguration), overlappingPairCache = new Ammo2.btDbvtBroadphase(), solver = new Ammo2.btSequentialImpulseConstraintSolver();
-    this.dynamicsWorld = new Ammo2.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-    this.dynamicsWorld.setGravity(new Ammo2.btVector3(0, this.options.gravity, 0));
-    var groundShape = new Ammo2.btBoxShape(new Ammo2.btVector3(this.options.roundDimensionX, 1, this.options.roundDimensionY)), groundTransform = new Ammo2.btTransform();
-    groundTransform.setIdentity();
-    groundTransform.setOrigin(new Ammo2.btVector3(0, GROUND_Y, 0));
-    var mass = 0, isDynamic = mass !== 0, localInertia = new Ammo2.btVector3(0, 0, 0);
-    if (isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
-    var myMotionState = new Ammo2.btDefaultMotionState(groundTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
-    body2.name = "ground";
-    this.ground = body2;
-    this.dynamicsWorld.addRigidBody(body2);
-  }
-  addPhysics(MEObject, pOptions) {
-    switch (pOptions.geometry) {
-      case "Sphere":
-        return this.addPhysicsSphere(MEObject, pOptions);
-      case "Cube":
-        return this.addPhysicsBox(MEObject, pOptions);
-      case "Capsule":
-        return this.addPhysicsCapsule(MEObject, pOptions);
-      case "CapsuleX":
-        return this.addPhysicsCapsuleX(MEObject, pOptions);
-      case "CapsuleZ":
-        return this.addPhysicsCapsuleZ(MEObject, pOptions);
-      case "Cylinder":
-        return this.addPhysicsCylinder(MEObject, pOptions);
-      case "CylinderX":
-        return this.addPhysicsCylinderX(MEObject, pOptions);
-      case "CylinderZ":
-        return this.addPhysicsCylinderZ(MEObject, pOptions);
-      case "Cone":
-        return this.addPhysicsCone(MEObject, pOptions);
-      case "ConeX":
-        return this.addPhysicsConeX(MEObject, pOptions);
-      case "ConeZ":
-        return this.addPhysicsConeZ(MEObject, pOptions);
-      case "StaticPlane":
-        return this.addPhysicsStaticPlane(MEObject, pOptions);
-      case "ConvexHull":
-        return this.addPhysicsConvexHull(MEObject, pOptions);
-      case "BvhMesh":
-        return this.addPhysicsBvhMesh(MEObject, pOptions);
-      case "Compound":
-        return this.addPhysicsCompound(MEObject, pOptions);
-      case "Heightfield":
-        return this.addPhysicsHeightfield(MEObject, pOptions);
-      default:
-        console.warn("addPhysics: unknown geometry type:", pOptions.geometry);
-        return null;
-    }
-  }
-  _applyBodyFlags(body2, pOptions) {
-    const CF_KINEMATIC = 2;
-    const CF_NO_RESPONSE = 3;
-    if (pOptions.mass === 0 && pOptions.state === void 0 && pOptions.collide === void 0) {
-      body2.setCollisionFlags(CF_KINEMATIC);
-      body2.setActivationState(2);
-    } else if (pOptions.collide === false) {
-      body2.setCollisionFlags(CF_NO_RESPONSE);
-      body2.setActivationState(4);
-    } else {
-      body2.setActivationState(4);
-    }
-  }
-  // ─── shared helper ────────────────────────────────────────────
-  // Registers body in world + rigidBodies list.
-  _registerBody(body2, MEObject, pOptions) {
-    body2.name = pOptions.name;
-    MEObject.itIsPhysicsBody = true;
-    body2.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body2);
-    this.rigidBodies.push(body2);
-    return body2;
-  }
-  addPhysicsCapsule(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const rbInfo = new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    );
-    const body2 = new Ammo2.btRigidBody(rbInfo);
-    body2.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
-    body2.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
-    body2.setFriction(pOptions.fiction ? pOptions.fiction : 1);
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  addPhysicsSphere(MEObject, pOptions) {
-    const FLAGS = {
-      TEST_NIDZA: 3,
-      CF_KINEMATIC_OBJECT: 2
-    };
-    let Ammo2 = this.Ammo;
-    var colShape = new Ammo2.btSphereShape(Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius), startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    var mass = 1;
-    var localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
-    if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body2.setActivationState(2);
-      body2.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-    } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body2.setActivationState(4);
-      body2.setCollisionFlags(FLAGS.TEST_NIDZA);
-    } else {
-      body2.setActivationState(4);
-    }
-    body2.name = pOptions.name;
-    MEObject.itIsPhysicsBody = true;
-    body2.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body2);
-    this.rigidBodies.push(body2);
-    return body2;
-  }
-  addPhysicsBox(MEObject, pOptions) {
-    const FLAGS = {
-      TEST_NIDZA: 3,
-      CF_KINEMATIC_OBJECT: 2
-    };
-    let Ammo2 = this.Ammo;
-    var colShape = new Ammo2.btBoxShape(new Ammo2.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])), startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    var mass = pOptions.mass;
-    var localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    var t = startTransform.getRotation();
-    t.setX(degToRad(pOptions.rotation.x));
-    t.setY(degToRad(pOptions.rotation.y));
-    t.setZ(degToRad(pOptions.rotation.z));
-    startTransform.setRotation(t);
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
-    if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body2.setActivationState(2);
-      body2.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-    } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body2.setActivationState(4);
-      body2.setCollisionFlags(FLAGS.TEST_NIDZA);
-    } else {
-      body2.setActivationState(4);
-    }
-    body2.name = pOptions.name;
-    MEObject.itIsPhysicsBody = true;
-    body2.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body2);
-    this.rigidBodies.push(body2);
-    return body2;
-  }
-  addHingeConstraint(MEObjectA, MEObjectB, pOptions) {
-    let Ammo2 = this.Ammo;
-    if (!this.constraints) this.constraints = [];
-    let bodyA = null;
-    let bodyB = null;
-    for (let i = 0; i < this.rigidBodies.length; i++) {
-      if (this.rigidBodies[i].MEObject === MEObjectA) {
-        bodyA = this.rigidBodies[i];
-      }
-      if (this.rigidBodies[i].MEObject === MEObjectB) {
-        bodyB = this.rigidBodies[i];
-      }
-    }
-    if (!bodyA || !bodyB) {
-      console.warn("addHingeConstraint: bodies not found for MEObjects");
-      return null;
-    }
-    const pivotA = pOptions.pivotA || [0, 0, 0];
-    const pivotB = pOptions.pivotB || [0, 0, 0];
-    const axis = pOptions.axis || [0, 1, 0];
-    const ammoPivotA = new Ammo2.btVector3(pivotA[0], pivotA[1], pivotA[2]);
-    const ammoPivotB = new Ammo2.btVector3(pivotB[0], pivotB[1], pivotB[2]);
-    const frameA = new Ammo2.btTransform();
-    frameA.setIdentity();
-    frameA.setOrigin(new Ammo2.btVector3(pivotA[0], pivotA[1], pivotA[2]));
-    const frameB = new Ammo2.btTransform();
-    frameB.setIdentity();
-    frameB.setOrigin(new Ammo2.btVector3(pivotB[0], pivotB[1], pivotB[2]));
-    const ammoAxisA = new Ammo2.btVector3(axis[0], axis[1], axis[2]);
-    const ammoAxisB = new Ammo2.btVector3(axis[0], axis[1], axis[2]);
-    const hinge = new Ammo2.btHingeConstraint(
-      bodyA,
-      bodyB,
-      ammoPivotA,
-      ammoPivotB,
-      ammoAxisA,
-      ammoAxisB,
-      true
-    );
-    if (pOptions.limits) {
-      hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
-    }
-    this.dynamicsWorld.addConstraint(hinge, true);
-    hinge.name = pOptions.name;
-    this.constraints.push(hinge);
-    return hinge;
-  }
-  // ─── capsule on X axis ────────────────────────────────────────
-  addPhysicsCapsuleX(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    body2.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
-    body2.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
-    body2.setFriction(pOptions.fiction ? pOptions.fiction : 1);
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─── capsule on Z axis ────────────────────────────────────────
-  addPhysicsCapsuleZ(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btCapsuleShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    body2.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
-    body2.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
-    body2.setFriction(pOptions.fiction ? pOptions.fiction : 1);
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─────────────────────────────────────────────────────────────
-  // 2. CYLINDER  (Y axis — barrels, pillars, wheels)
-  //    pOptions: { scale: [rx, hy, rz], mass, position, rotation, name }
-  //    scale[0] = radius X, scale[1] = half-height, scale[2] = radius Z
-  // ─────────────────────────────────────────────────────────────
-  addPhysicsCylinder(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btCylinderShape(
-      new Ammo2.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])
-    );
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const rot2 = startTransform.getRotation();
-    rot2.setX(degToRad(pOptions.rotation?.x ?? 0));
-    rot2.setY(degToRad(pOptions.rotation?.y ?? 0));
-    rot2.setZ(degToRad(pOptions.rotation?.z ?? 0));
-    startTransform.setRotation(rot2);
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─── cylinder on X axis ───────────────────────────────────────
-  addPhysicsCylinderX(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btCylinderShapeX(
-      new Ammo2.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])
-    );
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    body2.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
-    body2.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
-    body2.setFriction(pOptions.fiction ? pOptions.fiction : 1);
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─── cylinder on Z axis ───────────────────────────────────────
-  addPhysicsCylinderZ(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btCylinderShapeZ(
-      new Ammo2.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])
-    );
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    body2.setDamping(pOptions.damping ? pOptions.damping : 0.8, pOptions.damping ? pOptions.damping : 1);
-    body2.setRestitution(pOptions.restitution ? pOptions.restitution : 0.1);
-    body2.setFriction(pOptions.fiction ? pOptions.fiction : 1);
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─────────────────────────────────────────────────────────────
-  // 3. CONE  (Y axis)
-  //    pOptions: { radius, height, mass, position, name }
-  // ─────────────────────────────────────────────────────────────
-  addPhysicsCone(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btConeShape(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      // pOptions.height*0.5,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─── cone on X axis ───────────────────────────────────────────
-  addPhysicsConeX(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btConeShapeX(pOptions.radius ? pOptions.radius : 1, pOptions.height ? pOptions.height : 1);
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─── cone on Z axis ───────────────────────────────────────────
-  addPhysicsConeZ(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btConeShapeZ(pOptions.radius, pOptions.height);
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─────────────────────────────────────────────────────────────
-  // 4. STATIC PLANE  (mass = 0 always, infinite flat surface)
-  //    pOptions: { normal: [nx,ny,nz], constant, position, name }
-  //    normal  = surface normal, e.g. [0,1,0] = horizontal floor
-  //    constant = signed distance from origin, e.g. 0 = floor at y=0
-  // ─────────────────────────────────────────────────────────────
-  addPhysicsStaticPlane(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const n2 = pOptions.normal ?? [0, 1, 0];
-    const colShape = new Ammo2.btStaticPlaneShape(
-      new Ammo2.btVector3(n2[0], n2[1], n2[2]),
-      pOptions.constant ?? 0
-    );
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position?.x ?? 0,
-      pOptions.position?.y ?? 0,
-      pOptions.position?.z ?? 0
-    ));
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      0,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    body2.setCollisionFlags(2);
-    body2.setActivationState(2);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─────────────────────────────────────────────────────────────
-  // 5. CONVEX HULL  (dynamic-safe approximate mesh shape)
-  //    pOptions: { vertices: Float32Array|Array, mass, position, rotation, name }
-  //    vertices = flat [x,y,z, x,y,z, ...] — all points, no indices needed
-  // ─────────────────────────────────────────────────────────────
-  addPhysicsConvexHull(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const colShape = new Ammo2.btConvexHullShape();
-    const verts = pOptions.vertices;
-    const sx = pOptions.scale?.[0] ?? 1;
-    const sy = pOptions.scale?.[1] ?? 1;
-    const sz = pOptions.scale?.[2] ?? 1;
-    for (let i = 0; i < verts.length; i += 3) {
-      colShape.addPoint(new Ammo2.btVector3(
-        verts[i] * sx,
-        verts[i + 1] * sy,
-        verts[i + 2] * sz
-      ), true);
-    }
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const rot2 = startTransform.getRotation();
-    rot2.setX(degToRad(pOptions.rotation?.x ?? 0));
-    rot2.setY(degToRad(pOptions.rotation?.y ?? 0));
-    rot2.setZ(degToRad(pOptions.rotation?.z ?? 0));
-    startTransform.setRotation(rot2);
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─────────────────────────────────────────────────────────────
-  // 6. BVH TRIANGLE MESH  (exact mesh shape — static / mass=0 only)
-  //    pOptions: { vertices: Float32Array, indices: Uint16Array|Uint32Array,
-  //                position, rotation, name }
-  //    vertices = flat [x,y,z, ...], indices = triangle index triples
-  // ─────────────────────────────────────────────────────────────
-  addPhysicsBvhMesh(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const triMesh = new Ammo2.btTriangleMesh(true, true);
-    const v = pOptions.vertices;
-    const idx = pOptions.indices;
-    for (let i = 0; i < idx.length; i += 3) {
-      const i0 = idx[i] * 3, i1 = idx[i + 1] * 3, i2 = idx[i + 2] * 3;
-      triMesh.addTriangle(
-        new Ammo2.btVector3(v[i0], v[i0 + 1], v[i0 + 2]),
-        new Ammo2.btVector3(v[i1], v[i1 + 1], v[i1 + 2]),
-        new Ammo2.btVector3(v[i2], v[i2 + 1], v[i2 + 2]),
-        false
-      );
-    }
-    const colShape = new Ammo2.btBvhTriangleMeshShape(triMesh, true, true);
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const rot2 = startTransform.getRotation();
-    rot2.setX(degToRad(pOptions.rotation?.x ?? 0));
-    rot2.setY(degToRad(pOptions.rotation?.y ?? 0));
-    rot2.setZ(degToRad(pOptions.rotation?.z ?? 0));
-    startTransform.setRotation(rot2);
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      0,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    body2.setCollisionFlags(2);
-    body2.setActivationState(2);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─────────────────────────────────────────────────────────────
-  // 7. COMPOUND  (combine multiple child shapes at offsets)
-  //    pOptions: {
-  //      children: [
-  //        { shape: Ammo.btCollisionShape, offset: {x,y,z}, rotation: {x,y,z} },
-  //        ...
-  //      ],
-  //      mass, position, rotation, name
-  //    }
-  //    Build each child shape first (btBoxShape, btSphereShape, etc.)
-  //    then pass them in as pOptions.children.
-  // ─────────────────────────────────────────────────────────────
-  addPhysicsCompound(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const compound = new Ammo2.btCompoundShape();
-    for (const child of pOptions.children) {
-      const childTransform = new Ammo2.btTransform();
-      childTransform.setIdentity();
-      childTransform.setOrigin(new Ammo2.btVector3(
-        child.offset?.x ?? 0,
-        child.offset?.y ?? 0,
-        child.offset?.z ?? 0
-      ));
-      const cRot = childTransform.getRotation();
-      cRot.setX(degToRad(child.rotation?.x ?? 0));
-      cRot.setY(degToRad(child.rotation?.y ?? 0));
-      cRot.setZ(degToRad(child.rotation?.z ?? 0));
-      childTransform.setRotation(cRot);
-      compound.addChildShape(childTransform, child.shape);
-    }
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position.x,
-      pOptions.position.y,
-      pOptions.position.z
-    ));
-    const rot2 = startTransform.getRotation();
-    rot2.setX(degToRad(pOptions.rotation?.x ?? 0));
-    rot2.setY(degToRad(pOptions.rotation?.y ?? 0));
-    rot2.setZ(degToRad(pOptions.rotation?.z ?? 0));
-    startTransform.setRotation(rot2);
-    const mass = pOptions.mass;
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    compound.calculateLocalInertia(mass, localInertia);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      mass,
-      new Ammo2.btDefaultMotionState(startTransform),
-      compound,
-      localInertia
-    ));
-    this._applyBodyFlags(body2, pOptions);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  // ─────────────────────────────────────────────────────────────
-  // 8. HEIGHTFIELD  (terrain — static, mass=0 always)
-  //    pOptions: {
-  //      data: Float32Array,       // row-major height values
-  //      widthSamples: number,     // samples along X
-  //      heightSamples: number,    // samples along Z
-  //      minHeight: number,
-  //      maxHeight: number,
-  //      heightScale: number,      // usually 1
-  //      position, name
-  //    }
-  //    The Float32Array must be kept alive (don't let it be GC'd).
-  //    Store it on pOptions or on the MEObject if you need to access it later.
-  // ─────────────────────────────────────────────────────────────
-  addPhysicsHeightfield(MEObject, pOptions) {
-    const Ammo2 = this.Ammo;
-    const data = pOptions.data;
-    const nBytes = data.length * 4;
-    const ptr = Ammo2._malloc(nBytes);
-    Ammo2.HEAPF32.set(data, ptr >> 2);
-    MEObject._heightfieldPtr = ptr;
-    const colShape = new Ammo2.btHeightfieldTerrainShape(
-      pOptions.widthSamples,
-      pOptions.heightSamples,
-      ptr,
-      pOptions.heightScale ?? 1,
-      pOptions.minHeight,
-      pOptions.maxHeight,
-      1,
-      // upAxis: 1 = Y
-      "PHY_FLOAT",
-      false
-      // flipQuadEdges
-    );
-    if (pOptions.worldScale) {
-      colShape.setLocalScaling(new Ammo2.btVector3(
-        pOptions.worldScale.x ?? 1,
-        pOptions.worldScale.y ?? 1,
-        pOptions.worldScale.z ?? 1
-      ));
-    }
-    const startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    const midY = (pOptions.minHeight + pOptions.maxHeight) / 2;
-    startTransform.setOrigin(new Ammo2.btVector3(
-      pOptions.position?.x ?? 0,
-      (pOptions.position?.y ?? 0) + midY,
-      pOptions.position?.z ?? 0
-    ));
-    const localInertia = new Ammo2.btVector3(0, 0, 0);
-    const body2 = new Ammo2.btRigidBody(new Ammo2.btRigidBodyConstructionInfo(
-      0,
-      new Ammo2.btDefaultMotionState(startTransform),
-      colShape,
-      localInertia
-    ));
-    body2.setCollisionFlags(2);
-    body2.setActivationState(2);
-    return this._registerBody(body2, MEObject, pOptions);
-  }
-  setBodyVelocity = (body2, x2, y2, z) => {
-    var tbv30 = new Ammo.btVector3();
-    tbv30.setValue(x2, y2, z);
-    body2.setLinearVelocity(tbv30);
-  };
-  setKinematicTransform = (body2, x2, y2, z, rx, ry, rz) => {
-    if (typeof rx == "undefined") {
-      var rx = 0;
-    }
-    if (typeof ry == "undefined") {
-      var ry = 0;
-    }
-    if (typeof rz == "undefined") {
-      var rz = 0;
-    }
-    let pos2 = new Ammo.btVector3();
-    pos2 = body2.getWorldTransform().getOrigin();
-    let localRot = body2.getWorldTransform().getRotation();
-    pos2.setX(pos2.x() + x2);
-    pos2.setY(pos2.y() + y2);
-    pos2.setZ(pos2.z() + z);
-    localRot.setX(rx);
-    localRot.setY(ry);
-    localRot.setZ(rz);
-    let physicsBody = body2;
-    let ms = physicsBody.getMotionState();
-    if (ms) {
-      var tmpTrans = new Ammo.btTransform();
-      tmpTrans.setIdentity();
-      tmpTrans.setOrigin(pos2);
-      tmpTrans.setRotation(localRot);
-      ms.setWorldTransform(tmpTrans);
     }
   };
-  getBodyByName = (name2) => {
-    var b = null;
-    this.rigidBodies.forEach((item, index, array) => {
-      if (item.name == name2) {
-        b = array[index];
-      }
-    });
-    return b;
-  };
-  getNameByBody = (body2) => {
-    var b = null;
-    this.rigidBodies.forEach((item, index, array) => {
-      if (item.kB == body2.kB) {
-        b = array[index].name;
-      }
-    });
-    return b;
-  };
-  deactivatePhysics = (body2) => {
-    const CF_KINEMATIC_OBJECT = 2;
-    const DISABLE_DEACTIVATION = 4;
-    this.dynamicsWorld.removeRigidBody(body2);
-    const flags = body2.getCollisionFlags();
-    body2.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
-    body2.setActivationState(DISABLE_DEACTIVATION);
-    const zero2 = new Ammo.btVector3(0, 0, 0);
-    body2.setLinearVelocity(zero2);
-    body2.setAngularVelocity(zero2);
-    const currentTransform = body2.getWorldTransform();
-    body2.setWorldTransform(currentTransform);
-    body2.getMotionState().setWorldTransform(currentTransform);
-    this.matrixAmmo.dynamicsWorld.addRigidBody(body2);
-    body2.isKinematic = true;
-  };
-  raycastToTarget(fromBody, toBody) {
-    let from = fromBody.getWorldTransform().getOrigin();
-    let to = toBody.getWorldTransform().getOrigin();
-    let rayDirection = [
-      to.x() - from.x(),
-      to.y() - from.y(),
-      to.z() - from.z()
-    ];
-    let length2 = Math.sqrt(
-      rayDirection[0] ** 2 + rayDirection[1] ** 2 + rayDirection[2] ** 2
-    );
-    return [
-      rayDirection[0] / length2,
-      rayDirection[1] / length2,
-      rayDirection[2] / length2
-    ];
-  }
-  detectCollision() {
-    let dispatcher = this.dynamicsWorld.getDispatcher();
-    let numManifolds = dispatcher.getNumManifolds();
-    let currentCollisions = /* @__PURE__ */ new Set();
-    for (let i = 0; i < numManifolds; i++) {
-      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      let numContacts = contactManifold.getNumContacts();
-      if (numContacts > 0) {
-        let body0 = contactManifold.getBody0();
-        let body1 = contactManifold.getBody1();
-        let name0 = this.getNameByBody(body0);
-        let name1 = this.getNameByBody(body1);
-        let collisionKey = `${name0}|${name1}`;
-        currentCollisions.add(collisionKey);
-        if (!this.lastCollisionState.has(collisionKey)) {
-          let contact = contactManifold.getContactPoint();
-          let normal = contact.get_m_normalWorldOnB();
-          let rayDirection = [normal.x(), normal.y(), normal.z()];
-          this.collisionEvent.detail.body0Name = name0;
-          this.collisionEvent.detail.body1Name = name1;
-          this.collisionEvent.detail.rayDirection = rayDirection;
-          document.dispatchEvent(this.collisionEvent);
-        }
-      }
-    }
-    this.lastCollisionState = currentCollisions;
-  }
-  updatePhysics() {
-    this.rigidBodies.forEach((body2) => {
-      if (body2.isKinematic) {
-        this._transform.setIdentity();
-        this._origin.setValue(
-          body2.MEObject.position.x,
-          body2.MEObject.position.y,
-          body2.MEObject.position.z
-        );
-        this._transform.setOrigin(this._origin);
-        this._axis.setValue(
-          body2.MEObject.rotation.axis.x,
-          body2.MEObject.rotation.axis.y,
-          body2.MEObject.rotation.axis.z
-        );
-        this._quat.setRotation(this._axis, degToRad(body2.MEObject.rotation.angle));
-        this._transform.setRotation(this._quat);
-        body2.setWorldTransform(this._transform);
-        const ms = body2.getMotionState();
-        if (ms) ms.setWorldTransform(this._transform);
-      }
-    });
-    for (let i = 0; i < this.speedUpSimulation; i++) {
-      this.dynamicsWorld.stepSimulation(1 / 30, this.maxSubSteps);
-    }
-    this.rigidBodies.forEach((body2) => {
-      if (!body2.isKinematic && body2.getMotionState()) {
-        body2.getMotionState().getWorldTransform(this._trans);
-        const _x = +this._trans.getOrigin().x();
-        const _y = +this._trans.getOrigin().y();
-        const _z = +this._trans.getOrigin().z();
-        body2.MEObject.position.setPosition(_x, _y, _z);
-        body2.MEObject.position.inMove = true;
-        const rot2 = this._trans.getRotation();
-        const rotAxis = rot2.getAxis();
-        rot2.normalize();
-        body2.MEObject.rotation.axis.x = rotAxis.x();
-        body2.MEObject.rotation.axis.y = rotAxis.y();
-        body2.MEObject.rotation.axis.z = rotAxis.z();
-        body2.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot2);
-        body2.MEObject.rotation.angle = radToDeg(parseFloat(rot2.getAngle()));
-      }
-    });
-    this.detectCollision();
-  }
 };
 
 // ../../../../public/res/multilang/en-backup.js
@@ -13210,7 +12553,7 @@ var MultiLang = class {
   loadMultilang = async function(lang = "en") {
     if (lang == "rs") lang = "sr";
     lang = "res/multilang/" + lang + ".json";
-    console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE2);
+    console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE);
     try {
       const r2 = await fetch(lang, {
         headers: {
@@ -13264,8 +12607,8 @@ var MatrixSounds = class {
     const audio = this.audios[name2];
     if (!audio) return;
     if (audio.paused) {
-      audio.play().catch((e) => {
-        if (e.name !== "NotAllowedError") console.warn("sounds error:", e);
+      audio.play().catch((e2) => {
+        if (e2.name !== "NotAllowedError") console.warn("sounds error:", e2);
       });
     } else {
       this.tryClone(name2);
@@ -16094,8 +15437,8 @@ var MEBvh = class {
   _recursive_apply_frame(joint, frame_pose, index_offset, p, r2, M_parent, p_parent) {
     var joint_index;
     if (joint.position_animated()) {
-      var local = this._extract_position(joint, frame_pose, index_offset);
-      var offset_position = local[0], index_offset = local[1];
+      var local3 = this._extract_position(joint, frame_pose, index_offset);
+      var offset_position = local3[0], index_offset = local3[1];
     } else {
       var offset_position = [0, 0, 0];
     }
@@ -16126,12 +15469,12 @@ var MEBvh = class {
     var position = arraySum3(p_parent, dot3vs1(M_parent, joint.offset));
     position = arraySum3(position, offset_position);
     var rotation3 = mat2euler(M, "rad2deg");
-    var local = 0;
+    var local3 = 0;
     for (const item2 in this.joints) {
       if (joint.name == item2) {
-        joint_index = local;
+        joint_index = local3;
       }
-      local++;
+      local3++;
     }
     p[joint_index] = position;
     r2[joint_index] = rotation3;
@@ -18778,10 +18121,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
     let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
-
     var lightContribution = vec3f(0.0);
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
@@ -18794,11 +18133,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
-
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    // Apply per-instance tint
     finalColor *= input.colorMult.rgb;
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
@@ -19100,6 +18436,7 @@ var MaterialsInstanced = class {
     this.textureCache = textureCache;
     this.isVideo = false;
     this.videoIsReady = "NONE";
+    this.materialBindGroupCache = MaterialBindGroupCache.get();
     this.compareSampler = this.device.createSampler({
       compare: "less-equal",
       // safer for shadow comparison
@@ -19357,7 +18694,6 @@ var MaterialsInstanced = class {
       this.texture0 = { createView: () => newTexture };
     }
     this.isVideo = false;
-    this.createBindGroupForRender();
   }
   changeMaterial(newType = "graph", graphShader) {
     this.material.fromGraph = graphShader;
@@ -19385,8 +18721,8 @@ var MaterialsInstanced = class {
       return this.material.fromGraph;
     } else if (this.material.type === "mirror") {
       return fragmentMirrorWGSLInstanced;
-    } else if (this.material.type === "free") {
-      return fragmentWGSLNoCut;
+    } else if (this.material.type === "dark" || this.material.type === "free") {
+      return fragmentWGSLDark;
     } else if (this.material.type === "mini") {
       return miniWGSL;
     } else if (this.material.type === "minia") {
@@ -19483,12 +18819,23 @@ var MaterialsInstanced = class {
       this.video.autoplay = true;
       this.video.loop = true;
       document.body.append(this.video);
-      this.video.style.display = "none";
       this.video.style.position = "absolute";
-      this.video.style.top = "750px";
-      this.video.style.left = "50px";
-      await this.video.play();
-      this.isVideo = true;
+      this.video.style.width = "640px";
+      this.video.style.height = "480px";
+      this.video.style.top = "-20px";
+      this.video.style.left = "50%";
+      this.video.play();
+      this.video.addEventListener("canplaythrough", () => {
+        if (this.video.readyState >= 3) {
+          this.externalTexture = this.device.importExternalTexture({ source: this.video });
+          if (!this.externalTexture) alert("ERROR " + this.externalTexture);
+          this.sampler = this.device.createSampler({
+            magFilter: "linear",
+            minFilter: "linear"
+          });
+          this.createMaterialBindGroupVideo();
+        }
+      }, { once: false });
     } else if (arg.type === "videoElement") {
       this.video = arg.el;
       await this.video.play();
@@ -19560,19 +18907,12 @@ var MaterialsInstanced = class {
       magFilter: "linear",
       minFilter: "linear"
     });
-    this.createLayoutForRender();
+    this.createMaterialBindGroupVideo();
+    this.setupPipeline();
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
-    if (!this.externalTexture) {
-      this.externalTexture = this.device.importExternalTexture({ source: this.video });
-      this.createBindGroupForRender();
-      this.videoIsReady = "YES";
-      console.log("%c\u2705video bind.", LOG_FUNNY_ARCADE);
-    } else {
-      this.externalTexture = this.device.importExternalTexture({ source: this.video });
-      this.createBindGroupForRender();
-    }
+    this.externalTexture = this.device.importExternalTexture({ source: this.video });
+    this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
@@ -19593,46 +18933,62 @@ var MaterialsInstanced = class {
     const texIndex = texInfo.index;
     return this.glb.glbTextures[texIndex].createView();
   }
-  createBindGroupForRender() {
+  createBindGroupForRender(key) {
     let textureResource = this.texture0.createView();
     if (this.material.useTextureFromGlb === true) {
       const material = this.skinnedNode.mesh.primitives[0].material;
       textureResource = material.baseColorTexture.imageView;
     }
-    this.materialBindGroup = this.device.createBindGroup({
-      layout: this.materialBGL,
-      entries: [
-        { binding: 0, resource: textureResource },
-        { binding: 1, resource: this.imageSampler },
-        { binding: 2, resource: this.metallicRoughnessTextureView },
-        { binding: 3, resource: this.metallicRoughnessSampler },
-        { binding: 4, resource: { buffer: this.materialPBRBuffer } },
-        { binding: 5, resource: this.normalTextureView },
-        { binding: 6, resource: this.normalSampler }
-      ]
-    });
-  }
-  createLayoutForRender() {
-    this.materialBGL = this.device.createBindGroupLayout({
-      label: "MaterialBGL",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
-      ]
-    });
-    this.materialVideoBGL = this.device.createBindGroupLayout({
-      label: "MaterialVideoBGL",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-      ]
-    });
+    key = JSON.stringify(key);
+    if (typeof this.material.share !== "undefined" && this.material.share == true) {
+      if (!this.materialBindGroupCache._cache.has(key)) {
+        this.materialBindGroupCache._cache.set(
+          key,
+          this.device.createBindGroup({
+            layout: this.materialBGL,
+            entries: [
+              { binding: 0, resource: textureResource },
+              { binding: 1, resource: this.imageSampler },
+              { binding: 2, resource: this.metallicRoughnessTextureView },
+              { binding: 3, resource: this.metallicRoughnessSampler },
+              { binding: 4, resource: { buffer: this.materialPBRBuffer } },
+              { binding: 5, resource: this.normalTextureView },
+              { binding: 6, resource: this.normalSampler }
+            ]
+          })
+        );
+        this.materialBindGroup = this.materialBindGroupCache.get(key);
+      } else {
+        console.log("[no share] materialBindGroup [key] = ", key);
+        this.materialBindGroup = this.device.createBindGroup({
+          label: "materialBindGroup normal",
+          layout: this.materialBGL,
+          entries: [
+            { binding: 0, resource: textureResource },
+            { binding: 1, resource: this.imageSampler },
+            { binding: 2, resource: this.metallicRoughnessTextureView },
+            { binding: 3, resource: this.metallicRoughnessSampler },
+            { binding: 4, resource: { buffer: this.materialPBRBuffer } },
+            { binding: 5, resource: this.normalTextureView },
+            { binding: 6, resource: this.normalSampler }
+          ]
+        });
+      }
+    } else {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: "materialBindGroup normal",
+        layout: this.materialBGL,
+        entries: [
+          { binding: 0, resource: textureResource },
+          { binding: 1, resource: this.imageSampler },
+          { binding: 2, resource: this.metallicRoughnessTextureView },
+          { binding: 3, resource: this.metallicRoughnessSampler },
+          { binding: 4, resource: { buffer: this.materialPBRBuffer } },
+          { binding: 5, resource: this.normalTextureView },
+          { binding: 6, resource: this.normalSampler }
+        ]
+      });
+    }
   }
   createMaterialBindGroupVideo() {
     if (!this.externalTexture) return;
@@ -19649,7 +19005,6 @@ var MaterialsInstanced = class {
 
 // ../../../shaders/instanced/vertex.instanced.wgsl.js
 var vertexWGSLInstanced = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
-const MAX_INSTANCES = 10u; 
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -19714,6 +19069,7 @@ struct VertexAnimParams {
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(2) @binding(1) var<uniform> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
+@group(2) @binding(3) var<uniform> uvScale: vec2f;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -19731,27 +19087,6 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
-//     var skinnedPos  = vec4f(0.0);
-//     var skinnedNorm = vec3f(0.0);
-//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-//         let jointIndex = joints[i];
-//         let w = weights[i];
-//         if (w > 0.0) {
-//           let boneMat  = bones.boneMatrices[jointIndex];
-//           skinnedPos  += (boneMat * pos) * w;
-//           let boneMat3 = mat3x3f(
-//             boneMat[0].xyz,
-//             boneMat[1].xyz,
-//             boneMat[2].xyz
-//           );
-//           skinnedNorm += (boneMat3 * nrm) * w;
-//         }
-//     }
-//     return SkinResult(skinnedPos, skinnedNorm);
-// }
-
-// 2. skinVertex gets instId passed in
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
@@ -20066,11 +19401,11 @@ var GenGeo = class {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
-      const local = mat4Impl.identity();
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.scale(local, t.currentScale, local);
+      const local2 = mat4Impl.identity();
+      mat4Impl.translate(local2, t.currentPosition, local2);
+      mat4Impl.scale(local2, t.currentScale, local2);
       const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local, finalMat);
+      mat4Impl.multiply(baseModelMatrix, local2, finalMat);
       const offset = i * this.floatsPerInstance;
       this.instanceData.set(finalMat, offset);
       this.instanceData.set(t.color, offset + 16);
@@ -20830,14 +20165,14 @@ var GenGeoTexture2 = class {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
-      const local = mat4Impl.identity();
+      const local2 = mat4Impl.identity();
       if (this.rotateEffect == true) {
-        mat4Impl.rotateY(local, this.rotateAngle, local);
+        mat4Impl.rotateY(local2, this.rotateAngle, local2);
       }
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.scale(local, t.currentScale, local);
+      mat4Impl.translate(local2, t.currentPosition, local2);
+      mat4Impl.scale(local2, t.currentScale, local2);
       const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local, finalMat);
+      mat4Impl.multiply(baseModelMatrix, local2, finalMat);
       const offset = i * this.floatsPerInstance;
       this.instanceData.set(finalMat, offset);
       this.instanceData.set(t.color, offset + 16);
@@ -20885,6 +20220,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this.mType = MeshType.INSTANCED;
     this.shadowsCast = o2.shadowsCast ? o2.shadowsCast : true;
     this.sceneBGL = o2.sceneBGL;
+    this.materialBGL = o2.materialBGL;
+    this.uniformBufferBindGroupLayoutInstanced = o2.uniformBufferBindGroupLayoutInstanced;
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4Impl.create();
@@ -21112,7 +20449,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = mat4Impl.create();
         this.loadTex0(this.texturesPaths).then(() => {
-          resolve();
+          resolve(this);
         });
       });
     };
@@ -21228,7 +20565,14 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
       });
-      this.createLayoutForRender();
+      this.materialVideoBGL = this.device.createBindGroupLayout({
+        label: "MaterialVideoBGL",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
+          { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        ]
+      });
       this.instanceTargets = [];
       this.lerpSpeed = 0.05;
       this.lerpSpeedAlpha = 0.05;
@@ -21262,13 +20606,22 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
             t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
             t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
-            if (j == 2) {
+            if (j === 2) {
               t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          ghost[0] *= t.currentScale[0];
-          ghost[5] *= t.currentScale[1];
-          ghost[10] *= t.currentScale[2];
+          const sx = t.currentScale[0];
+          const sy = t.currentScale[1];
+          const sz = t.currentScale[2];
+          ghost[0] *= sx;
+          ghost[1] *= sx;
+          ghost[2] *= sx;
+          ghost[4] *= sy;
+          ghost[5] *= sy;
+          ghost[6] *= sy;
+          ghost[8] *= sz;
+          ghost[9] *= sz;
+          ghost[10] *= sz;
           ghost[12] += t.currentPosition[0];
           ghost[13] += t.currentPosition[1];
           ghost[14] += t.currentPosition[2];
@@ -21289,6 +20642,16 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           label: "instanceBuffer in bvh mesh [instanced]",
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+        this.modelBindGroup = this.device.createBindGroup({
+          label: "modelBindGroup[instanced]",
+          layout: this.uniformBufferBindGroupLayoutInstanced,
+          entries: [
+            { binding: 0, resource: { buffer: this.instanceBuffer } },
+            { binding: 1, resource: { buffer: this.bonesBuffer } },
+            { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
+            { binding: 3, resource: { buffer: this.uvScaleBuffer } }
+          ]
         });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
@@ -21321,15 +20684,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-        label: "uniformBufferBindGroupLayout in mesh [instanced]",
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-          { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-        ]
-      });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: "uniformBufferBindGroupLayout in mesh [regular]",
         entries: [
@@ -21342,11 +20696,12 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         return Math.ceil(n2 / 256) * 256;
       }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      const TRAIL_INSTANCES = 10;
+      const TRAIL_INSTANCES = 11;
       const BYTES_PER_INSTANCE = alignTo2562(64 * this.MAX_BONES);
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
-        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        size: 64e3,
+        //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
@@ -21573,29 +20928,29 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         }
       }
       this.getModelMatrix = (pos2, useScale = false) => {
-        let modelMatrix = mat4Impl.identity(this._modelMatrix);
-        this._translateVec[0] = pos2.x;
-        this._translateVec[1] = pos2.y;
-        this._translateVec[2] = pos2.z;
-        mat4Impl.translate(modelMatrix, this._translateVec, modelMatrix);
-        if (this.itIsPhysicsBody) {
-          this._rotAxisVec[0] = this.rotation.axis.x;
-          this._rotAxisVec[1] = this.rotation.axis.y;
-          this._rotAxisVec[2] = this.rotation.axis.z;
-          mat4Impl.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-        } else {
+        if (!this.itIsPhysicsBody) {
+          let modelMatrix = mat4Impl.identity(this._modelMatrix);
+          this._translateVec[0] = pos2.x;
+          this._translateVec[1] = pos2.y;
+          this._translateVec[2] = pos2.z;
+          mat4Impl.translate(modelMatrix, this._translateVec, modelMatrix);
           mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          if (useScale == true) {
+            this._scaleVec[0] = this.scale[0];
+            this._scaleVec[1] = this.scale[1];
+            this._scaleVec[2] = this.scale[2];
+            mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
+          }
+          this.modelMatrix = modelMatrix;
+          return this.modelMatrix;
         }
-        if (useScale == true) {
-          this._scaleVec[0] = this.scale[0];
-          this._scaleVec[1] = this.scale[1];
-          this._scaleVec[2] = this.scale[2];
-          mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
+        if (!this.modelMatrix) {
+          let modelMatrix = mat4Impl.identity(this._modelMatrix);
+          this.modelMatrix = modelMatrix;
         }
-        this.modelMatrix = modelMatrix;
-        return modelMatrix;
+        return this.modelMatrix;
       };
       this.getModelMatrix(this.position, this.useScale);
       this.done = true;
@@ -21626,7 +20981,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x2, y2]));
   }
   setupPipeline = () => {
-    this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
@@ -21634,7 +20988,24 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     const vertexCode = vertexWGSLInstanced;
     const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
     const isNormalMap = this.material.type === "normalmap";
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>");
+    console.log(">>>>>>>>>>>>>INSTANCED >>>>>>>>>>>>");
+    const baseKey = {
+      vertexId: isNormalMap ? "mesh_nm" : "mesh_basic",
+      fragmentId: isVideo ? "video" : this.material.type,
+      type: "instanced",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: "rgba16float",
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    this.createBindGroupForRender(MKEY);
     const layout = this.device.createPipelineLayout({
       label: "PipelineLayout Instanced Mesh",
       bindGroupLayouts: [
@@ -21650,18 +21021,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       buffers: this.vertexBuffers
     };
     const fragmentConstants = { shadowDepthTextureSize: this.shadowDepthTextureSize };
-    const baseKey = {
-      vertexId: isNormalMap ? "mesh_nm" : "mesh_basic",
-      fragmentId: isVideo ? "video" : this.material.type,
-      type: "instanced",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: "rgba16float",
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
@@ -21792,10 +21151,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, "uint16");
-    for (var ins = 1; ins < this.instanceCount; ins++) {
-      if (ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
-      else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    }
+    pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   };
   drawVideoElements = (pass) => {
     this.updateVideoTexture();
@@ -22461,13 +21817,13 @@ var METoolTip = class {
     this.tooltip = tooltip;
   }
   attachTooltip(element, text) {
-    element.addEventListener("mouseenter", (e) => {
+    element.addEventListener("mouseenter", (e2) => {
       this.tooltip.textContent = text;
       this.tooltip.style.opacity = "1";
     });
-    element.addEventListener("mousemove", (e) => {
-      this.tooltip.style.left = e.clientX + 12 + "px";
-      this.tooltip.style.top = e.clientY + 12 + "px";
+    element.addEventListener("mousemove", (e2) => {
+      this.tooltip.style.left = e2.clientX + 12 + "px";
+      this.tooltip.style.top = e2.clientY + 12 + "px";
     });
     element.addEventListener("mouseleave", () => {
       this.tooltip.style.opacity = "0";
@@ -22482,7 +21838,7 @@ var MEEditorClient = class {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
       if (typeOfRun == "created from editor") {
-        console.log(`%cCreated from editor. Watch <signal> ${name2}`, LOG_FUNNY_ARCADE2);
+        console.log(`%cCreated from editor. Watch <signal> ${name2}`, LOG_FUNNY_ARCADE);
         let o2 = {
           action: "watch",
           name: name2
@@ -22496,13 +21852,13 @@ var MEEditorClient = class {
         o2 = JSON.stringify(o2);
         this.ws.send(o2);
       }
-      console.log("%c[EDITOR][WS OPEN]", LOG_FUNNY_ARCADE2);
+      console.log("%c[EDITOR][WS OPEN]", LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent("editorx-ws-ready", {}));
     };
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE2, data);
+        console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
           setTimeout(() => location.assign(data.name + ".html"), 2e3);
         } else if (data.payload && data.payload == "stop-watch done") {
@@ -22553,8 +21909,8 @@ var MEEditorClient = class {
             mb.show("From editorX:" + data.ok);
           }
         }
-      } catch (e) {
-        console.error("[WS ERROR PARSE]", e);
+      } catch (e2) {
+        console.error("[WS ERROR PARSE]", e2);
       }
     };
     this.ws.onerror = (err) => {
@@ -22567,7 +21923,7 @@ var MEEditorClient = class {
     this.attachEvents();
   }
   attachEvents() {
-    document.addEventListener("lp", (e) => {
+    document.addEventListener("lp", (e2) => {
       console.info("Load project <signal>");
       let o2 = {
         action: "lp"
@@ -22575,204 +21931,204 @@ var MEEditorClient = class {
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("cnp", (e) => {
+    document.addEventListener("cnp", (e2) => {
       console.info("Create new project <signal>");
       let o2 = {
         action: "cnp",
-        name: e.detail.name,
-        features: e.detail.features
+        name: e2.detail.name,
+        features: e2.detail.features
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("stop-watch", (e) => {
+    document.addEventListener("stop-watch", (e2) => {
       console.info("stop-watch <signal>");
       let o2 = {
         action: "stop-watch",
-        name: e.detail.name
+        name: e2.detail.name
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("start-watch", (e) => {
+    document.addEventListener("start-watch", (e2) => {
       console.info("start-watch <signal>");
       let o2 = {
         action: "watch",
-        name: e.detail.name
+        name: e2.detail.name
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("nav-folder", (e) => {
+    document.addEventListener("nav-folder", (e2) => {
       console.info("nav-folder <signal>");
       let o2 = {
         action: "nav-folder",
-        name: e.detail.name,
-        rootFolder: e.detail.rootFolder
+        name: e2.detail.name,
+        rootFolder: e2.detail.rootFolder
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("file-detail", (e) => {
-      console.info("%c[file-detail <signal>]", LOG_FUNNY_ARCADE2);
+    document.addEventListener("file-detail", (e2) => {
+      console.info("%c[file-detail <signal>]", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "file-detail",
-        name: e.detail.name,
-        rootFolder: e.detail.rootFolder
+        name: e2.detail.name,
+        rootFolder: e2.detail.rootFolder
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addCube", (e) => {
-      console.info("%c[web.editor.addCube]", LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.addCube", (e2) => {
+      console.info("%c[web.editor.addCube]", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addCube",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e.detail
+        options: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addSphere", (e) => {
-      console.info("%c[web.editor.addSphere]", LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.addSphere", (e2) => {
+      console.info("%c[web.editor.addSphere]", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addSphere",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e.detail
+        options: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("save-methods", (e) => {
-      console.info("%cSave methods <signal>", LOG_FUNNY_ARCADE2);
+    document.addEventListener("save-methods", (e2) => {
+      console.info("%cSave methods <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-methods",
-        methodsContainer: e.detail.methodsContainer
+        methodsContainer: e2.detail.methodsContainer
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("save-graph", (e) => {
-      console.info("%cSave graph <signal>", LOG_FUNNY_ARCADE2);
+    document.addEventListener("save-graph", (e2) => {
+      console.info("%cSave graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-graph",
-        graphData: e.detail
+        graphData: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("save-shader-graph", (e) => {
-      console.info("%cSave shader-graph <signal>", LOG_FUNNY_ARCADE2);
+    document.addEventListener("save-shader-graph", (e2) => {
+      console.info("%cSave shader-graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-shader-graph",
-        graphData: e.detail
+        graphData: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("aiGenGraphCall", (e) => {
-      console.info("%caiGenGraphCall fluxCodexVertex <signal>", LOG_FUNNY_ARCADE2);
+    document.addEventListener("aiGenGraphCall", (e2) => {
+      console.info("%caiGenGraphCall fluxCodexVertex <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "aiGenGraphCall",
-        prompt: e.detail
+        prompt: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("load-shader-graph", (e) => {
-      console.info("%cLoad shader-graph <signal>", LOG_FUNNY_ARCADE2);
+    document.addEventListener("load-shader-graph", (e2) => {
+      console.info("%cLoad shader-graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "load-shader-graph",
-        name: e.detail
+        name: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("delete-shader-graph", (e) => {
-      console.info("%cDelete shader-graph <signal>", LOG_FUNNY_ARCADE2);
+    document.addEventListener("delete-shader-graph", (e2) => {
+      console.info("%cDelete shader-graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "delete-shader-graph",
-        name: e.detail
+        name: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
     document.addEventListener("get-shader-graphs", () => {
-      console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE2);
+      console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "get-shader-graphs"
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addGlb", (e) => {
-      console.log("%c[web.editor.addGlb]: " + e.detail, LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.addGlb", (e2) => {
+      console.log("%c[web.editor.addGlb]: " + e2.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addGlb",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e.detail
+        options: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addObj", (e) => {
-      console.log("%c[web.editor.addObj]: " + e.detail, LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.addObj", (e2) => {
+      console.log("%c[web.editor.addObj]: " + e2.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addObj",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e.detail
+        options: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addMp3", (e) => {
+    document.addEventListener("web.editor.addMp3", (e2) => {
     });
-    document.addEventListener("web.editor.delete", (e) => {
-      console.log("%c[web.editor.delete]: " + e.detail, LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.delete", (e2) => {
+      console.log("%c[web.editor.delete]: " + e2.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "delete-obj",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        name: e.detail.prefix
+        name: e2.detail.prefix
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.pos", (e) => {
-      console.log("%c[web.editor.update.pos]: " + e.detail, LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.update.pos", (e2) => {
+      console.log("%c[web.editor.update.pos]: " + e2.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "updatePos",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e.detail
+        data: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.rot", (e) => {
-      console.log("%c[web.editor.update.rot]: " + e.detail, LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.update.rot", (e2) => {
+      console.log("%c[web.editor.update.rot]: " + e2.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "updateRot",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e.detail
+        data: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.scale", (e) => {
-      console.log("%c[web.editor.update.scale]: " + e.detail, LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.update.scale", (e2) => {
+      console.log("%c[web.editor.update.scale]: " + e2.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "updateScale",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e.detail
+        data: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.useScale", (e) => {
-      console.log("%c[web.editor.update.useScale]: " + e.detail, LOG_FUNNY_ARCADE2);
+    document.addEventListener("web.editor.update.useScale", (e2) => {
+      console.log("%c[web.editor.update.useScale]: " + e2.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "useScale",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e.detail
+        data: e2.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -22790,28 +22146,28 @@ var EditorProvider = class {
     return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
   addEditorEvents() {
-    document.addEventListener("web.editor.input", (e) => {
-      console.log("[EDITOR-input]: ", e.detail);
-      switch (e.detail.propertyId) {
+    document.addEventListener("web.editor.input", (e2) => {
+      console.log("[EDITOR-input]: ", e2.detail);
+      switch (e2.detail.propertyId) {
         case "position": {
-          console.log("change signal for pos", e.detail);
-          if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
-            detail: e.detail
+          console.log("change signal for pos", e2.detail);
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
+            detail: e2.detail
           }));
           break;
         }
         case "rotation": {
           console.log("[signal][rot]");
-          if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
-            detail: e.detail
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
+            detail: e2.detail
           }));
           break;
         }
         case "scale": {
           console.log("[signal][scale]");
-          if (e.detail.property == "0" || e.detail.property == "1" || e.detail.property == "2") {
+          if (e2.detail.property == "0" || e2.detail.property == "1" || e2.detail.property == "2") {
             document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e.detail
+              detail: e2.detail
             }));
           }
           break;
@@ -22819,20 +22175,20 @@ var EditorProvider = class {
         default:
           console.log("changes not saved.");
       }
-      let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
-      if (e.detail.property == "no info") {
-        sceneObj[e.detail.propertyId] = e.detail.value;
-        if (e.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent("web.editor.update.useScale", { detail: e.detail }));
+      let sceneObj = this.core.getSceneObjectByName(e2.detail.inputFor);
+      if (e2.detail.property == "no info") {
+        sceneObj[e2.detail.propertyId] = e2.detail.value;
+        if (e2.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent("web.editor.update.useScale", { detail: e2.detail }));
         return;
       }
       if (sceneObj) {
-        sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
+        sceneObj[e2.detail.propertyId][e2.detail.property] = parseFloat(e2.detail.value);
       } else {
         console.warn("EditorProvider input error");
         return;
       }
     });
-    document.addEventListener("web.editor.addCube", (e) => {
+    document.addEventListener("web.editor.addCube", (e2) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
         const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
@@ -22841,17 +22197,17 @@ var EditorProvider = class {
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: "" + e.detail.index,
+          name: "" + e2.detail.index,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
           physics: {
-            enabled: e.detail.physics,
+            enabled: e2.detail.physics,
             geometry: "Cube"
           }
         });
       }, { scale: [1, 1, 1] });
     });
-    document.addEventListener("web.editor.addSphere", (e) => {
+    document.addEventListener("web.editor.addSphere", (e2) => {
       downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
         const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
@@ -22860,33 +22216,33 @@ var EditorProvider = class {
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: e.detail.index,
+          name: e2.detail.index,
           mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
           physics: {
-            enabled: e.detail.physics,
+            enabled: e2.detail.physics,
             geometry: "Sphere"
           }
         });
       }, { scale: [1, 1, 1] });
     });
-    document.addEventListener("web.editor.addGlb", async (e) => {
-      console.log("[web.editor.addGlb]: ", e.detail.path);
-      e.detail.path = e.detail.path.replace("\\res", "res");
-      var glbFile01 = await fetch(e.detail.path).then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, this.core.device)));
+    document.addEventListener("web.editor.addGlb", async (e2) => {
+      console.log("[web.editor.addGlb]: ", e2.detail.path);
+      e2.detail.path = e2.detail.path.replace("\\res", "res");
+      var glbFile01 = await fetch(e2.detail.path).then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObj({
         material: { type: "power", useTextureFromGlb: true },
         scale: [2, 2, 2],
         position: { x: 0, y: 0, z: -20 },
-        name: this.getNameFromPath(e.detail.path),
+        name: this.getNameFromPath(e2.detail.path),
         texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
       }, null, glbFile01);
     });
-    document.addEventListener("web.editor.addObj", (e) => {
-      console.log("[web.editor.addObj]: ", e.detail);
-      e.detail.path = e.detail.path.replace("\\res", "res");
-      e.detail.path = e.detail.path.replace(/\\/g, "/");
-      downloadMeshes({ objMesh: `${e.detail.path}` }, (m) => {
+    document.addEventListener("web.editor.addObj", (e2) => {
+      console.log("[web.editor.addObj]: ", e2.detail);
+      e2.detail.path = e2.detail.path.replace("\\res", "res");
+      e2.detail.path = e2.detail.path.replace(/\\/g, "/");
+      downloadMeshes({ objMesh: `${e2.detail.path}` }, (m) => {
         const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
@@ -22894,19 +22250,19 @@ var EditorProvider = class {
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: e.detail.index,
+          name: e2.detail.index,
           mesh: m.objMesh,
           raycast: { enabled: true, radius: 2 },
           physics: {
-            enabled: e.detail.physics,
+            enabled: e2.detail.physics,
             geometry: "Cube"
           }
         });
       }, { scale: [1, 1, 1] });
     });
-    document.addEventListener("web.editor.delete", (e) => {
-      console.log("[web.editor.delete]: ", e.detail.fullName);
-      this.core.removeSceneObjectByName(e.detail.fullName);
+    document.addEventListener("web.editor.delete", (e2) => {
+      console.log("[web.editor.delete]: ", e2.detail.fullName);
+      this.core.removeSceneObjectByName(e2.detail.fullName);
     });
   }
 };
@@ -23166,18 +22522,18 @@ var FragmentShaderGraph = class {
   }
   makeDraggable(el2, node2, connectionLayer) {
     let ox = 0, oy = 0, drag = false;
-    el2.addEventListener("pointerdown", (e) => {
+    el2.addEventListener("pointerdown", (e2) => {
       drag = true;
-      ox = e.clientX - el2.offsetLeft;
-      oy = e.clientY - el2.offsetTop;
-      el2.setPointerCapture(e.pointerId);
+      ox = e2.clientX - el2.offsetLeft;
+      oy = e2.clientY - el2.offsetTop;
+      el2.setPointerCapture(e2.pointerId);
     });
-    el2.addEventListener("pointermove", (e) => {
+    el2.addEventListener("pointermove", (e2) => {
       if (!drag) return;
-      el2.style.left = e.clientX - ox + "px";
-      el2.style.top = e.clientY - oy + "px";
-      node2.x = e.clientX - ox;
-      node2.y = e.clientY - oy;
+      el2.style.left = e2.clientX - ox + "px";
+      el2.style.top = e2.clientY - oy + "px";
+      node2.x = e2.clientX - ox;
+      node2.y = e2.clientY - oy;
       connectionLayer.redrawAll();
     });
     el2.addEventListener("pointerup", () => drag = false);
@@ -23976,25 +23332,25 @@ var ConnectionLayer = class {
     this.shaderGraph = shaderGraph;
     this.temp = null;
     this.from = null;
-    document.addEventListener("pointermove", (e) => this.move(e));
-    document.addEventListener("pointerup", (e) => this.up(e));
+    document.addEventListener("pointermove", (e2) => this.move(e2));
+    document.addEventListener("pointerup", (e2) => this.up(e2));
   }
   attach(pin) {
-    pin.onpointerdown = (e) => {
-      e.stopPropagation();
+    pin.onpointerdown = (e2) => {
+      e2.stopPropagation();
       if (pin.dataset.type !== "output") return;
       this.from = pin;
       this.temp = this.path();
       this.svg.appendChild(this.temp);
     };
   }
-  move(e) {
+  move(e2) {
     if (!this.temp || !this.from) return;
-    this.draw(this.temp, this.center(this.from), { x: e.clientX, y: e.clientY });
+    this.draw(this.temp, this.center(this.from), { x: e2.clientX, y: e2.clientY });
   }
-  up(e) {
+  up(e2) {
     if (!this.temp || !this.from) return;
-    const t = document.elementFromPoint(e.clientX, e.clientY);
+    const t = document.elementFromPoint(e2.clientX, e2.clientY);
     if (t?.classList.contains("pinShader") && t.dataset.type === "input") {
       this.finalize(this.from, t);
     }
@@ -24076,19 +23432,19 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
     area.classList.add("fancy-grid-bg");
     area.classList.add("dark");
     let pan = { active: false, ox: 0, oy: 0 };
-    area.addEventListener("pointerdown", (e) => {
-      if (e.target !== area) return;
+    area.addEventListener("pointerdown", (e2) => {
+      if (e2.target !== area) return;
       pan.active = true;
-      pan.ox = e.clientX;
-      pan.oy = e.clientY;
-      area.setPointerCapture(e.pointerId);
+      pan.ox = e2.clientX;
+      pan.oy = e2.clientY;
+      area.setPointerCapture(e2.pointerId);
     });
-    area.addEventListener("pointermove", (e) => {
+    area.addEventListener("pointermove", (e2) => {
       if (!pan.active) return;
-      const dx = e.clientX - pan.ox;
-      const dy = e.clientY - pan.oy;
-      pan.ox = e.clientX;
-      pan.oy = e.clientY;
+      const dx = e2.clientX - pan.ox;
+      const dy = e2.clientY - pan.oy;
+      pan.ox = e2.clientX;
+      pan.oy = e2.clientY;
       shaderGraph.nodes.forEach((n2) => {
         n2.x += dx;
         n2.y += dy;
@@ -24100,9 +23456,9 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
       });
       connectionLayer.redrawAll();
     });
-    area.addEventListener("pointerup", (e) => {
+    area.addEventListener("pointerup", (e2) => {
       pan.active = false;
-      area.releasePointerCapture(e.pointerId);
+      area.releasePointerCapture(e2.pointerId);
     });
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.style.position = "absolute";
@@ -24234,8 +23590,8 @@ svg path {
       el2.style.top = y2 + "px";
       area.appendChild(el2);
       el2.tabIndex = 0;
-      el2.addEventListener("click", (e) => {
-        e.stopPropagation();
+      el2.addEventListener("click", (e2) => {
+        e2.stopPropagation();
         document.querySelectorAll(".nodeShader.selected").forEach((n2) => n2.classList.remove("selected"));
         el2.classList.add("selected");
       });
@@ -24262,7 +23618,7 @@ svg path {
           const val = type2 === "number" ? parseFloat(input.value) : input.value;
           node2[propName] = val;
         });
-        input.addEventListener("pointerdown", (e) => e.stopPropagation());
+        input.addEventListener("pointerdown", (e2) => e2.stopPropagation());
         row2.appendChild(labelEl);
         row2.appendChild(input);
         propsContainer.appendChild(row2);
@@ -24295,7 +23651,7 @@ svg path {
         ta.value = node2.code;
         ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
         ta.oninput = () => node2.code = ta.value;
-        ta.onpointerdown = (e) => e.stopPropagation();
+        ta.onpointerdown = (e2) => e2.stopPropagation();
         propsContainer.appendChild(ta);
       }
       if (propsContainer.children.length > 0) {
@@ -24338,8 +23694,8 @@ svg path {
       shaderGraph.connectionLayer = connectionLayer;
       shaderGraph.makeDraggable(el2, node2, connectionLayer);
     }
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Delete") {
+    document.addEventListener("keydown", (e2) => {
+      if (e2.key === "Delete") {
         const sel = document.querySelector(".nodeShader.selected");
         if (!sel) return;
         const nodeId2 = sel.dataset.nodeId;
@@ -24443,7 +23799,7 @@ svg path {
       console.log("[DELETE]", shaderGraph.id);
       document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph.id }));
     });
-    btn("Import JSON", async (e) => {
+    btn("Import JSON", async (e2) => {
       shaderGraph.clear();
       let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
       if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
@@ -24456,8 +23812,8 @@ svg path {
           input.type = "file";
           input.accept = ".json";
           input.style.display = "none";
-          input.onchange = (e2) => {
-            const file = e2.target.files[0];
+          input.onchange = (e3) => {
+            const file = e3.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = () => {
@@ -24490,8 +23846,8 @@ svg path {
     b.classList.add("btnLeftBox");
     b.style.webkitTextStrokeWidth = 0;
     menu.appendChild(b);
-    document.addEventListener("on-shader-graphs-list", (e) => {
-      const shaders = e.detail;
+    document.addEventListener("on-shader-graphs-list", (e2) => {
+      const shaders = e2.detail;
       b.innerHTML = "";
       var __ = 0;
       if (!byId("shader-graphs-list-dom")) {
@@ -24587,23 +23943,23 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
       content
     }
   }));
-  console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE2);
+  console.log("%cShader shaderGraph saved", LOG_FUNNY_ARCADE);
 }
 async function loadGraph(key, shaderGraph, addNodeUI) {
   if (shaderGraph.onGraphLoadAttached === false) {
     shaderGraph.onGraphLoadAttached = true;
-    document.addEventListener("on-graph-load", (e) => {
-      if (e.detail == null) {
+    document.addEventListener("on-graph-load", (e2) => {
+      if (e2.detail == null) {
         return;
       }
       shaderGraph.nodes.length = 0;
       shaderGraph.connections.length = 0;
-      shaderGraph.id = e.detail.name;
+      shaderGraph.id = e2.detail.name;
       let data;
-      if (typeof e.detail.content === "object") {
-        data = e.detail.content;
+      if (typeof e2.detail.content === "object") {
+        data = e2.detail.content;
       } else {
-        data = JSON.parse(e.detail.content);
+        data = JSON.parse(e2.detail.content);
       }
       if (!data) return false;
       const map = {};
@@ -24930,11 +24286,11 @@ var CurveEditor = class {
     );
     this._updateToolbar();
   }
-  _getMouse(e) {
+  _getMouse(e2) {
     const r2 = this.canvas.getBoundingClientRect();
     return {
-      x: e.clientX - r2.left - this.padLeft,
-      y: e.clientY - r2.top
+      x: e2.clientX - r2.left - this.padLeft,
+      y: e2.clientY - r2.top
     };
   }
   _bindMouse() {
@@ -24953,8 +24309,8 @@ var CurveEditor = class {
       const playY = this._valueToY(this.getValueNow());
       return Math.hypot(mx - playX, my - playY) < 8;
     };
-    this.canvas.addEventListener("mousedown", (e) => {
-      const { x: mx, y: my } = this._getMouse(e);
+    this.canvas.addEventListener("mousedown", (e2) => {
+      const { x: mx, y: my } = this._getMouse(e2);
       if (hitPlayhead(mx, my)) {
         this.activeKey = "playhead";
         this.dragMode = "playhead";
@@ -24968,12 +24324,12 @@ var CurveEditor = class {
         this._grabDX = mx - kx;
         this._grabDY = my - ky;
         this.activeKey = k;
-        this.dragMode = e.shiftKey ? "tangent" : "key";
+        this.dragMode = e2.shiftKey ? "tangent" : "key";
       }
     });
-    window.addEventListener("mousemove", (e) => {
+    window.addEventListener("mousemove", (e2) => {
       if (!this.activeKey) return;
-      const { x: mx, y: my } = this._getMouse(e);
+      const { x: mx, y: my } = this._getMouse(e2);
       if (this.dragMode === "playhead" && this.activeKey === "playhead") {
         const w = this.width - this.padLeft;
         let t = Math.max(0, Math.min(1, mx / w));
@@ -25008,8 +24364,8 @@ var CurveEditor = class {
       this.activeKey = null;
       this.dragMode = null;
     });
-    this.canvas.addEventListener("dblclick", (e) => {
-      const { x: x2, y: y2 } = this._getMouse(e);
+    this.canvas.addEventListener("dblclick", (e2) => {
+      const { x: x2, y: y2 } = this._getMouse(e2);
       const w = this.width - this.padLeft;
       const t = Math.max(0, Math.min(1, x2 / w));
       const v = this._yToValue(y2);
@@ -25023,9 +24379,9 @@ var CurveEditor = class {
       this._reBake();
       this.draw();
     });
-    this.canvas.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      const { x: mx, y: my } = this._getMouse(e);
+    this.canvas.addEventListener("contextmenu", (e2) => {
+      e2.preventDefault();
+      const { x: mx, y: my } = this._getMouse(e2);
       const k = hitKey(mx, my);
       if (k && this.keys.length > 2) {
         this.keys = this.keys.filter((x2) => x2 !== k);
@@ -25242,7 +24598,7 @@ var CurveEditor = class {
     `;
     this.hideBtn.onclick = () => {
       this.toggleEditor();
-      console.log(`%c Curve [${this.name}] saved!`, LOG_FUNNY_ARCADE2);
+      console.log(`%c Curve [${this.name}] saved!`, LOG_FUNNY_ARCADE);
     };
     this.toolbar.append(
       this.nameInput,
@@ -25280,28 +24636,28 @@ var CurveEditor = class {
     let startTop = 0;
     handle.style.cursor = "move";
     handle2.style.cursor = "move";
-    handle.addEventListener("mousedown", (e) => {
+    handle.addEventListener("mousedown", (e2) => {
       isDown = true;
-      startX = e.clientX;
-      startY = e.clientY;
+      startX = e2.clientX;
+      startY = e2.clientY;
       const rect = el2.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
       document.body.style.userSelect = "none";
     });
-    handle2.addEventListener("mousedown", (e) => {
+    handle2.addEventListener("mousedown", (e2) => {
       isDown = true;
-      startX = e.clientX;
-      startY = e.clientY;
+      startX = e2.clientX;
+      startY = e2.clientY;
       const rect = el2.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
       document.body.style.userSelect = "none";
     });
-    window.addEventListener("mousemove", (e) => {
+    window.addEventListener("mousemove", (e2) => {
       if (!isDown) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
+      const dx = e2.clientX - startX;
+      const dy = e2.clientY - startY;
       el2.style.left = startLeft + dx + "px";
       el2.style.top = startTop + dy + "px";
       el2.style.transform = "none";
@@ -25429,8 +24785,8 @@ var CurveStore = class {
       const data = JSON.parse(raw);
       if (!data.curves) return;
       this.curves = data.curves.map((c) => this._fromJSON(c));
-    } catch (e) {
-      console.warn("CurveStore load failed", e);
+    } catch (e2) {
+      console.warn("CurveStore load failed", e2);
       this.curves = [];
     }
   }
@@ -25515,7 +24871,7 @@ var FluxCodexVertex = class {
     this.clearRuntime = () => {
       app.graphUpdate = () => {
       };
-      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n2) => n2.title == "On Draw"), LOG_FUNNY_ARCADE2);
+      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n2) => n2.title == "On Draw"), LOG_FUNNY_ARCADE);
       let allOnDraws = Object.values(this.nodes).filter((n2) => n2.title == "On Draw");
       for (var x2 = 0; x2 < allOnDraws.length; x2++) {
         allOnDraws[x2]._listenerAttached = false;
@@ -25535,9 +24891,9 @@ var FluxCodexVertex = class {
       this.state.zoom = Math.max(0.2, Math.min(2.5, z));
       this.board.style.transform = `scale(${this.state.zoom})`;
     };
-    this.onWheel = (e) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    this.onWheel = (e2) => {
+      e2.preventDefault();
+      const delta = e2.deltaY > 0 ? -0.1 : 0.1;
       this.setZoom(this.state.zoom + delta);
     };
     this.boardWrap.addEventListener("wheel", this.onWheel.bind(this), {
@@ -25549,13 +24905,13 @@ var FluxCodexVertex = class {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-    document.addEventListener("on-ai-graph-response", (e) => {
-      console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE2);
-      byId("graphGenJSON").value = e.detail;
+    document.addEventListener("on-ai-graph-response", (e2) => {
+      console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
+      byId("graphGenJSON").value = e2.detail;
       byId("ai-status").removeAttribute("data-ai-status");
     });
-    document.addEventListener("keydown", (e) => {
-      const target = e.composedPath && e.composedPath()[0] || e.target || document.activeElement;
+    document.addEventListener("keydown", (e2) => {
+      const target = e2.composedPath && e2.composedPath()[0] || e2.target || document.activeElement;
       function isEditableElement(el2) {
         if (!el2) return false;
         if (el2 instanceof HTMLInputElement || el2 instanceof HTMLTextAreaElement || el2 instanceof HTMLSelectElement) return true;
@@ -25564,10 +24920,10 @@ var FluxCodexVertex = class {
         return false;
       }
       if (isEditableElement(target)) return;
-      if (e.key == "F6") {
-        e.preventDefault();
+      if (e2.key == "F6") {
+        e2.preventDefault();
         this.runGraph();
-      } else if (e.key === "Delete") {
+      } else if (e2.key === "Delete") {
         if (this.state.selectedNode) {
           this.deleteNode(this.state.selectedNode);
           this.state.selectedNode = null;
@@ -25575,22 +24931,22 @@ var FluxCodexVertex = class {
       }
     });
     this.createContextMenu();
-    document.addEventListener("fluxcodex.input.change", (e) => {
+    document.addEventListener("fluxcodex.input.change", (e2) => {
       console.log("fluxcodex.input.change");
-      const { nodeId: nodeId2, field, value } = e.detail;
+      const { nodeId: nodeId2, field, value } = e2.detail;
       const node2 = this.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
       this.handleGetSubObject(node2, value);
       if (field !== "path") return;
     });
-    document.addEventListener("web.editor.addMp3", (e) => {
-      console.log("[web.editor.addMp3]: ", e.detail);
-      e.detail.path = e.detail.path.replace("\\res", "res");
-      e.detail.path = e.detail.path.replace(/\\/g, "/");
-      this.addNode("audioMP3", e.detail);
+    document.addEventListener("web.editor.addMp3", (e2) => {
+      console.log("[web.editor.addMp3]: ", e2.detail);
+      e2.detail.path = e2.detail.path.replace("\\res", "res");
+      e2.detail.path = e2.detail.path.replace(/\\/g, "/");
+      this.addNode("audioMP3", e2.detail);
     });
-    document.addEventListener("show-curve-editor", (e) => {
+    document.addEventListener("show-curve-editor", (e2) => {
       this.curveEditor.toggleEditor();
     });
     setTimeout(() => this.init(), 3300);
@@ -25601,14 +24957,14 @@ var FluxCodexVertex = class {
     CMenu.classList.add("fc-context-menu");
     CMenu.classList.add("hidden");
     const board = document.getElementById("board");
-    board.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
+    board.addEventListener("contextmenu", (e2) => {
+      e2.preventDefault();
       CMenu.innerHTML = this.getFluxCodexMenuHTML();
       const menuRect = CMenu.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      let x2 = e.clientX;
-      let y2 = e.clientY;
+      let x2 = e2.clientX;
+      let y2 = e2.clientY;
       if (x2 + menuRect.width > vw) {
         x2 = vw - menuRect.width - 5;
       }
@@ -25918,20 +25274,20 @@ var FluxCodexVertex = class {
     call.style.width = "200px";
     call.style.fontWeight = "bold";
     call.style.webkitTextStrokeWidth = "0px";
-    call.addEventListener("click", (e) => {
+    call.addEventListener("click", (e2) => {
       if (selectPrompt.selectedIndex > 0) {
       }
-      if (e.target.getAttribute("data-ai-status") == null) {
-        e.target.setAttribute("data-ai-status", "wip");
+      if (e2.target.getAttribute("data-ai-status") == null) {
+        e2.target.setAttribute("data-ai-status", "wip");
       } else {
-        if (e.target.getAttribute("data-ai-status") == "wip") {
+        if (e2.target.getAttribute("data-ai-status") == "wip") {
           console.info("gen ai tool call PREVENT ");
           return;
         } else {
           console.info("gen ai tool call !!!!!!!!!!!!!!!! else ");
         }
       }
-      console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE2);
+      console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
         detail: {
           provider: providers[0],
@@ -26142,10 +25498,10 @@ var FluxCodexVertex = class {
     let startLeft = 0;
     let startTop = 0;
     handle.style.cursor = "move";
-    handle.addEventListener("mousedown", (e) => {
+    handle.addEventListener("mousedown", (e2) => {
       isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
+      startX = e2.clientX;
+      startY = e2.clientY;
       const rect = popup.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
@@ -26155,10 +25511,10 @@ var FluxCodexVertex = class {
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
     });
-    const onMove = (e) => {
+    const onMove = (e2) => {
       if (!isDragging) return;
-      popup.style.left = startLeft + (e.clientX - startX) + "px";
-      popup.style.top = startTop + (e.clientY - startY) + "px";
+      popup.style.left = startLeft + (e2.clientX - startX) + "px";
+      popup.style.top = startTop + (e2.clientY - startY) + "px";
     };
     const onUp = () => {
       isDragging = false;
@@ -26345,8 +25701,8 @@ var FluxCodexVertex = class {
       }
       this.populateMethodsSelect(select2);
       if (node2.attachedMethod) select2.value = node2.attachedMethod;
-      select2.onchange = (e) => {
-        const selected = this.methodsManager.methodsContainer.find((m) => m.name === e.target.value);
+      select2.onchange = (e2) => {
+        const selected = this.methodsManager.methodsContainer.find((m) => m.name === e2.target.value);
         console.log("test reference::::", selected);
         if (selected) this.adaptNodeToMethod(node2, selected);
       };
@@ -26362,8 +25718,8 @@ var FluxCodexVertex = class {
     if (!node.accessObject && node.accessObjectLiteral) {
       try {
         node.accessObject = eval(node.accessObjectLiteral);
-      } catch (e) {
-        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e);
+      } catch (e2) {
+        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e2);
         node.accessObject = [];
       }
     }
@@ -26403,8 +25759,8 @@ var FluxCodexVertex = class {
         const selected = node.fields.find((f) => f.key === "selectedObject")?.value;
         if (selected) select.value = selected;
       }
-      select.onchange = (e) => {
-        const val = e.target.value;
+      select.onchange = (e2) => {
+        const val = e2.target.value;
         node.fields.find((f) => f.key === "selectedObject").value = val;
       };
     }
@@ -26600,7 +25956,7 @@ var FluxCodexVertex = class {
       const c = new CurveData(spec.id);
       let curve = this.curveEditor.curveStore.getOrCreate(c);
       spec.curve = curve;
-      console.log(`%c Create DOM corotine Node [CURVE] ${spec.curve}`, LOG_FUNNY_ARCADE2);
+      console.log(`%c Create DOM corotine Node [CURVE] ${spec.curve}`, LOG_FUNNY_ARCADE);
       this.curveEditor.bindCurve(spec.curve, {
         name: spec.id,
         idNode: spec.id
@@ -26641,7 +25997,7 @@ var FluxCodexVertex = class {
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
-        input.addEventListener("input", (e) => f.value = e.target.value);
+        input.addEventListener("input", (e2) => f.value = e2.target.value);
         container.appendChild(input);
         const label = document.createElement("span");
         label.textContent = f.key;
@@ -26666,9 +26022,9 @@ var FluxCodexVertex = class {
       if (spec.attachedMethod) {
         select2.value = spec.attachedMethod;
       }
-      select2.addEventListener("change", (e) => {
+      select2.addEventListener("change", (e2) => {
         const selected = this.methodsManager.methodsContainer.find(
-          (m) => m.name === e.target.value
+          (m) => m.name === e2.target.value
         );
         if (selected) {
           console.log("test reference", selected);
@@ -26695,8 +26051,8 @@ var FluxCodexVertex = class {
         spec.accessObject = eval(spec.accessObjectLiteral);
       }
       this.populateDynamicFunctionSelect(select, spec);
-      select.addEventListener("change", (e) => {
-        const fnName = e.target.value;
+      select.addEventListener("change", (e2) => {
+        const fnName = e2.target.value;
         if (fnName) {
           this.adaptDynamicFunction(spec, fnName);
         }
@@ -26720,8 +26076,8 @@ var FluxCodexVertex = class {
         select.appendChild(opt);
       });
       if (spec.fields[0].value) select.value = spec.fields[0].value;
-      select.addEventListener("change", (e) => {
-        const name2 = e.target.value;
+      select.addEventListener("change", (e2) => {
+        const name2 = e2.target.value;
         spec.fields[0].value = name2;
         this.updateSceneObjectPins(spec, name2);
       });
@@ -26742,8 +26098,8 @@ var FluxCodexVertex = class {
         opt.textContent = name2;
         select.appendChild(opt);
       });
-      select.addEventListener("change", (e) => {
-        const name2 = e.target.value;
+      select.addEventListener("change", (e2) => {
+        const name2 = e2.target.value;
         spec.fields[0].value = name2;
         const dom2 = document.querySelector(`.node[data-id="${spec.id}"]`);
         let fields = dom2.querySelectorAll(".node-fields");
@@ -26754,24 +26110,24 @@ var FluxCodexVertex = class {
       setTimeout(() => select.dispatchEvent(new Event("change", { bubbles: true })), 100);
     }
     el.appendChild(body);
-    header.addEventListener("mousedown", (e) => {
-      e.preventDefault();
+    header.addEventListener("mousedown", (e2) => {
+      e2.preventDefault();
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
       this.state.dragOffset = [
-        e.clientX - rect.left + bx.left,
-        e.clientY - rect.top + bx.top
+        e2.clientX - rect.left + bx.left,
+        e2.clientY - rect.top + bx.top
       ];
       document.body.style.cursor = "grabbing";
     });
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
+    el.addEventListener("click", (e2) => {
+      e2.stopPropagation();
       this.selectNode(spec.id);
       this.updateNodeDOM(spec.id);
     });
-    el.addEventListener("dblclick", (e) => {
-      e.stopPropagation();
+    el.addEventListener("dblclick", (e2) => {
+      e2.stopPropagation();
       console.log("DBL " + spec.id);
       this.onNodeDoubleClick(spec);
     });
@@ -28436,9 +27792,9 @@ LIST OF INTEREST OBJECT:
       this.fluxcodexFieldChange.detail.value = field.value;
       document.dispatchEvent(this, this.fluxcodexFieldChange);
     };
-    input.onkeydown = (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
+    input.onkeydown = (e2) => {
+      if (e2.key === "Enter") {
+        e2.preventDefault();
         saveInputValue();
       }
     };
@@ -28558,8 +27914,8 @@ LIST OF INTEREST OBJECT:
     } else if (n2.title == "On Ray Hit") {
       if (n2._listenerAttached) return;
       app.reference.addRaycastsListener();
-      const handler = (e) => {
-        n2._returnCache = e.detail;
+      const handler = (e2) => {
+        n2._returnCache = e2.detail;
         this.enqueueOutputs(n2, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
@@ -28586,26 +27942,26 @@ LIST OF INTEREST OBJECT:
       if (n2._listenerAttached) return;
       const graph = this;
       n2._isHeld = false;
-      window.addEventListener("keydown", (e) => {
-        n2.lastKey = e.key;
+      window.addEventListener("keydown", (e2) => {
+        n2.lastKey = e2.key;
         graph.enqueueOutputs(n2, "anyKeyDown");
-        if (e.ctrlKey == true) graph.enqueueOutputs(n2, "ctrl");
-        if (e.altKey == true) graph.enqueueOutputs(n2, "alt");
-        if (e.shiftKey == true) graph.enqueueOutputs(n2, "shift");
+        if (e2.ctrlKey == true) graph.enqueueOutputs(n2, "ctrl");
+        if (e2.altKey == true) graph.enqueueOutputs(n2, "alt");
+        if (e2.shiftKey == true) graph.enqueueOutputs(n2, "shift");
         const keyValue = n2.fields.find((f) => f.key === "key")?.value;
         if (!keyValue) return;
-        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
+        if (e2.key.toLowerCase() === keyValue.toLowerCase()) {
           n2._isHeld = true;
           graph.enqueueOutputs(n2, "keyDown");
         }
       });
-      window.addEventListener("keyup", (e) => {
-        console.log("ON e.shiftKey !!!!!", e.shiftKey);
-        console.log("ON e.altKey !!!!!", e.altKey);
-        console.log("ON e.ctrltKey !!!!!", e.ctrlKey);
+      window.addEventListener("keyup", (e2) => {
+        console.log("ON e.shiftKey !!!!!", e2.shiftKey);
+        console.log("ON e.altKey !!!!!", e2.altKey);
+        console.log("ON e.ctrltKey !!!!!", e2.ctrlKey);
         const keyValue = n2.fields.find((f) => f.key === "key")?.value;
         if (!keyValue) return;
-        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
+        if (e2.key.toLowerCase() === keyValue.toLowerCase()) {
           n2._isHeld = false;
           graph.enqueueOutputs(n2, "keyUp");
         }
@@ -28722,8 +28078,8 @@ LIST OF INTEREST OBJECT:
           } else {
             value = JSON.parse(value);
           }
-        } catch (e) {
-          console.warn("[getValue][json parse err]:", e);
+        } catch (e2) {
+          console.warn("[getValue][json parse err]:", e2);
         }
       }
       return value;
@@ -29008,7 +28364,7 @@ LIST OF INTEREST OBJECT:
       if (typeof arr === "string") {
         try {
           arr = JSON.parse(arr);
-        } catch (e) {
+        } catch (e2) {
           console.warn("Failed to parse array string", arr);
           arr = [];
         }
@@ -29058,9 +28414,9 @@ LIST OF INTEREST OBJECT:
       console.log("********************************");
       const eventName = n.fields?.find((f) => f.key === "name")?.value;
       if (!eventName) return;
-      const handler = (e) => {
+      const handler = (e2) => {
         console.log("**TRUE** HANDLER**");
-        n._returnCache = e.detail;
+        n._returnCache = e2.detail;
         this.enqueueOutputs(n, "exec");
       };
       console.log("**eventName**", eventName);
@@ -29132,7 +28488,7 @@ LIST OF INTEREST OBJECT:
       return;
     }
     if (n.category === "event" && typeof n.noselfExec === "undefined") {
-      console.info(`%c<EMPTY EXEC>: ${n.title}`, LOG_FUNNY_ARCADE2);
+      console.info(`%c<EMPTY EXEC>: ${n.title}`, LOG_FUNNY_ARCADE);
       this.enqueueOutputs(n, "exec");
       return;
     }
@@ -29235,7 +28591,7 @@ LIST OF INTEREST OBJECT:
             n.displayEl.textContent = String(val);
           }
         }
-        console.info(`%c[Print] ${label}` + val, LOG_FUNNY_ARCADE2);
+        console.info(`%c[Print] ${label}` + val, LOG_FUNNY_ARCADE);
       } else if (n.title === "SetTimeout") {
         const delay2 = +n.fields?.find((f) => f.key === "delay")?.value || 1e3;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay2);
@@ -29245,7 +28601,7 @@ LIST OF INTEREST OBJECT:
         const src = this.getValue(nodeId, "src");
         const clones = Number(this.getValue(nodeId, "clones")) || 1;
         if (!key || !src) {
-          console.info(`%c[Play MP3] Missing key or src...`, LOG_FUNNY_ARCADE2);
+          console.info(`%c[Play MP3] Missing key or src...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
@@ -29361,7 +28717,7 @@ LIST OF INTEREST OBJECT:
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
-            console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE2);
+            console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           });
@@ -29411,13 +28767,14 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        let b = app.matrixAmmo.getBodyByName(objectName2);
-        const i = new Ammo.btVector3(
+        console.log("Set Force On Hit - getBodyByName ");
+        let b = app.matrixPhysics.getBodyByName(objectName2);
+        const i = new PVector(
           rayDirection[0] * strength,
           rayDirection[1] * strength,
           rayDirection[2] * strength
         );
-        b.applyCentralImpulse(i);
+        app.matrixPhysics.applyImpulse(b, i);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Set Video Texture") {
@@ -29448,7 +28805,7 @@ LIST OF INTEREST OBJECT:
         let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
         let specialCanvas2dArg = this.getValue(nodeId, "specialCanvas2dArg");
         if (!objectName) {
-          console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, LOG_FUNNY_ARCADE2);
+          console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
@@ -29465,7 +28822,7 @@ LIST OF INTEREST OBJECT:
         }
         let o = app.getSceneObjectByName(objectName);
         if (typeof o === "undefined") {
-          console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, LOG_FUNNY_ARCADE2);
+          console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, LOG_FUNNY_ARCADE);
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
@@ -29480,7 +28837,7 @@ LIST OF INTEREST OBJECT:
         const cName = this.getValue(nodeId, "name");
         const cDelta = this.getValue(nodeId, "delta");
         if (!cName) {
-          console.log(`%c Node [CURVE] probably name is missing...`, LOG_FUNNY_ARCADE2);
+          console.log(`%c Node [CURVE] probably name is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
@@ -29491,7 +28848,7 @@ LIST OF INTEREST OBJECT:
           return;
         }
         if (!curve.baked) {
-          console.log(`%cNode [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE2);
+          console.log(`%cNode [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE);
           curve.bake();
         }
         n.curve = curve;
@@ -29735,7 +29092,11 @@ LIST OF INTEREST OBJECT:
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (sceneObjectName) {
         let obj2 = app.getSceneObjectByName(sceneObjectName);
-        obj2.setBlend(a);
+        if (typeof obj2 === "undefined") {
+          console.warn("fluxCodexVertex: no obj with name: ", sceneObjectName);
+        } else {
+          obj2.setBlend(a);
+        }
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -29743,9 +29104,12 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (texpath) {
+        console.log("SET TECTURE : sceneObjectName", sceneObjectName);
         let obj2 = app.getSceneObjectByName(sceneObjectName);
-        obj2.loadTex0([texpath]).then(() => {
-          setTimeout(() => obj2.changeTexture(obj2.texture0), 200);
+        obj2.loadTex0([texpath]).then((_) => {
+          setTimeout(() => {
+            _.changeTexture(_.texture0);
+          }, 100);
         });
       }
       this.enqueueOutputs(n, "execOut");
@@ -29780,6 +29144,7 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set RotateX") {
       const rot2 = this.getValue(nodeId, "rotation");
+      console.log("TEST ROTATE X");
       if (rot2?.setRotateX) {
         rot2.setRotateX(this.getValue(nodeId, "x"));
       }
@@ -29918,8 +29283,8 @@ LIST OF INTEREST OBJECT:
         select2.appendChild(opt);
       });
     });
-    select2.onchange = (e) => {
-      const [objName, fnName] = e.target.value.split(".");
+    select2.onchange = (e2) => {
+      const [objName, fnName] = e2.target.value.split(".");
       this.adaptNodeToAccessMethod(node, objName, fnName);
     };
   }
@@ -29971,11 +29336,11 @@ LIST OF INTEREST OBJECT:
       byId("app").style.opacity = 1;
     });
   }
-  handleMouseMove(e) {
+  handleMouseMove(e2) {
     if (this.state.draggingNode) {
       const el2 = this.state.draggingNode;
-      const newX = e.clientX - this.state.dragOffset[0];
-      const newY = e.clientY - this.state.dragOffset[1];
+      const newX = e2.clientX - this.state.dragOffset[0];
+      const newY = e2.clientY - this.state.dragOffset[1];
       el2.style.left = newX + "px";
       el2.style.top = newY + "px";
       const id2 = el2.dataset.id;
@@ -29985,11 +29350,11 @@ LIST OF INTEREST OBJECT:
       }
       this.updateLinks();
     } else if (this.state.panning) {
-      const dx = e.clientX - this.state.panStart[0], dy = e.clientY - this.state.panStart[1];
+      const dx = e2.clientX - this.state.panStart[0], dy = e2.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
       this.state.pan[1] += dy;
       this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
-      this.state.panStart = [e.clientX, e.clientY];
+      this.state.panStart = [e2.clientX, e2.clientY];
       this.updateLinks();
     }
   }
@@ -29998,10 +29363,10 @@ LIST OF INTEREST OBJECT:
     this.state.panning = false;
     document.body.style.cursor = "default";
   }
-  handleBoardWrapMouseDown(e) {
-    if (!e.target.closest(".node")) {
+  handleBoardWrapMouseDown(e2) {
+    if (!e2.target.closest(".node")) {
       this.state.panning = true;
-      this.state.panStart = [e.clientX, e.clientY];
+      this.state.panStart = [e2.clientX, e2.clientY];
       document.body.style.cursor = "grabbing";
       this.selectNode(null);
     }
@@ -30135,8 +29500,8 @@ LIST OF INTEREST OBJECT:
     input.type = "file";
     input.accept = ".json";
     input.style.display = "none";
-    input.onchange = (e) => {
-      const file = e.target.files[0];
+    input.onchange = (e2) => {
+      const file = e2.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
@@ -30154,7 +29519,6 @@ LIST OF INTEREST OBJECT:
   }
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph);
     if (saved || app.graph) {
       try {
         let data;
@@ -30169,7 +29533,7 @@ LIST OF INTEREST OBJECT:
             console.warn("\u26A0\uFE0F No file also no cache for graph, Editor faild to load!");
             return;
           }
-        } catch (e) {
+        } catch (e2) {
           console.warn("\u26A0\uFE0F No cache for graph, load from module!");
           data = app.graph;
         }
@@ -30195,8 +29559,8 @@ LIST OF INTEREST OBJECT:
         this.restoreConnectionsRuntime();
         this.log("Loaded graph.");
         return;
-      } catch (e) {
-        console.error("Failed to load graph from storage:", e);
+      } catch (e2) {
+        console.error("Failed to load graph from storage:", e2);
       }
     }
     this.addNode("event");
@@ -30219,7 +29583,7 @@ LIST OF INTEREST OBJECT:
     return;
   }
   onNodeDoubleClick(node2) {
-    console.log(`%c Node [CURVE  func] ${node2.curve}`, LOG_FUNNY_ARCADE2);
+    console.log(`%c Node [CURVE  func] ${node2.curve}`, LOG_FUNNY_ARCADE);
     if (node2.title !== "Curve") return;
     this.curveEditor.bindCurve(node2.curve, {
       name: node2.id,
@@ -30306,9 +29670,9 @@ var EditorHud = class {
     document.addEventListener("editor-not-running", () => {
       this.noEditorConn();
     });
-    document.addEventListener("file-detail-data", (e) => {
-      console.log(e.detail.details);
-      let getPATH = e.detail.details.path.split("public")[1];
+    document.addEventListener("file-detail-data", (e2) => {
+      console.log(e2.detail.details);
+      let getPATH = e2.detail.details.path.split("public")[1];
       const ext = getPATH.split(".").pop();
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt(`Path: ${getPATH} 
@@ -30360,11 +29724,11 @@ var EditorHud = class {
         }));
       } else {
         let s = "";
-        for (let key in e.detail.details) {
+        for (let key in e2.detail.details) {
           if (key == "path") {
-            s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+            s += key + ":" + e2.detail.details[key].split("public")[1] + "\n";
           } else {
-            s += key + ":" + e.detail.details[key] + "\n";
+            s += key + ":" + e2.detail.details[key] + "\n";
           }
         }
         mb.show(s);
@@ -30522,8 +29886,8 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
+      btn.addEventListener("click", (e2) => {
+        const menu = e2.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
@@ -30542,8 +29906,8 @@ var EditorHud = class {
     byId("stopMainGraphDOM").addEventListener("click", () => {
       app.editor.fluxCodexVertex.clearRuntime();
     });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
+    document.addEventListener("click", (e2) => {
+      if (!this.editorMenu.contains(e2.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
@@ -30609,7 +29973,6 @@ var EditorHud = class {
       location.reload(true);
     };
     if (byId("start-refresh")) this.toolTip.attachTooltip(byId("start-refresh"), "Simple refresh page.");
-    alert();
     byId("load-new-project").onclick = () => {
       console.log("Go to editorX landing page...");
       location.href = "matrix-engine.html";
@@ -30655,19 +30018,19 @@ var EditorHud = class {
         detail: o2
       }));
     });
-    byId("showCodeEditorBtn").addEventListener("click", (e) => {
+    byId("showCodeEditorBtn").addEventListener("click", (e2) => {
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });
-    byId("showCurveEditorBtn").addEventListener("click", (e) => {
+    byId("showCurveEditorBtn").addEventListener("click", (e2) => {
       document.dispatchEvent(new CustomEvent("show-curve-editor", { detail: {} }));
     });
-    byId("showShaderEditorBtn").addEventListener("click", (e) => {
+    byId("showShaderEditorBtn").addEventListener("click", (e2) => {
       if (byId("app").style.display == "flex") {
         byId("app").style.display = "none";
       }
       if (byId("shaderDOM") === null) {
-        openFragmentShaderEditor().then((e2) => {
-          app.shaderGraph = e2;
+        openFragmentShaderEditor().then((e3) => {
+          app.shaderGraph = e3;
         });
       } else if (byId("shaderDOM").style.display === "flex") {
         byId("shaderDOM").style.display = "none";
@@ -30675,7 +30038,7 @@ var EditorHud = class {
         byId("shaderDOM").style.display = "flex";
       }
     });
-    byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
+    byId("showVisualCodeEditorBtn").addEventListener("click", (e2) => {
       if (byId("shaderDOM") && byId("shaderDOM").style.display == "flex") {
         byId("shaderDOM").style.display = "none";
       }
@@ -30686,12 +30049,12 @@ var EditorHud = class {
         if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
       }
     });
-    byId("showCodeVARSBtn").addEventListener("click", (e) => {
+    byId("showCodeVARSBtn").addEventListener("click", (e2) => {
       byId("app").style.display = "flex";
       byId("varsPopup").style.display = "flex";
       this.core.editor.fluxCodexVertex.updateLinks();
     });
-    document.addEventListener("updateSceneContainer", (e) => {
+    document.addEventListener("updateSceneContainer", (e2) => {
       this.updateSceneContainer();
     });
     this.showAboutModal = () => {
@@ -30760,8 +30123,9 @@ var EditorHud = class {
         `;
       document.head.appendChild(style);
     }
-    const setMode = (e) => {
-      let m = parseInt(e.target.getAttribute("data-mode"));
+    const setMode = (e2) => {
+      if (byId("graph-status").innerHTML !== "\u26AB") return;
+      let m = parseInt(e2.target.getAttribute("data-mode"));
       dispatchEvent(new CustomEvent("editor-set-gizmo-mode", { detail: { mode: m } }));
       if (m == 0) {
         byId("mode0").style.border = "gray 1px solid";
@@ -30833,11 +30197,11 @@ var EditorHud = class {
 
     Support for mp3 adding by click also. No support for mp4 - mp4 can be added from 'Set Textures' node.
     `);
-    document.addEventListener("la", (e) => {
-      console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, LOG_FUNNY_ARCADE2);
-      byId("res-folder").setAttribute("data-root-folder", e.detail.rootFolder);
+    document.addEventListener("la", (e2) => {
+      console.log(`%c[Editor]Root Resource Folder: ${e2.detail.rootFolder}`, LOG_FUNNY_ARCADE);
+      byId("res-folder").setAttribute("data-root-folder", e2.detail.rootFolder);
       byId("res-folder").innerHTML = "";
-      e.detail.payload.forEach((i) => {
+      e2.detail.payload.forEach((i) => {
         let item = document.createElement("div");
         item.classList.add("file-item");
         if (i.isDir == true) {
@@ -30857,7 +30221,7 @@ var EditorHud = class {
         }
         item.innerHTML = "<p>" + i.name + "</p>";
         byId("res-folder").appendChild(item);
-        item.addEventListener("click", (e2) => {
+        item.addEventListener("click", (e3) => {
           if (i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
             detail: {
               rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
@@ -30918,16 +30282,16 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
+      btn.addEventListener("click", (e2) => {
+        const menu = e2.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
+    document.addEventListener("click", (e2) => {
+      if (!this.editorMenu.contains(e2.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
@@ -31004,16 +30368,16 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
+      btn.addEventListener("click", (e2) => {
+        const menu = e2.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
+    document.addEventListener("click", (e2) => {
+      if (!this.editorMenu.contains(e2.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
@@ -31134,13 +30498,13 @@ var EditorHud = class {
     this.sceneProperty.appendChild(this.objectProperies);
     document.body.appendChild(this.sceneProperty);
   }
-  updateSceneObjProperties = (e) => {
+  updateSceneObjProperties = (e2) => {
     this.currentProperties = [];
     this.objectProperiesTitle.style.fontSize = "120%";
     this.objectProperiesTitle.innerHTML = `Scene object properties`;
     this.objectProperies.innerHTML = ``;
-    const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
-    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+    const currentSO = this.core.getSceneObjectByName(e2.target.innerHTML);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e2.target.innerHTML}</span> 
       <span style="color:yellow;"> [${currentSO.constructor.name}]`;
     const OK = Object.keys(currentSO);
     OK.forEach((prop) => {
@@ -31186,13 +30550,13 @@ var SceneObjectProperty = class {
       this.propName.style.overflow = "hidden";
       this.propName.style.height = "20px";
       this.propName.style.borderBottom = "solid lime 2px";
-      this.propName.addEventListener("click", (e) => {
-        if (e.currentTarget.style.height != "fit-content") {
+      this.propName.addEventListener("click", (e2) => {
+        if (e2.currentTarget.style.height != "fit-content") {
           this.propName.style.overflow = "unset";
-          e.currentTarget.style.height = "fit-content";
+          e2.currentTarget.style.height = "fit-content";
         } else {
           this.propName.style.overflow = "hidden";
-          e.currentTarget.style.height = "20px";
+          e2.currentTarget.style.height = "20px";
         }
       });
       if (propName == "itIsPhysicsBody") {
@@ -31232,7 +30596,7 @@ var SceneObjectProperty = class {
           }
         });
       } else if (propName == "itIsPhysicsBody") {
-        let body2 = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        let body2 = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for (let key in body2) {
           if (typeof body2[key] === "string") {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
@@ -31491,16 +30855,16 @@ var SceneObjectProperty = class {
       <div><select id='sceneObjEditorPropEvents' ></select></div>
     </div>`;
     parentDOM.appendChild(this.propName);
-    byId("sceneObjEditorPropEvents").onchange = (e) => {
-      console.log("Event system selection:", e.target.value);
-      if (e.target.value == "none") {
+    byId("sceneObjEditorPropEvents").onchange = (e2) => {
+      console.log("Event system selection:", e2.target.value);
+      if (e2.target.value == "none") {
         currSceneObj.position.onTargetPositionReach = () => {
         };
         console.log("clear event");
         return;
       }
       const method = app.editor.methodsManager.methodsContainer.find(
-        (m) => m.name === e.target.value
+        (m) => m.name === e2.target.value
       );
       let F = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F;
@@ -31560,8 +30924,8 @@ var MethodsManager = class {
       this.popup.style.display = "block";
       this.wrapper.style.display = "block";
     });
-    document.addEventListener("XcompileFunction", (e) => {
-      this.compileFunction(e.detail.code);
+    document.addEventListener("XcompileFunction", (e2) => {
+      this.compileFunction(e2.detail.code);
     });
   }
   loadMethods = async (editorType) => {
@@ -31590,17 +30954,17 @@ var MethodsManager = class {
     let offsetX = 0;
     let offsetY = 0;
     this.wrapper.style.cursor = "move";
-    this.wrapper.addEventListener("mousedown", (e) => {
+    this.wrapper.addEventListener("mousedown", (e2) => {
       isDragging = true;
       const rect = this.popup.getBoundingClientRect();
-      offsetX = e.clientX - rect.left;
-      offsetY = e.clientY - rect.top;
+      offsetX = e2.clientX - rect.left;
+      offsetY = e2.clientY - rect.top;
       this.popup.style.transition = "none";
     });
-    document.addEventListener("mousemove", (e) => {
+    document.addEventListener("mousemove", (e2) => {
       if (!isDragging) return;
-      this.popup.style.left = e.clientX - offsetX + "px";
-      this.popup.style.top = e.clientY - offsetY + "px";
+      this.popup.style.left = e2.clientX - offsetX + "px";
+      this.popup.style.top = e2.clientY - offsetY + "px";
       this.popup.style.transform = "none";
     });
     document.addEventListener("mouseup", () => {
@@ -31805,8 +31169,8 @@ var MethodsManager = class {
     try {
       const fn = new Function(code + "; return " + this.extractName(code) + ";")();
       return fn;
-    } catch (e) {
-      console.error("Compilation error:", e);
+    } catch (e2) {
+      console.error("Compilation error:", e2);
       return () => {
       };
     }
@@ -31830,9 +31194,9 @@ var Editor = class {
       this.client = new MEEditorClient(this.check(a));
     } else if (this.check(a) == "created from editor") {
       document.addEventListener("editorx-ws-ready", () => {
-        openFragmentShaderEditor().then((e) => {
+        openFragmentShaderEditor().then((e2) => {
           byId("shaderDOM").style.display = "none";
-          app.shaderGraph = e;
+          app.shaderGraph = e2;
         });
       });
       this.client = new MEEditorClient(this.check(a), projName);
@@ -32412,45 +31776,53 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
 }
 
 // ../../../engine/generators/generator.js
-function stabilizeTowerBody(body2) {
-  body2.setDamping(0.8, 0.95);
-  body2.setSleepingThresholds(0.4, 0.4);
-  body2.setAngularFactor(new Ammo.btVector3(0.1, 0.1, 0.1));
-  body2.setFriction(1);
-  body2.setRollingFriction(0.8);
-}
-function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 100, delay2 = 500, mesh = null) {
-  let engine = this;
-  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
-  const inputSphere = { mesh: "./res/meshes/blender/sphere.obj" };
-  function handler(m) {
-    let RAY = { enabled: raycast2 == true ? true : false, radius: 1 };
-    for (var x2 = 0; x2 < sum2; x2++) {
+var local = [];
+async function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 20, delay2 = 500, mesh = null) {
+  return new Promise((resolve) => {
+    let engine = this;
+    const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+    const inputSphere = { mesh: "./res/meshes/blender/sphere.obj" };
+    function handler(m) {
+      let ALL = [];
+      let RAY = { enabled: raycast2 == true ? true : false, radius: 1 };
+      for (var x2 = 0; x2 < sum2; x2++) {
+        const cubeName = name2 + "_" + x2;
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: { type: material },
+            position: pos2,
+            rotation: rot2,
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            texturesPaths: [texturePath2],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: true,
+              geometry
+            },
+            raycast: RAY
+          });
+          const o2 = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o2);
+          local.push(o2.name);
+        }, x2 * delay2);
+      }
       setTimeout(() => {
-        engine.addMeshObj({
-          material: { type: material },
-          position: pos2,
-          rotation: rot2,
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturePath2],
-          name: name2 + "_" + x2,
-          mesh: m.mesh,
-          physics: {
-            enabled: true,
-            geometry
-          },
-          raycast: RAY
-        });
-        const o2 = app.getSceneObjectByName(cubeName);
-        runtimeCacheObjs.push(o2);
-      }, x2 * delay2);
+        for (let x3 = 0; x3 < local.length; x3++) {
+          const o1 = app.matrixPhysics.getBodyByName(local[x3]);
+          ALL.push(o1);
+          if (x3 == local.length - 1) {
+            resolve(ALL);
+          }
+        }
+      }, delay2 * sum2);
     }
-  }
-  if (geometry == "Cube") {
-    downloadMeshes(inputCube, handler, { scale: scale4 });
-  } else if (geometry == "Sphere") {
-    downloadMeshes(inputSphere, handler, { scale: scale4 });
-  }
+    if (geometry == "Cube") {
+      downloadMeshes(inputCube, handler, { scale: scale4 });
+    } else if (geometry == "Sphere") {
+      downloadMeshes(inputSphere, handler, { scale: scale4 });
+    }
+  });
 }
 function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
@@ -32461,7 +31833,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
     const RAY = { enabled: raycast2, radius: 1 };
     for (let y2 = 0; y2 < height; y2++) {
       for (let x2 = 0; x2 < width; x2++) {
-        const cubeName2 = `${name2}_${index}`;
+        const cubeName = `${name2}_${index}`;
         setTimeout(() => {
           engine.addMeshObj({
             material: { type: material },
@@ -32492,7 +31864,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
             rotation: rot2,
             rotationSpeed: { x: 0, y: 0, z: 0 },
             texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
-            name: cubeName2,
+            name: cubeName,
             mesh: m.mesh,
             physics: {
               scale: scale4,
@@ -32501,7 +31873,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
             },
             raycast: RAY
           });
-          const o2 = app.getSceneObjectByName(cubeName2);
+          const o2 = app.getSceneObjectByName(cubeName);
           runtimeCacheObjs.push(o2);
         }, index * delay2);
         index++;
@@ -32520,7 +31892,7 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
       const rowCount = levels2 - y2;
       const xOffset = (rowCount - 1) * spacing2 * 0.5;
       for (let x2 = 0; x2 < rowCount; x2++) {
-        const cubeName2 = `${name2}_${index}`;
+        const cubeName = `${name2}_${index}`;
         setTimeout(() => {
           engine.addMeshObj({
             material: { type: material },
@@ -32532,7 +31904,7 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
             rotation: rot2,
             rotationSpeed: { x: 0, y: 0, z: 0 },
             texturesPaths: [texturePath2],
-            name: cubeName2,
+            name: cubeName,
             mesh: m.mesh,
             physics: {
               scale: scale4,
@@ -32541,7 +31913,7 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
             },
             raycast: RAY
           });
-          const o2 = app.getSceneObjectByName(cubeName2);
+          const o2 = app.getSceneObjectByName(cubeName);
           runtimeCacheObjs.push(o2);
         }, delay2);
         index++;
@@ -32551,6 +31923,7 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
 function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
+  const root = this;
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
@@ -32568,7 +31941,7 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
         const zOffset = (sizeZ - 1) * spacing2 * 0.5;
         for (let x2 = 0; x2 < sizeX; x2++) {
           for (let z = 0; z < sizeZ; z++) {
-            const cubeName2 = `${name2}_${index}`;
+            const cubeName = `${name2}_${index}`;
             const currentIndex = index;
             setTimeout(() => {
               engine.addMeshObj({
@@ -32581,7 +31954,7 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
                 rotation: rot2,
                 rotationSpeed: { x: 0, y: 0, z: 0 },
                 texturesPaths: [texturePath2],
-                name: cubeName2,
+                name: cubeName,
                 mesh: m.mesh,
                 physics: {
                   scale: scale4,
@@ -32590,9 +31963,7 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
                 },
                 raycast: RAY
               });
-              const b = app.matrixAmmo.getBodyByName(cubeName2);
-              stabilizeTowerBody(b);
-              const o2 = app.getSceneObjectByName(cubeName2);
+              const o2 = app.getSceneObjectByName(cubeName);
               runtimeCacheObjs.push(o2);
               objects.push(o2.name);
               if (currentIndex === lastIndex) {
@@ -32613,7 +31984,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
   function handler(m) {
     const RAY = { enabled: !!raycast2, radius: 1 };
     for (let y2 = 0; y2 < height; y2++) {
-      const cubeName2 = `${name2}_${y2}`;
+      const cubeName = `${name2}_${y2}`;
       setTimeout(() => {
         engine.addMeshObj({
           material: { type: material },
@@ -32625,7 +31996,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
           rotation: rot2,
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturePath2],
-          name: cubeName2,
+          name: cubeName,
           mesh: m.mesh,
           physics: {
             scale: scale4,
@@ -32634,9 +32005,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
           },
           raycast: RAY
         });
-        const b = app.matrixAmmo.getBodyByName(cubeName2);
-        stabilizeTowerBody(b);
-        const o2 = app.getSceneObjectByName(cubeName2);
+        const o2 = app.getSceneObjectByName(cubeName);
         runtimeCacheObjs.push(o2);
       }, delay);
     }
@@ -32669,11 +32038,54 @@ function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, i
         raycast: RAY
       });
       const o2 = app.getSceneObjectByName(name2);
+      console.log(o2.name);
       runtimeCacheObjs.push(o2);
       resolve(o2);
     }
     downloadMeshes(inputCube, handler, { scale: scale4 });
   });
+}
+function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["./res/textures/slot/reel1.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
+  const engine = this;
+  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+  function handler(m) {
+    const RAY = { enabled: !!raycast2, radius: 1 };
+    for (let y2 = 0; y2 < size2; y2++) {
+      const cubeName = `${name2}_${y2}`;
+      engine.addMeshObj({
+        material: { type: material },
+        position: {
+          x: pos2.x,
+          y: pos2.y + y2 * spacing2,
+          z: pos2.z
+        },
+        rotation: rot2,
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: [texturePath2],
+        name: cubeName,
+        mesh: m.mesh,
+        physics: {
+          scale: scale4,
+          mass: y2 == 0 ? 0 : mass,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
+    }
+    const ids = [];
+    setTimeout(() => {
+      for (let y2 = 0; y2 < size2; y2++) {
+        const cubeName = `${name2}_${y2}`;
+        const id2 = engine.matrixPhysics.getBodyByName(cubeName);
+        const o2 = app.getSceneObjectByName(cubeName);
+        runtimeCacheObjs.push(o2);
+        ids.push(id2);
+      }
+      engine.matrixPhysics.createChain(ids, spacing2, 0.5);
+    }, 500);
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
 }
 
 // ../../../engine/core-cache.js
@@ -33248,6 +32660,9 @@ var ProceduralMeshObj = class extends Materials {
       o2.material.useBlend = false;
     }
     this.mType = MeshType.PROCEDURAL;
+    this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
+    this._scaleVec = new Float32Array(3);
     this._camVP = mat4Impl.create();
     this.meshA = null;
     this.meshB = null;
@@ -33255,6 +32670,8 @@ var ProceduralMeshObj = class extends Materials {
     this.buildPipelineBucketsEvent = new CustomEvent("update-pipeine-buckets", {});
     this.shadowsCast = true;
     this.sceneBGL = o2.sceneBGL;
+    this.materialBGL = o2.materialBGL;
+    this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
     if (o2.meshA && o2.meshB) {
       const pair = MeshMorpher.createMatchedPair(o2.meshA, o2.meshB, o2.resolutionU || 32, o2.resolutionV || 32);
       this.meshA = pair.meshA;
@@ -33697,17 +33114,33 @@ var ProceduralMeshObj = class extends Materials {
     this.updateVertexAnimBuffer();
   }
   setupPipeline() {
-    this.createLayoutForRender();
-    this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.getMaterial();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? "custom_proc" : "proc_morph";
-    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.material.type;
+    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.isVideo == true ? "video" : this.material.type;
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
     const isNormalMap = this.material.type === "normalmap";
     const isVideo = this.isVideo === true;
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "procedural",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: "rgba16float",
+      morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    this.createBindGroupForRender(MKEY);
     const layout = this.device.createPipelineLayout({
       bindGroupLayouts: [
         this.sceneBGL,
@@ -33722,19 +33155,6 @@ var ProceduralMeshObj = class extends Materials {
       buffers: this.vertexBuffers
     };
     const fragmentConstants = { shadowDepthTextureSize: this.shadowDepthTextureSize };
-    const baseKey = {
-      vertexId,
-      fragmentId,
-      type: "procedural",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: "rgba16float",
-      morph: !this.vertexWGSL ? 1 : 0,
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
@@ -33852,34 +33272,33 @@ var ProceduralMeshObj = class extends Materials {
     }
   }
   getModelMatrix(pos2, useScale = false) {
-    let modelMatrix = mat4Impl.identity(this._modelMatrix);
-    this._posArray[0] = pos2.x;
-    this._posArray[1] = pos2.y;
-    this._posArray[2] = pos2.z;
-    mat4Impl.translate(modelMatrix, this._posArray, modelMatrix);
-    if (this.itIsPhysicsBody) {
-      this._rotAxisVec[0] = this.rotation.axis.x;
-      this._rotAxisVec[1] = this.rotation.axis.y;
-      this._rotAxisVec[2] = this.rotation.axis.z;
-      mat4Impl.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-    } else {
+    if (!this.itIsPhysicsBody) {
+      let modelMatrix = mat4Impl.identity(this._modelMatrix);
+      this._translateVec[0] = pos2.x;
+      this._translateVec[1] = pos2.y;
+      this._translateVec[2] = pos2.z;
+      mat4Impl.translate(modelMatrix, this._translateVec, modelMatrix);
       mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+      if (useScale == true) {
+        this._scaleVec[0] = this.scale[0];
+        this._scaleVec[1] = this.scale[1];
+        this._scaleVec[2] = this.scale[2];
+        mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
+      }
+      this.modelMatrix = modelMatrix;
+      return this.modelMatrix;
     }
-    if (useScale == true) mat4Impl.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-    this.modelMatrix = modelMatrix;
-    return modelMatrix;
+    if (!this.modelMatrix) {
+      let modelMatrix = mat4Impl.identity(this._modelMatrix);
+      this.modelMatrix = modelMatrix;
+    }
+    return this.modelMatrix;
   }
   updateModelUniformBuffer() {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(
-      this.modelUniformBuffer,
-      0,
-      modelMatrix.buffer,
-      modelMatrix.byteOffset,
-      modelMatrix.byteLength
-    );
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   }
   updateTime(time) {
     this.time += time * this.deltaTimeAdapter;
@@ -34205,15 +33624,42 @@ var MeshMorpher = class {
       return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
     };
   }
-  static capsule(radius = 0.5, height = 1) {
+  // static capsule(radius = 0.5, height = 1) {
+  //   const halfH = height / 2;
+  //   return (u, v) => {
+  //     if(v < 0.25) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) - halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else if(v > 0.75) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) + halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else {
+  //       const theta = u * Math.PI * 2;
+  //       const y = ((v - 0.25) / 0.5) * height - halfH;
+  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+  //     }
+  //   };
+  // }
+  static capsule(radius = 1, height = 1, fromZeroY = true) {
     const halfH = height / 2;
+    const yOffset = fromZeroY ? halfH + radius : 0;
     return (u, v) => {
       if (v < 0.25) {
         const theta = -u * Math.PI * 2;
         const phi = v / 0.25 * (Math.PI / 2) + Math.PI / 2;
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) - halfH,
+          radius * Math.cos(phi) - halfH + yOffset,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else if (v > 0.75) {
@@ -34221,13 +33667,17 @@ var MeshMorpher = class {
         const phi = (v - 0.75) / 0.25 * (Math.PI / 2);
         return [
           radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) + halfH,
+          radius * Math.cos(phi) + halfH + yOffset,
           radius * Math.sin(phi) * Math.sin(theta)
         ];
       } else {
         const theta = u * Math.PI * 2;
         const y2 = (v - 0.25) / 0.5 * height - halfH;
-        return [radius * Math.cos(theta), y2, radius * Math.sin(theta)];
+        return [
+          radius * Math.cos(theta),
+          y2 + yOffset,
+          radius * Math.sin(theta)
+        ];
       }
     };
   }
@@ -34578,6 +34028,405 @@ var zeroPass = function() {
 var noShadowPass = function() {
 };
 
+// ../../../engine/overrides/nano-render.js
+var nanoPass = function() {
+  const now2 = performance.now();
+  this.now = now2 * 1e-3;
+  this.autoUpdate.forEach((_) => _.update());
+  requestAnimationFrame(this.frame);
+  try {
+    let commandEncoder = this.device.createCommandEncoder();
+    this.updateLights();
+    const camera = this.getCamera();
+    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+    camera.update();
+    const len2 = this.mainRenderBundle.length;
+    for (let i = 0; i < len2; i++) {
+      const mesh = this.mainRenderBundle[i];
+      if (mesh.position.inMove) mesh.updateModelUniformBuffer(i);
+      mesh.position.update();
+    }
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
+    for (const [pipeline, meshes] of this.opaqueBuckets) {
+      pass.setPipeline(pipeline);
+      pass.setBindGroup(1, meshes[0].materialBindGroup);
+      for (const mesh of meshes) {
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    pass.end();
+    const canvasTexture = this.context.getCurrentTexture();
+    if (this._lastCanvasTex !== canvasTexture) {
+      this._lastCanvasTex = canvasTexture;
+      this._canvasView = canvasTexture.createView();
+    }
+    const canvasView = this._canvasView;
+    this.finalPS.colorAttachments[0].view = canvasView;
+    pass = commandEncoder.beginRenderPass(this.finalPS);
+    pass.setPipeline(this.presentPipeline);
+    pass.setBindGroup(0, this._activeBindGroup);
+    pass.draw(6);
+    pass.end();
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
+    this.submitQueue[0] = null;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+    this.blendQueue.length = 0;
+  } catch (err) {
+    if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
+  }
+};
+
+// ../../../engine/physics/bridge.js
+var PhysicsBridge = class {
+  constructor(workerUrl) {
+    this._worker = null;
+    if (workerUrl.indexOf("ammo") != -1) {
+      this._worker = new Worker(workerUrl);
+    } else {
+      this._worker = new Worker(workerUrl, { type: "module" });
+    }
+    this._worker.onerror = (e2) => {
+      console.error("MEWorker error:", e2.message, e2.filename, e2.lineno);
+    };
+    this._snapshot = null;
+    this._pending = /* @__PURE__ */ new Map();
+    this._msgId = 0;
+    this._bodyIndexMap = /* @__PURE__ */ new Map();
+    this._ready = false;
+    this._queue = [];
+    this._worker.onmessage = ({ data }) => this._onMessage(data);
+    this.pCollisionEvent = new CustomEvent("pCollision", { detail: {} });
+    this.pCollisionEventArg = {
+      detail: {
+        body0Name: "",
+        body1Name: "",
+        rayDirection: [0, 0, 0]
+      }
+    };
+    this.detectCollision = (e2) => {
+    };
+    this.tempRot = mat4Impl.create();
+    this._paused = false;
+    this.updates = [];
+    this._kinematicIdx = new Uint16Array(1024);
+    this._kinematicPos = new Float32Array(1024 * 3);
+    this._kinematicCount = 0;
+    this.c = 0;
+  }
+  getBodyByName(name2) {
+    for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
+    console.info("[bridge] Body not found -1 :", name2);
+    return -1;
+  }
+  async init(options2 = {}) {
+    await this._send("init", { options: options2 });
+    this._ready = true;
+    for (const { MEObject, pOptions } of this._queue) {
+      this._doAddPhysics(MEObject, pOptions);
+    }
+    this._queue = [];
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("PhysicsReady", {}));
+    }, 50);
+  }
+  addPhysics(MEObject, pOptions) {
+    if (!this._ready) {
+      this._queue.push({ MEObject, pOptions });
+      return;
+    }
+    this._doAddPhysics(MEObject, pOptions);
+  }
+  _doAddPhysics(MEObject, pOptions) {
+    MEObject.isKinematic = pOptions.state === 4;
+    this._send("addBody", { pOptions }).then((idx) => {
+      this._bodyIndexMap.set(idx, MEObject);
+    });
+  }
+  updatePhysics() {
+    let count = 0;
+    const idxArr = this._kinematicIdx;
+    const posArr = this._kinematicPos;
+    for (const [idx, meObj] of this._bodyIndexMap) {
+      if (!meObj.isKinematic) continue;
+      const base = count * 3;
+      idxArr[count] = idx;
+      posArr[base + 0] = meObj.position.x;
+      posArr[base + 1] = meObj.position.y;
+      posArr[base + 2] = meObj.position.z;
+      count++;
+    }
+    this._kinematicCount = count;
+    if (count > 0) {
+      this._worker.postMessage({ cmd: "setKinematicTransform", count, idx: idxArr, pos: posArr });
+    }
+    if (this.c % 2 === 0) this._worker.postMessage({ cmd: "step" });
+    this.c++;
+  }
+  // MatrixJolt public API
+  setGravity(x2, y2, z) {
+    this._worker.postMessage({ cmd: "setGravity", x: x2, y: y2, z });
+  }
+  setHingeLimit(idx, v0, v1, v2, v3, v4) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setHingeLimit", idx, v0, v1, v2, v3, v4 });
+  }
+  applyImpulse(idx, pVect) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "applyImpulse", idx, ...pVect });
+  }
+  shootBody(idx, lx, ly, lz, ax, ay, az) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "shootBody", idx, lx, ly, lz, ax, ay, az });
+  }
+  setActivationState(idx, s) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setActivationState", idx, s });
+  }
+  activate(idx, s) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "activate", idx, s });
+  }
+  setDamping(idx, l, a) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setDamping", idx, l, a });
+  }
+  setRestitution(idx, s) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setRestitution", idx, s });
+  }
+  setFriction(idx, s) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setFriction", idx, s });
+  }
+  applyTorque(idx, pVect) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "applyTorque", idx, ...pVect });
+  }
+  setBodyVelocity(idx, x2, y2, z) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setLinearVelocity", idx, x: x2, y: y2, z });
+  }
+  setBodyAngularVelocity(idx, x2, y2, z) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setBodyAngularVelocity", idx, x: x2, y: y2, z });
+  }
+  explode(idx, x2, y2, z, radius, strength) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "explode", idx, x: x2, y: y2, z, radius, strength });
+  }
+  deactivatePhysics(idx) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "deactivate", idx });
+  }
+  setSleepingThresholds(idx, linear, angular) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setSleepingThresholds", idx, linear, angular });
+  }
+  setAngularFactor(idx, x2, y2, z) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setAngularFactor", idx, x: x2, y: y2, z });
+  }
+  setRollingFriction(idx, friction) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "setRollingFriction", idx, friction });
+  }
+  addHingeConstraint(idxA, idxB, options2) {
+    if (idxA === void 0 || idxB === void 0 || idxA === -1 || idxB === -1) {
+      console.log("error in addHingeConstraint !!! ");
+      return Promise.resolve(-1);
+    }
+    return this._send("addHingeConstraint", { idxA, idxB, options: options2 });
+  }
+  enableAngularMotor(constraintIdx, enable, targetVelocity, maxMotorImpulse) {
+    if (constraintIdx === void 0) return;
+    this._worker.postMessage({ cmd: "enableAngularMotor", constraintIdx, enable, targetVelocity, maxMotorImpulse });
+  }
+  getPosition(idx) {
+    return this._send("getPosition", { idx });
+  }
+  clearBody(idx) {
+    this._worker.postMessage({ cmd: "clearBody", idx });
+  }
+  speedUpSimulation(value) {
+    this._worker.postMessage({ cmd: "speedUpSimulation", value });
+  }
+  setCollisionFlags(idx, flags) {
+    if (idx === void 0 || idx === -1) return;
+    this._worker.postMessage({ cmd: "setCollisionFlags", idx, flags });
+  }
+  removeRigidBody(idx) {
+    if (idx === void 0 || idx === -1) return;
+    this._worker.postMessage({ cmd: "removeRigidBody", idx });
+    this._bodyIndexMap.delete(idx);
+  }
+  // cannones ,
+  createChain(ids, size2 = 0.5, mass = 0.3, marginSpace = 0.1) {
+    this._worker.postMessage({ cmd: "createChain", ids, size: size2, mass, marginSpace });
+  }
+  createBoundedSpace(ids, pos2 = { x: 0, y: 0, z: 0 }, size2 = { x: 5, y: 5, z: 5 }) {
+    this._worker.postMessage({ cmd: "createBoundedSpace", ids, pos: pos2, size: size2 });
+  }
+  physicsBoundedSpace(pos2 = { x: 0, y: 0, z: 0 }, size2 = { x: 5, y: 5, z: 5 }, name2 = "bounded_space", withFloor = true) {
+    this._worker.postMessage({ cmd: "createBoundedSpace", pos: pos2, size: size2, name: name2, withFloor });
+  }
+  _syncToObjects() {
+    const snap = this._snapshot;
+    if (!snap) return;
+    const STRIDE = 8;
+    for (const [idx, meObj] of this._bodyIndexMap) {
+      if (!meObj.modelMatrix) continue;
+      const b = idx * STRIDE;
+      const pos2 = snap.subarray(b, b + 3);
+      const quat = snap.subarray(b + 3, b + 7);
+      mat4Impl.fromQuat(quat, meObj.modelMatrix);
+      meObj.modelMatrix[12] = pos2[0];
+      meObj.modelMatrix[13] = pos2[1];
+      meObj.modelMatrix[14] = pos2[2];
+      mat4Impl.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
+      meObj.modelMatrix[15] = 1;
+      meObj.position.inMove = true;
+    }
+  }
+  _send(cmd, extra = {}) {
+    const id2 = this._msgId++;
+    return new Promise((resolve) => {
+      this._pending.set(id2, resolve);
+      this._worker.postMessage({ cmd, id: id2, ...extra });
+    });
+  }
+  setBodyTransform(idx, x2, y2, z) {
+    if (idx === void 0 || idx === -1) return;
+    this._worker.postMessage({ cmd: "setBodyTransform", idx, x: x2, y: y2, z });
+  }
+  setGravityScale(idx, scale4) {
+    if (idx === void 0 || idx === -1) return;
+    this._worker.postMessage({ cmd: "setGravityScale", idx, scale: scale4 });
+  }
+  _onMessage(data) {
+    switch (data.cmd) {
+      case "ready":
+      // this._worker.onmessage = ({data}) => this._onMessage(data);
+      case "bodyAdded":
+        this._pending.get(data.id)?.(data.idx);
+        this._pending.delete(data.id);
+        break;
+      case "snapshot":
+        this._snapshot = data.snap;
+        this._syncToObjects();
+        break;
+      case "collision":
+        this.pCollisionEventArg.detail.body0Name = data.body0Name;
+        this.pCollisionEventArg.detail.body1Name = data.body1Name;
+        this.pCollisionEventArg.detail.rayDirection = data.normal;
+        this.detectCollision(this.pCollisionEventArg);
+        break;
+      case "constraintAdded":
+        this._pending.get(data.id)?.(data.idx);
+        this._pending.delete(data.id);
+        break;
+      case "getPosition":
+        this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+    }
+  }
+};
+
+// ../../../engine/overrides/mobile-1.js
+var mobile1 = function() {
+  const now2 = performance.now();
+  this.now = now2 * 1e-3;
+  this.lastFrameMS = this.now;
+  this.autoUpdate.forEach((_) => _.update());
+  requestAnimationFrame(this.frame);
+  try {
+    let commandEncoder = this.device.createCommandEncoder();
+    if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
+    this.updateLights();
+    const camera = this.getCamera();
+    if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
+    camera.update();
+    for (let i = 0; i < this.lightContainer.length; i++) {
+      const light = this.lightContainer[i];
+      const pass2 = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+      if (this.shadowBuckets.default.length) {
+        pass2.setPipeline(light.shadowPipeline);
+        for (let m of this.shadowBuckets.default) {
+          pass2.setBindGroup(0, light.getShadowBindGroup(m));
+          pass2.setBindGroup(1, m.modelBindGroup);
+          m.drawShadows(pass2, light);
+        }
+      }
+      pass2.end();
+    }
+    const len2 = this.mainRenderBundle.length;
+    for (let i = 0; i < len2; i++) {
+      const mesh = this.mainRenderBundle[i];
+      if (mesh.position.inMove === true) {
+        mesh.updateModelUniformBuffer(i);
+      }
+      mesh.position.update();
+    }
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
+    for (const [pipeline, meshes] of this.opaqueBuckets) {
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    for (const [pipeline, meshes] of this.transparentBuckets) {
+      meshes.sort((a, b) => {
+        const dx1 = camera.position[0] - a.position[0];
+        const dz1 = camera.position[2] - a.position[2];
+        const da = dx1 * dx1 + dz1 * dz1;
+        const dx2 = camera.position[0] - b.position[0];
+        const dz2 = camera.position[2] - b.position[2];
+        const db = dx2 * dx2 + dz2 * dz2;
+        return db - da;
+      });
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    pass.end();
+    const canvasTexture = this.context.getCurrentTexture();
+    if (this._lastCanvasTex !== canvasTexture) {
+      this._lastCanvasTex = canvasTexture;
+      this._canvasView = canvasTexture.createView();
+    }
+    if (this.bloomPass.enabled == true) {
+      this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    }
+    this.finalPS.colorAttachments[0].view = this._canvasView;
+    pass = commandEncoder.beginRenderPass(this.finalPS);
+    pass.setPipeline(this.presentPipeline);
+    pass.setBindGroup(0, this._activeBindGroup);
+    pass.draw(6);
+    pass.end();
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
+    this.submitQueue[0] = null;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+  } catch (err) {
+    if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
+  }
+};
+
 // ../../../world.js
 var MatrixEngineWGPU = class {
   // Save class reference
@@ -34648,6 +34497,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorPyramid = physicsBodiesGeneratorPyramid.bind(this);
       this.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower.bind(this);
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
+      this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.editorAddOBJ = addOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -34663,18 +34513,27 @@ var MatrixEngineWGPU = class {
     }
     if (typeof options2.useContex == "undefined") options2.useContex = "webgpu";
     if (typeof options2.dontUsePhysics === "undefined") {
-      if (typeof options2.PHYSICS_GROUND_BYX !== "undefined" && typeof options2.PHYSICS_GROUND_BYZ !== "undefined") {
-        this.matrixAmmo = new MatrixAmmo({
-          gravity: options2.GRAVITY_Y_AXIS ? options2.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS,
-          roundDimensionX: options2.PHYSICS_GROUND_BYX,
-          roundDimensionY: options2.PHYSICS_GROUND_BYZ
-        });
+      if (typeof options2.useJolt !== "undefined") {
+        this.matrixPhysics = new PhysicsBridge("./joltjs/matrix-jolt-worker.js");
+        this.matrixPhysics.init({ gravity: 10, groundY: -1 });
+        this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = "JOLT";
+      } else if (typeof options2.useCannon !== "undefined") {
+        this.matrixPhysics = new PhysicsBridge("./ammojs/cannon-es-worker.js");
+        this.matrixPhysics.init({ gravity: 10, groundY: -1 });
+        this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = "CANNON";
       } else {
-        this.matrixAmmo = new MatrixAmmo({
-          gravity: MEConfig.GRAVITY_Y_AXIS,
-          roundDimensionX: MEConfig.PHYSICS_GROUND_BYX,
-          roundDimensionY: MEConfig.PHYSICS_GROUND_BYZ
+        this.matrixPhysics = new PhysicsBridge("./ammojs/matrix-ammo-worker.js");
+        const G = options2.GRAVITY_Y_AXIS ? options2.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS;
+        this.matrixPhysics.init({
+          gravity: G,
+          groundY: -1,
+          roundDimensionX: options2.PHYSICS_GROUND_BYX ? options2.PHYSICS_GROUND_BYX : MEConfig.PHYSICS_GROUND_BYX,
+          roundDimensionY: options2.PHYSICS_GROUND_BYZ ? options2.PHYSICS_GROUND_BYZ : MEConfig.PHYSICS_GROUND_BYX
         });
+        this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = "AMMO";
       }
     }
     this._sceneData = new Float32Array(48);
@@ -34710,13 +34569,17 @@ var MatrixEngineWGPU = class {
     if (typeof options2.render !== "undefined") {
       if (options2.render == "zero") {
         this.overrideRender = zeroPass.bind(this);
+      } else if (options2.render == "nano") {
+        this.overrideRender = nanoPass.bind(this);
       } else if (options2.render == "no-shadows") {
         this.overrideRender = noShadowPass.bind(this);
+      } else if (options2.render == "mobile1") {
+        this.overrideRender = mobile1.bind(this);
       }
     }
-    window.addEventListener("keydown", (e) => {
-      if (e.code == "F4") {
-        e.preventDefault();
+    window.addEventListener("keydown", (e2) => {
+      if (e2.code == "F4") {
+        e2.preventDefault();
         mb.error(`Activated WebEditor view.`);
         app.activateEditor();
         return false;
@@ -34768,10 +34631,9 @@ var MatrixEngineWGPU = class {
       responseCoef: this.options.mainCameraParams.responseCoef
     };
     this.cameras = {
-      // arcball: new ArcballCamera({position: initialCameraPosition, canvas: canvas}),
-      firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1 }),
-      WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1 }),
-      RPG: new RPGCamera({ position: initialCameraPosition, canvas })
+      firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null }),
+      WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null }),
+      RPG: new RPGCamera({ position: initialCameraPosition, canvas, isActive: "RPG" == this.options.mainCameraParams.type ? "init active cam" : null })
     };
     if (urlQuery.lang != null) {
       this.label.loadMultilang(urlQuery.lang).then((r2) => {
@@ -34787,6 +34649,46 @@ var MatrixEngineWGPU = class {
       });
     }
     this.init({ canvas, callback });
+  }
+  createGlobalsForEntities() {
+    this.materialBGL = this.device.createBindGroupLayout({
+      label: "MaterialBGL[mesh]",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        { binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
+      ]
+    });
+    this.materialVideoBGL = this.device.createBindGroupLayout({
+      label: "MaterialVideoBGL[mesh]",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      label: "uniformBufferBindGroupLayout[mesh]",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+      ]
+    });
+    this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+      label: "uniformBufferBindGroupLayout in mesh [instanced]",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+      ]
+    });
   }
   applyCanvasSize(scale4) {
     const screenWidth = window.innerWidth;
@@ -34821,13 +34723,14 @@ var MatrixEngineWGPU = class {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = null;
     this.createGlobalStuff(callback);
+    this.createGlobalsForEntities();
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = mat4Impl.create();
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.10.0 [FasterThanRabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.11.0 [FasterThanARabbit] ", LOG_FUNNY);
     console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNo tracking. No hype. Just solutions and high performance. \u{1F525}",
@@ -34835,12 +34738,12 @@ var MatrixEngineWGPU = class {
     );
     console.log(
       "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
-      LOG_FUNNY_ARCADE2
+      LOG_FUNNY_ARCADE
     );
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE2);
-    console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE2);
-    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE2);
-    console.log("%cSource code: \u{1F449} GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE2);
+    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
+    console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE);
+    console.log("%cSource code: \u{1F449} GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
   };
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1e3;
@@ -34850,6 +34753,7 @@ var MatrixEngineWGPU = class {
       this.getCamera()._dirty = true;
     });
     PipelineManager.init(this.device);
+    MaterialBindGroupCache.init(this.device);
     this.getTransformationMatrix = (camera, dt) => {
       this._sceneData.set(camera.VP, 16);
       this._sceneData[32] = camera.position[0];
@@ -35131,19 +35035,21 @@ var MatrixEngineWGPU = class {
   removeSceneObjectByName = (name2) => {
     const index = this.mainRenderBundle.findIndex((obj3) => obj3.name === name2);
     if (index === -1) {
-      console.warn("%cScene object not found:" + name2, LOG_FUNNY_ARCADE2);
+      console.warn("%cScene object not found:" + name2, LOG_FUNNY_ARCADE);
       return false;
     }
     const obj2 = this.mainRenderBundle[index];
-    let testPB = app.matrixAmmo.getBodyByName(obj2.name);
+    let testPB = app.matrixPhysics.getBodyByName(obj2.name);
     if (testPB !== null) {
       try {
-        this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
-      } catch (e) {
-        console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE2);
+        this.matrixPhysics.removeRigidBody(testPB);
+      } catch (e2) {
+        console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
       }
     }
+    obj2.destroy();
     this.mainRenderBundle.splice(index, 1);
+    this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };
   buildRenderBuckets(sceneMeshes) {
@@ -35159,9 +35065,7 @@ var MatrixEngineWGPU = class {
       }
       const isTransparent = mesh.material.useBlend == true;
       const pipeline = isTransparent ? mesh.pipelineTransparent : mesh.pipeline;
-      if (!pipeline) {
-        continue;
-      }
+      if (!pipeline) continue;
       const buckets = isTransparent ? this.transparentBuckets : this.opaqueBuckets;
       let bucket = buckets.get(pipeline);
       if (!bucket) {
@@ -35199,7 +35103,7 @@ var MatrixEngineWGPU = class {
       this.shadowSampler
     );
     this.lightContainer.push(newLight);
-    console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE2);
+    console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
   addMeshObj = (o2, clearColor = this.options.clearColor) => {
     if (typeof o2.name === "undefined") {
@@ -35270,9 +35174,16 @@ var MatrixEngineWGPU = class {
     o2.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
     o2.sceneBGL = this.sceneBGL;
+    o2.materialBGL = this.materialBGL;
+    o2.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o2, this.inputHandler, AM);
     myMesh1.clearColor = clearColor;
-    if (o2.physics.enabled == true) this.matrixAmmo.addPhysics(myMesh1, o2.physics);
+    if (o2.physics.enabled == true) {
+      myMesh1.itIsPhysicsBody = true;
+      this.matrixPhysics.addPhysics(myMesh1, o2.physics);
+    } else {
+      myMesh1.itIsPhysicsBody = false;
+    }
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if (typeof this.editor !== "undefined") this.editor.editorHud.updateSceneContainer();
@@ -35335,14 +35246,22 @@ var MatrixEngineWGPU = class {
     }
     let AM = this.globalAmbient.slice();
     o2.sceneBGL = this.sceneBGL;
+    o2.materialBGL = this.materialBGL;
+    o2.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o2, this.inputHandler, AM);
     myMesh.clearColor = clearColor;
-    if (o2.physics.enabled === true) this.matrixAmmo.addPhysics(myMesh, o2.physics);
+    if (o2.physics.enabled === true) {
+      myMesh.itIsPhysicsBody = true;
+      this.matrixPhysics.addPhysics(myMesh, o2.physics);
+    } else {
+      myMesh.itIsPhysicsBody = false;
+    }
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if (typeof this.editor !== "undefined") this.editor.editorHud.updateSceneContainer();
     return myMesh;
   };
+  // THIS MUST BE ELIMINATED FROM WORLD.JS
   addFontana = (o2, clearColor = this.options.clearColor) => {
     const px = o2.position.x;
     const py = o2.position.y;
@@ -35364,12 +35283,11 @@ var MatrixEngineWGPU = class {
       resolutionU: geo1.resolutionU,
       resolutionV: geo1.resolutionV,
       fragmentWGSL: fountainCurtainFragmentWGSL,
-      vertexWGSL: fountainWaterVertexWGSL,
-      pointerEffect: {
-        enabled: true,
-        flameEffect: false,
-        flameEmitter: true
-      }
+      vertexWGSL: fountainWaterVertexWGSL
+      // pointerEffect: {
+      //   enabled: true,
+      //   flameEmitter: true,
+      // }
     });
     const geo2 = fountainBasinStoneConfig(MeshMorpher);
     let m2 = this.addProceduralMeshObj({
@@ -35425,12 +35343,7 @@ var MatrixEngineWGPU = class {
       resolutionU: geo4.resolutionU,
       resolutionV: geo4.resolutionV,
       fragmentWGSL: fountainCurtainFragmentWGSL,
-      vertexWGSL: fountainWaterVertexWGSL,
-      pointerEffect: {
-        enabled: true,
-        flameEffect: false,
-        flameEmitter: true
-      }
+      vertexWGSL: fountainWaterVertexWGSL
     });
     const geo5 = fountainBasinWaterConfig(MeshMorpher);
     let m5 = this.addProceduralMeshObj({
@@ -35478,7 +35391,7 @@ var MatrixEngineWGPU = class {
   async run(callback) {
     this._lastPipeline = null;
     if (this.overrideRender !== null) {
-      console.log(`%cOverride render. Use zero configuraion.`, LOG_FUNNY_ARCADE2);
+      console.log(`%cOverride render. Use zero configuraion.`, LOG_FUNNY_ARCADE);
       this.frame = this.overrideRender;
     } else {
       this.frame = this.frameSinglePass;
@@ -35502,13 +35415,13 @@ var MatrixEngineWGPU = class {
     for (const obj2 of this.mainRenderBundle) {
       try {
         obj2?.destroy?.();
-      } catch (e) {
-        console.warn("Object destroy error:", obj2?.name, e);
+      } catch (e2) {
+        console.warn("Object destroy error:", obj2?.name, e2);
       }
     }
     this.mainRenderBundle.length = 0;
-    this.matrixAmmo?.destroy?.();
-    this.matrixAmmo = null;
+    this.matrixPhysics?.destroy?.();
+    this.matrixPhysics = null;
     this.editor?.destroy?.();
     this.editor = null;
     this.inputHandler?.destroy?.();
@@ -35550,11 +35463,10 @@ var MatrixEngineWGPU = class {
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
-      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
+      if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
-      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
@@ -35591,9 +35503,7 @@ var MatrixEngineWGPU = class {
         const mesh = this.mainRenderBundle[i];
         if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
-        if (mesh.position.inMove === true) {
-          mesh.updateModelUniformBuffer(i);
-        }
+        mesh.updateModelUniformBuffer(i);
         mesh.position.update();
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
@@ -35604,8 +35514,12 @@ var MatrixEngineWGPU = class {
       pass.setBindGroup(0, this.sceneBindGroup);
       for (const [pipeline, meshes] of this.opaqueBuckets) {
         pass.setPipeline(pipeline);
+        let l = null;
         for (const mesh of meshes) {
-          pass.setBindGroup(1, mesh.materialBindGroup);
+          if (mesh.materialBindGroup !== l) {
+            pass.setBindGroup(1, mesh.materialBindGroup);
+            l = mesh.materialBindGroup;
+          }
           pass.setBindGroup(2, mesh.modelBindGroup);
           if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
           if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
@@ -35639,7 +35553,7 @@ var MatrixEngineWGPU = class {
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if (effect.enabled === false) continue;
+            if (effect == null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(transPass, mesh, viewProjMatrix);
           }
@@ -35769,6 +35683,8 @@ var MatrixEngineWGPU = class {
       let c = 0;
       for (const primitive of skinnedNode.mesh.primitives) {
         o2.name = o2.name + "-" + skinnedNode.name + "-" + c;
+        o2.materialBGL = this.materialBGL;
+        o2.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
         const bvhPlayer = new BVHPlayer(
           o2,
           BVHANIM,
@@ -35782,6 +35698,7 @@ var MatrixEngineWGPU = class {
           this.globalAmbient.slice()
         );
         bvhPlayer.clearColor = clearColor;
+        bvhPlayer.itIsPhysicsBody = false;
         this.mainRenderBundle.push(bvhPlayer);
         r2.push(bvhPlayer);
         this.sortRenderBundle();
@@ -35880,6 +35797,7 @@ var MatrixEngineWGPU = class {
       console.warn("GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!");
     }
     o2.sceneBGL = this.sceneBGL;
+    let results = [];
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -35889,6 +35807,8 @@ var MatrixEngineWGPU = class {
         } else {
           o2.pointerEffect = { enabled: false };
         }
+        o2.materialBGL = this.materialBGL;
+        o2.uniformBufferBindGroupLayoutInstanced = this.uniformBufferBindGroupLayoutInstanced;
         const bvhPlayer = new BVHPlayerInstances(
           o2,
           BVHANIM,
@@ -35902,11 +35822,12 @@ var MatrixEngineWGPU = class {
           this.globalAmbient.slice()
         );
         bvhPlayer.clearColor = clearColor;
+        results.push(bvhPlayer);
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
           setTimeout(() => {
-            document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} }));
+            document.dispatchEvent(this.usEvent);
           }, 50);
         }, 200);
         c++;
@@ -35916,6 +35837,7 @@ var MatrixEngineWGPU = class {
     if (typeof this.editor !== "undefined") {
       this.editor.editorHud.updateSceneContainer();
     }
+    return results[0];
   };
   sortRenderBundle() {
     setTimeout(() => this.buildRenderBuckets(this.mainRenderBundle), 50);
@@ -35953,7 +35875,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test1/graph.js
-var graph_default = { "nodes": { "node_28": { "id": "node_28", "x": 592.1249389648438, "y": 103.7083740234375, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "alpha", "value": "0.5" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_29": { "id": "node_29", "x": 879.6597290039062, "y": 126.65280151367188, "title": "Set Material", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "materialType", "semantic": "string", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "materialType", "value": "water", "placeholder": "standard|power|water" }] }, "node_30": { "id": "node_30", "x": 1159.722282409668, "y": 116.6492919921875, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster_MutantMesh" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_31": { "id": "node_31", "x": 1430.2917404174805, "y": 112.3507080078125, "title": "Set Vertex Ocean", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableOcean", "type": "boolean" }, { "name": "Ocean Scale", "type": "value" }, { "name": "Ocean Height", "type": "value" }, { "name": "Ocean speed", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableOcean", "value": "true" }, { "key": "Ocean Scale", "value": "1" }, { "key": "Ocean Height", "value": "0.02" }, { "key": "Ocean speed", "value": "0.5" }] }, "node_34": { "id": "node_34", "title": "functions", "x": 295.44793701171875, "y": 103.21876525878906, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_35": { "id": "node_35", "title": "onLoad", "x": 81.0867919921875, "y": 102.1423568725586, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] } }, "links": [{ "id": "link_26", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_29", "pin": "exec" }, "type": "action" }, { "id": "link_27", "from": { "node": "node_29", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_30", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_30", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_31", "pin": "exec" }, "type": "action" }, { "id": "link_31", "from": { "node": "node_35", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_34", "pin": "exec" }, "type": "action" }, { "id": "link_32", "from": { "node": "node_34", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }], "nodeCounter": 36, "linkCounter": 33, "pan": [-427, 123], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "node_2": { "noExec": true, "id": "node_2", "title": "Get Scene Light", "x": 372.15625, "y": 416.046875, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_3": { "id": "node_3", "title": "reffunctions", "x": 977.34375, "y": 357.4375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_4": { "id": "node_4", "title": "Get Number", "x": 686.953125, "y": 400.53125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_5": { "id": "node_5", "title": "Get Number", "x": 682.8125, "y": 602.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 988.78125, "y": 557.28125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_10": { "id": "node_10", "title": "reffunctions", "x": 989.671875, "y": 731.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorR", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_11": { "id": "node_11", "title": "Get Number", "x": 698.609375, "y": 789.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_RED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_12": { "id": "node_12", "title": "reffunctions", "x": 1005.078125, "y": 947.953125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorB", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_13": { "id": "node_13", "title": "Get Number", "x": 713.515625, "y": 995.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_BLUE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "title": "reffunctions", "x": 989.984375, "y": 1199.3125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorG", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_15": { "id": "node_15", "title": "Get Number", "x": 740.1006469726562, "y": 1241.9687805175781, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_GREEN" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_16": { "noExec": true, "id": "node_16", "title": "Get Scene Object", "x": 1323.5625, "y": 1496.8125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_17": { "id": "node_17", "x": 1603.234375, "y": 1239.390625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_18": { "id": "node_18", "title": "Get String", "x": 1295.5625, "y": 1325.265625, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "functions", "x": -17.28125, "y": 17.765625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "activateBloomEffect" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 128.828125, "y": 221.390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "bloomPower" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_24": { "id": "node_24", "x": 2020.515625, "y": 1696.265625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_25": { "id": "node_25", "title": "Get String", "x": 1322.40625, "y": 1839.234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_26": { "noExec": true, "id": "node_26", "title": "Get Scene Object", "x": 1706.9375, "y": 1755.78125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_42": { "noExec": true, "id": "node_42", "title": "Get Scene Object", "x": 3181.890625, "y": 1338.546875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_43": { "id": "node_43", "x": 3566.53125, "y": 1326.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_44": { "id": "node_44", "title": "Get Number", "x": 3215.9375, "y": 1842.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SMALL_INV_ROT_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_45": { "noExec": true, "id": "node_45", "title": "Get Scene Object", "x": 3187.828125, "y": 1599.359375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_46": { "noExec": true, "id": "node_46", "title": "Get Scene Object", "x": 3195.609375, "y": 2016.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_48": { "id": "node_48", "x": 3566.46875, "y": 1701, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_49": { "id": "node_49", "x": 3574.5625, "y": 2060.640625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_50": { "id": "node_50", "title": "SetTimeout", "x": 3579.765625, "y": 1884.234375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_65": { "id": "node_65", "title": "if", "x": 3154.484375, "y": 719.640625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }] }, "node_69": { "noExec": true, "id": "node_69", "title": "Get Scene Object", "x": 1705.015625, "y": 1972.59375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_70": { "noExec": true, "id": "node_70", "title": "Get Scene Object", "x": 1706.4375, "y": 2193.75, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_71": { "id": "node_71", "x": 2023.84375, "y": 1928.5625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_72": { "id": "node_72", "x": 2021.96875, "y": 2152.53125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_77": { "id": "node_77", "title": "Set Object", "x": -272.625, "y": 9.171875, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_78": { "id": "node_78", "title": "Get Object", "x": -271.75, "y": 168.84375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_84": { "id": "node_84", "title": "Print", "x": 3437.34375, "y": 797.8125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS IS FREE TO PLAY" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_85": { "id": "node_85", "title": "SetTimeout", "x": 3554.40625, "y": 1527.28125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_86": { "id": "node_86", "title": "Get Number", "x": 4025.125, "y": 1846.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPIN_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_87": { "id": "node_87", "x": 4277.9375, "y": 1504.921875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_89": { "id": "node_89", "x": 4306.96875, "y": 2103.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_97": { "id": "node_97", "title": "Function", "x": 5406.890625, "y": 1280.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_98": { "id": "node_98", "title": "GenRandInt", "x": 5180.90625, "y": 1401.8125, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_99": { "id": "node_99", "title": "Get Number", "x": 4982.109375, "y": 2194.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_100": { "id": "node_100", "title": "SetTimeout", "x": 4716.15625, "y": 1556.875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_102": { "id": "node_102", "x": 4921.765625, "y": 1272.671875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_104": { "noExec": true, "id": "node_104", "title": "Get Scene Object", "x": 5421.203125, "y": 1565.96875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_109": { "id": "node_109", "title": "Get Number", "x": 6485.46875, "y": 3241.625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_113": { "noExec": true, "id": "node_113", "title": "Get Scene Object", "x": 5766.765625, "y": 2410.46875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_115": { "id": "node_115", "title": "GenRandInt", "x": 5769.71875, "y": 2238.890625, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_116": { "id": "node_116", "title": "Function", "x": 6041.734375, "y": 2172.59375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_118": { "id": "node_118", "title": "GenRandInt", "x": 5941.5, "y": 3064.875, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_119": { "id": "node_119", "title": "Function", "x": 6183.046875, "y": 2990.25, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_120": { "noExec": true, "id": "node_120", "title": "Get Scene Object", "x": 6205.84375, "y": 3181.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_121": { "id": "node_121", "x": 6522.609375, "y": 3010.75, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_126": { "id": "node_126", "title": "functions", "x": -718.80908203125, "y": -307.0694580078125, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_128": { "id": "node_128", "title": "Get Number", "x": -1016.638916015625, "y": -180.72222900390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_INIT_PITCH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_130": { "id": "node_130", "title": "Get Number", "x": -1005.2430419921875, "y": 24.24652099609375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_131": { "id": "node_131", "title": "Get Number", "x": -998.861083984375, "y": 238.2430419921875, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Z" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_132": { "id": "node_132", "title": "functions", "x": -686.140625, "y": -41.90625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setY" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setY", "descFunc": "setY" }, "node_137": { "id": "node_137", "title": "functions", "x": -688.15625, "y": 181.71875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "z", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setZ" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setZ", "descFunc": "setZ" }, "node_139": { "id": "node_139", "title": "Get Number", "x": 5417.203125, "y": 1811.234375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_142": { "id": "node_142", "x": 6625.296875, "y": 2309.84375, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_144": { "id": "node_144", "title": "Get Number", "x": 6347.265625, "y": 2632.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_146": { "id": "node_146", "title": "onLoad", "x": -1718.1807250976562, "y": -728.7395935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_149": { "id": "node_149", "x": 3850.359375, "y": 1616.234375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "start_spin" }, { "key": "src", "value": "res/audios/spin.mp3" }], "noselfExec": "true" }, "node_150": { "id": "node_150", "title": "SetTimeout", "x": 3818.0625, "y": 1951.421875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_157": { "id": "node_157", "x": 2469.03125, "y": 594.109375, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObject", "type": "object" }], "noselfExec": "true", "_listenerAttached": false }, "node_160": { "id": "node_160", "title": "Set Object", "x": 3442.03125, "y": 996.734375, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": "" }], "finished": true }, "node_161": { "id": "node_161", "title": "Get Object", "x": 3155.234375, "y": 1053.75, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "USED_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_162": { "id": "node_162", "title": "Get Object", "x": 2519.8125, "y": 930.875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_164": { "id": "node_164", "title": "Get Object", "x": 2523.875, "y": 781.109375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_165": { "id": "node_165", "title": "A != B", "x": 2857.375, "y": 897.234375, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_167": { "id": "node_167", "title": "Set Object", "x": 7844.84375, "y": 2837.28125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_168": { "id": "node_168", "title": "Get Object", "x": 7966.9375, "y": 3035.078125, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_169": { "id": "node_169", "title": "Print", "x": 8093.671875, "y": 2833.359375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "MASHINE IS FREE " }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_170": { "id": "node_170", "title": "Comment", "x": 2790.890625, "y": 748.046875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Equal and NoEqual only compare nodes \nwho works with objects !!!" }] }, "node_172": { "id": "node_172", "x": 5779.578125, "y": 2084.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_174": { "id": "node_174", "x": 5936.875, "y": 2901.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_176": { "id": "node_176", "title": "Get Number", "x": 5707.625, "y": 1612.859375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_177": { "id": "node_177", "x": 5950.9375, "y": 1361.5, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_178": { "id": "node_178", "x": 6219.546875, "y": 1502.609375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_179": { "id": "node_179", "title": "Mul", "x": 5970.328125, "y": 1681.34375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_180": { "id": "node_180", "title": "Get Number", "x": 5706.21875, "y": 1780.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_181": { "id": "node_181", "title": "SetTimeout", "x": 6219.046875, "y": 1674.140625, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_183": { "id": "node_183", "x": 6224.515625, "y": 1825.296875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_184": { "id": "node_184", "title": "Get Number", "x": 6065.84375, "y": 2406.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_185": { "id": "node_185", "title": "Mul", "x": 6293.59375, "y": 2485.90625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_186": { "id": "node_186", "title": "Get Number", "x": 6055.53125, "y": 2574.125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_187": { "id": "node_187", "x": 6631.390625, "y": 2491.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_188": { "id": "node_188", "title": "SetTimeout", "x": 6638.84375, "y": 2652.09375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_189": { "id": "node_189", "x": 6655.71875, "y": 2798.484375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_190": { "id": "node_190", "title": "Get Number", "x": 6743.9375, "y": 3179.015625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_191": { "id": "node_191", "title": "Get Number", "x": 6757.0625, "y": 3335.703125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_192": { "id": "node_192", "title": "Mul", "x": 6969.84375, "y": 3254.84375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_193": { "id": "node_193", "x": 6755.296875, "y": 3012.375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_194": { "id": "node_194", "title": "SetTimeout", "x": 7510.78125, "y": 2875.953125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_195": { "id": "node_195", "title": "SetTimeout", "x": 6997.125, "y": 3065.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_196": { "id": "node_196", "x": 7210.9375, "y": 3164.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_197": { "id": "node_197", "title": "SetTimeout", "x": 4286.1875, "y": 1649.359375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_198": { "id": "node_198", "x": 4300.8125, "y": 1804.625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_199": { "id": "node_199", "title": "SetTimeout", "x": 4303.109375, "y": 1959.21875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_200": { "id": "node_200", "title": "Print", "x": 3452.515625, "y": 594.296875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS USED" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_205": { "id": "node_205", "title": "Get Number", "x": 409.59375, "y": 217.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLUR_EFFECT" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_206": { "id": "node_206", "title": "Comment", "x": 7031.359375, "y": 2832.375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "NOW STOP SPINING" }] }, "node_207": { "id": "node_207", "title": "functions", "x": 984.359375, "y": 62.625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setKnee" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setKnee", "descFunc": "setKnee" }, "node_208": { "id": "node_208", "title": "functions", "x": 709.546875, "y": 63.234375, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setBlurRadius" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_209": { "id": "node_209", "title": "Get Number", "x": 743.1875, "y": 238.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_KNEE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_211": { "id": "node_211", "title": "functions", "x": 431.140625, "y": 28.140625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setIntensity" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_215": { "id": "node_215", "title": "Function", "x": 305.7292175292969, "y": 2023.8612670898438, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "neonTextEffect" }, "node_219": { "id": "node_219", "title": "SetTimeout", "x": 754.0416870117188, "y": 1783.1425170898438, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "2000" }], "builtIn": true }, "node_221": { "id": "node_221", "x": 669.7327270507812, "y": 1990.350830078125, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER1" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": '{ hue: 200, glow: 10, text: "Roll Baby Roll\\n \u{1F47D}\u{1F47D}\u{1F47D}" , fontSize: 25, flicker: 0.05 , middle : true}' }], "noselfExec": "true" }, "node_231": { "id": "node_231", "x": 992.65625, "y": 3119.546875, "title": "Curve", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "name", "type": "string" }, { "name": "delta", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "name", "value": "Curve1" }], "curve": { "name": "node_231", "keys": [{ "time": 0, "value": 0, "inTangent": 0, "outTangent": 0 }, { "time": 1, "value": 1, "inTangent": 0, "outTangent": 0 }], "length": 1, "loop": true, "samples": 128, "baked": null }, "noselfExec": "true" }, "node_233": { "noExec": true, "id": "node_233", "title": "Get Scene Object", "x": 1247.1875, "y": 2880.078125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "BANNER1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_236": { "id": "node_236", "title": "Mul", "x": 1363.453125, "y": 3296.296875, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_237": { "id": "node_237", "title": "Get Number", "x": 1038.3125, "y": 3386.328125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "MULTIPLY_CURVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_239": { "id": "node_239", "title": "Get Number", "x": 1357.515625, "y": 3480.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_241": { "id": "node_241", "x": 1727.015625, "y": 3126.765625, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_243": { "id": "node_243", "title": "getNumberLiteral", "x": 1351.953125, "y": 3126.109375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "90" }], "noselfExec": "true" }, "node_252": { "noExec": true, "id": "node_252", "title": "Get Scene Object", "x": 3139.484375, "y": 3452.890625, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "CAMERA_JUMPER" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_254": { "id": "node_254", "title": "Get Object", "x": 3141, "y": 3715.921875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_255": { "id": "node_255", "x": 3489.953125, "y": 3351.296875, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_258": { "id": "node_258", "title": "getNumberLiteral", "x": 3089.09375, "y": 3074.984375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "0.03" }], "noselfExec": "true" }, "node_261": { "id": "node_261", "title": "if", "x": 2792.125, "y": 3138.71875, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "true" }], "noselfExec": "true" }, "node_269": { "id": "node_269", "title": "Mul", "x": 3153.6875, "y": 3274.625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_271": { "id": "node_271", "x": 2370.59375, "y": 3180.625, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_275": { "id": "node_275", "title": "Get Boolean", "x": 3489.921875, "y": 3641.328125, "category": "value", "outputs": [{ "name": "result", "type": "boolean" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_276": { "id": "node_276", "title": "Set Boolean", "x": 2913.078125, "y": 2589.90625, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": "true" }], "finished": true }, "node_280": { "id": "node_280", "x": 2458.84375, "y": 2502.921875, "title": "Generator Pyramid", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "levels", "type": "value" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/cube-g1.webp" }, { "key": "name", "value": "TEST" }, { "key": "levels", "value": "5" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 10 }, { "key": "delay", "value": "50" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_281": { "id": "node_281", "type": "getArray", "title": "Get Array", "x": 4353.375, "y": 3439.109375, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_282": { "id": "node_282", "title": "For Each", "type": "forEach", "x": 4596.390625, "y": 3454.578125, "state": { "item": "TEST_54", "index": 54 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_284": { "id": "node_284", "x": 4928.7606201171875, "y": 3606.062744140625, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_286": { "id": "node_286", "title": "Mul", "x": 4376.5625, "y": 3749.234375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_287": { "id": "node_287", "title": "getNumberLiteral", "x": 4052.7466430664062, "y": 3551.3613891601562, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": "0.02" }], "noselfExec": "true" }, "node_288": { "id": "node_288", "title": "if", "x": 3794.234375, "y": 3402.265625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }], "noselfExec": "true" }, "node_289": { "id": "node_289", "title": "Get Object", "x": 4691.159912109375, "y": 3881.0072021484375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_290": { "id": "node_290", "title": "Set Boolean", "x": 2114.84375, "y": 2644.125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": false }], "finished": true }, "node_308": { "noExec": true, "id": "node_308", "title": "Get Scene Object", "x": 2356.765625, "y": 1721.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "L_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_309": { "id": "node_309", "x": 2723.4375, "y": 1888.484375, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_310": { "id": "node_310", "title": "Get String", "x": 2483.796875, "y": 2028.75, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "CUBE_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_311": { "noExec": true, "id": "node_311", "title": "Get Scene Object", "x": 2349.734375, "y": 2185, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "R_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_312": { "id": "node_312", "x": 2715.484375, "y": 2184.0625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_313": { "id": "node_313", "title": "Comment", "x": 1832.203125, "y": 2625.671875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON LOAD TEST CASE \n" }] }, "node_314": { "id": "node_314", "title": "Comment", "x": 710.796875, "y": 3127.1875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON DRAW \n" }] }, "node_346": { "noExec": true, "id": "node_346", "title": "Set Shader Graph", "x": 479.16668701171875, "y": 1404.8785095214844, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "objectName": "objectName", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "selectedShader", "value": "ScrollTex" }, { "key": "objectName", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.shaderGraph" }, "node_349": { "noExec": true, "id": "node_349", "title": "Get Scene Object", "x": -124.2569580078125, "y": 1362.0798950195312, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_TOP" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_350": { "id": "node_350", "x": 210.10760498046875, "y": 1170.34033203125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_351": { "id": "node_351", "title": "onLoad", "x": -138.65625, "y": 1077.5, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_352": { "id": "node_352", "title": "Get String", "x": -137.607666015625, "y": 1198.6771240234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_363": { "id": "node_363", "title": "getNumberLiteral", "x": -1410.1007080078125, "y": -269.3333740234375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 1 }], "noselfExec": "true" }, "node_367": { "id": "node_367", "title": "functions", "x": -1021.892578125, "y": -538.3471984863281, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "yaw", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setYaw" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setYaw", "descFunc": "setYaw" }, "node_370": { "id": "node_370", "title": "Get Number", "x": -1736.3228759765625, "y": -465.6805725097656, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_371": { "id": "node_371", "title": "functions", "x": -1355.045166015625, "y": -740.0625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "p", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_372": { "id": "node_372", "x": 1048.2396850585938, "y": 2349.2640380859375, "title": "Set Vertex Wave", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "intensity", "type": "value" }, { "name": "enableWave", "type": "boolean" }, { "name": "Wave Speed", "type": "value" }, { "name": "Wave Amplitude", "type": "value" }, { "name": "Wave Frequency", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableWave", "value": "true" }, { "key": "Wave Speed", "value": "4.5" }, { "key": "Wave Amplitude", "value": "0.6" }, { "key": "Wave Frequency", "value": 1.5 }] } }, "links": [{ "id": "link_1", "from": { "node": "node_2", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "reference" }, "type": "any" }, { "id": "link_3", "from": { "node": "node_4", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "intensity" }, "type": "value" }, { "id": "link_4", "from": { "node": "node_2", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_5", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_5", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_9", "from": { "node": "node_2", "pin": "setColorR", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "reference" }, "type": "any" }, { "id": "link_10", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_11", "from": { "node": "node_11", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "colorR" }, "type": "value" }, { "id": "link_12", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_2", "pin": "setColorB", "type": "object", "out": true }, "to": { "node": "node_12", "pin": "reference" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_12", "pin": "colorB" }, "type": "value" }, { "id": "link_15", "from": { "node": "node_2", "pin": "setColorG", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "reference" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_15", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "colorG" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_16", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_20", "from": { "node": "node_18", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "texturePath" }, "type": "any" }, { "id": "link_26", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "texturePath" }, "type": "any" }, { "id": "link_27", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_26", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_52", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_43", "pin": "rotation" }, "type": "any" }, { "id": "link_53", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_43", "pin": "x" }, "type": "any" }, { "id": "link_55", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_48", "pin": "rotation" }, "type": "any" }, { "id": "link_57", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_48", "pin": "x" }, "type": "any" }, { "id": "link_58", "from": { "node": "node_48", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_50", "pin": "exec" }, "type": "action" }, { "id": "link_59", "from": { "node": "node_50", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_49", "pin": "exec" }, "type": "action" }, { "id": "link_60", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_49", "pin": "rotation" }, "type": "any" }, { "id": "link_61", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_49", "pin": "x" }, "type": "any" }, { "id": "link_95", "from": { "node": "node_69", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_96", "from": { "node": "node_24", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_71", "pin": "exec" }, "type": "action" }, { "id": "link_97", "from": { "node": "node_71", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_72", "pin": "exec" }, "type": "action" }, { "id": "link_98", "from": { "node": "node_70", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_99", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "texturePath" }, "type": "any" }, { "id": "link_100", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "texturePath" }, "type": "any" }, { "id": "link_104", "from": { "node": "node_77", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_105", "from": { "node": "node_78", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_77", "pin": "value" }, "type": "object" }, { "id": "link_113", "from": { "node": "node_65", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_84", "pin": "exec" }, "type": "action" }, { "id": "link_115", "from": { "node": "node_43", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_85", "pin": "exec" }, "type": "action" }, { "id": "link_116", "from": { "node": "node_85", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_48", "pin": "exec" }, "type": "action" }, { "id": "link_117", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_87", "pin": "rotation" }, "type": "any" }, { "id": "link_119", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_89", "pin": "rotation" }, "type": "any" }, { "id": "link_120", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_87", "pin": "x" }, "type": "any" }, { "id": "link_122", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_89", "pin": "x" }, "type": "any" }, { "id": "link_134", "from": { "node": "node_98", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_97", "pin": "input" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_89", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_100", "pin": "exec" }, "type": "action" }, { "id": "link_138", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_102", "pin": "rotation" }, "type": "any" }, { "id": "link_143", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_102", "pin": "x" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_100", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_102", "pin": "exec" }, "type": "action" }, { "id": "link_166", "from": { "node": "node_115", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_116", "pin": "input" }, "type": "value" }, { "id": "link_172", "from": { "node": "node_118", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_119", "pin": "input" }, "type": "value" }, { "id": "link_174", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_121", "pin": "rotation" }, "type": "any" }, { "id": "link_175", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "y" }, "type": "any" }, { "id": "link_176", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "z" }, "type": "any" }, { "id": "link_178", "from": { "node": "node_119", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "x" }, "type": "any" }, { "id": "link_179", "from": { "node": "node_119", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_121", "pin": "exec" }, "type": "action" }, { "id": "link_182", "from": { "node": "node_128", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_126", "pin": "pitch" }, "type": "value" }, { "id": "link_186", "from": { "node": "node_126", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_132", "pin": "exec" }, "type": "action" }, { "id": "link_188", "from": { "node": "node_130", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_132", "pin": "y2" }, "type": "value" }, { "id": "link_193", "from": { "node": "node_131", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_137", "pin": "z" }, "type": "value" }, { "id": "link_194", "from": { "node": "node_132", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_137", "pin": "exec" }, "type": "action" }, { "id": "link_195", "from": { "node": "node_137", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_77", "pin": "exec" }, "type": "action" }, { "id": "link_207", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_142", "pin": "rotation" }, "type": "any" }, { "id": "link_208", "from": { "node": "node_116", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_142", "pin": "exec" }, "type": "action" }, { "id": "link_211", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "y" }, "type": "any" }, { "id": "link_212", "from": { "node": "node_116", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "x" }, "type": "any" }, { "id": "link_213", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "z" }, "type": "any" }, { "id": "link_218", "from": { "node": "node_49", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_150", "pin": "exec" }, "type": "action" }, { "id": "link_219", "from": { "node": "node_150", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_149", "pin": "exec" }, "type": "action" }, { "id": "link_220", "from": { "node": "node_149", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_87", "pin": "exec" }, "type": "action" }, { "id": "link_235", "from": { "node": "node_84", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_160", "pin": "exec" }, "type": "action" }, { "id": "link_236", "from": { "node": "node_160", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_43", "pin": "exec" }, "type": "action" }, { "id": "link_237", "from": { "node": "node_161", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_160", "pin": "value" }, "type": "object" }, { "id": "link_239", "from": { "node": "node_157", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_65", "pin": "exec" }, "type": "action" }, { "id": "link_243", "from": { "node": "node_164", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "A" }, "type": "any" }, { "id": "link_244", "from": { "node": "node_162", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "B" }, "type": "any" }, { "id": "link_245", "from": { "node": "node_165", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_65", "pin": "condition" }, "type": "boolean" }, { "id": "link_248", "from": { "node": "node_168", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_167", "pin": "value" }, "type": "object" }, { "id": "link_249", "from": { "node": "node_167", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_169", "pin": "exec" }, "type": "action" }, { "id": "link_250", "from": { "node": "node_102", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_97", "pin": "exec" }, "type": "action" }, { "id": "link_251", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_172", "pin": "rotation" }, "type": "any" }, { "id": "link_252", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_172", "pin": "x" }, "type": "any" }, { "id": "link_255", "from": { "node": "node_172", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_116", "pin": "exec" }, "type": "action" }, { "id": "link_256", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_174", "pin": "x" }, "type": "any" }, { "id": "link_259", "from": { "node": "node_174", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_119", "pin": "exec" }, "type": "action" }, { "id": "link_260", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_174", "pin": "rotation" }, "type": "any" }, { "id": "link_261", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_177", "pin": "rotation" }, "type": "any" }, { "id": "link_262", "from": { "node": "node_97", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_177", "pin": "exec" }, "type": "action" }, { "id": "link_267", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "y" }, "type": "any" }, { "id": "link_268", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "z" }, "type": "any" }, { "id": "link_269", "from": { "node": "node_176", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "a" }, "type": "value" }, { "id": "link_270", "from": { "node": "node_180", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "b" }, "type": "value" }, { "id": "link_271", "from": { "node": "node_179", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_178", "pin": "x" }, "type": "any" }, { "id": "link_272", "from": { "node": "node_177", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_178", "pin": "exec" }, "type": "action" }, { "id": "link_273", "from": { "node": "node_178", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_181", "pin": "exec" }, "type": "action" }, { "id": "link_274", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_178", "pin": "rotation" }, "type": "any" }, { "id": "link_278", "from": { "node": "node_181", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_183", "pin": "exec" }, "type": "action" }, { "id": "link_279", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_183", "pin": "x" }, "type": "any" }, { "id": "link_280", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_183", "pin": "rotation" }, "type": "any" }, { "id": "link_281", "from": { "node": "node_183", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_172", "pin": "exec" }, "type": "action" }, { "id": "link_282", "from": { "node": "node_97", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "x" }, "type": "any" }, { "id": "link_283", "from": { "node": "node_184", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "a" }, "type": "value" }, { "id": "link_284", "from": { "node": "node_186", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "b" }, "type": "value" }, { "id": "link_285", "from": { "node": "node_142", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_187", "pin": "exec" }, "type": "action" }, { "id": "link_286", "from": { "node": "node_185", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_187", "pin": "x" }, "type": "any" }, { "id": "link_287", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_187", "pin": "rotation" }, "type": "any" }, { "id": "link_288", "from": { "node": "node_187", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_188", "pin": "exec" }, "type": "action" }, { "id": "link_289", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_189", "pin": "x" }, "type": "any" }, { "id": "link_290", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_189", "pin": "rotation" }, "type": "any" }, { "id": "link_291", "from": { "node": "node_188", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_189", "pin": "exec" }, "type": "action" }, { "id": "link_292", "from": { "node": "node_189", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_174", "pin": "exec" }, "type": "action" }, { "id": "link_293", "from": { "node": "node_190", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_192", "pin": "a" }, "type": "value" }, { "id": "link_294", "from": { "node": "node_191", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_192", "pin": "b" }, "type": "value" }, { "id": "link_295", "from": { "node": "node_192", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_193", "pin": "x" }, "type": "any" }, { "id": "link_296", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_193", "pin": "rotation" }, "type": "any" }, { "id": "link_297", "from": { "node": "node_194", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_167", "pin": "exec" }, "type": "action" }, { "id": "link_298", "from": { "node": "node_121", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_193", "pin": "exec" }, "type": "action" }, { "id": "link_299", "from": { "node": "node_193", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_195", "pin": "exec" }, "type": "action" }, { "id": "link_300", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_196", "pin": "x" }, "type": "any" }, { "id": "link_301", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_196", "pin": "rotation" }, "type": "any" }, { "id": "link_302", "from": { "node": "node_195", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_196", "pin": "exec" }, "type": "action" }, { "id": "link_303", "from": { "node": "node_196", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_194", "pin": "exec" }, "type": "action" }, { "id": "link_304", "from": { "node": "node_87", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_197", "pin": "exec" }, "type": "action" }, { "id": "link_305", "from": { "node": "node_197", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_198", "pin": "exec" }, "type": "action" }, { "id": "link_306", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_198", "pin": "x" }, "type": "any" }, { "id": "link_307", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_198", "pin": "rotation" }, "type": "any" }, { "id": "link_308", "from": { "node": "node_198", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_199", "pin": "exec" }, "type": "action" }, { "id": "link_309", "from": { "node": "node_199", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_89", "pin": "exec" }, "type": "action" }, { "id": "link_310", "from": { "node": "node_65", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_200", "pin": "exec" }, "type": "action" }, { "id": "link_316", "from": { "node": "node_205", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_208", "pin": "v" }, "type": "value" }, { "id": "link_318", "from": { "node": "node_208", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_207", "pin": "exec" }, "type": "action" }, { "id": "link_319", "from": { "node": "node_207", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_320", "from": { "node": "node_209", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_207", "pin": "v" }, "type": "value" }, { "id": "link_321", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_211", "pin": "exec" }, "type": "action" }, { "id": "link_322", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_211", "pin": "v" }, "type": "value" }, { "id": "link_323", "from": { "node": "node_211", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_208", "pin": "exec" }, "type": "action" }, { "id": "link_331", "from": { "node": "node_215", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_221", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_332", "from": { "node": "node_219", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_221", "pin": "exec" }, "type": "action" }, { "id": "link_352", "from": { "node": "node_231", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "a" }, "type": "value" }, { "id": "link_355", "from": { "node": "node_237", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "b" }, "type": "value" }, { "id": "link_362", "from": { "node": "node_233", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_241", "pin": "rotation" }, "type": "any" }, { "id": "link_363", "from": { "node": "node_236", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "y" }, "type": "any" }, { "id": "link_365", "from": { "node": "node_239", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "z" }, "type": "any" }, { "id": "link_366", "from": { "node": "node_231", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_243", "pin": "exec" }, "type": "action" }, { "id": "link_367", "from": { "node": "node_243", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "x" }, "type": "any" }, { "id": "link_368", "from": { "node": "node_243", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_241", "pin": "exec" }, "type": "action" }, { "id": "link_380", "from": { "node": "node_254", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_255", "pin": "rayDirection" }, "type": "object" }, { "id": "link_382", "from": { "node": "node_252", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_255", "pin": "objectName" }, "type": "string" }, { "id": "link_392", "from": { "node": "node_258", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_255", "pin": "exec" }, "type": "action" }, { "id": "link_402", "from": { "node": "node_261", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_258", "pin": "exec" }, "type": "action" }, { "id": "link_409", "from": { "node": "node_258", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "a" }, "type": "value" }, { "id": "link_411", "from": { "node": "node_269", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_255", "pin": "strength" }, "type": "value" }, { "id": "link_414", "from": { "node": "node_271", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_261", "pin": "exec" }, "type": "action" }, { "id": "link_415", "from": { "node": "node_271", "pin": "mid", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "b" }, "type": "value" }, { "id": "link_416", "from": { "node": "node_271", "pin": "beat", "type": "boolean", "out": true }, "to": { "node": "node_261", "pin": "condition" }, "type": "boolean" }, { "id": "link_426", "from": { "node": "node_280", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_276", "pin": "exec" }, "type": "action" }, { "id": "link_427", "from": { "node": "node_280", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_281", "pin": "array" }, "type": "any" }, { "id": "link_429", "from": { "node": "node_281", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_282", "pin": "exec" }, "type": "action" }, { "id": "link_430", "from": { "node": "node_281", "pin": "array", "type": "any", "out": true }, "to": { "node": "node_282", "pin": "array" }, "type": "any" }, { "id": "link_431", "from": { "node": "node_282", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_284", "pin": "exec" }, "type": "action" }, { "id": "link_432", "from": { "node": "node_282", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_284", "pin": "objectName" }, "type": "string" }, { "id": "link_434", "from": { "node": "node_271", "pin": "high", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "a" }, "type": "value" }, { "id": "link_435", "from": { "node": "node_255", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_288", "pin": "exec" }, "type": "action" }, { "id": "link_436", "from": { "node": "node_275", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_288", "pin": "condition" }, "type": "boolean" }, { "id": "link_437", "from": { "node": "node_288", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_287", "pin": "exec" }, "type": "action" }, { "id": "link_438", "from": { "node": "node_287", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_281", "pin": "exec" }, "type": "action" }, { "id": "link_439", "from": { "node": "node_287", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "b" }, "type": "value" }, { "id": "link_440", "from": { "node": "node_286", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_284", "pin": "strength" }, "type": "value" }, { "id": "link_441", "from": { "node": "node_289", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_284", "pin": "rayDirection" }, "type": "object" }, { "id": "link_443", "from": { "node": "node_290", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_280", "pin": "exec" }, "type": "action" }, { "id": "link_450", "from": { "node": "node_241", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_271", "pin": "exec" }, "type": "action" }, { "id": "link_462", "from": { "node": "node_72", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_309", "pin": "exec" }, "type": "action" }, { "id": "link_463", "from": { "node": "node_308", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_464", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "texturePath" }, "type": "any" }, { "id": "link_465", "from": { "node": "node_311", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_466", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "texturePath" }, "type": "any" }, { "id": "link_467", "from": { "node": "node_309", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_312", "pin": "exec" }, "type": "action" }, { "id": "link_505", "from": { "node": "node_349", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_506", "from": { "node": "node_351", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_350", "pin": "exec" }, "type": "action" }, { "id": "link_507", "from": { "node": "node_352", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "texturePath" }, "type": "any" }, { "id": "link_508", "from": { "node": "node_350", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_346", "pin": "exec" }, "type": "action" }, { "id": "link_509", "from": { "node": "node_346", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_219", "pin": "exec" }, "type": "action" }, { "id": "link_518", "from": { "node": "node_367", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_126", "pin": "exec" }, "type": "action" }, { "id": "link_521", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_367", "pin": "yaw" }, "type": "any" }, { "id": "link_522", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "x2" }, "type": "any" }, { "id": "link_523", "from": { "node": "node_146", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_371", "pin": "exec" }, "type": "action" }, { "id": "link_524", "from": { "node": "node_371", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_367", "pin": "exec" }, "type": "action" }, { "id": "link_526", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "p" }, "type": "any" }], "nodeCounter": 373, "linkCounter": 527, "pan": [-424, -1879], "variables": { "number": { "LIGHT_POWER": 8, "LIGHT_Y": 65, "COLOR_RED": 1, "COLOR_BLUE": 1, "COLOR_GREEN": 1, "bloomPower": 1, "SMALL_INV_ROT_SPEED": -100, "SPIN_SPEED": 1e4, "ZERO": 0, "RESULT_ANGLE": null, "CAMERA_INIT_PITCH": -0.1, "CAMERA_Y": 3.5, "CAMERA_Z": -12, "DELTA_INV_ON_STOP": 1e3, "NEGATIVE": -1, "BLUR_EFFECT": 3, "BLOOM_KNEE": 1, "MULTIPLY_CURVE": 20 }, "boolean": { "DINAMIC_OBJS_READY": true, "WAVE_EFFECT": true }, "string": { "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.png", "REEL_TEX": "res/textures/slot/reel1.png", "START_SPIN": "start-spin", "CUBE_TEX": "res/textures/cube-g1.webp" }, "object": { "SPIN_STATUS": { "status": "free" }, "FREE": { "status": "free" }, "USED_STATUS": { "status": "used" }, "RAY_DIR": [1, 0, 0] } } };
 
 // ../../../../projects/Test1/shader-graphs.js
 var shaderGraphsProdc = [
@@ -36012,7 +35934,7 @@ var app2 = new MatrixEngineWGPU(
       app3.shadersPack[gShader.name] = shaderReady.final;
       if (typeof shaderReady.final === void 0) console.warn(`Shader ${shaderReady.name} is not compiled.`);
     });
-    addEventListener("AmmoReady", async () => {
+    addEventListener("PhysicsReady", async () => {
       addRaycastsListener("canvas1", "mousedown");
       app3.addLight();
       downloadMeshes({ cube: "./res/meshes/blender/plane.obj" }, (m) => {
@@ -36143,9 +36065,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("R_BOX").scale[1] = 4;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetY(3);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("REEL_3").position.SetY(3);
       }, 800);
       setTimeout(() => {
@@ -36245,9 +36164,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER3").scale[2] = 3;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("BANNER3").position.SetY(9);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("BANNER3").position.SetX(8);
       }, 800);
       setTimeout(() => {
@@ -36318,9 +36234,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_TOP").scale[0] = 2.1;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("R_BOX").position.SetZ(-20);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("BANNER1").position.SetY(9);
       }, 800);
       setTimeout(() => {
@@ -36333,9 +36246,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("FLOOR").position.SetY(-2.4500000000000046);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-20.000094540456008);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("BANNER2").position.SetX(-9);
       }, 800);
       setTimeout(() => {
@@ -36345,13 +36255,31 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_2").position.SetX(0.03);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_TOP").position.SetX(0);
+        app3.getSceneObjectByName("REEL_TOP").position.SetY(2.3800000000000012);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-20.000094540456008);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetZ(-20);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER3").position.SetY(9);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_TOP").position.SetX(0.08000000000000052);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetY(3);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("R_BOX").position.SetZ(-20);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_TOP").position.SetZ(-20);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_TOP").position.SetY(3.1199999999999997);
+        app3.getSceneObjectByName("REEL_3").position.SetZ(-20);
       }, 800);
     });
   }

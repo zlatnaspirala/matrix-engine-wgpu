@@ -1,6 +1,7 @@
 import {MEConfig} from "../me-config";
 
-export let fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+export let fragmentWGSLDark = `
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -49,11 +50,10 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
-    alpha     : f32,  // ✅ Added alpha
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
-
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -63,112 +63,177 @@ const MAX_SPOTLIGHTS = 20u;
 @group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
 @group(1) @binding(3) var metallicRoughnessSampler: sampler;
 @group(1) @binding(4) var<uniform> material: MaterialPBR;
-// @group(1) @binding(5) var normalTexture: texture_2d<f32>;
-// @group(1) @binding(6) var normalSampler: sampler;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-  @location(0) shadowPos : vec4f,
-  @location(1) fragPos   : vec3f,
-  @location(2) fragNorm  : vec3f,
-  @location(3) uv        : vec2f,
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-  let texColor = textureSample(meshTexture, meshSampler, uv);
-  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-  let metallic = mrTex.b * material.metallicFactor;
-  let roughness = mrTex.g * material.roughnessFactor;
-  let alpha = texColor.a * material.baseColorFactor.a;
-  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    let alpha = material.baseColorFactor.a;
+    return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-  let a = roughness * roughness;
-  let a2 = a * a;
-  let NdotH = max(dot(N, H), 0.0);
-  let NdotH2 = NdotH * NdotH;
-  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-  return a2 / (PI * denom * denom);
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-  let r = (roughness + 1.0);
-  let k = (r * r) / 8.0;
-  return NdotV / (NdotV * (1.0 - k) + k);
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-  let NdotV = max(dot(N, V), 0.0);
-  let NdotL = max(dot(N, L), 0.0);
-  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-  let L = normalize(light.position - fragPos);
-  let theta = dot(L, normalize(-light.direction));
-  let epsilon = light.innerCutoff - light.outerCutoff;
-  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-// PCF shadow sampling
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+    return material.baseColor * light.color * light.intensity * NdotL;
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-  var visibility: f32 = 0.0;
-  let biasConstant: f32 = 0.001;
-  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-  let bias = biasConstant + slopeBias;
-  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-  let offsets: array<vec2f, 9> = array<vec2f, 9>(
-      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-  );
-  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
-  }
-  return visibility / 9.0;
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    var weight: f32 = 0.0;
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        let sampleUV = shadowUV + offsets[i] * oneOverSize;
+        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+        let s = textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            sampleUV, layer, depthRef - bias
+        );
+        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+        visibility += select(1.0, s, inBounds);
+        weight += 1.0;
+    }
+    return visibility / weight;
 }
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-  let materialData = getPBRMaterial(input.uv);
-  if (materialData.alpha < 0.01) {
-      discard;
-  }
-  let N = normalize(input.fragNorm);
-  let V = normalize(scene.cameraPos - input.fragPos);
-  var Lo = vec3f(0.0);
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-      let L = normalize(spotlights[i].position - input.fragPos);
-      let H = normalize(V + L);
-      let distance = length(spotlights[i].position - input.fragPos);
-      let dist        = length(spotlights[i].position - input.fragPos);
-      let r           = dist / max(spotlights[i].range, 0.001);
-      let attenuation = 1.0 / (1.0 + r * r);
-      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-      let NDF = distributionGGX(N, H, materialData.roughness);
-      let G   = geometrySmith(N, V, L, materialData.roughness);
-      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-      let kS = F;
-      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-      let diffuse  = kD * materialData.baseColor / PI;
-      let NdotL = max(dot(N, L), 0.0);
-      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-      Lo += (diffuse + specular) * radiance * NdotL;
-  }
+    let materialData = getPBRMaterial(input.uv);
+    // if (materialData.alpha < 0.01) {
+    //     discard;
+    // }
 
-  let maxIntensity = max(length(Lo), 0.0);
-  let ambientScale = clamp(maxIntensity * 0.5 + 0.05, 0.0, 1.0);
-  let ambient = scene.globalAmbient * materialData.baseColor * ambientScale;
-  var color = ambient + Lo;
-
-  color = pow(max(color, vec3f(0.0)), vec3f(1.0 / 2.2));
-  return vec4f(color, 1.0);
-}
-`;
+    var lightContribution = vec3f(0.0);
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+        let depthRef = p.z;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        // let inFrustum =
+        //     p.z >= 0.0 && p.z <= 1.0 &&
+        //     p.x >= -1.0 && p.x <= 1.0 &&
+        //     p.y >= -1.0 && p.y <= 1.0;
+        let inDepth = p.z >= 0.0 && p.z <= 1.0;
+        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+        let shadowFactor = select(1.0, visibility, inDepth);
+        let contrib = computeSpotLight(
+            spotlights[i],
+            norm,
+            input.fragPos,
+            viewDir,
+            materialData
+        );
+        lightContribution += contrib * shadowFactor;
+    }
+    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+    // -- from dark next feature
+    // var ambientTerm = material.ambientColor * materialData.baseColor;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    // like fog interest
+    // var ambientTerm = material.ambientColor + scene.globalAmbient;
+    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    return vec4f(finalColor, alpha);
+}`;

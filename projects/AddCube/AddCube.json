@@ -1,0 +1,10 @@
+{
+  "redirect": true,
+  "id": "AddCube",
+  "name": "AddCube",
+  "absolutePath": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects\\AddCube\\AddCube.json",
+  "PROJECTS_DIR": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects",
+  "projectData": "AddCube\\AddCube.json",
+  "physics": false,
+  "networking": false
+}

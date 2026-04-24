@@ -3,9 +3,6 @@ import {downloadMeshes, makeObjSeqArg} from '../src/engine/loader-obj.js';
 import {LOG_MATRIX} from "../src/engine/utils.js";
 
 export var loadObjsSequence = function() {
-  // THIS EXAMPLE GIVE EXSTRIME GOOD PERFOMANCE (ALSO ON MOBILE)
-  // IST IS EXSPECTED OPOSITY
-  // PROBABLY SWICTHING PIPELINE COST IN WEBGPU
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
@@ -71,10 +68,10 @@ export var loadObjsSequence = function() {
       })
 
       setTimeout(() => {
-        app.cameras.WASD.pitch = -0.26;
-        app.cameras.WASD.yaw = -0.06;
-        app.cameras.WASD.position[1] = 15
-        app.cameras.WASD.position[2] = 11;
+        app.cameras.WASD.setPitch(-0.26);
+        app.cameras.WASD.setYaw(-0.06);
+        app.cameras.WASD.setY(15);
+        app.cameras.WASD.setZ(11);
         app.cameras.WASD._dirtyAngle = true;
         app.getSceneObjectByName('swat').objAnim.play('walk')
       }, 200);

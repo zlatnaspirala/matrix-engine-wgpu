@@ -1343,7 +1343,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
   display: flex;
   flex-direction: column;
   z-index: 10;
-  height: 81vh;
+  height: 74vh;
   overflow: scroll;
   overflow-x: hidden;
   -webkit-text-stroke-width: 0.2px;
@@ -1533,6 +1533,11 @@ svg.connections {
 
 .node.shader .header {
   background: linear-gradient(45deg, #000000 0%, #b300ff 25%, #000000 50%, #0084ff 75%, #000000 100%);
+}
+
+.node.selected {
+  outline: 2px solid var(--color-text-info, #4a9eff);
+  outline-offset: 2px;
 }
 
 .node .body {

@@ -42,6 +42,11 @@ export class WASDCamera {
     this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
+
+    if(isMobile() == true && options.isActive == 'init active cam') {
+      console.log('CONTROLER MOBILE WASDCAMERA')
+      MobileDOM.createWASD(this, {marginR: 0, marginD: 0});
+    }
   }
 
   setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
@@ -199,39 +204,39 @@ export class WASDCamera {
     this._dirtyAngle = false;
   }
 
-  setX(x) {
+  setX = (x) => {
     this.position[0] = x;
     this._dirtyAngle = true;
   }
 
-  setY(y) {
+  setY = (y) => {
     this.position[1] = y;
     this._dirtyAngle = true;
   }
 
-  setZ(z) {
+  setZ = (z) => {
     this.position[2] = z;
     this._dirtyAngle = true;
   }
 
-  setPosition(x, y, z) {
+  setPosition = (x, y, z) => {
     this.position[0] = x;
     this.position[1] = y;
     this.position[2] = z;
     this._dirtyAngle = true;
   }
 
-  setPitch(p) {
+  setPitch = (p) => {
     this.pitch = p;
     this._dirtyAngle = true;
   }
 
-  setYaw(y) {
+  setYaw = (y) => {
     this.yaw = y;
     this._dirtyAngle = true;
   }
 
-  setTarget(x, y, z) {
+  setTarget = (x, y, z) => {
     this.target[0] = x;
     this.target[1] = y;
     this.target[2] = z;
@@ -473,7 +478,6 @@ export class RPGCamera {
     });
   }
 
-  // 🔥 SAME AS WASD (no matrices)
   _updateOrientation() {
     const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
@@ -571,14 +575,47 @@ export class FirstPersonCamera {
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
 
-    if(isMobile() == true) {
-      MobileDOM.createWASD(this);
+    if(isMobile() == true && options.isActive == 'init active cam') {
+      console.log('FPCAMERA')
+      MobileDOM.createWASD(this, {margin: 50});
     }
   }
 
-  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+  setPitch = (p) => {
+    this.pitch = p;
+    this._dirtyAngle = true;
+  }
+
+  setYaw = (y) => {
+    this.yaw = y;
+    this._dirtyAngle = true;
+  }
+
+  setProjection = (fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) => {
     mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
+  }
+
+  setPosition = (x, y, z) => {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+
+  setX = (x) => {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  }
+
+  setY = (y) => {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  }
+
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
   }
 
   static mat4MultiplySafe(a, b, out) {
@@ -640,7 +677,7 @@ export class FirstPersonCamera {
       for(const ce of events) {
         let dx = 0, dy = 0;
         if(ce.pointerType === 'mouse') {
-          if((ce.buttons & 1) === 0) continue;
+          // if((ce.buttons & 1) === 0) continue;
           dx = ce.movementX * this.MOUSE_SENS;
           dy = ce.movementY * this.MOUSE_SENS;
         } else {
@@ -722,19 +759,21 @@ export class FirstPersonCamera {
   }
 }
 
-const MobileDOM = {
+export const MobileDOM = {
 
   createWASD(camera, options = {}) {
     const size = options.size ?? 60;
-    const margin = options.margin ?? 20;
+    const marginR = options.marginR ?? 0;
+    const marginB = options.marginB ?? 0;
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#ffffff';
 
     const wrap = document.createElement('div');
+    wrap.id = "mobileControls";
     Object.assign(wrap.style, {
       position: 'fixed',
-      bottom: `${margin}px`,
-      left: `${margin}px`,
+      bottom: `${marginB}px`,
+      right: `${marginR}px`,
       width: `${size * 3 + 8}px`,
       userSelect: 'none',
       zIndex: '9999',
@@ -779,6 +818,7 @@ const MobileDOM = {
         if(camera._keyInterval === null) {
           camera._keyInterval = setInterval(() => {
             camera._dirty = true;
+            camera._dirtyAngle = true;
             camera._applyDigitalMovement();
           }, 16);
         }
@@ -806,16 +846,17 @@ const MobileDOM = {
     return wrap; // caller can hide/remove later
   },
 
-  addButton(label, onClick, options = {}) {
+  addButton(label, onClick, onRelease, options = {}) {
     const size = options.size ?? 56;
-    const margin = options.margin ?? 20;
+    const bottom = options.bottom ?? 0;
+    const left = options.left ?? 0;
     const opacity = options.opacity ?? 0.35;
 
     const btn = document.createElement('div');
     Object.assign(btn.style, {
       position: 'fixed',
-      bottom: options.bottom ?? `${margin}px`,
-      right: options.right ?? `${margin}px`,
+      bottom: `${bottom}%`,
+      left: `${left}%`,
       width: `${size}px`,
       height: `${size}px`,
       display: 'flex',
@@ -839,8 +880,14 @@ const MobileDOM = {
       btn.style.background = `rgba(255,255,255,${opacity})`;
       onClick(e);
     }, {passive: true});
-    btn.addEventListener('pointerup', () => {btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;}, {passive: true});
-    btn.addEventListener('pointercancel', () => {btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;}, {passive: true});
+    btn.addEventListener('pointerup', (e) => {
+      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
+    }, {passive: true});
+    btn.addEventListener('pointercancel', () => {
+      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
+    }, {passive: true});
 
     document.body.appendChild(btn);
     return btn;

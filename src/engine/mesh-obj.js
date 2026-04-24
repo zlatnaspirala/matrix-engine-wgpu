@@ -15,6 +15,7 @@ import {createGroundTexture} from './procedures/procedural-textures';
 import {MEConfig} from '../me-config';
 import {PointerEffect} from './effects/pointerEffect';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
+import {MSDFTextEffect} from './effects/msdfText';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -46,6 +47,8 @@ export default class MEMeshObj extends Materials {
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
+    this._modelMatrix = mat4.create();
+    this.modelMatrix = mat4.create();
 
     if(typeof o.material.useBlend === 'undefined' ||
       typeof o.material.useBlend !== "boolean") {
@@ -56,10 +59,11 @@ export default class MEMeshObj extends Materials {
     }
 
     this.sceneBGL = o.sceneBGL;
+    this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
     this.useScale = o.useScale || false;
-
     this.uvScaleBuffer = this.device.createBuffer({
-      size: 8, // vec2f
+      size: 8,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     // Default = no scale
@@ -276,6 +280,7 @@ export default class MEMeshObj extends Materials {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if(typeof o.isVideo !== 'undefined') {
+      console.log('MESH what i s isvideo ', o.isVideo)
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if(this.material.type != 'mirror' && this.material.type != 'water') {
@@ -300,6 +305,7 @@ export default class MEMeshObj extends Materials {
 
     // new dummy for skin mesh
     if(!this.mesh.jointsBuffer) {
+      // console.log('Dummy buffer size check:', this.mesh.vertices.length)
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -310,13 +316,7 @@ export default class MEMeshObj extends Materials {
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
       this.mesh.jointsBuffer = jointsBuffer;
-      // = {
-      //   data: jointsData,
-      //   buffer: jointsBuffer,
-      //   stride: 16, // vec4<u32>
-      // };
       const numVerts = this.mesh.vertices.length / 3;
-      // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4);
       for(let i = 0;i < numVerts;i++) {
         weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
@@ -340,8 +340,6 @@ export default class MEMeshObj extends Materials {
       //   buffer: weightsBuffer,
       //   stride: 16
       // };
-
-      this._modelMatrix = mat4.create();
     }
 
     this.runProgram = () => {
@@ -470,7 +468,6 @@ export default class MEMeshObj extends Materials {
         this.setupPipeline();
       };
 
-      // 'back' typical for shadow passes
       this.primitive = {
         topology: this.topology,
         cullMode: 'none',
@@ -486,26 +483,12 @@ export default class MEMeshObj extends Materials {
         ]
       });
 
-      this.createLayoutForRender();
-
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16, // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh',
-        entries: [
-          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        ],
-      });
-
       function alignTo256(n) {return Math.ceil(n / 256) * 256;}
-
       let MAX_BONES = MEConfig.MAX_BONES;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device.createBuffer({
@@ -519,8 +502,6 @@ export default class MEMeshObj extends Materials {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-
-      // vertex Anim
       this.vertexAnimParams = new Float32Array([
         0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
       ]);
@@ -661,8 +642,7 @@ export default class MEMeshObj extends Materials {
           {binding: 0, resource: {buffer: this.modelUniformBuffer}},
           {binding: 1, resource: {buffer: this.bonesBuffer}},
           {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-          {binding: 3, resource: {buffer: this.uvScaleBuffer}},
-
+          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
         ],
       });
 
@@ -689,6 +669,9 @@ export default class MEMeshObj extends Materials {
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch');
         }
+        if(typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
+          this.effects.gpuText = new MSDFTextEffect(device, pf, "rgba16float", 'torch');
+        }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
         }
@@ -702,29 +685,29 @@ export default class MEMeshObj extends Materials {
       }
 
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = mat4.identity(this._modelMatrix);
-        this._translateVec[0] = pos.x;
-        this._translateVec[1] = pos.y;
-        this._translateVec[2] = pos.z;
-        mat4.translate(modelMatrix, this._translateVec, modelMatrix);
-        if(this.itIsPhysicsBody) {
-          this._rotAxisVec[0] = this.rotation.axis.x;
-          this._rotAxisVec[1] = this.rotation.axis.y;
-          this._rotAxisVec[2] = this.rotation.axis.z;
-          mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-        } else {
+        if(!this.itIsPhysicsBody) {
+          let modelMatrix = mat4.identity(this._modelMatrix);
+          this._translateVec[0] = pos.x;
+          this._translateVec[1] = pos.y;
+          this._translateVec[2] = pos.z;
+          mat4.translate(modelMatrix, this._translateVec, modelMatrix);
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          if(useScale == true) {
+            this._scaleVec[0] = this.scale[0];
+            this._scaleVec[1] = this.scale[1];
+            this._scaleVec[2] = this.scale[2];
+            mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+          }
+          this.modelMatrix = modelMatrix;
+          return this.modelMatrix;
         }
-        if(useScale == true) {
-          this._scaleVec[0] = this.scale[0];
-          this._scaleVec[1] = this.scale[1];
-          this._scaleVec[2] = this.scale[2];
-          mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+        if(!this.modelMatrix) {
+          let modelMatrix = mat4.identity(this._modelMatrix);
+          this.modelMatrix = modelMatrix;
         }
-        this.modelMatrix = modelMatrix;
-        return modelMatrix;
+        return this.modelMatrix;
       };
 
       const modelMatrix = mat4.translation([0, 0, 0]);
@@ -744,9 +727,7 @@ export default class MEMeshObj extends Materials {
             console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE); return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-
-          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); return;
-
+          // console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); return;
         });
         this.setupPipeline()
       } else {
@@ -764,8 +745,7 @@ export default class MEMeshObj extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
 
-  setupPipeline = () => {
-    this.createBindGroupForRender();
+  setupPipeline() {
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -775,6 +755,26 @@ export default class MEMeshObj extends Materials {
     const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
     const vertexModule = this.device.createShaderModule({code: vertexCode});
     const fragmentModule = this.device.createShaderModule({code: fragmentCode});
+
+    let baseKey = {
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
+      type: "mesh",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
 
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Mesh',
@@ -792,18 +792,7 @@ export default class MEMeshObj extends Materials {
       buffers: this.vertexBuffers,
     };
     const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-    const baseKey = {
-      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
-      fragmentId: isVideo ? 'video' : this.material.type,
-      type: "mesh",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: 'rgba16float',
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
+
     // OPAQUE PIPELINE
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
@@ -883,7 +872,6 @@ export default class MEMeshObj extends Materials {
   updateModelUniformBuffer = () => {
     const modelMatrix = this.getModelMatrix(this.position, this.useScale);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-    this.modelMatrix = modelMatrix;
   }
 
   createGPUBuffer(dataArray, usage) {
@@ -1078,14 +1066,12 @@ export default class MEMeshObj extends Materials {
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
 
-    let testPB = app.matrixAmmo.getBodyByName(this.name);
-    if(testPB !== null) {
-      try {
-        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
-      } catch(e) {
-        console.warn("Physics cleanup err:", e);
+    if(app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if(testPB !== null) {
+        try {app.matrixPhysics.removeRigidBody(testPB)} catch(e) {console.warn("Physics cleanup err:", e)}
       }
     }
-    console.info(`🧹Destroyed: ${this.name}`);
+    // console.info(`🧹Destroyed: ${this.name}`);
   }
 }

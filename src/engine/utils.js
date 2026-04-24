@@ -1,7 +1,7 @@
 
 export var supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
 
-export const MeshType = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2 , BVHANIM: 3};
+export const MeshType = {MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3};
 
 export function isMobile() {
   if(supportsTouch == true) return true;
@@ -710,7 +710,7 @@ export function getAxisRot3(Q) {
   return axis;
 }
 
-// NTO TESTED
+// Copied intro worker also.
 export function quaternion_rotation_matrix(Q) {
 
   // Covert a quaternion into a full three-dimensional rotation matrix.
@@ -785,23 +785,23 @@ export const LOG_FUNNY_EXTRABIG =
   "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" +
   "background:black; padding:14px 18px;";
 
-export const LOGO_FRAMES = [
-  ` M                 `,
-  ` MA                 `,
-  ` MAT                `,
-  ` MATR               `,
-  ` MATRI              `,
-  ` MATRIX             `,
-  ` MATRIX-E           `,
-  ` MATRIX-ENG         `,
-  ` MATRIX-ENGI        `,
-  ` MATRIX-ENGIN       `,
-  ` MATRIX-ENGINE      `,
-  ` MATRIX-ENGINE-     `,
-  ` MATRIX-ENGINE-W    `,
-  ` MATRIX-ENGINE-WG   `,
-  ` MATRIX-ENGINE-WGPU `
-];
+// export const LOGO_FRAMES = [
+//   ` M                 `,
+//   ` MA                 `,
+//   ` MAT                `,
+//   ` MATR               `,
+//   ` MATRI              `,
+//   ` MATRIX             `,
+//   ` MATRIX-E           `,
+//   ` MATRIX-ENG         `,
+//   ` MATRIX-ENGI        `,
+//   ` MATRIX-ENGIN       `,
+//   ` MATRIX-ENGINE      `,
+//   ` MATRIX-ENGINE-     `,
+//   ` MATRIX-ENGINE-W    `,
+//   ` MATRIX-ENGINE-WG   `,
+//   ` MATRIX-ENGINE-WGPU `
+// ];
 
 export function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -972,7 +972,6 @@ export function typeText(elementId, htmlString, delay = 50) {
   typeNextChar();
 }
 
-
 export function setupCanvasFilters(canvasId) {
   let canvas = document.getElementById(canvasId);
   if(canvas == null) {
@@ -1100,6 +1099,7 @@ export const SS = {
     sessionStorage.clear();
   }
 };
+
 export const jsonHeaders = new Headers({
   "Content-Type": "application/json",
   "Accept": "application/json",
@@ -1122,7 +1122,6 @@ export class FullScreenManagerElement {
   constructor(targetElement = document.documentElement) {
     this.target = targetElement;
   }
-
   isFullscreen() {
     return !!(
       document.fullscreenElement ||
@@ -1131,7 +1130,6 @@ export class FullScreenManagerElement {
       document.msFullscreenElement
     );
   }
-
   request() {
     const el = this.target;
     return (
@@ -1141,7 +1139,6 @@ export class FullScreenManagerElement {
       el.msRequestFullscreen?.()
     );
   }
-
   exit() {
     return (
       document.exitFullscreen?.() ||
@@ -1150,12 +1147,10 @@ export class FullScreenManagerElement {
       document.msExitFullscreen?.()
     );
   }
-
   toggle() {
     if(this.isFullscreen()) return this.exit();
     return this.request();
   }
-
   onChange(callback) {
     [
       "fullscreenchange",
@@ -1172,7 +1167,7 @@ export class FullScreenManagerElement {
 
 export class FullscreenManager {
   constructor() {
-    this.target = document.documentElement; // fullscreen whole page / window
+    this.target = document.documentElement;
   }
 
   isFullscreen() {
@@ -1187,25 +1182,17 @@ export class FullscreenManager {
   request() {
     const el = this.target;
     return (
-      el.requestFullscreen?.() ||
-      el.webkitRequestFullscreen?.() ||
-      el.mozRequestFullScreen?.() ||
-      el.msRequestFullscreen?.()
+      el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.()
     );
   }
 
   exit() {
     return (
-      document.exitFullscreen?.() ||
-      document.webkitExitFullscreen?.() ||
-      document.mozCancelFullScreen?.() ||
-      document.msExitFullscreen?.()
+      document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.()
     );
   }
 
-  toggle() {
-    return this.isFullscreen() ? this.exit() : this.request();
-  }
+  toggle() {return this.isFullscreen() ? this.exit() : this.request()}
 
   onChange(callback) {
     [

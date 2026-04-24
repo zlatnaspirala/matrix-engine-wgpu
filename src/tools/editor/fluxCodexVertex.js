@@ -1,6 +1,8 @@
 /**
  * @description
  * Flux Codex Vertex use visual scripting model.
+ * It is pragmatic and intuitive.
+ * Avoid casting with adaptive expectation logic.
  *
  * @filename
  * fluxCodexVertex.js
@@ -35,6 +37,7 @@
  *
  * - MPL applies ONLY to this file
  */
+import {PVector} from "../../engine/matrix-class.js";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 // import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
@@ -73,9 +76,11 @@ export default class FluxCodexVertex {
     // State Management
     this.state = {
       draggingNode: null,
-      dragOffset: [0, 0],
+      dragOffset: [0, 0],      // offset for the PRIMARY dragged node
       connecting: null,
-      selectedNode: null,
+      selectedNode: null,       // keep for backward compat (single-select APIs)
+      selectedNodes: new Set(), // NEW: multi-select set of node IDs
+      rubberBand: null,         // NEW: { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
@@ -86,10 +91,11 @@ export default class FluxCodexVertex {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
     });
+    this.saveGraphEvent = new CustomEvent('save-graph', {detail: {}});
+    this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {detail: {}});
 
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
-      // stop sepcial onDraw node
       console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n) => n.title == "On Draw"), LOG_FUNNY_ARCADE);
       let allOnDraws = Object.values(this.nodes).filter((n) => n.title == "On Draw");
       for(var x = 0;x < allOnDraws.length;x++) {
@@ -106,7 +112,7 @@ export default class FluxCodexVertex {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
-      document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
+      document.dispatchEvent(this.updateSceneContainerEvent);
       byId("graph-status").innerHTML = '⚫';
     };
 
@@ -154,10 +160,15 @@ export default class FluxCodexVertex {
         e.preventDefault();
         this.runGraph();
       } else if(e.key === "Delete") {
-        if(this.state.selectedNode) {
-          this.deleteNode(this.state.selectedNode);
-          this.state.selectedNode = null;
-        }
+        // if(this.state.selectedNode) {
+        //   this.deleteNode(this.state.selectedNode);
+        //   this.state.selectedNode = null;
+        // }
+        const toDelete = this.state.selectedNodes.size > 0
+          ? [...this.state.selectedNodes]
+          : this.state.selectedNode ? [this.state.selectedNode] : [];
+        toDelete.forEach(id => this.deleteNode(id));
+        this._selectClear();
       }
     });
 
@@ -553,7 +564,7 @@ export default class FluxCodexVertex {
           console.info('gen ai tool call PREVENT ')
           return;
         } else {
-          console.info('gen ai tool call !!!!!!!!!!!!!!!! else ')
+          console.info('gen ai tool call else ')
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
@@ -1082,13 +1093,11 @@ export default class FluxCodexVertex {
         node.accessObject = [];
       }
     }
-
     // Ensure fields exist
     if(!node.fields) node.fields = [];
     if(!node.fields.find(f => f.key === "selectedObject")) {
       node.fields.push({key: "selectedObject", value: ""});
     }
-
     // Ensure pins exist
     if(!node.inputs || node.inputs.length === 0) {
       node.inputs = [{name: "exec", type: "action"}];
@@ -1096,10 +1105,8 @@ export default class FluxCodexVertex {
     if(!node.outputs || node.outputs.length === 0) {
       node.outputs = [{name: "execOut", type: "action"}];
     }
-
     // Rebuild DOM select for this node
     let select = dom.querySelector("select");
-
     if(select == null) {
       select = document.createElement("select");
       select.id = node.id;
@@ -1112,7 +1119,6 @@ export default class FluxCodexVertex {
       const numOptions = select.options.length;
       const newLength = Object.keys(node.accessObject)
         .filter(key => typeof node.accessObject[key] === "function")
-
       // Only repopulate if length differs // +1 for placeholder
       if(numOptions !== newLength.length + 1) {
         select.innerHTML = "";
@@ -1120,7 +1126,6 @@ export default class FluxCodexVertex {
         placeholder.value = "";
         placeholder.textContent = "-- Select Function --";
         select.appendChild(placeholder);
-
         Object.keys(node.accessObject)
           .filter(key => typeof node.accessObject[key] === "function")
           .forEach(fnName => {
@@ -1129,13 +1134,10 @@ export default class FluxCodexVertex {
             opt.textContent = fnName;
             select.appendChild(opt);
           });
-
-
         // restore previously selected
         const selected = node.fields.find(f => f.key === "selectedObject")?.value;
         if(selected) select.value = selected;
       }
-
       // Attach onchange
       select.onchange = e => {
         const val = e.target.value;
@@ -1240,7 +1242,6 @@ export default class FluxCodexVertex {
     }
     getSubNode._needsRebuild = false;
     getSubNode._pinsBuilt = true;
-    // console.log("[ADAPT SUB OBJECT]", getSubNode.id, "path:", path, "target:", target);
     this.updateNodeDOM(getSubNode.id);
   }
 
@@ -1337,21 +1338,17 @@ export default class FluxCodexVertex {
     } else {
       el.className = "node " + (spec.category || "");
     }
-
     el.style.left = spec.x + "px";
     el.style.top = spec.y + "px";
     el.dataset.id = spec.id;
-
     // --- Header ---
     const header = document.createElement("div");
     header.className = "header";
     header.textContent = spec.title;
     el.appendChild(header);
-
     // --- Body ---
     const body = document.createElement("div");
     body.className = "body";
-
     // --- Pin row ---
     const row = document.createElement("div");
     if(spec.title == "Comment") {
@@ -1397,21 +1394,42 @@ export default class FluxCodexVertex {
     }
 
     if(spec.comment) {
+      // const textarea = document.createElement("textarea");
+      // // textarea.style
+      // textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
+      // textarea.style.boxShadow =
+      //   "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
+      // textarea.style.backgroundColor = "gray";
+      // textarea.style.color = "black";
+
+      // textarea.value = spec.fields.find(f => f.key === "text").value;
+
+      // textarea.oninput = () => {
+      //   spec.fields.find(f => f.key === "text").value = textarea.value;
+      //   row.textContent = textarea.value || "Comment";
+      // };
+
+      // body.appendChild(textarea);
       const textarea = document.createElement("textarea");
-      // textarea.style
       textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
-      textarea.style.boxShadow =
-        "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
+      textarea.style.boxShadow = "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
       textarea.style.backgroundColor = "gray";
       textarea.style.color = "black";
 
       textarea.value = spec.fields.find(f => f.key === "text").value;
 
+      // Add a separate label div for display
+      const commentLabel = document.createElement("div");
+      commentLabel.className = "comment-label";
+      commentLabel.textContent = textarea.value || "Comment";
+      commentLabel.style.cssText = "padding:4px;opacity:0.8;pointer-events:none;white-space:pre-wrap;word-break:break-word;";
+
       textarea.oninput = () => {
         spec.fields.find(f => f.key === "text").value = textarea.value;
-        row.textContent = textarea.value || "Comment";
+        commentLabel.textContent = textarea.value || "Comment";
       };
 
+      body.appendChild(commentLabel);
       body.appendChild(textarea);
     }
     // 🔴 FIELD INPUTS
@@ -1429,12 +1447,10 @@ export default class FluxCodexVertex {
       });
       body.appendChild(fieldsWrap);
     }
-
     // Value display
     if(spec.fields && spec.title === "GenRandInt") {
       const container = document.createElement("div");
       container.className = "genrand-inputs";
-
       spec.fields.forEach(f => {
         const input = document.createElement("input");
         input.type = "number";
@@ -1579,6 +1595,13 @@ export default class FluxCodexVertex {
     // --- Dragging ---
     header.addEventListener("mousedown", e => {
       e.preventDefault();
+
+      // If clicking a node not in selection, clear and select just this one
+      if(!this.state.selectedNodes.has(spec.id)) {
+        this._selectClear();
+        this._selectAdd(spec.id);
+      }
+
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
@@ -1586,46 +1609,58 @@ export default class FluxCodexVertex {
         e.clientX - rect.left + bx.left,
         e.clientY - rect.top + bx.top,
       ];
+
+      // Snapshot start positions for ALL selected nodes (for group drag)
+      this.state.dragStartPositions = {};
+      this.state.selectedNodes.forEach(nid => {
+        const n = this.nodes[nid];
+        if(n) this.state.dragStartPositions[nid] = {x: n.x, y: n.y};
+      });
+      // Also store the primary node's starting pixel position
+      this.state.dragPrimaryStart = {
+        x: rect.left - bx.left,
+        y: rect.top - bx.top,
+      };
+
       document.body.style.cursor = "grabbing";
     });
-    // --- Selecting ---
     el.addEventListener("click", e => {
       e.stopPropagation();
-      this.selectNode(spec.id);
-
-      this.updateNodeDOM(spec.id)
+      this._selectToggle(spec.id, e.shiftKey);
+      this.updateNodeDOM(spec.id);
     });
-
     el.addEventListener("dblclick", e => {
       e.stopPropagation();
       console.log('DBL ' + spec.id);
       this.onNodeDoubleClick(spec);
-
     });
-
     return el;
   }
 
   selectNode(id) {
+    // Called on single click without shift — still works as before
     if(this.state.selectedNode) {
-      document
-        .querySelector(`.node[data-id="${this.state.selectedNode}"]`)
+      document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)
         ?.classList.remove("selected");
     }
+    // Clear others only if not already part of multi-select
+    if(!this.state.selectedNodes.has(id)) {
+      this._selectClear();
+    }
     this.state.selectedNode = id;
-    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    if(id) {
+      this.state.selectedNodes.add(id);
+      document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    }
   }
 
   populateDynamicFunctionSelect(select, spec) {
     select.innerHTML = "";
-
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "-- Select Function --";
     select.appendChild(placeholder);
-
     if(!spec.accessObject || typeof spec.accessObject !== "object") return;
-
     for(const key in spec.accessObject) {
       if(typeof spec.accessObject[key] === "function") {
         const opt = document.createElement("option");
@@ -3140,7 +3175,7 @@ LIST OF INTEREST OBJECT:
       this.fluxcodexFieldChange.detail.fieldKey = field.key;
       this.fluxcodexFieldChange.detail.fieldType = field.type;
       this.fluxcodexFieldChange.detail.value = field.value;
-      document.dispatchEvent(this, this.fluxcodexFieldChange);
+      document.dispatchEvent(this.fluxcodexFieldChange);
     };
 
     input.onkeydown = e => {
@@ -3882,7 +3917,7 @@ LIST OF INTEREST OBJECT:
         return;
       }
       const detail = this.getValue(nodeId, "detail");
-      console.log('*************window.dispatchEvent****************', name)
+      // console.log('*************window.dispatchEvent****************', name)
       window.dispatchEvent(
         new CustomEvent(name, {
           detail: detail ?? {}
@@ -4255,13 +4290,15 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        let b = app.matrixAmmo.getBodyByName(objectName);
-        const i = new Ammo.btVector3(
+
+        console.log('Set Force On Hit - getBodyByName ');
+        let b = app.matrixPhysics.getBodyByName(objectName);
+        const i = new PVector(
           rayDirection[0] * strength,
           rayDirection[1] * strength,
           rayDirection[2] * strength
         );
-        b.applyCentralImpulse(i);
+        app.matrixPhysics.applyImpulse(b, i);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Set Video Texture") {
@@ -4600,7 +4637,11 @@ LIST OF INTEREST OBJECT:
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(sceneObjectName) {
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.setBlend(a);
+        if(typeof obj === 'undefined') {
+          console.warn('fluxCodexVertex: no obj with name: ', sceneObjectName);
+        } else {
+          obj.setBlend(a);
+        }
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -4608,10 +4649,12 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(texpath) {
-        // console.log('sceneObjectName', sceneObjectName)
+        console.log('SET TECTURE : sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
-        obj.loadTex0([texpath]).then(() => {
-          setTimeout(() => obj.changeTexture(obj.texture0), 200);
+        obj.loadTex0([texpath]).then((_) => {
+          setTimeout(() => {
+            _.changeTexture(_.texture0)
+          }, 100);
         })
       }
       this.enqueueOutputs(n, "execOut");
@@ -4646,6 +4689,7 @@ LIST OF INTEREST OBJECT:
       return;
     } else if(n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
+      console.log('TEST ROTATE X')
       if(rot?.setRotateX) {
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
@@ -4859,17 +4903,33 @@ LIST OF INTEREST OBJECT:
       const el = this.state.draggingNode;
       const newX = e.clientX - this.state.dragOffset[0];
       const newY = e.clientY - this.state.dragOffset[1];
-      el.style.left = newX + "px";
-      el.style.top = newY + "px";
-      const id = el.dataset.id;
-      if(this.nodes[id]) {
-        this.nodes[id].x = newX;
-        this.nodes[id].y = newY;
-      }
+
+      const dx = newX - this.state.dragPrimaryStart.x;
+      const dy = newY - this.state.dragPrimaryStart.y;
+
+      // Move ALL selected nodes by the same delta
+      this.state.selectedNodes.forEach(nid => {
+        const n = this.nodes[nid];
+        const domEl = document.querySelector(`.node[data-id="${nid}"]`);
+        if(!n || !domEl) return;
+        const start = this.state.dragStartPositions[nid];
+        if(!start) return;
+        const nx = start.x + dx;
+        const ny = start.y + dy;
+        domEl.style.left = nx + "px";
+        domEl.style.top = ny + "px";
+        n.x = nx;
+        n.y = ny;
+      });
+
       this.updateLinks();
+
+    } else if(this.state.rubberBand) {
+      this._updateRubberBand(e);
+
     } else if(this.state.panning) {
-      const dx = e.clientX - this.state.panStart[0],
-        dy = e.clientY - this.state.panStart[1];
+      const dx = e.clientX - this.state.panStart[0];
+      const dy = e.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
       this.state.pan[1] += dy;
       this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
@@ -4878,19 +4938,35 @@ LIST OF INTEREST OBJECT:
     }
   }
 
-  handleMouseUp() {
-    // if(this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
+  handleMouseUp(e) {
+    if(this.state.rubberBand) {
+      const rb = this.state.rubberBand;
+      const r = rb.rect;
+      const isRealDrag = r && (r.w > 6 || r.h > 6);
+      if(isRealDrag) this.state.panning = false;
+      this._commitRubberBand(e.shiftKey);
+    }
+
     this.state.draggingNode = null;
+    this.state.dragStartPositions = null;
+    this.state.dragPrimaryStart = null;
     this.state.panning = false;
     document.body.style.cursor = "default";
   }
 
   handleBoardWrapMouseDown(e) {
     if(!e.target.closest(".node")) {
-      this.state.panning = true;
-      this.state.panStart = [e.clientX, e.clientY];
-      document.body.style.cursor = "grabbing";
-      this.selectNode(null);
+      if(e.shiftKey) {
+        // Shift held — rubber-band mode
+        this._startRubberBand(e);
+        document.body.style.cursor = "crosshair";
+      } else {
+        // Normal pan
+        if(!e.shiftKey) this._selectClear();
+        this.state.panning = true;
+        this.state.panStart = [e.clientX, e.clientY];
+        document.body.style.cursor = "grabbing";
+      }
     }
   }
 
@@ -4940,9 +5016,8 @@ LIST OF INTEREST OBJECT:
   }
 
   compileGraph() {
-    // this is save !!!
-    console.log(">>>>>SAVE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", this.nodes)
-
+    // This is save !!!
+    // console.log("SAVE:", this.nodes)
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -4966,7 +5041,8 @@ LIST OF INTEREST OBJECT:
 
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    document.dispatchEvent(new CustomEvent('save-graph', {detail: d}));
+    this.saveGraphEvent.detail = d;
+    document.dispatchEvent(this.saveGraphEvent);
     // this.log("Graph saved to LocalStorage and final script");
   }
 
@@ -5082,7 +5158,7 @@ LIST OF INTEREST OBJECT:
 
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph)
+    // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph)
     if(saved || app.graph) {
       try {
         let data;
@@ -5176,7 +5252,6 @@ LIST OF INTEREST OBJECT:
       // Ensure we create a truly unique ID string
       const newId = "n" + (this.nodeCounter++);
       nodeIdMap[oldId] = newId;
-
       const newNode = {
         ...node,
         id: newId,
@@ -5186,17 +5261,14 @@ LIST OF INTEREST OBJECT:
       };
 
       this.nodes[newId] = newNode;
-
       // Create DOM element
       const domEl = this.createNodeDOM(newNode);
       this.board.appendChild(domEl);
-
       if((newNode.category === "value" && newNode.title !== "GenRandInt") ||
         newNode.category === "math" || newNode.title === "Print") {
         newNode.displayEl = domEl.querySelector(".value-display");
       }
     });
-
     // 2. Map and Create Links
     if(Array.isArray(data.links)) {
       data.links.forEach(link => {
@@ -5214,29 +5286,133 @@ LIST OF INTEREST OBJECT:
             node: nodeIdMap[link.to.node]
           }
         };
-
         // Only add link if BOTH nodes were successfully remapped
         if(this.nodes[newLink.from.node] && this.nodes[newLink.to.node]) {
           this.links.push(newLink);
         }
       });
     }
-
     // 3. Critical UI Refresh Sequence
-    // First, update the DOM positions for the new nodes
     Object.keys(nodeIdMap).forEach(oldId => {
       this.updateNodeDOM(nodeIdMap[oldId]);
     });
 
-    // Second, tell the engine to draw the lines
     this.updateLinks();
+    if(this.restoreConnectionsRuntime) this.restoreConnectionsRuntime();
+    this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
+    this.compileGraph();
+  }
 
-    // Third, if your engine requires runtime binding (like events/logic)
-    if(this.restoreConnectionsRuntime) {
-      this.restoreConnectionsRuntime();
+  // Multi-select helpers
+  _selectAdd(id) {
+    this.state.selectedNodes.add(id);
+    this.state.selectedNode = id;
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  }
+
+  _selectRemove(id) {
+    this.state.selectedNodes.delete(id);
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.remove("selected");
+    // keep selectedNode pointing at something still selected
+    this.state.selectedNode = this.state.selectedNodes.size
+      ? [...this.state.selectedNodes].at(-1)
+      : null;
+  }
+
+  _selectClear() {
+    this.state.selectedNodes.forEach(id => {
+      document.querySelector(`.node[data-id="${id}"]`)?.classList.remove("selected");
+    });
+    this.state.selectedNodes.clear();
+    this.state.selectedNode = null;
+  }
+
+  _selectToggle(id, additive) {
+    if(additive) {
+      if(this.state.selectedNodes.has(id)) {
+        this._selectRemove(id);
+      } else {
+        this._selectAdd(id);
+      }
+    } else {
+      if(!this.state.selectedNodes.has(id)) {
+        this._selectClear();
+      }
+      this._selectAdd(id);
+    }
+  }
+
+  _startRubberBand(e) {
+    const pos = this._getBoardPos(e.clientX, e.clientY);
+
+    const el = document.createElement("div");
+    el.id = "fc-rubber-band";
+    Object.assign(el.style, {
+      position: "absolute",
+      border: "1px dashed var(--color-text-info, #4a9eff)",
+      background: "rgba(74,158,255,0.06)",
+      pointerEvents: "none",
+      zIndex: 999,
+      left: pos.x + "px",
+      top: pos.y + "px",
+      width: "0px",
+      height: "0px",
+    });
+    this.board.appendChild(el);
+    this.state.rubberBand = {startX: pos.x, startY: pos.y, el};
+  }
+
+  _updateRubberBand(e) {
+    const rb = this.state.rubberBand;
+    if(!rb) return;
+    const pos = this._getBoardPos(e.clientX, e.clientY);
+    const x = Math.min(rb.startX, pos.x);
+    const y = Math.min(rb.startY, pos.y);
+    const w = Math.abs(pos.x - rb.startX);
+    const h = Math.abs(pos.y - rb.startY);
+
+    Object.assign(rb.el.style, {
+      left: x + "px",
+      top: y + "px",
+      width: w + "px",
+      height: h + "px",
+    });
+    rb.rect = {x, y, w, h};
+  }
+
+  _commitRubberBand(additive) {
+    const rb = this.state.rubberBand;
+    if(!rb) return;
+    rb.el.remove();
+    const r = rb.rect;
+    if(!r || (r.w < 4 && r.h < 4)) {
+      if(!additive) this._selectClear();
+      this.state.rubberBand = null;
+      return;
     }
 
-    this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
-    this.compileGraph(); // Save to LocalStorage
+    if(!additive) this._selectClear();
+    for(const id in this.nodes) {
+      const n = this.nodes[id];
+      const nx = n.x, ny = n.y;
+      // rough node size estimate — good enough for hit test
+      const nw = 180, nh = 80;
+      const overlaps =
+        nx < r.x + r.w &&
+        nx + nw > r.x &&
+        ny < r.y + r.h &&
+        ny + nh > r.y;
+      if(overlaps) this._selectAdd(id);
+    }
+    this.state.rubberBand = null;
   }
+
+  _getBoardPos(clientX, clientY) {
+    const bRect = this.board.getBoundingClientRect();
+    return {
+      x: (clientX - bRect.left) / this.state.zoom,
+      y: (clientY - bRect.top) / this.state.zoom,
+    };
+  }
+
 }

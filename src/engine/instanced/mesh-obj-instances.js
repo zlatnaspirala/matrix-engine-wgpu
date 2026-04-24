@@ -39,6 +39,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.mType = MeshType.INSTANCED;
     this.shadowsCast = o.shadowsCast ? o.shadowsCast : true;
     this.sceneBGL = o.sceneBGL;
+    this.materialBGL = o.materialBGL;
+    this.uniformBufferBindGroupLayoutInstanced = o.uniformBufferBindGroupLayoutInstanced;
     // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
@@ -276,9 +278,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 512;
+        this.shadowDepthTextureSize = 512; // HARDCODE REMOVE LATER !!!
         this.modelViewProjectionMatrix = mat4.create();
-        this.loadTex0(this.texturesPaths).then(() => {resolve()})
+        this.loadTex0(this.texturesPaths).then(() => {resolve(this)})
       })
     }
 
@@ -408,12 +410,14 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
-
-
-      this.createLayoutForRender();
-
-
-
+      this.materialVideoBGL = this.device.createBindGroupLayout({
+        label: 'MaterialVideoBGL',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
+        ]
+      });
 
       // EDIT INSTANCED PART
       this.instanceTargets = [];
@@ -444,34 +448,38 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.updateInstanceData = (modelMatrix) => {
         this.instanceData.set(modelMatrix, 0);
         this.instanceData.set(this._defaultColor, 16);
+
         for(let i = 1;i < this.instanceCount;i++) {
           const t = this.instanceTargets[i];
           this._ghostScratch.set(modelMatrix);
           const ghost = this._ghostScratch;
-          // --- Smooth interpolate position
+
           for(let j = 0;j < 3;j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
             t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
             t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
-            if(j == 2) {
+            if(j === 2) {
               t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          ghost[0] *= t.currentScale[0];
-          ghost[5] *= t.currentScale[1];
-          ghost[10] *= t.currentScale[2];
-          // pos
-          ghost[12] += t.currentPosition[0]; // X
-          ghost[13] += t.currentPosition[1]; // Y
-          ghost[14] += t.currentPosition[2]; // Z
-          // t.color[0] += t.currentColor[0]//r;
-          // t.color[1] += t.currentColor[1]//r;
-          // t.color[2] += t.currentColor[2]//r;
-          // t.color[3] += t.currentColor[3]//r;
+
+          const sx = t.currentScale[0];
+          const sy = t.currentScale[1];
+          const sz = t.currentScale[2];
+
+          ghost[0] *= sx; ghost[1] *= sx; ghost[2] *= sx;
+          ghost[4] *= sy; ghost[5] *= sy; ghost[6] *= sy;
+          ghost[8] *= sz; ghost[9] *= sz; ghost[10] *= sz;
+
+          ghost[12] += t.currentPosition[0];
+          ghost[13] += t.currentPosition[1];
+          ghost[14] += t.currentPosition[2];
+
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
           this.instanceData.set(t.currentColor, offset + 16);
         }
+
         device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
       };
 
@@ -487,6 +495,18 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
+
+        this.modelBindGroup = this.device.createBindGroup({
+          label: 'modelBindGroup[instanced]',
+          layout: this.uniformBufferBindGroupLayoutInstanced,
+          entries: [
+            {binding: 0, resource: {buffer: this.instanceBuffer, }},
+            {binding: 1, resource: {buffer: this.bonesBuffer}},
+            {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+            {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+          ],
+        });
+
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
       };
@@ -521,15 +541,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh [instanced]',
-        entries: [
-          {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-          {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        ],
-      });
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [regular]',
@@ -546,11 +557,11 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       }
       this.MAX_BONES = MEConfig.MAX_BONES;
       // your total instance count
-      const TRAIL_INSTANCES = 10;
+      const TRAIL_INSTANCES = 11;
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
-        size: BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        size: 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -756,29 +767,29 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       }
 
       this.getModelMatrix = (pos, useScale = false) => {
-        let modelMatrix = mat4.identity(this._modelMatrix);
-        this._translateVec[0] = pos.x;
-        this._translateVec[1] = pos.y;
-        this._translateVec[2] = pos.z;
-        mat4.translate(modelMatrix, this._translateVec, modelMatrix);
-        if(this.itIsPhysicsBody) {
-          this._rotAxisVec[0] = this.rotation.axis.x;
-          this._rotAxisVec[1] = this.rotation.axis.y;
-          this._rotAxisVec[2] = this.rotation.axis.z;
-          mat4.rotate(modelMatrix, this._rotAxisVec, degToRad(this.rotation.angle), modelMatrix);
-        } else {
+        if(!this.itIsPhysicsBody) {
+          let modelMatrix = mat4.identity(this._modelMatrix);
+          this._translateVec[0] = pos.x;
+          this._translateVec[1] = pos.y;
+          this._translateVec[2] = pos.z;
+          mat4.translate(modelMatrix, this._translateVec, modelMatrix);
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          if(useScale == true) {
+            this._scaleVec[0] = this.scale[0];
+            this._scaleVec[1] = this.scale[1];
+            this._scaleVec[2] = this.scale[2];
+            mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+          }
+          this.modelMatrix = modelMatrix;
+          return this.modelMatrix;
         }
-        if(useScale == true) {
-          this._scaleVec[0] = this.scale[0];
-          this._scaleVec[1] = this.scale[1];
-          this._scaleVec[2] = this.scale[2];
-          mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+        if(!this.modelMatrix) {
+          let modelMatrix = mat4.identity(this._modelMatrix);
+          this.modelMatrix = modelMatrix;
         }
-        this.modelMatrix = modelMatrix;
-        return modelMatrix;
+        return this.modelMatrix;
       };
 
       this.getModelMatrix(this.position, this.useScale);
@@ -806,7 +817,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   }
 
   setupPipeline = () => {
-    this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -814,7 +824,28 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     const vertexCode = vertexWGSLInstanced;
     const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>')
+    console.log('>>>>>>>>>>>>>INSTANCED >>>>>>>>>>>>')
+
+    const baseKey = {
+      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
+      fragmentId: isVideo ? 'video' : this.material.type,
+      type: "instanced",
+      topology: this.primitive.topology,
+      cullMode: this.primitive.cullMode,
+      frontFace: this.primitive.frontFace,
+      format: 'rgba16float',
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    // console.log("MKEY:", MKEY);
+    this.createBindGroupForRender(MKEY);
+
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
       bindGroupLayouts: [
@@ -830,18 +861,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       buffers: this.vertexBuffers,
     };
     const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-    const baseKey = {
-      vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
-      fragmentId: isVideo ? 'video' : this.material.type,
-      type: "instanced",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: 'rgba16float',
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
+
     // OPAQUE
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
@@ -979,10 +999,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    for(var ins = 1;ins < this.instanceCount;ins++) {
-      if(ins == 0) pass.drawIndexed(this.indexCount, 0, 0, 0, ins);
-      else pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    }
+    // instanceCount covers all instances including index 0
+    pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   }
 
   drawVideoElements = (pass) => {

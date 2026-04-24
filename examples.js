@@ -1,6 +1,8 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
+ * @version 1.11.0
+ * @www maximumroulette.com
  * 2026
  */
 
@@ -17,7 +19,11 @@ import {snakeLights} from "./examples/snake-lights.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId, urlQuery} from "./src/engine/utils.js";
 import {mazeGame} from "./examples/maze.js";
-import {flipper} from "./examples/flipper.js";
+import {flipperJolt} from "./examples/flipper-jolt.js";
+import {flipperAmmo} from "./examples/flipper-ammo.js";
+import {testJolt} from "./examples/physics-test-jolt.js";
+import {testCannonES} from "./examples/physics-test-cannones.js";
+import {canvasInline} from "./examples/canvas-inline.js";
 
 window.urlQ = urlQuery;
 
@@ -33,6 +39,10 @@ const switchDemo = (id) => {
   window.location.href = url.toString();
 };
 
+const hideMenu = () => {
+  document.getElementById('examples').style.left = "-150px";
+}
+
 byId('loadObjFile').addEventListener("click", () => switchDemo('1'));
 byId('physicsPlayground').addEventListener("click", () => switchDemo('2'));
 byId('camera-texture').addEventListener("click", () => switchDemo('3'));
@@ -45,7 +55,12 @@ byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 byId('maze').addEventListener("click", () => switchDemo('12'));
-byId('flipper').addEventListener("click", () => switchDemo('13'));
+byId('flipper-jolt').addEventListener("click", () => switchDemo('13'));
+byId('flipper-ammo').addEventListener("click", () => switchDemo('14'));
+byId('test-jolt').addEventListener("click", () => switchDemo('15'));
+byId('test-cannones').addEventListener("click", () => switchDemo('16'));
+byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
+
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
@@ -53,13 +68,13 @@ byId('moba').addEventListener("click", () => window.open('https://goldenspiral.i
 if(urlQ['demo'] === '1') {
   loadObjFile();
 } else if(urlQ['demo'] === '2') {
-  physicsPlayground()
+  physicsPlayground();
 } else if(urlQ['demo'] === '3') {
   loadCameraTexture();
 } else if(urlQ['demo'] === '4') {
   loadVideoTexture();
 } else if(urlQ['demo'] === '5') {
-  loadObjsSequence()
+  loadObjsSequence();
 } else if(urlQ['demo'] === '6') {
   loadGLBLoader();
 } else if(urlQ['demo'] === '7') {
@@ -75,11 +90,17 @@ if(urlQ['demo'] === '1') {
 } else if(urlQ['demo'] === '12') {
   mazeGame();
 } else if(urlQ['demo'] === '13') {
-  flipper();
+  flipperJolt();
 } else if(urlQ['demo'] === '14') {
-  //
+  flipperAmmo();
+} else if(urlQ['demo'] === '15') {
+  testJolt();
+} else if(urlQ['demo'] === '16') {
+  testCannonES();
+} else if(urlQ['demo'] === '17') {
+  canvasInline();
 } else {
-  flipper();
+  flipperAmmo();
 }
 
-
+setTimeout(() => {hideMenu()}, 2000);

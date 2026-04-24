@@ -377,7 +377,6 @@ export default class EditorHud {
     };
     if(byId('start-refresh')) this.toolTip.attachTooltip(byId('start-refresh'), "Simple refresh page.");
 
-    alert()
     byId('load-new-project').onclick = () => {
       console.log("Go to editorX landing page...");
       location.href = 'matrix-engine.html';
@@ -575,6 +574,7 @@ export default class EditorHud {
       document.head.appendChild(style);
     }
     const setMode = (e) => {
+      if (byId('graph-status'). innerHTML !== "⚫") return;
       let m = parseInt(e.target.getAttribute("data-mode"));
       dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: m}}))
       if(m == 0) {
@@ -1104,7 +1104,8 @@ class SceneObjectProperty {
           }
         })
       } else if(propName == "itIsPhysicsBody") {
-        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        if (!this.core.matrixPhysics) return;
+        let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for(let key in body) {
           if(typeof body[key] === 'string') {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 

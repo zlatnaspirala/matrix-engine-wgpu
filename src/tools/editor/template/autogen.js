@@ -15,7 +15,7 @@ let app = new MatrixEngineWGPU({
 }, 
    (app) => {
     console.log("AUTOGEN NORMAL MAIN !");
-  addEventListener('AmmoReady', async () => {
+  addEventListener('PhysicsReady', async () => {
     console.log("AUTOGEN START UP");
   })
 })

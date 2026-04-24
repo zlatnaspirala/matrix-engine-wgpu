@@ -74,7 +74,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     return name;
   }
 
-  // addEventListener('AmmoReady', async () => {})
+  // addEventListener('PhysicsReady', async () => {})
   forestOfHollowBlood.player.data = SS.get('player');
 
   // ASYNC FOR very small json become big buggy - pragmatic
@@ -435,7 +435,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   })
 
   addEventListener('local-hero-bodies-ready', () => {
-    app.cameras.RPG.position[1] = 130;
+    app.cameras.RPG.setY(130);
     app.cameras.RPG.movementSpeed = 100;
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;

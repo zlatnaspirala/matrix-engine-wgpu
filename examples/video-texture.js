@@ -19,11 +19,12 @@ export var loadVideoTexture = function() {
 
     addRaycastsAABBListener();
     videoTexture.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('test ray after shadows merge')
+      if(videoTexture.getSceneObjectByName('MyVideoTex').video.paused == true) {
+        videoTexture.getSceneObjectByName('MyVideoTex').video.play();
+      }
     })
 
-    console.log('test AmmoReady attach')
-    addEventListener('AmmoReady', () => {
+    addEventListener('PhysicsReady', () => {
       downloadMeshes({
         piramyd: "./res/meshes/blender/piramyd.obj",
         cube: "./res/meshes/blender/cube.obj",
@@ -68,41 +69,41 @@ export var loadVideoTexture = function() {
         raycast: {enabled: true, radius: 12}
       })
 
-      // videoTexture.addMeshObj({
-      //   position: {x: 0, y: 7, z: -20},
-      //   rotation: {x: 90, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'MyVideoTex',
-      //   mesh: m.piramyd,
-      //   scale: [5, 5, 5],
-      //   isVideo: {
-      //     type: 'video',
-      //     src: 'res/videos/tunel.mp4'
-      //   },
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "piramyd"
-      //   },
-      //   raycast: {enabled: true, radius: 12}
-      // })
-      // also possibole to switch in runtime
+      videoTexture.addMeshObj({
+        position: {x: 0, y: 7, z: -20},
+        rotation: {x: 90, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'MyVideoTex',
+        mesh: m.piramyd,
+        scale: [5, 5, 5],
+        isVideo: {
+          type: 'video',
+          src: 'res/videos/tunel.mp4'
+        },
+        physics: {
+          enabled: false,
+          geometry: "piramyd"
+        },
+        raycast: {enabled: true, radius: 12}
+      })
+
+      // Also possibole to switch in runtime (Used in visual scripting)
       // var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
       // console.log(`%c Test video-texture...`, LOG_MATRIX);
       // TEST.loadVideoTexture({
       //   type: 'video',
       //   src: 'res/videos/tunel.mp4'
       // });
+
       setTimeout(() => {
-        videoTexture.cameras.WASD.yaw = -0.03;
-        videoTexture.cameras.WASD.pitch = -0.49;
-        videoTexture.cameras.WASD.position[2] = 10;
-        videoTexture.cameras.WASD.position[1] = 5;
+        videoTexture.cameras.WASD.setYaw(-0.03);
+        videoTexture.cameras.WASD.setPitch(-0.49);
+        videoTexture.cameras.WASD.setZ(10);
+        videoTexture.cameras.WASD.setY(5);
         videoTexture.buildRenderBuckets(videoTexture.mainRenderBundle)
       }, 1000)
     }
   })
-
   window.app = videoTexture;
-
 }
