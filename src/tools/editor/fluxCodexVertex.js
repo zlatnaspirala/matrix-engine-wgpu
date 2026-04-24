@@ -91,10 +91,11 @@ export default class FluxCodexVertex {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
     });
+    this.saveGraphEvent = new CustomEvent('save-graph', {detail: {}});
+    this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {detail: {}});
 
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
-      // stop sepcial onDraw node
       console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n) => n.title == "On Draw"), LOG_FUNNY_ARCADE);
       let allOnDraws = Object.values(this.nodes).filter((n) => n.title == "On Draw");
       for(var x = 0;x < allOnDraws.length;x++) {
@@ -111,7 +112,7 @@ export default class FluxCodexVertex {
         // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
-      document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}}))
+      document.dispatchEvent(this.updateSceneContainerEvent);
       byId("graph-status").innerHTML = '⚫';
     };
 
@@ -563,7 +564,7 @@ export default class FluxCodexVertex {
           console.info('gen ai tool call PREVENT ')
           return;
         } else {
-          console.info('gen ai tool call !!!!!!!!!!!!!!!! else ')
+          console.info('gen ai tool call else ')
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
@@ -1393,21 +1394,42 @@ export default class FluxCodexVertex {
     }
 
     if(spec.comment) {
+      // const textarea = document.createElement("textarea");
+      // // textarea.style
+      // textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
+      // textarea.style.boxShadow =
+      //   "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
+      // textarea.style.backgroundColor = "gray";
+      // textarea.style.color = "black";
+
+      // textarea.value = spec.fields.find(f => f.key === "text").value;
+
+      // textarea.oninput = () => {
+      //   spec.fields.find(f => f.key === "text").value = textarea.value;
+      //   row.textContent = textarea.value || "Comment";
+      // };
+
+      // body.appendChild(textarea);
       const textarea = document.createElement("textarea");
-      // textarea.style
       textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
-      textarea.style.boxShadow =
-        "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
+      textarea.style.boxShadow = "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
       textarea.style.backgroundColor = "gray";
       textarea.style.color = "black";
 
       textarea.value = spec.fields.find(f => f.key === "text").value;
 
+      // Add a separate label div for display
+      const commentLabel = document.createElement("div");
+      commentLabel.className = "comment-label";
+      commentLabel.textContent = textarea.value || "Comment";
+      commentLabel.style.cssText = "padding:4px;opacity:0.8;pointer-events:none;white-space:pre-wrap;word-break:break-word;";
+
       textarea.oninput = () => {
         spec.fields.find(f => f.key === "text").value = textarea.value;
-        row.textContent = textarea.value || "Comment";
+        commentLabel.textContent = textarea.value || "Comment";
       };
 
+      body.appendChild(commentLabel);
       body.appendChild(textarea);
     }
     // 🔴 FIELD INPUTS
@@ -1602,49 +1624,19 @@ export default class FluxCodexVertex {
 
       document.body.style.cursor = "grabbing";
     });
-    // header.addEventListener("mousedown", e => {
-    //   e.preventDefault();
-    //   this.state.draggingNode = el;
-    //   const rect = el.getBoundingClientRect();
-    //   const bx = this.board.getBoundingClientRect();
-    //   this.state.dragOffset = [
-    //     e.clientX - rect.left + bx.left,
-    //     e.clientY - rect.top + bx.top,
-    //   ];
-    //   document.body.style.cursor = "grabbing";
-    // });
-    // --- Selecting ---
-    // el.addEventListener("click", e => {
-    //   e.stopPropagation();
-    //   this.selectNode(spec.id);
-
-    //   this.updateNodeDOM(spec.id)
-    // });
     el.addEventListener("click", e => {
       e.stopPropagation();
       this._selectToggle(spec.id, e.shiftKey);
       this.updateNodeDOM(spec.id);
     });
-
     el.addEventListener("dblclick", e => {
       e.stopPropagation();
       console.log('DBL ' + spec.id);
       this.onNodeDoubleClick(spec);
-
     });
-
     return el;
   }
 
-  // selectNode(id) {
-  //   if(this.state.selectedNode) {
-  //     document
-  //       .querySelector(`.node[data-id="${this.state.selectedNode}"]`)
-  //       ?.classList.remove("selected");
-  //   }
-  //   this.state.selectedNode = id;
-  //   document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
-  // }
   selectNode(id) {
     // Called on single click without shift — still works as before
     if(this.state.selectedNode) {
@@ -1664,14 +1656,11 @@ export default class FluxCodexVertex {
 
   populateDynamicFunctionSelect(select, spec) {
     select.innerHTML = "";
-
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "-- Select Function --";
     select.appendChild(placeholder);
-
     if(!spec.accessObject || typeof spec.accessObject !== "object") return;
-
     for(const key in spec.accessObject) {
       if(typeof spec.accessObject[key] === "function") {
         const opt = document.createElement("option");
@@ -3928,7 +3917,7 @@ LIST OF INTEREST OBJECT:
         return;
       }
       const detail = this.getValue(nodeId, "detail");
-      console.log('*************window.dispatchEvent****************', name)
+      // console.log('*************window.dispatchEvent****************', name)
       window.dispatchEvent(
         new CustomEvent(name, {
           detail: detail ?? {}
@@ -5052,7 +5041,8 @@ LIST OF INTEREST OBJECT:
 
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    document.dispatchEvent(new CustomEvent('save-graph', {detail: d}));
+    this.saveGraphEvent.detail = d;
+    document.dispatchEvent(this.saveGraphEvent);
     // this.log("Graph saved to LocalStorage and final script");
   }
 
@@ -5262,7 +5252,6 @@ LIST OF INTEREST OBJECT:
       // Ensure we create a truly unique ID string
       const newId = "n" + (this.nodeCounter++);
       nodeIdMap[oldId] = newId;
-
       const newNode = {
         ...node,
         id: newId,
@@ -5272,17 +5261,14 @@ LIST OF INTEREST OBJECT:
       };
 
       this.nodes[newId] = newNode;
-
       // Create DOM element
       const domEl = this.createNodeDOM(newNode);
       this.board.appendChild(domEl);
-
       if((newNode.category === "value" && newNode.title !== "GenRandInt") ||
         newNode.category === "math" || newNode.title === "Print") {
         newNode.displayEl = domEl.querySelector(".value-display");
       }
     });
-
     // 2. Map and Create Links
     if(Array.isArray(data.links)) {
       data.links.forEach(link => {
@@ -5316,7 +5302,6 @@ LIST OF INTEREST OBJECT:
     this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
     this.compileGraph();
   }
-
 
   // Multi-select helpers
   _selectAdd(id) {

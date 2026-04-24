@@ -24876,6 +24876,8 @@ var FluxCodexVertex = class {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: { nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null }
     });
+    this.saveGraphEvent = new CustomEvent("save-graph", { detail: {} });
+    this.updateSceneContainerEvent = new CustomEvent("updateSceneContainer", { detail: {} });
     this.clearRuntime = () => {
       app.graphUpdate = () => {
       };
@@ -24892,7 +24894,7 @@ var FluxCodexVertex = class {
       for (let x3 = 0; x3 < runtimeCacheObjs.length; x3++) {
         app.removeSceneObjectByName(runtimeCacheObjs[x3].name);
       }
-      document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} }));
+      document.dispatchEvent(this.updateSceneContainerEvent);
       byId("graph-status").innerHTML = "\u26AB";
     };
     this.setZoom = (z) => {
@@ -25291,7 +25293,7 @@ var FluxCodexVertex = class {
           console.info("gen ai tool call PREVENT ");
           return;
         } else {
-          console.info("gen ai tool call !!!!!!!!!!!!!!!! else ");
+          console.info("gen ai tool call else ");
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
@@ -25976,10 +25978,15 @@ var FluxCodexVertex = class {
       textarea.style.backgroundColor = "gray";
       textarea.style.color = "black";
       textarea.value = spec.fields.find((f) => f.key === "text").value;
+      const commentLabel = document.createElement("div");
+      commentLabel.className = "comment-label";
+      commentLabel.textContent = textarea.value || "Comment";
+      commentLabel.style.cssText = "padding:4px;opacity:0.8;pointer-events:none;white-space:pre-wrap;word-break:break-word;";
       textarea.oninput = () => {
         spec.fields.find((f) => f.key === "text").value = textarea.value;
-        row.textContent = textarea.value || "Comment";
+        commentLabel.textContent = textarea.value || "Comment";
       };
+      body.appendChild(commentLabel);
       body.appendChild(textarea);
     }
     if (spec.fields?.length && !spec.comment && spec.title != "GenRandInt") {
@@ -26153,15 +26160,6 @@ var FluxCodexVertex = class {
     });
     return el;
   }
-  // selectNode(id) {
-  //   if(this.state.selectedNode) {
-  //     document
-  //       .querySelector(`.node[data-id="${this.state.selectedNode}"]`)
-  //       ?.classList.remove("selected");
-  //   }
-  //   this.state.selectedNode = id;
-  //   document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
-  // }
   selectNode(id2) {
     if (this.state.selectedNode) {
       document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove("selected");
@@ -28468,7 +28466,6 @@ LIST OF INTEREST OBJECT:
         return;
       }
       const detail = this.getValue(nodeId, "detail");
-      console.log("*************window.dispatchEvent****************", name2);
       window.dispatchEvent(
         new CustomEvent(name2, {
           detail: detail ?? {}
@@ -29488,7 +29485,8 @@ LIST OF INTEREST OBJECT:
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    document.dispatchEvent(new CustomEvent("save-graph", { detail: d }));
+    this.saveGraphEvent.detail = d;
+    document.dispatchEvent(this.saveGraphEvent);
   }
   clearStorage() {
     let ask = confirm("\u26A0\uFE0F This will delete all nodes. Are you sure?");
@@ -36026,7 +36024,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/AddCube/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 271.34375, "y": 82.5625, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 567.71875, "y": 92, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:4, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default2.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[3,3,3]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_3": { "id": "node_3", "title": "Comment", "x": 593.375, "y": -45.40625, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "THIS NON PHYSICS WORLD\nADD SIMPLE CUBE\n" }] }, "node_4": { "id": "node_4", "title": "Print", "x": 948.1875, "y": 119.734375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_5": { "id": "node_5", "title": "Print", "x": 947.03125, "y": 279.328125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_6": { "id": "node_6", "title": "Print", "x": 945.390625, "y": 440.078125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_2", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_2", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_4", "from": { "node": "node_2", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_6", "pin": "exec" }, "type": "action" }], "nodeCounter": 7, "linkCounter": 5, "pan": [-379, 36], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 223.34375, "y": 115.5625, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 564.71875, "y": 182, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:4, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default2.png" }, { "key": "name", "value": "MECube" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[3,3,3]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false, "value": "false" }, { "key": "created", "value": "false" }], "noselfExec": "true" }, "node_3": { "id": "node_3", "title": "Comment", "x": 574.375, "y": 17.59375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "THIS NON PHYSICS WORLD\nADD SIMPLE CUBE\n" }] }, "node_4": { "id": "node_4", "title": "Print", "x": 948.1875, "y": 119.734375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_5": { "id": "node_5", "title": "Print", "x": 947.03125, "y": 279.328125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_6": { "id": "node_6", "title": "Print", "x": 945.390625, "y": 440.078125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_7": { "id": "node_7", "title": "Comment", "x": 555.4297002196419, "y": 755.5836549280814, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "DONT EDIT LAST FIELD\nIT IS INTERNAL , BUT NOT CRITICAL" }] }, "node_8": { "id": "node_8", "title": "Comment", "x": 48.59203312269858, "y": 284.643713542496, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "PINS have priority if no pin connection than use default fileds..." }] } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_2", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_2", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_4", "from": { "node": "node_2", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_6", "pin": "exec" }, "type": "action" }], "nodeCounter": 9, "linkCounter": 5, "pan": [-380, -50], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/AddCube/shader-graphs.js
 var shaderGraphsProdc = [

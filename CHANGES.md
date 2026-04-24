@@ -2,7 +2,7 @@
 
 [1.11.0]
   [MOBILE OPTIMISATION]
-  Physics added JOLT support,
+  Physics added JOLT support.
   Added bridge for physics -> physics worker.
   Physics from 1.11.0 running intro worker by default.
   Added multi-select node graphs for app graph(FluxCodexVertex)
