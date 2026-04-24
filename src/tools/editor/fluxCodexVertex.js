@@ -76,9 +76,11 @@ export default class FluxCodexVertex {
     // State Management
     this.state = {
       draggingNode: null,
-      dragOffset: [0, 0],
+      dragOffset: [0, 0],      // offset for the PRIMARY dragged node
       connecting: null,
-      selectedNode: null,
+      selectedNode: null,       // keep for backward compat (single-select APIs)
+      selectedNodes: new Set(), // NEW: multi-select set of node IDs
+      rubberBand: null,         // NEW: { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
@@ -157,10 +159,15 @@ export default class FluxCodexVertex {
         e.preventDefault();
         this.runGraph();
       } else if(e.key === "Delete") {
-        if(this.state.selectedNode) {
-          this.deleteNode(this.state.selectedNode);
-          this.state.selectedNode = null;
-        }
+        // if(this.state.selectedNode) {
+        //   this.deleteNode(this.state.selectedNode);
+        //   this.state.selectedNode = null;
+        // }
+        const toDelete = this.state.selectedNodes.size > 0
+          ? [...this.state.selectedNodes]
+          : this.state.selectedNode ? [this.state.selectedNode] : [];
+        toDelete.forEach(id => this.deleteNode(id));
+        this._selectClear();
       }
     });
 
@@ -1582,6 +1589,13 @@ export default class FluxCodexVertex {
     // --- Dragging ---
     header.addEventListener("mousedown", e => {
       e.preventDefault();
+
+      // If clicking a node not in selection, clear and select just this one
+      if(!this.state.selectedNodes.has(spec.id)) {
+        this._selectClear();
+        this._selectAdd(spec.id);
+      }
+
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
@@ -1589,14 +1603,43 @@ export default class FluxCodexVertex {
         e.clientX - rect.left + bx.left,
         e.clientY - rect.top + bx.top,
       ];
+
+      // Snapshot start positions for ALL selected nodes (for group drag)
+      this.state.dragStartPositions = {};
+      this.state.selectedNodes.forEach(nid => {
+        const n = this.nodes[nid];
+        if(n) this.state.dragStartPositions[nid] = {x: n.x, y: n.y};
+      });
+      // Also store the primary node's starting pixel position
+      this.state.dragPrimaryStart = {
+        x: rect.left - bx.left,
+        y: rect.top - bx.top,
+      };
+
       document.body.style.cursor = "grabbing";
     });
+    // header.addEventListener("mousedown", e => {
+    //   e.preventDefault();
+    //   this.state.draggingNode = el;
+    //   const rect = el.getBoundingClientRect();
+    //   const bx = this.board.getBoundingClientRect();
+    //   this.state.dragOffset = [
+    //     e.clientX - rect.left + bx.left,
+    //     e.clientY - rect.top + bx.top,
+    //   ];
+    //   document.body.style.cursor = "grabbing";
+    // });
     // --- Selecting ---
+    // el.addEventListener("click", e => {
+    //   e.stopPropagation();
+    //   this.selectNode(spec.id);
+
+    //   this.updateNodeDOM(spec.id)
+    // });
     el.addEventListener("click", e => {
       e.stopPropagation();
-      this.selectNode(spec.id);
-
-      this.updateNodeDOM(spec.id)
+      this._selectToggle(spec.id, e.shiftKey);
+      this.updateNodeDOM(spec.id);
     });
 
     el.addEventListener("dblclick", e => {
@@ -1609,14 +1652,30 @@ export default class FluxCodexVertex {
     return el;
   }
 
+  // selectNode(id) {
+  //   if(this.state.selectedNode) {
+  //     document
+  //       .querySelector(`.node[data-id="${this.state.selectedNode}"]`)
+  //       ?.classList.remove("selected");
+  //   }
+  //   this.state.selectedNode = id;
+  //   document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  // }
   selectNode(id) {
+    // Called on single click without shift — still works as before
     if(this.state.selectedNode) {
-      document
-        .querySelector(`.node[data-id="${this.state.selectedNode}"]`)
+      document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)
         ?.classList.remove("selected");
     }
+    // Clear others only if not already part of multi-select
+    if(!this.state.selectedNodes.has(id)) {
+      this._selectClear();
+    }
     this.state.selectedNode = id;
-    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    if(id) {
+      this.state.selectedNodes.add(id);
+      document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    }
   }
 
   populateDynamicFunctionSelect(select, spec) {
@@ -4871,17 +4930,33 @@ LIST OF INTEREST OBJECT:
       const el = this.state.draggingNode;
       const newX = e.clientX - this.state.dragOffset[0];
       const newY = e.clientY - this.state.dragOffset[1];
-      el.style.left = newX + "px";
-      el.style.top = newY + "px";
-      const id = el.dataset.id;
-      if(this.nodes[id]) {
-        this.nodes[id].x = newX;
-        this.nodes[id].y = newY;
-      }
+
+      const dx = newX - this.state.dragPrimaryStart.x;
+      const dy = newY - this.state.dragPrimaryStart.y;
+
+      // Move ALL selected nodes by the same delta
+      this.state.selectedNodes.forEach(nid => {
+        const n = this.nodes[nid];
+        const domEl = document.querySelector(`.node[data-id="${nid}"]`);
+        if(!n || !domEl) return;
+        const start = this.state.dragStartPositions[nid];
+        if(!start) return;
+        const nx = start.x + dx;
+        const ny = start.y + dy;
+        domEl.style.left = nx + "px";
+        domEl.style.top = ny + "px";
+        n.x = nx;
+        n.y = ny;
+      });
+
       this.updateLinks();
+
+    } else if(this.state.rubberBand) {
+      this._updateRubberBand(e);
+
     } else if(this.state.panning) {
-      const dx = e.clientX - this.state.panStart[0],
-        dy = e.clientY - this.state.panStart[1];
+      const dx = e.clientX - this.state.panStart[0];
+      const dy = e.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
       this.state.pan[1] += dy;
       this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
@@ -4890,19 +4965,34 @@ LIST OF INTEREST OBJECT:
     }
   }
 
-  handleMouseUp() {
-    // if(this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
-    this.state.draggingNode = null;
-    this.state.panning = false;
-    document.body.style.cursor = "default";
+ handleMouseUp(e) {
+  if (this.state.rubberBand) {
+    const rb = this.state.rubberBand;
+    const r = rb.rect;
+    const isRealDrag = r && (r.w > 6 || r.h > 6);
+    if (isRealDrag) this.state.panning = false;
+    this._commitRubberBand(e.shiftKey);
   }
 
+  this.state.draggingNode = null;
+  this.state.dragStartPositions = null;
+  this.state.dragPrimaryStart = null;
+  this.state.panning = false;
+  document.body.style.cursor = "default";
+}
   handleBoardWrapMouseDown(e) {
     if(!e.target.closest(".node")) {
-      this.state.panning = true;
-      this.state.panStart = [e.clientX, e.clientY];
-      document.body.style.cursor = "grabbing";
-      this.selectNode(null);
+      if(e.shiftKey) {
+        // Shift held — rubber-band mode
+        this._startRubberBand(e);
+        document.body.style.cursor = "crosshair";
+      } else {
+        // Normal pan
+        if(!e.shiftKey) this._selectClear();
+        this.state.panning = true;
+        this.state.panStart = [e.clientX, e.clientY];
+        document.body.style.cursor = "grabbing";
+      }
     }
   }
 
@@ -5250,4 +5340,175 @@ LIST OF INTEREST OBJECT:
     this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
     this.compileGraph(); // Save to LocalStorage
   }
+
+
+  // ── Multi-select helpers ──────────────────────────────────────────
+
+  _selectAdd(id) {
+    this.state.selectedNodes.add(id);
+    this.state.selectedNode = id;
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  }
+
+  _selectRemove(id) {
+    this.state.selectedNodes.delete(id);
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.remove("selected");
+    // keep selectedNode pointing at something still selected
+    this.state.selectedNode = this.state.selectedNodes.size
+      ? [...this.state.selectedNodes].at(-1)
+      : null;
+  }
+
+  _selectClear() {
+    this.state.selectedNodes.forEach(id => {
+      document.querySelector(`.node[data-id="${id}"]`)?.classList.remove("selected");
+    });
+    this.state.selectedNodes.clear();
+    this.state.selectedNode = null;
+  }
+
+  _selectToggle(id, additive) {
+    if(additive) {
+      if(this.state.selectedNodes.has(id)) {
+        this._selectRemove(id);
+      } else {
+        this._selectAdd(id);
+      }
+    } else {
+      if(!this.state.selectedNodes.has(id)) {
+        this._selectClear();
+      }
+      this._selectAdd(id);
+    }
+  }
+
+  // ── Rubber-band ───────────────────────────────────────────────────
+
+  // _startRubberBand(e) {
+  //   const bRect = this.board.getBoundingClientRect();
+  //   const startX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
+  //   const startY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
+
+  //   const el = document.createElement("div");
+  //   el.id = "fc-rubber-band";
+  //   Object.assign(el.style, {
+  //     position: "absolute",
+  //     border: "1px dashed var(--color-text-info, #4a9eff)",
+  //     background: "rgba(74,158,255,0.06)",
+  //     pointerEvents: "none",
+  //     zIndex: 999,
+  //     left: startX + "px",
+  //     top: startY + "px",
+  //     width: "0px",
+  //     height: "0px",
+  //   });
+  //   this.board.appendChild(el);
+
+  //   this.state.rubberBand = {startX, startY, el};
+  // }
+  _startRubberBand(e) {
+    const pos = this._getBoardPos(e.clientX, e.clientY);
+
+    const el = document.createElement("div");
+    el.id = "fc-rubber-band";
+    Object.assign(el.style, {
+      position: "absolute",
+      border: "1px dashed var(--color-text-info, #4a9eff)",
+      background: "rgba(74,158,255,0.06)",
+      pointerEvents: "none",
+      zIndex: 999,
+      left: pos.x + "px",
+      top: pos.y + "px",
+      width: "0px",
+      height: "0px",
+    });
+    this.board.appendChild(el);
+
+    this.state.rubberBand = {startX: pos.x, startY: pos.y, el};
+  }
+
+  // _updateRubberBand(e) {
+  //   const rb = this.state.rubberBand;
+  //   if(!rb) return;
+
+  //   const bRect = this.board.getBoundingClientRect();
+  //   const curX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
+  //   const curY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
+
+  //   const x = Math.min(rb.startX, curX);
+  //   const y = Math.min(rb.startY, curY);
+  //   const w = Math.abs(curX - rb.startX);
+  //   const h = Math.abs(curY - rb.startY);
+
+  //   Object.assign(rb.el.style, {
+  //     left: x + "px",
+  //     top: y + "px",
+  //     width: w + "px",
+  //     height: h + "px",
+  //   });
+
+  //   rb.rect = {x, y, w, h}; // store for commit
+  // }
+  _updateRubberBand(e) {
+    const rb = this.state.rubberBand;
+    if(!rb) return;
+
+    const pos = this._getBoardPos(e.clientX, e.clientY);
+    const x = Math.min(rb.startX, pos.x);
+    const y = Math.min(rb.startY, pos.y);
+    const w = Math.abs(pos.x - rb.startX);
+    const h = Math.abs(pos.y - rb.startY);
+
+    Object.assign(rb.el.style, {
+      left: x + "px",
+      top: y + "px",
+      width: w + "px",
+      height: h + "px",
+    });
+
+    rb.rect = {x, y, w, h};
+  }
+
+  _commitRubberBand(additive) {
+    const rb = this.state.rubberBand;
+    if(!rb) return;
+    rb.el.remove();
+
+    const r = rb.rect;
+    if(!r || (r.w < 4 && r.h < 4)) {
+      // too small — treat as a click, clear selection unless additive
+      if(!additive) this._selectClear();
+      this.state.rubberBand = null;
+      return;
+    }
+
+    if(!additive) this._selectClear();
+
+    for(const id in this.nodes) {
+      const n = this.nodes[id];
+      const nx = n.x, ny = n.y;
+      // rough node size estimate — good enough for hit test
+      const nw = 180, nh = 80;
+      const overlaps =
+        nx < r.x + r.w &&
+        nx + nw > r.x &&
+        ny < r.y + r.h &&
+        ny + nh > r.y;
+      if(overlaps) this._selectAdd(id);
+    }
+
+    this.state.rubberBand = null;
+  }
+
+  _getBoardPos(clientX, clientY) {
+    const bRect = this.board.getBoundingClientRect();
+    // clientX/Y are already in screen space — just subtract board's screen origin
+    // board's transform (translate+scale) is baked into getBoundingClientRect,
+    // so we need to go into board's LOCAL coordinate space
+    return {
+      x: (clientX - bRect.left) / this.state.zoom,
+      y: (clientY - bRect.top) / this.state.zoom,
+    };
+  }
+
 }

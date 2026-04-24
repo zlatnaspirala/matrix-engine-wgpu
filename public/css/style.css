@@ -1535,6 +1535,11 @@ svg.connections {
   background: linear-gradient(45deg, #000000 0%, #b300ff 25%, #000000 50%, #0084ff 75%, #000000 100%);
 }
 
+.node.selected {
+  outline: 2px solid var(--color-text-info, #4a9eff);
+  outline-offset: 2px;
+}
+
 .node .body {
   padding: 8px 10px;
   font-size: 13px;

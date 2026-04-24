@@ -24860,8 +24860,14 @@ var FluxCodexVertex = class {
     this.state = {
       draggingNode: null,
       dragOffset: [0, 0],
+      // offset for the PRIMARY dragged node
       connecting: null,
       selectedNode: null,
+      // keep for backward compat (single-select APIs)
+      selectedNodes: /* @__PURE__ */ new Set(),
+      // NEW: multi-select set of node IDs
+      rubberBand: null,
+      // NEW: { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
@@ -24926,10 +24932,9 @@ var FluxCodexVertex = class {
         e2.preventDefault();
         this.runGraph();
       } else if (e2.key === "Delete") {
-        if (this.state.selectedNode) {
-          this.deleteNode(this.state.selectedNode);
-          this.state.selectedNode = null;
-        }
+        const toDelete = this.state.selectedNodes.size > 0 ? [...this.state.selectedNodes] : this.state.selectedNode ? [this.state.selectedNode] : [];
+        toDelete.forEach((id2) => this.deleteNode(id2));
+        this._selectClear();
       }
     });
     this.createContextMenu();
@@ -26114,6 +26119,10 @@ var FluxCodexVertex = class {
     el.appendChild(body);
     header.addEventListener("mousedown", (e2) => {
       e2.preventDefault();
+      if (!this.state.selectedNodes.has(spec.id)) {
+        this._selectClear();
+        this._selectAdd(spec.id);
+      }
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
@@ -26121,11 +26130,20 @@ var FluxCodexVertex = class {
         e2.clientX - rect.left + bx.left,
         e2.clientY - rect.top + bx.top
       ];
+      this.state.dragStartPositions = {};
+      this.state.selectedNodes.forEach((nid) => {
+        const n2 = this.nodes[nid];
+        if (n2) this.state.dragStartPositions[nid] = { x: n2.x, y: n2.y };
+      });
+      this.state.dragPrimaryStart = {
+        x: rect.left - bx.left,
+        y: rect.top - bx.top
+      };
       document.body.style.cursor = "grabbing";
     });
     el.addEventListener("click", (e2) => {
       e2.stopPropagation();
-      this.selectNode(spec.id);
+      this._selectToggle(spec.id, e2.shiftKey);
       this.updateNodeDOM(spec.id);
     });
     el.addEventListener("dblclick", (e2) => {
@@ -26135,12 +26153,27 @@ var FluxCodexVertex = class {
     });
     return el;
   }
+  // selectNode(id) {
+  //   if(this.state.selectedNode) {
+  //     document
+  //       .querySelector(`.node[data-id="${this.state.selectedNode}"]`)
+  //       ?.classList.remove("selected");
+  //   }
+  //   this.state.selectedNode = id;
+  //   document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  // }
   selectNode(id2) {
     if (this.state.selectedNode) {
       document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove("selected");
     }
+    if (!this.state.selectedNodes.has(id2)) {
+      this._selectClear();
+    }
     this.state.selectedNode = id2;
-    document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
+    if (id2) {
+      this.state.selectedNodes.add(id2);
+      document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
+    }
   }
   populateDynamicFunctionSelect(select2, spec2) {
     select2.innerHTML = "";
@@ -29343,16 +29376,27 @@ LIST OF INTEREST OBJECT:
       const el2 = this.state.draggingNode;
       const newX = e2.clientX - this.state.dragOffset[0];
       const newY = e2.clientY - this.state.dragOffset[1];
-      el2.style.left = newX + "px";
-      el2.style.top = newY + "px";
-      const id2 = el2.dataset.id;
-      if (this.nodes[id2]) {
-        this.nodes[id2].x = newX;
-        this.nodes[id2].y = newY;
-      }
+      const dx = newX - this.state.dragPrimaryStart.x;
+      const dy = newY - this.state.dragPrimaryStart.y;
+      this.state.selectedNodes.forEach((nid) => {
+        const n2 = this.nodes[nid];
+        const domEl = document.querySelector(`.node[data-id="${nid}"]`);
+        if (!n2 || !domEl) return;
+        const start = this.state.dragStartPositions[nid];
+        if (!start) return;
+        const nx = start.x + dx;
+        const ny = start.y + dy;
+        domEl.style.left = nx + "px";
+        domEl.style.top = ny + "px";
+        n2.x = nx;
+        n2.y = ny;
+      });
       this.updateLinks();
+    } else if (this.state.rubberBand) {
+      this._updateRubberBand(e2);
     } else if (this.state.panning) {
-      const dx = e2.clientX - this.state.panStart[0], dy = e2.clientY - this.state.panStart[1];
+      const dx = e2.clientX - this.state.panStart[0];
+      const dy = e2.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
       this.state.pan[1] += dy;
       this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
@@ -29360,17 +29404,31 @@ LIST OF INTEREST OBJECT:
       this.updateLinks();
     }
   }
-  handleMouseUp() {
+  handleMouseUp(e2) {
+    if (this.state.rubberBand) {
+      const rb = this.state.rubberBand;
+      const r2 = rb.rect;
+      const isRealDrag = r2 && (r2.w > 6 || r2.h > 6);
+      if (isRealDrag) this.state.panning = false;
+      this._commitRubberBand(e2.shiftKey);
+    }
     this.state.draggingNode = null;
+    this.state.dragStartPositions = null;
+    this.state.dragPrimaryStart = null;
     this.state.panning = false;
     document.body.style.cursor = "default";
   }
   handleBoardWrapMouseDown(e2) {
     if (!e2.target.closest(".node")) {
-      this.state.panning = true;
-      this.state.panStart = [e2.clientX, e2.clientY];
-      document.body.style.cursor = "grabbing";
-      this.selectNode(null);
+      if (e2.shiftKey) {
+        this._startRubberBand(e2);
+        document.body.style.cursor = "crosshair";
+      } else {
+        if (!e2.shiftKey) this._selectClear();
+        this.state.panning = true;
+        this.state.panStart = [e2.clientX, e2.clientY];
+        document.body.style.cursor = "grabbing";
+      }
     }
   }
   updateLinks() {
@@ -29644,6 +29702,138 @@ LIST OF INTEREST OBJECT:
     }
     this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
     this.compileGraph();
+  }
+  // ── Multi-select helpers ──────────────────────────────────────────
+  _selectAdd(id2) {
+    this.state.selectedNodes.add(id2);
+    this.state.selectedNode = id2;
+    document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
+  }
+  _selectRemove(id2) {
+    this.state.selectedNodes.delete(id2);
+    document.querySelector(`.node[data-id="${id2}"]`)?.classList.remove("selected");
+    this.state.selectedNode = this.state.selectedNodes.size ? [...this.state.selectedNodes].at(-1) : null;
+  }
+  _selectClear() {
+    this.state.selectedNodes.forEach((id2) => {
+      document.querySelector(`.node[data-id="${id2}"]`)?.classList.remove("selected");
+    });
+    this.state.selectedNodes.clear();
+    this.state.selectedNode = null;
+  }
+  _selectToggle(id2, additive) {
+    if (additive) {
+      if (this.state.selectedNodes.has(id2)) {
+        this._selectRemove(id2);
+      } else {
+        this._selectAdd(id2);
+      }
+    } else {
+      if (!this.state.selectedNodes.has(id2)) {
+        this._selectClear();
+      }
+      this._selectAdd(id2);
+    }
+  }
+  // ── Rubber-band ───────────────────────────────────────────────────
+  // _startRubberBand(e) {
+  //   const bRect = this.board.getBoundingClientRect();
+  //   const startX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
+  //   const startY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
+  //   const el = document.createElement("div");
+  //   el.id = "fc-rubber-band";
+  //   Object.assign(el.style, {
+  //     position: "absolute",
+  //     border: "1px dashed var(--color-text-info, #4a9eff)",
+  //     background: "rgba(74,158,255,0.06)",
+  //     pointerEvents: "none",
+  //     zIndex: 999,
+  //     left: startX + "px",
+  //     top: startY + "px",
+  //     width: "0px",
+  //     height: "0px",
+  //   });
+  //   this.board.appendChild(el);
+  //   this.state.rubberBand = {startX, startY, el};
+  // }
+  _startRubberBand(e2) {
+    const pos2 = this._getBoardPos(e2.clientX, e2.clientY);
+    const el2 = document.createElement("div");
+    el2.id = "fc-rubber-band";
+    Object.assign(el2.style, {
+      position: "absolute",
+      border: "1px dashed var(--color-text-info, #4a9eff)",
+      background: "rgba(74,158,255,0.06)",
+      pointerEvents: "none",
+      zIndex: 999,
+      left: pos2.x + "px",
+      top: pos2.y + "px",
+      width: "0px",
+      height: "0px"
+    });
+    this.board.appendChild(el2);
+    this.state.rubberBand = { startX: pos2.x, startY: pos2.y, el: el2 };
+  }
+  // _updateRubberBand(e) {
+  //   const rb = this.state.rubberBand;
+  //   if(!rb) return;
+  //   const bRect = this.board.getBoundingClientRect();
+  //   const curX = (e.clientX - bRect.left) / this.state.zoom - this.state.pan[0] / this.state.zoom;
+  //   const curY = (e.clientY - bRect.top) / this.state.zoom - this.state.pan[1] / this.state.zoom;
+  //   const x = Math.min(rb.startX, curX);
+  //   const y = Math.min(rb.startY, curY);
+  //   const w = Math.abs(curX - rb.startX);
+  //   const h = Math.abs(curY - rb.startY);
+  //   Object.assign(rb.el.style, {
+  //     left: x + "px",
+  //     top: y + "px",
+  //     width: w + "px",
+  //     height: h + "px",
+  //   });
+  //   rb.rect = {x, y, w, h}; // store for commit
+  // }
+  _updateRubberBand(e2) {
+    const rb = this.state.rubberBand;
+    if (!rb) return;
+    const pos2 = this._getBoardPos(e2.clientX, e2.clientY);
+    const x2 = Math.min(rb.startX, pos2.x);
+    const y2 = Math.min(rb.startY, pos2.y);
+    const w = Math.abs(pos2.x - rb.startX);
+    const h = Math.abs(pos2.y - rb.startY);
+    Object.assign(rb.el.style, {
+      left: x2 + "px",
+      top: y2 + "px",
+      width: w + "px",
+      height: h + "px"
+    });
+    rb.rect = { x: x2, y: y2, w, h };
+  }
+  _commitRubberBand(additive) {
+    const rb = this.state.rubberBand;
+    if (!rb) return;
+    rb.el.remove();
+    const r2 = rb.rect;
+    if (!r2 || r2.w < 4 && r2.h < 4) {
+      if (!additive) this._selectClear();
+      this.state.rubberBand = null;
+      return;
+    }
+    if (!additive) this._selectClear();
+    for (const id2 in this.nodes) {
+      const n2 = this.nodes[id2];
+      const nx = n2.x, ny = n2.y;
+      const nw = 180, nh = 80;
+      const overlaps = nx < r2.x + r2.w && nx + nw > r2.x && ny < r2.y + r2.h && ny + nh > r2.y;
+      if (overlaps) this._selectAdd(id2);
+    }
+    this.state.rubberBand = null;
+  }
+  _getBoardPos(clientX, clientY) {
+    const bRect = this.board.getBoundingClientRect();
+    return {
+      x: (clientX - bRect.left) / this.state.zoom,
+      y: (clientY - bRect.top) / this.state.zoom
+    };
   }
 };
 
