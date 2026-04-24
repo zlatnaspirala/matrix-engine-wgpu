@@ -547,6 +547,12 @@ class MatrixJolt {
     this.speedUpSimulation = v;
   }
 
+  removeRigidBody(idx) {
+    this.bodyInterface.RemoveBody(idx);
+    this.bodyInterface.DestroyBody(idx);
+    this.rigidBodies.slice(idx, 1);
+  }
+
   step() {
     if(!this.joltInterface) return;
     for(let i = 0;i < this.speedUpSimulation;i++) {
@@ -615,5 +621,7 @@ self.onmessage = async ({data}) => {
     case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': jolt.getPosition(data.idx, data.id); break;
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
+
+    case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
   }
 };

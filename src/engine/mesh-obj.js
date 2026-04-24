@@ -280,6 +280,7 @@ export default class MEMeshObj extends Materials {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if(typeof o.isVideo !== 'undefined') {
+      console.log('MESH what i s isvideo ', o.isVideo)
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if(this.material.type != 'mirror' && this.material.type != 'water') {
@@ -745,13 +746,6 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline() {
-
-    // this.primitive = {
-    //   topology: this.topology,
-    //   cullMode: 'none',
-    //   frontFace: 'ccw'
-    // }
-
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -1075,7 +1069,7 @@ export default class MEMeshObj extends Materials {
     let testPB = app.matrixPhysics.getBodyByName(this.name);
     if(testPB !== null) {
       try {
-        app.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
+        app.matrixPhysics.removeRigidBody(testPB);
       } catch(e) {
         console.warn("Physics cleanup err:", e);
       }

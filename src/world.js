@@ -693,12 +693,15 @@ export default class MatrixEngineWGPU {
     let testPB = app.matrixPhysics.getBodyByName(obj.name);
     if(testPB !== null) {
       try {
-        this.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
+        this.matrixPhysics.removeRigidBody(testPB);
       } catch(e) {
         console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
       }
     }
+    obj.destroy();
     this.mainRenderBundle.splice(index, 1);
+    console.log('DESTROY ');
+    this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   }
 

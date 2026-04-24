@@ -387,6 +387,16 @@ class MatrixCannon {
     }
   }
 
+  removeRigidBody(idx) {
+    const b = this.rigidBodies[idx];
+    if(!b) return;
+
+    this.world.removeBody(b);
+
+    // cleanup reference
+    this.rigidBodies.slice(idx, 1);
+  }
+
   setGravity(x, y, z) {
     if(this.world) {
       this.world.gravity.set(x, y, z);
@@ -651,6 +661,9 @@ self.onmessage = async ({data}) => {
     case 'explode': cannon.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': cannon.getPosition(data.idx, data.id); break;
     case 'speedUpSimulation': cannon.speedUpSimulation(data.value); break;
+
+    case 'setCollisionFlags': cannon.setCollisionFlags(data.idx, data.flags); break;
+    case 'removeRigidBody': cannon.removeRigidBody(data.idx, data.flags); break;
     // new
     case 'createChain': cannon.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
     case 'createBoundedSpace': cannon.createBoundedSpace(data.ids, data.pos, data.size); break;

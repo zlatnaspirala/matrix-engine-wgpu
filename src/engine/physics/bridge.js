@@ -39,7 +39,8 @@ export class PhysicsBridge {
   }
 
   getBodyByName(name) {
-    for(const [meObj, idx] of this._bodyIndexMap) if(meObj.name === name) return idx;
+    console.info('[bridge] Body search :', name);
+    for(const [idx,meObj] of this._bodyIndexMap) if(meObj.name === name) return idx;
     console.info('[bridge] Body not found -1 :', name);
     return -1;
   }
@@ -63,7 +64,7 @@ export class PhysicsBridge {
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then(idx => {
-      this._bodyIndexMap.set(MEObject, idx);
+      this._bodyIndexMap.set(idx, MEObject);
     });
   }
 
@@ -71,7 +72,7 @@ export class PhysicsBridge {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
-    for(const [meObj, idx] of this._bodyIndexMap) {
+    for(const [idx, meObj] of this._bodyIndexMap) {
       if(!meObj.isKinematic) continue;
       const base = count * 3;
       idxArr[count] = idx;
@@ -202,6 +203,12 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'setCollisionFlags', idx, flags});
   }
 
+  removeRigidBody(idx) {
+    if(idx === undefined || idx === -1) return;
+    this._worker.postMessage({cmd: 'removeRigidBody', idx});
+    this._bodyIndexMap.delete(idx);
+  }
+
   // cannones ,
   createChain(ids, size = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({cmd: 'createChain', ids, size, mass, marginSpace});
@@ -224,7 +231,7 @@ export class PhysicsBridge {
     const snap = this._snapshot;
     if(!snap) return;
     const STRIDE = 8;
-    for(const [meObj, idx] of this._bodyIndexMap) {
+    for(const [idx, meObj] of this._bodyIndexMap) {
       if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
 

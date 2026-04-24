@@ -35,6 +35,7 @@ export default class Materials {
     this.glb = glb;
     this.material = material;
     if(typeof isVideo !== 'undefined') {
+      console.log("WHAT IS isvideo ", this.isVideo)
       this.isVideo = true;
     } else {this.isVideo = false}
     this.videoIsReady = 'NONE';
@@ -242,7 +243,6 @@ export default class Materials {
     if(sampler) this.imageSampler = sampler;
     // Recreate bind group only
     this.createBindGroupForRender();
-    // MAYBE SETYPPIPELINE ! NOW NEEDED 
   }
 
   changeMaterial(newType = 'graph', graphShader) {
@@ -511,7 +511,11 @@ export default class Materials {
   async loadVideoTexture(arg) {
     this.videoIsReady = 'MAYBE';
     this.isVideo = true;
-    this.drawElements = this.drawVideoElements;
+
+    this.sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+    });
 
     if(arg.type === 'video') {
       this.video = document.createElement('video');
@@ -546,6 +550,13 @@ export default class Materials {
     } else if(arg.type === 'camera') {
       if(!byId(`core-${this.name}`)) {
         this.video = document.createElement('video');
+
+        this.video.style.position = 'absolute';
+        this.video.style.width = '640px';
+        this.video.style.height = '480px';
+        this.video.style.top = '-465px';
+        this.video.style.left = '50%';
+
         this.video.id = `core-${this.name}`;
         this.video.autoplay = true;
         this.video.muted = true;
@@ -563,6 +574,20 @@ export default class Materials {
           this.video.srcObject = stream;
           await this.video.play();
           this.isVideo = true;
+          await new Promise(resolve => {
+            this.video.requestVideoFrameCallback(() => {
+              // setTimeout(() => {
+              // this.createMaterialBindGroupVideo();
+              // this.setupPipeline();
+              // }, 10)
+              resolve();
+            });
+          });
+          setTimeout(() => {
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+          }, 1)
+          return;
         } catch(err) {
           console.info("❌ Failed to access camera:", err);
           // return;
@@ -582,8 +607,7 @@ export default class Materials {
       this.video.play();
       this.isVideo = true;
     } else if(arg.type === 'canvas2d-inline') {
-      // console.log('what is arg', arg);
-      // Miniature inline-drawn canvas created dynamically
+      // console.log('what is arg VIDEO', arg);
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
@@ -594,20 +618,27 @@ export default class Materials {
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
       if(typeof arg.canvaInlineProgram === 'function') {
-        const drawLoop = () => {
-          // ctx.save();
-          // ctx.translate(canvas.width, 0);
-          // ctx.scale(-1, 1);
-          arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
-          // ctx.restore();
-          requestAnimationFrame(drawLoop);
-        };
+        let drawLoop;
+        if(typeof arg.specialCanvas2dArg.middle !== 'undefined') {
+          drawLoop = () => {
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+            ctx.restore();
+            requestAnimationFrame(drawLoop);
+          };
+        } else {
+          drawLoop = () => {
+            arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+            requestAnimationFrame(drawLoop);
+          };
+        }
         drawLoop();
       } else {
         ctx.fillStyle = '#0ce325ff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-
       this.video = document.createElement('video');
       this.video.style.position = 'absolute';
       // this.video.style.zIndex = '1';
@@ -616,32 +647,26 @@ export default class Materials {
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(18);
+      this.video.srcObject = canvas.captureStream(24);
       document.body.append(this.video);
       this.video.play();
-      await new Promise(resolve => {
-        const check = () => {
-          if(this.video.readyState >= 2) resolve();
-          else requestAnimationFrame(check);
-        };
-        check();
-      });
-      console.log('Canvas video stream READY');
-      // setTimeout(() => this.setupPipeline() ,1000)
-      this.createMaterialBindGroupVideo();
-     this.setupPipeline()
     }
-    this.sampler = this.device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear',
+
+    await new Promise(resolve => {
+      this.video.requestVideoFrameCallback(() => {
+        this.updateVideoTexture();
+        this.createMaterialBindGroupVideo();
+        this.setupPipeline();
+        resolve();
+      });
     });
-    this.createMaterialBindGroupVideo();
 
   }
 
   updateVideoTexture() {
-    // if(!this.video || this.video.readyState < 2) return;
+    if(!this.video || this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
+    if(!this.externalTexture) return;
     this.createMaterialBindGroupVideo();
   }
 

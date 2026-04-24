@@ -601,6 +601,15 @@ class MatrixAmmoWorker {
     this.rigidBodies[idx].setCollisionFlags(flags);
   }
 
+  removeRigidBody(idx) {
+    console.log('remove rigid body')
+    const b = this.rigidBodies[idx];
+    if(b) {
+      this.dynamicsWorld.removeRigidBody(b)
+    }
+    this.rigidBodies.slice(idx, 1);
+  }
+
   setBodyTransform(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body) return;
@@ -700,6 +709,7 @@ self.onmessage = async ({data}) => {
     case 'setGravityScale': ammo.setGravityScale(data.idx, data.scale); break;
     case 'getPosition': ammo.getPosition(data.idx, data.id); break;
 
+    case 'removeRigidBody': ammo.removeRigidBody(data.idx, data.flags); break;
     case 'speedUpSimulation': ammo.speedUpSimulation(data.value); break;
   }
 };

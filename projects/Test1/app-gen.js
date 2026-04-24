@@ -606,6 +606,12 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_TOP updatePosz
  
+  // ME START REEL_3 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_3').position.SetZ(-20);
+ }, 800);
+ // ME END REEL_3 updatePosz
+ 
  // [MAIN_REPLACE2]
 
     })

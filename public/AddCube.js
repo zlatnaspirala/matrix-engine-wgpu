@@ -7354,17 +7354,17 @@ var Materials = class {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-  async loadTex0(texturesPaths2) {
+  async loadTex0(texturesPaths) {
     return new Promise(async (resolve) => {
-      const path2 = texturesPaths2[0];
+      const path2 = texturesPaths[0];
       const { texture, sampler } = await this.textureCache.get(path2, this.getFormat());
       this.texture0 = texture;
       this.sampler = sampler;
       resolve(this);
     });
   }
-  async loadEnvMap(texturesPaths2, isEnvMap = false) {
-    const path2 = texturesPaths2[1] || texturesPaths2[0];
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path2 = texturesPaths[1] || texturesPaths[0];
     const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
     return {
       texture,
@@ -12463,7 +12463,7 @@ var MEMeshObj = class extends Materials {
     let testPB = app.matrixPhysics.getBodyByName(this.name);
     if (testPB !== null) {
       try {
-        app.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
+        app.matrixPhysics.removeRigidBody(testPB);
       } catch (e2) {
         console.warn("Physics cleanup err:", e2);
       }
@@ -18781,13 +18781,13 @@ var MaterialsInstanced = class {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-  async loadTex0(texturesPaths2) {
+  async loadTex0(texturesPaths) {
     this.sampler = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear"
     });
     return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths2[0]);
+      const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.texture0 = this.device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -18803,8 +18803,8 @@ var MaterialsInstanced = class {
       resolve();
     });
   }
-  async loadEnvMap(texturesPaths2, isEnvMap = false) {
-    const path2 = texturesPaths2[1] || texturesPaths2[0];
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path2 = texturesPaths[1] || texturesPaths[0];
     const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
     return {
       texture,
@@ -22191,12 +22191,12 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addCube", (e2) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: "" + e2.detail.index,
           mesh: m.cube,
@@ -22210,12 +22210,12 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addSphere", (e2) => {
       downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.mesh,
@@ -22244,12 +22244,12 @@ var EditorProvider = class {
       e2.detail.path = e2.detail.path.replace("\\res", "res");
       e2.detail.path = e2.detail.path.replace(/\\/g, "/");
       downloadMeshes({ objMesh: `${e2.detail.path}` }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.objMesh,
@@ -32040,6 +32040,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, i
         raycast: RAY
       });
       const o2 = app.getSceneObjectByName(name2);
+      console.log(o2.name);
       runtimeCacheObjs.push(o2);
       resolve(o2);
     }
@@ -34120,7 +34121,8 @@ var PhysicsBridge = class {
     this.c = 0;
   }
   getBodyByName(name2) {
-    for (const [meObj, idx] of this._bodyIndexMap) if (meObj.name === name2) return idx;
+    console.info("[bridge] Body search :", name2);
+    for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
     console.info("[bridge] Body not found -1 :", name2);
     return -1;
   }
@@ -34145,14 +34147,14 @@ var PhysicsBridge = class {
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((idx) => {
-      this._bodyIndexMap.set(MEObject, idx);
+      this._bodyIndexMap.set(idx, MEObject);
     });
   }
   updatePhysics() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
-    for (const [meObj, idx] of this._bodyIndexMap) {
+    for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.isKinematic) continue;
       const base = count * 3;
       idxArr[count] = idx;
@@ -34260,6 +34262,11 @@ var PhysicsBridge = class {
     if (idx === void 0 || idx === -1) return;
     this._worker.postMessage({ cmd: "setCollisionFlags", idx, flags });
   }
+  removeRigidBody(idx) {
+    if (idx === void 0 || idx === -1) return;
+    this._worker.postMessage({ cmd: "removeRigidBody", idx });
+    this._bodyIndexMap.delete(idx);
+  }
   // cannones ,
   createChain(ids, size2 = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({ cmd: "createChain", ids, size: size2, mass, marginSpace });
@@ -34274,7 +34281,7 @@ var PhysicsBridge = class {
     const snap = this._snapshot;
     if (!snap) return;
     const STRIDE = 8;
-    for (const [meObj, idx] of this._bodyIndexMap) {
+    for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
       const pos2 = snap.subarray(b, b + 3);
@@ -35038,12 +35045,15 @@ var MatrixEngineWGPU = class {
     let testPB = app.matrixPhysics.getBodyByName(obj2.name);
     if (testPB !== null) {
       try {
-        this.matrixPhysics.dynamicsWorld.removeRigidBody(testPB);
+        this.matrixPhysics.removeRigidBody(testPB);
       } catch (e2) {
         console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
       }
     }
+    obj2.destroy();
     this.mainRenderBundle.splice(index, 1);
+    console.log("DESTROY ");
+    this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };
   buildRenderBuckets(sceneMeshes) {
@@ -35868,24 +35878,35 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "node_28": { "id": "node_28", "x": 476.82293701171875, "y": 523.388916015625, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "alpha", "value": "0.5" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_29": { "id": "node_29", "x": 483.357666015625, "y": 749.3264465332031, "title": "Set Material", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "materialType", "semantic": "string", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "materialType", "value": "water", "placeholder": "standard|power|water" }] }, "node_30": { "id": "node_30", "x": 481.3958740234375, "y": 968.3402862548828, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster_MutantMesh" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_31": { "id": "node_31", "x": 722.8785247802734, "y": 1185.9445190429688, "title": "Set Vertex Ocean", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableOcean", "type": "boolean" }, { "name": "Ocean Scale", "type": "value" }, { "name": "Ocean Height", "type": "value" }, { "name": "Ocean speed", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableOcean", "value": "true" }, { "key": "Ocean Scale", "value": "1" }, { "key": "Ocean Height", "value": "0.02" }, { "key": "Ocean speed", "value": "0.5" }] }, "node_34": { "id": "node_34", "title": "functions", "x": 279.02435302734375, "y": 263.8055648803711, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_35": { "id": "node_35", "title": "onLoad", "x": 33.9862060546875, "y": 212.0382080078125, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_36": { "noExec": true, "id": "node_36", "title": "Get Scene Object", "x": 843.8507232666016, "y": 354.1458740234375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_37": { "id": "node_37", "title": "Print", "x": 1146.6979675292969, "y": 417.09375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_26", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_29", "pin": "exec" }, "type": "action" }, { "id": "link_27", "from": { "node": "node_29", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_30", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_30", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_31", "pin": "exec" }, "type": "action" }, { "id": "link_31", "from": { "node": "node_35", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_34", "pin": "exec" }, "type": "action" }, { "id": "link_32", "from": { "node": "node_34", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }, { "id": "link_33", "from": { "node": "node_37", "pin": "value" }, "to": { "node": "node_28", "pin": "sceneObjectName", "type": "any", "out": false }, "type": "any" }, { "id": "link_34", "from": { "node": "node_36", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_37", "pin": "value" }, "type": "any" }], "nodeCounter": 38, "linkCounter": 35, "pan": [-695, -172], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+// ../../../../projects/AddCube/graph.js
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 107.34375, "y": 192.5625, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "title": "Print", "x": 732.6875, "y": 383.5625, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Wait for object...." }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_3": { "id": "node_3", "title": "Comment", "x": 357.515625, "y": -4.796875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "WHO TO ADD CUBE FROM VISAL SCRIPTING GRAPH\nUSE: ADD OBJ NODE\n\n\n" }] }, "node_4": { "id": "node_4", "x": 409.234375, "y": 186.1875, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false, "value": "true" }, { "key": "isInstancedObj", "type": false, "value": "false" }, { "key": "created", "value": "false" }], "noselfExec": "true" }, "node_5": { "id": "node_5", "title": "Print", "x": 735.953125, "y": 184.28125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Dont wait exec next..." }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_4", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_4", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }], "nodeCounter": 6, "linkCounter": 4, "pan": [30, -106], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
-// ../../../../projects/Test2/shader-graphs.js
+// ../../../../projects/AddCube/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
     "content": '{"nodes":[{"id":"N0","type":"FragmentOutput","x":347,"y":321,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[]}'
+  },
+  {
+    "name": "ScrollTex",
+    "content": '{"nodes":[{"id":"N3","type":"Time","x":-573,"y":481,"inputs":{}},{"id":"N4","type":"Float","x":-576,"y":308,"value":0.01,"inputs":{}},{"id":"N5","type":"Multiply","x":-320,"y":419,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N7","type":"MultiplyVec2","x":-153,"y":519,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N12","type":"TextureSampler","x":351,"y":604,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N17","type":"Vec2","x":-492,"y":627,"inputs":{},"valueX":0,"valueY":1},{"id":"N18","type":"AddVec2","x":75,"y":516,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"UV","x":-159,"y":711,"inputs":{}},{"id":"N30","type":"LightShadowNode","x":194,"y":269,"inputs":{"intensity":{"default":"1"}}},{"id":"N32","type":"LightToColor","x":384,"y":268,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N34","type":"FragmentOutput","x":722,"y":539,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N35","type":"MultiplyColor","x":524,"y":427,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}}],"connections":[{"from":"N4","fromPin":"out","to":"N5","toPin":"a"},{"from":"N3","fromPin":"out","to":"N5","toPin":"b"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N17","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N18","toPin":"a"},{"from":"N18","fromPin":"out","to":"N12","toPin":"uv"},{"from":"N11","fromPin":"out","to":"N18","toPin":"b"},{"from":"N30","fromPin":"out","to":"N32","toPin":"light"},{"from":"N32","fromPin":"out","to":"N35","toPin":"a"},{"from":"N12","fromPin":"out","to":"N35","toPin":"b"},{"from":"N35","fromPin":"out","to":"N34","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 512.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = 0.01 * scene.time;\\n  let t2: vec2f = t1 * vec2f(0, 1);\\n  let t3: vec2f = t2 + input.uv;\\n  let t4: vec4f = textureSample(meshTexture, meshSampler, t3);\\n  let t5: vec4f = t0 * t4;\\n  \\n  return t5;\\n}\\n"}'
+  },
+  {
+    "name": "Pulsing",
+    "content": '{"nodes":[{"id":"N1","type":"Time","x":-400,"y":100,"inputs":{}},{"id":"N2","type":"Sin","x":-200,"y":100,"inputs":{"value":{"default":"0.0"}}},{"id":"N3","type":"Float","x":-200,"y":200,"value":0.3,"inputs":{}},{"id":"N4","type":"Multiply","x":0,"y":150,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Float","x":0,"y":250,"value":0.8,"inputs":{}},{"id":"N6","type":"Add","x":200,"y":200,"inputs":{"a":{"default":"0.0"},"b":{"default":"0.0"}}},{"id":"N7","type":"CombineVec4","x":400,"y":200,"inputs":{"x":{"default":"0.0"},"y":{"default":"0.0"},"z":{"default":"0.0"},"w":{"default":"1.0"}}},{"id":"N8","type":"UV","x":0,"y":450,"inputs":{}},{"id":"N9","type":"TextureSampler","x":200,"y":450,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N10","type":"LightShadowNode","x":200,"y":-100,"inputs":{"intensity":{"default":"1"}}},{"id":"N11","type":"LightToColor","x":400,"y":-100,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N12","type":"MultiplyColor","x":600,"y":50,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N13","type":"MultiplyColor","x":800,"y":250,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N14","type":"FragmentOutput","x":1000,"y":250,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N2","toPin":"value"},{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N5","fromPin":"out","to":"N6","toPin":"a"},{"from":"N4","fromPin":"out","to":"N6","toPin":"b"},{"from":"N6","fromPin":"out","to":"N7","toPin":"x"},{"from":"N6","fromPin":"out","to":"N7","toPin":"y"},{"from":"N6","fromPin":"out","to":"N7","toPin":"z"},{"from":"N8","fromPin":"out","to":"N9","toPin":"uv"},{"from":"N10","fromPin":"out","to":"N11","toPin":"light"},{"from":"N11","fromPin":"out","to":"N12","toPin":"a"},{"from":"N7","fromPin":"out","to":"N12","toPin":"b"},{"from":"N12","fromPin":"out","to":"N13","toPin":"a"},{"from":"N9","fromPin":"out","to":"N13","toPin":"b"},{"from":"N13","fromPin":"out","to":"N14","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 512.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = sin(scene.time);\\n  let t2: f32 = t1 * 0.3;\\n  let t3: f32 = 0.8 + t2;\\n  let t4: vec4f = vec4f(t3, t3, t3, 1.0);\\n  let t5: vec4f = t0 * t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, input.uv);\\n  let t7: vec4f = t5 * t6;\\n  \\n  return t7;\\n}\\n"}'
+  },
+  {
+    "name": "leftRightUV",
+    "content": '{"nodes":[{"id":"N1","type":"UV","x":152,"y":236,"inputs":{}},{"id":"N2","type":"Time","x":152,"y":436,"inputs":{}},{"id":"N3","type":"Float","x":152,"y":536,"value":0.05,"inputs":{}},{"id":"N4","type":"Multiply","x":352,"y":486,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Sin","x":552,"y":486,"inputs":{"value":{"default":"0.0"}}},{"id":"N6","type":"Float","x":552,"y":586,"value":0.08,"inputs":{}},{"id":"N7","type":"Multiply","x":752,"y":536,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N8","type":"Vec2","x":752,"y":636,"inputs":{},"valueX":1,"valueY":0},{"id":"N9","type":"MultiplyVec2","x":952,"y":586,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N10","type":"AddVec2","x":1079,"y":350,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"TextureSampler","x":1352,"y":411,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N12","type":"LightShadowNode","x":1152,"y":86,"inputs":{"intensity":{"default":"1"}}},{"id":"N13","type":"LightToColor","x":1352,"y":86,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N14","type":"MultiplyColor","x":1552,"y":248,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N15","type":"FragmentOutput","x":1752,"y":248,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N4","fromPin":"out","to":"N5","toPin":"value"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N6","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N9","toPin":"a"},{"from":"N8","fromPin":"out","to":"N9","toPin":"b"},{"from":"N1","fromPin":"out","to":"N10","toPin":"a"},{"from":"N9","fromPin":"out","to":"N10","toPin":"b"},{"from":"N10","fromPin":"out","to":"N11","toPin":"uv"},{"from":"N12","fromPin":"out","to":"N13","toPin":"light"},{"from":"N13","fromPin":"out","to":"N14","toPin":"a"},{"from":"N11","fromPin":"out","to":"N14","toPin":"b"},{"from":"N14","fromPin":"out","to":"N15","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 512.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = scene.time * 0.05;\\n  let t2: f32 = sin(t1);\\n  let t3: f32 = t2 * 0.08;\\n  let t4: vec2f = t3 * vec2f(1, 0);\\n  let t5: vec2f = input.uv + t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, t5);\\n  let t7: vec4f = t0 * t6;\\n  \\n  return t7;\\n}\\n"}'
   }
 ];
 
-// ../../../../projects/Test2/app-gen.js
+// ../../../../projects/AddCube/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
     projectType: "created from editor",
-    projectName: "Test2",
-    useSingleRenderPass: true,
+    projectName: "AddCube",
     canvasSize: "fullscreen",
     mainCameraParams: {
       type: "WASD",
@@ -35895,71 +35916,31 @@ var app2 = new MatrixEngineWGPU(
   },
   (app3) => {
     addEventListener("PhysicsReady", async () => {
-      addRaycastsListener("canvas1", "mousedown");
       app3.graph = graph_default;
       shaderGraphsProdc.forEach((gShader) => {
         let shaderReady = JSON.parse(gShader.content);
         app3.shadersPack[gShader.name] = shaderReady.final;
         if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
       });
+      addRaycastsListener("canvas1", "mousedown");
       app3.addLight();
       downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
-        let texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
           position: { x: 0, y: -1, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           name: "FLOOR",
+          mesh: m.mesh,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" },
           pointerEffect: {
             enabled: true,
-            // pointEffect: true,
             gizmoEffect: true
-            // destructionEffect: true
-          },
-          mesh: m.mesh,
-          raycast: { enabled: true, radius: 1 },
-          physics: { enabled: false, geometry: "Cube" }
+          }
         });
       }, { scale: [25, 1, 25] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").useScale = true;
-      }, 800);
-      var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
-      texturesPaths = ["./res/meshes/blender/cube.png"];
-      app3.addGlbObjInctance({
-        position: { x: 0, y: 0, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: [texturesPaths],
-        scale: [2, 2, 2],
-        name: app3.getNameFromPath("res/meshes/glb/monster.glb"),
-        material: { type: "standard", useTextureFromGlb: true },
-        raycast: { enabled: true, radius: 3 },
-        pointerEffect: { enabled: true },
-        physics: { enabled: true, geometry: "Cube" }
-      }, null, glbFile01);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").useScale = true;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(-0.029999999999988973);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetZ(-12.003727183092838);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-4.881266945378257);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetX(-1.0099999999999918);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-2.9300000000000024);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(1.520000000000026);
-      }, 800);
     });
   }
 );
@@ -35974,4 +35955,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=Test2.js.map
+//# sourceMappingURL=AddCube.js.map
