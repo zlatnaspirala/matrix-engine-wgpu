@@ -41804,11 +41804,11 @@ let mb = exports.mb = {
   kill: function () {
     mb.root().remove();
   },
-  show: function (content, t) {
+  show: function (content, t, delay = 1000) {
     mb.setContent(content, t);
     mb.root().style.display = "block";
     var loc2 = mb.c;
-    setTimeout(function () {
+    setTimeout(() => {
       byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
       byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
       setTimeout(function () {
@@ -41819,8 +41819,8 @@ let mb = exports.mb = {
         if (mb.c == mb.ic) {
           mb.root().style.display = 'none';
         }
-      }, 1000);
-    }, 3000);
+      }, delay);
+    }, 3 * delay);
     mb.c++;
   },
   error: function (content) {
@@ -61325,8 +61325,8 @@ class MatrixEngineWGPU {
     if (this.options.canvasSize == 'fullscreen') {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
         // this.applyCanvasSize(this.options.fastRender);
-        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth;
-        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 1.08;
+        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth * this.options.fastRender;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 1.08 * this.options.fastRender;
       } else if (this.options.fastRenderAlternative) {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -61383,9 +61383,8 @@ class MatrixEngineWGPU {
     }
     if (this.options.fastRender && !isNaN(this.options.fastRender) && (0, _utils.isMobile)()) {
       if ((0, _utils.byId)('msgBox')) (0, _utils.byId)('msgBox').style.left = '20%';
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
+      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2000);
+      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2500);
       addEventListener("run_mobile_fs", () => {
         setTimeout(() => {
           this.init({

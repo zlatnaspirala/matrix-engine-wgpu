@@ -836,11 +836,11 @@ export let mb = {
   kill: function() {
     mb.root().remove();
   },
-  show: function(content, t) {
+  show: function(content, t, delay = 1000) {
     mb.setContent(content, t);
     mb.root().style.display = "block";
     var loc2 = mb.c;
-    setTimeout(function() {
+    setTimeout(() => {
       byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
       byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
       setTimeout(function() {
@@ -852,8 +852,8 @@ export let mb = {
         if(mb.c == mb.ic) {
           mb.root().style.display = 'none';
         }
-      }, 1000)
-    }, 3000);
+      }, delay)
+    }, 3* delay);
     mb.c++;
   },
   error: function(content) {

@@ -226,8 +226,8 @@ export default class MatrixEngineWGPU {
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
         // this.applyCanvasSize(this.options.fastRender);
-        canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
-        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 1.08;
+        canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth * this.options.fastRender;
+        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 1.08 * this.options.fastRender;
       } else if(this.options.fastRenderAlternative) {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -271,10 +271,9 @@ export default class MatrixEngineWGPU {
     }
 
     if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
-      if (byId('msgBox')) byId('msgBox').style.left = '20%';
-      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
-      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
-      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
+      if(byId('msgBox')) byId('msgBox').style.left = '20%';
+      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2000);
+      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2500);
       addEventListener("run_mobile_fs", () => {
         setTimeout(() => {
           this.init({canvas, callback});
