@@ -64,7 +64,8 @@ byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
-
+window.loadObjFile = loadObjFile;
+    
 if(urlQ['demo'] === '1') {
   loadObjFile();
 } else if(urlQ['demo'] === '2') {

@@ -60,6 +60,7 @@ const hideMenu = () => {
 (0, _utils.byId)('canvas-inline').addEventListener("click", () => switchDemo('17'));
 (0, _utils.byId)('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 (0, _utils.byId)('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
+window.loadObjFile = _loadObjFile.loadObjFile;
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
 } else if (urlQ['demo'] === '2') {
@@ -28382,6 +28383,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.addOBJ = addOBJ;
+exports.addProceduralOBJ = addProceduralOBJ;
 exports.physicsBodiesChain = physicsBodiesChain;
 exports.physicsBodiesGenerator = physicsBodiesGenerator;
 exports.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid;
@@ -28391,6 +28393,7 @@ exports.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall;
 exports.stabilizeTowerBody = stabilizeTowerBody;
 var _fluxCodexVertex = require("../../tools/editor/fluxCodexVertex");
 var _loaderObj = require("../loader-obj");
+var _proceduralMesh = require("../procedural-mesh");
 // general function for stabilisation 
 function stabilizeTowerBody(body, root) {
   root.matrixPhysics.setDamping(body, 0.8, 0.95);
@@ -28810,6 +28813,75 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
     });
   });
 }
+function addProceduralOBJ(path, material = "standard", pos, rot, texturePath, name, isPhysicsBody = false, raycast = false, scale = [1, 1, 1], isInstancedObj = false) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = {
+      mesh: path
+    };
+    function handler(m) {
+      const RAY = {
+        enabled: !!raycast,
+        radius: 1
+      };
+      // console.info('add cube form graph..')
+      engine.addMeshObj({
+        material: {
+          type: material
+        },
+        position: {
+          x: pos.x,
+          y: pos.y,
+          z: pos.z
+        },
+        rotation: rot,
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: [texturePath],
+        name: name,
+        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2, false),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        physics: {
+          scale: scale,
+          enabled: isPhysicsBody,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
+
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 10, y: 15, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.capsule(1, 2, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_1`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Capsule",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+      // const b = app.matrixPhysics.getBodyByName(name);
+      const o = app.getSceneObjectByName(name);
+      // console.log(o.name);
+      _fluxCodexVertex.runtimeCacheObjs.push(o);
+      resolve(o);
+    }
+    (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+      scale
+    });
+  });
+}
 function physicsBodiesChain(material = "standard", pos = {
   x: 10,
   y: 30,
@@ -28874,7 +28946,7 @@ function physicsBodiesChain(material = "standard", pos = {
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":124,"../loader-obj":58}],53:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":124,"../loader-obj":58,"../procedural-mesh":74}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41723,6 +41795,8 @@ let mb = exports.mb = {
     iMsg.classList.add('animate1');
     if (t == 'ok') {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
+    } else if (t == "spacial-case-mob") {
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin-left:-2px';
     } else {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     }
@@ -41730,11 +41804,11 @@ let mb = exports.mb = {
   kill: function () {
     mb.root().remove();
   },
-  show: function (content, t) {
+  show: function (content, t, delay = 1000) {
     mb.setContent(content, t);
     mb.root().style.display = "block";
     var loc2 = mb.c;
-    setTimeout(function () {
+    setTimeout(() => {
       byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
       byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
       setTimeout(function () {
@@ -41745,8 +41819,8 @@ let mb = exports.mb = {
         if (mb.c == mb.ic) {
           mb.root().style.display = 'none';
         }
-      }, 1000);
-    }, 3000);
+      }, delay);
+    }, 3 * delay);
     mb.c++;
   },
   error: function (content) {
@@ -42149,6 +42223,9 @@ const MEConfig = exports.MEConfig = {
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
+        setTimeout(() => {
+          dispatchEvent(new CustomEvent('run_mobile_fs', {}));
+        }, 100);
         window.removeEventListener('click', this._fs);
       };
       window.addEventListener('click', this._fs);
@@ -54690,6 +54767,92 @@ class FluxCodexVertex {
         }],
         noselfExec: "true"
       }),
+      addProceduralMesh: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Add Procedural Mesh",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "path",
+          type: "string"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "isPhysicsBody",
+          type: "boolean"
+        }, {
+          name: "isInstancedObj",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "complete",
+          type: "action"
+        }, {
+          name: "error",
+          type: "action"
+        }],
+        fields: [{
+          key: "path",
+          value: "res/meshes/blender/cube.obj"
+        }, {
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:0, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "isPhysicsBody",
+          type: false
+        }, {
+          key: "isInstancedObj",
+          type: false
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
       setForceOnHit: (id, x, y) => ({
         id,
         x,
@@ -57941,6 +58104,57 @@ LIST OF INTEREST OBJECT:
         // sync
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if (n.title === "Add Procedural Mesh") {
+        const path = this.getValue(nodeId, "path");
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let rot = this.getValue(nodeId, "rot");
+        let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation - nature of stuff
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (isInstancedObj == "true") {
+          isInstancedObj = true;
+        } else {
+          isInstancedObj = false;
+        }
+        if (isPhysicsBody == "true") {
+          isPhysicsBody = true;
+        } else {
+          isPhysicsBody = false;
+        }
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !path) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then(object => {
+            object._GRAPH_CACHE = true;
+            n._returnCache = object;
+            this.enqueueOutputs(n, "complete");
+          }).catch(err => {
+            console.log(`%cADD OBJ ERROR GRAPH!`, _utils.LOG_FUNNY_ARCADE);
+            n._returnCache = null;
+            this.enqueueOutputs(n, "error");
+          });
+          // createdField.value = true;
+        }
+        // sync
+        this.enqueueOutputs(n, "execOut");
+        return;
       } else if (n.title === "Generator Pyramid") {
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
@@ -60976,6 +61190,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesChain = _generator.physicsBodiesChain.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
+    this.editorAddProceduralMesh = _generator.addProceduralOBJ.bind(this);
     this.MEConfig = _meConfig.MEConfig;
     this.MEConfig.construct();
     this.label = new _lang.MultiLang();
@@ -61109,7 +61324,9 @@ class MatrixEngineWGPU {
     this.canvas = canvas;
     if (this.options.canvasSize == 'fullscreen') {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-        this.applyCanvasSize(this.options.fastRender);
+        // this.applyCanvasSize(this.options.fastRender);
+        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth * this.options.fastRender;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 1.08 * this.options.fastRender;
       } else if (this.options.fastRenderAlternative) {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -61117,6 +61334,7 @@ class MatrixEngineWGPU {
       } else {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight;
+        // console.log('APPLY CANVAS!!!')
       }
     } else {
       canvas.width = this.options.canvasSize.w;
@@ -61163,10 +61381,24 @@ class MatrixEngineWGPU {
         this.label.get = r;
       });
     }
-    this.init({
-      canvas,
-      callback
-    });
+    if (this.options.fastRender && !isNaN(this.options.fastRender) && (0, _utils.isMobile)()) {
+      if ((0, _utils.byId)('msgBox')) (0, _utils.byId)('msgBox').style.left = '20%';
+      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2000);
+      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2500);
+      addEventListener("run_mobile_fs", () => {
+        setTimeout(() => {
+          this.init({
+            canvas,
+            callback
+          });
+        }, 10);
+      });
+    } else {
+      this.init({
+        canvas,
+        callback
+      });
+    }
   }
   createGlobalsForEntities() {
     // TYPE "MESH"

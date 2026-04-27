@@ -1866,6 +1866,43 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
+      addProceduralMesh: (id, x, y) => ({
+        id, x, y, title: "Add Procedural Mesh",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "path", type: "string"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "isPhysicsBody", type: "boolean"},
+          {name: "isInstancedObj", type: "boolean"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "complete", type: "action"},
+          {name: "error", type: "action"}
+        ],
+        fields: [
+          {key: "path", value: "res/meshes/blender/cube.obj"},
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "isPhysicsBody", type: false},
+          {key: "isInstancedObj", type: false},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
       setForceOnHit: (id, x, y) => ({
         id, x, y, title: "Set Force On Hit",
         category: "action",
@@ -4247,7 +4284,48 @@ LIST OF INTEREST OBJECT:
         // sync
         this.enqueueOutputs(n, "execOut");
         return;
-      } else if(n.title === "Generator Pyramid") {
+      }
+      else if(n.title === "Add Procedural Mesh") {
+        const path = this.getValue(nodeId, "path");
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let rot = this.getValue(nodeId, "rot");
+        let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation - nature of stuff
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(isInstancedObj == "true") {isInstancedObj = true} else {isInstancedObj = false;}
+        if(isPhysicsBody == "true") {isPhysicsBody = true} else {isPhysicsBody = false;}
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+        if(!texturePath || !path) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+            object._GRAPH_CACHE = true;
+            n._returnCache = object;
+            this.enqueueOutputs(n, "complete");
+          }).catch((err) => {
+            console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            n._returnCache = null;
+            this.enqueueOutputs(n, "error");
+          })
+          // createdField.value = true;
+        }
+        // sync
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      else if(n.title === "Generator Pyramid") {
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");

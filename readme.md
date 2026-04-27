@@ -997,6 +997,12 @@ urlQuery.lang;
    Use it :
    `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
 
+   If you wanna full performance on mobile devices than use in constructor:
+   ```js
+     fastRender = anynumber
+   ```
+   In this case FORCE_FULL_SCREEN is true by default.
+   Pushed notification click anywhere to start the engine.
 
 ---
 
