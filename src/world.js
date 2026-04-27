@@ -2,7 +2,7 @@ import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 // import MatrixAmmo from "./engine/physics/matrix-ammo_DEPLACED.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -225,7 +225,9 @@ export default class MatrixEngineWGPU {
     this.canvas = canvas;
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-        this.applyCanvasSize(this.options.fastRender);
+        // this.applyCanvasSize(this.options.fastRender);
+        canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
+        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 1.08;
       } else if(this.options.fastRenderAlternative) {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -233,6 +235,7 @@ export default class MatrixEngineWGPU {
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
+        // console.log('APPLY CANVAS!!!')
       }
     } else {
       canvas.width = this.options.canvasSize.w;
@@ -266,7 +269,20 @@ export default class MatrixEngineWGPU {
         this.label.get = r;
       });
     }
-    this.init({canvas, callback});
+
+    if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
+      if (byId('msgBox')) byId('msgBox').style.left = '20%';
+      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
+      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
+      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob");
+      addEventListener("run_mobile_fs", () => {
+        setTimeout(() => {
+          this.init({canvas, callback});
+        }, 10)
+      })
+    } else {
+      this.init({canvas, callback});
+    }
   }
 
   createGlobalsForEntities() {

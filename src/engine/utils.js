@@ -827,7 +827,9 @@ export let mb = {
     iMsg.classList.add('animate1')
     if(t == 'ok') {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
-    } else {
+    } else if (t == "spacial-case-mob") {
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin-left:-2px';
+    }  else {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     }
   },
