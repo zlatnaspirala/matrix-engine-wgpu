@@ -487,6 +487,10 @@ pointerEffect: {
 // app.mainRenderBundle[0].effects
 ```
 
+Use random for creation than when you find perfect crazzy fancy case just collect input data see:
+https://gist.github.com/zlatnaspirala/8758bcfb8be81d65c2c428e222abbef2
+
+
 ### Bloom post processing
 
 Activete with :

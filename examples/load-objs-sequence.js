@@ -68,6 +68,9 @@ export var loadObjsSequence = function() {
       })
 
       setTimeout(() => {
+        // Int 1 is max speed
+        app.getSceneObjectByName('swat').objAnim.animations.walk.speed = 1;
+
         app.cameras.WASD.setPitch(-0.26);
         app.cameras.WASD.setYaw(-0.06);
         app.cameras.WASD.setY(15);

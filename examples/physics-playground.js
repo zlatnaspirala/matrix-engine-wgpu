@@ -9,6 +9,7 @@ import {PVector} from "../src/engine/matrix-class.js";
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
+    fastRender: 1, // must be 1 for now
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -141,7 +142,7 @@ export var physicsPlayground = function() {
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [25, 0.01, 25],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {

@@ -4,11 +4,13 @@ import {addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 // import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 import {PVector} from "../src/engine/matrix-class.js";
+import {isMobile} from "../src/engine/utils.js";
 
 export var testJolt = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     useJolt: true, // Or ammojs by default...
+    fastRender: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -27,7 +29,7 @@ export var testJolt = function() {
 
       physicsPlayground.physicsBodiesGeneratorDeepPyramid(
         "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
-        "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400
+        "./res/textures/gold-1.webp", "pyr", 4, true, [1, 1, 1], 2, 400
       );
 
       // Buildin options
@@ -92,7 +94,7 @@ export var testJolt = function() {
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [25, 0.01, 25],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -162,7 +164,7 @@ export var testJolt = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      app.activateBloomEffect();
+      if (isMobile() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
     }

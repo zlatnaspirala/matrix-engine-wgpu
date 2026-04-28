@@ -56,7 +56,7 @@ export const MEConfig = {
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
-        console.log(',,,,,FS,,')
+        // console.log(',FS,')
         setTimeout(() => {
           dispatchEvent(new CustomEvent('run_mobile_fs', {}))
         }, 300)

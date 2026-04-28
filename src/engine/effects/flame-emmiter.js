@@ -39,7 +39,7 @@ export class FlameEmitter {
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        rotation: randomFloatFromTo(10 , 20),
+        rotation: randomFloatFromTo(10, 20),
         color: [1, 0.3, 0, 0.1],
         time: 1,
         intensity: 1,
@@ -87,6 +87,18 @@ export class FlameEmitter {
       memory11, memory21, 0.0,
       memory12, memory22, 0.0,
       memory13, memory23, 0.0,
+    ]);
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+
+  recreateVertexDataFromData(data) {
+    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
+    const vertexData = new Float32Array([
+      data[0], data[4], 0.0,
+      data[1], data[5], 0.0,
+      data[2], data[6], 0.0,
+      data[3], data[7], 0.0,
     ]);
     if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;

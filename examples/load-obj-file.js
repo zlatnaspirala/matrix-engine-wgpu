@@ -62,7 +62,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3,5,1],
+        scale: [3, 5, 1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -106,11 +106,14 @@ export var loadObjFile = function() {
 
       setTimeout(() => {
 
-        app.getSceneObjectByName('sky').setAmbient(2,0.5,1);
+        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        MYCUBE.effects.flameEmitter.rotSpeed = 1
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.recreateVertexDataFromData([
+          -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
+          0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
@@ -127,8 +130,8 @@ export var loadObjFile = function() {
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e.detail.hitObject.setAmbient(randomIntFromTo(1,7), randomIntFromTo(1,2), randomIntFromTo(1,5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1,5))
+        e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
       }
     });
 

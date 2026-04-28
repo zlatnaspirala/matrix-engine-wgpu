@@ -3,11 +3,13 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {PVector} from "../src/engine/matrix-class.js";
+import {isMobile} from "../src/engine/utils.js";
 
 export var testCannonES = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     useCannon: true,
+    fastRender: 0.9,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -20,17 +22,18 @@ export var testCannonES = function() {
     addEventListener('PhysicsReady', () => {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
+        plane: "./res/meshes/blender/plane.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
       // physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
-      physicsPlayground.physicsBodiesChain();
+      // physicsPlayground.physicsBodiesChain();
 
-      physicsPlayground.physicsBodiesGeneratorDeepPyramid(
-        "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
-        "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400
-      );
+      // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
+      //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
+      //   "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
+      // );
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -50,25 +53,25 @@ export var testCannonES = function() {
 
     async function onGround(m) {
 
-      const myComplexGeometry = physicsPlayground.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 8, y: 4, z: -6},
-        rotation: {x: 0, y: 0, z: 0.02},
-        scale: [3, 3, 3],
-        texturesPaths: ['./res/textures/slot/reel1.webp'],
-        name: 'MyHull',
-        mesh: m.reel,
-        physics: {
-          enabled: true,
-          mass: 2,
-          geometry: "ConvexHull",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 2,
-          mask: -1,
-        },
-        raycast: {enabled: true, radius: 1}
-      });
+      // const myComplexGeometry = physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 8, y: 4, z: -6},
+      //   rotation: {x: 0, y: 0, z: 0.02},
+      //   scale: [3, 3, 3],
+      //   texturesPaths: ['./res/textures/slot/reel1.webp'],
+      //   name: 'MyHull',
+      //   mesh: m.reel,
+      //   physics: {
+      //     enabled: true,
+      //     mass: 2,
+      //     geometry: "ConvexHull",
+      //     vertices: m.reel.vertices,
+      //     indices: m.reel.indices,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
 
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);
@@ -78,7 +81,7 @@ export var testCannonES = function() {
 
       physicsPlayground.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 125, z: -20},
+        position: {x: 0, y: 15, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 111, z: 0},
         scale: [5, 5, 5],
@@ -98,15 +101,11 @@ export var testCannonES = function() {
         position: {x: 0, y: -0.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [25, 0.1, 25],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+        scale: [25, 0.1, 25], // chatgpt-gen-bg-inv
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
+        mesh: m.plane,
+        physics: {enabled: false}
       });
 
       physicsPlayground.addProceduralMeshObj({
@@ -153,27 +152,27 @@ export var testCannonES = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      physicsPlayground.addProceduralMeshObj({
-        material: {type: 'standard'},
-        position: {x: 1, y: 3, z: -7},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: MeshMorpher.cone(1, 3, false),
-        meshB: MeshMorpher.cube(1),
-        name: `morph_cone`,
-        physics: {
-          enabled: true,
-          geometry: "Cone",
-          mass: 1,
-          radius: 1,
-          height: 3,
-          group: 2,
-          mask: -1,
-        },
-        raycast: {enabled: true, radius: 1}
-      });
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 1, y: 3, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.cone(1, 3, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_cone`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cone",
+      //     mass: 1,
+      //     radius: 1,
+      //     height: 3,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
 
       // not isolated bug yet - selecting not precise!
       // setTimeout(async () => {
@@ -192,7 +191,7 @@ export var testCannonES = function() {
       //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
       // }, 2500)
 
-      app.activateBloomEffect();
+      if(isMobile() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
     }

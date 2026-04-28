@@ -44,7 +44,7 @@ export class WASDCamera {
     this._recalculateViewVP();
 
     if(isMobile() == true && options.isActive == 'init active cam') {
-      console.log('CONTROLER MOBILE WASDCAMERA')
+      // console.log('CONTROLER MOBILE WASDCAMERA')
       MobileDOM.createWASD(this, {marginR: 0, marginD: 0});
     }
   }
@@ -877,16 +877,16 @@ export const MobileDOM = {
 
     btn.addEventListener('pointerdown', e => {
       e.stopPropagation();
-      btn.style.background = `rgba(255,255,255,${opacity})`;
+      // btn.style.background = `rgba(255,255,255,${opacity})`;
       onClick(e);
-    }, {passive: true});
+    }, {passive: false});
     btn.addEventListener('pointerup', (e) => {
       // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
       onRelease(e);
-    }, {passive: true});
+    }, {passive: false});
     btn.addEventListener('pointercancel', () => {
       // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-      onRelease(e);
+      // onRelease(e);
     }, {passive: true});
 
     document.body.appendChild(btn);

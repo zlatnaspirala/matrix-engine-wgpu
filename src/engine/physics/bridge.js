@@ -49,7 +49,8 @@ export class PhysicsBridge {
     this._ready = true;
     for(const {MEObject, pOptions} of this._queue) {this._doAddPhysics(MEObject, pOptions)}
     this._queue = [];
-    setTimeout(() => {dispatchEvent(new CustomEvent('PhysicsReady', {}))}, 250);
+    console.log('BRIGDE FINISEHD')
+    setTimeout(() => {dispatchEvent(new CustomEvent('PhysicsReady', {}))}, 1500);
   }
 
   addPhysics(MEObject, pOptions) {
@@ -84,9 +85,9 @@ export class PhysicsBridge {
     if(count > 0) {
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
-
-    if(this.c % 2 === 0) this._worker.postMessage({cmd: 'step'});
-    this.c++;
+    // if(this.c % 2 === 0) 
+    this._worker.postMessage({cmd: 'step'});
+    // this.c++;
   }
 
   // MatrixJolt public API

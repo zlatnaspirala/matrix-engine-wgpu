@@ -510,7 +510,7 @@ export function physicsBodiesChain(
       const cubeName = `${name}_${y}`;
 
       engine.addMeshObj({
-        material: {type: material},
+        material: {type: material, share: true},
         position: {
           x: pos.x,
           y: pos.y + y * spacing,
