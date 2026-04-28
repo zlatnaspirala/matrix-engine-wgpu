@@ -260,6 +260,43 @@ class MatrixAmmoWorker {
     this.constraints[constraintIdx].enableAngularMotor(enable, targetVelocity, maxMotorImpulse);
   }
 
+  createChain(ids, size = 0.5, marginSpace = 0.05) {
+    const Ammo = this.Ammo;
+    const space = marginSpace * size;
+
+    if(!this.constraints) this.constraints = [];
+
+    for(let i = 1;i < ids.length;i++) {
+      const bodyA = this.rigidBodies[ids[i]];
+      const bodyB = this.rigidBodies[ids[i - 1]];
+      if(!bodyA || !bodyB) continue;
+
+      // pivots
+      const pivotA1 = new Ammo.btVector3(-size, size + space, 0);
+      const pivotB1 = new Ammo.btVector3(-size, -size - space, 0);
+
+      const pivotA2 = new Ammo.btVector3(size, size + space, 0);
+      const pivotB2 = new Ammo.btVector3(size, -size - space, 0);
+
+      const c1 = new Ammo.btPoint2PointConstraint(bodyA, bodyB, pivotA1, pivotB1);
+      const c2 = new Ammo.btPoint2PointConstraint(bodyA, bodyB, pivotA2, pivotB2);
+
+      this.dynamicsWorld.addConstraint(c1, true);
+      this.dynamicsWorld.addConstraint(c2, true);
+
+      this.constraints.push(c1, c2);
+    }
+
+    // anchor (top)
+    const anchor = this.rigidBodies[ids[0]];
+    if(anchor) {
+      anchor.setMassProps(0, new Ammo.btVector3(0, 0, 0));
+      anchor.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+      anchor.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+      anchor.setActivationState(4); // disable deactivation
+    }
+  }
+
   _addCapsule(pOptions) {
     const Ammo = this.Ammo;
     const shape = new Ammo.btCapsuleShape(pOptions.radius ?? 1, pOptions.height ?? 1);
@@ -705,8 +742,8 @@ self.onmessage = async ({data}) => {
     case 'setBodyTransform': ammo.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': ammo.setGravityScale(data.idx, data.scale); break;
     case 'getPosition': ammo.getPosition(data.idx, data.id); break;
-
     case 'removeRigidBody': ammo.removeRigidBody(data.idx, data.flags); break;
     case 'speedUpSimulation': ammo.speedUpSimulation(data.value); break;
+    case 'createChain': ammo.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
   }
 };

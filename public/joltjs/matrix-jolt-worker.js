@@ -525,6 +525,43 @@ class MatrixJolt {
     }
   }
 
+  createChain(ids, size = 0.5, marginSpace = 0.05) {
+    const Jolt = this.Jolt;
+    const space = marginSpace * size;
+
+    if(!this.constraints) this.constraints = [];
+
+    for(let i = 1;i < ids.length;i++) {
+      const bodyA = this.rigidBodies[ids[i]];
+      const bodyB = this.rigidBodies[ids[i - 1]];
+      if(!bodyA || !bodyB) continue;
+
+      const settings1 = new Jolt.PointConstraintSettings();
+      settings1.mPoint1 = new Jolt.Vec3(-size, size + space, 0);
+      settings1.mPoint2 = new Jolt.Vec3(-size, -size - space, 0);
+
+      const settings2 = new Jolt.PointConstraintSettings();
+      settings2.mPoint1 = new Jolt.Vec3(size, size + space, 0);
+      settings2.mPoint2 = new Jolt.Vec3(size, -size - space, 0);
+
+      const c1 = settings1.Create(bodyA, bodyB);
+      const c2 = settings2.Create(bodyA, bodyB);
+
+      this.physicsSystem.AddConstraint(c1);
+      this.physicsSystem.AddConstraint(c2);
+
+      this.constraints.push(c1, c2);
+    }
+
+    // anchor
+    const anchor = this.rigidBodies[ids[0]];
+    if(anchor) {
+      this.bodyInterface.SetMotionType(anchor, Jolt.EMotionType_Static);
+      this.bodyInterface.SetLinearVelocity(anchor, new Jolt.Vec3(0, 0, 0));
+      this.bodyInterface.SetAngularVelocity(anchor, new Jolt.Vec3(0, 0, 0));
+    }
+  }
+
   getPosition(idx, msgID) {
     const body = this.rigidBodies[idx];
 
@@ -621,7 +658,7 @@ self.onmessage = async ({data}) => {
     case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': jolt.getPosition(data.idx, data.id); break;
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
-
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
+    case 'createChain': jolt.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
   }
 };

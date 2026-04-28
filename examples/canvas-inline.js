@@ -6,7 +6,7 @@ import {isMobile} from "../src/engine/utils.js";
 export var canvasInline = function() {
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 0.9,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',

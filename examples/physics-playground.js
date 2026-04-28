@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {LOG_MATRIX} from "../src/engine/utils.js";
+import {isMobile, LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 // import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
@@ -52,7 +52,7 @@ export var physicsPlayground = function() {
 
       physicsPlayground.physicsBodiesGeneratorDeepPyramid(
         "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
-        "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400
+        "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400
       );
 
       // Buildin options
@@ -216,7 +216,7 @@ export var physicsPlayground = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      app.activateBloomEffect();
+      if (isMobile() === false) app.activateBloomEffect();
       // physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       // physicsPlayground.lightContainer[0].behavior.value_ = -1;
       // physicsPlayground.lightContainer[0].updater.push((light) => {

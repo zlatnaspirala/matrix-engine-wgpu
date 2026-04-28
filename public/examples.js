@@ -196,7 +196,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var canvasInline = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 0.9,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -640,7 +640,7 @@ var flipperAmmo = function () {
   };
   let flipper = new _world.default({
     render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
-    fastRender: (0, _utils.isMobile)() == true ? 0.6 : 0.9,
+    fastRender: (0, _utils.isMobile)() == true ? 1 : 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -1523,7 +1523,7 @@ var flipperJolt = function () {
   };
   let flipper = new _world.default({
     // render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: (0, _utils.isMobile)() == true ? 0.5 : 0.9,
+    fastRender: 0.9,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -1543,13 +1543,32 @@ var flipperJolt = function () {
     let hingeRightID = 0;
     const POWERPIN = 50;
     // Audios
-    flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
-    // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
-    flipper.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-    flipper.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
-    flipper.matrixSounds.audios.win1.volume = 0.8;
-    flipper.matrixSounds.audios.music.loop = true;
-    flipper.matrixSounds.play('music');
+    // flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+    // // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
+    // flipper.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+    // flipper.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
+    // flipper.matrixSounds.audios.win1.volume = 0.8;
+    // flipper.matrixSounds.audios.music.loop = true;
+    // flipper.matrixSounds.play('music');
+
+    addEventListener('PhysicsReady', () => {
+      (0, _raycast.addRaycastsAABBListener)();
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj",
+        ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
+        pin: "./res/meshes/blender/pin-for-pinball.obj",
+        pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
+        pushBtn: "./res/meshes/shapes/pushBtn.obj",
+        vrcLeft: "./res/meshes/blender/vrc-left.obj",
+        jumper: "./res/meshes/blender/jumper-up.obj",
+        bottomLeft: "./res/meshes/blender/bottom-left.obj",
+        glass: "./res/meshes/shapes/plane-subdivine-16.obj",
+        bigBox: "./res/meshes/shapes/flipperBigBox.obj"
+      }, onGround, {
+        scale: [1, 1, 1]
+      });
+      // flipper.matrixPhysics.speedUpSimulation = isMobile() == true ? 1 : 4;
+    });
     if ((0, _utils.isMobile)()) (0, _utils.byId)('mobileControls').style.marginRight = '30%';
     _cameras.MobileDOM.addButton("PIN", function () {
       const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
@@ -1633,24 +1652,6 @@ var flipperJolt = function () {
         light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
-    addEventListener('PhysicsReady', () => {
-      (0, _raycast.addRaycastsAABBListener)();
-      (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/blender/cube.obj",
-        ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
-        pin: "./res/meshes/blender/pin-for-pinball.obj",
-        pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
-        pushBtn: "./res/meshes/shapes/pushBtn.obj",
-        vrcLeft: "./res/meshes/blender/vrc-left.obj",
-        jumper: "./res/meshes/blender/jumper-up.obj",
-        bottomLeft: "./res/meshes/blender/bottom-left.obj",
-        glass: "./res/meshes/shapes/plane-subdivine-16.obj",
-        bigBox: "./res/meshes/shapes/flipperBigBox.obj"
-      }, onGround, {
-        scale: [1, 1, 1]
-      });
-      // flipper.matrixPhysics.speedUpSimulation = isMobile() == true ? 1 : 4;
-    });
     async function onGround(m) {
       // Ball
       const ball1 = flipper.addMeshObj({
@@ -1728,7 +1729,8 @@ var flipperJolt = function () {
           geometry: "Cube"
         }
       });
-      let TEST = flipper.addMeshObj({
+      let TEST;
+      if ((0, _utils.isMobile)() == false) TEST = flipper.addMeshObj({
         material: {
           type: 'standard',
           share: true
@@ -2415,214 +2417,208 @@ var flipperJolt = function () {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.2, 0, 0));
           }
         };
-        TEST.loadVideoTexture({
-          type: 'canvas2d-inline',
-          canvaInlineProgram: (() => {
-            const COLS = Math.floor(512 / 16);
-            const drops = Array.from({
-              length: COLS
-            }, () => Math.floor(Math.random() * -30));
-            const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
-            let frame = 0;
 
-            // ── panel anchors ──────────────────────────────────────────
-            const BALANCE = {
-              x: 12,
-              y: 12,
-              w: 230,
-              h: 120,
-              r: 10
-            };
-            const BALLS = {
-              x: 270,
-              y: 12,
-              w: 230,
-              h: 120,
-              r: 10
-            };
-            const PALETTE = [[255, 0, 180],
-            // magenta
-            [0, 220, 255],
-            // cyan
-            [255, 200, 0],
-            // gold
-            [0, 255, 120],
-            // green
-            [180, 0, 255] // purple
-            ];
-            function hue(i, t) {
-              const [r, g, b] = PALETTE[i % PALETTE.length];
-              const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
-              return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
-            }
-            function roundRect(ctx, x, y, w, h, r) {
-              ctx.beginPath();
-              ctx.moveTo(x + r, y);
-              ctx.lineTo(x + w - r, y);
-              ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-              ctx.lineTo(x + w, y + h - r);
-              ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-              ctx.lineTo(x + r, y + h);
-              ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-              ctx.lineTo(x, y + r);
-              ctx.quadraticCurveTo(x, y, x + r, y);
-              ctx.closePath();
-            }
-            function drawPanel(ctx, p, [r, g, b], pulse) {
-              // gradient fill
-              const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
-              grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
-              grad.addColorStop(1, `rgba(0,0,0,0.75)`);
-              ctx.fillStyle = grad;
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.fill();
+        // TEST.loadVideoTexture({
+        //   type: 'canvas2d-inline',
+        //   canvaInlineProgram: (() => {
+        //     const COLS = Math.floor(512 / 16);
+        //     const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -30));
+        //     const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
+        //     let frame = 0;
 
-              // glowing border
-              ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
-              ctx.lineWidth = 1.5;
-              ctx.shadowColor = `rgb(${r},${g},${b})`;
-              ctx.shadowBlur = 12 * pulse;
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.stroke();
-              ctx.shadowBlur = 0;
+        //     // ── panel anchors ──────────────────────────────────────────
+        //     const BALANCE = {x: 12, y: 12, w: 230, h: 120, r: 10};
+        //     const BALLS = {x: 270, y: 12, w: 230, h: 120, r: 10};
 
-              // corner ticks
-              const tk = 10;
-              ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
-              ctx.lineWidth = 2;
-              [[p.x, p.y, 1, 1], [p.x + p.w, p.y, -1, 1], [p.x, p.y + p.h, 1, -1], [p.x + p.w, p.y + p.h, -1, -1]].forEach(([cx, cy, sx, sy]) => {
-                ctx.beginPath();
-                ctx.moveTo(cx + sx * tk, cy);
-                ctx.lineTo(cx, cy);
-                ctx.lineTo(cx, cy + sy * tk);
-                ctx.stroke();
-              });
-            }
-            return (ctx, {
-              balance = 99840,
-              balls = 3,
-              maxBalls = 5
-            } = {}) => {
-              const W = ctx.canvas.width,
-                H = ctx.canvas.height;
-              const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
-              const t = frame;
+        //     const PALETTE = [
+        //       [255, 0, 180],   // magenta
+        //       [0, 220, 255],   // cyan
+        //       [255, 200, 0],   // gold
+        //       [0, 255, 120],   // green
+        //       [180, 0, 255],   // purple
+        //     ];
 
-              // fade + scanlines
-              ctx.fillStyle = 'rgba(2,0,12,0.22)';
-              ctx.fillRect(0, 0, W, H);
-              for (let y = 0; y < H; y += 4) {
-                ctx.fillStyle = 'rgba(0,0,0,0.08)';
-                ctx.fillRect(0, y, W, 1);
-              }
+        //     function hue(i, t) {
+        //       const [r, g, b] = PALETTE[i % PALETTE.length];
+        //       const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
+        //       return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
+        //     }
 
-              // multi-color rain
-              ctx.font = 'bold 13px monospace';
-              for (let i = 0; i < COLS; i++) {
-                const ch = chars[Math.floor(Math.random() * chars.length)];
-                const [r, g, b] = PALETTE[i % PALETTE.length];
-                const br = Math.random();
-                ctx.fillStyle = br > 0.93 ? '#ffffff' : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
-                ctx.fillText(ch, i * 16, drops[i] * 16);
-                if (drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;else drops[i]++;
-              }
-              ctx.save();
+        //     function roundRect(ctx, x, y, w, h, r) {
+        //       ctx.beginPath();
+        //       ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+        //       ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        //       ctx.lineTo(x + w, y + h - r);
+        //       ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        //       ctx.lineTo(x + r, y + h);
+        //       ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        //       ctx.lineTo(x, y + r);
+        //       ctx.quadraticCurveTo(x, y, x + r, y);
+        //       ctx.closePath();
+        //     }
 
-              // ── BALANCE panel ────────────────────────────────────────
-              const B = BALANCE;
-              const bc = hue(1, t);
-              drawPanel(ctx, B, bc, pulse);
-              ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
-              ctx.shadowBlur = 10 * pulse;
-              ctx.font = 'bold 10px monospace';
-              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
-              ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
-              ctx.font = 'bold 12px monospace';
-              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
-              ctx.fillText('BALANCE', B.x + 12, B.y + 46);
+        //     function drawPanel(ctx, p, [r, g, b], pulse) {
+        //       // gradient fill
+        //       const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+        //       grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
+        //       grad.addColorStop(1, `rgba(0,0,0,0.75)`);
+        //       ctx.fillStyle = grad;
+        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.fill();
 
-              // per-digit color cycling
-              const val = balance.toLocaleString();
-              ctx.font = 'bold 36px monospace';
-              let dx = B.x + 12;
-              for (let i = 0; i < val.length; i++) {
-                const [r, g, b] = hue(i, t);
-                ctx.fillStyle = `rgba(${r},${g},${b},1)`;
-                ctx.shadowColor = `rgb(${r},${g},${b})`;
-                ctx.shadowBlur = 14 * pulse;
-                ctx.fillText(val[i], dx, B.y + 88);
-                dx += ctx.measureText(val[i]).width;
-              }
+        //       // glowing border
+        //       ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+        //       ctx.lineWidth = 1.5;
+        //       ctx.shadowColor = `rgb(${r},${g},${b})`;
+        //       ctx.shadowBlur = 12 * pulse;
+        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.stroke();
+        //       ctx.shadowBlur = 0;
 
-              // score bar
-              const barW = B.w - 24;
-              ctx.fillStyle = 'rgba(255,255,255,0.06)';
-              roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3);
-              ctx.fill();
-              const filled = barW * (balance / 999999);
-              const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
-              barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
-              barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
-              barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
-              ctx.fillStyle = barGrad;
-              ctx.shadowBlur = 6;
-              ctx.shadowColor = '#ff00cc';
-              roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3);
-              ctx.fill();
+        //       // corner ticks
+        //       const tk = 10;
+        //       ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
+        //       ctx.lineWidth = 2;
+        //       [
+        //         [p.x, p.y, 1, 1],
+        //         [p.x + p.w, p.y, -1, 1],
+        //         [p.x, p.y + p.h, 1, -1],
+        //         [p.x + p.w, p.y + p.h, -1, -1],
+        //       ].forEach(([cx, cy, sx, sy]) => {
+        //         ctx.beginPath();
+        //         ctx.moveTo(cx + sx * tk, cy);
+        //         ctx.lineTo(cx, cy);
+        //         ctx.lineTo(cx, cy + sy * tk);
+        //         ctx.stroke();
+        //       });
+        //     }
 
-              // ── BALLS panel ──────────────────────────────────────────
-              const BL = BALLS;
-              const mc = hue(0, t);
-              drawPanel(ctx, BL, mc, pulse);
-              ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
-              ctx.shadowBlur = 10 * pulse;
-              ctx.font = 'bold 10px monospace';
-              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
-              ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
-              ctx.font = 'bold 12px monospace';
-              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
-              ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
-              for (let b = 0; b < maxBalls; b++) {
-                const bx = BL.x + 24 + b * 40;
-                const by = BL.y + 80;
-                const [r, g, b2] = hue(b, t);
-                ctx.beginPath();
-                ctx.arc(bx, by, 14, 0, Math.PI * 2);
-                if (b < balls) {
-                  const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
-                  bg.addColorStop(0, 'rgba(255,255,255,0.9)');
-                  bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
-                  bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
-                  ctx.fillStyle = bg;
-                  ctx.shadowColor = `rgb(${r},${g},${b2})`;
-                  ctx.shadowBlur = 18 * pulse;
-                } else {
-                  ctx.fillStyle = 'rgba(30,10,40,0.8)';
-                  ctx.shadowBlur = 0;
-                }
-                ctx.fill();
-                if (b < balls) {
-                  ctx.font = 'bold 10px monospace';
-                  ctx.fillStyle = 'rgba(0,0,0,0.8)';
-                  ctx.shadowBlur = 0;
-                  ctx.fillText(b + 1, bx - 4, by + 4);
-                }
-              }
-              ctx.restore();
+        //     return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
+        //       const W = ctx.canvas.width, H = ctx.canvas.height;
+        //       const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
+        //       const t = frame;
 
-              // footer
-              const ft = hue(2, t);
-              ctx.font = 'bold 10px monospace';
-              ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
-              ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
-              ctx.shadowBlur = 6;
-              ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
-              ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
-              ctx.shadowBlur = 0;
-              frame++;
-            };
-          })()
-        });
+        //       // fade + scanlines
+        //       ctx.fillStyle = 'rgba(2,0,12,0.22)';
+        //       ctx.fillRect(0, 0, W, H);
+        //       for(let y = 0;y < H;y += 4) {
+        //         ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        //         ctx.fillRect(0, y, W, 1);
+        //       }
+
+        //       // multi-color rain
+        //       ctx.font = 'bold 13px monospace';
+        //       for(let i = 0;i < COLS;i++) {
+        //         const ch = chars[Math.floor(Math.random() * chars.length)];
+        //         const [r, g, b] = PALETTE[i % PALETTE.length];
+        //         const br = Math.random();
+
+        //         // ctx.fillStyle = br > 0.93 ? '#ffffff' : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
+
+        //         ctx.fillText(ch, i * 16, drops[i] * 16);
+        //         if(drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;
+        //         else drops[i]++;
+        //       }
+
+        //       ctx.save();
+
+        //       // ── BALANCE panel ────────────────────────────────────────
+        //       const B = BALANCE;
+        //       const bc = hue(1, t);
+        //       drawPanel(ctx, B, bc, pulse);
+
+        //       ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
+        //       ctx.shadowBlur = 10 * pulse;
+
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
+        //       ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
+
+        //       ctx.font = 'bold 12px monospace';
+        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
+        //       ctx.fillText('BALANCE', B.x + 12, B.y + 46);
+
+        //       // per-digit color cycling
+        //       const val = balance.toLocaleString();
+        //       ctx.font = 'bold 36px monospace';
+        //       let dx = B.x + 12;
+        //       for(let i = 0;i < val.length;i++) {
+        //         const [r, g, b] = hue(i, t);
+        //         ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+        //         ctx.shadowColor = `rgb(${r},${g},${b})`;
+        //         ctx.shadowBlur = 14 * pulse;
+        //         ctx.fillText(val[i], dx, B.y + 88);
+        //         dx += ctx.measureText(val[i]).width;
+        //       }
+
+        //       // score bar
+        //       const barW = B.w - 24;
+        //       ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        //       roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3); ctx.fill();
+        //       const filled = barW * (balance / 999999);
+        //       const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
+        //       barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
+        //       barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
+        //       barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
+        //       ctx.fillStyle = barGrad;
+        //       ctx.shadowBlur = 6; ctx.shadowColor = '#ff00cc';
+        //       roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3); ctx.fill();
+
+        //       // ── BALLS panel ──────────────────────────────────────────
+        //       const BL = BALLS;
+        //       const mc = hue(0, t);
+        //       drawPanel(ctx, BL, mc, pulse);
+
+        //       ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
+        //       ctx.shadowBlur = 10 * pulse;
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
+        //       ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
+        //       ctx.font = 'bold 12px monospace';
+        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
+        //       ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
+
+        //       for(let b = 0;b < maxBalls;b++) {
+        //         const bx = BL.x + 24 + b * 40;
+        //         const by = BL.y + 80;
+        //         const [r, g, b2] = hue(b, t);
+        //         ctx.beginPath();
+        //         ctx.arc(bx, by, 14, 0, Math.PI * 2);
+        //         if(b < balls) {
+        //           const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
+        //           bg.addColorStop(0, 'rgba(255,255,255,0.9)');
+        //           bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
+        //           bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
+        //           ctx.fillStyle = bg;
+        //           ctx.shadowColor = `rgb(${r},${g},${b2})`;
+        //           ctx.shadowBlur = 18 * pulse;
+        //         } else {
+        //           ctx.fillStyle = 'rgba(30,10,40,0.8)';
+        //           ctx.shadowBlur = 0;
+        //         }
+        //         ctx.fill();
+        //         if(b < balls) {
+        //           ctx.font = 'bold 10px monospace';
+        //           ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        //           ctx.shadowBlur = 0;
+        //           ctx.fillText(b + 1, bx - 4, by + 4);
+        //         }
+        //       }
+
+        //       ctx.restore();
+
+        //       // footer
+        //       const ft = hue(2, t);
+        //       ctx.font = 'bold 10px monospace';
+        //       ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
+        //       ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
+        //       ctx.shadowBlur = 6;
+        //       ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
+        //       ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
+        //       ctx.shadowBlur = 0;
+
+        //       frame++;
+        //     };
+        //   })()
+        // })
       }, 1000);
       const commonAchorX = 2.3;
       const commomBODYX = 0;
@@ -3796,7 +3792,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 1,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -3826,7 +3822,8 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -3857,7 +3854,8 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -3887,12 +3885,11 @@ var loadObjFile = function () {
       // share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {
-          type: 'standard',
-          share: true
+          type: 'mirror'
         },
         position: {
           x: 0,
-          y: 3,
+          y: 4,
           z: -10
         },
         rotation: {
@@ -3905,19 +3902,20 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp'],
+        scale: [3, 5, 1],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.3,
+          baseColorMix: 0.1,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
-          reflectivity: 0.35,
+          reflectivity: 0.75,
           // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0],
           // Soft cyan
-          illuminateStrength: 0.5,
+          illuminateStrength: 1.5,
           // Gentle rim
           illuminatePulse: 0.1,
           // No pulse (static)
@@ -3934,29 +3932,34 @@ var loadObjFile = function () {
           enabled: false,
           mass: 0,
           geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+          // flameEffect: true
         }
-        // pointerEffect: {
-        //   enabled: true,
-        //   flameEmitter: true
-        //   // flameEffect: true
-        // }
       });
       loadObjFile.lightContainer[0].setIntensity(5);
-      if ((0, _utils.isMobile)() == false) {
-        loadObjFile.activateBloomEffect();
-        loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-        loadObjFile.lightContainer[0].behavior.value_ = -1;
-        loadObjFile.lightContainer[0].updater.push(light => {
-          light.setTargetX(light.behavior.setPath0());
-          light.setPosX(light.behavior.setPath0());
-        });
-        loadObjFile.lightContainer[0].setPosition(0, 15, -10);
-        loadObjFile.lightContainer[0].setTarget(0, 0, -10);
-      }
+
+      // if(isMobile() == false) {
+      loadObjFile.activateBloomEffect();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push(light => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      loadObjFile.lightContainer[0].setPosition(0, 15, -10);
+      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      // }
+
       setTimeout(() => {
+        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        MYCUBE.setAmbient(10, 1, 0);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
@@ -3969,7 +3972,10 @@ var loadObjFile = function () {
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       // console.log('ray.hit.event detected');
       if (e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4);
+        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e.detail.hitObject.effects.flameEmitter.setIntensity((0, _utils.randomIntFromTo)(1, 200));
+        e.detail.hitObject.setAmbient((0, _utils.randomIntFromTo)(1, 7), (0, _utils.randomIntFromTo)(1, 2), (0, _utils.randomIntFromTo)(1, 5));
+        app.bloomPass.setBlurRadius((0, _utils.randomIntFromTo)(1, 5));
       }
     });
   });
@@ -4120,7 +4126,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var mazeGame = function () {
   let maze = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.8,
+    fastRender: 0.9,
     render: 'nano',
     //'zero', // test
     dontUsePhysics: true,
@@ -4454,7 +4460,7 @@ var physicsPlayground = function () {
         x: 0,
         y: 0,
         z: 0
-      }, "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400);
+      }, "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400);
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -4699,7 +4705,7 @@ var physicsPlayground = function () {
           radius: 1
         }
       });
-      app.activateBloomEffect();
+      if ((0, _utils.isMobile)() === false) app.activateBloomEffect();
       // physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       // physicsPlayground.lightContainer[0].behavior.value_ = -1;
       // physicsPlayground.lightContainer[0].updater.push((light) => {
@@ -24688,7 +24694,7 @@ class FirstPersonCamera {
     if (options.yaw) this.yaw = options.yaw;
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
@@ -36957,7 +36963,8 @@ class MEMeshObj extends _materials.default {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          // console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); return;
+          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, _utils.LOG_FUNNY_ARCADE); //return;
+          this.setupPipeline();
         });
         this.setupPipeline();
       } else {
@@ -37681,7 +37688,7 @@ class PhysicsBridge {
     this._queue = [];
     setTimeout(() => {
       dispatchEvent(new CustomEvent('PhysicsReady', {}));
-    }, 50);
+    }, 250);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -40981,7 +40988,7 @@ exports.htmlHeader = void 0;
 exports.isEven = isEven;
 exports.isMobile = isMobile;
 exports.isOdd = isOdd;
-exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
+exports.meLoader = exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -41778,6 +41785,68 @@ function genName(length) {
   }
   return result;
 }
+const meLoader = exports.meLoader = {
+  create: function (callback) {
+    const loader = document.createElement("div");
+    loader.id = "loader";
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      zIndex: 9999,
+      background: "#000000ff",
+      fontFamily: "Orbitron, sans-serif",
+      cursor: 'url(./res/icons/default.png) 0 0, auto'
+    });
+    loader.innerHTML = `
+  <div style="
+    font-size: 64px;
+    font-weight: 900;
+    color: #00ffff;
+    letter-spacing: 4px;
+    text-align: center;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 20px #00ffff,
+      0 0 40px #00ffff;
+    animation: glowPulse 1.5s infinite alternate;
+  ">
+    RUN MEWGPU
+  </div>
+
+  <style>
+    @keyframes glowPulse {
+      from {
+        transform: scale(1);
+        text-shadow:
+          0 0 5px #00ffff,
+          0 0 10px #00ffff,
+          0 0 20px #00ffff;
+      }
+      to {
+        transform: scale(1.05);
+        text-shadow:
+          0 0 10px #00ffff,
+          0 0 20px #00ffff,
+          0 0 40px #00ffff,
+          0 0 80px #00ffff;
+      }
+    }
+  </style>
+`;
+    if (callback) loader.addEventListener('click', callback);
+    document.body.appendChild(loader);
+  },
+  destroy: function () {
+    if (byId('loader')) document.body.removeChild(byId('loader'));
+  }
+};
 let mb = exports.mb = {
   root: () => byId('msgBox'),
   pContent: () => byId('not-content'),
@@ -42217,15 +42286,16 @@ const MEConfig = exports.MEConfig = {
       this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
       console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
     }
-    if (urlQ['fs']) {
+    if (urlQ['fs'] || (0, _utils.isMobile)()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, _utils.LOG_FUNNY_ARCADE);
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
+        console.log(',,,,,FS,,');
         setTimeout(() => {
           dispatchEvent(new CustomEvent('run_mobile_fs', {}));
-        }, 100);
+        }, 300);
         window.removeEventListener('click', this._fs);
       };
       window.addEventListener('click', this._fs);
@@ -61325,8 +61395,14 @@ class MatrixEngineWGPU {
     if (this.options.canvasSize == 'fullscreen') {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
         // this.applyCanvasSize(this.options.fastRender);
+        // console.log('APPLY CANVAS!!!', this.options.fastRender)
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth * this.options.fastRender;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 1.08 * this.options.fastRender;
+      } else if ((0, _utils.isMobile)() == true) {
+        // this.applyCanvasSize(this.options.fastRender);
+        // console.log('APPLY CANVAS!!!', this.options.fastRender)
+        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 1.08;
       } else if (this.options.fastRenderAlternative) {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -61383,14 +61459,15 @@ class MatrixEngineWGPU {
     }
     if (this.options.fastRender && !isNaN(this.options.fastRender) && (0, _utils.isMobile)()) {
       if ((0, _utils.byId)('msgBox')) (0, _utils.byId)('msgBox').style.left = '20%';
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2000);
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 2500);
+      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
+      _utils.meLoader.create();
       addEventListener("run_mobile_fs", () => {
         setTimeout(() => {
           this.init({
             canvas,
             callback
           });
+          _utils.meLoader.destroy();
         }, 10);
       });
     } else {

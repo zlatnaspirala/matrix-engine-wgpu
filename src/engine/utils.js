@@ -812,6 +812,71 @@ export function genName(length) {
   return result;
 }
 
+export const meLoader = {
+  create: function(callback) {
+    const loader = document.createElement("div");
+    loader.id = "loader";
+
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      zIndex: 9999,
+      background: "#000000ff",
+      fontFamily: "Orbitron, sans-serif",
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+    });
+
+    loader.innerHTML = `
+  <div style="
+    font-size: 64px;
+    font-weight: 900;
+    color: #00ffff;
+    letter-spacing: 4px;
+    text-align: center;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 20px #00ffff,
+      0 0 40px #00ffff;
+    animation: glowPulse 1.5s infinite alternate;
+  ">
+    RUN MEWGPU
+  </div>
+
+  <style>
+    @keyframes glowPulse {
+      from {
+        transform: scale(1);
+        text-shadow:
+          0 0 5px #00ffff,
+          0 0 10px #00ffff,
+          0 0 20px #00ffff;
+      }
+      to {
+        transform: scale(1.05);
+        text-shadow:
+          0 0 10px #00ffff,
+          0 0 20px #00ffff,
+          0 0 40px #00ffff,
+          0 0 80px #00ffff;
+      }
+    }
+  </style>
+`;
+    if(callback) loader.addEventListener('click', callback);
+    document.body.appendChild(loader);
+  },
+  destroy: function() {
+    if(byId('loader')) document.body.removeChild(byId('loader'));
+  }
+};
+
 export let mb = {
   root: () => byId('msgBox'),
   pContent: () => byId('not-content'),
@@ -827,9 +892,9 @@ export let mb = {
     iMsg.classList.add('animate1')
     if(t == 'ok') {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
-    } else if (t == "spacial-case-mob") {
+    } else if(t == "spacial-case-mob") {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin-left:-2px';
-    }  else {
+    } else {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     }
   },
@@ -853,7 +918,7 @@ export let mb = {
           mb.root().style.display = 'none';
         }
       }, delay)
-    }, 3* delay);
+    }, 3 * delay);
     mb.c++;
   },
   error: function(content) {

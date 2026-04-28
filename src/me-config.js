@@ -50,15 +50,16 @@ export const MEConfig = {
       console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
     }
 
-    if(urlQ['fs']) {
+    if(urlQ['fs'] || isMobile()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
+        console.log(',,,,,FS,,')
         setTimeout(() => {
           dispatchEvent(new CustomEvent('run_mobile_fs', {}))
-        }, 100)
+        }, 300)
         window.removeEventListener('click', this._fs);
       }
       window.addEventListener('click', this._fs);
