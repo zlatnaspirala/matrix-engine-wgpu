@@ -54,7 +54,7 @@ class MatrixJolt {
     this.joltInterface = null;
     this.physicsSystem = null;
     this.bodyInterface = null;
-    this.speedUpSimulation = 3;
+    this.setSpeedUp = 3;
     this.options = {roundDimension: 100, gravity: 10};
     this._sab = null;
     this._snapshot = null;
@@ -256,14 +256,29 @@ class MatrixJolt {
     );
 
     if(!isStatic) {
+      // settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
+      // settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
+
       settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
       settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
+
+      // settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertiaAndVolume;
+      // settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
+
+      // settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_MassAndInertiaProvided;
+      // settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
     }
 
     if(pOptions.restitution !== undefined) settings.mRestitution = pOptions.restitution;
     if(pOptions.friction !== undefined) settings.mFriction = pOptions.friction;
 
+    console.log("motionType:", motionType, "isStatic:", isStatic, "isKinematic:", isKinematic, "mass:", pOptions.mass);
+
     const body = this.bodyInterface.CreateBody(settings);
+
+    console.log("body valid:", !body);
+    console.log("body id:", body.GetID().GetIndex());
+
     Jolt.destroy(settings);
 
     if(pOptions.sensor) {
@@ -275,6 +290,13 @@ class MatrixJolt {
       body.GetID(),
       isStatic ? Jolt.EActivation_DontActivate : Jolt.EActivation_Activate
     );
+    //  const aabb = body.GetWorldSpaceBounds();
+    //  console.log("min:", aabb.mMin.GetX(), aabb.mMin.GetY(), aabb.mMin.GetZ());
+    //  console.log("max:", aabb.mMax.GetX(), aabb.mMax.GetY(), aabb.mMax.GetZ());
+
+    const testPos = this.bodyInterface.GetPosition(body.GetID());
+    console.log("pos after add:", testPos.GetX(), testPos.GetY(), testPos.GetZ());
+
     return this._registerBody(body, pOptions);
   }
 
@@ -323,21 +345,65 @@ class MatrixJolt {
   _addConvexHull(pOptions) {
     const Jolt = this.Jolt;
     const settings = new Jolt.ConvexHullShapeSettings();
+
+    settings.mMaxConvexRadius = 0.05;
+    settings.mHullTolerance = 0.001;
+
+    console.log("hull options:", JSON.stringify({
+      position: pOptions.position,
+      rotation: pOptions.rotation,
+      scale: pOptions.scale,
+      mass: pOptions.mass,
+      kinematic: pOptions.kinematic,
+      state: pOptions.state
+    }));
+
+
     const verts = pOptions.vertices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
+
+    // Create an array to track objects we need to clean up LATER
+    const tempVecs = [];
+
     for(let i = 0;i < verts.length;i += 3) {
-      settings.mPoints.push_back(
-        new Jolt.Vec3(
-          verts[i] * sx,
-          verts[i + 1] * sy,
-          verts[i + 2] * sz
-        )
-      );
+      let x = verts[i] * sx;
+      let y = verts[i + 1] * sy;
+      let z = verts[i + 2] * sz;
+      if(x == 0) x = 0;
+      if(y == 0) y = 0;
+      if(z == 0) z = 0;
+      const v = new Jolt.Vec3(x, y, z);
+      settings.mPoints.push_back(v);
+      tempVecs.push(v);
     }
+
     const result = settings.Create();
+    if(result.HasError()) {
+      console.error("ConvexHull error:", result.GetError().c_str());
+      Jolt.destroy(settings);
+      return null;
+    }
+
     const shape = result.Get();
-    Jolt.destroy(settings);
-    return this._createBody(pOptions, shape);
+    // Jolt.destroy(settings);
+    // Cleanup Vec3s ONLY AFTER Create() is done
+    tempVecs.forEach(v => Jolt.destroy(v));
+
+    // const testSettings = new Jolt.BodyCreationSettings(
+    //   shape,
+    //   new Jolt.RVec3(pOptions.position.x, pOptions.position.y, pOptions.position.z),
+    //   Jolt.Quat.prototype.sIdentity(),
+    //   Jolt.EMotionType_Dynamic,
+    //   LAYER_MOVING
+    // );
+    // const mp = shape.GetMassProperties();
+    // console.log("mass:", mp.mMass);
+    // console.log("inertia diagonal:", mp.mInertia.GetDiagonal3());
+    // Jolt.destroy(testSettings);
+    const body = this._createBody(pOptions, shape);
+    Jolt.destroy(settings);  // <-- destroy after body is created
+    return body;
+
   }
 
   _addBvhMesh(pOptions) {
@@ -570,6 +636,9 @@ class MatrixJolt {
       return;
     }
     const t = body.GetWorldTransform().GetTranslation();
+
+    const pos = this.bodyInterface.GetPosition(body.GetID());
+    console.log(pos.GetX(), pos.GetY(), pos.GetZ());
     // console.info('get pos  t.GetX() ', t.GetX())
     // console.info('get pos  t.GetX() ', t.GetY())
     // console.info('get pos  t.GetX() ', t.GetZ())
@@ -581,7 +650,7 @@ class MatrixJolt {
   }
 
   speedUpSimulation(v) {
-    this.speedUpSimulation = v;
+    this.setSpeedUp = v;
   }
 
   removeRigidBody(idx) {
@@ -592,7 +661,7 @@ class MatrixJolt {
 
   step() {
     if(!this.joltInterface) return;
-    for(let i = 0;i < this.speedUpSimulation;i++) {
+    for(let i = 0;i < this.setSpeedUp;i++) {
       this.joltInterface.Step(1 / 30, 1);
     }
     const snap = this._snapshot;
