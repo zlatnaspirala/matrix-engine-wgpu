@@ -49,8 +49,8 @@ export class PhysicsBridge {
     this._ready = true;
     for(const {MEObject, pOptions} of this._queue) {this._doAddPhysics(MEObject, pOptions)}
     this._queue = [];
-    console.log('BRIGDE FINISEHD')
-    setTimeout(() => {dispatchEvent(new CustomEvent('PhysicsReady', {}))}, 1500);
+    // console.log('BRIGDE FINISEHD')
+    setTimeout(() => {dispatchEvent(new CustomEvent('PhysicsReady', {}))}, 100);
   }
 
   addPhysics(MEObject, pOptions) {

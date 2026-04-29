@@ -281,10 +281,12 @@ export default class MatrixEngineWGPU {
       mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
       addEventListener("run_mobile_fs", () => {
+        // console.log('what iscallback ', callback)
+        this.init({canvas, callback});
+        meLoader.destroy();
         setTimeout(() => {
-          this.init({canvas, callback});
-          meLoader.destroy();
-        }, 10)
+          if(this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
+        }, 500)
       })
     } else {
       this.init({canvas, callback});

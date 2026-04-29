@@ -5125,7 +5125,7 @@ var testJolt = function () {
         x: 0,
         y: 0,
         z: 0
-      }, "./res/textures/gold-1.webp", "pyr", 4, true, [1, 1, 1], 2, 400);
+      }, "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400);
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -5134,19 +5134,20 @@ var testJolt = function () {
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
-        console.log('ray.hit.event detected');
+        console.log('ray.hit.event detected', e.detail.hitObject.name);
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
         app.matrixPhysics.applyImpulse(b, new _matrixClass.PVector(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength));
       });
     });
     async function onGround(m) {
+      // console.log( m.reel.vertices)
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {
           type: 'standard'
         },
         position: {
           x: 8,
-          y: 4,
+          y: 7,
           z: -6
         },
         rotation: {
@@ -37652,10 +37653,10 @@ class PhysicsBridge {
       this._doAddPhysics(MEObject, pOptions);
     }
     this._queue = [];
-    console.log('BRIGDE FINISEHD');
+    // console.log('BRIGDE FINISEHD')
     setTimeout(() => {
       dispatchEvent(new CustomEvent('PhysicsReady', {}));
-    }, 1500);
+    }, 100);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -41774,8 +41775,8 @@ const meLoader = exports.meLoader = {
     loader.innerHTML = `
   <div style="
     font-size: 42px;
-    padding-top: 20%;
-    width: 40vw;
+    width: 50vw;
+    margin-top: -15%;
     font-weight: 900;
     color: #00ffff;
     letter-spacing: 4px;
@@ -61432,13 +61433,15 @@ class MatrixEngineWGPU {
       _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       _utils.meLoader.create();
       addEventListener("run_mobile_fs", () => {
+        // console.log('what iscallback ', callback)
+        this.init({
+          canvas,
+          callback
+        });
+        _utils.meLoader.destroy();
         setTimeout(() => {
-          this.init({
-            canvas,
-            callback
-          });
-          _utils.meLoader.destroy();
-        }, 10);
+          if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
+        }, 500);
       });
     } else {
       this.init({

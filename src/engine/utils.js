@@ -835,8 +835,8 @@ export const meLoader = {
     loader.innerHTML = `
   <div style="
     font-size: 42px;
-    padding-top: 20%;
-    width: 40vw;
+    width: 50vw;
+    margin-top: -15%;
     font-weight: 900;
     color: #00ffff;
     letter-spacing: 4px;
