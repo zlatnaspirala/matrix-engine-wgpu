@@ -4159,9 +4159,9 @@ var myLights = function () {
     ];
     // Ground
     (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
+      plane: "./res/meshes/blender/plane.obj"
     }, m => {
-      myLights.addMeshObj({
+      const floor = myLights.addMeshObj({
         material: {
           type: 'standard'
         },
@@ -4173,12 +4173,23 @@ var myLights = function () {
         },
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
-        mesh: m.cube,
-        scale: [30, 0.5, 30],
+        mesh: m.plane,
+        scale: [6, 0.5, 6],
         physics: {
           enabled: false
         }
       });
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = myLights.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat'
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+      }, 200);
     }, {
       scale: [30, 0.5, 30]
     });
@@ -4190,7 +4201,7 @@ var myLights = function () {
         useTextureFromGlb: true
       },
       useScale: true,
-      scale: [5, 5, 5],
+      scale: [6, 6, 6],
       position: {
         x: TARGET.x,
         y: TARGET.y - 4,
@@ -4229,8 +4240,8 @@ var myLights = function () {
     if ((0, _utils.isMobile)() == false) myLights.activateBloomEffect();
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(5);
-      monster.updateInstances(5);
+      monster.updateMaxInstances(4);
+      monster.updateInstances(4);
       monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
       myLights.cameras.WASD.setYaw(-0.03);
