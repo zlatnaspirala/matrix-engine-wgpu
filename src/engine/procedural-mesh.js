@@ -511,7 +511,7 @@ export default class ProceduralMeshObj extends Materials {
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
-    const fragmentId = this.fragmentWGSL ? 'custom_frag' :  this.isVideo == true ? 'video' : this.material.type;
+    const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.isVideo == true ? 'video' : this.material.type;
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
     const isNormalMap = this.material.type === 'normalmap';
@@ -520,9 +520,9 @@ export default class ProceduralMeshObj extends Materials {
       vertexId,
       fragmentId,
       type: "procedural",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       morph: !this.vertexWGSL ? 1 : 0,
       mirror: isMirror ? 1 : 0,

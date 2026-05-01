@@ -371,7 +371,7 @@ export default class MatrixEngineWGPU {
     });
 
     this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
-    this.MAX_SPOTLIGHTS = 20;
+    this.MAX_SPOTLIGHTS = MEConfig.MAX_SPOTLIGHTS;
     this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.createGlobalsForEntities();
@@ -382,7 +382,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.11.0 [FasterThanARabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.11.2 [FasterThanARabbit] ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
@@ -392,6 +392,7 @@ export default class MatrixEngineWGPU {
       "%cMatrix Engine WGPU - Initial configuration :\n" +
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
       " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" +
+      " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" +
       " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
       " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);

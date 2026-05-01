@@ -29,13 +29,11 @@ export default class Materials {
   constructor(device, material, glb, textureCache, isVideo) {
     this.device = device;
     this.textureCache = textureCache;
-
     this.materialBindGroupCache = MaterialBindGroupCache.get();
-
     this.glb = glb;
     this.material = material;
     if(typeof isVideo !== 'undefined') {
-      console.log("WHAT IS isvideo ", this.isVideo)
+      // console.log("WHAT IS isvideo ??", this.isVideo)
       this.isVideo = true;
     } else {this.isVideo = false}
     this.videoIsReady = 'NONE';
@@ -613,7 +611,8 @@ export default class Materials {
       canvas.height = arg.height || 256;
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
-      canvas.style.top = '-225px';
+      canvas.style.top = '-325px';
+      canvas.id = arg.id ? arg.id : this.name + 'ci1';
       // canvas.style.zIndex = '10000';
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
@@ -654,10 +653,20 @@ export default class Materials {
 
     await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
-        this.updateVideoTexture();
-        this.createMaterialBindGroupVideo();
-        this.setupPipeline();
-        resolve();
+        setTimeout(() => {
+          this.updateVideoTexture();
+          this.createMaterialBindGroupVideo();
+          this.setupPipeline();
+          resolve();
+          // Very interest 
+          const ci1 = document.getElementById('ci1')
+          if(ci1) {
+            document.body.removeChild(ci1);
+          } else {
+            const ci2 = document.getElementById(this.name + 'ci1');
+            if(ci2) document.body.removeChild(ci2);
+          }
+        }, 200)
       });
     });
 
