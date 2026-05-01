@@ -42,7 +42,9 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 
   // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+
+  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a); 
+  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 
    switch (postFXMode) {
     case 0: {

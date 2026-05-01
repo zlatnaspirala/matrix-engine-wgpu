@@ -1134,6 +1134,7 @@ export default class MatrixEngineWGPU {
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
         if(mesh.isVideo) mesh.updateVideoTexture();
+        if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       }
 
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;

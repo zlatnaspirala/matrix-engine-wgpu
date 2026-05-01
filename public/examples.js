@@ -269,29 +269,12 @@ var canvasInline = function () {
       let VIDEO_ARG = {
         type: 'canvas2d-inline',
         canvaInlineProgram: (() => {
-          // ── matrix rain state ──────────────────────────────────────
           const COLS = Math.floor(512 / 14);
           const drops = Array.from({
             length: COLS
           }, () => Math.floor(Math.random() * -40));
           const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオ';
           let frame = 0;
-          // ── panel anchors — change x/y to move entire panel ────────
-          const BALANCE = {
-            x: 18,
-            y: 1,
-            w: 225,
-            h: 208,
-            r: 8
-          };
-          const BALLS = {
-            x: 18,
-            y: 255,
-            w: 225,
-            h: 208,
-            r: 8
-          };
-          // ── helpers ────────────────────────────────────────────────
           function roundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
             ctx.moveTo(x + r, y);
@@ -305,7 +288,6 @@ var canvasInline = function () {
             ctx.quadraticCurveTo(x, y, x + r, y);
             ctx.closePath();
           }
-          // ── main draw — called every frame by loadVideoTexture ─────
           return (ctx, {
             balance = 1213,
             balls = 3,
@@ -315,9 +297,8 @@ var canvasInline = function () {
             const H = ctx.canvas.height;
             const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
             // fade trail
-            ctx.fillStyle = 'rgba(130, 130, 130, 0.04)';
+            ctx.fillStyle = 'rgba(0, 0, 10, 0.04)';
             ctx.fillRect(0, 0, W, H);
-
             // matrix rain
             ctx.font = '14px monospace';
             for (let i = 0; i < COLS; i++) {
@@ -378,18 +359,18 @@ var canvasInline = function () {
         },
         position: {
           x: 0,
-          y: 6,
+          y: 7,
           z: -10
         },
         rotation: {
-          x: 90,
+          x: 0,
           y: 0,
           z: 0
         },
-        scale: [15, 15, 15],
+        scale: [10, 10, 10],
         rotationSpeed: {
-          x: 3,
-          y: 0,
+          x: 0,
+          y: 3,
           z: 0
         },
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
@@ -410,7 +391,7 @@ var canvasInline = function () {
         //   // flameEffect: true
         // }
       });
-      loadObjFile.lightContainer[0].setIntensity(5);
+      loadObjFile.lightContainer[0].setIntensity(10);
       if ((0, _utils.isMobile)() == false) {
         loadObjFile.activateBloomEffect();
         loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
@@ -419,22 +400,22 @@ var canvasInline = function () {
           light.setTargetX(light.behavior.setPath0());
           light.setPosX(light.behavior.setPath0());
         });
-        loadObjFile.lightContainer[0].setPosition(0, 15, -10);
+        loadObjFile.lightContainer[0].setPosition(0, 25, -10);
         loadObjFile.lightContainer[0].setTarget(0, 0, -10);
       }
       setTimeout(() => {
         // Load canvas tex in runtime...
         MYCUBE.loadVideoTexture(VIDEO_ARG);
         MYCUBE.setBlend(0.1);
-
+        MYCUBE.setupPipeline();
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         // MYCUBE.setAmbient(10, 1, 0);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
-        cam.setZ(0);
-        cam.setY(10);
+        cam.setZ(5);
+        cam.setY(20);
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
       }, 800);
@@ -35370,19 +35351,27 @@ class Materials {
         ctx.fillStyle = '#0ce325ff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      this.video = document.createElement('video');
-      this.video.style.position = 'absolute';
-      // this.video.style.zIndex = '1';
-      this.video.style.left = '-600px';
-      this.video.style.top = '0';
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(24);
-      document.body.append(this.video);
-      this.video.play();
+      this.sourceCanvas = canvas; // store ref
+
+      this.gpuTexture = this.device.createTexture({
+        size: [this.sourceCanvas.width, this.sourceCanvas.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.video = null;
+      // this.video = document.createElement('video');
+      // this.video.style.position = 'absolute';
+      // // this.video.style.zIndex = '1';
+      // this.video.style.left = '-600px';
+      // this.video.style.top = '0';
+      // this.video.autoplay = true;
+      // this.video.muted = true;
+      // this.video.playsInline = true;
+      // this.video.srcObject = canvas.captureStream(24);
+      // document.body.append(this.video);
+      // this.video.play();
     }
-    await new Promise(resolve => {
+    if (this.video) await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
         setTimeout(() => {
           this.updateVideoTexture();
@@ -35407,6 +35396,15 @@ class Materials {
       source: this.video
     });
     if (!this.externalTexture) return;
+    this.createMaterialBindGroupVideo();
+  }
+  updateCanvasInlineTexture() {
+    this.externalTexture = this.device.queue.copyExternalImageToTexture({
+      source: this.sourceCanvas
+    }, {
+      texture: this.gpuTexture,
+      premultipliedAlpha: false
+    }, [this.sourceCanvas.width, this.sourceCanvas.height]);
     this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
@@ -35506,22 +35504,41 @@ class Materials {
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
     // console.log('SET VIDEO BIND GROUP')
-    this.materialBindGroup = this.device.createBindGroup({
-      label: 'materialVideoBGL',
-      layout: this.materialVideoBGL,
-      entries: [{
-        binding: 0,
-        resource: this.externalTexture
-      }, {
-        binding: 1,
-        resource: this.videoSampler
-      }, {
-        binding: 2,
-        resource: {
-          buffer: this.postFXModeBuffer
-        }
-      }]
-    });
+    if (this.video == null) {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [{
+          binding: 0,
+          resource: this.gpuTexture.createView()
+        }, {
+          binding: 1,
+          resource: this.videoSampler
+        }, {
+          binding: 2,
+          resource: {
+            buffer: this.postFXModeBuffer
+          }
+        }]
+      });
+    } else {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [{
+          binding: 0,
+          resource: this.externalTexture
+        }, {
+          binding: 1,
+          resource: this.videoSampler
+        }, {
+          binding: 2,
+          resource: {
+            buffer: this.postFXModeBuffer
+          }
+        }]
+      });
+    }
   }
 }
 exports.default = Materials;
@@ -35536,20 +35553,19 @@ exports.Rotation = exports.Position = exports.PVector = void 0;
 exports.pairRepulsion = pairRepulsion;
 var _utils = require("./utils");
 /**
- * @description 
- * Sub classes for matrix-wgpu
+ * @description
+ * Sub classes for matrix-engine-wgpu
  * Base class
  * Position { x, y, z }
  */
 
 class Position {
   constructor(x, y, z) {
-    // console.log('TEST TYTPOF ', x)
     this.remoteName = null;
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 3;
+    this.netTolerance = 2;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
@@ -35951,7 +35967,7 @@ class Rotation {
       }
       return this._cachedRotY;
     } else {
-      this.y = this.y + this.rotationSpeed.y * 0.01;
+      this.y = this.y + this.rotationSpeed.y;
       this._cachedRotY = (0, _utils.degToRad)(this.y);
       this._lastY = this.y;
       return this._cachedRotY;
@@ -35973,7 +35989,7 @@ class Rotation {
       }
       return this._cachedRotZ;
     } else {
-      this.z = this.z + this.rotationSpeed.z * 0.01;
+      this.z = this.z + this.rotationSpeed.z;
       this._cachedRotZ = (0, _utils.degToRad)(this.z);
       this._lastZ = this.z;
       return this._cachedRotZ;
@@ -35981,7 +35997,7 @@ class Rotation {
   };
 }
 
-// array type of pos obj
+// Array type of pos obj
 exports.Rotation = Rotation;
 function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0) {
   const dx = Apos[0] - Bpos.x;
@@ -43800,7 +43816,9 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 
   // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+
+  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a); 
+  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 
    switch (postFXMode) {
     case 0: {
@@ -44077,7 +44095,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // var ambientTerm = material.ambientColor + scene.globalAmbient;
     // var finalColor = ambientTerm + texColor.rgb * lightContribution;
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // let alpha = mix(materialData.alpha, 1.0 , 0.5);
+    let alpha = texColor.a * material.baseColorFactor.a;
+    // let alpha = material.baseColorFactor.a;
     return vec4f(finalColor, alpha);
 }`;
 
@@ -62422,6 +62442,7 @@ class MatrixEngineWGPU {
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();
+        if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);

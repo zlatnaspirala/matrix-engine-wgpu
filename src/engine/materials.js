@@ -638,20 +638,31 @@ export default class Materials {
         ctx.fillStyle = '#0ce325ff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      this.video = document.createElement('video');
-      this.video.style.position = 'absolute';
-      // this.video.style.zIndex = '1';
-      this.video.style.left = '-600px';
-      this.video.style.top = '0';
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(24);
-      document.body.append(this.video);
-      this.video.play();
+
+      this.sourceCanvas = canvas; // store ref
+
+      this.gpuTexture = this.device.createTexture({
+        size: [this.sourceCanvas.width, this.sourceCanvas.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      this.video = null;
+      // this.video = document.createElement('video');
+      // this.video.style.position = 'absolute';
+      // // this.video.style.zIndex = '1';
+      // this.video.style.left = '-600px';
+      // this.video.style.top = '0';
+      // this.video.autoplay = true;
+      // this.video.muted = true;
+      // this.video.playsInline = true;
+      // this.video.srcObject = canvas.captureStream(24);
+      // document.body.append(this.video);
+      // this.video.play();
     }
 
-    await new Promise(resolve => {
+    if(this.video) await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
         setTimeout(() => {
           this.updateVideoTexture();
@@ -676,6 +687,15 @@ export default class Materials {
     if(!this.video || this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
     if(!this.externalTexture) return;
+    this.createMaterialBindGroupVideo();
+  }
+
+  updateCanvasInlineTexture() {
+    this.externalTexture = this.device.queue.copyExternalImageToTexture(
+      {source: this.sourceCanvas},
+      {texture: this.gpuTexture, premultipliedAlpha: false},
+      [this.sourceCanvas.width, this.sourceCanvas.height]
+    );
     this.createMaterialBindGroupVideo();
   }
 
@@ -756,14 +776,26 @@ export default class Materials {
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
     // console.log('SET VIDEO BIND GROUP')
-    this.materialBindGroup = this.device.createBindGroup({
-      label: 'materialVideoBGL',
-      layout: this.materialVideoBGL,
-      entries: [
-        {binding: 0, resource: this.externalTexture},
-        {binding: 1, resource: this.videoSampler},
-        {binding: 2, resource: {buffer: this.postFXModeBuffer}}
-      ]
-    });
+    if(this.video == null) {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [
+          {binding: 0, resource: this.gpuTexture.createView()},
+          {binding: 1, resource: this.videoSampler},
+          {binding: 2, resource: {buffer: this.postFXModeBuffer}}
+        ]
+      });
+    } else {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [
+          {binding: 0, resource: this.externalTexture},
+          {binding: 1, resource: this.videoSampler},
+          {binding: 2, resource: {buffer: this.postFXModeBuffer}}
+        ]
+      });
+    }
   }
 }
