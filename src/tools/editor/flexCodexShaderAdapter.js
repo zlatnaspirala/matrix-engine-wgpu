@@ -147,7 +147,7 @@ struct PBRMaterialData {
 };
 
 // PREDEFINED
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // // PREDEFINED
 // @group(0) @binding(0) var<uniform> scene : Scene;

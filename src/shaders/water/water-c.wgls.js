@@ -1,7 +1,7 @@
 import {MEConfig} from "../../me-config";
 
 export let fragmentWaterWGSL = `
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 const PI: f32 = 3.141592653589793;
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 

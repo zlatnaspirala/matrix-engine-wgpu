@@ -1,3 +1,5 @@
+import {MEConfig} from "../../me-config";
+
 export let colorbWGSL = `
 override shadowDepthTextureSize: f32;
 
@@ -21,8 +23,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 struct SpotLight {
@@ -43,7 +45,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // KEEP LAYOUT
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -66,18 +68,13 @@ struct FragmentInput {
 fn main(input: FragmentInput) -> @location(0) vec4f {
 
 let uv = fract(input.fragUV);
-
     // distance to nearest edge 0 or 1
     let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-
     let edgeWidth = 0.05;  // tweak thickness
     let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
-
     let neonColor = vec3f(0.0, 1.0, 1.0);
     let coreColor = vec3f(0.0, 0.0, 0.0);
-
     let color = mix(coreColor, neonColor, edgeFactor);
-
     return vec4f(color, 1);
 }`;
 
@@ -124,7 +121,7 @@ let uv = fract(input.fragUV);
 //     lightViewProj : mat4x4<f32>,
 // };
 
-// const MAX_SPOTLIGHTS = 20u;
+// const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // // ===== KEEP ORIGINAL BINDINGS =====
 // @group(0) @binding(0) var<uniform> scene : Scene;

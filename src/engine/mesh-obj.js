@@ -406,7 +406,7 @@ export default class MEMeshObj extends Materials {
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
       let glbInfo = {
-        arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
+        arrayStride: 4 * 4,
         attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
       }
 
@@ -727,7 +727,7 @@ export default class MEMeshObj extends Materials {
             console.warn(`%cYou forgot to put envMapParams in args...`, LOG_FUNNY_ARCADE); return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); //return;
+          console.warn(`%cMIRROR ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); //return;
           this.setupPipeline()
         });
         this.setupPipeline()
@@ -761,9 +761,9 @@ export default class MEMeshObj extends Materials {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "mesh",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
@@ -975,25 +975,24 @@ export default class MEMeshObj extends Materials {
   drawElementsAnim = (renderPass) => {
     // if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    // renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    // renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     // if(this.objAnim.playing == true) {
-      if(this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
-        this.objAnim.currentAni++;
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
-      } else {
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
-      }
-      if(this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
-        this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
-      }
+    if(this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+      this.objAnim.currentAni++;
+      this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+    } else {
+      this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
+    }
+    if(this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
+      this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
+    }
     // }
   }
 
@@ -1022,7 +1021,7 @@ export default class MEMeshObj extends Materials {
   destroy = () => {
     if(this._destroyed) return;
     this._destroyed = true;
-    // --- GPU Buffers ---
+    // GPU Buffers
     this.vertexBuffer?.destroy();
     this.vertexNormalsBuffer?.destroy();
     this.vertexTexCoordsBuffer?.destroy();

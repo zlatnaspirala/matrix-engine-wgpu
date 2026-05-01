@@ -1,5 +1,7 @@
+import {MEConfig} from "../../me-config";
+
 const SHARED = `
-override shadowDepthTextureSize : f32 = 512.0;
+override shadowDepthTextureSize : f32 = ${MEConfig.SHADOW_RES};
 const PI  : f32 = 3.141592653589793;
 const TAU : f32 = 6.283185307179586;
 
@@ -38,7 +40,7 @@ struct PBRMaterialData {
     roughness : f32,
     alpha     : f32,
 };
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;

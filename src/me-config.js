@@ -17,7 +17,7 @@ export const MEConfig = {
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
   MAX_BONES: isMobile() == true ? 80 : 100,
-  MAX_LIGHTS: isMobile() == true ? 20 : 40,
+  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 40,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -41,13 +41,13 @@ export const MEConfig = {
       this.SHADOW_RES = parseInt(urlQ['SHADOW_RES']);
       console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
-    if(urlQ['MAX_LIGHTS']) {
-      this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
-      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+    if(urlQ['MAX_SPOTLIGHTS']) {
+      this.MAX_SPOTLIGHTS = parseInt(urlQ['MAX_SPOTLIGHTS']);
+      console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['MAX_BONES']) {
       this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
-      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+      console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
     }
 
     if(urlQ['fs'] || isMobile()) {

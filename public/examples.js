@@ -213,18 +213,18 @@ var canvasInline = function () {
     loadObjFile.addLight();
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
-      cube: "./res/meshes/blender/cube.obj"
+      cube: "./res/meshes/blender/plane.obj"
     }, onLoadObj, {
       scale: [1, 1, 1]
     });
     (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
+      plane: "./res/meshes/blender/plane.obj"
     }, onGround, {
       scale: [30, 0.5, 30]
     });
     (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
     function onGround(m) {
-      loadObjFile.addMeshObj({
+      let floor = loadObjFile.addMeshObj({
         material: {
           type: 'standard'
         },
@@ -246,13 +246,24 @@ var canvasInline = function () {
         texturesPaths: ['./res/textures/floor1.webp'],
         //, './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
-        mesh: m.cube,
+        mesh: m.plane,
         physics: {
           enabled: false,
           mass: 0,
           geometry: "Cube"
         }
       });
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = loadObjFile.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat'
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(8, 8);
+      }, 500);
     }
     async function onLoadObj(m) {
       let VIDEO_ARG = {
@@ -263,9 +274,8 @@ var canvasInline = function () {
           const drops = Array.from({
             length: COLS
           }, () => Math.floor(Math.random() * -40));
-          const chars = 'アイウエオカキクケコ01アイウエオ';
+          const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオ';
           let frame = 0;
-
           // ── panel anchors — change x/y to move entire panel ────────
           const BALANCE = {
             x: 18,
@@ -281,7 +291,6 @@ var canvasInline = function () {
             h: 208,
             r: 8
           };
-
           // ── helpers ────────────────────────────────────────────────
           function roundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
@@ -296,77 +305,32 @@ var canvasInline = function () {
             ctx.quadraticCurveTo(x, y, x + r, y);
             ctx.closePath();
           }
-          function drawPanel(ctx, p, pulse) {
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-            ctx.fill();
-            ctx.strokeStyle = `rgba(0,${Math.floor(200 * pulse)},50,0.7)`;
-            ctx.lineWidth = 1;
-            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-            ctx.stroke();
-          }
-
           // ── main draw — called every frame by loadVideoTexture ─────
           return (ctx, {
-            balance = 99840,
+            balance = 1213,
             balls = 3,
             maxBalls = 5
           } = {}) => {
             const W = ctx.canvas.width;
             const H = ctx.canvas.height;
             const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
-
             // fade trail
-            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.fillStyle = 'rgba(130, 130, 130, 0.04)';
             ctx.fillRect(0, 0, W, H);
 
             // matrix rain
-            ctx.font = '12px monospace';
+            ctx.font = '14px monospace';
             for (let i = 0; i < COLS; i++) {
               const ch = chars[Math.floor(Math.random() * chars.length)];
               const br = Math.random();
-              ctx.fillStyle = br > 0.92 ? '#ffffff' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
+              ctx.fillStyle = br > 0.82 ? '#ffffff' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
               ctx.fillText(ch, i * 14, drops[i] * 14);
               if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
             }
             ctx.save();
             ctx.shadowColor = '#00ff41';
             ctx.shadowBlur = 18 * pulse;
-
-            // ── BALANCE panel ─────────────────────────────────────────
-            const B = BALANCE;
-            drawPanel(ctx, B, pulse);
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = 'rgba(0,200,60,0.55)';
-            ctx.fillText('MATRIX ENGINE // PINBALL', B.x + 12, B.y + 18);
-            ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-            ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-            ctx.font = 'bold 32px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-            ctx.fillText(balance.toLocaleString(), B.x + 12, B.y + 82);
-
-            // ── BALLS panel ───────────────────────────────────────────
-            const BL = BALLS;
-            drawPanel(ctx, BL, pulse);
-            ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-            ctx.fillText('BALLS', BL.x + 12, BL.y + 46);
-            for (let b = 0; b < maxBalls; b++) {
-              ctx.beginPath();
-              ctx.arc(BL.x + 24 + b * 34, BL.y + 70, 12, 0, Math.PI * 2);
-              if (b < balls) {
-                ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-                ctx.shadowBlur = 14 * pulse;
-              } else {
-                ctx.fillStyle = 'rgba(0,60,20,0.5)';
-                ctx.shadowBlur = 0;
-              }
-              ctx.fill();
-            }
             ctx.restore();
-
-            // ── footer ────────────────────────────────────────────────
             ctx.font = 'bold 11px monospace';
             ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
             ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
@@ -375,9 +339,10 @@ var canvasInline = function () {
           };
         })()
       };
-      loadObjFile.addMeshObj({
+      let sky = loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -413,21 +378,21 @@ var canvasInline = function () {
         },
         position: {
           x: 0,
-          y: 3,
+          y: 6,
           z: -10
         },
         rotation: {
-          x: 0,
+          x: 90,
           y: 0,
           z: 0
         },
-        scale: [3, 3, 3],
+        scale: [15, 15, 15],
         rotationSpeed: {
-          x: 0,
+          x: 3,
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp'],
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
         raycast: {
@@ -458,127 +423,9 @@ var canvasInline = function () {
         loadObjFile.lightContainer[0].setTarget(0, 0, -10);
       }
       setTimeout(() => {
-        // let TEST = app.getSceneObjectByName('cube')
-        MYCUBE.loadVideoTexture({
-          type: 'canvas2d-inline',
-          canvaInlineProgram: (() => {
-            // ── matrix rain state ──────────────────────────────────────
-            const COLS = Math.floor(512 / 14);
-            const drops = Array.from({
-              length: COLS
-            }, () => Math.floor(Math.random() * -40));
-            const chars = 'アイウエオカキクケコ01アイウエオ';
-            let frame = 0;
-
-            // ── panel anchors — change x/y to move entire panel ────────
-            const BALANCE = {
-              x: 18,
-              y: 18,
-              w: 220,
-              h: 108,
-              r: 8
-            };
-            const BALLS = {
-              x: 274,
-              y: 18,
-              w: 220,
-              h: 108,
-              r: 8
-            };
-
-            // ── helpers ────────────────────────────────────────────────
-            function roundRect(ctx, x, y, w, h, r) {
-              ctx.beginPath();
-              ctx.moveTo(x + r, y);
-              ctx.lineTo(x + w - r, y);
-              ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-              ctx.lineTo(x + w, y + h - r);
-              ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-              ctx.lineTo(x + r, y + h);
-              ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-              ctx.lineTo(x, y + r);
-              ctx.quadraticCurveTo(x, y, x + r, y);
-              ctx.closePath();
-            }
-            function drawPanel(ctx, p, pulse) {
-              ctx.fillStyle = 'rgba(0,0,0,0.6)';
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.fill();
-              ctx.strokeStyle = `rgba(0,${Math.floor(200 * pulse)},50,0.7)`;
-              ctx.lineWidth = 1;
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.stroke();
-            }
-
-            // ── main draw — called every frame by loadVideoTexture ─────
-            return (ctx, {
-              balance = 99840,
-              balls = 3,
-              maxBalls = 5
-            } = {}) => {
-              const W = ctx.canvas.width;
-              const H = ctx.canvas.height;
-              const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
-
-              // fade trail
-              ctx.fillStyle = 'rgba(0,0,0,0.18)';
-              ctx.fillRect(0, 0, W, H);
-
-              // matrix rain
-              ctx.font = '12px monospace';
-              for (let i = 0; i < COLS; i++) {
-                const ch = chars[Math.floor(Math.random() * chars.length)];
-                const br = Math.random();
-                ctx.fillStyle = br > 0.92 ? '#ffffff' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
-                ctx.fillText(ch, i * 14, drops[i] * 14);
-                if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
-              }
-              ctx.save();
-              ctx.shadowColor = '#00ff41';
-              ctx.shadowBlur = 18 * pulse;
-
-              // ── BALANCE panel ─────────────────────────────────────────
-              const B = BALANCE;
-              drawPanel(ctx, B, pulse);
-              ctx.font = 'bold 11px monospace';
-              ctx.fillStyle = 'rgba(0,200,60,0.55)';
-              ctx.fillText('MATRIX ENGINE // PINBALL', B.x + 12, B.y + 18);
-              ctx.font = 'bold 13px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-              ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-              ctx.font = 'bold 32px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-              ctx.fillText(balance.toLocaleString(), B.x + 12, B.y + 82);
-
-              // ── BALLS panel ───────────────────────────────────────────
-              const BL = BALLS;
-              drawPanel(ctx, BL, pulse);
-              ctx.font = 'bold 13px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-              ctx.fillText('BALLS', BL.x + 12, BL.y + 46);
-              for (let b = 0; b < maxBalls; b++) {
-                ctx.beginPath();
-                ctx.arc(BL.x + 24 + b * 34, BL.y + 70, 12, 0, Math.PI * 2);
-                if (b < balls) {
-                  ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-                  ctx.shadowBlur = 14 * pulse;
-                } else {
-                  ctx.fillStyle = 'rgba(0,60,20,0.5)';
-                  ctx.shadowBlur = 0;
-                }
-                ctx.fill();
-              }
-              ctx.restore();
-
-              // ── footer ────────────────────────────────────────────────
-              ctx.font = 'bold 11px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
-              ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
-              ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
-              frame++;
-            };
-          })()
-        });
+        // Load canvas tex in runtime...
+        MYCUBE.loadVideoTexture(VIDEO_ARG);
+        MYCUBE.setBlend(0.1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
@@ -31577,9 +31424,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "instanced",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
@@ -34890,7 +34737,7 @@ class Materials {
     this.glb = glb;
     this.material = material;
     if (typeof isVideo !== 'undefined') {
-      console.log("WHAT IS isvideo ", this.isVideo);
+      // console.log("WHAT IS isvideo ??", this.isVideo)
       this.isVideo = true;
     } else {
       this.isVideo = false;
@@ -35496,7 +35343,8 @@ class Materials {
       canvas.height = arg.height || 256;
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
-      canvas.style.top = '-225px';
+      canvas.style.top = '-325px';
+      canvas.id = arg.id ? arg.id : this.name + 'ci1';
       // canvas.style.zIndex = '10000';
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
@@ -35536,10 +35384,20 @@ class Materials {
     }
     await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
-        this.updateVideoTexture();
-        this.createMaterialBindGroupVideo();
-        this.setupPipeline();
-        resolve();
+        setTimeout(() => {
+          this.updateVideoTexture();
+          this.createMaterialBindGroupVideo();
+          this.setupPipeline();
+          resolve();
+          // Very interest 
+          const ci1 = document.getElementById('ci1');
+          if (ci1) {
+            document.body.removeChild(ci1);
+          } else {
+            const ci2 = document.getElementById(this.name + 'ci1');
+            if (ci2) document.body.removeChild(ci2);
+          }
+        }, 200);
       });
     });
   }
@@ -36566,7 +36424,6 @@ class MEMeshObj extends _materials.default {
       this.indexCount = indexCount;
       let glbInfo = {
         arrayStride: 4 * 4,
-        // vec4<f32> = 4 * 4 bytes
         attributes: [{
           format: 'float32x4',
           offset: 0,
@@ -36933,7 +36790,7 @@ class MEMeshObj extends _materials.default {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, _utils.LOG_FUNNY_ARCADE); //return;
+          console.warn(`%cMIRROR ${this.mirrorBindGroup} `, _utils.LOG_FUNNY_ARCADE); //return;
           this.setupPipeline();
         });
         this.setupPipeline();
@@ -36972,9 +36829,9 @@ class MEMeshObj extends _materials.default {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "mesh",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
@@ -37165,13 +37022,12 @@ class MEMeshObj extends _materials.default {
   drawElementsAnim = renderPass => {
     // if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    // renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    // renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     // if(this.objAnim.playing == true) {
@@ -37209,7 +37065,7 @@ class MEMeshObj extends _materials.default {
   destroy = () => {
     if (this._destroyed) return;
     this._destroyed = true;
-    // --- GPU Buffers ---
+    // GPU Buffers
     this.vertexBuffer?.destroy();
     this.vertexNormalsBuffer?.destroy();
     this.vertexTexCoordsBuffer?.destroy();
@@ -39757,9 +39613,9 @@ class ProceduralMeshObj extends _materials.default {
       vertexId,
       fragmentId,
       type: "procedural",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       morph: !this.vertexWGSL ? 1 : 0,
       mirror: isMirror ? 1 : 0,
@@ -42226,7 +42082,7 @@ const MEConfig = exports.MEConfig = {
   fsManager: new _utils.FullScreenManagerElement(),
   SHADOW_RES: (0, _utils.isMobile)() == true ? 128.0 : 512.0,
   MAX_BONES: (0, _utils.isMobile)() == true ? 80 : 100,
-  MAX_LIGHTS: (0, _utils.isMobile)() == true ? 20 : 40,
+  MAX_SPOTLIGHTS: (0, _utils.isMobile)() == true ? 18 : 40,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -42249,13 +42105,13 @@ const MEConfig = exports.MEConfig = {
       this.SHADOW_RES = parseInt(urlQ['SHADOW_RES']);
       console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, _utils.LOG_FUNNY_ARCADE);
     }
-    if (urlQ['MAX_LIGHTS']) {
-      this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
-      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
+    if (urlQ['MAX_SPOTLIGHTS']) {
+      this.MAX_SPOTLIGHTS = parseInt(urlQ['MAX_SPOTLIGHTS']);
+      console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, _utils.LOG_FUNNY_ARCADE);
     }
     if (urlQ['MAX_BONES']) {
       this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
-      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
+      console.log(`%cMAX_BONES : ${this.MAX_BONES}`, _utils.LOG_FUNNY_ARCADE);
     }
     if (urlQ['fs'] || (0, _utils.isMobile)()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
@@ -42844,8 +42700,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fountainWaterVertexWGSL = exports.fountainCurtainFragmentWGSL = exports.fountainCapFragmentWGSL = exports.fountainBasinFragmentWGSL = void 0;
+var _meConfig = require("../../me-config");
 const SHARED = `
-override shadowDepthTextureSize : f32 = 512.0;
+override shadowDepthTextureSize : f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI  : f32 = 3.141592653589793;
 const TAU : f32 = 6.283185307179586;
 
@@ -42884,7 +42741,7 @@ struct PBRMaterialData {
     roughness : f32,
     alpha     : f32,
 };
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -43379,7 +43236,7 @@ fn main(input: VertexInput) -> VertexOutput {
 }
 `;
 
-},{}],86:[function(require,module,exports){
+},{"../../me-config":79}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43440,7 +43297,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -43657,7 +43514,7 @@ struct MirrorIlluminateParams {
     _pad2              : vec3f,  // ✅ Padding to maintain alignment
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -44039,7 +43896,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -44284,7 +44141,7 @@ struct PBRMaterialData {
     alpha     : f32,  // ✅ Added alpha
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -44498,7 +44355,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -44743,7 +44600,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -44991,7 +44848,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -45217,7 +45074,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -45453,7 +45310,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -45686,7 +45543,7 @@ struct MirrorIlluminateParams {
     _pad2              : vec3f,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -46437,6 +46294,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.colorbWGSL = void 0;
+var _meConfig = require("../../me-config");
 let colorbWGSL = exports.colorbWGSL = `
 override shadowDepthTextureSize: f32;
 
@@ -46460,8 +46318,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 struct SpotLight {
@@ -46482,7 +46340,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 // KEEP LAYOUT
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -46505,18 +46363,13 @@ struct FragmentInput {
 fn main(input: FragmentInput) -> @location(0) vec4f {
 
 let uv = fract(input.fragUV);
-
     // distance to nearest edge 0 or 1
     let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-
     let edgeWidth = 0.05;  // tweak thickness
     let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
-
     let neonColor = vec3f(0.0, 1.0, 1.0);
     let coreColor = vec3f(0.0, 0.0, 0.0);
-
     let color = mix(coreColor, neonColor, edgeFactor);
-
     return vec4f(color, 1);
 }`;
 
@@ -46563,7 +46416,7 @@ let uv = fract(input.fragUV);
 //     lightViewProj : mat4x4<f32>,
 // };
 
-// const MAX_SPOTLIGHTS = 20u;
+// const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // // ===== KEEP ORIGINAL BINDINGS =====
 // @group(0) @binding(0) var<uniform> scene : Scene;
@@ -46598,7 +46451,7 @@ let uv = fract(input.fragUV);
 // }
 // `;
 
-},{}],102:[function(require,module,exports){
+},{"../../me-config":79}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46651,7 +46504,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
@@ -46777,7 +46630,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -46891,7 +46744,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -46949,9 +46802,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.miniWGSL = void 0;
 var _meConfig = require("../../me-config");
 let miniWGSL = exports.miniWGSL = `
-
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
-
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -46966,13 +46817,11 @@ struct Scene {
     padding4             : vec2f,
 };
 
-// minimal dummy spotlight (kept for layout compatibility)
 struct SpotLight {
     position : vec3f,
     _pad1    : f32,
 };
 
-// minimal material (layout compatibility)
 struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
@@ -46983,7 +46832,7 @@ struct MaterialPBR {
     _pad            : f32,    // alignment padding
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 
@@ -47029,7 +46878,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSLMix1 = void 0;
-let fragmentWGSLMix1 = exports.fragmentWGSLMix1 = `override shadowDepthTextureSize: f32 = 512.0;
+var _meConfig = require("../../me-config");
+let fragmentWGSLMix1 = exports.fragmentWGSLMix1 = `
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -47078,7 +46929,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -47242,7 +47093,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],107:[function(require,module,exports){
+},{"../../me-config":79}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48553,7 +48404,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.fragmentWaterWGSL = void 0;
 var _meConfig = require("../../me-config");
 let fragmentWaterWGSL = exports.fragmentWaterWGSL = `
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 const PI: f32 = 3.141592653589793;
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
@@ -52757,7 +52608,7 @@ struct PBRMaterialData {
 };
 
 // PREDEFINED
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 // // PREDEFINED
 // @group(0) @binding(0) var<uniform> scene : Scene;
@@ -61614,7 +61465,7 @@ class MatrixEngineWGPU {
       alphaMode: 'premultiplied'
     });
     this.globalAmbient = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
-    this.MAX_SPOTLIGHTS = 20;
+    this.MAX_SPOTLIGHTS = _meConfig.MEConfig.MAX_SPOTLIGHTS;
     this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.createGlobalsForEntities();
@@ -61625,10 +61476,10 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.11.0 [FasterThanARabbit] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.11.2 [FasterThanARabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
-    console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
+    console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY_ARCADE);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", _utils.LOG_FUNNY_ARCADE);
