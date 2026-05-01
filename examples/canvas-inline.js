@@ -2,6 +2,7 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile} from "../src/engine/utils.js";
+import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 
 export var canvasInline = function() {
   let loadObjFile = new MatrixEngineWGPU({
@@ -58,7 +59,7 @@ export var canvasInline = function() {
         canvaInlineProgram: (() => {
           const COLS = Math.floor(512 / 14);
           const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -40));
-          const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオ';
+          const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオMATRIX-ENGINE';
           let frame = 0;
           function roundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
@@ -78,15 +79,15 @@ export var canvasInline = function() {
             const H = ctx.canvas.height;
             const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
             // fade trail
-            ctx.fillStyle = 'rgba(0, 0, 10, 0.04)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, W, H);
             // matrix rain
-            ctx.font = '14px monospace';
+            ctx.font = '13px monospace';
             for(let i = 0;i < COLS;i++) {
               const ch = chars[Math.floor(Math.random() * chars.length)];
               const br = Math.random();
               ctx.fillStyle = br > 0.82
-                ? '#ffffff'
+                ? '#ffffff78'
                 : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
               ctx.fillText(ch, i * 14, drops[i] * 14);
               if(drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;
@@ -114,7 +115,7 @@ export var canvasInline = function() {
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 110.5, z: 0},
+        rotationSpeed: {x: 0, y: 0.5, z: 0},
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'sky',
         mesh: m.ball,
@@ -130,7 +131,7 @@ export var canvasInline = function() {
         material: {type: 'standard', share: true},
         position: {x: 0, y: 7, z: -10},
         rotation: {x: 0, y: 0, z: 0},
-        scale: [10, 10, 10],
+        scale: [7, 7, 7],
         rotationSpeed: {x: 0, y: 3, z: 0},
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
@@ -147,6 +148,22 @@ export var canvasInline = function() {
         //   // flameEffect: true
         // }
       })
+
+      let MYCYLINDER = loadObjFile.addProceduralMeshObj({
+        material: {type: 'standard', share: true},
+        position: {x: 0, y: 7, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [5, 5, 5],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        meshA: MeshMorpher.sphere(1, 2),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_cylinder`,
+        physics: {
+          enabled: false
+        },
+        raycast: {enabled: true, radius: 1}
+      });
 
       loadObjFile.lightContainer[0].setIntensity(10);
 
@@ -165,8 +182,14 @@ export var canvasInline = function() {
       setTimeout(() => {
         // Load canvas tex in runtime...
         MYCUBE.loadVideoTexture(VIDEO_ARG);
+
         MYCUBE.setBlend(0.1);
         MYCUBE.setupPipeline();
+
+        MYCYLINDER.loadVideoTexture(VIDEO_ARG);
+        MYCYLINDER.setBlend(0.1);
+        MYCYLINDER.setupPipeline();
+
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         // MYCUBE.setAmbient(10, 1, 0);
@@ -182,9 +205,12 @@ export var canvasInline = function() {
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected');
-      if(e.detail.hitObject.name.startsWith('cube')) {
-        if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
-      }
+      //  if(e.detail.hitObject.name.startsWith('cube')) {
+
+      //  }
+      // if(e.detail.hitObject.name.startsWith('cube')) {
+      //   if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
+      // }
     });
 
   })

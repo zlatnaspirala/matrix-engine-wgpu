@@ -192,6 +192,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var canvasInline = function () {
   let loadObjFile = new _world.default({
@@ -273,7 +274,7 @@ var canvasInline = function () {
           const drops = Array.from({
             length: COLS
           }, () => Math.floor(Math.random() * -40));
-          const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオ';
+          const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオMATRIX-ENGINE';
           let frame = 0;
           function roundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
@@ -297,14 +298,14 @@ var canvasInline = function () {
             const H = ctx.canvas.height;
             const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
             // fade trail
-            ctx.fillStyle = 'rgba(0, 0, 10, 0.04)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, W, H);
             // matrix rain
-            ctx.font = '14px monospace';
+            ctx.font = '13px monospace';
             for (let i = 0; i < COLS; i++) {
               const ch = chars[Math.floor(Math.random() * chars.length)];
               const br = Math.random();
-              ctx.fillStyle = br > 0.82 ? '#ffffff' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
+              ctx.fillStyle = br > 0.82 ? '#ffffff78' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
               ctx.fillText(ch, i * 14, drops[i] * 14);
               if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
             }
@@ -338,7 +339,7 @@ var canvasInline = function () {
         scale: [100, 100, 100],
         rotationSpeed: {
           x: 0,
-          y: 110.5,
+          y: 0.5,
           z: 0
         },
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
@@ -367,7 +368,7 @@ var canvasInline = function () {
           y: 0,
           z: 0
         },
-        scale: [10, 10, 10],
+        scale: [7, 7, 7],
         rotationSpeed: {
           x: 0,
           y: 3,
@@ -391,6 +392,39 @@ var canvasInline = function () {
         //   // flameEffect: true
         // }
       });
+      let MYCYLINDER = loadObjFile.addProceduralMeshObj({
+        material: {
+          type: 'standard',
+          share: true
+        },
+        position: {
+          x: 0,
+          y: 7,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [5, 5, 5],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        meshA: _proceduralMesh.MeshMorpher.sphere(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        name: `morph_cylinder`,
+        physics: {
+          enabled: false
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
       loadObjFile.lightContainer[0].setIntensity(10);
       if ((0, _utils.isMobile)() == false) {
         loadObjFile.activateBloomEffect();
@@ -408,6 +442,10 @@ var canvasInline = function () {
         MYCUBE.loadVideoTexture(VIDEO_ARG);
         MYCUBE.setBlend(0.1);
         MYCUBE.setupPipeline();
+        MYCYLINDER.loadVideoTexture(VIDEO_ARG);
+        MYCYLINDER.setBlend(0.1);
+        MYCYLINDER.setupPipeline();
+
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         // MYCUBE.setAmbient(10, 1, 0);
@@ -422,16 +460,19 @@ var canvasInline = function () {
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       // console.log('ray.hit.event detected');
-      if (e.detail.hitObject.name.startsWith('cube')) {
-        if (e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4);
-      }
+      //  if(e.detail.hitObject.name.startsWith('cube')) {
+
+      //  }
+      // if(e.detail.hitObject.name.startsWith('cube')) {
+      //   if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
+      // }
     });
   });
   window.app = loadObjFile;
 };
 exports.canvasInline = canvasInline;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43817,7 +43858,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
 
-  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a); 
+  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a * 0.8);
   // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 
    switch (postFXMode) {
