@@ -226,14 +226,18 @@ export default class MatrixEngineWGPU {
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
         // this.applyCanvasSize(this.options.fastRender);
-        // console.log('APPLY CANVAS!!!', this.options.fastRender)
-        canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth * this.options.fastRender;
-        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 1.08 * this.options.fastRender;
+        console.log('FastRender : ', this.options.fastRender)
+        if(isMobile() == false) {
+          this.applyCanvasSize(this.options.fastRender)
+        } else {
+          this.applyCanvasSizeMobile(this.options.fastRender);
+          // canvas.width = screen.availWidth * this.options.fastRender;
+          // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
+        }
       } else if(isMobile() == true) {
-        // this.applyCanvasSize(this.options.fastRender);
-        // console.log('APPLY CANVAS!!!', this.options.fastRender)
+        console.log('Just Apply screen or inner...', this.options.fastRender)
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
-        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 1.08;
+        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if(this.options.fastRenderAlternative) {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -241,9 +245,10 @@ export default class MatrixEngineWGPU {
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
-        // console.log('APPLY CANVAS!!!')
+        console.log('Just INNER...');
       }
     } else {
+      console.log('Apply custom W H');
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
@@ -347,6 +352,15 @@ export default class MatrixEngineWGPU {
     this.canvas.style.height = screenHeight + "px";
   }
 
+  applyCanvasSizeMobile(scale) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scale;
+    this.canvas.height = screenHeight * scale;
+    this.canvas.style.width = screenWidth + "px";
+    this.canvas.style.height = screenHeight + "px";
+  }
+
   getCamera() {return this.cameras[this.mainCameraParams.type]}
 
   init = async ({canvas, callback}) => {
@@ -359,7 +373,7 @@ export default class MatrixEngineWGPU {
       this.context = canvas.getContext('webgpu');
     } else if(this.options.alphaMode == "opaque") {
       this.context = canvas.getContext('webgpu', {alphaMode: 'opaque'});
-    } else if(this.options.alphaMode == "opaque") {
+    } else {
       this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
     }
 
@@ -1155,15 +1169,15 @@ export default class MatrixEngineWGPU {
         }
       }
       for(const [pipeline, meshes] of this.transparentBuckets) {
-        meshes.sort((a, b) => {
-          const dx1 = camera.position[0] - a.position[0];
-          const dz1 = camera.position[2] - a.position[2];
-          const da = dx1 * dx1 + dz1 * dz1;
-          const dx2 = camera.position[0] - b.position[0];
-          const dz2 = camera.position[2] - b.position[2];
-          const db = dx2 * dx2 + dz2 * dz2;
-          return db - da;
-        });
+        // meshes.sort((a, b) => {
+        //   const dx1 = camera.position[0] - a.position[0];
+        //   const dz1 = camera.position[2] - a.position[2];
+        //   const da = dx1 * dx1 + dz1 * dz1;
+        //   const dx2 = camera.position[0] - b.position[0];
+        //   const dz2 = camera.position[2] - b.position[2];
+        //   const db = dx2 * dx2 + dz2 * dz2;
+        //   return db - da;
+        // });
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
@@ -1173,10 +1187,7 @@ export default class MatrixEngineWGPU {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      pass.end();
 
-      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = camera.VP;
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if(mesh.effects) {
@@ -1184,25 +1195,44 @@ export default class MatrixEngineWGPU {
             const effect = mesh.effects[effectName];
             if(effect == null || effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-            effect.render(transPass, mesh, viewProjMatrix);
+            effect.render(pass, mesh, camera.VP);
           }
         }
       }
-      transPass.end();
+
+      pass.end();
+
+      // const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
+      // const viewProjMatrix = camera.VP;
+      // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
+      //   const mesh = this.mainRenderBundle[meshIndex];
+      //   if(mesh.effects) {
+      //     for(const effectName in mesh.effects) {
+      //       const effect = mesh.effects[effectName];
+      //       if(effect == null || effect.enabled === false) continue;
+      //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+      //       effect.render(transPass, mesh, viewProjMatrix);
+      //     }
+      //   }
+      // }
+      // transPass.end();
 
       if(this.volumetricPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
-        const light = this.lightContainer[0];
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
-        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
-        this._volumetricLightUniforms.direction = light.direction;
-        this.volumetricPass.render(commandEncoder,
-          this.sceneTextureView,
-          this.mainDepthView,
-          this.shadowArrayView,
-          this._volumetricUniforms,
-          this._volumetricLightUniforms
-        );
+        for(let i = 0;i < this.lightContainer.length;i++) {
+          const light = this.lightContainer[i];
+          // if(!light.viewProjMatrix || !light.direction) continue;
+          this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+          this._volumetricLightUniforms.direction = light.direction;
+          this.volumetricPass.render(commandEncoder,
+            this.sceneTextureView,
+            this.mainDepthView,
+            this.shadowArrayView,
+            this._volumetricUniforms,
+            this._volumetricLightUniforms
+          );
+        }
       }
 
       const canvasTexture = this.context.getCurrentTexture();

@@ -197,7 +197,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var canvasInline = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.9,
+    fastRender: 0.85,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -206,9 +206,9 @@ var canvasInline = function () {
     },
     clearColor: {
       r: 0,
-      b: 0.122,
-      g: 0.122,
-      a: 1
+      b: 0,
+      g: 0,
+      a: 0
     }
   }, () => {
     loadObjFile.addLight();
@@ -274,7 +274,8 @@ var canvasInline = function () {
           const drops = Array.from({
             length: COLS
           }, () => Math.floor(Math.random() * -40));
-          const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオMATRIX-ENGINE';
+          const chars = 'アイウエオカキクケコアイウエオ';
+          // const chars = '01';
           let frame = 0;
           function roundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
@@ -289,34 +290,33 @@ var canvasInline = function () {
             ctx.quadraticCurveTo(x, y, x + r, y);
             ctx.closePath();
           }
-          return (ctx, {
-            balance = 1213,
-            balls = 3,
-            maxBalls = 5
-          } = {}) => {
+          return ctx => {
             const W = ctx.canvas.width;
             const H = ctx.canvas.height;
             const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
             // fade trail
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.01)';
             ctx.fillRect(0, 0, W, H);
             // matrix rain
-            ctx.font = '13px monospace';
+            // ctx.font = '13px monospace';
             for (let i = 0; i < COLS; i++) {
               const ch = chars[Math.floor(Math.random() * chars.length)];
               const br = Math.random();
-              ctx.fillStyle = br > 0.82 ? '#ffffff78' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
+              ctx.fillStyle = br > 0.82 ? '#ffffff4b' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
               ctx.fillText(ch, i * 14, drops[i] * 14);
               if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
             }
-            ctx.save();
-            ctx.shadowColor = '#00ff41';
+
+            // ctx.save();
+            ctx.shadowColor = '#00ff4052';
             ctx.shadowBlur = 18 * pulse;
-            ctx.restore();
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
-            ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
-            ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
+            // ctx.restore();
+
+            // ctx.font = 'bold 11px monospace';
+            // ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
+            // ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
+            // ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
+
             frame++;
           };
         })()
@@ -416,7 +416,7 @@ var canvasInline = function () {
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         meshA: _proceduralMesh.MeshMorpher.sphere(1, 2),
         meshB: _proceduralMesh.MeshMorpher.cube(1),
-        name: `morph_cylinder`,
+        name: `morph_1`,
         physics: {
           enabled: false
         },
@@ -426,17 +426,19 @@ var canvasInline = function () {
         }
       });
       loadObjFile.lightContainer[0].setIntensity(10);
-      if ((0, _utils.isMobile)() == false) {
-        loadObjFile.activateBloomEffect();
-        loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-        loadObjFile.lightContainer[0].behavior.value_ = -1;
-        loadObjFile.lightContainer[0].updater.push(light => {
-          light.setTargetX(light.behavior.setPath0());
-          light.setPosX(light.behavior.setPath0());
-        });
-        loadObjFile.lightContainer[0].setPosition(0, 25, -10);
-        loadObjFile.lightContainer[0].setTarget(0, 0, -10);
-      }
+
+      // if(isMobile() == false) {
+      loadObjFile.activateBloomEffect();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push(light => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      loadObjFile.lightContainer[0].setPosition(0, 25, -10);
+      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      // }
+
       setTimeout(() => {
         // Load canvas tex in runtime...
         MYCUBE.loadVideoTexture(VIDEO_ARG);
@@ -458,14 +460,14 @@ var canvasInline = function () {
         cam._dirtyAngle = true;
       }, 800);
     }
+    let STATUS = 1;
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       // console.log('ray.hit.event detected');
-      //  if(e.detail.hitObject.name.startsWith('cube')) {
-
-      //  }
-      // if(e.detail.hitObject.name.startsWith('cube')) {
-      //   if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
-      // }
+      if (e.detail.hitObject.name == 'morph_1') {
+        // if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
+        e.detail.hitObject.morphTo(STATUS);
+        if (STATUS == 1) STATUS = 0;else STATUS = 1;
+      }
     });
   });
   window.app = loadObjFile;
@@ -3724,7 +3726,7 @@ var loadObjFile = function () {
         scale: [100, 100, 100],
         rotationSpeed: {
           x: 0,
-          y: 110.5,
+          y: 0.1,
           z: 0
         },
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
@@ -3813,7 +3815,7 @@ var loadObjFile = function () {
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        MYCUBE.recreateVertexDataFromData([-2.582509022040566, 0.21125441598805741, 0.4249951687253338, 0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([-2.582509022040566, 0.21125441598805741, 0.4249951687253338, 0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
@@ -25866,7 +25868,7 @@ class FlameEmitter {
     const memory22 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
     const memory23 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
     this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, _utils.LOG_FUNNY_ARCADE);
+    console.info(`%cCrazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, _utils.LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([memory1, memory2, 0.0, memory11, memory21, 0.0, memory12, memory22, 0.0, memory13, memory23, 0.0]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
@@ -61289,14 +61291,18 @@ class MatrixEngineWGPU {
     if (this.options.canvasSize == 'fullscreen') {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
         // this.applyCanvasSize(this.options.fastRender);
-        // console.log('APPLY CANVAS!!!', this.options.fastRender)
-        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth * this.options.fastRender;
-        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 1.08 * this.options.fastRender;
+        console.log('FastRender : ', this.options.fastRender);
+        if ((0, _utils.isMobile)() == false) {
+          this.applyCanvasSize(this.options.fastRender);
+        } else {
+          this.applyCanvasSizeMobile(this.options.fastRender);
+          // canvas.width = screen.availWidth * this.options.fastRender;
+          // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
+        }
       } else if ((0, _utils.isMobile)() == true) {
-        // this.applyCanvasSize(this.options.fastRender);
-        // console.log('APPLY CANVAS!!!', this.options.fastRender)
+        console.log('Just Apply screen or inner...', this.options.fastRender);
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth;
-        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 1.08;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if (this.options.fastRenderAlternative) {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -61304,9 +61310,10 @@ class MatrixEngineWGPU {
       } else {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight;
-        // console.log('APPLY CANVAS!!!')
+        console.log('Just INNER...');
       }
     } else {
+      console.log('Apply custom W H');
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
@@ -61508,6 +61515,14 @@ class MatrixEngineWGPU {
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
+  applyCanvasSizeMobile(scale) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scale;
+    this.canvas.height = screenHeight * scale;
+    this.canvas.style.width = screenWidth + "px";
+    this.canvas.style.height = screenHeight + "px";
+  }
   getCamera() {
     return this.cameras[this.mainCameraParams.type];
   }
@@ -61525,7 +61540,7 @@ class MatrixEngineWGPU {
       this.context = canvas.getContext('webgpu', {
         alphaMode: 'opaque'
       });
-    } else if (this.options.alphaMode == "opaque") {
+    } else {
       this.context = canvas.getContext('webgpu', {
         alphaMode: 'premultiplied'
       });
@@ -62514,15 +62529,15 @@ class MatrixEngineWGPU {
         }
       }
       for (const [pipeline, meshes] of this.transparentBuckets) {
-        meshes.sort((a, b) => {
-          const dx1 = camera.position[0] - a.position[0];
-          const dz1 = camera.position[2] - a.position[2];
-          const da = dx1 * dx1 + dz1 * dz1;
-          const dx2 = camera.position[0] - b.position[0];
-          const dz2 = camera.position[2] - b.position[2];
-          const db = dx2 * dx2 + dz2 * dz2;
-          return db - da;
-        });
+        // meshes.sort((a, b) => {
+        //   const dx1 = camera.position[0] - a.position[0];
+        //   const dz1 = camera.position[2] - a.position[2];
+        //   const da = dx1 * dx1 + dz1 * dz1;
+        //   const dx2 = camera.position[0] - b.position[0];
+        //   const dz2 = camera.position[2] - b.position[2];
+        //   const db = dx2 * dx2 + dz2 * dz2;
+        //   return db - da;
+        // });
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
@@ -62532,9 +62547,6 @@ class MatrixEngineWGPU {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      pass.end();
-      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = camera.VP;
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if (mesh.effects) {
@@ -62542,18 +62554,37 @@ class MatrixEngineWGPU {
             const effect = mesh.effects[effectName];
             if (effect == null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-            effect.render(transPass, mesh, viewProjMatrix);
+            effect.render(pass, mesh, camera.VP);
           }
         }
       }
-      transPass.end();
+      pass.end();
+
+      // const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
+      // const viewProjMatrix = camera.VP;
+      // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
+      //   const mesh = this.mainRenderBundle[meshIndex];
+      //   if(mesh.effects) {
+      //     for(const effectName in mesh.effects) {
+      //       const effect = mesh.effects[effectName];
+      //       if(effect == null || effect.enabled === false) continue;
+      //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+      //       effect.render(transPass, mesh, viewProjMatrix);
+      //     }
+      //   }
+      // }
+      // transPass.end();
+
       if (this.volumetricPass.enabled === true) {
         _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
-        const light = this.lightContainer[0];
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
-        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
-        this._volumetricLightUniforms.direction = light.direction;
-        this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
+        for (let i = 0; i < this.lightContainer.length; i++) {
+          const light = this.lightContainer[i];
+          // if(!light.viewProjMatrix || !light.direction) continue;
+          this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+          this._volumetricLightUniforms.direction = light.direction;
+          this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
+        }
       }
       const canvasTexture = this.context.getCurrentTexture();
       if (this._lastCanvasTex !== canvasTexture) {

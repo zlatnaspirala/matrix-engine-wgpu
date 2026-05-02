@@ -7,14 +7,14 @@ import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 export var canvasInline = function() {
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.9,
+    fastRender: 0.85,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',
       responseCoef: 1000
     },
-    clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+    clearColor: {r: 0, b: 0, g: 0, a: 0}
   }, () => {
     loadObjFile.addLight();
 
@@ -59,7 +59,8 @@ export var canvasInline = function() {
         canvaInlineProgram: (() => {
           const COLS = Math.floor(512 / 14);
           const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -40));
-          const chars = 'アTイHウEエRオIカSキNクOケコ01アイウエオMATRIX-ENGINE';
+          const chars = 'アイウエオカキクケコアイウエオ';
+          // const chars = '01';
           let frame = 0;
           function roundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
@@ -74,36 +75,35 @@ export var canvasInline = function() {
             ctx.quadraticCurveTo(x, y, x + r, y);
             ctx.closePath();
           }
-          return (ctx, {balance = 1213, balls = 3, maxBalls = 5} = {}) => {
+          return (ctx) => {
             const W = ctx.canvas.width;
             const H = ctx.canvas.height;
             const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
             // fade trail
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.01)';
             ctx.fillRect(0, 0, W, H);
             // matrix rain
-            ctx.font = '13px monospace';
+            // ctx.font = '13px monospace';
             for(let i = 0;i < COLS;i++) {
               const ch = chars[Math.floor(Math.random() * chars.length)];
               const br = Math.random();
               ctx.fillStyle = br > 0.82
-                ? '#ffffff78'
+                ? '#ffffff4b'
                 : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
               ctx.fillText(ch, i * 14, drops[i] * 14);
               if(drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;
               else drops[i]++;
             }
 
-            ctx.save();
-            ctx.shadowColor = '#00ff41';
+            // ctx.save();
+            ctx.shadowColor = '#00ff4052';
             ctx.shadowBlur = 18 * pulse;
+            // ctx.restore();
 
-            ctx.restore();
-
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
-            ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
-            ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
+            // ctx.font = 'bold 11px monospace';
+            // ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
+            // ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
+            // ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
 
             frame++;
           };
@@ -158,7 +158,7 @@ export var canvasInline = function() {
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         meshA: MeshMorpher.sphere(1, 2),
         meshB: MeshMorpher.cube(1),
-        name: `morph_cylinder`,
+        name: `morph_1`,
         physics: {
           enabled: false
         },
@@ -167,7 +167,7 @@ export var canvasInline = function() {
 
       loadObjFile.lightContainer[0].setIntensity(10);
 
-      if(isMobile() == false) {
+      // if(isMobile() == false) {
         loadObjFile.activateBloomEffect();
         loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
         loadObjFile.lightContainer[0].behavior.value_ = -1;
@@ -177,7 +177,7 @@ export var canvasInline = function() {
         })
         loadObjFile.lightContainer[0].setPosition(0, 25, -10);
         loadObjFile.lightContainer[0].setTarget(0, 0, -10);
-      }
+      // }
 
       setTimeout(() => {
         // Load canvas tex in runtime...
@@ -203,16 +203,16 @@ export var canvasInline = function() {
       }, 800);
     }
 
+    let STATUS = 1;
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected');
-      //  if(e.detail.hitObject.name.startsWith('cube')) {
-
-      //  }
-      // if(e.detail.hitObject.name.startsWith('cube')) {
-      //   if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
-      // }
+      if(e.detail.hitObject.name == 'morph_1') {
+        // if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
+        e.detail.hitObject.morphTo(STATUS)
+        if(STATUS == 1) STATUS = 0;
+        else STATUS = 1;
+      }
     });
-
   })
   window.app = loadObjFile;
 }

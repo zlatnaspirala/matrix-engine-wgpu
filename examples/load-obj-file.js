@@ -46,7 +46,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 110.5, z: 0},
+        rotationSpeed: {x: 0, y: 0.1, z: 0},
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'sky',
         mesh: m.ball,
@@ -111,7 +111,7 @@ export var loadObjFile = function() {
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        MYCUBE.recreateVertexDataFromData([
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
         MYCUBE.setAmbient(2, 3, 0.5);
