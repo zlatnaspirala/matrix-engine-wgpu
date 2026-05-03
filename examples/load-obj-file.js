@@ -4,15 +4,13 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {MEConfig} from "../src/me-config.js";
 
-MEConfig.construct({MAX_SPOTLIGHTS: 4});
-
 export var loadObjFile = function() {
 
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 1,
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: 1,
+    MAX_SPOTLIGHTS: 2, // Other way
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',
@@ -22,7 +20,6 @@ export var loadObjFile = function() {
   }, () => {
 
     loadObjFile.addLight();
-
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
@@ -133,7 +130,7 @@ export var loadObjFile = function() {
     }
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
-      // console.log('ray.hit.event detected');
+       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));

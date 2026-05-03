@@ -12,12 +12,13 @@ export var flipperJolt = function() {
 
   let flipper = new MatrixEngineWGPU({
     render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: 0.9,
+    fastRender: 0.8,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
+    MAX_SPOTLIGHTS: isMobile() ? 1 : 4,
     clearColor: {r: 0, g: 1, b: 1, a: 1}
   }, () => {
     let hingeLeftID = 0;

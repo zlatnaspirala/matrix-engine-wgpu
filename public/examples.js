@@ -1389,7 +1389,7 @@ var flipperJolt = function () {
   };
   let flipper = new _world.default({
     render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
-    fastRender: 0.9,
+    fastRender: 0.8,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -1398,6 +1398,7 @@ var flipperJolt = function () {
     },
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 1 : 4,
     clearColor: {
       r: 0,
       g: 1,
@@ -3435,6 +3436,7 @@ function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -3658,15 +3660,13 @@ var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 var _meConfig = require("../src/me-config.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-_meConfig.MEConfig.construct({
-  MAX_SPOTLIGHTS: 4
-});
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
     fastRender: 1,
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: 1,
+    MAX_SPOTLIGHTS: 2,
+    // Other way
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',
@@ -3680,7 +3680,6 @@ var loadObjFile = function () {
     }
   }, () => {
     loadObjFile.addLight();
-
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
@@ -3846,7 +3845,7 @@ var loadObjFile = function () {
       }, 400);
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
-      // console.log('ray.hit.event detected');
+      console.log('ray.hit.event detected');
       if (e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity((0, _utils.randomIntFromTo)(1, 200));
@@ -37364,18 +37363,15 @@ let mobile1 = function () {
     pass.setBindGroup(0, this.sceneBindGroup);
     for (const [pipeline, meshes] of this.opaqueBuckets) {
       pass.setPipeline(pipeline);
-      //  let l = null;
+      let l = null;
       for (const mesh of meshes) {
-        //  if(mesh.materialBindGroup !== l) {
-        pass.setBindGroup(1, mesh.materialBindGroup);
-        //    l = mesh.materialBindGroup;
-        //  } else {
-        //    console.log('same BIND GROUP!')
-        //  }
-        // pass.setBindGroup(1, mesh.materialBindGroup);
+        if (mesh.materialBindGroup !== l) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          l = mesh.materialBindGroup;
+        }
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        //  if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
@@ -62079,7 +62075,7 @@ class MatrixEngineWGPU {
   createTexArrayForShadows() {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      let numberOfLights = 20;
+      let numberOfLights = this.MAX_SPOTLIGHTS;
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -62847,22 +62843,6 @@ class MatrixEngineWGPU {
         }
       }
       pass.end();
-
-      // const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      // const viewProjMatrix = camera.VP;
-      // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-      //   const mesh = this.mainRenderBundle[meshIndex];
-      //   if(mesh.effects) {
-      //     for(const effectName in mesh.effects) {
-      //       const effect = mesh.effects[effectName];
-      //       if(effect == null || effect.enabled === false) continue;
-      //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-      //       effect.render(transPass, mesh, viewProjMatrix);
-      //     }
-      //   }
-      // }
-      // transPass.end();
-
       if (this.volumetricPass.enabled === true) {
         _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;

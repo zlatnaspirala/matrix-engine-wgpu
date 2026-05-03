@@ -648,7 +648,7 @@ export default class MatrixEngineWGPU {
   createTexArrayForShadows() {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      let numberOfLights = 20;
+      let numberOfLights = this.MAX_SPOTLIGHTS;
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -1206,21 +1206,6 @@ export default class MatrixEngineWGPU {
       }
 
       pass.end();
-
-      // const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      // const viewProjMatrix = camera.VP;
-      // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-      //   const mesh = this.mainRenderBundle[meshIndex];
-      //   if(mesh.effects) {
-      //     for(const effectName in mesh.effects) {
-      //       const effect = mesh.effects[effectName];
-      //       if(effect == null || effect.enabled === false) continue;
-      //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-      //       effect.render(transPass, mesh, viewProjMatrix);
-      //     }
-      //   }
-      // }
-      // transPass.end();
 
       if(this.volumetricPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
