@@ -62469,8 +62469,8 @@ class MatrixEngineWGPU {
       meshB: geo1.meshB,
       resolutionU: geo1.resolutionU,
       resolutionV: geo1.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCurtainFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCurtainFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
       // pointerEffect: {
       //   enabled: true,
       //   flameEmitter: true,

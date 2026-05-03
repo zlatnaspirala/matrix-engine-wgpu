@@ -941,7 +941,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo1.meshA, meshB: geo1.meshB, resolutionU: geo1.resolutionU, resolutionV: geo1.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainCurtainFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
       // pointerEffect: {
       //   enabled: true,
       //   flameEmitter: true,
