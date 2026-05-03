@@ -1385,6 +1385,8 @@ var _cameras = require("../src/engine/cameras.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var flipperJolt = function () {
   let MYFLIPPER = {
+    BALANCE: 0,
+    BALLS: 5,
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
@@ -1446,6 +1448,7 @@ var flipperJolt = function () {
       if (pos.x > 5 && pos.z > -6.6) {
         flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.1, -(0, _utils.randomIntFromTo)(0.5, 1)));
         flipper.matrixSounds.play('push');
+        MYFLIPPER.BALLS--;
       }
     }, () => {}, {
       left: '80',
@@ -1579,224 +1582,6 @@ var flipperJolt = function () {
           geometry: "Cube"
         }
       });
-
-      // let TEXTBOX = {
-      //   type: 'canvas2d-inline',
-      //   specialCanvas2dArg: {middle: true},
-      //   canvaInlineProgram: (() => {
-      //     const COLS = Math.floor(512 / 16);
-      //     const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -30));
-      //     const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
-      //     let frame = 0;
-
-      //     const BALANCE = {x: 0, y: 0, w: 256, h: 128, r: 10};
-      //     const BALLS   = {x: 0, y: 128, w: 256, h: 128, r: 10};
-
-      //     const PALETTE = [
-      //       [255, 0,   180],  // magenta
-      //       [0,   220, 255],  // cyan
-      //       [255, 200, 0  ],  // gold
-      //       [0,   255, 120],  // green
-      //       [180, 0,   255],  // purple
-      //     ];
-
-      //     function hue(i, t) {
-      //       const [r, g, b] = PALETTE[i % PALETTE.length];
-      //       const p = 0.88 + 0.12 * Math.sin(t * 0.05 + i * 1.2); // never dims below 88%
-      //       return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
-      //     }
-
-      //     function roundRect(ctx, x, y, w, h, r) {
-      //       ctx.beginPath();
-      //       ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-      //       ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      //       ctx.lineTo(x + w, y + h - r);
-      //       ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      //       ctx.lineTo(x + r, y + h);
-      //       ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      //       ctx.lineTo(x, y + r);
-      //       ctx.quadraticCurveTo(x, y, x + r, y);
-      //       ctx.closePath();
-      //     }
-
-      //     function drawPanel(ctx, p, [r, g, b], pulse) {
-      //       // gradient fill — more opaque so text sits on something solid
-      //       const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
-      //       grad.addColorStop(0, `rgba(${r},${g},${b},0.32)`);
-      //       grad.addColorStop(1, `rgba(10,5,30,0.92)`);
-      //       ctx.fillStyle = grad;
-      //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.fill();
-
-      //       // glowing border
-      //       ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
-      //       ctx.lineWidth = 2;
-      //       ctx.shadowColor = `rgb(${r},${g},${b})`;
-      //       ctx.shadowBlur = 20 * pulse;
-      //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.stroke();
-      //       ctx.shadowBlur = 0;
-
-      //       // corner ticks
-      //       const tk = 10;
-      //       ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
-      //       ctx.lineWidth = 2;
-      //       [
-      //         [p.x,       p.y,       1,  1],
-      //         [p.x + p.w, p.y,      -1,  1],
-      //         [p.x,       p.y + p.h, 1, -1],
-      //         [p.x + p.w, p.y + p.h,-1, -1],
-      //       ].forEach(([cx, cy, sx, sy]) => {
-      //         ctx.beginPath();
-      //         ctx.moveTo(cx + sx * tk, cy);
-      //         ctx.lineTo(cx, cy);
-      //         ctx.lineTo(cx, cy + sy * tk);
-      //         ctx.stroke();
-      //       });
-      //     }
-
-      //     return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
-      //       const W = ctx.canvas.width, H = ctx.canvas.height;
-      //       const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
-      //       const t = frame;
-
-      //       // fade — light enough that brightness accumulates
-      //       ctx.fillStyle = 'rgba(6,0,28,0.15)';
-      //       ctx.fillRect(0, 0, W, H);
-
-      //       // scanlines — very subtle
-      //       for(let y = 0; y < H; y += 4) {
-      //         ctx.fillStyle = 'rgba(0,0,0,0.04)';
-      //         ctx.fillRect(0, y, W, 1);
-      //       }
-
-      //       // multi-color rain — floor brightness so chars never go invisible
-      //       ctx.font = 'bold 13px monospace';
-      //       for(let i = 0; i < COLS; i++) {
-      //         const ch = chars[Math.floor(Math.random() * chars.length)];
-      //         const [r, g, b] = PALETTE[i % PALETTE.length];
-      //         const br = 0.4 + Math.random() * 0.6; // floor at 0.4, never pure black
-      //         ctx.fillStyle = br > 0.93
-      //           ? '#ffffff'
-      //           : `rgba(${Math.floor(r*br)},${Math.floor(g*br)},${Math.floor(b*br)},0.9)`;
-      //         ctx.fillText(ch, i * 16, drops[i] * 16);
-      //         if(drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;
-      //         else drops[i]++;
-      //       }
-
-      //       ctx.save();
-
-      //       // ── BALANCE panel ─────────────────────────────────────────────
-      //       const B = BALANCE;
-      //       const bc = hue(1, t);
-      //       drawPanel(ctx, B, bc, pulse);
-
-      //       // subtitle — pure white
-      //       ctx.font = 'bold 10px monospace';
-      //       ctx.fillStyle = '#ffffff';
-      //       ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
-      //       ctx.shadowBlur = 8 * pulse;
-      //       ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
-
-      //       // header — pure white, stronger glow
-      //       ctx.font = 'bold 12px monospace';
-      //       ctx.fillStyle = '#ffffff';
-      //       ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
-      //       ctx.shadowBlur = 14 * pulse;
-      //       ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-
-      //       // per-digit color cycling
-      //       const val = balance.toLocaleString();
-      //       ctx.font = 'bold 36px monospace';
-      //       let dx = B.x + 12;
-      //       for(let i = 0; i < val.length; i++) {
-      //         const [r, g, b] = hue(i, t);
-      //         ctx.fillStyle = `rgb(${r},${g},${b})`;
-      //         ctx.shadowColor = `rgb(${r},${g},${b})`;
-      //         ctx.shadowBlur = 16 * pulse;
-      //         ctx.fillText(val[i], dx, B.y + 88);
-      //         dx += ctx.measureText(val[i]).width;
-      //       }
-
-      //       // score bar track
-      //       const barW = B.w - 24;
-      //       ctx.fillStyle = 'rgba(255,255,255,0.12)';
-      //       ctx.shadowBlur = 0;
-      //       roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3); ctx.fill();
-
-      //       // score bar fill
-      //       const filled = barW * Math.min(balance / 999999, 1);
-      //       const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
-      //       barGrad.addColorStop(0,   'rgb(0, 101, 116)');
-      //       barGrad.addColorStop(0.5, 'rgb(80, 0, 114)');
-      //       barGrad.addColorStop(1,   'rgb(107, 0, 75)');
-      //       ctx.fillStyle = barGrad;
-      //       ctx.shadowBlur = 8; ctx.shadowColor = '#ff00cc';
-      //       roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3); ctx.fill();
-
-      //       // ── BALLS panel ───────────────────────────────────────────────
-      //       const BL = BALLS;
-      //       const mc = hue(0, t);
-      //       drawPanel(ctx, BL, mc, pulse);
-
-      //       // subtitle — pure white
-      //       ctx.font = 'bold 10px monospace';
-      //       ctx.fillStyle = '#ffffff';
-      //       ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
-      //       ctx.shadowBlur = 8 * pulse;
-      //       ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
-
-      //       // header — pure white
-      //       ctx.font = 'bold 12px monospace';
-      //       ctx.fillStyle = '#ffffff';
-      //       ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
-      //       ctx.shadowBlur = 14 * pulse;
-      //       ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
-
-      //       ctx.shadowBlur = 0;
-
-      //       for(let b = 0; b < maxBalls; b++) {
-      //         const bx = BL.x + 24 + b * 40;
-      //         const by = BL.y + 80;
-      //         const [r, g, b2] = hue(b, t);
-      //         ctx.beginPath();
-      //         ctx.arc(bx, by, 14, 0, Math.PI * 2);
-      //         if(b < balls) {
-      //           const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
-      //           bg.addColorStop(0,   'rgb(0, 0, 0)');
-      //           bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
-      //           bg.addColorStop(1,   `rgba(${Math.floor(r*0.3)},${Math.floor(g*0.3)},${Math.floor(b2*0.3)},1)`);
-      //           ctx.fillStyle = bg;
-      //           ctx.shadowColor = `rgb(${r},${g},${b2})`;
-      //           ctx.shadowBlur = 20 * pulse;
-      //         } else {
-      //           ctx.fillStyle = 'rgba(30,10,40,0.8)';
-      //           ctx.shadowBlur = 0;
-      //         }
-      //         ctx.fill();
-
-      //         if(b < balls) {
-      //           ctx.font = 'bold 10px monospace';
-      //           ctx.fillStyle = '#ffffff';   // was rgba(0,0,0,0.8) — unreadable on bright ball
-      //           ctx.shadowBlur = 0;
-      //           ctx.fillText(b + 1, bx - 4, by + 4);
-      //         }
-      //       }
-
-      //       ctx.restore();
-
-      //       // footer — full white, stronger glow
-      //       const ft = hue(2, t);
-      //       ctx.font = 'bold 10px monospace';
-      //       ctx.fillStyle = '#ffffff';
-      //       ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
-      //       ctx.shadowBlur = 10;
-      //       ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', 50, H - 10);
-      //       ctx.shadowBlur = 0;
-
-      //       frame++;
-      //     };
-      //   })()
-      // };
-
       let TEXTBOX = {
         type: 'canvas2d-inline',
         specialCanvas2dArg: {
@@ -1869,10 +1654,10 @@ var flipperJolt = function () {
             });
           }
           return (ctx, {
-            balls = 3,
             maxBalls = 5
           } = {}) => {
-            let balance = 100;
+            const balance = MYFLIPPER.BALANCE;
+            const balls = MYFLIPPER.BALLS;
             const W = ctx.canvas.width,
               H = ctx.canvas.height;
             const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
@@ -2474,6 +2259,7 @@ var flipperJolt = function () {
             const pos = await app.matrixPhysics.getPosition(ball);
             if (pos.x > 5 && pos.z < -6) {
               flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
+              MYFLIPPER.BALLS--;
             } else if (pos.x < 5.1 && pos.z < -5.5) {
               flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector((0, _utils.randomFloatFromTo)(0.1, 0.15), 0, 0));
             }
@@ -62634,9 +62420,9 @@ class MatrixEngineWGPU {
     m1.rotation.setRotateY(1000);
     m4.setBlend(0.1);
     setTimeout(() => {
-      m4.effects.flameEmitter.instanceTargets.forEach(i => {
-        i.color = [0, (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(50, 200)];
-      });
+      // m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+      //   i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
+      // })
     }, 1000);
   };
   createBloomBindGroup() {
@@ -62752,8 +62538,9 @@ class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
-      // this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+      // if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];

@@ -991,9 +991,9 @@ export default class MatrixEngineWGPU {
     m4.setBlend(0.1);
 
     setTimeout(() => {
-      m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-        i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-      })
+      // m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+      //   i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
+      // })
     }, 1000)
   }
 
@@ -1108,8 +1108,9 @@ export default class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
-      // this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+      // if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.getTransformationMatrix(camera, now2);
       camera.update();
 
       for(let i = 0;i < this.lightContainer.length;i++) {
