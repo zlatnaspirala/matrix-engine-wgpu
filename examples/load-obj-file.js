@@ -10,7 +10,7 @@ export var loadObjFile = function() {
     canvasSize: 'fullscreen',
     fastRender: 1,
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: 2, // Other way
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',

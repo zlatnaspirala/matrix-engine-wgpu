@@ -835,9 +835,17 @@ export const MobileDOM = {
         }
       };
 
-      btn.addEventListener('pointerdown', e => {e.stopPropagation(); press(); btn.setPointerCapture(e.pointerId);}, {passive: true});
-      btn.addEventListener('pointerup', e => {release();}, {passive: true});
-      btn.addEventListener('pointercancel', e => {release();}, {passive: true});
+      btn.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        press();
+        btn.setPointerCapture(e.pointerId);
+      }, {passive: true});
+      btn.addEventListener('pointerup', e => {
+        release()
+      }, {passive: true});
+      btn.addEventListener('pointercancel', e => {
+        release()
+      }, {passive: true});
 
       wrap.appendChild(btn);
     }
@@ -847,6 +855,8 @@ export const MobileDOM = {
   },
 
   addButton(label, onClick, onRelease, options = {}) {
+    document.body.style.touchAction = 'none';
+
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
@@ -875,20 +885,19 @@ export const MobileDOM = {
     });
     btn.textContent = label;
 
-    btn.addEventListener('pointerdown', e => {
+    btn.addEventListener('touchstart', e => {
       e.stopPropagation();
       // btn.style.background = `rgba(255,255,255,${opacity})`;
       onClick(e);
-    }, {passive: false});
-    btn.addEventListener('pointerup', (e) => {
+    }, {passive: true});
+    btn.addEventListener('touchend', (e) => {
       // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
       onRelease(e);
-    }, {passive: false});
-    btn.addEventListener('pointercancel', () => {
-      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-      // onRelease(e);
     }, {passive: true});
-
+    btn.addEventListener('touchcancel', () => {
+      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      onRelease(e);
+    }, {passive: true});
     document.body.appendChild(btn);
     return btn;
   },
