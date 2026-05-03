@@ -113,6 +113,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadCameraTexture = function () {
   let cameraTexture = new _world.default({
@@ -129,23 +130,19 @@ var loadCameraTexture = function () {
       a: 1
     }
   }, () => {
+    (0, _raycast.addRaycastsAABBListener)();
     cameraTexture.addLight();
     addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
-        welcomeText: "./res/meshes/blender/piramyd.obj",
-        armor: "./res/meshes/obj/armor.obj",
-        sphere: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj"
+        welcomeText: "./res/meshes/blender/piramyd.obj"
+        // sphere: "./res/meshes/blender/sphere.obj",
+        // cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj, {
         scale: [1, 1, 1]
       });
     });
     function onLoadObj(m) {
-      cameraTexture.myLoadedMeshes = m;
-      // for(var key in m) {
-      //   console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
-      // }
-      cameraTexture.addMeshObj({
+      cameraTexture.addProceduralMeshObj({
         position: {
           x: 0,
           y: 2,
@@ -162,18 +159,33 @@ var loadCameraTexture = function () {
           z: 0
         },
         texturesPaths: ['./res/meshes/blender/cube.png'],
+        scale: [6, 6, 6],
         name: 'MyVideoTex',
-        mesh: m.cube,
+        meshA: _proceduralMesh.MeshMorpher.sphere(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
         physics: {
           enabled: false,
           geometry: "Cube"
+        },
+        raycast: {
+          enabled: true,
+          radius: 2
         }
-        // raycast: { enabled: true , radius: 2 }
       });
       var TEST = cameraTexture.getSceneObjectByName('MyVideoTex');
       console.log(`%c Test video-texture...`, _utils.LOG_MATRIX);
       TEST.loadVideoTexture({
         type: 'camera'
+      });
+      let status = 1.0;
+      cameraTexture.canvas.addEventListener("ray.hit.event", e => {
+        console.log('ray.hit.event:', e.detail);
+        TEST.morphTo(status);
+        if (status == 1.0) {
+          status = 0.0;
+        } else {
+          status = 1.0;
+        }
       });
     }
   });
@@ -181,7 +193,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
