@@ -954,7 +954,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo2.meshA, meshB: geo2.meshB, resolutionU: geo2.resolutionU, resolutionV: geo2.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainCapFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
     });
 
     const geo3 = fountainCapConfig(MeshMorpher);
@@ -964,7 +964,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py + TOP * 0.8, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo3.meshA, meshB: geo3.meshB, resolutionU: geo3.resolutionU, resolutionV: geo3.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainCapFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
     });
 
     const geo4 = fountainCurtainConfig(MeshMorpher);
@@ -974,7 +974,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo4.meshA, meshB: geo4.meshB, resolutionU: geo4.resolutionU, resolutionV: geo4.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL
+      fragmentWGSL: fountainCurtainFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL()
     });
 
     const geo5 = fountainBasinWaterConfig(MeshMorpher);
@@ -984,7 +984,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py + 0.01, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo5.meshA, meshB: geo5.meshB, resolutionU: geo5.resolutionU, resolutionV: geo5.resolutionV,
-      fragmentWGSL: fountainBasinFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainBasinFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
     });
 
     m1.rotation.setRotateY(1000);

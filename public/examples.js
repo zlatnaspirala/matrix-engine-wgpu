@@ -62511,8 +62511,8 @@ class MatrixEngineWGPU {
       meshB: geo2.meshB,
       resolutionU: geo2.resolutionU,
       resolutionV: geo2.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCapFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCapFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     const geo3 = (0, _fontana.fountainCapConfig)(_proceduralMesh.MeshMorpher);
     let m3 = this.addProceduralMeshObj({
@@ -62550,8 +62550,8 @@ class MatrixEngineWGPU {
       meshB: geo3.meshB,
       resolutionU: geo3.resolutionU,
       resolutionV: geo3.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCapFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCapFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     const geo4 = (0, _fontana.fountainCurtainConfig)(_proceduralMesh.MeshMorpher);
     let m4 = this.addProceduralMeshObj({
@@ -62589,8 +62589,8 @@ class MatrixEngineWGPU {
       meshB: geo4.meshB,
       resolutionU: geo4.resolutionU,
       resolutionV: geo4.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCurtainFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCurtainFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     const geo5 = (0, _fontana.fountainBasinWaterConfig)(_proceduralMesh.MeshMorpher);
     let m5 = this.addProceduralMeshObj({
@@ -62628,8 +62628,8 @@ class MatrixEngineWGPU {
       meshB: geo5.meshB,
       resolutionU: geo5.resolutionU,
       resolutionV: geo5.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainBasinFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainBasinFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     m1.rotation.setRotateY(1000);
     m4.setBlend(0.1);
