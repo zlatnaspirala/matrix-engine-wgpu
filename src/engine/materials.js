@@ -17,6 +17,7 @@ import {coloraWGSL} from "../shaders/minimalist/color-a.wgsl";
 import {colorbWGSL} from "../shaders/minimalist/color-b.wgsl";
 import {fountainBasinFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
 import {MaterialBindGroupCache} from "./pipelineManager";
+import {fragmentDarkWGSL} from "../shaders/fragment.dark.wgsl";
 
 /**
  * @description
@@ -377,46 +378,47 @@ export default class Materials {
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if(this.material.type == 'standard') {
-      return fragmentWGSL;
+      return fragmentWGSL();
+    } else if(this.material.type == 'dark') {
+      return fragmentDarkWGSL();
     } else if(this.material.type == 'pong') {
-      return fragmentWGSLPong;
+      return fragmentWGSLPong();
     } else if(this.material.type == 'power') {
-      return fragmentWGSLPower;
+      return fragmentWGSLPower();
     } else if(this.material.type == 'metal') {
-      return fragmentWGSLMetal;
+      return fragmentWGSLMetal();
     } else if(this.material.type == 'normalmap') {
-      return fragmentWGSLNormalMap;
+      return fragmentWGSLNormalMap();
     } else if(this.material.type == 'gpt') {
-      return fragmentWGSLGPT;
+      return fragmentWGSLGPT();
     } else if(this.material.type == 'water') {
-      return fragmentWaterWGSL;
+      return fragmentWaterWGSL();
     } else if(this.material.type == 'graph') {
-      // console.warn('Unknown material ???????????????:', this.material?.type);
+      console.info('Material from graph :', this.material?.type);
       return this.material.fromGraph;
     } else if(this.material.type == 'mix1') {
       return fragmentWGSLMix1; // ?
     } else if(this.material.type === "mirror") {
-      return mirrorIlluminateFragmentWGSL;
+      return mirrorIlluminateFragmentWGSL();
     } else if(this.material.type === "dark" || this.material.type === "free") {
-      return fragmentWGSLDark;
+      return fragmentWGSLDark();
     } else if(this.material.type === "fontana") {
-      return fountainBasinFragmentWGSL;
+      return fountainBasinFragmentWGSL();
     } else if(this.material.type === "mini") {
-      return miniWGSL;
+      return miniWGSL();
     } else if(this.material.type === "minia") {
-      return miniaWGSL;
+      return miniaWGSL();
     } else if(this.material.type === "mida") {
-      return midaWGSL;
+      return midaWGSL();
     } else if(this.material.type === "hybrid") {
-      return hybridWGSL;
+      return hybridWGSL();
     } else if(this.material.type === "colora") {
-      return coloraWGSL;
+      return coloraWGSL();
     } else if(this.material.type === "colorb") {
-      return colorbWGSL;
+      return colorbWGSL();
     }
-
     console.warn('Unknown material type:', this.material?.type);
-    return fragmentWGSL;
+    return fragmentWGSL();
   }
 
   getFormat() {

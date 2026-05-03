@@ -1,7 +1,7 @@
+import {MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
-// import MatrixAmmo from "./engine/physics/matrix-ammo_DEPLACED.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
@@ -26,7 +26,6 @@ import {FlameEffect} from "./engine/effects/flame.js";
 import ProceduralMeshObj, {MeshMorpher} from "./engine/procedural-mesh.js";
 import {FOUNTAIN_COLUMN_TOP, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainStructureConfig} from "./engine/procedures/fontana.js";
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
-import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
@@ -111,7 +110,7 @@ export default class MatrixEngineWGPU {
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
-    this.MEConfig.construct();
+    this.MEConfig.construct(options);
     this.label = new MultiLang();
     this.now = 0;
     this.logLoopError = true;
@@ -385,7 +384,13 @@ export default class MatrixEngineWGPU {
     });
 
     this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
-    this.MAX_SPOTLIGHTS = MEConfig.MAX_SPOTLIGHTS;
+    if(this.options.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
+      MEConfig.MAX_SPOTLIGHTS = this.MAX_SPOTLIGHTS;
+    } else {
+      this.MAX_SPOTLIGHTS = MEConfig.MAX_SPOTLIGHTS;
+    }
+
     this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.createGlobalsForEntities();

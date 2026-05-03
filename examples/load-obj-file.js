@@ -2,12 +2,17 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {MEConfig} from "../src/me-config.js";
+
+MEConfig.construct({MAX_SPOTLIGHTS: 4});
 
 export var loadObjFile = function() {
+
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 1,
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',
@@ -15,8 +20,10 @@ export var loadObjFile = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
+
     loadObjFile.addLight();
 
+    // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})

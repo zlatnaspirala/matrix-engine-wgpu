@@ -508,8 +508,8 @@ export default class ProceduralMeshObj extends Materials {
   setupPipeline() {
     // this.createBindGroupForRender();
     const pm = PipelineManager.get();
-    const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL() : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.isVideo == true ? 'video' : this.material.type;
     const isMirror = this.material.type === 'mirror';

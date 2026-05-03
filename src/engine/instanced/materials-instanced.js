@@ -9,6 +9,7 @@ import {fragmentWGSLInstanced} from "../../shaders/instanced/fragment.instanced.
 import {fragmentMirrorWGSLInstanced} from "../../shaders/instanced/fragment.mirror.instanced.wgsl";
 import {coloraWGSL} from "../../shaders/minimalist/color-a.wgsl";
 import {colorbWGSL} from "../../shaders/minimalist/color-b.wgsl";
+import {hybridWGSL} from "../../shaders/minimalist/hybrid.wgsl";
 import {miniWGSL} from "../../shaders/minimalist/mini.wgsl";
 import {fragmentWaterWGSL} from "../../shaders/water/water-c.wgls";
 import {MaterialBindGroupCache} from "../pipelineManager";
@@ -293,41 +294,40 @@ export default class MaterialsInstanced {
   }
 
   getMaterial() {
-    // procedural mesh not suport all
     if(this.material.type == 'standard') {
-      return fragmentWGSLInstanced;
+      return fragmentWGSLInstanced();
     } else if(this.material.type == 'pong') {
-      return fragmentWGSLPong;
+      return fragmentWGSLPong();
     } else if(this.material.type == 'power') {
-      return fragmentWGSLPower;
+      return fragmentWGSLPower();
     } else if(this.material.type == 'metal') {
-      return fragmentWGSLMetal;
+      return fragmentWGSLMetal();
     } else if(this.material.type == 'normalmap') {
-      return fragmentWGSLNormalMap;
+      return fragmentWGSLNormalMap();
     } else if(this.material.type == 'water') {
-      return fragmentWaterWGSL;
+      return fragmentWaterWGSL();
     } else if(this.material.type == 'graph') {
       return this.material.fromGraph;
     } else if(this.material.type === "mirror") {
-      return fragmentMirrorWGSLInstanced;
+      return fragmentMirrorWGSLInstanced();
     } else if(this.material.type === "dark" || this.material.type === "free") {
-      return fragmentWGSLDark;
+      return fragmentWGSLDark();
     } else if(this.material.type === "mini") {
-      return miniWGSL;
+      return miniWGSL();
     } else if(this.material.type === "minia") {
-      return miniaWGSL;
+      return miniaWGSL();
     } else if(this.material.type === "mida") {
-      return midaWGSL;
+      return midaWGSL();
     } else if(this.material.type === "hybrid") {
-      return hybridWGSL;
+      return hybridWGSL();
     } else if(this.material.type === "colora") {
-      return coloraWGSL;
+      return coloraWGSL();
     } else if(this.material.type === "colorb") {
-      return colorbWGSL;
+      return colorbWGSL();
     }
 
     console.warn('Unknown material type use standard:', this.material?.type);
-    return fragmentWGSL;
+    return fragmentWGSL();
   }
 
   getFormat() {

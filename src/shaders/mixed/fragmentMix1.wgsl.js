@@ -1,6 +1,6 @@
 import {MEConfig} from "../../me-config";
 
-export let fragmentWGSLMix1 = `
+export let fragmentWGSLMix1 = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 

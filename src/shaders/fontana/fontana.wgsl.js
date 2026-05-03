@@ -158,7 +158,7 @@ fn sss_lights(fragPos: vec3f, N: vec3f, V: vec3f, fresnel: f32) -> vec3f {
 //  UV: (0,0)=corner (1,1)=corner, centre=(0.5,0.5)
 //  Fragment: discard outside circle, caustics + ripple rings + glow
 // ─────────────────────────────────────────────────────────────────
-export const fountainCapFragmentWGSL = SHARED + `
+export const fountainCapFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -231,7 +231,7 @@ fn pb_shadows(fragPos: vec3f, N: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f
 //  UV: U = around cylinder, V = 0 at top, 1 at bottom
 //  Fragment: vertical scrolling streaks, fade at bottom
 // ─────────────────────────────────────────────────────────────────
-export const fountainCurtainFragmentWGSL = SHARED + `
+export const fountainCurtainFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -295,7 +295,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 //  UV: (0.5,0.5) = centre of plane
 //  Fragment: discard outside ring + inside column hole, ripple water
 // ─────────────────────────────────────────────────────────────────
-export const fountainBasinFragmentWGSL = SHARED + `
+export const fountainBasinFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -365,7 +365,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // ─────────────────────────────────────────────────────────────────
 //  VERTEX SHADER — shared by all three water meshes
 // ─────────────────────────────────────────────────────────────────
-export const fountainWaterVertexWGSL = /* wgsl */`
+export const fountainWaterVertexWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,

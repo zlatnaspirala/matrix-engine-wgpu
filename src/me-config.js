@@ -24,7 +24,7 @@ export const MEConfig = {
   GRAVITY_Y_AXIS: -10,
   FORCE_FULL_SCREEN: false,
 
-  construct: function() {
+  construct: function(options = {}) {
     if(urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
       console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
@@ -43,8 +43,12 @@ export const MEConfig = {
     }
     if(urlQ['MAX_SPOTLIGHTS']) {
       this.MAX_SPOTLIGHTS = parseInt(urlQ['MAX_SPOTLIGHTS']);
-      console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
     }
+    if(options.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = options.MAX_SPOTLIGHTS;
+    }
+    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
+
     if(urlQ['MAX_BONES']) {
       this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
       console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);

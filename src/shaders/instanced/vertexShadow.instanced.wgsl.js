@@ -1,6 +1,6 @@
 import {MEConfig} from "../../me-config";
 
-export let vertexShadowWGSLInstanced = `
+export let vertexShadowWGSLInstanced = () => `
 const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {

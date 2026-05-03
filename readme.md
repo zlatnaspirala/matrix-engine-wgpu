@@ -1008,6 +1008,10 @@ urlQuery.lang;
    In this case FORCE_FULL_SCREEN is true by default.
    Pushed notification click anywhere to start the engine.
 
+  Note for MAX_SPOTLIGHTS :
+  If you wanna override values from MECOnfig or even urlParam than use :
+
+  
 ---
 
 ## About `main.js`

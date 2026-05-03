@@ -1,4 +1,4 @@
-export let coloraWGSL = `
+export let coloraWGSL = () => `
 override shadowDepthTextureSize: f32;
 
 struct Scene {

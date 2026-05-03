@@ -1,6 +1,6 @@
 import {MEConfig} from "../../me-config";
 
-export let colorbWGSL = `
+export let colorbWGSL = () => `
 override shadowDepthTextureSize: f32;
 
 struct Scene {
@@ -78,7 +78,7 @@ let uv = fract(input.fragUV);
     return vec4f(color, 1);
 }`;
 
-// export let colorbWGSL = `
+// export let colorbWGSL = () => `
 // override shadowDepthTextureSize: f32;
 
 // struct Scene {

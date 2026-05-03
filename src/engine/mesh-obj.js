@@ -752,8 +752,8 @@ export default class MEMeshObj extends Materials {
     const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
     const isNormalMap = this.material.type === 'normalmap';
-    const vertexCode = isNormalMap ? vertexWGSL_NM : vertexWGSL;
-    const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = isNormalMap ? vertexWGSL_NM() : vertexWGSL();
+    const fragmentCode = isVideo ? fragmentVideoWGSL() : this.getMaterial();
     const vertexModule = this.device.createShaderModule({code: vertexCode});
     const fragmentModule = this.device.createShaderModule({code: fragmentCode});
 

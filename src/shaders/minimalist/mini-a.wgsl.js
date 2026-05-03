@@ -1,6 +1,6 @@
 import {MEConfig} from "../../me-config";
 
-export let miniaWGSL = `
+export let miniaWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
 struct Scene {
