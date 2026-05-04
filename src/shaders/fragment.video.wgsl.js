@@ -19,36 +19,17 @@ struct FragmentInput {
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.7;
+const ambientFactor = 1.2;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
-  // Shadow filtering
-  // var visibility = 0.0;
-  // let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
-  // for (var y = -1; y <= 1; y++) {
-  //   for (var x = -1; x <= 1; x++) {
-  //     let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-  //     visibility += textureSampleCompare(
-  //       shadowMap, shadowSampler,
-  //       input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-  //     );
-  //   }
-  // }
-  // visibility /= 9.0;
-
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
-
-  // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-
-  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a * 0.8);
-  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
-
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
+  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
    switch (postFXMode) {
     case 0: {
-      // Default
       return color;
     }
     case 1: {
@@ -74,7 +55,5 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
       return color;
     }
   }
-
-  // return color;
 }
 `;

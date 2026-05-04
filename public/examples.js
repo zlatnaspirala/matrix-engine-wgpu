@@ -96,7 +96,7 @@ if (urlQ['demo'] === '1') {
 } else if (urlQ['demo'] === '17') {
   (0, _canvasInline.canvasInline)();
 } else {
-  (0, _flipperAmmo.flipperAmmo)();
+  (0, _flipperJolt.flipperJolt)();
 }
 setTimeout(() => {
   hideMenu();
@@ -1446,6 +1446,10 @@ var flipperJolt = function () {
       let ball = app.matrixPhysics.getBodyByName('ball1');
       const pos = await app.matrixPhysics.getPosition(ball);
       if (pos.x > 5 && pos.z > -6.6) {
+        if (MYFLIPPER.BALLS == 0) {
+          _utils.mb.show('No more balls...');
+          return;
+        }
         flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.1, -(0, _utils.randomIntFromTo)(0.5, 1)));
         flipper.matrixSounds.play('push');
         MYFLIPPER.BALLS--;
@@ -1456,23 +1460,23 @@ var flipperJolt = function () {
     });
 
     // Lights
-    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 1 : 4;
-    const ORBIT_RADIUS = 12;
-    const ORBIT_SPEED = 0.6;
+    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 3 : 4;
+    const ORBIT_RADIUS = 8;
+    const ORBIT_SPEED = 0.7;
     const TARGET = {
       x: 0,
-      y: 1,
-      z: -15
+      y: 0,
+      z: -17
     };
 
     // Light colors cycling around the hue wheel
-    const LIGHT_COLORS = [[2.0, 0.2, 0.2],
+    const LIGHT_COLORS = [[2.5, 0.2, 0.2],
     // red
-    [2.0, 0.8, 0.1],
+    [2.5, 0.8, 0.1],
     // orange
-    [0.2, 0.2, 2.0],
+    [0.2, 0.2, 3.0],
     // blue
-    [2.0, 2.0, 0.1] // yellow
+    [2.0, 3.0, 0.1] // yellow
     // [0.2, 1.0, 0.2],  // green
     // [0.1, 1.0, 0.6],  // teal
     // [0.1, 0.6, 1.0],  // sky
@@ -1488,17 +1492,17 @@ var flipperJolt = function () {
       const light = flipper.lightContainer[i];
       const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-      light.setIntensity(15);
+      light.setIntensity(16);
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
-      const heightOffset = Math.sin(angleOffset) * 2;
+      const heightOffset = Math.sin(angleOffset) * 5;
       light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
       light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
       light.updater.push(light => {
         light.orbitAngle += ORBIT_SPEED * 0.01;
-        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+        const height = 8 + Math.sin(light.orbitAngle + angleOffset) * 5;
         const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
         const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
         light.setPosition(x, height, z);
@@ -1608,7 +1612,7 @@ var flipperJolt = function () {
             h: 128,
             r: 10
           };
-          const PALETTE = [[255, 0, 180], [0, 220, 255], [255, 200, 0], [0, 255, 120], [180, 0, 255]];
+          const PALETTE = [[255, 110, 180], [0, 220, 255], [255, 200, 0], [0, 255, 120], [180, 0, 255]];
           function hue(i, t) {
             const index = Math.floor(i) % PALETTE.length;
             const [r, g, b] = PALETTE[index < 0 ? 0 : index];
@@ -1630,8 +1634,8 @@ var flipperJolt = function () {
           }
           function drawPanel(ctx, p, [r, g, b], pulse, alpha = 0.05) {
             const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
-            grad.addColorStop(0, `rgba(20,10,45,${alpha})`);
-            grad.addColorStop(1, `rgba(8,3,25,${alpha + 0.1})`);
+            grad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+            grad.addColorStop(1, `rgba(255,2,255,${alpha + 0.1})`);
             ctx.fillStyle = grad;
             roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
             ctx.fill();
@@ -1656,7 +1660,6 @@ var flipperJolt = function () {
           return (ctx, {
             maxBalls = 5
           } = {}) => {
-            const balance = MYFLIPPER.BALANCE;
             const balls = MYFLIPPER.BALLS;
             const W = ctx.canvas.width,
               H = ctx.canvas.height;
@@ -1684,7 +1687,7 @@ var flipperJolt = function () {
             // BALANCE PANEL
             const B = BALANCE;
             const bc = hue(1, t);
-            drawPanel(ctx, B, bc, pulse, 0.1);
+            drawPanel(ctx, B, bc, pulse, 0.01);
             ctx.font = 'bold 12px monospace';
             ctx.fillStyle = '#000000';
             ctx.shadowBlur = 8 * pulse;
@@ -1692,8 +1695,8 @@ var flipperJolt = function () {
             ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 14, B.y + 20);
             ctx.font = 'bold 15px monospace';
             ctx.shadowBlur = 14 * pulse;
-            ctx.fillText('BALANCE', B.x + 14, B.y + 46);
-            const val = balance.toLocaleString();
+            ctx.fillText('BALANCE: ', B.x + 14, B.y + 46);
+            const val = MYFLIPPER.BALANCE.toLocaleString();
             ctx.font = 'bold 42px monospace';
             let dx = B.x + 14;
             for (let i = 0; i < val.length; i++) {
@@ -1755,11 +1758,11 @@ var flipperJolt = function () {
 
             // Footer
             const ft = hue(2, t);
-            ctx.font = 'bold 12px monospace';
+            ctx.font = 'bold 10px monospace';
             ctx.fillStyle = '#000000';
             ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
             ctx.shadowBlur = 0;
-            ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', 48, H - 10);
+            ctx.fillText('flipper: "Z" and "M" and for shootBall "Space"', 2, H - 10);
             ctx.shadowBlur = 0;
             frame++;
           };
@@ -2258,9 +2261,13 @@ var flipperJolt = function () {
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
             if (pos.x > 5 && pos.z < -6) {
+              if (MYFLIPPER.BALLS == 0) {
+                _utils.mb.show('No more balls...');
+                return;
+              }
               flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
               MYFLIPPER.BALLS--;
-            } else if (pos.x < 5.1 && pos.z < -5.5) {
+            } else if (pos.x < 5.1 && pos.z > -5.5) {
               flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector((0, _utils.randomFloatFromTo)(0.1, 0.15), 0, 0));
             }
           }
@@ -2275,6 +2282,7 @@ var flipperJolt = function () {
           // (body1Name == "ball1" && body0Name.startsWith("bumper"))
           if (body0Name == "ball1" && body1Name.startsWith("bumper")) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * 0.015, 0, rayDirection[2] * 0.015));
+            MYFLIPPER.BALANCE = MYFLIPPER.BALANCE + 20;
           } else if (body1Name == 'bottomEdge2') {
             console.log('collision FORCE : ', body1Name);
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.3, 0, 0));
@@ -37244,7 +37252,8 @@ let nanoPass = function () {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+    // if(camera._dirtyAngle || camera._dirty)
+    this.getTransformationMatrix(camera, now2);
     camera.update();
     const len = this.mainRenderBundle.length;
     for (let i = 0; i < len; i++) {
@@ -43891,36 +43900,17 @@ struct FragmentInput {
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.7;
+const ambientFactor = 1.2;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
-  // Shadow filtering
-  // var visibility = 0.0;
-  // let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
-  // for (var y = -1; y <= 1; y++) {
-  //   for (var x = -1; x <= 1; x++) {
-  //     let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-  //     visibility += textureSampleCompare(
-  //       shadowMap, shadowSampler,
-  //       input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-  //     );
-  //   }
-  // }
-  // visibility /= 9.0;
-
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
-
-  // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-
-  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a * 0.8);
-  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
-
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
+  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
    switch (postFXMode) {
     case 0: {
-      // Default
       return color;
     }
     case 1: {
@@ -43946,8 +43936,6 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
       return color;
     }
   }
-
-  // return color;
 }
 `;
 exports.fragmentVideoWGSL = fragmentVideoWGSL;

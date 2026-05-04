@@ -101,7 +101,7 @@ if(urlQ['demo'] === '1') {
 } else if(urlQ['demo'] === '17') {
   canvasInline();
 } else {
-  flipperAmmo();
+  flipperJolt();
 }
 
 setTimeout(() => {hideMenu()}, 2000);
