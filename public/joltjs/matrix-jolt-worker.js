@@ -11,22 +11,18 @@ const BP_LAYER_DYNAMIC = 1;
 const degToRad = d => d * (Math.PI / 180);
 
 function localToWorld(Jolt, body, localOffset) {
-  const rot = body.GetRotation(); // Jolt quaternion
-  // Rotate the offset vector by the quaternion: v' = q * v * q^-1
+  const rot = body.GetRotation();
   const ox = localOffset[0], oy = localOffset[1], oz = localOffset[2];
   const qx = rot.GetX(), qy = rot.GetY(), qz = rot.GetZ(), qw = rot.GetW();
-
   // q * v
   const tx = qw * ox + qy * oz - qz * oy;
   const ty = qw * oy + qz * ox - qx * oz;
   const tz = qw * oz + qx * oy - qy * ox;
   const tw = -qx * ox - qy * oy - qz * oz;
-
   // (q*v) * q^-1
   const rx = tx * qw + tw * (-qx) + ty * (-qz) - tz * (-qy);
   const ry = ty * qw + tw * (-qy) + tz * (-qx) - tx * (-qz);
   const rz = tz * qw + tw * (-qz) + tx * (-qy) - ty * (-qx);
-
   const pos = body.GetPosition();
   return new Jolt.RVec3(
     pos.GetX() + rx,
@@ -54,7 +50,7 @@ class MatrixJolt {
     this.joltInterface = null;
     this.physicsSystem = null;
     this.bodyInterface = null;
-    this.speedUpSimulation = 3;
+    this.setSpeedUp = 3;
     this.options = {roundDimension: 100, gravity: 10};
     this._sab = null;
     this._snapshot = null;
@@ -82,7 +78,8 @@ class MatrixJolt {
 
   async init(options = {}) {
     Object.assign(this.options, options);
-    const module = await import('https://www.unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js');
+    // const module = await import('https://www.unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js');
+    const module = await import('./jolt-physics.wasm-compat.js');
     const Jolt = await module.default();
     this.Jolt = Jolt;
     this._vector0 = new Jolt.Vec3();
@@ -96,14 +93,10 @@ class MatrixJolt {
     const Jolt = this.Jolt;
     const objectFilter = new Jolt.ObjectLayerPairFilterTable(NUM_OBJ_LAYERS);
 
-    // existing
     objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_MOVING);
     objectFilter.EnableCollision(LAYER_MOVING, LAYER_MOVING);
-    // objectFilter.EnableCollision(LAYER_NON_MOVING, LAYER_ANCHOR);
-    // objectFilter.EnableCollision(LAYER_MOVING, LAYER_ANCHOR);
     objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_MOVING);
-    // objectFilter.EnableCollision(LAYER_FLIPPER, LAYER_NON_MOVING);
-    // LAYER_FLIPPER <-> LAYER_ANCHOR = omitted
+
     const bpLayerInterface = new Jolt.BroadPhaseLayerInterfaceTable(NUM_OBJ_LAYERS, NUM_BROAD_PHASE_LAYERS);
     bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_NON_MOVING, BP_LAYER_STATIC);
     bpLayerInterface.MapObjectToBroadPhaseLayer(LAYER_MOVING, BP_LAYER_DYNAMIC);
@@ -247,13 +240,8 @@ class MatrixJolt {
       layer = LAYER_MOVING;
     }
 
-    const settings = new Jolt.BodyCreationSettings(
-      shape,
-      new Jolt.RVec3(pos.x, pos.y, pos.z),
-      q,
-      motionType,
-      layer
-    );
+    const settings = new Jolt.BodyCreationSettings(shape,
+      new Jolt.RVec3(pos.x, pos.y, pos.z), q, motionType, layer);
 
     if(!isStatic) {
       settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
@@ -262,14 +250,9 @@ class MatrixJolt {
 
     if(pOptions.restitution !== undefined) settings.mRestitution = pOptions.restitution;
     if(pOptions.friction !== undefined) settings.mFriction = pOptions.friction;
-
     const body = this.bodyInterface.CreateBody(settings);
     Jolt.destroy(settings);
-
-    if(pOptions.sensor) {
-      body.SetIsSensor(true);
-    }
-
+    if(pOptions.sensor) body.SetIsSensor(true);
     body.isKinematic = isKinematic;
     this.bodyInterface.AddBody(
       body.GetID(),
@@ -323,21 +306,34 @@ class MatrixJolt {
   _addConvexHull(pOptions) {
     const Jolt = this.Jolt;
     const settings = new Jolt.ConvexHullShapeSettings();
+    settings.mMaxConvexRadius = 0.05;
+    settings.mHullTolerance = 0.001;
+
     const verts = pOptions.vertices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
+    const tempVecs = [];
     for(let i = 0;i < verts.length;i += 3) {
-      settings.mPoints.push_back(
-        new Jolt.Vec3(
-          verts[i] * sx,
-          verts[i + 1] * sy,
-          verts[i + 2] * sz
-        )
-      );
+      let x = verts[i] * sx;
+      let y = verts[i + 1] * sy;
+      let z = verts[i + 2] * sz;
+      if(x == 0) x = 0;
+      if(y == 0) y = 0;
+      if(z == 0) z = 0;
+      const v = new Jolt.Vec3(x, y, z);
+      settings.mPoints.push_back(v);
+      tempVecs.push(v);
     }
     const result = settings.Create();
+    if(result.HasError()) {
+      console.error("ConvexHull error:", result.GetError().c_str());
+      Jolt.destroy(settings);
+      return null;
+    }
     const shape = result.Get();
+    tempVecs.forEach(v => Jolt.destroy(v));
+    const body = this._createBody(pOptions, shape);
     Jolt.destroy(settings);
-    return this._createBody(pOptions, shape);
+    return body;
   }
 
   _addBvhMesh(pOptions) {
@@ -478,10 +474,6 @@ class MatrixJolt {
     if(!this.constraints) this.constraints = [];
     const bodyA = this.rigidBodies[idxA];
     const bodyB = this.rigidBodies[idxB];
-    if(bodyB.IsSensor()) {
-      // bodyB.SetIsSensor(true);
-      console.log("SET SENSOR ON:", pOptions.name, bodyB.IsSensor());
-    }
     if(!bodyA || !bodyB) return null;
     const pivotA = pOptions.pivotA || [0, 0, 0];
     const pivotB = pOptions.pivotB || [0, 0, 0];
@@ -525,26 +517,50 @@ class MatrixJolt {
     }
   }
 
+  createChain(ids, size = 0.5, marginSpace = 0.05) {
+    const Jolt = this.Jolt;
+    const space = marginSpace * size;
+    if(!this.constraints) this.constraints = [];
+
+    for(let i = 1;i < ids.length;i++) {
+      const bodyA = this.rigidBodies[ids[i]];
+      const bodyB = this.rigidBodies[ids[i - 1]];
+      if(!bodyA || !bodyB) continue;
+      const settings1 = new Jolt.PointConstraintSettings();
+      settings1.mPoint1 = new Jolt.Vec3(-size, size + space, 0);
+      settings1.mPoint2 = new Jolt.Vec3(-size, -size - space, 0);
+      const settings2 = new Jolt.PointConstraintSettings();
+      settings2.mPoint1 = new Jolt.Vec3(size, size + space, 0);
+      settings2.mPoint2 = new Jolt.Vec3(size, -size - space, 0);
+      const c1 = settings1.Create(bodyA, bodyB);
+      const c2 = settings2.Create(bodyA, bodyB);
+      this.physicsSystem.AddConstraint(c1);
+      this.physicsSystem.AddConstraint(c2);
+      this.constraints.push(c1, c2);
+    }
+    // anchor
+    const anchor = this.rigidBodies[ids[0]];
+    if(anchor) {
+      this.bodyInterface.SetMotionType(anchor, Jolt.EMotionType_Static);
+      this.bodyInterface.SetLinearVelocity(anchor, new Jolt.Vec3(0, 0, 0));
+      this.bodyInterface.SetAngularVelocity(anchor, new Jolt.Vec3(0, 0, 0));
+    }
+  }
+
   getPosition(idx, msgID) {
     const body = this.rigidBodies[idx];
-
     if(!body) {
       self.postMessage({cmd: 'getPosition', id: msgID, position: null});
       return;
     }
     const t = body.GetWorldTransform().GetTranslation();
-    // console.info('get pos  t.GetX() ', t.GetX())
-    // console.info('get pos  t.GetX() ', t.GetY())
-    // console.info('get pos  t.GetX() ', t.GetZ())
-    self.postMessage({
-      cmd: 'getPosition',
-      id: msgID,
-      position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}
-    });
+    const pos = this.bodyInterface.GetPosition(body.GetID());
+    console.log(pos.GetX(), pos.GetY(), pos.GetZ());
+    self.postMessage({cmd: 'getPosition', id: msgID, position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}});
   }
 
   speedUpSimulation(v) {
-    this.speedUpSimulation = v;
+    this.setSpeedUp = v;
   }
 
   removeRigidBody(idx) {
@@ -555,7 +571,7 @@ class MatrixJolt {
 
   step() {
     if(!this.joltInterface) return;
-    for(let i = 0;i < this.speedUpSimulation;i++) {
+    for(let i = 0;i < this.setSpeedUp;i++) {
       this.joltInterface.Step(1 / 30, 1);
     }
     const snap = this._snapshot;
@@ -566,24 +582,20 @@ class MatrixJolt {
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
       const id = ids[i];
-      // OPTIMIZATION TEST
+      // OPTIMIZATION
       if(!bi.IsActive(id)) {
         snap[base + 7] = 0;
         continue;
       }
-      // --- WASM calls ---
       const pos = bi.GetPosition(id);
       const rot = bi.GetRotation(id);
-      // --- position ---
       snap[base + 0] = pos.GetX();
       snap[base + 1] = pos.GetY();
       snap[base + 2] = pos.GetZ();
-      // --- quaternion DIRECT (NO CONVERSION)
       snap[base + 3] = rot.GetX();
       snap[base + 4] = rot.GetY();
       snap[base + 5] = rot.GetZ();
       snap[base + 6] = rot.GetW();
-      // optional flag
       snap[base + 7] = 1;
     }
   }
@@ -621,7 +633,7 @@ self.onmessage = async ({data}) => {
     case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': jolt.getPosition(data.idx, data.id); break;
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
-
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
+    case 'createChain': jolt.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
   }
 };

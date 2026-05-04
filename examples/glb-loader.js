@@ -13,6 +13,7 @@ export function loadGLBLoader() {
   let TEST_ANIM = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

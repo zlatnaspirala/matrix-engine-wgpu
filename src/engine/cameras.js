@@ -44,7 +44,7 @@ export class WASDCamera {
     this._recalculateViewVP();
 
     if(isMobile() == true && options.isActive == 'init active cam') {
-      console.log('CONTROLER MOBILE WASDCAMERA')
+      // console.log('CONTROLER MOBILE WASDCAMERA')
       MobileDOM.createWASD(this, {marginR: 0, marginD: 0});
     }
   }
@@ -571,7 +571,7 @@ export class FirstPersonCamera {
     if(options.yaw) this.yaw = options.yaw;
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
-    this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 100);
+    this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
 
@@ -835,9 +835,17 @@ export const MobileDOM = {
         }
       };
 
-      btn.addEventListener('pointerdown', e => {e.stopPropagation(); press(); btn.setPointerCapture(e.pointerId);}, {passive: true});
-      btn.addEventListener('pointerup', e => {release();}, {passive: true});
-      btn.addEventListener('pointercancel', e => {release();}, {passive: true});
+      btn.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        press();
+        btn.setPointerCapture(e.pointerId);
+      }, {passive: true});
+      btn.addEventListener('pointerup', e => {
+        release()
+      }, {passive: true});
+      btn.addEventListener('pointercancel', e => {
+        release()
+      }, {passive: true});
 
       wrap.appendChild(btn);
     }
@@ -847,6 +855,8 @@ export const MobileDOM = {
   },
 
   addButton(label, onClick, onRelease, options = {}) {
+    document.body.style.touchAction = 'none';
+
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
@@ -875,20 +885,19 @@ export const MobileDOM = {
     });
     btn.textContent = label;
 
-    btn.addEventListener('pointerdown', e => {
+    btn.addEventListener('touchstart', e => {
       e.stopPropagation();
-      btn.style.background = `rgba(255,255,255,${opacity})`;
+      // btn.style.background = `rgba(255,255,255,${opacity})`;
       onClick(e);
     }, {passive: true});
-    btn.addEventListener('pointerup', (e) => {
+    btn.addEventListener('touchend', (e) => {
       // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
       onRelease(e);
     }, {passive: true});
-    btn.addEventListener('pointercancel', () => {
+    btn.addEventListener('touchcancel', () => {
       // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
       onRelease(e);
     }, {passive: true});
-
     document.body.appendChild(btn);
     return btn;
   },

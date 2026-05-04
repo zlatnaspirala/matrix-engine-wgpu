@@ -36,20 +36,12 @@ export class SpotLight {
   innerCutoff;
   outerCutoff;
 
-  spotlightUniformBuffer;
-
+  // spotlightUniformBuffer;
   // Dirty flags
   _dirty = true;            // VP matrix needs recompute (position/target changed)
   _lightBufferDirty = true; // _lightBuffer array needs rebuild before next upload
 
-  // ─── Getters / Setters ────────────────────────────────────────────────────
   get position() {return this._position;}
-
-  // set position(v) {
-  //   vec3.copy(v, this._position);
-  //   this._dirty = true;
-  //   this._lightBufferDirty = true;
-  // }
 
   setPosition(x, y, z) {
     this._position[0] = x;
@@ -110,7 +102,7 @@ export class SpotLight {
 
     aspect = 1;
     this.name = "light" + indexx;
-    this.getName = () => {return "light" + indexx;};
+    this.getName = () => {return this.name};
     this.fov = fov;
     this.aspect = 1;
     this.near = near;
@@ -121,7 +113,6 @@ export class SpotLight {
 
     this.camera = camera;
     this.inputHandler = inputHandler;
-
     // Use backing fields directly in constructor to avoid setter overhead
     // before scratch buffers exist
     this._position = vec3.create(0, 10, -20);
@@ -260,7 +251,7 @@ export class SpotLight {
         ],
       }),
       vertex: {
-        module: this.device.createShaderModule({code: vertexShadowWGSL}),
+        module: this.device.createShaderModule({code: vertexShadowWGSL()}),
         buffers: [
           {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]}, // pos
           {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}, // normal
@@ -290,7 +281,7 @@ export class SpotLight {
         ],
       }),
       vertex: {
-        module: this.device.createShaderModule({code: vertexShadowWGSLInstanced}),
+        module: this.device.createShaderModule({code: vertexShadowWGSLInstanced()}),
         buffers: [
           {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]}, // pos
           {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}, // normal
@@ -320,7 +311,7 @@ export class SpotLight {
         ],
       }),
       vertex: {
-        module: this.device.createShaderModule({code: vertexMorphShadowWGSL}),
+        module: this.device.createShaderModule({code: vertexMorphShadowWGSL()}),
         buffers: [
           {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]}, // posA
           {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}, // nrmA
@@ -378,15 +369,12 @@ export class SpotLight {
     return true;
   }
 
-  // ─── Light data buffer ────────────────────────────────────────────────────
-
   /**
    * Returns the packed Float32Array for the spotlight uniform array.
    * Rebuilds only when _lightBufferDirty is true.
    */
   getLightDataBuffer() {
     if(!this._lightBufferDirty) return this._lightBuffer;
-
     const m = this.viewProjMatrix;
     const b = this._lightBuffer;
     b.set(this._position, 0);
@@ -404,13 +392,9 @@ export class SpotLight {
     b[18] = this.shadowBias;
     b[19] = 0.0;
     b.set(m, 20);
-
     this._lightBufferDirty = false;
     return b;
   }
-
-  // ─── Setters ──────────────────────────────────────────────────────────────
-  // Position components — mutate vec3 in place, mark both dirty flags
 
   setPosX = (x) => {
     if(this._position[0] === x) return;

@@ -12,7 +12,7 @@ export var flipperAmmo = function() {
 
   let flipper = new MatrixEngineWGPU({
     render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: isMobile() == true ? 0.6 : 0.9,
+    fastRender: isMobile() == true ? 1 : 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
@@ -223,7 +223,7 @@ export var flipperAmmo = function() {
         //   material: {type: 'standard'},
         //   position: {x: 0, y: 2.1, z: -20.5},
         //   scale: [6, 0.05, 14.5],
-        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         //   name: 'glass',
         //   mesh: m.glass,
         //   shadowsCast: false,

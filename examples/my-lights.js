@@ -33,17 +33,30 @@ export var myLights = function() {
       [1.0, 0.1, 0.4],  // rose
     ];
     // Ground
-    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
-      myLights.addMeshObj({
+    downloadMeshes({plane: "./res/meshes/blender/plane.obj"}, (m) => {
+      const floor = myLights.addMeshObj({
         material: {type: 'standard'},
         shadowsCast: false,
         position: {x: 0, y: -5, z: -10},
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
-        mesh: m.cube,
-        scale: [30, 0.5, 30],
+        mesh: m.plane,
+        scale: [6, 0.5, 6],
         physics: {enabled: false}
       });
+
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = myLights.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat',
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+      }, 200)
+
     }, {scale: [30, 0.5, 30]});
     // GLB monster
     const glbFile = await fetch("res/meshes/glb/monster.glb")
@@ -53,7 +66,7 @@ export var myLights = function() {
     myLights.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       useScale: true,
-      scale: [5, 5, 5],
+      scale: [6, 6, 6],
       position: {x: TARGET.x, y: TARGET.y - 4, z: TARGET.z},
       name: 'monster',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
@@ -96,8 +109,8 @@ export var myLights = function() {
 
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(5);
-      monster.updateInstances(5);
+      monster.updateMaxInstances(4);
+      monster.updateInstances(4);
       monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
       myLights.cameras.WASD.setYaw(-0.03);

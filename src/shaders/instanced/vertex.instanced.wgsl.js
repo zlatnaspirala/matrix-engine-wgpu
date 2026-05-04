@@ -1,6 +1,6 @@
 import {MEConfig} from "../../me-config";
 
-export let vertexWGSLInstanced = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
+export let vertexWGSLInstanced = () => `const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,

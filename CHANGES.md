@@ -1,5 +1,11 @@
 ## CHANGES [Started from feb 2026]
 
+[1.11.2]
+  - Added support for all lights VOLUMETRIC EFFECT postproccesing
+  - MAX_SPOTLIGHTS controlled from URL PARAMS or from MECONFIG
+  - Remove pipeline pas for effect used  already exist pass for transparent objs... [OPTIMISATION]
+  - MAke better looks for the examples...
+
 [1.11.0]
   [MOBILE OPTIMISATION]
   Physics added JOLT support.

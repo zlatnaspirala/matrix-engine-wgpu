@@ -9055,7 +9055,7 @@ GRAPH ExampleComplex1
       "WAVE_EFFECT": true
     },
     "string": {
-      "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.png",
+      "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.webp",
       "REEL_TEX": "res/textures/slot/reel1.png",
       "START_SPIN": "start-spin",
       "CUBE_TEX": "res/textures/cube-g1.webp"

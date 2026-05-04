@@ -17,14 +17,14 @@ export const MEConfig = {
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
   MAX_BONES: isMobile() == true ? 80 : 100,
-  MAX_LIGHTS: isMobile() == true ? 20 : 40,
+  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 40,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
   FORCE_FULL_SCREEN: false,
 
-  construct: function() {
+  construct: function(options = {}) {
     if(urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
       console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
@@ -41,21 +41,29 @@ export const MEConfig = {
       this.SHADOW_RES = parseInt(urlQ['SHADOW_RES']);
       console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
-    if(urlQ['MAX_LIGHTS']) {
-      this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
-      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+    if(urlQ['MAX_SPOTLIGHTS']) {
+      this.MAX_SPOTLIGHTS = parseInt(urlQ['MAX_SPOTLIGHTS']);
     }
+    if(options.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = options.MAX_SPOTLIGHTS;
+    }
+    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
+
     if(urlQ['MAX_BONES']) {
       this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
-      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
+      console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
     }
 
-    if(urlQ['fs']) {
+    if(urlQ['fs'] || isMobile()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
+        // console.log(',FS,')
+        setTimeout(() => {
+          dispatchEvent(new CustomEvent('run_mobile_fs', {}))
+        }, 300)
         window.removeEventListener('click', this._fs);
       }
       window.addEventListener('click', this._fs);

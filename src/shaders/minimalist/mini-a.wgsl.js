@@ -1,6 +1,6 @@
 import {MEConfig} from "../../me-config";
 
-export let miniaWGSL = `
+export let miniaWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
 struct Scene {
@@ -45,7 +45,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;

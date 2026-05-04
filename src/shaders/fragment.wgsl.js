@@ -1,6 +1,6 @@
 import {MEConfig} from "../me-config";
 
-export let fragmentWGSL = `
+export let fragmentWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -53,7 +53,8 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -234,6 +235,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // var ambientTerm = material.ambientColor + scene.globalAmbient;
     // var finalColor = ambientTerm + texColor.rgb * lightContribution;
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // let alpha = mix(materialData.alpha, 1.0 , 0.5);
+    let alpha = texColor.a * material.baseColorFactor.a;
+    // let alpha = material.baseColorFactor.a;
     return vec4f(finalColor, alpha);
 }`;

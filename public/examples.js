@@ -60,6 +60,7 @@ const hideMenu = () => {
 (0, _utils.byId)('canvas-inline').addEventListener("click", () => switchDemo('17'));
 (0, _utils.byId)('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 (0, _utils.byId)('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
+window.loadObjFile = _loadObjFile.loadObjFile;
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
 } else if (urlQ['demo'] === '2') {
@@ -95,7 +96,7 @@ if (urlQ['demo'] === '1') {
 } else if (urlQ['demo'] === '17') {
   (0, _canvasInline.canvasInline)();
 } else {
-  (0, _flipperAmmo.flipperAmmo)();
+  (0, _flipperJolt.flipperJolt)();
 }
 setTimeout(() => {
   hideMenu();
@@ -112,6 +113,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadCameraTexture = function () {
   let cameraTexture = new _world.default({
@@ -128,23 +130,19 @@ var loadCameraTexture = function () {
       a: 1
     }
   }, () => {
+    (0, _raycast.addRaycastsAABBListener)();
     cameraTexture.addLight();
     addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
-        welcomeText: "./res/meshes/blender/piramyd.obj",
-        armor: "./res/meshes/obj/armor.obj",
-        sphere: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj"
+        welcomeText: "./res/meshes/blender/piramyd.obj"
+        // sphere: "./res/meshes/blender/sphere.obj",
+        // cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj, {
         scale: [1, 1, 1]
       });
     });
     function onLoadObj(m) {
-      cameraTexture.myLoadedMeshes = m;
-      // for(var key in m) {
-      //   console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
-      // }
-      cameraTexture.addMeshObj({
+      cameraTexture.addProceduralMeshObj({
         position: {
           x: 0,
           y: 2,
@@ -161,18 +159,33 @@ var loadCameraTexture = function () {
           z: 0
         },
         texturesPaths: ['./res/meshes/blender/cube.png'],
+        scale: [6, 6, 6],
         name: 'MyVideoTex',
-        mesh: m.cube,
+        meshA: _proceduralMesh.MeshMorpher.sphere(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
         physics: {
           enabled: false,
           geometry: "Cube"
+        },
+        raycast: {
+          enabled: true,
+          radius: 2
         }
-        // raycast: { enabled: true , radius: 2 }
       });
       var TEST = cameraTexture.getSceneObjectByName('MyVideoTex');
       console.log(`%c Test video-texture...`, _utils.LOG_MATRIX);
       TEST.loadVideoTexture({
         type: 'camera'
+      });
+      let status = 1.0;
+      cameraTexture.canvas.addEventListener("ray.hit.event", e => {
+        console.log('ray.hit.event:', e.detail);
+        TEST.morphTo(status);
+        if (status == 1.0) {
+          status = 0.0;
+        } else {
+          status = 1.0;
+        }
       });
     }
   });
@@ -180,7 +193,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -191,11 +204,12 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var canvasInline = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 0.85,
     dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
@@ -204,26 +218,26 @@ var canvasInline = function () {
     },
     clearColor: {
       r: 0,
-      b: 0.122,
-      g: 0.122,
-      a: 1
+      b: 0,
+      g: 0,
+      a: 0
     }
   }, () => {
     loadObjFile.addLight();
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
-      cube: "./res/meshes/blender/cube.obj"
+      cube: "./res/meshes/blender/plane.obj"
     }, onLoadObj, {
       scale: [1, 1, 1]
     });
     (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
+      plane: "./res/meshes/blender/plane.obj"
     }, onGround, {
       scale: [30, 0.5, 30]
     });
     (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
     function onGround(m) {
-      loadObjFile.addMeshObj({
+      let floor = loadObjFile.addMeshObj({
         material: {
           type: 'standard'
         },
@@ -245,18 +259,84 @@ var canvasInline = function () {
         texturesPaths: ['./res/textures/floor1.webp'],
         //, './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
-        mesh: m.cube,
+        mesh: m.plane,
         physics: {
           enabled: false,
           mass: 0,
           geometry: "Cube"
         }
       });
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = loadObjFile.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat'
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(8, 8);
+      }, 500);
     }
     async function onLoadObj(m) {
-      loadObjFile.addMeshObj({
+      let VIDEO_ARG = {
+        type: 'canvas2d-inline',
+        canvaInlineProgram: (() => {
+          const COLS = Math.floor(512 / 14);
+          const drops = Array.from({
+            length: COLS
+          }, () => Math.floor(Math.random() * -40));
+          const chars = 'アイウエオカキクケコアイウエオ';
+          // const chars = '01';
+          let frame = 0;
+          function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+          }
+          return ctx => {
+            const W = ctx.canvas.width;
+            const H = ctx.canvas.height;
+            const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
+            // fade trail
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.01)';
+            ctx.fillRect(0, 0, W, H);
+            // matrix rain
+            // ctx.font = '13px monospace';
+            for (let i = 0; i < COLS; i++) {
+              const ch = chars[Math.floor(Math.random() * chars.length)];
+              const br = Math.random();
+              ctx.fillStyle = br > 0.82 ? '#ffffff4b' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
+              ctx.fillText(ch, i * 14, drops[i] * 14);
+              if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
+            }
+
+            // ctx.save();
+            ctx.shadowColor = '#00ff4052';
+            ctx.shadowBlur = 18 * pulse;
+            // ctx.restore();
+
+            // ctx.font = 'bold 11px monospace';
+            // ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
+            // ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
+            // ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
+
+            frame++;
+          };
+        })()
+      };
+      let sky = loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -271,132 +351,13 @@ var canvasInline = function () {
         scale: [100, 100, 100],
         rotationSpeed: {
           x: 0,
-          y: 110.5,
+          y: 0.5,
           z: 0
         },
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'sky',
         mesh: m.ball,
-        isVideo: {
-          type: 'canvas2d-inline',
-          canvaInlineProgram: (() => {
-            // ── matrix rain state ──────────────────────────────────────
-            const COLS = Math.floor(512 / 14);
-            const drops = Array.from({
-              length: COLS
-            }, () => Math.floor(Math.random() * -40));
-            const chars = 'アイウエオカキクケコ01アイウエオ';
-            let frame = 0;
-
-            // ── panel anchors — change x/y to move entire panel ────────
-            const BALANCE = {
-              x: 18,
-              y: 18,
-              w: 220,
-              h: 108,
-              r: 8
-            };
-            const BALLS = {
-              x: 274,
-              y: 18,
-              w: 220,
-              h: 108,
-              r: 8
-            };
-
-            // ── helpers ────────────────────────────────────────────────
-            function roundRect(ctx, x, y, w, h, r) {
-              ctx.beginPath();
-              ctx.moveTo(x + r, y);
-              ctx.lineTo(x + w - r, y);
-              ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-              ctx.lineTo(x + w, y + h - r);
-              ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-              ctx.lineTo(x + r, y + h);
-              ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-              ctx.lineTo(x, y + r);
-              ctx.quadraticCurveTo(x, y, x + r, y);
-              ctx.closePath();
-            }
-            function drawPanel(ctx, p, pulse) {
-              ctx.fillStyle = 'rgba(0,0,0,0.6)';
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.fill();
-              ctx.strokeStyle = `rgba(0,${Math.floor(200 * pulse)},50,0.7)`;
-              ctx.lineWidth = 1;
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.stroke();
-            }
-
-            // ── main draw — called every frame by loadVideoTexture ─────
-            return (ctx, {
-              balance = 99840,
-              balls = 3,
-              maxBalls = 5
-            } = {}) => {
-              const W = ctx.canvas.width;
-              const H = ctx.canvas.height;
-              const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
-
-              // fade trail
-              ctx.fillStyle = 'rgba(0,0,0,0.18)';
-              ctx.fillRect(0, 0, W, H);
-
-              // matrix rain
-              ctx.font = '12px monospace';
-              for (let i = 0; i < COLS; i++) {
-                const ch = chars[Math.floor(Math.random() * chars.length)];
-                const br = Math.random();
-                ctx.fillStyle = br > 0.92 ? '#ffffff' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
-                ctx.fillText(ch, i * 14, drops[i] * 14);
-                if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
-              }
-              ctx.save();
-              ctx.shadowColor = '#00ff41';
-              ctx.shadowBlur = 18 * pulse;
-
-              // ── BALANCE panel ─────────────────────────────────────────
-              const B = BALANCE;
-              drawPanel(ctx, B, pulse);
-              ctx.font = 'bold 11px monospace';
-              ctx.fillStyle = 'rgba(0,200,60,0.55)';
-              ctx.fillText('MATRIX ENGINE // PINBALL', B.x + 12, B.y + 18);
-              ctx.font = 'bold 13px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-              ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-              ctx.font = 'bold 32px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-              ctx.fillText(balance.toLocaleString(), B.x + 12, B.y + 82);
-
-              // ── BALLS panel ───────────────────────────────────────────
-              const BL = BALLS;
-              drawPanel(ctx, BL, pulse);
-              ctx.font = 'bold 13px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-              ctx.fillText('BALLS', BL.x + 12, BL.y + 46);
-              for (let b = 0; b < maxBalls; b++) {
-                ctx.beginPath();
-                ctx.arc(BL.x + 24 + b * 34, BL.y + 70, 12, 0, Math.PI * 2);
-                if (b < balls) {
-                  ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-                  ctx.shadowBlur = 14 * pulse;
-                } else {
-                  ctx.fillStyle = 'rgba(0,60,20,0.5)';
-                  ctx.shadowBlur = 0;
-                }
-                ctx.fill();
-              }
-              ctx.restore();
-
-              // ── footer ────────────────────────────────────────────────
-              ctx.font = 'bold 11px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
-              ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
-              ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
-              frame++;
-            };
-          })()
-        },
+        isVideo: VIDEO_ARG,
         physics: {
           enabled: false,
           geometry: "Sphere"
@@ -411,7 +372,7 @@ var canvasInline = function () {
         },
         position: {
           x: 0,
-          y: 3,
+          y: 7,
           z: -10
         },
         rotation: {
@@ -419,33 +380,15 @@ var canvasInline = function () {
           y: 0,
           z: 0
         },
-        scale: [3, 3, 3],
+        scale: [7, 7, 7],
         rotationSpeed: {
           x: 0,
-          y: 0,
+          y: 3,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp'],
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.3,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.35,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.5,
-          // Gentle rim
-          illuminatePulse: 0.1,
-          // No pulse (static)
-          fresnelPower: 5,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
         raycast: {
           enabled: true,
           radius: 1
@@ -461,140 +404,61 @@ var canvasInline = function () {
         //   // flameEffect: true
         // }
       });
-      loadObjFile.lightContainer[0].setIntensity(5);
-      if ((0, _utils.isMobile)() == false) {
-        loadObjFile.activateBloomEffect();
-        loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-        loadObjFile.lightContainer[0].behavior.value_ = -1;
-        loadObjFile.lightContainer[0].updater.push(light => {
-          light.setTargetX(light.behavior.setPath0());
-          light.setPosX(light.behavior.setPath0());
-        });
-        loadObjFile.lightContainer[0].setPosition(0, 15, -10);
-        loadObjFile.lightContainer[0].setTarget(0, 0, -10);
-      }
+      let MYCYLINDER = loadObjFile.addProceduralMeshObj({
+        material: {
+          type: 'standard',
+          share: true
+        },
+        position: {
+          x: 0,
+          y: 7,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [5, 5, 5],
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        meshA: _proceduralMesh.MeshMorpher.sphere(1, 2),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        name: `morph_1`,
+        physics: {
+          enabled: false
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      loadObjFile.lightContainer[0].setIntensity(10);
+
+      // if(isMobile() == false) {
+      loadObjFile.activateBloomEffect();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push(light => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      loadObjFile.lightContainer[0].setPosition(0, 25, -10);
+      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      // }
+
       setTimeout(() => {
-        // let TEST = app.getSceneObjectByName('cube')
-        MYCUBE.loadVideoTexture({
-          type: 'canvas2d-inline',
-          canvaInlineProgram: (() => {
-            // ── matrix rain state ──────────────────────────────────────
-            const COLS = Math.floor(512 / 14);
-            const drops = Array.from({
-              length: COLS
-            }, () => Math.floor(Math.random() * -40));
-            const chars = 'アイウエオカキクケコ01アイウエオ';
-            let frame = 0;
-
-            // ── panel anchors — change x/y to move entire panel ────────
-            const BALANCE = {
-              x: 18,
-              y: 18,
-              w: 220,
-              h: 108,
-              r: 8
-            };
-            const BALLS = {
-              x: 274,
-              y: 18,
-              w: 220,
-              h: 108,
-              r: 8
-            };
-
-            // ── helpers ────────────────────────────────────────────────
-            function roundRect(ctx, x, y, w, h, r) {
-              ctx.beginPath();
-              ctx.moveTo(x + r, y);
-              ctx.lineTo(x + w - r, y);
-              ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-              ctx.lineTo(x + w, y + h - r);
-              ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-              ctx.lineTo(x + r, y + h);
-              ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-              ctx.lineTo(x, y + r);
-              ctx.quadraticCurveTo(x, y, x + r, y);
-              ctx.closePath();
-            }
-            function drawPanel(ctx, p, pulse) {
-              ctx.fillStyle = 'rgba(0,0,0,0.6)';
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.fill();
-              ctx.strokeStyle = `rgba(0,${Math.floor(200 * pulse)},50,0.7)`;
-              ctx.lineWidth = 1;
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.stroke();
-            }
-
-            // ── main draw — called every frame by loadVideoTexture ─────
-            return (ctx, {
-              balance = 99840,
-              balls = 3,
-              maxBalls = 5
-            } = {}) => {
-              const W = ctx.canvas.width;
-              const H = ctx.canvas.height;
-              const pulse = 0.85 + 0.15 * Math.sin(frame * 0.06);
-
-              // fade trail
-              ctx.fillStyle = 'rgba(0,0,0,0.18)';
-              ctx.fillRect(0, 0, W, H);
-
-              // matrix rain
-              ctx.font = '12px monospace';
-              for (let i = 0; i < COLS; i++) {
-                const ch = chars[Math.floor(Math.random() * chars.length)];
-                const br = Math.random();
-                ctx.fillStyle = br > 0.92 ? '#ffffff' : `rgba(0,${Math.floor(160 + br * 95)},${Math.floor(br * 60)},${0.4 + br * 0.6})`;
-                ctx.fillText(ch, i * 14, drops[i] * 14);
-                if (drops[i] * 14 > H + 14 && Math.random() > 0.975) drops[i] = 0;else drops[i]++;
-              }
-              ctx.save();
-              ctx.shadowColor = '#00ff41';
-              ctx.shadowBlur = 18 * pulse;
-
-              // ── BALANCE panel ─────────────────────────────────────────
-              const B = BALANCE;
-              drawPanel(ctx, B, pulse);
-              ctx.font = 'bold 11px monospace';
-              ctx.fillStyle = 'rgba(0,200,60,0.55)';
-              ctx.fillText('MATRIX ENGINE // PINBALL', B.x + 12, B.y + 18);
-              ctx.font = 'bold 13px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-              ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-              ctx.font = 'bold 32px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-              ctx.fillText(balance.toLocaleString(), B.x + 12, B.y + 82);
-
-              // ── BALLS panel ───────────────────────────────────────────
-              const BL = BALLS;
-              drawPanel(ctx, BL, pulse);
-              ctx.font = 'bold 13px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(220 * pulse)},60,0.85)`;
-              ctx.fillText('BALLS', BL.x + 12, BL.y + 46);
-              for (let b = 0; b < maxBalls; b++) {
-                ctx.beginPath();
-                ctx.arc(BL.x + 24 + b * 34, BL.y + 70, 12, 0, Math.PI * 2);
-                if (b < balls) {
-                  ctx.fillStyle = `rgba(0,${Math.floor(255 * pulse)},80,1)`;
-                  ctx.shadowBlur = 14 * pulse;
-                } else {
-                  ctx.fillStyle = 'rgba(0,60,20,0.5)';
-                  ctx.shadowBlur = 0;
-                }
-                ctx.fill();
-              }
-              ctx.restore();
-
-              // ── footer ────────────────────────────────────────────────
-              ctx.font = 'bold 11px monospace';
-              ctx.fillStyle = `rgba(0,${Math.floor(180 * pulse)},50,0.6)`;
-              ctx.fillText(`FRM:${String(frame).padStart(5, '0')}`, 18, H - 12);
-              ctx.fillText('MatrixEngine-WGPU', W - 170, H - 12);
-              frame++;
-            };
-          })()
-        });
+        // Load canvas tex in runtime...
+        MYCUBE.loadVideoTexture(VIDEO_ARG);
+        MYCUBE.setBlend(0.1);
+        MYCUBE.setupPipeline();
+        MYCYLINDER.loadVideoTexture(VIDEO_ARG);
+        MYCYLINDER.setBlend(0.1);
+        MYCYLINDER.setupPipeline();
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
@@ -602,16 +466,19 @@ var canvasInline = function () {
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
-        cam.setZ(0);
-        cam.setY(10);
+        cam.setZ(5);
+        cam.setY(20);
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
       }, 800);
     }
+    let STATUS = 1;
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       // console.log('ray.hit.event detected');
-      if (e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4);
+      if (e.detail.hitObject.name == 'morph_1') {
+        // if(e.detail.hitObject.effects.flameEmitter) e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4)
+        e.detail.hitObject.morphTo(STATUS);
+        if (STATUS == 1) STATUS = 0;else STATUS = 1;
       }
     });
   });
@@ -619,7 +486,7 @@ var canvasInline = function () {
 };
 exports.canvasInline = canvasInline;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -639,7 +506,7 @@ var flipperAmmo = function () {
   };
   let flipper = new _world.default({
     render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
-    fastRender: (0, _utils.isMobile)() == true ? 0.6 : 0.9,
+    fastRender: (0, _utils.isMobile)() == true ? 1 : 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -904,7 +771,7 @@ var flipperAmmo = function () {
         //   material: {type: 'standard'},
         //   position: {x: 0, y: 2.1, z: -20.5},
         //   scale: [6, 0.05, 14.5],
-        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         //   name: 'glass',
         //   mesh: m.glass,
         //   shadowsCast: false,
@@ -1502,7 +1369,7 @@ var flipperAmmo = function () {
 };
 exports.flipperAmmo = flipperAmmo;
 
-},{"../src/engine/cameras.js":37,"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],5:[function(require,module,exports){
+},{"../src/engine/cameras.js":37,"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1518,11 +1385,13 @@ var _cameras = require("../src/engine/cameras.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var flipperJolt = function () {
   let MYFLIPPER = {
+    BALANCE: 0,
+    BALLS: 5,
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
     // render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: (0, _utils.isMobile)() == true ? 0.5 : 0.9,
+    fastRender: 0.8,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -1531,6 +1400,7 @@ var flipperJolt = function () {
     },
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 4 : 4,
     clearColor: {
       r: 0,
       g: 1,
@@ -1540,98 +1410,19 @@ var flipperJolt = function () {
   }, () => {
     let hingeLeftID = 0;
     let hingeRightID = 0;
-    const POWERPIN = 50;
+    const POWERPIN = 10;
     // Audios
-    flipper.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+    flipper.matrixSounds.createAudio('music', 'res/audios/hyperball_pursuit.mp3', 1);
     // flipper.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
-    flipper.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-    flipper.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
-    flipper.matrixSounds.audios.win1.volume = 0.8;
+    flipper.matrixSounds.createAudio('push', 'res/audios/push.mp3', 1);
+    flipper.matrixSounds.createAudio('click1', './res/audios/kenney/mp3/click1.mp3', 4);
+    flipper.matrixSounds.createAudio('click3', './res/audios/kenney/mp3/click3.mp3', 4);
+    flipper.matrixSounds.audios.music.volume = 0.25;
     flipper.matrixSounds.audios.music.loop = true;
+    flipper.matrixSounds.audios.push.volume = 1;
+    flipper.matrixSounds.audios.click1.volume = 1;
+    flipper.matrixSounds.audios.click3.volume = 1;
     flipper.matrixSounds.play('music');
-    if ((0, _utils.isMobile)()) (0, _utils.byId)('mobileControls').style.marginRight = '30%';
-    _cameras.MobileDOM.addButton("PIN", function () {
-      const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
-      flipper.matrixPhysics.activate(leftBody, true);
-      flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -25, POWERPIN * 2);
-    }, () => {
-      flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN);
-    }, {
-      left: '5'
-    });
-    _cameras.MobileDOM.addButton("PIN", function () {
-      const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-      flipper.matrixPhysics.activate(rightBody, true);
-      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 25, POWERPIN * 2);
-    }, () => {
-      flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -25, POWERPIN * 2);
-    }, {
-      left: '80'
-    });
-    _cameras.MobileDOM.addButton("PUSH", async () => {
-      let ball = app.matrixPhysics.getBodyByName('ball1');
-      const pos = await app.matrixPhysics.getPosition(ball);
-      if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 2, -(0, _utils.randomIntFromTo)(11, 15)));
-    }, () => {}, {
-      left: '80',
-      bottom: '50'
-    });
-
-    // Lights
-    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 1 : 4;
-    const ORBIT_RADIUS = 12;
-    const ORBIT_SPEED = 0.6;
-    const TARGET = {
-      x: 0,
-      y: 1,
-      z: -15
-    };
-
-    // Light colors cycling around the hue wheel
-    const LIGHT_COLORS = [[2.0, 0.2, 0.2],
-    // red
-    [2.0, 0.8, 0.1],
-    // orange
-    [0.2, 0.2, 2.0],
-    // blue
-    [2.0, 2.0, 0.1],
-    // yellow
-    [0.2, 1.0, 0.2],
-    // green
-    [0.1, 1.0, 0.6],
-    // teal
-    [0.1, 0.6, 1.0],
-    // sky
-    [0.6, 0.1, 1.0],
-    // purple
-    [1.0, 0.1, 0.8],
-    // pink
-    [1.0, 0.1, 0.4] // rose
-    ];
-    for (let i = 0; i < NUM_LIGHTS; i++) {
-      flipper.addLight();
-    }
-    if ((0, _utils.isMobile)() == false) for (let i = 0; i < NUM_LIGHTS; i++) {
-      const light = flipper.lightContainer[i];
-      const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
-      const color = LIGHT_COLORS[i];
-      light.setIntensity(15);
-      light.color = color;
-      // Orbit height varies slightly per light for more visual interest
-      const heightOffset = Math.sin(angleOffset) * 2;
-      light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
-      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-      // Each light orbits at its own phase offset
-      light.orbitAngle = angleOffset;
-      light.updater.push(light => {
-        light.orbitAngle += ORBIT_SPEED * 0.01;
-        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
-        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
-        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
-        light.setPosition(x, height, z);
-        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-      });
-    }
     addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
       (0, _loaderObj.downloadMeshes)({
@@ -1644,12 +1435,80 @@ var flipperJolt = function () {
         jumper: "./res/meshes/blender/jumper-up.obj",
         bottomLeft: "./res/meshes/blender/bottom-left.obj",
         glass: "./res/meshes/shapes/plane-subdivine-16.obj",
-        bigBox: "./res/meshes/shapes/flipperBigBox.obj"
+        bigBox: "./res/meshes/shapes/flipperBigBox.obj",
+        plane: "./res/meshes/blender/plane.obj"
       }, onGround, {
         scale: [1, 1, 1]
       });
-      // flipper.matrixPhysics.speedUpSimulation = isMobile() == true ? 1 : 4;
     });
+    if ((0, _utils.isMobile)()) (0, _utils.byId)('mobileControls').style.marginRight = '30%';
+    _cameras.MobileDOM.addButton("PUSH", async () => {
+      let ball = app.matrixPhysics.getBodyByName('ball1');
+      const pos = await app.matrixPhysics.getPosition(ball);
+      if (pos.x > 5 && pos.z > -6.6) {
+        if (MYFLIPPER.BALLS == 0) {
+          _utils.mb.show('No more balls...');
+          return;
+        }
+        flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.1, -(0, _utils.randomIntFromTo)(0.5, 1)));
+        flipper.matrixSounds.play('push');
+        MYFLIPPER.BALLS--;
+      }
+    }, () => {}, {
+      left: '80',
+      bottom: '50'
+    });
+
+    // Lights
+    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 3 : 4;
+    const ORBIT_RADIUS = 8;
+    const ORBIT_SPEED = 0.7;
+    const TARGET = {
+      x: 0,
+      y: 0,
+      z: -17
+    };
+
+    // Light colors cycling around the hue wheel
+    const LIGHT_COLORS = [[2.5, 0.2, 0.2],
+    // red
+    [2.5, 0.8, 0.1],
+    // orange
+    [0.2, 0.2, 3.0],
+    // blue
+    [2.0, 3.0, 0.1] // yellow
+    // [0.2, 1.0, 0.2],  // green
+    // [0.1, 1.0, 0.6],  // teal
+    // [0.1, 0.6, 1.0],  // sky
+    // [0.6, 0.1, 1.0],  // purple
+    // [1.0, 0.1, 0.8],  // pink
+    // [1.0, 0.1, 0.4],  // rose
+    ];
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      flipper.addLight();
+    }
+    // if(isMobile() == false) 
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      const light = flipper.lightContainer[i];
+      const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
+      const color = LIGHT_COLORS[i];
+      light.setIntensity(16);
+      light.color = color;
+      // Orbit height varies slightly per light for more visual interest
+      const heightOffset = Math.sin(angleOffset) * 5;
+      light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+      // Each light orbits at its own phase offset
+      light.orbitAngle = angleOffset;
+      light.updater.push(light => {
+        light.orbitAngle += ORBIT_SPEED * 0.01;
+        const height = 8 + Math.sin(light.orbitAngle + angleOffset) * 5;
+        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+      });
+    }
     async function onGround(m) {
       // Ball
       const ball1 = flipper.addMeshObj({
@@ -1727,221 +1586,212 @@ var flipperJolt = function () {
           geometry: "Cube"
         }
       });
-      let TEST = flipper.addMeshObj({
+      let TEXTBOX = {
+        type: 'canvas2d-inline',
+        specialCanvas2dArg: {
+          middle: true
+        },
+        canvaInlineProgram: (() => {
+          const COLS = Math.floor(512 / 16);
+          const drops = Array.from({
+            length: COLS
+          }, () => Math.floor(Math.random() * -30));
+          const chars = '0123♢✮♦♠♥♣';
+          let frame = 0;
+          const BALANCE = {
+            x: 0,
+            y: 0,
+            w: 256,
+            h: 128,
+            r: 10
+          };
+          const BALLS = {
+            x: 0,
+            y: 128,
+            w: 256,
+            h: 128,
+            r: 10
+          };
+          const PALETTE = [[255, 110, 180], [0, 220, 255], [255, 200, 0], [0, 255, 120], [180, 0, 255]];
+          function hue(i, t) {
+            const index = Math.floor(i) % PALETTE.length;
+            const [r, g, b] = PALETTE[index < 0 ? 0 : index];
+            const p = 0.88 + 0.12 * Math.sin(t * 0.05 + i * 1.2);
+            return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
+          }
+          function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+          }
+          function drawPanel(ctx, p, [r, g, b], pulse, alpha = 0.05) {
+            const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+            grad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+            grad.addColorStop(1, `rgba(255,2,255,${alpha + 0.1})`);
+            ctx.fillStyle = grad;
+            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
+            ctx.fill();
+            ctx.strokeStyle = `rgba(${r},${g},${b},0.95)`;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = `rgb(${r},${g},${b})`;
+            ctx.shadowBlur = 22 * pulse;
+            roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            const tk = 11;
+            ctx.strokeStyle = `rgb(${r},${g},${b})`;
+            ctx.lineWidth = 2.5;
+            [[p.x, p.y, 1, 1], [p.x + p.w, p.y, -1, 1], [p.x, p.y + p.h, 1, -1], [p.x + p.w, p.y + p.h, -1, -1]].forEach(([cx, cy, sx, sy]) => {
+              ctx.beginPath();
+              ctx.moveTo(cx + sx * tk, cy);
+              ctx.lineTo(cx, cy);
+              ctx.lineTo(cx, cy + sy * tk);
+              ctx.stroke();
+            });
+          }
+          return (ctx, {
+            maxBalls = 5
+          } = {}) => {
+            const balls = MYFLIPPER.BALLS;
+            const W = ctx.canvas.width,
+              H = ctx.canvas.height;
+            const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
+            const t = frame;
+
+            // === YOUR ORIGINAL RAIN SETTINGS (this worked) ===
+            ctx.fillStyle = 'rgb(255, 255, 255)';
+            ctx.fillRect(0, 0, W, H);
+            for (let y = 0; y < H; y += 4) {
+              ctx.fillStyle = 'rgb(255, 255, 255)';
+              ctx.fillRect(0, y, W, 1);
+            }
+            ctx.font = 'bold 13px monospace';
+            for (let i = 0; i < COLS; i++) {
+              const ch = chars[Math.floor(Math.random() * chars.length)];
+              const [r, g, b] = PALETTE[i % PALETTE.length];
+              const br = 0.4 + Math.random() * 0.6;
+              ctx.fillStyle = br > 0.93 ? '#ffffff' : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},0.9)`;
+              ctx.fillText(ch, i * 16, drops[i] * 16);
+              if (drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;else drops[i]++;
+            }
+            ctx.save();
+
+            // BALANCE PANEL
+            const B = BALANCE;
+            const bc = hue(1, t);
+            drawPanel(ctx, B, bc, pulse, 0.01);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillStyle = '#000000';
+            ctx.shadowBlur = 8 * pulse;
+            ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
+            ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 14, B.y + 20);
+            ctx.font = 'bold 15px monospace';
+            ctx.shadowBlur = 14 * pulse;
+            ctx.fillText('BALANCE: ', B.x + 14, B.y + 46);
+            const val = MYFLIPPER.BALANCE.toLocaleString();
+            ctx.font = 'bold 42px monospace';
+            let dx = B.x + 14;
+            for (let i = 0; i < val.length; i++) {
+              const [r, g, b] = hue(i, t);
+              ctx.fillStyle = `rgb(${r},${g},${b})`;
+              ctx.shadowColor = `rgb(${r},${g},${b})`;
+              ctx.shadowBlur = 16 * pulse;
+              ctx.strokeStyle = '#000000';
+              ctx.lineWidth = 4;
+              ctx.strokeText(val[i], dx, B.y + 90);
+              ctx.fillText(val[i], dx, B.y + 90);
+              dx += ctx.measureText(val[i]).width + 2;
+            }
+
+            // BALLS PANEL
+            const BL = BALLS;
+            const mc = hue(0, t);
+            drawPanel(ctx, BL, mc, pulse, 0.06);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillStyle = '#000000';
+            ctx.shadowBlur = 10 * pulse;
+            ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
+            ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 14, BL.y + 20);
+            ctx.font = 'bold 16px monospace';
+            ctx.shadowBlur = 14 * pulse;
+            ctx.fillText('BALLS REMAINING', BL.x + 14, BL.y + 46);
+            for (let b = 0; b < maxBalls; b++) {
+              const bx = BL.x + 28 + b * 42;
+              const by = BL.y + 85;
+              const [r, g, b2] = hue(b, t);
+              const radius = 17.5;
+              ctx.beginPath();
+              ctx.arc(bx, by, radius, 0, Math.PI * 2);
+              if (b < balls) {
+                const bg = ctx.createRadialGradient(bx - 5, by - 5, 3, bx, by, radius);
+                bg.addColorStop(0, '#ffffff');
+                bg.addColorStop(0.35, `rgb(${r},${g},${b2})`);
+                bg.addColorStop(1, `rgb(${Math.floor(r * 0.25)},${Math.floor(g * 0.25)},${Math.floor(b2 * 0.25)})`);
+                ctx.fillStyle = bg;
+                ctx.shadowColor = `rgb(${r},${g},${b2})`;
+                ctx.shadowBlur = 26 * pulse;
+              } else {
+                ctx.fillStyle = 'rgba(30,10,40,0.85)';
+                ctx.shadowBlur = 0;
+              }
+              ctx.fill();
+              if (b < balls) {
+                ctx.font = 'bold 15px monospace';
+                ctx.fillStyle = '#000000';
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((b + 1).toString(), bx, by);
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+              }
+            }
+            ctx.restore();
+
+            // Footer
+            const ft = hue(2, t);
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#000000';
+            ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
+            ctx.shadowBlur = 0;
+            ctx.fillText('flipper: "Z" and "M" and for shootBall "Space"', 2, H - 10);
+            ctx.shadowBlur = 0;
+            frame++;
+          };
+        })()
+      };
+      let TEST;
+      // if(isMobile() == false) 
+      TEST = flipper.addMeshObj({
         material: {
           type: 'standard',
           share: true
         },
         position: {
           x: 0,
-          y: 6,
-          z: -36
+          y: 10,
+          z: -35
         },
-        scale: [2.95, 3, 1],
+        scale: [7.5, 7.5, 7.5],
+        rotation: {
+          x: 90,
+          y: 0,
+          z: 0
+        },
         texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'bigBox',
-        mesh: m.bigBox,
+        // mesh: m.bigBox,
+        mesh: m.plane,
         shadowsCast: false,
-        // isVideo: {
-        //   type: 'canvas2d-inline',
-        //   canvaInlineProgram: (() => {
-        //     const COLS = Math.floor(512 / 16);
-        //     const drops = Array.from({length: COLS}, () => Math.floor(Math.random() * -30));
-        //     const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
-        //     let frame = 0;
-
-        //     // ── panel anchors ──────────────────────────────────────────
-        //     const BALANCE = {x: 12, y: 12, w: 230, h: 120, r: 10};
-        //     const BALLS = {x: 270, y: 12, w: 230, h: 120, r: 10};
-
-        //     const PALETTE = [
-        //       [255, 0, 180],   // magenta
-        //       [0, 220, 255],   // cyan
-        //       [255, 200, 0],   // gold
-        //       [0, 255, 120],   // green
-        //       [180, 0, 255],   // purple
-        //     ];
-
-        //     function hue(i, t) {
-        //       const [r, g, b] = PALETTE[i % PALETTE.length];
-        //       const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
-        //       return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
-        //     }
-
-        //     function roundRect(ctx, x, y, w, h, r) {
-        //       ctx.beginPath();
-        //       ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-        //       ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        //       ctx.lineTo(x + w, y + h - r);
-        //       ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        //       ctx.lineTo(x + r, y + h);
-        //       ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        //       ctx.lineTo(x, y + r);
-        //       ctx.quadraticCurveTo(x, y, x + r, y);
-        //       ctx.closePath();
-        //     }
-
-        //     function drawPanel(ctx, p, [r, g, b], pulse) {
-        //       // gradient fill
-        //       const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
-        //       grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
-        //       grad.addColorStop(1, `rgba(0,0,0,0.75)`);
-        //       ctx.fillStyle = grad;
-        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.fill();
-
-        //       // glowing border
-        //       ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
-        //       ctx.lineWidth = 1.5;
-        //       ctx.shadowColor = `rgb(${r},${g},${b})`;
-        //       ctx.shadowBlur = 12 * pulse;
-        //       roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.stroke();
-        //       ctx.shadowBlur = 0;
-
-        //       // corner ticks
-        //       const tk = 10;
-        //       ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
-        //       ctx.lineWidth = 2;
-        //       [
-        //         [p.x, p.y, 1, 1],
-        //         [p.x + p.w, p.y, -1, 1],
-        //         [p.x, p.y + p.h, 1, -1],
-        //         [p.x + p.w, p.y + p.h, -1, -1],
-        //       ].forEach(([cx, cy, sx, sy]) => {
-        //         ctx.beginPath();
-        //         ctx.moveTo(cx + sx * tk, cy);
-        //         ctx.lineTo(cx, cy);
-        //         ctx.lineTo(cx, cy + sy * tk);
-        //         ctx.stroke();
-        //       });
-        //     }
-
-        //     return (ctx, {balance = 99840, balls = 3, maxBalls = 5} = {}) => {
-        //       const W = ctx.canvas.width, H = ctx.canvas.height;
-        //       const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
-        //       const t = frame;
-
-        //       // fade + scanlines
-        //       ctx.fillStyle = 'rgba(2,0,12,0.22)';
-        //       ctx.fillRect(0, 0, W, H);
-        //       for(let y = 0;y < H;y += 4) {
-        //         ctx.fillStyle = 'rgba(0,0,0,0.08)';
-        //         ctx.fillRect(0, y, W, 1);
-        //       }
-
-        //       // multi-color rain
-        //       ctx.font = 'bold 13px monospace';
-        //       for(let i = 0;i < COLS;i++) {
-        //         const ch = chars[Math.floor(Math.random() * chars.length)];
-        //         const [r, g, b] = PALETTE[i % PALETTE.length];
-        //         const br = Math.random();
-        //         ctx.fillStyle = br > 0.93 ? '#ffffff'
-        //           : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
-        //         ctx.fillText(ch, i * 16, drops[i] * 16);
-        //         if(drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;
-        //         else drops[i]++;
-        //       }
-
-        //       ctx.save();
-
-        //       // ── BALANCE panel ────────────────────────────────────────
-        //       const B = BALANCE;
-        //       const bc = hue(1, t);
-        //       drawPanel(ctx, B, bc, pulse);
-
-        //       ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
-        //       ctx.shadowBlur = 10 * pulse;
-
-        //       ctx.font = 'bold 10px monospace';
-        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
-        //       ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
-
-        //       ctx.font = 'bold 12px monospace';
-        //       ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
-        //       ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-
-        //       // per-digit color cycling
-        //       const val = balance.toLocaleString();
-        //       ctx.font = 'bold 36px monospace';
-        //       let dx = B.x + 12;
-        //       for(let i = 0;i < val.length;i++) {
-        //         const [r, g, b] = hue(i, t);
-        //         ctx.fillStyle = `rgba(${r},${g},${b},1)`;
-        //         ctx.shadowColor = `rgb(${r},${g},${b})`;
-        //         ctx.shadowBlur = 14 * pulse;
-        //         ctx.fillText(val[i], dx, B.y + 88);
-        //         dx += ctx.measureText(val[i]).width;
-        //       }
-
-        //       // score bar
-        //       const barW = B.w - 24;
-        //       ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        //       roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3); ctx.fill();
-        //       const filled = barW * (balance / 999999);
-        //       const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
-        //       barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
-        //       barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
-        //       barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
-        //       ctx.fillStyle = barGrad;
-        //       ctx.shadowBlur = 6; ctx.shadowColor = '#ff00cc';
-        //       roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3); ctx.fill();
-
-        //       // ── BALLS panel ──────────────────────────────────────────
-        //       const BL = BALLS;
-        //       const mc = hue(0, t);
-        //       drawPanel(ctx, BL, mc, pulse);
-
-        //       ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
-        //       ctx.shadowBlur = 10 * pulse;
-        //       ctx.font = 'bold 10px monospace';
-        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
-        //       ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
-        //       ctx.font = 'bold 12px monospace';
-        //       ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
-        //       ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
-
-        //       for(let b = 0;b < maxBalls;b++) {
-        //         const bx = BL.x + 24 + b * 40;
-        //         const by = BL.y + 80;
-        //         const [r, g, b2] = hue(b, t);
-        //         ctx.beginPath();
-        //         ctx.arc(bx, by, 14, 0, Math.PI * 2);
-        //         if(b < balls) {
-        //           const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
-        //           bg.addColorStop(0, 'rgba(255,255,255,0.9)');
-        //           bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
-        //           bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
-        //           ctx.fillStyle = bg;
-        //           ctx.shadowColor = `rgb(${r},${g},${b2})`;
-        //           ctx.shadowBlur = 18 * pulse;
-        //         } else {
-        //           ctx.fillStyle = 'rgba(30,10,40,0.8)';
-        //           ctx.shadowBlur = 0;
-        //         }
-        //         ctx.fill();
-        //         if(b < balls) {
-        //           ctx.font = 'bold 10px monospace';
-        //           ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        //           ctx.shadowBlur = 0;
-        //           ctx.fillText(b + 1, bx - 4, by + 4);
-        //         }
-        //       }
-
-        //       ctx.restore();
-
-        //       // footer
-        //       const ft = hue(2, t);
-        //       ctx.font = 'bold 10px monospace';
-        //       ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
-        //       ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
-        //       ctx.shadowBlur = 6;
-        //       ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
-        //       ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
-        //       ctx.shadowBlur = 0;
-
-        //       frame++;
-        //     };
-        //   })()
-        // },
+        isVideo: TEXTBOX,
         physics: {
           enabled: false,
           mass: 0,
@@ -1952,7 +1802,6 @@ var flipperJolt = function () {
       // // canvas2d-inline
       // TEST.loadVideoTexture({
       //   type: 'canvas2d-inline',
-
       // });
 
       let envMapParams = {
@@ -2002,7 +1851,7 @@ var flipperJolt = function () {
         //   material: {type: 'standard'},
         //   position: {x: 0, y: 2.1, z: -20.5},
         //   scale: [6, 0.05, 14.5],
-        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.png'],
+        //   texturesPaths: ['./res/textures/tex01.webp'], //['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
         //   name: 'glass',
         //   mesh: m.glass,
         //   shadowsCast: false,
@@ -2306,13 +2155,34 @@ var flipperJolt = function () {
       setTimeout(async () => {
         const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
         const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
-        // flipper.matrixPhysics.setActivationState(leftBody, 4);
+        _cameras.MobileDOM.addButton("PIN-L", function () {
+          // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
+          flipper.matrixPhysics.activate(leftBody, true);
+          flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
+          flipper.matrixSounds.play('click3');
+        }, () => {
+          setTimeout(() => {
+            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN * 2);
+            flipper.matrixSounds.play('click1');
+          }, 30);
+        }, {
+          left: '5'
+        });
+        _cameras.MobileDOM.addButton("PIN-R", function () {
+          // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
+          flipper.matrixPhysics.activate(rightBody, true);
+          flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, POWERPIN * 2);
+          flipper.matrixSounds.play('click3');
+        }, () => {
+          setTimeout(() => {
+            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN * 2);
+            flipper.matrixSounds.play('click1');
+          }, 30);
+        }, {
+          left: '79'
+        });
         flipper.matrixPhysics.activate(leftBody, true);
-        // flipper.matrixPhysics.setActivationState(rightBody, 4);
         flipper.matrixPhysics.activate(rightBody, true);
-        // flipper.matrixPhysics.setDamping(leftBody, 0.95, 0.95);
-        // flipper.matrixPhysics.setDamping(rightBody, 0.95, 0.95);
-
         flipper.matrixPhysics.setDamping(leftBody, 0., 0.);
         flipper.matrixPhysics.setDamping(rightBody, 0., 0.);
         flipper.matrixPhysics.setRestitution(leftBody, 0.1);
@@ -2328,8 +2198,6 @@ var flipperJolt = function () {
         const ball = flipper.matrixPhysics.getBodyByName('ball1');
         flipper.matrixPhysics.setRestitution(ball, 0.1);
         flipper.matrixPhysics.setFriction(ball, 0.1);
-        // flipper.matrixPhysics.setDamping(ball, 0, 0);
-
         // FLIPPER SETUP
         const commonX = 0;
         const BA = flipper.matrixPhysics.getBodyByName('flipperLeft');
@@ -2342,7 +2210,6 @@ var flipperJolt = function () {
           limits: [-0.8, 0.5]
         });
         hingeLeft.then(idx => {
-          // console.log('Hinge index (its is not regular rigidbody idx)', idx)
           hingeLeftID = idx;
           app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
           app.matrixPhysics.enableAngularMotor(idx, true, 10, POWERPIN);
@@ -2358,10 +2225,6 @@ var flipperJolt = function () {
         });
         hingeRight.then(idx => {
           hingeRightID = idx;
-          // app.matrixPhysics.setHingeLimit(idx, -0.8, 0.5, 0.0, 0.5, 1.0);
-          // app.matrixPhysics.enableAngularMotor(idx, true, -10, 500);
-          // app.matrixPhysics.setHingeLimit(idx, 0.8, 0.5, 0.0, 0.5, 1.0);   // swapped + clean
-          // Stronger negative motor so it moves in the opposite visual direction
           app.matrixPhysics.enableAngularMotor(idx, true, -10, POWERPIN); // increased strength
         });
         REdge.setUVScale(1, 1);
@@ -2375,27 +2238,36 @@ var flipperJolt = function () {
             leftBodycurrPos = 'pressed';
             flipper.matrixPhysics.activate(leftBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
+            flipper.matrixSounds.play('click3');
           }
           if (e.code === "KeyM") {
             flipper.matrixPhysics.activate(rightBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, POWERPIN * 2);
+            flipper.matrixSounds.play('click3');
           }
         });
         window.addEventListener("keyup", async e => {
           if (e.code === "KeyZ") {
             leftBodycurrPos = 'unpressed';
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN);
+            flipper.matrixSounds.play('click1');
           }
           if (e.code === "KeyM") {
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN);
+            flipper.matrixSounds.play('click1');
           }
           if (e.code == "Space") {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
             if (pos.x > 5 && pos.z < -6) {
+              if (MYFLIPPER.BALLS == 0) {
+                _utils.mb.show('No more balls...');
+                return;
+              }
               flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
-            } else if (pos.x < 5.1 && pos.z < -5.5) {
+              MYFLIPPER.BALLS--;
+            } else if (pos.x < 5.1 && pos.z > -5.5) {
               flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector((0, _utils.randomFloatFromTo)(0.1, 0.15), 0, 0));
             }
           }
@@ -2407,221 +2279,15 @@ var flipperJolt = function () {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          if (body0Name == "ball1" && body1Name.startsWith("bumper") || body1Name == "ball1" && body0Name.startsWith("bumper")) {
-            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * 0.01, 0, rayDirection[2] * 0.01));
+          // (body1Name == "ball1" && body0Name.startsWith("bumper"))
+          if (body0Name == "ball1" && body1Name.startsWith("bumper")) {
+            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * 0.015, 0, rayDirection[2] * 0.015));
+            MYFLIPPER.BALANCE = MYFLIPPER.BALANCE + 20;
           } else if (body1Name == 'bottomEdge2') {
             console.log('collision FORCE : ', body1Name);
-            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.2, 0, 0));
+            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.3, 0, 0));
           }
         };
-        TEST.loadVideoTexture({
-          type: 'canvas2d-inline',
-          canvaInlineProgram: (() => {
-            const COLS = Math.floor(512 / 16);
-            const drops = Array.from({
-              length: COLS
-            }, () => Math.floor(Math.random() * -30));
-            const chars = '0123456789ABCDEF♦♠♥♣█▓▒░';
-            let frame = 0;
-
-            // ── panel anchors ──────────────────────────────────────────
-            const BALANCE = {
-              x: 12,
-              y: 12,
-              w: 230,
-              h: 120,
-              r: 10
-            };
-            const BALLS = {
-              x: 270,
-              y: 12,
-              w: 230,
-              h: 120,
-              r: 10
-            };
-            const PALETTE = [[255, 0, 180],
-            // magenta
-            [0, 220, 255],
-            // cyan
-            [255, 200, 0],
-            // gold
-            [0, 255, 120],
-            // green
-            [180, 0, 255] // purple
-            ];
-            function hue(i, t) {
-              const [r, g, b] = PALETTE[i % PALETTE.length];
-              const p = 0.7 + 0.3 * Math.sin(t * 0.05 + i * 1.2);
-              return [Math.floor(r * p), Math.floor(g * p), Math.floor(b * p)];
-            }
-            function roundRect(ctx, x, y, w, h, r) {
-              ctx.beginPath();
-              ctx.moveTo(x + r, y);
-              ctx.lineTo(x + w - r, y);
-              ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-              ctx.lineTo(x + w, y + h - r);
-              ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-              ctx.lineTo(x + r, y + h);
-              ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-              ctx.lineTo(x, y + r);
-              ctx.quadraticCurveTo(x, y, x + r, y);
-              ctx.closePath();
-            }
-            function drawPanel(ctx, p, [r, g, b], pulse) {
-              // gradient fill
-              const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
-              grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
-              grad.addColorStop(1, `rgba(0,0,0,0.75)`);
-              ctx.fillStyle = grad;
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.fill();
-
-              // glowing border
-              ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
-              ctx.lineWidth = 1.5;
-              ctx.shadowColor = `rgb(${r},${g},${b})`;
-              ctx.shadowBlur = 12 * pulse;
-              roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
-              ctx.stroke();
-              ctx.shadowBlur = 0;
-
-              // corner ticks
-              const tk = 10;
-              ctx.strokeStyle = `rgba(${r},${g},${b},1)`;
-              ctx.lineWidth = 2;
-              [[p.x, p.y, 1, 1], [p.x + p.w, p.y, -1, 1], [p.x, p.y + p.h, 1, -1], [p.x + p.w, p.y + p.h, -1, -1]].forEach(([cx, cy, sx, sy]) => {
-                ctx.beginPath();
-                ctx.moveTo(cx + sx * tk, cy);
-                ctx.lineTo(cx, cy);
-                ctx.lineTo(cx, cy + sy * tk);
-                ctx.stroke();
-              });
-            }
-            return (ctx, {
-              balance = 99840,
-              balls = 3,
-              maxBalls = 5
-            } = {}) => {
-              const W = ctx.canvas.width,
-                H = ctx.canvas.height;
-              const pulse = 0.8 + 0.2 * Math.sin(frame * 0.07);
-              const t = frame;
-
-              // fade + scanlines
-              ctx.fillStyle = 'rgba(2,0,12,0.22)';
-              ctx.fillRect(0, 0, W, H);
-              for (let y = 0; y < H; y += 4) {
-                ctx.fillStyle = 'rgba(0,0,0,0.08)';
-                ctx.fillRect(0, y, W, 1);
-              }
-
-              // multi-color rain
-              ctx.font = 'bold 13px monospace';
-              for (let i = 0; i < COLS; i++) {
-                const ch = chars[Math.floor(Math.random() * chars.length)];
-                const [r, g, b] = PALETTE[i % PALETTE.length];
-                const br = Math.random();
-                ctx.fillStyle = br > 0.93 ? '#ffffff' : `rgba(${Math.floor(r * br)},${Math.floor(g * br)},${Math.floor(b * br)},${0.35 + br * 0.65})`;
-                ctx.fillText(ch, i * 16, drops[i] * 16);
-                if (drops[i] * 16 > H + 16 && Math.random() > 0.97) drops[i] = 0;else drops[i]++;
-              }
-              ctx.save();
-
-              // ── BALANCE panel ────────────────────────────────────────
-              const B = BALANCE;
-              const bc = hue(1, t);
-              drawPanel(ctx, B, bc, pulse);
-              ctx.shadowColor = `rgb(${bc[0]},${bc[1]},${bc[2]})`;
-              ctx.shadowBlur = 10 * pulse;
-              ctx.font = 'bold 10px monospace';
-              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},0.6)`;
-              ctx.fillText('◈ MATRIX PINBALL ◈', B.x + 12, B.y + 20);
-              ctx.font = 'bold 12px monospace';
-              ctx.fillStyle = `rgba(${bc[0]},${bc[1]},${bc[2]},1)`;
-              ctx.fillText('BALANCE', B.x + 12, B.y + 46);
-
-              // per-digit color cycling
-              const val = balance.toLocaleString();
-              ctx.font = 'bold 36px monospace';
-              let dx = B.x + 12;
-              for (let i = 0; i < val.length; i++) {
-                const [r, g, b] = hue(i, t);
-                ctx.fillStyle = `rgba(${r},${g},${b},1)`;
-                ctx.shadowColor = `rgb(${r},${g},${b})`;
-                ctx.shadowBlur = 14 * pulse;
-                ctx.fillText(val[i], dx, B.y + 88);
-                dx += ctx.measureText(val[i]).width;
-              }
-
-              // score bar
-              const barW = B.w - 24;
-              ctx.fillStyle = 'rgba(255,255,255,0.06)';
-              roundRect(ctx, B.x + 12, B.y + 98, barW, 10, 3);
-              ctx.fill();
-              const filled = barW * (balance / 999999);
-              const barGrad = ctx.createLinearGradient(B.x + 12, 0, B.x + 12 + filled, 0);
-              barGrad.addColorStop(0, 'rgba(0,220,255,0.9)');
-              barGrad.addColorStop(0.5, 'rgba(180,0,255,0.9)');
-              barGrad.addColorStop(1, 'rgba(255,0,180,0.9)');
-              ctx.fillStyle = barGrad;
-              ctx.shadowBlur = 6;
-              ctx.shadowColor = '#ff00cc';
-              roundRect(ctx, B.x + 12, B.y + 98, filled, 10, 3);
-              ctx.fill();
-
-              // ── BALLS panel ──────────────────────────────────────────
-              const BL = BALLS;
-              const mc = hue(0, t);
-              drawPanel(ctx, BL, mc, pulse);
-              ctx.shadowColor = `rgb(${mc[0]},${mc[1]},${mc[2]})`;
-              ctx.shadowBlur = 10 * pulse;
-              ctx.font = 'bold 10px monospace';
-              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},0.6)`;
-              ctx.fillText('◈ FLIPPER STATUS ◈', BL.x + 12, BL.y + 20);
-              ctx.font = 'bold 12px monospace';
-              ctx.fillStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},1)`;
-              ctx.fillText('BALLS REMAINING', BL.x + 12, BL.y + 46);
-              for (let b = 0; b < maxBalls; b++) {
-                const bx = BL.x + 24 + b * 40;
-                const by = BL.y + 80;
-                const [r, g, b2] = hue(b, t);
-                ctx.beginPath();
-                ctx.arc(bx, by, 14, 0, Math.PI * 2);
-                if (b < balls) {
-                  const bg = ctx.createRadialGradient(bx - 4, by - 4, 2, bx, by, 14);
-                  bg.addColorStop(0, 'rgba(255,255,255,0.9)');
-                  bg.addColorStop(0.3, `rgba(${r},${g},${b2},1)`);
-                  bg.addColorStop(1, `rgba(${Math.floor(r * 0.3)},${Math.floor(g * 0.3)},${Math.floor(b2 * 0.3)},1)`);
-                  ctx.fillStyle = bg;
-                  ctx.shadowColor = `rgb(${r},${g},${b2})`;
-                  ctx.shadowBlur = 18 * pulse;
-                } else {
-                  ctx.fillStyle = 'rgba(30,10,40,0.8)';
-                  ctx.shadowBlur = 0;
-                }
-                ctx.fill();
-                if (b < balls) {
-                  ctx.font = 'bold 10px monospace';
-                  ctx.fillStyle = 'rgba(0,0,0,0.8)';
-                  ctx.shadowBlur = 0;
-                  ctx.fillText(b + 1, bx - 4, by + 4);
-                }
-              }
-              ctx.restore();
-
-              // footer
-              const ft = hue(2, t);
-              ctx.font = 'bold 10px monospace';
-              ctx.fillStyle = `rgba(${ft[0]},${ft[1]},${ft[2]},0.7)`;
-              ctx.shadowColor = `rgb(${ft[0]},${ft[1]},${ft[2]})`;
-              ctx.shadowBlur = 6;
-              ctx.fillText(`▶ FRM:${String(frame).padStart(5, '0')}`, 12, H - 10);
-              ctx.fillText('MatrixEngine-WGPU ◈ PINBALL', W - 230, H - 10);
-              ctx.shadowBlur = 0;
-              frame++;
-            };
-          })()
-        });
       }, 1000);
       const commonAchorX = 2.3;
       const commomBODYX = 0;
@@ -2690,12 +2356,11 @@ var flipperJolt = function () {
           enabled: true,
           mass: 0.5,
           geometry: "Cube",
-          // vertices: m.pin.vertices,
           collisionGroup: 0,
           collisionSubGroup: 0,
           group: 1,
           mask: -1,
-          // everything,
+          // everything
           layer: 3 // LAYER_FLIPPER
         }
       });
@@ -2717,8 +2382,6 @@ var flipperJolt = function () {
           enabled: true,
           mass: 0.5,
           geometry: "Cube",
-          // geometry: "ConvexHull",
-          // vertices: m.pinR.vertices,
           collisionGroup: 0,
           collisionSubGroup: 0,
           group: 1,
@@ -2732,12 +2395,11 @@ var flipperJolt = function () {
         if (e.detail.hitObject.name == "pushBtn") {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
           const pos = await app.matrixPhysics.getPosition(ball);
-          if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomIntFromTo)(1, 2)));
+          if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
         }
       });
 
       // GRAVITY TILT (PINBALL FEEL)
-      // flipper.matrixPhysics.setGravity(0, -9.8, 1.8);
       flipper.matrixPhysics.setGravity(0, -9.8, 2);
       if ((0, _utils.isMobile)() == false) {
         // only render objs
@@ -2836,14 +2498,14 @@ var flipperJolt = function () {
         app.cameras.WASD.setZ(0);
         app.cameras.WASD.setY(10);
         app.cameras.WASD._dirtyAngle = true;
-      }, 500);
+      }, 900);
     }
   });
   window.app = flipper;
 };
 exports.flipperJolt = flipperJolt;
 
-},{"../src/engine/cameras.js":37,"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],6:[function(require,module,exports){
+},{"../src/engine/cameras.js":37,"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3023,7 +2685,7 @@ var fontana = function () {
 };
 exports.fontana = fontana;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3570,6 +3232,7 @@ function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -3780,7 +3443,7 @@ function loadGLBLoader() {
   window.app = TEST_ANIM;
 }
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/world.js":128}],9:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/world.js":129}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3791,12 +3454,14 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
+var _meConfig = require("../src/me-config.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.6,
+    fastRender: 1,
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',
@@ -3810,6 +3475,7 @@ var loadObjFile = function () {
     }
   }, () => {
     loadObjFile.addLight();
+    // if you double call downloadMeshes for same path engine use cached values no double fetch...
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj"
@@ -3825,7 +3491,8 @@ var loadObjFile = function () {
     function onGround(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -3856,7 +3523,8 @@ var loadObjFile = function () {
     async function onLoadObj(m) {
       loadObjFile.addMeshObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: true
         },
         position: {
           x: 0,
@@ -3871,7 +3539,7 @@ var loadObjFile = function () {
         scale: [100, 100, 100],
         rotationSpeed: {
           x: 0,
-          y: 110.5,
+          y: 0.1,
           z: 0
         },
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
@@ -3886,12 +3554,11 @@ var loadObjFile = function () {
       // share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {
-          type: 'standard',
-          share: true
+          type: 'mirror'
         },
         position: {
           x: 0,
-          y: 3,
+          y: 4,
           z: -10
         },
         rotation: {
@@ -3904,19 +3571,20 @@ var loadObjFile = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/textures/floor1.webp'],
+        scale: [3, 5, 1],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
-          baseColorMix: 0.3,
+          baseColorMix: 0.1,
           // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],
           // Slight cool tint
-          reflectivity: 0.35,
+          reflectivity: 0.75,
           // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0],
           // Soft cyan
-          illuminateStrength: 0.5,
+          illuminateStrength: 1.5,
           // Gentle rim
           illuminatePulse: 0.1,
           // No pulse (static)
@@ -3933,29 +3601,35 @@ var loadObjFile = function () {
           enabled: false,
           mass: 0,
           geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+          // flameEffect: true
         }
-        // pointerEffect: {
-        //   enabled: true,
-        //   flameEmitter: true
-        //   // flameEffect: true
-        // }
       });
       loadObjFile.lightContainer[0].setIntensity(5);
-      if ((0, _utils.isMobile)() == false) {
-        loadObjFile.activateBloomEffect();
-        loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-        loadObjFile.lightContainer[0].behavior.value_ = -1;
-        loadObjFile.lightContainer[0].updater.push(light => {
-          light.setTargetX(light.behavior.setPath0());
-          light.setPosX(light.behavior.setPath0());
-        });
-        loadObjFile.lightContainer[0].setPosition(0, 15, -10);
-        loadObjFile.lightContainer[0].setTarget(0, 0, -10);
-      }
+
+      // if(isMobile() == false) {
+      loadObjFile.activateBloomEffect();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push(light => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      loadObjFile.lightContainer[0].setPosition(0, 15, -10);
+      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      // }
+
       setTimeout(() => {
+        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        MYCUBE.setAmbient(10, 1, 0);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([-2.582509022040566, 0.21125441598805741, 0.4249951687253338, 0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+        MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
@@ -3966,9 +3640,12 @@ var loadObjFile = function () {
       }, 400);
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
-      // console.log('ray.hit.event detected');
+      console.log('ray.hit.event detected');
       if (e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(4);
+        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e.detail.hitObject.effects.flameEmitter.setIntensity((0, _utils.randomIntFromTo)(1, 200));
+        e.detail.hitObject.setAmbient((0, _utils.randomIntFromTo)(1, 7), (0, _utils.randomIntFromTo)(1, 2), (0, _utils.randomIntFromTo)(1, 5));
+        app.bloomPass.setBlurRadius((0, _utils.randomIntFromTo)(1, 5));
       }
     });
   });
@@ -3976,7 +3653,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],10:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/me-config.js":79,"../src/world.js":129}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4064,6 +3741,8 @@ var loadObjsSequence = function () {
         objAnim: objAnim
       });
       setTimeout(() => {
+        // Int 1 is max speed
+        app.getSceneObjectByName('swat').objAnim.animations.walk.speed = 1;
         app.cameras.WASD.setPitch(-0.26);
         app.cameras.WASD.setYaw(-0.06);
         app.cameras.WASD.setY(15);
@@ -4104,7 +3783,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/utils.js":78,"../src/world.js":128}],11:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/utils.js":78,"../src/world.js":129}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4119,7 +3798,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var mazeGame = function () {
   let maze = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 0.8,
+    fastRender: 0.9,
     render: 'nano',
     //'zero', // test
     dontUsePhysics: true,
@@ -4236,7 +3915,7 @@ var mazeGame = function () {
 };
 exports.mazeGame = mazeGame;
 
-},{"../src/engine/collision-sub-system.js":38,"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/world.js":128}],12:[function(require,module,exports){
+},{"../src/engine/collision-sub-system.js":38,"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/world.js":129}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4295,9 +3974,9 @@ var myLights = function () {
     ];
     // Ground
     (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
+      plane: "./res/meshes/blender/plane.obj"
     }, m => {
-      myLights.addMeshObj({
+      const floor = myLights.addMeshObj({
         material: {
           type: 'standard'
         },
@@ -4309,12 +3988,23 @@ var myLights = function () {
         },
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
-        mesh: m.cube,
-        scale: [30, 0.5, 30],
+        mesh: m.plane,
+        scale: [6, 0.5, 6],
         physics: {
           enabled: false
         }
       });
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = myLights.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat'
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+      }, 200);
     }, {
       scale: [30, 0.5, 30]
     });
@@ -4326,7 +4016,7 @@ var myLights = function () {
         useTextureFromGlb: true
       },
       useScale: true,
-      scale: [5, 5, 5],
+      scale: [6, 6, 6],
       position: {
         x: TARGET.x,
         y: TARGET.y - 4,
@@ -4365,8 +4055,8 @@ var myLights = function () {
     if ((0, _utils.isMobile)() == false) myLights.activateBloomEffect();
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(5);
-      monster.updateInstances(5);
+      monster.updateMaxInstances(4);
+      monster.updateInstances(4);
       monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
       myLights.cameras.WASD.setYaw(-0.03);
@@ -4378,7 +4068,7 @@ var myLights = function () {
 };
 exports.myLights = myLights;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/engine/utils.js":78,"../src/world.js":128}],13:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/engine/utils.js":78,"../src/world.js":129}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4397,6 +4087,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
+    fastRender: 1,
+    // must be 1 for now
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -4453,7 +4145,7 @@ var physicsPlayground = function () {
         x: 0,
         y: 0,
         z: 0
-      }, "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400);
+      }, "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400);
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -4575,7 +4267,7 @@ var physicsPlayground = function () {
           z: 0
         },
         scale: [25, 0.01, 25],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -4698,7 +4390,7 @@ var physicsPlayground = function () {
           radius: 1
         }
       });
-      app.activateBloomEffect();
+      if ((0, _utils.isMobile)() === false) app.activateBloomEffect();
       // physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       // physicsPlayground.lightContainer[0].behavior.value_ = -1;
       // physicsPlayground.lightContainer[0].updater.push((light) => {
@@ -4803,7 +4495,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],14:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4815,11 +4507,13 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var testCannonES = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
     useCannon: true,
+    fastRender: 0.9,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -4836,6 +4530,7 @@ var testCannonES = function () {
     addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
+        plane: "./res/meshes/blender/plane.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {
@@ -4843,16 +4538,12 @@ var testCannonES = function () {
       });
       // physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
-      physicsPlayground.physicsBodiesChain();
-      physicsPlayground.physicsBodiesGeneratorDeepPyramid("standard", {
-        x: 0,
-        y: 1,
-        z: -20
-      }, {
-        x: 0,
-        y: 0,
-        z: 0
-      }, "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400);
+      // physicsPlayground.physicsBodiesChain();
+
+      // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
+      //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
+      //   "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
+      // );
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -4867,38 +4558,26 @@ var testCannonES = function () {
       });
     });
     async function onGround(m) {
-      const myComplexGeometry = physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 8,
-          y: 4,
-          z: -6
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0.02
-        },
-        scale: [3, 3, 3],
-        texturesPaths: ['./res/textures/slot/reel1.webp'],
-        name: 'MyHull',
-        mesh: m.reel,
-        physics: {
-          enabled: true,
-          mass: 2,
-          geometry: "ConvexHull",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 2,
-          mask: -1
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
+      // const myComplexGeometry = physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 8, y: 4, z: -6},
+      //   rotation: {x: 0, y: 0, z: 0.02},
+      //   scale: [3, 3, 3],
+      //   texturesPaths: ['./res/textures/slot/reel1.webp'],
+      //   name: 'MyHull',
+      //   mesh: m.reel,
+      //   physics: {
+      //     enabled: true,
+      //     mass: 2,
+      //     geometry: "ConvexHull",
+      //     vertices: m.reel.vertices,
+      //     indices: m.reel.indices,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);
       app.cameras.WASD.setZ(0);
@@ -4910,7 +4589,7 @@ var testCannonES = function () {
         },
         position: {
           x: 0,
-          y: 125,
+          y: 15,
           z: -20
         },
         rotation: {
@@ -4955,13 +4634,12 @@ var testCannonES = function () {
           z: 0
         },
         scale: [25, 0.1, 25],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+        // chatgpt-gen-bg-inv
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
-        mesh: m.cube,
+        mesh: m.plane,
         physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
+          enabled: false
         }
       });
       physicsPlayground.addProceduralMeshObj({
@@ -5040,44 +4718,28 @@ var testCannonES = function () {
           radius: 1
         }
       });
-      physicsPlayground.addProceduralMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 1,
-          y: 3,
-          z: -7
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1, 1, 1],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher.cone(1, 3, false),
-        meshB: _proceduralMesh.MeshMorpher.cube(1),
-        name: `morph_cone`,
-        physics: {
-          enabled: true,
-          geometry: "Cone",
-          mass: 1,
-          radius: 1,
-          height: 3,
-          group: 2,
-          mask: -1
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
+
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 1, y: 3, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.cone(1, 3, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_cone`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cone",
+      //     mass: 1,
+      //     radius: 1,
+      //     height: 3,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
 
       // not isolated bug yet - selecting not precise!
       // setTimeout(async () => {
@@ -5096,7 +4758,7 @@ var testCannonES = function () {
       //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
       // }, 2500)
 
-      app.activateBloomEffect();
+      if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
     }
@@ -5105,7 +4767,7 @@ var testCannonES = function () {
 };
 exports.testCannonES = testCannonES;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/world.js":128}],15:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5117,6 +4779,7 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
@@ -5125,6 +4788,7 @@ var testJolt = function () {
     canvasSize: 'fullscreen',
     useJolt: true,
     // Or ammojs by default...
+    fastRender: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -5156,7 +4820,7 @@ var testJolt = function () {
         x: 0,
         y: 0,
         z: 0
-      }, "./res/textures/gold-1.webp", "pyr", 5, true, [1, 1, 1], 2, 400);
+      }, "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400);
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -5165,25 +4829,26 @@ var testJolt = function () {
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
-        console.log('ray.hit.event detected');
+        console.log('ray.hit.event detected', e.detail.hitObject.name);
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
         app.matrixPhysics.applyImpulse(b, new _matrixClass.PVector(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength));
       });
     });
     async function onGround(m) {
+      // console.log( m.reel.vertices)
       const myComplexGeometry = physicsPlayground.addMeshObj({
         material: {
           type: 'standard'
         },
         position: {
           x: 8,
-          y: 4,
-          z: -6
+          y: 17,
+          z: -16
         },
         rotation: {
           x: 0,
           y: 0,
-          z: 0.02
+          z: 0
         },
         scale: [3, 3, 3],
         texturesPaths: ['./res/textures/slot/reel1.webp'],
@@ -5254,7 +4919,7 @@ var testJolt = function () {
           z: 0
         },
         scale: [25, 0.01, 25],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.cube,
         physics: {
@@ -5371,7 +5036,7 @@ var testJolt = function () {
           radius: 1
         }
       });
-      app.activateBloomEffect();
+      if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
     }
@@ -5380,7 +5045,7 @@ var testJolt = function () {
 };
 exports.testJolt = testJolt;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/world.js":128}],16:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/matrix-class.js":63,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5581,7 +5246,7 @@ var procMesh = function () {
 };
 exports.procMesh = procMesh;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":128}],17:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/procedural-mesh.js":74,"../src/engine/raycast.js":77,"../src/engine/utils.js":78,"../src/world.js":129}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5712,7 +5377,7 @@ var snakeLightsInstanced = function () {
 };
 exports.snakeLightsInstanced = snakeLightsInstanced;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/engine/utils.js":78,"../src/world.js":128}],18:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/engine/utils.js":78,"../src/world.js":129}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5950,7 +5615,7 @@ var snakeLights = function () {
 };
 exports.snakeLights = snakeLights;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/world.js":128}],19:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/loaders/webgpu-gltf.js":61,"../src/world.js":129}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6100,7 +5765,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/world.js":128}],20:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":58,"../src/engine/raycast.js":77,"../src/world.js":129}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24056,7 +23721,7 @@ class WASDCamera {
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
-      console.log('CONTROLER MOBILE WASDCAMERA');
+      // console.log('CONTROLER MOBILE WASDCAMERA')
       MobileDOM.createWASD(this, {
         marginR: 0,
         marginD: 0
@@ -24687,7 +24352,7 @@ class FirstPersonCamera {
     if (options.yaw) this.yaw = options.yaw;
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
@@ -25033,6 +24698,7 @@ const MobileDOM = exports.MobileDOM = {
     return wrap; // caller can hide/remove later
   },
   addButton(label, onClick, onRelease, options = {}) {
+    document.body.style.touchAction = 'none';
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
@@ -25059,20 +24725,20 @@ const MobileDOM = exports.MobileDOM = {
       touchAction: 'none'
     });
     btn.textContent = label;
-    btn.addEventListener('pointerdown', e => {
+    btn.addEventListener('touchstart', e => {
       e.stopPropagation();
-      btn.style.background = `rgba(255,255,255,${opacity})`;
+      // btn.style.background = `rgba(255,255,255,${opacity})`;
       onClick(e);
     }, {
       passive: true
     });
-    btn.addEventListener('pointerup', e => {
+    btn.addEventListener('touchend', e => {
       // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
       onRelease(e);
     }, {
       passive: true
     });
-    btn.addEventListener('pointercancel', () => {
+    btn.addEventListener('touchcancel', () => {
       // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
       onRelease(e);
     }, {
@@ -26016,8 +25682,14 @@ class FlameEmitter {
     const memory22 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
     const memory23 = -(0, _utils.randomFloatFromTo)(0.4, 0.4 + S);
     this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, _utils.LOG_FUNNY_ARCADE);
+    console.info(`%cCrazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, _utils.LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([memory1, memory2, 0.0, memory11, memory21, 0.0, memory12, memory22, 0.0, memory13, memory23, 0.0]);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+  recreateVertexDataFromData(data) {
+    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, _utils.LOG_FUNNY_ARCADE);
+    const vertexData = new Float32Array([data[0], data[4], 0.0, data[1], data[5], 0.0, data[2], data[6], 0.0, data[3], data[7], 0.0]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
   }
@@ -26807,7 +26479,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":108,"../geometry-factory.js":53,"wgpu-matrix":34}],45:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":109,"../geometry-factory.js":53,"wgpu-matrix":34}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27066,7 +26738,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":108,"../geometry-factory.js":53,"wgpu-matrix":34}],46:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":109,"../geometry-factory.js":53,"wgpu-matrix":34}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27257,7 +26929,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":107,"../geometry-factory.js":53,"wgpu-matrix":34}],47:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":108,"../geometry-factory.js":53,"wgpu-matrix":34}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27715,7 +27387,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":95}],48:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":96}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28187,7 +27859,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":109,"wgpu-matrix":34}],51:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":110,"wgpu-matrix":34}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28375,13 +28047,14 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":110}],52:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":111}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.addOBJ = addOBJ;
+exports.addProceduralOBJ = addProceduralOBJ;
 exports.physicsBodiesChain = physicsBodiesChain;
 exports.physicsBodiesGenerator = physicsBodiesGenerator;
 exports.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid;
@@ -28391,6 +28064,7 @@ exports.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall;
 exports.stabilizeTowerBody = stabilizeTowerBody;
 var _fluxCodexVertex = require("../../tools/editor/fluxCodexVertex");
 var _loaderObj = require("../loader-obj");
+var _proceduralMesh = require("../procedural-mesh");
 // general function for stabilisation 
 function stabilizeTowerBody(body, root) {
   root.matrixPhysics.setDamping(body, 0.8, 0.95);
@@ -28810,6 +28484,75 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
     });
   });
 }
+function addProceduralOBJ(path, material = "standard", pos, rot, texturePath, name, isPhysicsBody = false, raycast = false, scale = [1, 1, 1], isInstancedObj = false) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = {
+      mesh: path
+    };
+    function handler(m) {
+      const RAY = {
+        enabled: !!raycast,
+        radius: 1
+      };
+      // console.info('add cube form graph..')
+      engine.addMeshObj({
+        material: {
+          type: material
+        },
+        position: {
+          x: pos.x,
+          y: pos.y,
+          z: pos.z
+        },
+        rotation: rot,
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: [texturePath],
+        name: name,
+        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2, false),
+        meshB: _proceduralMesh.MeshMorpher.cube(1),
+        physics: {
+          scale: scale,
+          enabled: isPhysicsBody,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
+
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 10, y: 15, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.capsule(1, 2, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_1`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Capsule",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+      // const b = app.matrixPhysics.getBodyByName(name);
+      const o = app.getSceneObjectByName(name);
+      // console.log(o.name);
+      _fluxCodexVertex.runtimeCacheObjs.push(o);
+      resolve(o);
+    }
+    (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+      scale
+    });
+  });
+}
 function physicsBodiesChain(material = "standard", pos = {
   x: 10,
   y: 30,
@@ -28832,7 +28575,8 @@ function physicsBodiesChain(material = "standard", pos = {
       const cubeName = `${name}_${y}`;
       engine.addMeshObj({
         material: {
-          type: material
+          type: material,
+          share: true
         },
         position: {
           x: pos.x,
@@ -28874,7 +28618,7 @@ function physicsBodiesChain(material = "standard", pos = {
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":124,"../loader-obj":58}],53:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":125,"../loader-obj":58,"../procedural-mesh":74}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29964,6 +29708,7 @@ var _fragmentInstanced = require("../../shaders/instanced/fragment.instanced.wgs
 var _fragmentMirrorInstanced = require("../../shaders/instanced/fragment.mirror.instanced.wgsl");
 var _colorA = require("../../shaders/minimalist/color-a.wgsl");
 var _colorB = require("../../shaders/minimalist/color-b.wgsl");
+var _hybrid = require("../../shaders/minimalist/hybrid.wgsl");
 var _mini = require("../../shaders/minimalist/mini.wgsl");
 var _waterC = require("../../shaders/water/water-c.wgls");
 var _pipelineManager = require("../pipelineManager");
@@ -30256,40 +30001,39 @@ class MaterialsInstanced {
     this.setupMaterialPBR([1, 1, 1, alpha]);
   };
   getMaterial() {
-    // procedural mesh not suport all
     if (this.material.type == 'standard') {
-      return _fragmentInstanced.fragmentWGSLInstanced;
+      return (0, _fragmentInstanced.fragmentWGSLInstanced)();
     } else if (this.material.type == 'pong') {
-      return _fragmentWgsl4.fragmentWGSLPong;
+      return (0, _fragmentWgsl4.fragmentWGSLPong)();
     } else if (this.material.type == 'power') {
-      return _fragmentWgsl5.fragmentWGSLPower;
+      return (0, _fragmentWgsl5.fragmentWGSLPower)();
     } else if (this.material.type == 'metal') {
-      return _fragmentWgsl.fragmentWGSLMetal;
+      return (0, _fragmentWgsl.fragmentWGSLMetal)();
     } else if (this.material.type == 'normalmap') {
-      return _fragmentWgsl3.fragmentWGSLNormalMap;
+      return (0, _fragmentWgsl3.fragmentWGSLNormalMap)();
     } else if (this.material.type == 'water') {
-      return _waterC.fragmentWaterWGSL;
+      return (0, _waterC.fragmentWaterWGSL)();
     } else if (this.material.type == 'graph') {
       return this.material.fromGraph;
     } else if (this.material.type === "mirror") {
-      return _fragmentMirrorInstanced.fragmentMirrorWGSLInstanced;
+      return (0, _fragmentMirrorInstanced.fragmentMirrorWGSLInstanced)();
     } else if (this.material.type === "dark" || this.material.type === "free") {
-      return _fragmentWgsl2.fragmentWGSLDark;
+      return (0, _fragmentWgsl2.fragmentWGSLDark)();
     } else if (this.material.type === "mini") {
-      return _mini.miniWGSL;
+      return (0, _mini.miniWGSL)();
     } else if (this.material.type === "minia") {
-      return miniaWGSL;
+      return miniaWGSL();
     } else if (this.material.type === "mida") {
-      return midaWGSL;
+      return midaWGSL();
     } else if (this.material.type === "hybrid") {
-      return hybridWGSL;
+      return (0, _hybrid.hybridWGSL)();
     } else if (this.material.type === "colora") {
-      return _colorA.coloraWGSL;
+      return (0, _colorA.coloraWGSL)();
     } else if (this.material.type === "colorb") {
-      return _colorB.colorbWGSL;
+      return (0, _colorB.colorbWGSL)();
     }
     console.warn('Unknown material type use standard:', this.material?.type);
-    return _fragment.fragmentWGSL;
+    return (0, _fragment.fragmentWGSL)();
   }
   getFormat() {
     if (this.material?.format == 'darker') {
@@ -30632,7 +30376,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":87,"../../shaders/fragment.wgsl":89,"../../shaders/fragment.wgsl.metal":90,"../../shaders/fragment.wgsl.noCut":91,"../../shaders/fragment.wgsl.normalmap":92,"../../shaders/fragment.wgsl.pong":93,"../../shaders/fragment.wgsl.power":94,"../../shaders/instanced/fragment.instanced.wgsl":96,"../../shaders/instanced/fragment.mirror.instanced.wgsl":97,"../../shaders/minimalist/color-a.wgsl":100,"../../shaders/minimalist/color-b.wgsl":101,"../../shaders/minimalist/mini.wgsl":105,"../../shaders/water/water-c.wgls":115,"../pipelineManager":70}],55:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":88,"../../shaders/fragment.wgsl":90,"../../shaders/fragment.wgsl.metal":91,"../../shaders/fragment.wgsl.noCut":92,"../../shaders/fragment.wgsl.normalmap":93,"../../shaders/fragment.wgsl.pong":94,"../../shaders/fragment.wgsl.power":95,"../../shaders/instanced/fragment.instanced.wgsl":97,"../../shaders/instanced/fragment.mirror.instanced.wgsl":98,"../../shaders/minimalist/color-a.wgsl":101,"../../shaders/minimalist/color-b.wgsl":102,"../../shaders/minimalist/hybrid.wgsl":103,"../../shaders/minimalist/mini.wgsl":106,"../../shaders/water/water-c.wgls":116,"../pipelineManager":70}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31521,17 +31265,17 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
-    const vertexCode = _vertexInstanced.vertexWGSLInstanced;
-    const fragmentCode = isVideo ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = (0, _vertexInstanced.vertexWGSLInstanced)();
+    const fragmentCode = isVideo ? (0, _fragmentVideo.fragmentVideoWGSL)() : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    console.log('>>>>>>>>>>>>>INSTANCED >>>>>>>>>>>>');
+    // console.log('INSTANCED')
     const baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "instanced",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
@@ -31758,7 +31502,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../me-config":79,"../../shaders/fragment.video.wgsl":88,"../../shaders/instanced/vertex.instanced.wgsl":98,"../effects/energy-bar":41,"../effects/flame":43,"../effects/flame-emmiter":42,"../effects/gen":46,"../effects/gen-tex":44,"../effects/gen-tex2":45,"../effects/mana-bar":48,"../effects/pointerEffect":50,"../literals":57,"../loaders/bvh-instaced":59,"../matrix-class":63,"../pipelineManager":70,"../utils":78,"./materials-instanced":54,"wgpu-matrix":34}],56:[function(require,module,exports){
+},{"../../me-config":79,"../../shaders/fragment.video.wgsl":89,"../../shaders/instanced/vertex.instanced.wgsl":99,"../effects/energy-bar":41,"../effects/flame":43,"../effects/flame-emmiter":42,"../effects/gen":46,"../effects/gen-tex":44,"../effects/gen-tex2":45,"../effects/mana-bar":48,"../effects/pointerEffect":50,"../literals":57,"../loaders/bvh-instaced":59,"../matrix-class":63,"../pipelineManager":70,"../utils":78,"./materials-instanced":54,"wgpu-matrix":34}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31799,23 +31543,15 @@ class SpotLight {
   far;
   innerCutoff;
   outerCutoff;
-  spotlightUniformBuffer;
 
+  // spotlightUniformBuffer;
   // Dirty flags
   _dirty = true; // VP matrix needs recompute (position/target changed)
   _lightBufferDirty = true; // _lightBuffer array needs rebuild before next upload
 
-  // ─── Getters / Setters ────────────────────────────────────────────────────
   get position() {
     return this._position;
   }
-
-  // set position(v) {
-  //   vec3.copy(v, this._position);
-  //   this._dirty = true;
-  //   this._lightBufferDirty = true;
-  // }
-
   setPosition(x, y, z) {
     this._position[0] = x;
     this._position[1] = y;
@@ -31862,7 +31598,7 @@ class SpotLight {
     aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {
-      return "light" + indexx;
+      return this.name;
     };
     this.fov = fov;
     this.aspect = 1;
@@ -31872,7 +31608,6 @@ class SpotLight {
     this.mainPassBindGroupContainer = {};
     this.camera = camera;
     this.inputHandler = inputHandler;
-
     // Use backing fields directly in constructor to avoid setter overhead
     // before scratch buffers exist
     this._position = _wgpuMatrix.vec3.create(0, 10, -20);
@@ -32060,7 +31795,7 @@ class SpotLight {
       }),
       vertex: {
         module: this.device.createShaderModule({
-          code: _vertexShadow.vertexShadowWGSL
+          code: (0, _vertexShadow.vertexShadowWGSL)()
         }),
         buffers: [{
           arrayStride: 12,
@@ -32126,7 +31861,7 @@ class SpotLight {
       }),
       vertex: {
         module: this.device.createShaderModule({
-          code: _vertexShadowInstanced.vertexShadowWGSLInstanced
+          code: (0, _vertexShadowInstanced.vertexShadowWGSLInstanced)()
         }),
         buffers: [{
           arrayStride: 12,
@@ -32192,7 +31927,7 @@ class SpotLight {
       }),
       vertex: {
         module: this.device.createShaderModule({
-          code: _vertexProcedural.vertexMorphShadowWGSL
+          code: (0, _vertexProcedural.vertexMorphShadowWGSL)()
         }),
         buffers: [{
           arrayStride: 12,
@@ -32292,8 +32027,6 @@ class SpotLight {
     return true;
   }
 
-  // ─── Light data buffer ────────────────────────────────────────────────────
-
   /**
    * Returns the packed Float32Array for the spotlight uniform array.
    * Rebuilds only when _lightBufferDirty is true.
@@ -32320,10 +32053,6 @@ class SpotLight {
     this._lightBufferDirty = false;
     return b;
   }
-
-  // ─── Setters ──────────────────────────────────────────────────────────────
-  // Position components — mutate vec3 in place, mark both dirty flags
-
   setPosX = x => {
     if (this._position[0] === x) return;
     this._position[0] = x;
@@ -32387,7 +32116,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../me-config":79,"../shaders/instanced/vertexShadow.instanced.wgsl":99,"../shaders/vertex.procedural.wgsl":111,"../shaders/vertexShadow.wgsl":114,"./behavior":36,"./utils":78,"wgpu-matrix":34}],57:[function(require,module,exports){
+},{"../me-config":79,"../shaders/instanced/vertexShadow.instanced.wgsl":100,"../shaders/vertex.procedural.wgsl":112,"../shaders/vertexShadow.wgsl":115,"./behavior":36,"./utils":78,"wgpu-matrix":34}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34827,6 +34556,7 @@ var _colorA = require("../shaders/minimalist/color-a.wgsl");
 var _colorB = require("../shaders/minimalist/color-b.wgsl");
 var _fontana = require("../shaders/fontana/fontana.wgsl");
 var _pipelineManager = require("./pipelineManager");
+var _fragmentDark = require("../shaders/fragment.dark.wgsl");
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -34842,7 +34572,7 @@ class Materials {
     this.glb = glb;
     this.material = material;
     if (typeof isVideo !== 'undefined') {
-      console.log("WHAT IS isvideo ", this.isVideo);
+      // console.log("WHAT IS isvideo ??", this.isVideo)
       this.isVideo = true;
     } else {
       this.isVideo = false;
@@ -35198,45 +34928,47 @@ class Materials {
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if (this.material.type == 'standard') {
-      return _fragment.fragmentWGSL;
+      return (0, _fragment.fragmentWGSL)();
+    } else if (this.material.type == 'dark') {
+      return (0, _fragmentDark.fragmentDarkWGSL)();
     } else if (this.material.type == 'pong') {
-      return _fragmentWgsl3.fragmentWGSLPong;
+      return (0, _fragmentWgsl3.fragmentWGSLPong)();
     } else if (this.material.type == 'power') {
-      return _fragmentWgsl4.fragmentWGSLPower;
+      return (0, _fragmentWgsl4.fragmentWGSLPower)();
     } else if (this.material.type == 'metal') {
-      return _fragmentWgsl.fragmentWGSLMetal;
+      return (0, _fragmentWgsl.fragmentWGSLMetal)();
     } else if (this.material.type == 'normalmap') {
-      return _fragmentWgsl2.fragmentWGSLNormalMap;
+      return (0, _fragmentWgsl2.fragmentWGSLNormalMap)();
     } else if (this.material.type == 'gpt') {
-      return _fragmentGpt.fragmentWGSLGPT;
+      return (0, _fragmentGpt.fragmentWGSLGPT)();
     } else if (this.material.type == 'water') {
-      return _waterC.fragmentWaterWGSL;
+      return (0, _waterC.fragmentWaterWGSL)();
     } else if (this.material.type == 'graph') {
-      // console.warn('Unknown material ???????????????:', this.material?.type);
+      console.info('Material from graph :', this.material?.type);
       return this.material.fromGraph;
     } else if (this.material.type == 'mix1') {
       return _fragmentMix.fragmentWGSLMix1; // ?
     } else if (this.material.type === "mirror") {
-      return _fragmentMirror.mirrorIlluminateFragmentWGSL;
+      return (0, _fragmentMirror.mirrorIlluminateFragmentWGSL)();
     } else if (this.material.type === "dark" || this.material.type === "free") {
-      return _fragmentWgsl5.fragmentWGSLDark;
+      return (0, _fragmentWgsl5.fragmentWGSLDark)();
     } else if (this.material.type === "fontana") {
-      return _fontana.fountainBasinFragmentWGSL;
+      return (0, _fontana.fountainBasinFragmentWGSL)();
     } else if (this.material.type === "mini") {
-      return _mini.miniWGSL;
+      return (0, _mini.miniWGSL)();
     } else if (this.material.type === "minia") {
-      return _miniA.miniaWGSL;
+      return (0, _miniA.miniaWGSL)();
     } else if (this.material.type === "mida") {
-      return _midA.midaWGSL;
+      return (0, _midA.midaWGSL)();
     } else if (this.material.type === "hybrid") {
-      return _hybrid.hybridWGSL;
+      return (0, _hybrid.hybridWGSL)();
     } else if (this.material.type === "colora") {
-      return _colorA.coloraWGSL;
+      return (0, _colorA.coloraWGSL)();
     } else if (this.material.type === "colorb") {
-      return _colorB.colorbWGSL;
+      return (0, _colorB.colorbWGSL)();
     }
     console.warn('Unknown material type:', this.material?.type);
-    return _fragment.fragmentWGSL;
+    return (0, _fragment.fragmentWGSL)();
   }
   getFormat() {
     if (this.material?.format == 'darker') {
@@ -35448,7 +35180,8 @@ class Materials {
       canvas.height = arg.height || 256;
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
-      canvas.style.top = '-225px';
+      canvas.style.top = '-325px';
+      canvas.id = arg.id ? arg.id : this.name + 'ci1';
       // canvas.style.zIndex = '10000';
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
@@ -35474,24 +35207,42 @@ class Materials {
         ctx.fillStyle = '#0ce325ff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      this.video = document.createElement('video');
-      this.video.style.position = 'absolute';
-      // this.video.style.zIndex = '1';
-      this.video.style.left = '-600px';
-      this.video.style.top = '0';
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(24);
-      document.body.append(this.video);
-      this.video.play();
+      this.sourceCanvas = canvas; // store ref
+
+      this.gpuTexture = this.device.createTexture({
+        size: [this.sourceCanvas.width, this.sourceCanvas.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.video = null;
+      // this.video = document.createElement('video');
+      // this.video.style.position = 'absolute';
+      // // this.video.style.zIndex = '1';
+      // this.video.style.left = '-600px';
+      // this.video.style.top = '0';
+      // this.video.autoplay = true;
+      // this.video.muted = true;
+      // this.video.playsInline = true;
+      // this.video.srcObject = canvas.captureStream(24);
+      // document.body.append(this.video);
+      // this.video.play();
     }
-    await new Promise(resolve => {
+    if (this.video) await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
-        this.updateVideoTexture();
-        this.createMaterialBindGroupVideo();
-        this.setupPipeline();
-        resolve();
+        setTimeout(() => {
+          this.updateVideoTexture();
+          this.createMaterialBindGroupVideo();
+          this.setupPipeline();
+          resolve();
+          // Very interest 
+          const ci1 = document.getElementById('ci1');
+          if (ci1) {
+            document.body.removeChild(ci1);
+          } else {
+            const ci2 = document.getElementById(this.name + 'ci1');
+            if (ci2) document.body.removeChild(ci2);
+          }
+        }, 200);
       });
     });
   }
@@ -35501,6 +35252,15 @@ class Materials {
       source: this.video
     });
     if (!this.externalTexture) return;
+    this.createMaterialBindGroupVideo();
+  }
+  updateCanvasInlineTexture() {
+    this.externalTexture = this.device.queue.copyExternalImageToTexture({
+      source: this.sourceCanvas
+    }, {
+      texture: this.gpuTexture,
+      premultipliedAlpha: false
+    }, [this.sourceCanvas.width, this.sourceCanvas.height]);
     this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
@@ -35600,27 +35360,46 @@ class Materials {
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
     // console.log('SET VIDEO BIND GROUP')
-    this.materialBindGroup = this.device.createBindGroup({
-      label: 'materialVideoBGL',
-      layout: this.materialVideoBGL,
-      entries: [{
-        binding: 0,
-        resource: this.externalTexture
-      }, {
-        binding: 1,
-        resource: this.videoSampler
-      }, {
-        binding: 2,
-        resource: {
-          buffer: this.postFXModeBuffer
-        }
-      }]
-    });
+    if (this.video == null) {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [{
+          binding: 0,
+          resource: this.gpuTexture.createView()
+        }, {
+          binding: 1,
+          resource: this.videoSampler
+        }, {
+          binding: 2,
+          resource: {
+            buffer: this.postFXModeBuffer
+          }
+        }]
+      });
+    } else {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [{
+          binding: 0,
+          resource: this.externalTexture
+        }, {
+          binding: 1,
+          resource: this.videoSampler
+        }, {
+          binding: 2,
+          resource: {
+            buffer: this.postFXModeBuffer
+          }
+        }]
+      });
+    }
   }
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":85,"../shaders/fragment.gpt.wgsl":86,"../shaders/fragment.mirror.wgsl":87,"../shaders/fragment.wgsl":89,"../shaders/fragment.wgsl.metal":90,"../shaders/fragment.wgsl.noCut":91,"../shaders/fragment.wgsl.normalmap":92,"../shaders/fragment.wgsl.pong":93,"../shaders/fragment.wgsl.power":94,"../shaders/minimalist/color-a.wgsl":100,"../shaders/minimalist/color-b.wgsl":101,"../shaders/minimalist/hybrid.wgsl":102,"../shaders/minimalist/mid-a.wgsl":103,"../shaders/minimalist/mini-a.wgsl":104,"../shaders/minimalist/mini.wgsl":105,"../shaders/mixed/fragmentMix1.wgsl":106,"../shaders/water/water-c.wgls":115,"./pipelineManager":70,"./utils":78}],63:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":85,"../shaders/fragment.dark.wgsl":86,"../shaders/fragment.gpt.wgsl":87,"../shaders/fragment.mirror.wgsl":88,"../shaders/fragment.wgsl":90,"../shaders/fragment.wgsl.metal":91,"../shaders/fragment.wgsl.noCut":92,"../shaders/fragment.wgsl.normalmap":93,"../shaders/fragment.wgsl.pong":94,"../shaders/fragment.wgsl.power":95,"../shaders/minimalist/color-a.wgsl":101,"../shaders/minimalist/color-b.wgsl":102,"../shaders/minimalist/hybrid.wgsl":103,"../shaders/minimalist/mid-a.wgsl":104,"../shaders/minimalist/mini-a.wgsl":105,"../shaders/minimalist/mini.wgsl":106,"../shaders/mixed/fragmentMix1.wgsl":107,"../shaders/water/water-c.wgls":116,"./pipelineManager":70,"./utils":78}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35630,20 +35409,19 @@ exports.Rotation = exports.Position = exports.PVector = void 0;
 exports.pairRepulsion = pairRepulsion;
 var _utils = require("./utils");
 /**
- * @description 
- * Sub classes for matrix-wgpu
+ * @description
+ * Sub classes for matrix-engine-wgpu
  * Base class
  * Position { x, y, z }
  */
 
 class Position {
   constructor(x, y, z) {
-    // console.log('TEST TYTPOF ', x)
     this.remoteName = null;
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 3;
+    this.netTolerance = 2;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
@@ -36045,7 +35823,7 @@ class Rotation {
       }
       return this._cachedRotY;
     } else {
-      this.y = this.y + this.rotationSpeed.y * 0.01;
+      this.y = this.y + this.rotationSpeed.y;
       this._cachedRotY = (0, _utils.degToRad)(this.y);
       this._lastY = this.y;
       return this._cachedRotY;
@@ -36067,7 +35845,7 @@ class Rotation {
       }
       return this._cachedRotZ;
     } else {
-      this.z = this.z + this.rotationSpeed.z * 0.01;
+      this.z = this.z + this.rotationSpeed.z;
       this._cachedRotZ = (0, _utils.degToRad)(this.z);
       this._lastZ = this.z;
       return this._cachedRotZ;
@@ -36075,7 +35853,7 @@ class Rotation {
   };
 }
 
-// array type of pos obj
+// Array type of pos obj
 exports.Rotation = Rotation;
 function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0) {
   const dx = Apos[0] - Bpos.x;
@@ -36518,7 +36296,6 @@ class MEMeshObj extends _materials.default {
       this.indexCount = indexCount;
       let glbInfo = {
         arrayStride: 4 * 4,
-        // vec4<f32> = 4 * 4 bytes
         attributes: [{
           format: 'float32x4',
           offset: 0,
@@ -36885,7 +36662,8 @@ class MEMeshObj extends _materials.default {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
-          // console.warn(`%c MIRRO ...  ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE); return;
+          console.warn(`%cMIRROR ${this.mirrorBindGroup} `, _utils.LOG_FUNNY_ARCADE); //return;
+          this.setupPipeline();
         });
         this.setupPipeline();
       } else {
@@ -36911,8 +36689,8 @@ class MEMeshObj extends _materials.default {
     const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
     const isNormalMap = this.material.type === 'normalmap';
-    const vertexCode = isNormalMap ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL;
-    const fragmentCode = isVideo ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = isNormalMap ? (0, _vertexWgsl.vertexWGSL_NM)() : (0, _vertex.vertexWGSL)();
+    const fragmentCode = isVideo ? (0, _fragmentVideo.fragmentVideoWGSL)() : this.getMaterial();
     const vertexModule = this.device.createShaderModule({
       code: vertexCode
     });
@@ -36923,9 +36701,9 @@ class MEMeshObj extends _materials.default {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "mesh",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
@@ -37114,31 +36892,27 @@ class MEMeshObj extends _materials.default {
     pass.drawIndexed(this.indexCount);
   };
   drawElementsAnim = renderPass => {
-    if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
-      console.log('NULL2');
-      return;
-    }
+    // if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log('NULL2'); return;}
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    // renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
-    if (this.objAnim.playing == true) {
-      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
-        this.objAnim.currentAni++;
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
-      } else {
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
-      }
-      if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
-        this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
-      }
+    // if(this.objAnim.playing == true) {
+    if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+      this.objAnim.currentAni++;
+      this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+    } else {
+      this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
     }
+    if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
+      this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
+    }
+    // }
   };
   drawShadows = shadowPass => {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
@@ -37163,7 +36937,7 @@ class MEMeshObj extends _materials.default {
   destroy = () => {
     if (this._destroyed) return;
     this._destroyed = true;
-    // --- GPU Buffers ---
+    // GPU Buffers
     this.vertexBuffer?.destroy();
     this.vertexNormalsBuffer?.destroy();
     this.vertexTexCoordsBuffer?.destroy();
@@ -37217,7 +36991,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../me-config":79,"../shaders/fragment.video.wgsl":88,"../shaders/vertex.wgsl":112,"../shaders/vertex.wgsl.normalmap":113,"./effects/destruction":40,"./effects/flame":43,"./effects/flame-emmiter":42,"./effects/gizmo":47,"./effects/msdfText":49,"./effects/pointerEffect":50,"./effects/topology-point":51,"./literals":57,"./materials":62,"./matrix-class":63,"./pipelineManager":70,"./procedures/procedural-textures":76,"./utils":78,"wgpu-matrix":34}],65:[function(require,module,exports){
+},{"../me-config":79,"../shaders/fragment.video.wgsl":89,"../shaders/vertex.wgsl":113,"../shaders/vertex.wgsl.normalmap":114,"./effects/destruction":40,"./effects/flame":43,"./effects/flame-emmiter":42,"./effects/gizmo":47,"./effects/msdfText":49,"./effects/pointerEffect":50,"./effects/topology-point":51,"./literals":57,"./materials":62,"./matrix-class":63,"./pipelineManager":70,"./procedures/procedural-textures":76,"./utils":78,"wgpu-matrix":34}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37385,18 +37159,15 @@ let mobile1 = function () {
     pass.setBindGroup(0, this.sceneBindGroup);
     for (const [pipeline, meshes] of this.opaqueBuckets) {
       pass.setPipeline(pipeline);
-      //  let l = null;
+      let l = null;
       for (const mesh of meshes) {
-        //  if(mesh.materialBindGroup !== l) {
-        pass.setBindGroup(1, mesh.materialBindGroup);
-        //    l = mesh.materialBindGroup;
-        //  } else {
-        //    console.log('same BIND GROUP!')
-        //  }
-        // pass.setBindGroup(1, mesh.materialBindGroup);
+        if (mesh.materialBindGroup !== l) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          l = mesh.materialBindGroup;
+        }
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        //  if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
@@ -37481,7 +37252,8 @@ let nanoPass = function () {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+    // if(camera._dirtyAngle || camera._dirty)
+    this.getTransformationMatrix(camera, now2);
     camera.update();
     const len = this.mainRenderBundle.length;
     for (let i = 0; i < len; i++) {
@@ -37607,9 +37379,10 @@ class PhysicsBridge {
       this._doAddPhysics(MEObject, pOptions);
     }
     this._queue = [];
+    // console.log('BRIGDE FINISEHD')
     setTimeout(() => {
       dispatchEvent(new CustomEvent('PhysicsReady', {}));
-    }, 50);
+    }, 100);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -37651,10 +37424,11 @@ class PhysicsBridge {
         pos: posArr
       });
     }
-    if (this.c % 2 === 0) this._worker.postMessage({
+    // if(this.c % 2 === 0) 
+    this._worker.postMessage({
       cmd: 'step'
     });
-    this.c++;
+    // this.c++;
   }
 
   // MatrixJolt public API
@@ -39697,8 +39471,8 @@ class ProceduralMeshObj extends _materials.default {
   setupPipeline() {
     // this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
-    const vertexCode = this.vertexWGSL ? this.vertexWGSL : _vertexProcedural.vertexMorphWGSL;
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = this.vertexWGSL ? this.vertexWGSL : (0, _vertexProcedural.vertexMorphWGSL)();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? (0, _fragmentVideo.fragmentVideoWGSL)() : this.getMaterial();
     const vertexId = this.vertexWGSL ? 'custom_proc' : 'proc_morph';
     const fragmentId = this.fragmentWGSL ? 'custom_frag' : this.isVideo == true ? 'video' : this.material.type;
     const isMirror = this.material.type === 'mirror';
@@ -39709,9 +39483,9 @@ class ProceduralMeshObj extends _materials.default {
       vertexId,
       fragmentId,
       type: "procedural",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       morph: !this.vertexWGSL ? 1 : 0,
       mirror: isMirror ? 1 : 0,
@@ -40528,7 +40302,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/fragment.video.wgsl":88,"../shaders/vertex.procedural.wgsl":111,"./effects/flame":43,"./effects/flame-emmiter":42,"./effects/gizmo":47,"./geometry-factory":53,"./literals":57,"./materials":62,"./matrix-class":63,"./pipelineManager":70,"./utils":78,"wgpu-matrix":34}],75:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":89,"../shaders/vertex.procedural.wgsl":112,"./effects/flame":43,"./effects/flame-emmiter":42,"./effects/gizmo":47,"./geometry-factory":53,"./literals":57,"./materials":62,"./matrix-class":63,"./pipelineManager":70,"./utils":78,"wgpu-matrix":34}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40909,7 +40683,7 @@ exports.htmlHeader = void 0;
 exports.isEven = isEven;
 exports.isMobile = isMobile;
 exports.isOdd = isOdd;
-exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
+exports.meLoader = exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -41706,6 +41480,70 @@ function genName(length) {
   }
   return result;
 }
+const meLoader = exports.meLoader = {
+  create: function (callback) {
+    const loader = document.createElement("div");
+    loader.id = "loader";
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      zIndex: 9999,
+      background: "#000000ff",
+      fontFamily: "Orbitron, sans-serif",
+      cursor: 'url(./res/icons/default.png) 0 0, auto'
+    });
+    loader.innerHTML = `
+  <div style="
+    font-size: 42px;
+    width: 50vw;
+    margin-top: -15%;
+    font-weight: 900;
+    color: #00ffff;
+    letter-spacing: 4px;
+    text-align: center;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 20px #00ffff,
+      0 0 40px #00ffff;
+    animation: glowPulse 1.5s infinite alternate;
+  ">
+    RUN MEWGPU
+  </div>
+
+  <style>
+    @keyframes glowPulse {
+      from {
+        transform: scale(1);
+        text-shadow:
+          0 0 5px #00ffff,
+          0 0 10px #00ffff,
+          0 0 20px #00ffff;
+      }
+      to {
+        transform: scale(1.05);
+        text-shadow:
+          0 0 10px #00ffff,
+          0 0 20px #00ffff,
+          0 0 40px #00ffff,
+          0 0 80px #00ffff;
+      }
+    }
+  </style>
+`;
+    if (callback) loader.addEventListener('click', callback);
+    document.body.appendChild(loader);
+  },
+  destroy: function () {
+    if (byId('loader')) document.body.removeChild(byId('loader'));
+  }
+};
 let mb = exports.mb = {
   root: () => byId('msgBox'),
   pContent: () => byId('not-content'),
@@ -41723,6 +41561,8 @@ let mb = exports.mb = {
     iMsg.classList.add('animate1');
     if (t == 'ok') {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
+    } else if (t == "spacial-case-mob") {
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin-left:-2px';
     } else {
       iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     }
@@ -41730,11 +41570,11 @@ let mb = exports.mb = {
   kill: function () {
     mb.root().remove();
   },
-  show: function (content, t) {
+  show: function (content, t, delay = 1000) {
     mb.setContent(content, t);
     mb.root().style.display = "block";
     var loc2 = mb.c;
-    setTimeout(function () {
+    setTimeout(() => {
       byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
       byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
       setTimeout(function () {
@@ -41745,8 +41585,8 @@ let mb = exports.mb = {
         if (mb.c == mb.ic) {
           mb.root().style.display = 'none';
         }
-      }, 1000);
-    }, 3000);
+      }, delay);
+    }, 3 * delay);
     mb.c++;
   },
   error: function (content) {
@@ -42112,13 +41952,13 @@ const MEConfig = exports.MEConfig = {
   fsManager: new _utils.FullScreenManagerElement(),
   SHADOW_RES: (0, _utils.isMobile)() == true ? 128.0 : 512.0,
   MAX_BONES: (0, _utils.isMobile)() == true ? 80 : 100,
-  MAX_LIGHTS: (0, _utils.isMobile)() == true ? 20 : 40,
+  MAX_SPOTLIGHTS: (0, _utils.isMobile)() == true ? 18 : 40,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
   FORCE_FULL_SCREEN: false,
-  construct: function () {
+  construct: function (options = {}) {
     if (urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
       console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, _utils.LOG_FUNNY_ARCADE);
@@ -42135,20 +41975,27 @@ const MEConfig = exports.MEConfig = {
       this.SHADOW_RES = parseInt(urlQ['SHADOW_RES']);
       console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, _utils.LOG_FUNNY_ARCADE);
     }
-    if (urlQ['MAX_LIGHTS']) {
-      this.MAX_LIGHTS = parseInt(urlQ['MAX_LIGHTS']);
-      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
+    if (urlQ['MAX_SPOTLIGHTS']) {
+      this.MAX_SPOTLIGHTS = parseInt(urlQ['MAX_SPOTLIGHTS']);
     }
+    if (options.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = options.MAX_SPOTLIGHTS;
+    }
+    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, _utils.LOG_FUNNY_ARCADE);
     if (urlQ['MAX_BONES']) {
       this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
-      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, _utils.LOG_FUNNY_ARCADE);
+      console.log(`%cMAX_BONES : ${this.MAX_BONES}`, _utils.LOG_FUNNY_ARCADE);
     }
-    if (urlQ['fs']) {
+    if (urlQ['fs'] || (0, _utils.isMobile)()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, _utils.LOG_FUNNY_ARCADE);
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
+        // console.log(',FS,')
+        setTimeout(() => {
+          dispatchEvent(new CustomEvent('run_mobile_fs', {}));
+        }, 300);
         window.removeEventListener('click', this._fs);
       };
       window.addEventListener('click', this._fs);
@@ -42726,8 +42573,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fountainWaterVertexWGSL = exports.fountainCurtainFragmentWGSL = exports.fountainCapFragmentWGSL = exports.fountainBasinFragmentWGSL = void 0;
+var _meConfig = require("../../me-config");
 const SHARED = `
-override shadowDepthTextureSize : f32 = 512.0;
+override shadowDepthTextureSize : f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI  : f32 = 3.141592653589793;
 const TAU : f32 = 6.283185307179586;
 
@@ -42766,7 +42614,7 @@ struct PBRMaterialData {
     roughness : f32,
     alpha     : f32,
 };
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -42884,7 +42732,7 @@ fn sss_lights(fragPos: vec3f, N: vec3f, V: vec3f, fresnel: f32) -> vec3f {
 //  UV: (0,0)=corner (1,1)=corner, centre=(0.5,0.5)
 //  Fragment: discard outside circle, caustics + ripple rings + glow
 // ─────────────────────────────────────────────────────────────────
-const fountainCapFragmentWGSL = exports.fountainCapFragmentWGSL = SHARED + `
+const fountainCapFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -42957,7 +42805,8 @@ fn pb_shadows(fragPos: vec3f, N: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f
 //  UV: U = around cylinder, V = 0 at top, 1 at bottom
 //  Fragment: vertical scrolling streaks, fade at bottom
 // ─────────────────────────────────────────────────────────────────
-const fountainCurtainFragmentWGSL = exports.fountainCurtainFragmentWGSL = SHARED + `
+exports.fountainCapFragmentWGSL = fountainCapFragmentWGSL;
+const fountainCurtainFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -43021,7 +42870,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 //  UV: (0.5,0.5) = centre of plane
 //  Fragment: discard outside ring + inside column hole, ripple water
 // ─────────────────────────────────────────────────────────────────
-const fountainBasinFragmentWGSL = exports.fountainBasinFragmentWGSL = SHARED + `
+exports.fountainCurtainFragmentWGSL = fountainCurtainFragmentWGSL;
+const fountainBasinFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -43090,7 +42940,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // ─────────────────────────────────────────────────────────────────
 //  VERTEX SHADER — shared by all three water meshes
 // ─────────────────────────────────────────────────────────────────
-const fountainWaterVertexWGSL = exports.fountainWaterVertexWGSL = /* wgsl */`
+exports.fountainBasinFragmentWGSL = fountainBasinFragmentWGSL;
+const fountainWaterVertexWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
@@ -43260,8 +43111,253 @@ fn main(input: VertexInput) -> VertexOutput {
   return output;
 }
 `;
+exports.fountainWaterVertexWGSL = fountainWaterVertexWGSL;
 
-},{}],86:[function(require,module,exports){
+},{"../../me-config":79}],86:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentDarkWGSL = void 0;
+var _meConfig = require("../me-config");
+console.log('TEST MAX_SPOTLIGHTS FROM SHADER', _meConfig.MEConfig.MAX_SPOTLIGHTS);
+let fragmentDarkWGSL = () => `
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+const PI: f32 = 3.14159;
+
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+struct SpotLight {
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
+};
+
+struct PBRMaterialData {
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
+};
+
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
+
+struct FragmentInput {
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+  return material.baseColor * light.color * light.intensity * NdotL;
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
+
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
+
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
+
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  var weight: f32 = 0.0;
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      let sampleUV = shadowUV + offsets[i] * oneOverSize;
+      let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                      sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+      let s = textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          sampleUV, layer, depthRef - bias
+      );
+      // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+      visibility += select(1.0, s, inBounds);
+      weight += 1.0;
+  }
+  return visibility / weight;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  // if (materialData.alpha < 0.01) {
+  //     discard;
+  // }
+
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      // let inFrustum =
+      //     p.z >= 0.0 && p.z <= 1.0 &&
+      //     p.x >= -1.0 && p.x <= 1.0 &&
+      //     p.y >= -1.0 && p.y <= 1.0;
+      let inDepth = p.z >= 0.0 && p.z <= 1.0;
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      let shadowFactor = select(1.0, visibility, inDepth);
+      let contrib = computeSpotLight(
+          spotlights[i],
+          norm,
+          input.fragPos,
+          viewDir,
+          materialData
+      );
+      lightContribution += contrib * shadowFactor;
+  }
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  // -- from dark next feature
+  var ambientTerm = material.ambientColor * materialData.baseColor;
+  var finalColor = ambientTerm + texColor.rgb * lightContribution;
+  // like fog interest
+  // var ambientTerm = material.ambientColor + scene.globalAmbient;
+  // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+  let alpha = texColor.a * material.baseColorFactor.a;
+  return vec4f(finalColor, alpha);
+}`;
+exports.fragmentDarkWGSL = fragmentDarkWGSL;
+
+},{"../me-config":79}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43269,7 +43365,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLGPT = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSLGPT = exports.fragmentWGSLGPT = `
+let fragmentWGSLGPT = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -43322,7 +43418,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -43464,8 +43560,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, materialData.alpha);
 }
 `;
+exports.fragmentWGSLGPT = fragmentWGSLGPT;
 
-},{"../me-config":79}],87:[function(require,module,exports){
+},{"../me-config":79}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43473,7 +43570,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.mirrorIlluminateFragmentWGSL = void 0;
 var _meConfig = require("../me-config");
-const mirrorIlluminateFragmentWGSL = exports.mirrorIlluminateFragmentWGSL = `
+const mirrorIlluminateFragmentWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -43539,7 +43636,7 @@ struct MirrorIlluminateParams {
     _pad2              : vec3f,  // ✅ Padding to maintain alignment
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -43773,15 +43870,16 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }
 `;
+exports.mirrorIlluminateFragmentWGSL = mirrorIlluminateFragmentWGSL;
 
-},{"../me-config":79}],88:[function(require,module,exports){
+},{"../me-config":79}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentVideoWGSL = void 0;
-let fragmentVideoWGSL = exports.fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1.0;
+let fragmentVideoWGSL = () => `override shadowDepthTextureSize: f32 = 1.0;
 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
@@ -43802,34 +43900,17 @@ struct FragmentInput {
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.7;
+const ambientFactor = 1.2;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
-  // Shadow filtering
-  // var visibility = 0.0;
-  // let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
-  // for (var y = -1; y <= 1; y++) {
-  //   for (var x = -1; x <= 1; x++) {
-  //     let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-  //     visibility += textureSampleCompare(
-  //       shadowMap, shadowSampler,
-  //       input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-  //     );
-  //   }
-  // }
-  // visibility /= 9.0;
-
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
-
-  // ✅ Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
-
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
+  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
    switch (postFXMode) {
     case 0: {
-      // Default
       return color;
     }
     case 1: {
@@ -43855,12 +43936,11 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
       return color;
     }
   }
-
-  // return color;
 }
 `;
+exports.fragmentVideoWGSL = fragmentVideoWGSL;
 
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43868,7 +43948,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSL = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSL = exports.fragmentWGSL = `
+let fragmentWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -43921,7 +44001,8 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -44102,11 +44183,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // var ambientTerm = material.ambientColor + scene.globalAmbient;
     // var finalColor = ambientTerm + texColor.rgb * lightContribution;
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // let alpha = mix(materialData.alpha, 1.0 , 0.5);
+    let alpha = texColor.a * material.baseColorFactor.a;
+    // let alpha = material.baseColorFactor.a;
     return vec4f(finalColor, alpha);
 }`;
+exports.fragmentWGSL = fragmentWGSL;
 
-},{"../me-config":79}],90:[function(require,module,exports){
+},{"../me-config":79}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44114,7 +44198,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLMetal = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSLMetal = exports.fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+let fragmentWGSLMetal = () => `override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -44166,7 +44250,7 @@ struct PBRMaterialData {
     alpha     : f32,  // ✅ Added alpha
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -44318,8 +44402,9 @@ let validLight = select(0.0, 1.0, NdotL > 0.0);
     return vec4f(color, materialData.alpha);
 }
 `;
+exports.fragmentWGSLMetal = fragmentWGSLMetal;
 
-},{"../me-config":79}],91:[function(require,module,exports){
+},{"../me-config":79}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44327,7 +44412,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLDark = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSLDark = exports.fragmentWGSLDark = `
+let fragmentWGSLDark = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -44380,7 +44465,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -44564,8 +44649,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
     return vec4f(finalColor, alpha);
 }`;
+exports.fragmentWGSLDark = fragmentWGSLDark;
 
-},{"../me-config":79}],92:[function(require,module,exports){
+},{"../me-config":79}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44573,7 +44659,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLNormalMap = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSLNormalMap = exports.fragmentWGSLNormalMap = `
+let fragmentWGSLNormalMap = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -44625,7 +44711,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -44813,8 +44899,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     return vec4f(finalColor, 1.0);
 }`;
+exports.fragmentWGSLNormalMap = fragmentWGSLNormalMap;
 
-},{"../me-config":79}],93:[function(require,module,exports){
+},{"../me-config":79}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44822,7 +44909,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLPong = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSLPong = exports.fragmentWGSLPong = `override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+let fragmentWGSLPong = () => `override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -44873,7 +44960,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -45039,8 +45126,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     return vec4f(finalColor, 1.0);
 }`;
+exports.fragmentWGSLPong = fragmentWGSLPong;
 
-},{"../me-config":79}],94:[function(require,module,exports){
+},{"../me-config":79}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45048,7 +45136,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLPower = void 0;
 var _meConfig = require("../me-config");
-let fragmentWGSLPower = exports.fragmentWGSLPower = `override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
+let fragmentWGSLPower = () => `override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -45099,7 +45187,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -45207,8 +45295,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(color, 1.0);
 }
 `;
+exports.fragmentWGSLPower = fragmentWGSLPower;
 
-},{"../me-config":79}],95:[function(require,module,exports){
+},{"../me-config":79}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45277,7 +45366,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(input.color, 1.0);
 }`;
 
-},{}],96:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45285,7 +45374,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWGSLInstanced = void 0;
 var _meConfig = require("../../me-config");
-let fragmentWGSLInstanced = exports.fragmentWGSLInstanced = `
+let fragmentWGSLInstanced = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -45335,7 +45424,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -45493,8 +45582,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let alpha = materialData.alpha;
     return vec4f(finalColor, alpha);
 }`;
+exports.fragmentWGSLInstanced = fragmentWGSLInstanced;
 
-},{"../../me-config":79}],97:[function(require,module,exports){
+},{"../../me-config":79}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45502,7 +45592,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentMirrorWGSLInstanced = void 0;
 var _meConfig = require("../../me-config");
-const fragmentMirrorWGSLInstanced = exports.fragmentMirrorWGSLInstanced = `
+const fragmentMirrorWGSLInstanced = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -45568,7 +45658,7 @@ struct MirrorIlluminateParams {
     _pad2              : vec3f,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -45784,8 +45874,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }
 `;
+exports.fragmentMirrorWGSLInstanced = fragmentMirrorWGSLInstanced;
 
-},{"../../me-config":79}],98:[function(require,module,exports){
+},{"../../me-config":79}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45793,7 +45884,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexWGSLInstanced = void 0;
 var _meConfig = require("../../me-config");
-let vertexWGSLInstanced = exports.vertexWGSLInstanced = `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
+let vertexWGSLInstanced = () => `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -46026,8 +46117,9 @@ fn main(
   output.colorMult = inst.colorMult;
   return output;
 }`;
+exports.vertexWGSLInstanced = vertexWGSLInstanced;
 
-},{"../../me-config":79}],99:[function(require,module,exports){
+},{"../../me-config":79}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46035,7 +46127,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexShadowWGSLInstanced = void 0;
 var _meConfig = require("../../me-config");
-let vertexShadowWGSLInstanced = exports.vertexShadowWGSLInstanced = `
+let vertexShadowWGSLInstanced = () => `
 const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
@@ -46220,15 +46312,16 @@ fn main(
   return scene.lightViewProjMatrix * worldPos;
 }
 `;
+exports.vertexShadowWGSLInstanced = vertexShadowWGSLInstanced;
 
-},{"../../me-config":79}],100:[function(require,module,exports){
+},{"../../me-config":79}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.coloraWGSL = void 0;
-let coloraWGSL = exports.coloraWGSL = `
+let coloraWGSL = () => `
 override shadowDepthTextureSize: f32;
 
 struct Scene {
@@ -46311,15 +46404,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(color, alpha);
 }
 `;
+exports.coloraWGSL = coloraWGSL;
 
-},{}],101:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.colorbWGSL = void 0;
-let colorbWGSL = exports.colorbWGSL = `
+var _meConfig = require("../../me-config");
+let colorbWGSL = () => `
 override shadowDepthTextureSize: f32;
 
 struct Scene {
@@ -46342,8 +46437,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 struct SpotLight {
@@ -46364,7 +46459,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 // KEEP LAYOUT
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -46387,22 +46482,17 @@ struct FragmentInput {
 fn main(input: FragmentInput) -> @location(0) vec4f {
 
 let uv = fract(input.fragUV);
-
     // distance to nearest edge 0 or 1
     let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-
     let edgeWidth = 0.05;  // tweak thickness
     let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
-
     let neonColor = vec3f(0.0, 1.0, 1.0);
     let coreColor = vec3f(0.0, 0.0, 0.0);
-
     let color = mix(coreColor, neonColor, edgeFactor);
-
     return vec4f(color, 1);
 }`;
 
-// export let colorbWGSL = `
+// export let colorbWGSL = () => `
 // override shadowDepthTextureSize: f32;
 
 // struct Scene {
@@ -46445,7 +46535,7 @@ let uv = fract(input.fragUV);
 //     lightViewProj : mat4x4<f32>,
 // };
 
-// const MAX_SPOTLIGHTS = 20u;
+// const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // // ===== KEEP ORIGINAL BINDINGS =====
 // @group(0) @binding(0) var<uniform> scene : Scene;
@@ -46479,8 +46569,9 @@ let uv = fract(input.fragUV);
 //     return vec4f(color, material.baseColorFactor.a);
 // }
 // `;
+exports.colorbWGSL = colorbWGSL;
 
-},{}],102:[function(require,module,exports){
+},{"../../me-config":79}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46488,7 +46579,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.hybridWGSL = void 0;
 var _meConfig = require("../../me-config");
-let hybridWGSL = exports.hybridWGSL = `
+let hybridWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
 struct Scene {
@@ -46533,7 +46624,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
@@ -46605,8 +46696,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(colorWithFog, alpha);
 }
 `;
+exports.hybridWGSL = hybridWGSL;
 
-},{"../../me-config":79}],103:[function(require,module,exports){
+},{"../../me-config":79}],104:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46614,7 +46706,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.midaWGSL = void 0;
 var _meConfig = require("../../me-config");
-let midaWGSL = exports.midaWGSL = `
+let midaWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
 struct Scene {
@@ -46659,7 +46751,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -46719,8 +46811,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }
 `;
+exports.midaWGSL = midaWGSL;
 
-},{"../../me-config":79}],104:[function(require,module,exports){
+},{"../../me-config":79}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46728,7 +46821,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.miniaWGSL = void 0;
 var _meConfig = require("../../me-config");
-let miniaWGSL = exports.miniaWGSL = `
+let miniaWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
 struct Scene {
@@ -46773,7 +46866,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -46821,8 +46914,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }
 `;
+exports.miniaWGSL = miniaWGSL;
 
-},{"../../me-config":79}],105:[function(require,module,exports){
+},{"../../me-config":79}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46830,10 +46924,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.miniWGSL = void 0;
 var _meConfig = require("../../me-config");
-let miniWGSL = exports.miniWGSL = `
-
+let miniWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
-
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -46848,13 +46940,11 @@ struct Scene {
     padding4             : vec2f,
 };
 
-// minimal dummy spotlight (kept for layout compatibility)
 struct SpotLight {
     position : vec3f,
     _pad1    : f32,
 };
 
-// minimal material (layout compatibility)
 struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
@@ -46865,7 +46955,7 @@ struct MaterialPBR {
     _pad            : f32,    // alignment padding
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 
@@ -46903,15 +46993,18 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }
 `;
+exports.miniWGSL = miniWGSL;
 
-},{"../../me-config":79}],106:[function(require,module,exports){
+},{"../../me-config":79}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSLMix1 = void 0;
-let fragmentWGSLMix1 = exports.fragmentWGSLMix1 = `override shadowDepthTextureSize: f32 = 512.0;
+var _meConfig = require("../../me-config");
+let fragmentWGSLMix1 = () => `
+override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -46960,7 +47053,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -47123,8 +47216,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }
 `;
+exports.fragmentWGSLMix1 = fragmentWGSLMix1;
 
-},{}],107:[function(require,module,exports){
+},{"../../me-config":79}],108:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47182,7 +47276,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],108:[function(require,module,exports){
+},{}],109:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47269,7 +47363,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],109:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47327,7 +47421,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],110:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47418,14 +47512,14 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],111:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexMorphWGSL = exports.vertexMorphShadowWGSL = void 0;
-const vertexMorphWGSL = exports.vertexMorphWGSL = `
+const vertexMorphWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
@@ -47596,7 +47690,8 @@ fn main(input: VertexInput) -> VertexOutput {
   return output;
 }
 `;
-const vertexMorphShadowWGSL = exports.vertexMorphShadowWGSL = /* wgsl */`
+exports.vertexMorphWGSL = vertexMorphWGSL;
+const vertexMorphShadowWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
@@ -47767,8 +47862,9 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
   return scene.lightViewProjMatrix * worldPos;
 }
 `;
+exports.vertexMorphShadowWGSL = vertexMorphShadowWGSL;
 
-},{}],112:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47776,7 +47872,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexWGSL = void 0;
 var _meConfig = require("../me-config");
-let vertexWGSL = exports.vertexWGSL = `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
+let vertexWGSL = () => `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -48045,8 +48141,9 @@ fn main(
   output.uv        = uv * uvScale;
   return output;
 }`;
+exports.vertexWGSL = vertexWGSL;
 
-},{"../me-config":79}],113:[function(require,module,exports){
+},{"../me-config":79}],114:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48054,7 +48151,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexWGSL_NM = void 0;
 var _meConfig = require("../me-config");
-let vertexWGSL_NM = exports.vertexWGSL_NM = `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
+let vertexWGSL_NM = () => `const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -48158,8 +48255,9 @@ fn main(
 
   return output;
 }`;
+exports.vertexWGSL_NM = vertexWGSL_NM;
 
-},{"../me-config":79}],114:[function(require,module,exports){
+},{"../me-config":79}],115:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48167,7 +48265,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexShadowWGSL = void 0;
 var _meConfig = require("../me-config");
-let vertexShadowWGSL = exports.vertexShadowWGSL = `
+let vertexShadowWGSL = () => `
 const MAX_BONES = ${_meConfig.MEConfig.MAX_BONES}u;
 
 struct Scene {
@@ -48425,8 +48523,9 @@ fn main(
   return scene.lightViewProjMatrix * worldPos;
 }
 `;
+exports.vertexShadowWGSL = vertexShadowWGSL;
 
-},{"../me-config":79}],115:[function(require,module,exports){
+},{"../me-config":79}],116:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48434,8 +48533,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentWaterWGSL = void 0;
 var _meConfig = require("../../me-config");
-let fragmentWaterWGSL = exports.fragmentWaterWGSL = `
-const MAX_SPOTLIGHTS = 20u;
+let fragmentWaterWGSL = () => `
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 const PI: f32 = 3.141592653589793;
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
@@ -48620,8 +48719,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
   let vibrantColor = finalColor * 1.5;
   return vec4f(vibrantColor, alpha);
 }`;
+exports.fragmentWaterWGSL = fragmentWaterWGSL;
 
-},{"../../me-config":79}],116:[function(require,module,exports){
+},{"../../me-config":79}],117:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48708,7 +48808,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],117:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48778,7 +48878,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],118:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49115,7 +49215,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":78}],119:[function(require,module,exports){
+},{"../../engine/utils":78}],120:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49882,7 +49982,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":78}],120:[function(require,module,exports){
+},{"../../engine/utils":78}],121:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50056,7 +50156,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":71,"../../engine/utils":78,"./client":118,"./editor.provider":121,"./flexCodexShader":122,"./fluxCodexVertex":124,"./hud":126,"./methodsManager":127}],121:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":71,"../../engine/utils":78,"./client":119,"./editor.provider":122,"./flexCodexShader":123,"./fluxCodexVertex":125,"./hud":127,"./methodsManager":128}],122:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50284,7 +50384,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":58,"../../engine/loaders/webgpu-gltf":61}],122:[function(require,module,exports){
+},{"../../engine/loader-obj":58,"../../engine/loaders/webgpu-gltf":61}],123:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52478,7 +52578,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":78,"./flexCodexShaderAdapter.js":123}],123:[function(require,module,exports){
+},{"../../engine/utils.js":78,"./flexCodexShaderAdapter.js":124}],124:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52639,7 +52739,7 @@ struct PBRMaterialData {
 };
 
 // PREDEFINED
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 // // PREDEFINED
 // @group(0) @binding(0) var<uniform> scene : Scene;
@@ -52702,7 +52802,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{"../../me-config":79}],124:[function(require,module,exports){
+},{"../../me-config":79}],125:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54609,6 +54709,92 @@ class FluxCodexVertex {
         x,
         y,
         title: "Add OBJ",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "path",
+          type: "string"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "isPhysicsBody",
+          type: "boolean"
+        }, {
+          name: "isInstancedObj",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "complete",
+          type: "action"
+        }, {
+          name: "error",
+          type: "action"
+        }],
+        fields: [{
+          key: "path",
+          value: "res/meshes/blender/cube.obj"
+        }, {
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:0, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "isPhysicsBody",
+          type: false
+        }, {
+          key: "isInstancedObj",
+          type: false
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      addProceduralMesh: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Add Procedural Mesh",
         category: "action",
         inputs: [{
           name: "exec",
@@ -57941,6 +58127,57 @@ LIST OF INTEREST OBJECT:
         // sync
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if (n.title === "Add Procedural Mesh") {
+        const path = this.getValue(nodeId, "path");
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let rot = this.getValue(nodeId, "rot");
+        let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation - nature of stuff
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (isInstancedObj == "true") {
+          isInstancedObj = true;
+        } else {
+          isInstancedObj = false;
+        }
+        if (isPhysicsBody == "true") {
+          isPhysicsBody = true;
+        } else {
+          isPhysicsBody = false;
+        }
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !path) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then(object => {
+            object._GRAPH_CACHE = true;
+            n._returnCache = object;
+            this.enqueueOutputs(n, "complete");
+          }).catch(err => {
+            console.log(`%cADD OBJ ERROR GRAPH!`, _utils.LOG_FUNNY_ARCADE);
+            n._returnCache = null;
+            this.enqueueOutputs(n, "error");
+          });
+          // createdField.value = true;
+        }
+        // sync
+        this.enqueueOutputs(n, "execOut");
+        return;
       } else if (n.title === "Generator Pyramid") {
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
@@ -59031,7 +59268,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/matrix-class.js":63,"../../engine/utils":78,"./curve-editor":119,"./generateAISchema.js":125}],125:[function(require,module,exports){
+},{"../../engine/matrix-class.js":63,"../../engine/utils":78,"./curve-editor":120,"./generateAISchema.js":126}],126:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -59158,7 +59395,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],126:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -60522,7 +60759,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":78,"./flexCodexShader.js":122}],127:[function(require,module,exports){
+},{"../../engine/utils.js":78,"./flexCodexShader.js":123}],128:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -60839,13 +61076,14 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],128:[function(require,module,exports){
+},{}],129:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _meConfig = require("./me-config.js");
 var _wgpuMatrix = require("wgpu-matrix");
 var _cameras = require("./engine/cameras.js");
 var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
@@ -60873,7 +61111,6 @@ var _flame = require("./engine/effects/flame.js");
 var _proceduralMesh = _interopRequireWildcard(require("./engine/procedural-mesh.js"));
 var _fontana = require("./engine/procedures/fontana.js");
 var _fontanaWgsl = require("./shaders/fontana/fontana.wgsl.js");
-var _meConfig = require("./me-config.js");
 var _minRender = require("./engine/overrides/min-render.js");
 var _noshadowRender = require("./engine/overrides/noshadow-render.js");
 var _pipelineManager = require("./engine/pipelineManager.js");
@@ -60882,8 +61119,6 @@ var _bridge = require("./engine/physics/bridge.js");
 var _mobile = require("./engine/overrides/mobile-1.js");
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import MatrixAmmo from "./engine/physics/matrix-ammo_DEPLACED.js";
-
 /**
  * @description
  * Main engine root class.
@@ -60976,8 +61211,9 @@ class MatrixEngineWGPU {
       this.physicsBodiesChain = _generator.physicsBodiesChain.bind(this);
     }
     this.editorAddOBJ = _generator.addOBJ.bind(this);
+    this.editorAddProceduralMesh = _generator.addProceduralOBJ.bind(this);
     this.MEConfig = _meConfig.MEConfig;
-    this.MEConfig.construct();
+    this.MEConfig.construct(options);
     this.label = new _lang.MultiLang();
     this.now = 0;
     this.logLoopError = true;
@@ -61109,7 +61345,19 @@ class MatrixEngineWGPU {
     this.canvas = canvas;
     if (this.options.canvasSize == 'fullscreen') {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-        this.applyCanvasSize(this.options.fastRender);
+        // this.applyCanvasSize(this.options.fastRender);
+        console.log('FastRender : ', this.options.fastRender);
+        if ((0, _utils.isMobile)() == false) {
+          this.applyCanvasSize(this.options.fastRender);
+        } else {
+          this.applyCanvasSizeMobile(this.options.fastRender);
+          // canvas.width = screen.availWidth * this.options.fastRender;
+          // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
+        }
+      } else if ((0, _utils.isMobile)() == true) {
+        console.log('Just Apply screen or inner...', this.options.fastRender);
+        canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth;
+        canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if (this.options.fastRenderAlternative) {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -61117,8 +61365,10 @@ class MatrixEngineWGPU {
       } else {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight;
+        console.log('Just INNER...');
       }
     } else {
+      console.log('Apply custom W H');
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
@@ -61163,10 +61413,27 @@ class MatrixEngineWGPU {
         this.label.get = r;
       });
     }
-    this.init({
-      canvas,
-      callback
-    });
+    if (this.options.fastRender && !isNaN(this.options.fastRender) && (0, _utils.isMobile)()) {
+      if ((0, _utils.byId)('msgBox')) (0, _utils.byId)('msgBox').style.left = '20%';
+      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
+      _utils.meLoader.create();
+      addEventListener("run_mobile_fs", () => {
+        // console.log('what iscallback ', callback)
+        this.init({
+          canvas,
+          callback
+        });
+        _utils.meLoader.destroy();
+        setTimeout(() => {
+          if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
+        }, 500);
+      });
+    } else {
+      this.init({
+        canvas,
+        callback
+      });
+    }
   }
   createGlobalsForEntities() {
     // TYPE "MESH"
@@ -61303,6 +61570,14 @@ class MatrixEngineWGPU {
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
+  applyCanvasSizeMobile(scale) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scale;
+    this.canvas.height = screenHeight * scale;
+    this.canvas.style.width = screenWidth + "px";
+    this.canvas.style.height = screenHeight + "px";
+  }
   getCamera() {
     return this.cameras[this.mainCameraParams.type];
   }
@@ -61320,7 +61595,7 @@ class MatrixEngineWGPU {
       this.context = canvas.getContext('webgpu', {
         alphaMode: 'opaque'
       });
-    } else if (this.options.alphaMode == "opaque") {
+    } else {
       this.context = canvas.getContext('webgpu', {
         alphaMode: 'premultiplied'
       });
@@ -61332,7 +61607,12 @@ class MatrixEngineWGPU {
       alphaMode: 'premultiplied'
     });
     this.globalAmbient = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
-    this.MAX_SPOTLIGHTS = 20;
+    if (this.options.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
+      _meConfig.MEConfig.MAX_SPOTLIGHTS = this.MAX_SPOTLIGHTS;
+    } else {
+      this.MAX_SPOTLIGHTS = _meConfig.MEConfig.MAX_SPOTLIGHTS;
+    }
     this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.createGlobalsForEntities();
@@ -61343,10 +61623,10 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.11.0 [FasterThanARabbit] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.11.2 [FasterThanARabbit] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
-    console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
+    console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY_ARCADE);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", _utils.LOG_FUNNY_ARCADE);
@@ -61571,7 +61851,7 @@ class MatrixEngineWGPU {
   createTexArrayForShadows() {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      let numberOfLights = 20;
+      let numberOfLights = this.MAX_SPOTLIGHTS;
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -61963,8 +62243,8 @@ class MatrixEngineWGPU {
       meshB: geo1.meshB,
       resolutionU: geo1.resolutionU,
       resolutionV: geo1.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCurtainFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCurtainFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
       // pointerEffect: {
       //   enabled: true,
       //   flameEmitter: true,
@@ -62005,8 +62285,8 @@ class MatrixEngineWGPU {
       meshB: geo2.meshB,
       resolutionU: geo2.resolutionU,
       resolutionV: geo2.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCapFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCapFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     const geo3 = (0, _fontana.fountainCapConfig)(_proceduralMesh.MeshMorpher);
     let m3 = this.addProceduralMeshObj({
@@ -62044,8 +62324,8 @@ class MatrixEngineWGPU {
       meshB: geo3.meshB,
       resolutionU: geo3.resolutionU,
       resolutionV: geo3.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCapFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCapFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     const geo4 = (0, _fontana.fountainCurtainConfig)(_proceduralMesh.MeshMorpher);
     let m4 = this.addProceduralMeshObj({
@@ -62083,8 +62363,8 @@ class MatrixEngineWGPU {
       meshB: geo4.meshB,
       resolutionU: geo4.resolutionU,
       resolutionV: geo4.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainCurtainFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainCurtainFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     const geo5 = (0, _fontana.fountainBasinWaterConfig)(_proceduralMesh.MeshMorpher);
     let m5 = this.addProceduralMeshObj({
@@ -62122,15 +62402,15 @@ class MatrixEngineWGPU {
       meshB: geo5.meshB,
       resolutionU: geo5.resolutionU,
       resolutionV: geo5.resolutionV,
-      fragmentWGSL: _fontanaWgsl.fountainBasinFragmentWGSL,
-      vertexWGSL: _fontanaWgsl.fountainWaterVertexWGSL
+      fragmentWGSL: (0, _fontanaWgsl.fountainBasinFragmentWGSL)(),
+      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
     });
     m1.rotation.setRotateY(1000);
     m4.setBlend(0.1);
     setTimeout(() => {
-      m4.effects.flameEmitter.instanceTargets.forEach(i => {
-        i.color = [0, (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(50, 200)];
-      });
+      // m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+      //   i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
+      // })
     }, 1000);
   };
   createBloomBindGroup() {
@@ -62246,8 +62526,9 @@ class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
-      // this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+      // if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -62289,6 +62570,7 @@ class MatrixEngineWGPU {
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();
+        if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -62308,15 +62590,15 @@ class MatrixEngineWGPU {
         }
       }
       for (const [pipeline, meshes] of this.transparentBuckets) {
-        meshes.sort((a, b) => {
-          const dx1 = camera.position[0] - a.position[0];
-          const dz1 = camera.position[2] - a.position[2];
-          const da = dx1 * dx1 + dz1 * dz1;
-          const dx2 = camera.position[0] - b.position[0];
-          const dz2 = camera.position[2] - b.position[2];
-          const db = dx2 * dx2 + dz2 * dz2;
-          return db - da;
-        });
+        // meshes.sort((a, b) => {
+        //   const dx1 = camera.position[0] - a.position[0];
+        //   const dz1 = camera.position[2] - a.position[2];
+        //   const da = dx1 * dx1 + dz1 * dz1;
+        //   const dx2 = camera.position[0] - b.position[0];
+        //   const dz2 = camera.position[2] - b.position[2];
+        //   const db = dx2 * dx2 + dz2 * dz2;
+        //   return db - da;
+        // });
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
@@ -62326,9 +62608,6 @@ class MatrixEngineWGPU {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      pass.end();
-      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = camera.VP;
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if (mesh.effects) {
@@ -62336,18 +62615,21 @@ class MatrixEngineWGPU {
             const effect = mesh.effects[effectName];
             if (effect == null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-            effect.render(transPass, mesh, viewProjMatrix);
+            effect.render(pass, mesh, camera.VP);
           }
         }
       }
-      transPass.end();
+      pass.end();
       if (this.volumetricPass.enabled === true) {
         _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
-        const light = this.lightContainer[0];
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
-        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
-        this._volumetricLightUniforms.direction = light.direction;
-        this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
+        for (let i = 0; i < this.lightContainer.length; i++) {
+          const light = this.lightContainer[i];
+          // if(!light.viewProjMatrix || !light.direction) continue;
+          this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+          this._volumetricLightUniforms.direction = light.direction;
+          this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
+        }
       }
       const canvasTexture = this.context.getCurrentTexture();
       if (this._lastCanvasTex !== canvasTexture) {
@@ -62678,4 +62960,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":37,"./engine/core-cache.js":39,"./engine/effects/energy-bar.js":41,"./engine/effects/flame-emmiter.js":42,"./engine/effects/flame.js":43,"./engine/effects/mana-bar.js":48,"./engine/effects/pointerEffect.js":50,"./engine/generators/generator.js":52,"./engine/instanced/mesh-obj-instances.js":55,"./engine/lights.js":56,"./engine/loader-obj.js":58,"./engine/loaders/bvh-instaced.js":59,"./engine/loaders/bvh.js":60,"./engine/mesh-obj.js":64,"./engine/overrides/min-render.js":65,"./engine/overrides/mobile-1.js":66,"./engine/overrides/nano-render.js":67,"./engine/overrides/noshadow-render.js":68,"./engine/physics/bridge.js":69,"./engine/pipelineManager.js":70,"./engine/postprocessing/bloom.js":72,"./engine/postprocessing/volumetric.js":73,"./engine/procedural-mesh.js":74,"./engine/procedures/fontana.js":75,"./engine/raycast.js":77,"./engine/utils.js":78,"./me-config.js":79,"./multilang/lang.js":80,"./shaders/fontana/fontana.wgsl.js":85,"./sounds/audioAsset.js":116,"./sounds/sounds.js":117,"./tools/editor/editor.js":120,"./tools/editor/flexCodexShaderAdapter.js":123,"wgpu-matrix":34}]},{},[1]);
+},{"./engine/cameras.js":37,"./engine/core-cache.js":39,"./engine/effects/energy-bar.js":41,"./engine/effects/flame-emmiter.js":42,"./engine/effects/flame.js":43,"./engine/effects/mana-bar.js":48,"./engine/effects/pointerEffect.js":50,"./engine/generators/generator.js":52,"./engine/instanced/mesh-obj-instances.js":55,"./engine/lights.js":56,"./engine/loader-obj.js":58,"./engine/loaders/bvh-instaced.js":59,"./engine/loaders/bvh.js":60,"./engine/mesh-obj.js":64,"./engine/overrides/min-render.js":65,"./engine/overrides/mobile-1.js":66,"./engine/overrides/nano-render.js":67,"./engine/overrides/noshadow-render.js":68,"./engine/physics/bridge.js":69,"./engine/pipelineManager.js":70,"./engine/postprocessing/bloom.js":72,"./engine/postprocessing/volumetric.js":73,"./engine/procedural-mesh.js":74,"./engine/procedures/fontana.js":75,"./engine/raycast.js":77,"./engine/utils.js":78,"./me-config.js":79,"./multilang/lang.js":80,"./shaders/fontana/fontana.wgsl.js":85,"./sounds/audioAsset.js":117,"./sounds/sounds.js":118,"./tools/editor/editor.js":121,"./tools/editor/flexCodexShaderAdapter.js":124,"wgpu-matrix":34}]},{},[1]);

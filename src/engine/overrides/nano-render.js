@@ -10,7 +10,8 @@ export let nanoPass = function() {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+    // if(camera._dirtyAngle || camera._dirty)
+    this.getTransformationMatrix(camera, now2);
     camera.update();
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {

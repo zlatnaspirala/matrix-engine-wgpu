@@ -1,8 +1,8 @@
+import {MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
-// import MatrixAmmo from "./engine/physics/matrix-ammo_DEPLACED.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -13,7 +13,7 @@ import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
-import {addOBJ, physicsBodiesChain, physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/generator.js";
+import {addOBJ, addProceduralMesh, addProceduralOBJ, physicsBodiesChain, physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/generator.js";
 import {TextureCache} from "./engine/core-cache.js";
 import {AudioAssetManager} from "./sounds/audioAsset.js";
 import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
@@ -26,7 +26,6 @@ import {FlameEffect} from "./engine/effects/flame.js";
 import ProceduralMeshObj, {MeshMorpher} from "./engine/procedural-mesh.js";
 import {FOUNTAIN_COLUMN_TOP, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainStructureConfig} from "./engine/procedures/fontana.js";
 import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
-import {MEConfig} from "./me-config.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
 import {noShadowPass} from "./engine/overrides/noshadow-render.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
@@ -109,8 +108,9 @@ export default class MatrixEngineWGPU {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.editorAddOBJ = addOBJ.bind(this);
+    this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
-    this.MEConfig.construct();
+    this.MEConfig.construct(options);
     this.label = new MultiLang();
     this.now = 0;
     this.logLoopError = true;
@@ -224,7 +224,19 @@ export default class MatrixEngineWGPU {
     this.canvas = canvas;
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-        this.applyCanvasSize(this.options.fastRender);
+        // this.applyCanvasSize(this.options.fastRender);
+        console.log('FastRender : ', this.options.fastRender)
+        if(isMobile() == false) {
+          this.applyCanvasSize(this.options.fastRender)
+        } else {
+          this.applyCanvasSizeMobile(this.options.fastRender);
+          // canvas.width = screen.availWidth * this.options.fastRender;
+          // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
+        }
+      } else if(isMobile() == true) {
+        console.log('Just Apply screen or inner...', this.options.fastRender)
+        canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
+        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if(this.options.fastRenderAlternative) {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -232,8 +244,10 @@ export default class MatrixEngineWGPU {
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
+        console.log('Just INNER...');
       }
     } else {
+      console.log('Apply custom W H');
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
@@ -265,7 +279,22 @@ export default class MatrixEngineWGPU {
         this.label.get = r;
       });
     }
-    this.init({canvas, callback});
+
+    if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
+      if(byId('msgBox')) byId('msgBox').style.left = '20%';
+      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
+      meLoader.create();
+      addEventListener("run_mobile_fs", () => {
+        // console.log('what iscallback ', callback)
+        this.init({canvas, callback});
+        meLoader.destroy();
+        setTimeout(() => {
+          if(this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
+        }, 500)
+      })
+    } else {
+      this.init({canvas, callback});
+    }
   }
 
   createGlobalsForEntities() {
@@ -322,6 +351,15 @@ export default class MatrixEngineWGPU {
     this.canvas.style.height = screenHeight + "px";
   }
 
+  applyCanvasSizeMobile(scale) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scale;
+    this.canvas.height = screenHeight * scale;
+    this.canvas.style.width = screenWidth + "px";
+    this.canvas.style.height = screenHeight + "px";
+  }
+
   getCamera() {return this.cameras[this.mainCameraParams.type]}
 
   init = async ({canvas, callback}) => {
@@ -334,7 +372,7 @@ export default class MatrixEngineWGPU {
       this.context = canvas.getContext('webgpu');
     } else if(this.options.alphaMode == "opaque") {
       this.context = canvas.getContext('webgpu', {alphaMode: 'opaque'});
-    } else if(this.options.alphaMode == "opaque") {
+    } else {
       this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
     }
 
@@ -346,7 +384,13 @@ export default class MatrixEngineWGPU {
     });
 
     this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
-    this.MAX_SPOTLIGHTS = 20;
+    if(this.options.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
+      MEConfig.MAX_SPOTLIGHTS = this.MAX_SPOTLIGHTS;
+    } else {
+      this.MAX_SPOTLIGHTS = MEConfig.MAX_SPOTLIGHTS;
+    }
+
     this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.createGlobalsForEntities();
@@ -357,7 +401,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.11.0 [FasterThanARabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.11.2 [FasterThanARabbit] ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
@@ -367,6 +411,7 @@ export default class MatrixEngineWGPU {
       "%cMatrix Engine WGPU - Initial configuration :\n" +
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
       " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" +
+      " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" +
       " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
       " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);
@@ -603,7 +648,7 @@ export default class MatrixEngineWGPU {
   createTexArrayForShadows() {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      let numberOfLights = 20;
+      let numberOfLights = this.MAX_SPOTLIGHTS;
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -896,7 +941,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo1.meshA, meshB: geo1.meshB, resolutionU: geo1.resolutionU, resolutionV: geo1.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainCurtainFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
       // pointerEffect: {
       //   enabled: true,
       //   flameEmitter: true,
@@ -909,7 +954,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo2.meshA, meshB: geo2.meshB, resolutionU: geo2.resolutionU, resolutionV: geo2.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainCapFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
     });
 
     const geo3 = fountainCapConfig(MeshMorpher);
@@ -919,7 +964,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py + TOP * 0.8, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo3.meshA, meshB: geo3.meshB, resolutionU: geo3.resolutionU, resolutionV: geo3.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainCapFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
     });
 
     const geo4 = fountainCurtainConfig(MeshMorpher);
@@ -929,7 +974,7 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo4.meshA, meshB: geo4.meshB, resolutionU: geo4.resolutionU, resolutionV: geo4.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL
+      fragmentWGSL: fountainCurtainFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL()
     });
 
     const geo5 = fountainBasinWaterConfig(MeshMorpher);
@@ -939,16 +984,16 @@ export default class MatrixEngineWGPU {
       position: {x: px, y: py + 0.01, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
       meshA: geo5.meshA, meshB: geo5.meshB, resolutionU: geo5.resolutionU, resolutionV: geo5.resolutionV,
-      fragmentWGSL: fountainBasinFragmentWGSL, vertexWGSL: fountainWaterVertexWGSL,
+      fragmentWGSL: fountainBasinFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
     });
 
     m1.rotation.setRotateY(1000);
     m4.setBlend(0.1);
 
     setTimeout(() => {
-      m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-        i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-      })
+      // m4.effects.flameEmitter.instanceTargets.forEach((i) => {
+      //   i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
+      // })
     }, 1000)
   }
 
@@ -1063,8 +1108,9 @@ export default class MatrixEngineWGPU {
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
-      // this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+      // if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      this.getTransformationMatrix(camera, now2);
       camera.update();
 
       for(let i = 0;i < this.lightContainer.length;i++) {
@@ -1108,6 +1154,7 @@ export default class MatrixEngineWGPU {
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
         if(mesh.isVideo) mesh.updateVideoTexture();
+        if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       }
 
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
@@ -1128,15 +1175,15 @@ export default class MatrixEngineWGPU {
         }
       }
       for(const [pipeline, meshes] of this.transparentBuckets) {
-        meshes.sort((a, b) => {
-          const dx1 = camera.position[0] - a.position[0];
-          const dz1 = camera.position[2] - a.position[2];
-          const da = dx1 * dx1 + dz1 * dz1;
-          const dx2 = camera.position[0] - b.position[0];
-          const dz2 = camera.position[2] - b.position[2];
-          const db = dx2 * dx2 + dz2 * dz2;
-          return db - da;
-        });
+        // meshes.sort((a, b) => {
+        //   const dx1 = camera.position[0] - a.position[0];
+        //   const dz1 = camera.position[2] - a.position[2];
+        //   const da = dx1 * dx1 + dz1 * dz1;
+        //   const dx2 = camera.position[0] - b.position[0];
+        //   const dz2 = camera.position[2] - b.position[2];
+        //   const db = dx2 * dx2 + dz2 * dz2;
+        //   return db - da;
+        // });
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
@@ -1146,10 +1193,7 @@ export default class MatrixEngineWGPU {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      pass.end();
 
-      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = camera.VP;
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if(mesh.effects) {
@@ -1157,25 +1201,29 @@ export default class MatrixEngineWGPU {
             const effect = mesh.effects[effectName];
             if(effect == null || effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-            effect.render(transPass, mesh, viewProjMatrix);
+            effect.render(pass, mesh, camera.VP);
           }
         }
       }
-      transPass.end();
+
+      pass.end();
 
       if(this.volumetricPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
-        const light = this.lightContainer[0];
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
-        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
-        this._volumetricLightUniforms.direction = light.direction;
-        this.volumetricPass.render(commandEncoder,
-          this.sceneTextureView,
-          this.mainDepthView,
-          this.shadowArrayView,
-          this._volumetricUniforms,
-          this._volumetricLightUniforms
-        );
+        for(let i = 0;i < this.lightContainer.length;i++) {
+          const light = this.lightContainer[i];
+          // if(!light.viewProjMatrix || !light.direction) continue;
+          this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+          this._volumetricLightUniforms.direction = light.direction;
+          this.volumetricPass.render(commandEncoder,
+            this.sceneTextureView,
+            this.mainDepthView,
+            this.shadowArrayView,
+            this._volumetricUniforms,
+            this._volumetricLightUniforms
+          );
+        }
       }
 
       const canvasTexture = this.context.getCurrentTexture();

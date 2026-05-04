@@ -821,18 +821,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
     const isVideo = this.isVideo === true;
-    const vertexCode = vertexWGSLInstanced;
-    const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = vertexWGSLInstanced();
+    const fragmentCode = isVideo ? fragmentVideoWGSL() : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    console.log('>>>>>>>>>>>>>INSTANCED >>>>>>>>>>>>')
-
+    // console.log('INSTANCED')
     const baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "instanced",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : 'triangle-list',
+      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,

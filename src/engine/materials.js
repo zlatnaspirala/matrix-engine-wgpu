@@ -17,6 +17,7 @@ import {coloraWGSL} from "../shaders/minimalist/color-a.wgsl";
 import {colorbWGSL} from "../shaders/minimalist/color-b.wgsl";
 import {fountainBasinFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
 import {MaterialBindGroupCache} from "./pipelineManager";
+import {fragmentDarkWGSL} from "../shaders/fragment.dark.wgsl";
 
 /**
  * @description
@@ -29,13 +30,11 @@ export default class Materials {
   constructor(device, material, glb, textureCache, isVideo) {
     this.device = device;
     this.textureCache = textureCache;
-
     this.materialBindGroupCache = MaterialBindGroupCache.get();
-
     this.glb = glb;
     this.material = material;
     if(typeof isVideo !== 'undefined') {
-      console.log("WHAT IS isvideo ", this.isVideo)
+      // console.log("WHAT IS isvideo ??", this.isVideo)
       this.isVideo = true;
     } else {this.isVideo = false}
     this.videoIsReady = 'NONE';
@@ -379,46 +378,47 @@ export default class Materials {
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if(this.material.type == 'standard') {
-      return fragmentWGSL;
+      return fragmentWGSL();
+    } else if(this.material.type == 'dark') {
+      return fragmentDarkWGSL();
     } else if(this.material.type == 'pong') {
-      return fragmentWGSLPong;
+      return fragmentWGSLPong();
     } else if(this.material.type == 'power') {
-      return fragmentWGSLPower;
+      return fragmentWGSLPower();
     } else if(this.material.type == 'metal') {
-      return fragmentWGSLMetal;
+      return fragmentWGSLMetal();
     } else if(this.material.type == 'normalmap') {
-      return fragmentWGSLNormalMap;
+      return fragmentWGSLNormalMap();
     } else if(this.material.type == 'gpt') {
-      return fragmentWGSLGPT;
+      return fragmentWGSLGPT();
     } else if(this.material.type == 'water') {
-      return fragmentWaterWGSL;
+      return fragmentWaterWGSL();
     } else if(this.material.type == 'graph') {
-      // console.warn('Unknown material ???????????????:', this.material?.type);
+      console.info('Material from graph :', this.material?.type);
       return this.material.fromGraph;
     } else if(this.material.type == 'mix1') {
       return fragmentWGSLMix1; // ?
     } else if(this.material.type === "mirror") {
-      return mirrorIlluminateFragmentWGSL;
+      return mirrorIlluminateFragmentWGSL();
     } else if(this.material.type === "dark" || this.material.type === "free") {
-      return fragmentWGSLDark;
+      return fragmentWGSLDark();
     } else if(this.material.type === "fontana") {
-      return fountainBasinFragmentWGSL;
+      return fountainBasinFragmentWGSL();
     } else if(this.material.type === "mini") {
-      return miniWGSL;
+      return miniWGSL();
     } else if(this.material.type === "minia") {
-      return miniaWGSL;
+      return miniaWGSL();
     } else if(this.material.type === "mida") {
-      return midaWGSL;
+      return midaWGSL();
     } else if(this.material.type === "hybrid") {
-      return hybridWGSL;
+      return hybridWGSL();
     } else if(this.material.type === "colora") {
-      return coloraWGSL;
+      return coloraWGSL();
     } else if(this.material.type === "colorb") {
-      return colorbWGSL;
+      return colorbWGSL();
     }
-
     console.warn('Unknown material type:', this.material?.type);
-    return fragmentWGSL;
+    return fragmentWGSL();
   }
 
   getFormat() {
@@ -613,7 +613,8 @@ export default class Materials {
       canvas.height = arg.height || 256;
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
-      canvas.style.top = '-225px';
+      canvas.style.top = '-325px';
+      canvas.id = arg.id ? arg.id : this.name + 'ci1';
       // canvas.style.zIndex = '10000';
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
@@ -639,25 +640,46 @@ export default class Materials {
         ctx.fillStyle = '#0ce325ff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      this.video = document.createElement('video');
-      this.video.style.position = 'absolute';
-      // this.video.style.zIndex = '1';
-      this.video.style.left = '-600px';
-      this.video.style.top = '0';
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(24);
-      document.body.append(this.video);
-      this.video.play();
+
+      this.sourceCanvas = canvas; // store ref
+
+      this.gpuTexture = this.device.createTexture({
+        size: [this.sourceCanvas.width, this.sourceCanvas.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      this.video = null;
+      // this.video = document.createElement('video');
+      // this.video.style.position = 'absolute';
+      // // this.video.style.zIndex = '1';
+      // this.video.style.left = '-600px';
+      // this.video.style.top = '0';
+      // this.video.autoplay = true;
+      // this.video.muted = true;
+      // this.video.playsInline = true;
+      // this.video.srcObject = canvas.captureStream(24);
+      // document.body.append(this.video);
+      // this.video.play();
     }
 
-    await new Promise(resolve => {
+    if(this.video) await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
-        this.updateVideoTexture();
-        this.createMaterialBindGroupVideo();
-        this.setupPipeline();
-        resolve();
+        setTimeout(() => {
+          this.updateVideoTexture();
+          this.createMaterialBindGroupVideo();
+          this.setupPipeline();
+          resolve();
+          // Very interest 
+          const ci1 = document.getElementById('ci1')
+          if(ci1) {
+            document.body.removeChild(ci1);
+          } else {
+            const ci2 = document.getElementById(this.name + 'ci1');
+            if(ci2) document.body.removeChild(ci2);
+          }
+        }, 200)
       });
     });
 
@@ -667,6 +689,15 @@ export default class Materials {
     if(!this.video || this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
     if(!this.externalTexture) return;
+    this.createMaterialBindGroupVideo();
+  }
+
+  updateCanvasInlineTexture() {
+    this.externalTexture = this.device.queue.copyExternalImageToTexture(
+      {source: this.sourceCanvas},
+      {texture: this.gpuTexture, premultipliedAlpha: false},
+      [this.sourceCanvas.width, this.sourceCanvas.height]
+    );
     this.createMaterialBindGroupVideo();
   }
 
@@ -747,14 +778,26 @@ export default class Materials {
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
     // console.log('SET VIDEO BIND GROUP')
-    this.materialBindGroup = this.device.createBindGroup({
-      label: 'materialVideoBGL',
-      layout: this.materialVideoBGL,
-      entries: [
-        {binding: 0, resource: this.externalTexture},
-        {binding: 1, resource: this.videoSampler},
-        {binding: 2, resource: {buffer: this.postFXModeBuffer}}
-      ]
-    });
+    if(this.video == null) {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [
+          {binding: 0, resource: this.gpuTexture.createView()},
+          {binding: 1, resource: this.videoSampler},
+          {binding: 2, resource: {buffer: this.postFXModeBuffer}}
+        ]
+      });
+    } else {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: 'materialVideoBGL',
+        layout: this.materialVideoBGL,
+        entries: [
+          {binding: 0, resource: this.externalTexture},
+          {binding: 1, resource: this.videoSampler},
+          {binding: 2, resource: {buffer: this.postFXModeBuffer}}
+        ]
+      });
+    }
   }
 }

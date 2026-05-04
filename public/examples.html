@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <link rel="manifest" href="manifest.web" />
   <title>Matrix Engine Powered by webGPU. Created by Nikola Lukic zlatnaspirala@gmail.com </title>
@@ -11,9 +12,11 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#000000" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" sizes="256x256" href="res/icons/512.webp" />
 </head>
+
 <body allow="autoplay">
   <div class="header" style="display: contents;text-align: center;font-size: large;">
     MATRIX-ENGINE-WGPU WORKSPACE 2026 <span>Tested on chrome, android chrome.</span> <a style="font-size: x-small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
@@ -40,8 +43,35 @@
     <button class="btn" id="jamb">Jamb game</button>
     <button class="btn" id="moba">MOBA game</button>
   </div>
+  <div id="msgBox" class="msg-box animate1" onclick="mb.copy()"></div>
   <script src="examples.js"></script>
   <script>
+    document.addEventListener('touchstart', function(e) {
+      if(e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, {passive: false});
+
+    document.addEventListener('touchmove', function(e) {
+      if(e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, {passive: false});
+
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault();
+    });
+
+    let lastTouchEnd = 0;
+
+    document.addEventListener('touchend', function(e) {
+      const now = Date.now();
+      if(now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, {passive: false});
+
     document.getElementById('sliderMenu1').addEventListener('click', () => {
       if(document.getElementById('examples').style.left == "0px") {
         document.getElementById('examples').style.left = "-150px";
@@ -51,4 +81,5 @@
     }, {passive: true});
   </script>
 </body>
+
 </html>

@@ -1,9 +1,7 @@
 import {MEConfig} from "../../me-config";
 
-export let miniWGSL = `
-
+export let miniWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
-
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -18,13 +16,11 @@ struct Scene {
     padding4             : vec2f,
 };
 
-// minimal dummy spotlight (kept for layout compatibility)
 struct SpotLight {
     position : vec3f,
     _pad1    : f32,
 };
 
-// minimal material (layout compatibility)
 struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
@@ -35,7 +31,7 @@ struct MaterialPBR {
     _pad            : f32,    // alignment padding
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 

@@ -1,31 +1,26 @@
 import {degToRad, radToDeg} from "./utils";
 
 /**
- * @description 
- * Sub classes for matrix-wgpu
+ * @description
+ * Sub classes for matrix-engine-wgpu
  * Base class
  * Position { x, y, z }
  */
 
 export class Position {
   constructor(x, y, z) {
-    // console.log('TEST TYTPOF ', x)
     this.remoteName = null;
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-
-    this.netTolerance = 3;
+    this.netTolerance = 2;
     this.netTolerance__ = 0;
-
     if(typeof x == 'undefined') x = 0;
     if(typeof y == 'undefined') y = 0;
     if(typeof z == 'undefined') z = 0;
-
     this.x = parseFloat(x);
     this.y = parseFloat(y);
     this.z = parseFloat(z);
-
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
@@ -34,13 +29,10 @@ export class Position {
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
     this.thrust = 0.01;
-
     return this;
   }
 
-  getSpeed = () => {
-    return this.thrust;
-  }
+  getSpeed = () => {return this.thrust}
 
   setSpeed = (n) => {
     if(typeof n === 'number') {
@@ -405,7 +397,7 @@ export class Rotation {
       }
       return this._cachedRotY;
     } else {
-      this.y = this.y + this.rotationSpeed.y * 0.01;
+      this.y = this.y + this.rotationSpeed.y;
       this._cachedRotY = degToRad(this.y);
       this._lastY = this.y;
       return this._cachedRotY;
@@ -428,16 +420,15 @@ export class Rotation {
       }
       return this._cachedRotZ;
     } else {
-      this.z = this.z + this.rotationSpeed.z * 0.01;
+      this.z = this.z + this.rotationSpeed.z;
       this._cachedRotZ = degToRad(this.z);
       this._lastZ = this.z;
       return this._cachedRotZ;
     }
   }
-
 }
 
-// array type of pos obj
+// Array type of pos obj
 export function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0) {
   const dx = Apos[0] - Bpos.x;
   const dz = Apos[2] - Bpos.z;
@@ -468,7 +459,6 @@ export function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0)
     // }
     return true;
   }
-
   return false;
 }
 

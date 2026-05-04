@@ -487,6 +487,10 @@ pointerEffect: {
 // app.mainRenderBundle[0].effects
 ```
 
+Use random for creation than when you find perfect crazzy fancy case just collect input data see:
+https://gist.github.com/zlatnaspirala/8758bcfb8be81d65c2c428e222abbef2
+
+
 ### Bloom post processing
 
 Activete with :
@@ -997,7 +1001,17 @@ urlQuery.lang;
    Use it :
    `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
 
+   If you wanna full performance on mobile devices than use in constructor:
+   ```js
+     fastRender = anynumber
+   ```
+   In this case FORCE_FULL_SCREEN is true by default.
+   Pushed notification click anywhere to start the engine.
 
+  Note for MAX_SPOTLIGHTS :
+  If you wanna override values from MECOnfig or even urlParam than use :
+
+  
 ---
 
 ## About `main.js`
