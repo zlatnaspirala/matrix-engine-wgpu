@@ -12,8 +12,8 @@ export var loadObjFile = function() {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
-      type: 'WASD',
-      // type: 'firstPersonCamera',
+      // type: 'WASD',
+      type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -126,7 +126,7 @@ export var loadObjFile = function() {
         cam.setY(10);
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
-      }, 400);
+      }, 700);
     }
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
