@@ -377,6 +377,7 @@ export function addOBJ(
   material = "standard",
   pos,
   rot,
+  rotationSpeed = {x: 0, y: 0, z: 0},
   texturePath,
   name,
   isPhysicsBody = false,
@@ -398,7 +399,7 @@ export function addOBJ(
           z: pos.z
         },
         rotation: rot,
-        rotationSpeed: {x: 0, y: 0, z: 0},
+        rotationSpeed: rotationSpeed,
         texturesPaths: [texturePath],
         name: name,
         mesh: m.mesh,
@@ -424,6 +425,7 @@ export function addProceduralOBJ(
   material = "standard",
   pos,
   rot,
+  rotationSpeed = {x: 0, y: 0, z: 0},
   texturePath,
   name,
   meshTypeA = 'cube',
@@ -447,7 +449,7 @@ export function addProceduralOBJ(
           z: pos.z
         },
         rotation: rot,
-        rotationSpeed: {x: 0, y: 0, z: 0},
+        rotationSpeed: rotationSpeed,
         texturesPaths: [texturePath],
         name: name,
         meshA: MeshMorpher[meshTypeA](1),
