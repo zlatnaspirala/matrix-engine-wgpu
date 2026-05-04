@@ -438,8 +438,8 @@ export function addProceduralOBJ(
     const engine = this;
     // const inputCube = {mesh: path};
       const RAY = {enabled: !!raycast, radius: 1};
-      // console.info('add cube form graph..')
-      engine.addMeshObj({
+      console.info('add cube form graph..')
+      engine.addProceduralMeshObj({
         material: {type: material},
         position: {
           x: pos.x,

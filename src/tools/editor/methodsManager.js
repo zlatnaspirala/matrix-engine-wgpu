@@ -152,7 +152,7 @@ export default class MethodsManager {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:30%;
+      width:50%;
       height: 75%;
       z-index:999;
     `;

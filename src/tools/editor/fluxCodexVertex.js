@@ -918,9 +918,9 @@ export default class FluxCodexVertex {
     node.outputs = [{name: "execOut", type: "action"}];
     // Dynamic input pins
     const args = this.getArgNames(fn);
-    args.forEach(arg => node.inputs.push({name: arg, type: "value"}));
+    args.forEach(arg => node.inputs.push({name: arg, type: "any"}));
     // Dynamic return pin
-    if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "value"});
+    if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "any"});
 
     // test 
     node.outputs.push({name: "reference", type: "function"});
@@ -3133,6 +3133,8 @@ LIST OF INTEREST OBJECT:
   setVariable(type, key, value) {
     if(!this.variables[type][key]) return;
 
+    console.log('Test -setVariable  value', value);
+
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
   }
@@ -4294,6 +4296,7 @@ LIST OF INTEREST OBJECT:
       else if(n.title === "Add Procedural Mesh") {
         const meshA = this.getValue(nodeId, "meshA");
         const meshB = this.getValue(nodeId, "meshB");
+        const rotationSpeed = this.getValue(nodeId, "rotationSpeed");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -4317,12 +4320,24 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+            // material = "standard",
+  // pos,
+  // rot,
+  // rotationSpeed = {x: 0, y: 0, z: 0},
+  // texturePath,
+  // name,
+  // meshTypeA = 'cube',
+  // meshTypeB = 'sphere',
+  // isPhysicsBody = false,
+  // raycast = false,
+  // scale = [1, 1, 1],
+  // isInstancedObj = false
+          app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
-            console.log(`%cADD PROC-OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            console.log(`%cADD PROC-OBJ ERROR GRAPH: ${err}`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           })

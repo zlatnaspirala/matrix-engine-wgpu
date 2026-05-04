@@ -25897,8 +25897,8 @@ var FluxCodexVertex = class {
     node2.inputs = [{ name: "exec", type: "action" }];
     node2.outputs = [{ name: "execOut", type: "action" }];
     const args2 = this.getArgNames(fn);
-    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "value" }));
-    if (this.hasReturn(fn)) node2.outputs.push({ name: "return", type: "value" });
+    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "any" }));
+    if (this.hasReturn(fn)) node2.outputs.push({ name: "return", type: "any" });
     node2.outputs.push({ name: "reference", type: "function" });
     node2.attachedMethod = methodItem.name;
     node2.fn = fn;
@@ -28093,6 +28093,7 @@ LIST OF INTEREST OBJECT:
   }
   setVariable(type2, key, value) {
     if (!this.variables[type2][key]) return;
+    console.log("Test -setVariable  value", value);
     this.variables[type2][key].value = value;
     this.notifyVariableChanged(type2, key);
   }
@@ -29100,6 +29101,7 @@ LIST OF INTEREST OBJECT:
       } else if (n.title === "Add Procedural Mesh") {
         const meshA = this.getValue(nodeId, "meshA");
         const meshB = this.getValue(nodeId, "meshB");
+        const rotationSpeed = this.getValue(nodeId, "rotationSpeed");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -29134,12 +29136,12 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+          app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
-            console.log(`%cADD PROC-OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            console.log(`%cADD PROC-OBJ ERROR GRAPH: ${err}`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           });
@@ -31575,7 +31577,7 @@ var MethodsManager = class {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:30%;
+      width:50%;
       height: 75%;
       z-index:999;
     `;
@@ -33837,7 +33839,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
-function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0, y: 0, z: 0 }, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = { mesh: path2 };
@@ -33851,7 +33853,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0
           z: pos2.z
         },
         rotation: rot2,
-        rotationSpeed,
+        rotationSpeed: rotationSpeed2,
         texturesPaths: [texturePath2],
         name: name2,
         mesh: m.mesh,
@@ -33869,11 +33871,12 @@ function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0
     downloadMeshes(inputCube, handler, { scale: scale4 });
   });
 }
-function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
     const RAY = { enabled: !!raycast2, radius: 1 };
-    engine.addMeshObj({
+    console.info("add cube form graph..");
+    engine.addProceduralMeshObj({
       material: { type: material },
       position: {
         x: pos2.x,
@@ -33881,7 +33884,7 @@ function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed = { x
         z: pos2.z
       },
       rotation: rot2,
-      rotationSpeed,
+      rotationSpeed: rotationSpeed2,
       texturesPaths: [texturePath2],
       name: name2,
       meshA: MeshMorpher[meshTypeA](1),
@@ -35190,7 +35193,6 @@ var MatrixEngineWGPU = class {
           this.applyCanvasSizeMobile(this.options.fastRender);
         }
       } else if (isMobile() == true) {
-        console.log("Just Apply screen or inner...", this.options.fastRender);
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
         canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if (this.options.fastRenderAlternative) {
@@ -35200,7 +35202,6 @@ var MatrixEngineWGPU = class {
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
-        console.log("Just INNER...");
       }
     } else {
       console.log("Apply custom W H");
@@ -35236,6 +35237,10 @@ var MatrixEngineWGPU = class {
       if (byId("msgBox")) byId("msgBox").style.left = "30%";
       mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
+      this.MEConfig.fsManager.onChange((isFS, target2) => {
+        console.log("GOT BACK FROM FS", isFS);
+        this.applyCanvasSizeMobile(this.options.fastRender);
+      });
       addEventListener("run_mobile_fs", () => {
         if (this.options.fastRender && !isNaN(this.options.fastRender)) {
           console.log("FastRender : ", this.options.fastRender);
@@ -36484,7 +36489,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Tutorial-2/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 299.34460239409304, "y": 127.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 637.34743397367, "y": 83.05620265702862, "title": "Add Procedural Mesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "meshA", "type": "string" }, { "name": "meshB", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "meshA", "value": "cube" }, { "key": "meshB", "value": "sphere" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "editorGen1" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }], "nodeCounter": 3, "linkCounter": 2, "pan": [-104, 236], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 299.34460239409304, "y": 127.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 571.34743397367, "y": 127.05620265702862, "title": "Add Procedural Mesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "meshA", "type": "string" }, { "name": "meshB", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "meshA", "value": "cube" }, { "key": "meshB", "value": "sphere" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "editorGen1" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_3": { "id": "node_3", "x": 990.2244984552017, "y": 307.98070127641563, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_13": { "id": "node_13", "title": "Comment", "x": 946.1295655868328, "y": 92.06977128451459, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "RAYCAST must be enabled for specific object ..." }] }, "node_17": { "id": "node_17", "title": "Get Number", "x": 1272.3062009050564, "y": 530.3769260669634, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_19": { "id": "node_19", "title": "Function", "x": 1499.3108705165866, "y": 300.2843325089999, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objName", "type": "any" }, { "name": "status", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "MyFirstFunc" }, "node_20": { "id": "node_20", "title": "if", "x": 2020.9859398846945, "y": 339.63190512342896, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 1512.19644410629, "y": 708.0117303758767, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_23": { "id": "node_23", "title": "Set Number", "x": 2364.4344941219106, "y": 552.461054422977, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }, { "key": "literal", "value": "1" }], "finished": true }, "node_24": { "id": "node_24", "title": "Print", "x": 2651.522025912863, "y": 253.4257749090538, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_25": { "id": "node_25", "title": "Print", "x": 2671.459612965746, "y": 507.40465614326183, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_26": { "id": "node_26", "title": "Get Number", "x": 2364.783994191486, "y": 367.82095494481075, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }], "isGetterNode": true, "displayEl": {} }, "node_27": { "id": "node_27", "title": "A != B", "x": 1750.0492131585943, "y": 547.8307308004491, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_28": { "id": "node_28", "title": "Set Number", "x": 2379.049150231602, "y": 171.67773765419605, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }, { "key": "literal", "value": 0 }], "finished": true } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_7", "from": { "node": "node_3", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_19", "pin": "exec" }, "type": "action" }, { "id": "link_8", "from": { "node": "node_3", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_19", "pin": "objName" }, "type": "any" }, { "id": "link_9", "from": { "node": "node_17", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_19", "pin": "status" }, "type": "any" }, { "id": "link_13", "from": { "node": "node_19", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_15", "from": { "node": "node_20", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_23", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_23", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_25", "pin": "exec" }, "type": "action" }, { "id": "link_18", "from": { "node": "node_26", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_24", "pin": "value" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_26", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_25", "pin": "value" }, "type": "any" }, { "id": "link_20", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_27", "pin": "B" }, "type": "any" }, { "id": "link_21", "from": { "node": "node_17", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_27", "pin": "A" }, "type": "any" }, { "id": "link_22", "from": { "node": "node_27", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_20", "pin": "condition" }, "type": "boolean" }, { "id": "link_23", "from": { "node": "node_20", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }, { "id": "link_24", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }], "nodeCounter": 29, "linkCounter": 25, "pan": [-2091, -58], "variables": { "number": { "STATUS_MORPH": 0, "ZERO": 0 }, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Tutorial-2/shader-graphs.js
 var shaderGraphsProdc = [
@@ -36548,6 +36553,15 @@ var app2 = new MatrixEngineWGPU(
         }
       });
     }, { scale: [25, 1, 25] });
+    setTimeout(() => {
+      app3.getSceneObjectByName("FLOOR").position.SetZ(-20);
+    }, 800);
+    setTimeout(() => {
+      app3.getSceneObjectByName("FLOOR").position.SetY(0);
+    }, 800);
+    setTimeout(() => {
+      app3.getSceneObjectByName("FLOOR").position.SetX(0);
+    }, 800);
   }
 );
 window.app = app2;

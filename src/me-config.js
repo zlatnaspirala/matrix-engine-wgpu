@@ -25,6 +25,7 @@ export const MEConfig = {
   FORCE_FULL_SCREEN: false,
 
   construct: function(options = {}) {
+
     if(urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
       console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
