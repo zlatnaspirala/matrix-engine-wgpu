@@ -281,10 +281,23 @@ export default class MatrixEngineWGPU {
     }
 
     if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
-      if(byId('msgBox')) byId('msgBox').style.left = '20%';
+      if(byId('msgBox')) byId('msgBox').style.left = '30%';
       mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
       addEventListener("run_mobile_fs", () => {
+
+        if(this.options.fastRender && !isNaN(this.options.fastRender)) {
+          // this.applyCanvasSize(this.options.fastRender);
+          console.log('FastRender : ', this.options.fastRender)
+          if(isMobile() == false) {
+            this.applyCanvasSize(this.options.fastRender)
+          } else {
+            this.applyCanvasSizeMobile(this.options.fastRender);
+            // canvas.width = screen.availWidth * this.options.fastRender;
+            // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
+          }
+        }
+
         // console.log('what iscallback ', callback)
         this.init({canvas, callback});
         meLoader.destroy();
@@ -1109,8 +1122,8 @@ export default class MatrixEngineWGPU {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      // if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
-      this.getTransformationMatrix(camera, now2);
+      if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      //this.getTransformationMatrix(camera, now2);
       camera.update();
 
       for(let i = 0;i < this.lightContainer.length;i++) {

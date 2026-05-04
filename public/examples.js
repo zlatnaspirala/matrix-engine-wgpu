@@ -3463,8 +3463,8 @@ var loadObjFile = function () {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
-      type: 'WASD',
-      // type: 'firstPersonCamera',
+      // type: 'WASD',
+      type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -3637,7 +3637,7 @@ var loadObjFile = function () {
         cam.setY(10);
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
-      }, 400);
+      }, 700);
     }
     loadObjFile.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
@@ -61414,10 +61414,22 @@ class MatrixEngineWGPU {
       });
     }
     if (this.options.fastRender && !isNaN(this.options.fastRender) && (0, _utils.isMobile)()) {
-      if ((0, _utils.byId)('msgBox')) (0, _utils.byId)('msgBox').style.left = '20%';
+      if ((0, _utils.byId)('msgBox')) (0, _utils.byId)('msgBox').style.left = '30%';
       _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       _utils.meLoader.create();
       addEventListener("run_mobile_fs", () => {
+        if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+          // this.applyCanvasSize(this.options.fastRender);
+          console.log('FastRender : ', this.options.fastRender);
+          if ((0, _utils.isMobile)() == false) {
+            this.applyCanvasSize(this.options.fastRender);
+          } else {
+            this.applyCanvasSizeMobile(this.options.fastRender);
+            // canvas.width = screen.availWidth * this.options.fastRender;
+            // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
+          }
+        }
+
         // console.log('what iscallback ', callback)
         this.init({
           canvas,
@@ -62527,8 +62539,8 @@ class MatrixEngineWGPU {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      // if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
-      this.getTransformationMatrix(camera, now2);
+      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      //this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
