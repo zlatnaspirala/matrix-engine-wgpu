@@ -91,7 +91,7 @@ export default class FluxCodexVertex {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
     });
-    this.saveGraphEvent = new CustomEvent('save-graph', {detail: {}});
+    this.saveGraphEvent = new CustomEvent('save-graph', {detail: { data: "payload" }, bubbles: true, cancelable: true});
     this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {detail: {}});
 
     this.clearRuntime = () => {
@@ -5126,7 +5126,8 @@ LIST OF INTEREST OBJECT:
 
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    this.saveGraphEvent.detail = d;
+    // ?
+    this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
     // this.log("Graph saved to LocalStorage and final script");
   }

@@ -22310,7 +22310,7 @@ var MEEditorClient = class {
       console.info("%cSave graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-graph",
-        graphData: e2.detail
+        graphData: e2.detail.data
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -25172,7 +25172,7 @@ var FluxCodexVertex = class {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: { nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null }
     });
-    this.saveGraphEvent = new CustomEvent("save-graph", { detail: {} });
+    this.saveGraphEvent = new CustomEvent("save-graph", { detail: { data: "payload" }, bubbles: true, cancelable: true });
     this.updateSceneContainerEvent = new CustomEvent("updateSceneContainer", { detail: {} });
     this.clearRuntime = () => {
       app.graphUpdate = () => {
@@ -29875,7 +29875,7 @@ LIST OF INTEREST OBJECT:
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    this.saveGraphEvent.detail = d;
+    this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
   }
   clearStorage() {
@@ -33869,37 +33869,34 @@ function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0
     downloadMeshes(inputCube, handler, { scale: scale4 });
   });
 }
-function addProceduralOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
-    const inputCube = { mesh: path2 };
-    function handler(m) {
-      const RAY = { enabled: !!raycast2, radius: 1 };
-      engine.addMeshObj({
-        material: { type: material },
-        position: {
-          x: pos2.x,
-          y: pos2.y,
-          z: pos2.z
-        },
-        rotation: rot2,
-        rotationSpeed,
-        texturesPaths: [texturePath2],
-        name: name2,
-        meshA: MeshMorpher[meshTypeA](1),
-        meshB: MeshMorpher[meshTypeB](1),
-        physics: {
-          scale: scale4,
-          enabled: isPhysicsBody2,
-          geometry: "Cube"
-        },
-        raycast: RAY
-      });
-      const o2 = app.getSceneObjectByName(name2);
-      runtimeCacheObjs.push(o2);
-      resolve(o2);
-    }
-    downloadMeshes(inputCube, handler, { scale: scale4 });
+    const RAY = { enabled: !!raycast2, radius: 1 };
+    engine.addMeshObj({
+      material: { type: material },
+      position: {
+        x: pos2.x,
+        y: pos2.y,
+        z: pos2.z
+      },
+      rotation: rot2,
+      rotationSpeed,
+      texturesPaths: [texturePath2],
+      name: name2,
+      meshA: MeshMorpher[meshTypeA](1),
+      meshB: MeshMorpher[meshTypeB](1),
+      physics: {
+        scale: scale4,
+        enabled: isPhysicsBody2,
+        geometry: "Cube"
+      },
+      raycast: RAY
+    });
+    const o2 = app.getSceneObjectByName(name2);
+    console.log(o2.name);
+    runtimeCacheObjs.push(o2);
+    resolve(o2);
   });
 }
 function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["./res/textures/slot/reel1.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
@@ -36487,29 +36484,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Tutorial-2/graph.js
-var graph_default = {
-  nodes: {
-    node_1: {
-      id: "node_1",
-      title: "onLoad",
-      x: 299.34460239409304,
-      y: 127.5731482201762,
-      category: "event",
-      inputs: [],
-      outputs: [{ name: "exec", type: "action" }]
-    }
-  },
-  links: [],
-  nodeCounter: 2,
-  linkCounter: 1,
-  pan: [0, 0],
-  variables: {
-    number: {},
-    boolean: {},
-    string: {},
-    object: {}
-  }
-};
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 299.34460239409304, "y": 127.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 637.34743397367, "y": 83.05620265702862, "title": "Add Procedural Mesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "meshA", "type": "string" }, { "name": "meshB", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "meshA", "value": "cube" }, { "key": "meshB", "value": "sphere" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/star1.png" }, { "key": "name", "value": "editorGen1" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }], "nodeCounter": 3, "linkCounter": 2, "pan": [-104, 236], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Tutorial-2/shader-graphs.js
 var shaderGraphsProdc = [

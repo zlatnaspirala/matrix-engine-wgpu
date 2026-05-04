@@ -421,7 +421,6 @@ export function addOBJ(
 }
 
 export function addProceduralOBJ(
-  path,
   material = "standard",
   pos,
   rot,
@@ -437,8 +436,7 @@ export function addProceduralOBJ(
 ) {
   return new Promise((resolve, reject) => {
     const engine = this;
-    const inputCube = {mesh: path};
-    function handler(m) {
+    // const inputCube = {mesh: path};
       const RAY = {enabled: !!raycast, radius: 1};
       // console.info('add cube form graph..')
       engine.addMeshObj({
@@ -461,32 +459,11 @@ export function addProceduralOBJ(
         },
         raycast: RAY
       });
-      // physicsPlayground.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 10, y: 15, z: -7},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher.capsule(1, 2, false),
-      //   meshB: MeshMorpher.cube(1),
-      //   name: `morph_1`,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Capsule",
-      //     mass: 1,
-      //     radius: 1.0,
-      //     height: 2.0
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // });
-      // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
-      // console.log(o.name);
+      console.log(o.name);
       runtimeCacheObjs.push(o);
       resolve(o);
-    }
-    downloadMeshes(inputCube, handler, {scale});
+    
   });
 }
 

@@ -204,7 +204,7 @@ export class MEEditorClient {
       console.info('%cSave graph <signal>', LOG_FUNNY_ARCADE);
       let o = {
         action: "save-graph",
-        graphData: e.detail
+        graphData: e.detail.data
       };
       o = JSON.stringify(o);
       this.ws.send(o);
