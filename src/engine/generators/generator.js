@@ -426,6 +426,8 @@ export function addProceduralOBJ(
   rot,
   texturePath,
   name,
+  meshTypeA = 'cube',
+  meshTypeB = 'sphere',
   isPhysicsBody = false,
   raycast = false,
   scale = [1, 1, 1],
@@ -448,8 +450,8 @@ export function addProceduralOBJ(
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: [texturePath],
         name: name,
-        meshA: MeshMorpher.capsule(1, 2, false),
-        meshB: MeshMorpher.cube(1),
+        meshA: MeshMorpher[meshTypeA](1),
+        meshB: MeshMorpher[meshTypeB](1),
         physics: {
           scale: scale,
           enabled: isPhysicsBody,
@@ -457,7 +459,6 @@ export function addProceduralOBJ(
         },
         raycast: RAY
       });
-
       // physicsPlayground.addProceduralMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 10, y: 15, z: -7},
@@ -486,7 +487,6 @@ export function addProceduralOBJ(
     downloadMeshes(inputCube, handler, {scale});
   });
 }
-
 
 export function physicsBodiesChain(
   material = "standard",

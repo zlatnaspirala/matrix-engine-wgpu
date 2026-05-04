@@ -1871,7 +1871,8 @@ export default class FluxCodexVertex {
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
-          {name: "path", type: "string"},
+          {name: "meshA", type: "string"},
+          {name: "meshB", type: "string"},
           {name: "material", type: "string"},
           {name: "pos", type: "object"},
           {name: "rot", type: "object"},
@@ -1888,12 +1889,13 @@ export default class FluxCodexVertex {
           {name: "error", type: "action"}
         ],
         fields: [
-          {key: "path", value: "res/meshes/blender/cube.obj"},
+          {key: "meshA", value: "cube"},
+          {key: "meshB", value: "sphere"},
           {key: "material", value: "standard"},
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
           {key: "texturePath", value: "res/textures/star1.png"},
-          {key: "name", value: "TEST"},
+          {key: "name", value: "editorGen1"},
           {key: "raycast", value: true},
           {key: "scale", value: [1, 1, 1]},
           {key: "isPhysicsBody", type: false},
@@ -4286,7 +4288,8 @@ LIST OF INTEREST OBJECT:
         return;
       }
       else if(n.title === "Add Procedural Mesh") {
-        const path = this.getValue(nodeId, "path");
+        const meshA = this.getValue(nodeId, "meshA");
+        const meshB = this.getValue(nodeId, "meshB");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -4303,19 +4306,19 @@ LIST OF INTEREST OBJECT:
         if(typeof pos == 'string') eval("pos = " + pos);
         if(typeof rot == 'string') eval("rot = " + rot);
         if(typeof scale == 'string') eval("scale = " + scale);
-        if(!texturePath || !path) {
+        if(!texturePath || !meshA) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
           return;
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
-            console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            console.log(`%cADD PROC-OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           })
