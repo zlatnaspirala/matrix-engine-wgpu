@@ -793,12 +793,9 @@ export default class EditorHud {
       if(confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      console.log(features);
+      // console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
-        detail: {
-          name: name,
-          features: features
-        }
+        detail: {name: name, features: features}
       }));
     });
 
