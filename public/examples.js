@@ -28436,7 +28436,11 @@ function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePat
 
 // universal (both physics and non physics objects)
 // app.editorAddOBJ(mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj
-function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhysicsBody = false, raycast = false, scale = [1, 1, 1], isInstancedObj = false) {
+function addOBJ(path, material = "standard", pos, rot, rotationSpeed = {
+  x: 0,
+  y: 0,
+  z: 0
+}, texturePath, name, isPhysicsBody = false, raycast = false, scale = [1, 1, 1], isInstancedObj = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = {
@@ -28458,11 +28462,7 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
           z: pos.z
         },
         rotation: rot,
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
+        rotationSpeed: rotationSpeed,
         texturesPaths: [texturePath],
         name: name,
         mesh: m.mesh,
@@ -28484,73 +28484,46 @@ function addOBJ(path, material = "standard", pos, rot, texturePath, name, isPhys
     });
   });
 }
-function addProceduralOBJ(path, material = "standard", pos, rot, texturePath, name, isPhysicsBody = false, raycast = false, scale = [1, 1, 1], isInstancedObj = false) {
+function addProceduralOBJ(material = "standard", pos, rot, rotationSpeed = {
+  x: 0,
+  y: 0,
+  z: 0
+}, texturePath, name, meshTypeA = 'cube', meshTypeB = 'sphere', isPhysicsBody = false, raycast = false, scale = [1, 1, 1], isInstancedObj = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
-    const inputCube = {
-      mesh: path
+    // const inputCube = {mesh: path};
+    const RAY = {
+      enabled: !!raycast,
+      radius: 1
     };
-    function handler(m) {
-      const RAY = {
-        enabled: !!raycast,
-        radius: 1
-      };
-      // console.info('add cube form graph..')
-      engine.addMeshObj({
-        material: {
-          type: material
-        },
-        position: {
-          x: pos.x,
-          y: pos.y,
-          z: pos.z
-        },
-        rotation: rot,
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: [texturePath],
-        name: name,
-        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2, false),
-        meshB: _proceduralMesh.MeshMorpher.cube(1),
-        physics: {
-          scale: scale,
-          enabled: isPhysicsBody,
-          geometry: "Cube"
-        },
-        raycast: RAY
-      });
-
-      // physicsPlayground.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 10, y: 15, z: -7},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher.capsule(1, 2, false),
-      //   meshB: MeshMorpher.cube(1),
-      //   name: `morph_1`,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Capsule",
-      //     mass: 1,
-      //     radius: 1.0,
-      //     height: 2.0
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // });
-      // const b = app.matrixPhysics.getBodyByName(name);
-      const o = app.getSceneObjectByName(name);
-      // console.log(o.name);
-      _fluxCodexVertex.runtimeCacheObjs.push(o);
-      resolve(o);
-    }
-    (0, _loaderObj.downloadMeshes)(inputCube, handler, {
-      scale
+    console.info('add cube form graph..');
+    engine.addProceduralMeshObj({
+      material: {
+        type: material
+      },
+      position: {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z
+      },
+      rotation: rot,
+      rotationSpeed: rotationSpeed,
+      texturesPaths: [texturePath],
+      name: name,
+      meshA: _proceduralMesh.MeshMorpher[meshTypeA](1),
+      meshB: _proceduralMesh.MeshMorpher[meshTypeB](1),
+      scale: scale,
+      physics: {
+        scale: scale,
+        enabled: isPhysicsBody,
+        geometry: "Cube"
+      },
+      raycast: RAY
     });
+    const o = app.getSceneObjectByName(name);
+    console.log(o.name);
+    _fluxCodexVertex.runtimeCacheObjs.push(o);
+    resolve(o);
   });
 }
 function physicsBodiesChain(material = "standard", pos = {
@@ -39592,7 +39565,6 @@ class ProceduralMeshObj extends _materials.default {
     }
   }
   morphTo(targetBlend, duration = 1000, onComplete) {
-    const safeDuration = Math.max(duration, 100);
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
@@ -39602,7 +39574,7 @@ class ProceduralMeshObj extends _materials.default {
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = safeDuration;
+    this.morphAnimation.duration = duration;
     this.morphAnimation.elapsed = 0;
     if (this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
@@ -49079,7 +49051,7 @@ class MEEditorClient {
       console.info('%cSave graph <signal>', _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "save-graph",
-        graphData: e.detail
+        graphData: e.detail.data
       };
       o = JSON.stringify(o);
       this.ws.send(o);
@@ -50058,7 +50030,8 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add OBJ</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
@@ -52914,7 +52887,11 @@ class FluxCodexVertex {
       }
     });
     this.saveGraphEvent = new CustomEvent('save-graph', {
-      detail: {}
+      detail: {
+        data: "payload"
+      },
+      bubbles: true,
+      cancelable: true
     });
     this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {
       detail: {}
@@ -53174,7 +53151,11 @@ class FluxCodexVertex {
           this.evaluateGetterNode(n);
           if (n.displayEl) {
             const val = n._returnCache;
-            if (type === "object") n.displayEl.textContent = JSON.stringify(val, null, 2);else if (type === "number") n.displayEl.textContent = val.toFixed(3);else n.displayEl.textContent = String(val);
+            if (type === "object") n.displayEl.textContent = JSON.stringify(val, null, 2);else if (type === "number") {
+              if (val) n.displayEl.textContent = val.toFixed(3);else n.displayEl.textContent = this.variables[type][key];
+            } else {
+              if (val) n.displayEl.textContent = String(val);else n.displayEl.textContent = this.variables[type][key];
+            }
           }
         }
       }
@@ -53692,12 +53673,12 @@ class FluxCodexVertex {
     const args = this.getArgNames(fn);
     args.forEach(arg => node.inputs.push({
       name: arg,
-      type: "value"
+      type: "any"
     }));
     // Dynamic return pin
     if (this.hasReturn(fn)) node.outputs.push({
       name: "return",
-      type: "value"
+      type: "any"
     });
 
     // test 
@@ -54513,7 +54494,7 @@ class FluxCodexVertex {
           value: '{x:0, y:0, z:0}'
         }, {
           key: "texturePath",
-          value: "res/textures/star1.png"
+          value: "res/textures/default.png"
         }, {
           key: "name",
           value: "TEST"
@@ -54593,7 +54574,7 @@ class FluxCodexVertex {
           value: '{x:0, y:0, z:0}'
         }, {
           key: "texturePath",
-          value: "res/textures/star1.png"
+          value: "res/textures/default.png"
         }, {
           key: "name",
           value: "TEST"
@@ -54679,7 +54660,7 @@ class FluxCodexVertex {
           value: '{x:0, y:0, z:0}'
         }, {
           key: "texturePath",
-          value: "res/textures/star1.png"
+          value: "res/textures/default.png"
         }, {
           key: "name",
           value: "TEST"
@@ -54726,6 +54707,9 @@ class FluxCodexVertex {
           name: "rot",
           type: "object"
         }, {
+          name: "rotSpeed",
+          type: "object"
+        }, {
           name: "texturePath",
           type: "string"
         }, {
@@ -54767,8 +54751,11 @@ class FluxCodexVertex {
           key: "rot",
           value: '{x:0, y:0, z:0}'
         }, {
+          key: "rotSpeed",
+          value: '{x:0, y:0, z:0}'
+        }, {
           key: "texturePath",
-          value: "res/textures/star1.png"
+          value: "res/textures/default.png"
         }, {
           key: "name",
           value: "TEST"
@@ -54800,7 +54787,10 @@ class FluxCodexVertex {
           name: "exec",
           type: "action"
         }, {
-          name: "path",
+          name: "meshA",
+          type: "string"
+        }, {
+          name: "meshB",
           type: "string"
         }, {
           name: "material",
@@ -54810,6 +54800,9 @@ class FluxCodexVertex {
           type: "object"
         }, {
           name: "rot",
+          type: "object"
+        }, {
+          name: "rotSpeed",
           type: "object"
         }, {
           name: "texturePath",
@@ -54841,8 +54834,11 @@ class FluxCodexVertex {
           type: "action"
         }],
         fields: [{
-          key: "path",
-          value: "res/meshes/blender/cube.obj"
+          key: "meshA",
+          value: "cube"
+        }, {
+          key: "meshB",
+          value: "sphere"
         }, {
           key: "material",
           value: "standard"
@@ -54853,11 +54849,14 @@ class FluxCodexVertex {
           key: "rot",
           value: '{x:0, y:0, z:0}'
         }, {
+          key: "rotSpeed",
+          value: '{x:0, y:0, z:0}'
+        }, {
           key: "texturePath",
-          value: "res/textures/star1.png"
+          value: "res/textures/default.png"
         }, {
           key: "name",
-          value: "TEST"
+          value: "editorGen1"
         }, {
           key: "raycast",
           value: true
@@ -57049,6 +57048,7 @@ LIST OF INTEREST OBJECT:
   }
   setVariable(type, key, value) {
     if (!this.variables[type][key]) return;
+    console.log('Test -setVariable  value', value);
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
   }
@@ -58128,7 +58128,9 @@ LIST OF INTEREST OBJECT:
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Add Procedural Mesh") {
-        const path = this.getValue(nodeId, "path");
+        const meshA = this.getValue(nodeId, "meshA");
+        const meshB = this.getValue(nodeId, "meshB");
+        const rotationSpeed = this.getValue(nodeId, "rotationSpeed");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -58157,19 +58159,31 @@ LIST OF INTEREST OBJECT:
         if (typeof pos == 'string') eval("pos = " + pos);
         if (typeof rot == 'string') eval("rot = " + rot);
         if (typeof scale == 'string') eval("scale = " + scale);
-        if (!texturePath || !path) {
+        if (!texturePath || !meshA) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
           return;
         }
         const createdField = n.fields.find(f => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then(object => {
+          // material = "standard",
+          // pos,
+          // rot,
+          // rotationSpeed = {x: 0, y: 0, z: 0},
+          // texturePath,
+          // name,
+          // meshTypeA = 'cube',
+          // meshTypeB = 'sphere',
+          // isPhysicsBody = false,
+          // raycast = false,
+          // scale = [1, 1, 1],
+          // isInstancedObj = false
+          app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then(object => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch(err => {
-            console.log(`%cADD OBJ ERROR GRAPH!`, _utils.LOG_FUNNY_ARCADE);
+            console.log(`%cADD PROC-OBJ ERROR GRAPH: ${err}`, _utils.LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           });
@@ -58922,7 +58936,8 @@ LIST OF INTEREST OBJECT:
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    this.saveGraphEvent.detail = d;
+    // ?
+    this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
     // this.log("Graph saved to LocalStorage and final script");
   }
@@ -59441,7 +59456,7 @@ class EditorHud {
         // let name = prompt("📦 GLB file : ", getPATH);
         // instanced is standard - top level sceneobj CLASS ...
         let objName = prompt(`Path: ${getPATH} \n 📦 Enter Uniq Name: `);
-        if (confirm("⚛ Enable physics (Ammo)?")) {
+        if (confirm("⚛ Enable physics for current body ?")) {
           // infly
           let o = {
             physics: true,
@@ -59464,7 +59479,7 @@ class EditorHud {
         }
       } else if (ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
         let objName = prompt("📦 Enter uniq name: ");
-        if (confirm("⚛ Enable physics (Ammo)?")) {
+        if (confirm("⚛ Enable physics for currect object?")) {
           // infly 
           let o = {
             physics: true,
@@ -59735,8 +59750,10 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo)?")) {
+      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
@@ -60134,7 +60151,7 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo)?")) {
+      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
@@ -60910,7 +60927,7 @@ class MethodsManager {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:30%;
+      width:50%;
       height: 75%;
       z-index:999;
     `;
@@ -61345,17 +61362,14 @@ class MatrixEngineWGPU {
     this.canvas = canvas;
     if (this.options.canvasSize == 'fullscreen') {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-        // this.applyCanvasSize(this.options.fastRender);
         console.log('FastRender : ', this.options.fastRender);
         if ((0, _utils.isMobile)() == false) {
           this.applyCanvasSize(this.options.fastRender);
         } else {
           this.applyCanvasSizeMobile(this.options.fastRender);
-          // canvas.width = screen.availWidth * this.options.fastRender;
-          // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
         }
       } else if ((0, _utils.isMobile)() == true) {
-        console.log('Just Apply screen or inner...', this.options.fastRender);
+        // console.log('Just Apply screen or inner...', this.options.fastRender)
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : screen.availWidth;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if (this.options.fastRenderAlternative) {
@@ -61365,7 +61379,7 @@ class MatrixEngineWGPU {
       } else {
         canvas.width = (0, _utils.isMobile)() == false ? window.innerWidth : window.innerWidth;
         canvas.height = (0, _utils.isMobile)() == false ? window.innerHeight : window.innerHeight;
-        console.log('Just INNER...');
+        // console.log('Just INNER...');
       }
     } else {
       console.log('Apply custom W H');
@@ -61417,19 +61431,19 @@ class MatrixEngineWGPU {
       if ((0, _utils.byId)('msgBox')) (0, _utils.byId)('msgBox').style.left = '30%';
       _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       _utils.meLoader.create();
+      this.MEConfig.fsManager.onChange((isFS, target) => {
+        console.log('GOT BACK FROM FS', isFS);
+        this.applyCanvasSizeMobile(this.options.fastRender);
+      });
       addEventListener("run_mobile_fs", () => {
         if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-          // this.applyCanvasSize(this.options.fastRender);
           console.log('FastRender : ', this.options.fastRender);
           if ((0, _utils.isMobile)() == false) {
             this.applyCanvasSize(this.options.fastRender);
           } else {
             this.applyCanvasSizeMobile(this.options.fastRender);
-            // canvas.width = screen.availWidth * this.options.fastRender;
-            // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
           }
         }
-
         // console.log('what iscallback ', callback)
         this.init({
           canvas,
