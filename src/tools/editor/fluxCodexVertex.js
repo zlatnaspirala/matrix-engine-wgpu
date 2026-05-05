@@ -359,9 +359,13 @@ export default class FluxCodexVertex {
             const val = n._returnCache;
             if(type === "object")
               n.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if(type === "number")
-              n.displayEl.textContent = val.toFixed(3);
-            else n.displayEl.textContent = String(val);
+            else if(type === "number") {
+              if (val) n.displayEl.textContent = val.toFixed(3);
+              else n.displayEl.textContent = this.variables[type][key];
+            } else {
+              if (val) n.displayEl.textContent = String(val);
+              else n.displayEl.textContent = this.variables[type][key];
+            }
           }
         }
       }

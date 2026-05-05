@@ -25897,8 +25897,8 @@ var FluxCodexVertex = class {
     node2.inputs = [{ name: "exec", type: "action" }];
     node2.outputs = [{ name: "execOut", type: "action" }];
     const args2 = this.getArgNames(fn);
-    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "value" }));
-    if (this.hasReturn(fn)) node2.outputs.push({ name: "return", type: "value" });
+    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "any" }));
+    if (this.hasReturn(fn)) node2.outputs.push({ name: "return", type: "any" });
     node2.outputs.push({ name: "reference", type: "function" });
     node2.attachedMethod = methodItem.name;
     node2.fn = fn;
@@ -28093,6 +28093,7 @@ LIST OF INTEREST OBJECT:
   }
   setVariable(type2, key, value) {
     if (!this.variables[type2][key]) return;
+    console.log("Test -setVariable  value", value);
     this.variables[type2][key].value = value;
     this.notifyVariableChanged(type2, key);
   }
@@ -29100,6 +29101,7 @@ LIST OF INTEREST OBJECT:
       } else if (n.title === "Add Procedural Mesh") {
         const meshA = this.getValue(nodeId, "meshA");
         const meshB = this.getValue(nodeId, "meshB");
+        const rotationSpeed = this.getValue(nodeId, "rotationSpeed");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -29134,12 +29136,12 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+          app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
-            console.log(`%cADD PROC-OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            console.log(`%cADD PROC-OBJ ERROR GRAPH: ${err}`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           });
@@ -31575,7 +31577,7 @@ var MethodsManager = class {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:30%;
+      width:50%;
       height: 75%;
       z-index:999;
     `;
@@ -33837,7 +33839,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
-function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0, y: 0, z: 0 }, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = { mesh: path2 };
@@ -33851,7 +33853,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0
           z: pos2.z
         },
         rotation: rot2,
-        rotationSpeed,
+        rotationSpeed: rotationSpeed2,
         texturesPaths: [texturePath2],
         name: name2,
         mesh: m.mesh,
@@ -33869,11 +33871,12 @@ function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed = { x: 0
     downloadMeshes(inputCube, handler, { scale: scale4 });
   });
 }
-function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
     const RAY = { enabled: !!raycast2, radius: 1 };
-    engine.addMeshObj({
+    console.info("add cube form graph..");
+    engine.addProceduralMeshObj({
       material: { type: material },
       position: {
         x: pos2.x,
@@ -33881,7 +33884,7 @@ function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed = { x
         z: pos2.z
       },
       rotation: rot2,
-      rotationSpeed,
+      rotationSpeed: rotationSpeed2,
       texturesPaths: [texturePath2],
       name: name2,
       meshA: MeshMorpher[meshTypeA](1),
@@ -35190,7 +35193,6 @@ var MatrixEngineWGPU = class {
           this.applyCanvasSizeMobile(this.options.fastRender);
         }
       } else if (isMobile() == true) {
-        console.log("Just Apply screen or inner...", this.options.fastRender);
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
         canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if (this.options.fastRenderAlternative) {
@@ -35200,7 +35202,6 @@ var MatrixEngineWGPU = class {
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
-        console.log("Just INNER...");
       }
     } else {
       console.log("Apply custom W H");
@@ -35236,6 +35237,10 @@ var MatrixEngineWGPU = class {
       if (byId("msgBox")) byId("msgBox").style.left = "30%";
       mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
+      this.MEConfig.fsManager.onChange((isFS, target2) => {
+        console.log("GOT BACK FROM FS", isFS);
+        this.applyCanvasSizeMobile(this.options.fastRender);
+      });
       addEventListener("run_mobile_fs", () => {
         if (this.options.fastRender && !isNaN(this.options.fastRender)) {
           console.log("FastRender : ", this.options.fastRender);

@@ -25392,9 +25392,13 @@ var FluxCodexVertex = class {
             const val = n2._returnCache;
             if (type2 === "object")
               n2.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if (type2 === "number")
-              n2.displayEl.textContent = val.toFixed(3);
-            else n2.displayEl.textContent = String(val);
+            else if (type2 === "number") {
+              if (val) n2.displayEl.textContent = val.toFixed(3);
+              else n2.displayEl.textContent = this.variables[type2][key];
+            } else {
+              if (val) n2.displayEl.textContent = String(val);
+              else n2.displayEl.textContent = this.variables[type2][key];
+            }
           }
         }
       }
