@@ -627,7 +627,6 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   morphTo(targetBlend, duration = 1000, onComplete) {
-    const safeDuration = Math.max(duration, 100);
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend))
@@ -637,7 +636,7 @@ export default class ProceduralMeshObj extends Materials {
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = safeDuration;
+    this.morphAnimation.duration = duration;
     this.morphAnimation.elapsed = 0;
     if(this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);

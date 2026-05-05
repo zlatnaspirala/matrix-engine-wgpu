@@ -452,6 +452,7 @@ export function addProceduralOBJ(
         name: name,
         meshA: MeshMorpher[meshTypeA](1),
         meshB: MeshMorpher[meshTypeB](1),
+        scale: scale,
         physics: {
           scale: scale,
           enabled: isPhysicsBody,
