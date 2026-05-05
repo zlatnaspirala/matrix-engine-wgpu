@@ -30221,7 +30221,7 @@ var EditorHud = class {
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt(`Path: ${getPATH} 
  \u{1F4E6} Enter Uniq Name: `);
-        if (confirm("\u269B Enable physics (Ammo)?")) {
+        if (confirm("\u269B Enable physics for current body ?")) {
           let o2 = {
             physics: true,
             path: getPATH,
@@ -30238,7 +30238,7 @@ var EditorHud = class {
         }
       } else if (ext == "obj" && confirm("OBJ FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt("\u{1F4E6} Enter uniq name: ");
-        if (confirm("\u269B Enable physics (Ammo)?")) {
+        if (confirm("\u269B Enable physics for currect object?")) {
           let o2 = {
             physics: true,
             path: getPATH,
@@ -30498,8 +30498,10 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
+      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
@@ -30852,7 +30854,7 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
+      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {

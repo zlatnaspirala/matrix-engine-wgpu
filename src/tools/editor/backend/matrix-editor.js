@@ -224,10 +224,11 @@ import {addRaycastsListener} from "../../src/engine/raycast.js";
 `;
 }
 
-function CBoptions(p, n, pName) {
+// ammo is default
+function CBoptions(p, n, pName, physicsLib) {
   return `
   {
-  ${p ? '' : 'dontUsePhysics: true,'}
+  ${p ? physicsLib == 1 ? 'useJolt: true,' : physicsLib == 3 ? 'useCannon: true,' : '' : 'dontUsePhysics: true,'}
   useEditor: true,
   projectType: "created from editor",
   ${pName ? `projectName: '${pName}',` : ""}
@@ -236,7 +237,7 @@ function CBoptions(p, n, pName) {
     type: 'WASD',
     responseCoef: 1000
   },
-  clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
+  clearColor: {r: 0, b: 0, g: 0, a: 1}
 }
   `;
 }
@@ -269,7 +270,7 @@ async function cnp(ws, msg) {
   }
 
   content.addLine(`let app = new MatrixEngineWGPU(`);
-  content.addLine(CBoptions(p, n, msg.name));
+  content.addLine(CBoptions(p, n, msg.name, msg.features.physicsLib));
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('PhysicsReady', async () => { `);
 

@@ -25392,9 +25392,13 @@ var FluxCodexVertex = class {
             const val = n2._returnCache;
             if (type2 === "object")
               n2.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if (type2 === "number")
-              n2.displayEl.textContent = val.toFixed(3);
-            else n2.displayEl.textContent = String(val);
+            else if (type2 === "number") {
+              if (val) n2.displayEl.textContent = val.toFixed(3);
+              else n2.displayEl.textContent = this.variables[type2][key];
+            } else {
+              if (val) n2.displayEl.textContent = String(val);
+              else n2.displayEl.textContent = this.variables[type2][key];
+            }
           }
         }
       }
@@ -26562,7 +26566,7 @@ var FluxCodexVertex = class {
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "geometry", value: "Cube" },
           { key: "raycast", value: true },
@@ -26599,7 +26603,7 @@ var FluxCodexVertex = class {
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "size", value: "10x3" },
           { key: "raycast", value: true },
@@ -26638,7 +26642,7 @@ var FluxCodexVertex = class {
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "levels", value: "5" },
           { key: "raycast", value: true },
@@ -26680,7 +26684,7 @@ var FluxCodexVertex = class {
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "rotSpeed", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
@@ -26723,7 +26727,7 @@ var FluxCodexVertex = class {
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "rotSpeed", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "editorGen1" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
@@ -30217,7 +30221,7 @@ var EditorHud = class {
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt(`Path: ${getPATH} 
  \u{1F4E6} Enter Uniq Name: `);
-        if (confirm("\u269B Enable physics (Ammo)?")) {
+        if (confirm("\u269B Enable physics for current body ?")) {
           let o2 = {
             physics: true,
             path: getPATH,
@@ -30234,7 +30238,7 @@ var EditorHud = class {
         }
       } else if (ext == "obj" && confirm("OBJ FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt("\u{1F4E6} Enter uniq name: ");
-        if (confirm("\u269B Enable physics (Ammo)?")) {
+        if (confirm("\u269B Enable physics for currect object?")) {
           let o2 = {
             physics: true,
             path: getPATH,
@@ -30494,8 +30498,10 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
+      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
@@ -30848,7 +30854,7 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
+      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
@@ -32898,7 +32904,6 @@ var ProceduralMeshObj = class extends Materials {
     }
   }
   morphTo(targetBlend, duration = 1e3, onComplete) {
-    const safeDuration = Math.max(duration, 100);
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
@@ -32908,7 +32913,7 @@ var ProceduralMeshObj = class extends Materials {
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = safeDuration;
+    this.morphAnimation.duration = duration;
     this.morphAnimation.elapsed = 0;
     if (this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
@@ -33889,6 +33894,7 @@ function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { 
       name: name2,
       meshA: MeshMorpher[meshTypeA](1),
       meshB: MeshMorpher[meshTypeB](1),
+      scale: scale4,
       physics: {
         scale: scale4,
         enabled: isPhysicsBody2,

@@ -40,7 +40,7 @@ export default class EditorHud {
         // let name = prompt("📦 GLB file : ", getPATH);
         // instanced is standard - top level sceneobj CLASS ...
         let objName = prompt(`Path: ${getPATH} \n 📦 Enter Uniq Name: `);
-        if(confirm("⚛ Enable physics (Ammo)?")) {
+        if(confirm("⚛ Enable physics for current body ?")) {
           // infly
           let o = {
             physics: true,
@@ -59,7 +59,7 @@ export default class EditorHud {
         }
       } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
         let objName = prompt("📦 Enter uniq name: ");
-        if(confirm("⚛ Enable physics (Ammo)?")) {
+        if(confirm("⚛ Enable physics for currect object?")) {
           // infly 
           let o = {
             physics: true,
@@ -353,8 +353,10 @@ export default class EditorHud {
         networking: false
       };
 
-      if(confirm("⚛ Enable physics (Ammo)?")) {
+      if(confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
 
       if(confirm("🔌 Enable networking (kurento/ov)?")) {
@@ -381,7 +383,7 @@ export default class EditorHud {
       console.log("Go to editorX landing page...");
       location.href = 'matrix-engine.html';
     };
-    
+
 
     // byId('start-prod-build').onclick = () => {
     //   //
@@ -574,7 +576,7 @@ export default class EditorHud {
       document.head.appendChild(style);
     }
     const setMode = (e) => {
-      if (byId('graph-status'). innerHTML !== "⚫") return;
+      if(byId('graph-status').innerHTML !== "⚫") return;
       let m = parseInt(e.target.getAttribute("data-mode"));
       dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: m}}))
       if(m == 0) {
@@ -782,7 +784,7 @@ export default class EditorHud {
         networking: false
       };
 
-      if(confirm("⚛ Enable physics (Ammo)?")) {
+      if(confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
       }
 
@@ -1104,7 +1106,7 @@ class SceneObjectProperty {
           }
         })
       } else if(propName == "itIsPhysicsBody") {
-        if (!this.core.matrixPhysics) return;
+        if(!this.core.matrixPhysics) return;
         let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for(let key in body) {
           if(typeof body[key] === 'string') {
