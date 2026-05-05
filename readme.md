@@ -49,9 +49,9 @@ HOT: For 1.1x.0 Firefox not FIXED Render
 ## Roadmap
 
 - (Preparing API DOCs)[https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API]
-- 🎯 Test linux OS -> Editor creates and manages files internally (Windows tested only!)
-- 🎯 Improve gizmo feature
-- 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`
+- 🎯 Test linux OS -> Editor creates and manages files internally.
+- 🎯 Improve gizmo feature.
+- 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`.
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
 - Add fully physics options. soft bodies etc...
 
