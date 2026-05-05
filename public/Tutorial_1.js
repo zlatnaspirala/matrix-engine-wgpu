@@ -4,6 +4,437 @@ var __export = (target, all) => {
     __defProp(target, name2, { get: all[name2], enumerable: true });
 };
 
+// ../../../engine/utils.js
+var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
+var MeshType = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 };
+function isMobile() {
+  if (supportsTouch == true) return true;
+  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+  return toMatch.some((toMatchItem) => {
+    return navigator.userAgent.match(toMatchItem);
+  });
+}
+function degToRad(degrees) {
+  return degrees * Math.PI / 180;
+}
+function radToDeg(r2) {
+  var pi = Math.PI;
+  return r2 * (180 / pi);
+}
+function OSCILLATOR(min2, max2, step, options2) {
+  if (min2 == null || max2 == null || step == null) {
+    console.log("OSCILLATOR ERROR");
+    return;
+  }
+  var ROOT = this;
+  this.min0 = parseFloat(min2);
+  this.max0 = parseFloat(max2);
+  this.min = this.min0;
+  this.max = this.max0;
+  this.step = parseFloat(step);
+  this.value_ = this.min;
+  this.status = 0;
+  options2 = options2 || {};
+  this.regime = options2.regime || "pingpong";
+  this.resist = parseFloat(options2.resist) || 0;
+  this.resistMode = options2.resistMode || "linear";
+  this.stopEpsilon = options2.stopEpsilon || 0;
+  this.useDelta = options2.useDelta || false;
+  this.on_maximum_value = function() {
+  };
+  this.on_minimum_value = function() {
+  };
+  this.on_stop = function() {
+  };
+  this._applyResist = function() {
+    if (this.resist <= 0) return;
+    var range = this.max - this.min;
+    if (range <= 0) return;
+    var shrink;
+    if (this.resistMode === "exp") {
+      shrink = range * this.resist;
+    } else {
+      shrink = (this.max0 - this.min0) * this.resist;
+    }
+    this.min += shrink;
+    this.max -= shrink;
+    if (this.min > this.max) {
+      var c = (this.min + this.max) * 0.5;
+      this.min = this.max = c;
+    }
+  };
+  this.UPDATE = function(delta) {
+    var s = this.step;
+    if (this.useDelta && delta !== void 0) {
+      s = s * delta;
+    }
+    switch (this.regime) {
+      // ===== PING-PONG =====
+      case "pingpong":
+        if (this.status === 0) {
+          this.value_ += s;
+          if (this.value_ >= this.max) {
+            this.value_ = this.max;
+            this.status = 1;
+            ROOT.on_maximum_value();
+          }
+        } else {
+          this.value_ -= s;
+          if (this.value_ <= this.min) {
+            this.value_ = this.min;
+            this.status = 0;
+            this._applyResist();
+            ROOT.on_minimum_value();
+          }
+        }
+        break;
+      // ===== ONLY MIN → MAX =====
+      case "onlyFromMinToMax":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.min;
+          this._applyResist();
+          ROOT.on_maximum_value();
+        }
+        break;
+      // ===== MAX → MIN =====
+      case "fromMaxToMin":
+        this.value_ -= s;
+        if (this.value_ <= this.min) {
+          this.value_ = this.max;
+          this._applyResist();
+          ROOT.on_minimum_value();
+        }
+        break;
+      // ===== ONE SHOT =====
+      case "oneShot":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.max;
+          ROOT.on_stop();
+        }
+        break;
+      // ===== SPRING TO CENTER =====
+      case "springCenter":
+        var center = (this.min + this.max) * 0.5;
+        var force = (center - this.value_) * this.resist;
+        this.value_ += force + s;
+        if (Math.abs(center - this.value_) < this.stopEpsilon) {
+          this.value_ = center;
+          ROOT.on_stop();
+        }
+        break;
+    }
+    if (this.stopEpsilon > 0) {
+      if (this.max - this.min < this.stopEpsilon) {
+        ROOT.on_stop();
+      }
+    }
+    return this.value_;
+  };
+}
+var byId = function(id2) {
+  return document.getElementById(id2);
+};
+function randomFloatFromTo(min2, max2) {
+  return Math.random() * (max2 - min2) + min2;
+}
+var urlQuery = (function() {
+  var query_string = {};
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  for (var i = 0; i < vars.length; i++) {
+    var pair = vars[i].split("=");
+    if (typeof query_string[pair[0]] === "undefined") {
+      query_string[pair[0]] = decodeURIComponent(pair[1]);
+    } else if (typeof query_string[pair[0]] === "string") {
+      var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
+      query_string[pair[0]] = arr;
+    } else {
+      query_string[pair[0]].push(decodeURIComponent(pair[1]));
+    }
+  }
+  return query_string;
+})();
+var LOG_WARN = "background: gray; color: yellow; font-size:10px";
+var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
+var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+var LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+var LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
+var LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
+function genName(length2) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result2 = "";
+  for (let i = 0; i < length2; i++) {
+    result2 += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result2;
+}
+var meLoader = {
+  create: function(callback) {
+    const loader = document.createElement("div");
+    loader.id = "loader";
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      zIndex: 9999,
+      background: "#000000ff",
+      fontFamily: "Orbitron, sans-serif",
+      cursor: "url(./res/icons/default.png) 0 0, auto"
+    });
+    loader.innerHTML = `
+  <div style="
+    font-size: 42px;
+    width: 50vw;
+    margin-top: -15%;
+    font-weight: 900;
+    color: #00ffff;
+    letter-spacing: 4px;
+    text-align: center;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 20px #00ffff,
+      0 0 40px #00ffff;
+    animation: glowPulse 1.5s infinite alternate;
+  ">
+    RUN MEWGPU
+  </div>
+
+  <style>
+    @keyframes glowPulse {
+      from {
+        transform: scale(1);
+        text-shadow:
+          0 0 5px #00ffff,
+          0 0 10px #00ffff,
+          0 0 20px #00ffff;
+      }
+      to {
+        transform: scale(1.05);
+        text-shadow:
+          0 0 10px #00ffff,
+          0 0 20px #00ffff,
+          0 0 40px #00ffff,
+          0 0 80px #00ffff;
+      }
+    }
+  </style>
+`;
+    if (callback) loader.addEventListener("click", callback);
+    document.body.appendChild(loader);
+  },
+  destroy: function() {
+    if (byId("loader")) document.body.removeChild(byId("loader"));
+  }
+};
+var mb = {
+  root: () => byId("msgBox"),
+  pContent: () => byId("not-content"),
+  copy: function() {
+    navigator.clipboard.writeText(mb.root().children[0].innerText);
+  },
+  c: 0,
+  ic: 0,
+  t: {},
+  setContent: function(content, t) {
+    var iMsg = document.createElement("div");
+    iMsg.innerHTML = content;
+    iMsg.id = `msgbox-loc-${mb.c}`;
+    mb.root().appendChild(iMsg);
+    iMsg.classList.add("animate1");
+    if (t == "ok") {
+      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
+    } else if (t == "spacial-case-mob") {
+      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin-left:-2px";
+    } else {
+      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
+    }
+  },
+  kill: function() {
+    mb.root().remove();
+  },
+  show: function(content, t, delay2 = 1e3) {
+    mb.setContent(content, t);
+    mb.root().style.display = "block";
+    var loc2 = mb.c;
+    setTimeout(() => {
+      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
+      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
+      setTimeout(function() {
+        byId(`msgbox-loc-${loc2}`).style.display = "none";
+        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
+        byId(`msgbox-loc-${loc2}`).remove();
+        mb.ic++;
+        if (mb.c == mb.ic) {
+          mb.root().style.display = "none";
+        }
+      }, delay2);
+    }, 3 * delay2);
+    mb.c++;
+  },
+  error: function(content) {
+    if (mb.root() == null) return;
+    mb.root().classList.remove("success");
+    mb.root().classList.add("error");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, "err");
+  },
+  success: function(content) {
+    if (mb.root() == null) return;
+    mb.root().classList.remove("error");
+    mb.root().classList.add("success");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, "ok");
+  }
+};
+var jsonHeaders = new Headers({
+  "Content-Type": "application/json",
+  "Accept": "application/json"
+});
+var htmlHeader = new Headers({
+  "Content-Type": "text/html",
+  "Accept": "text/plain"
+});
+var FullScreenManagerElement = class {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el2 = this.target;
+    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+  onChange(callback) {
+    [
+      "fullscreenchange",
+      "webkitfullscreenchange",
+      "mozfullscreenchange",
+      "MSFullscreenChange"
+    ].forEach(
+      (evt) => document.addEventListener(evt, () => {
+        callback(this.isFullscreen(), this.target);
+      })
+    );
+  }
+};
+var FullscreenManager = class {
+  constructor() {
+    this.target = document.documentElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el2 = this.target;
+    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    [
+      "fullscreenchange",
+      "webkitfullscreenchange",
+      "mozfullscreenchange",
+      "MSFullscreenChange"
+    ].forEach(
+      (evt) => document.addEventListener(evt, () => {
+        callback(this.isFullscreen());
+      })
+    );
+  }
+};
+function alignTo256(n2) {
+  return Math.ceil(n2 / 256) * 256;
+}
+
+// ../../../me-config.js
+window.urlQ = urlQuery;
+var MEConfig = {
+  fsManager: new FullScreenManagerElement(),
+  SHADOW_RES: isMobile() == true ? 128 : 512,
+  MAX_BONES: isMobile() == true ? 80 : 100,
+  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 40,
+  PHYSICS_GROUND_Y: -1,
+  PHYSICS_GROUND_BYX: 100,
+  PHYSICS_GROUND_BYZ: 100,
+  GRAVITY_Y_AXIS: -10,
+  FORCE_FULL_SCREEN: false,
+  construct: function(options2 = {}) {
+    if (urlQ["GRAVITY_Y_AXIS"]) {
+      this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
+      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
+    }
+    if (urlQ["PHYSICS_GROUND_BYX"]) {
+      this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
+      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
+    }
+    if (urlQ["PHYSICS_GROUND_BYZ"]) {
+      this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
+      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
+    }
+    if (urlQ["SHADOW_RES"]) {
+      this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
+      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
+    }
+    if (urlQ["MAX_SPOTLIGHTS"]) {
+      this.MAX_SPOTLIGHTS = parseInt(urlQ["MAX_SPOTLIGHTS"]);
+    }
+    if (options2.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = options2.MAX_SPOTLIGHTS;
+    }
+    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
+    if (urlQ["MAX_BONES"]) {
+      this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
+      console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    }
+    if (urlQ["fs"] || isMobile()) {
+      this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
+      console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
+      this.fsManager.request();
+      this._fs = () => {
+        this.fsManager.request();
+        setTimeout(() => {
+          dispatchEvent(new CustomEvent("run_mobile_fs", {}));
+        }, 300);
+        window.removeEventListener("click", this._fs);
+      };
+      window.addEventListener("click", this._fs);
+    }
+    if (urlQ["PHYSICS_GROUND_Y"] != null) {
+      this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
+      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
+    }
+  },
+  checkOffScreen: function() {
+    if ("OffscreenCanvas" in window) {
+      console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+    } else {
+      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+    }
+  }
+};
+
 // ../../../../node_modules/wgpu-matrix/dist/2.x/wgpu-matrix.module.js
 var EPSILON = 1e-6;
 var VecType$1 = Float32Array;
@@ -1780,317 +2211,6 @@ var vec4Impl = /* @__PURE__ */ Object.freeze({
   transformMat4
 });
 
-// ../../../engine/utils.js
-var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
-var MeshType = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 };
-function isMobile() {
-  if (supportsTouch == true) return true;
-  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
-  return toMatch.some((toMatchItem) => {
-    return navigator.userAgent.match(toMatchItem);
-  });
-}
-function degToRad(degrees) {
-  return degrees * Math.PI / 180;
-}
-function radToDeg(r2) {
-  var pi = Math.PI;
-  return r2 * (180 / pi);
-}
-function OSCILLATOR(min2, max2, step, options2) {
-  if (min2 == null || max2 == null || step == null) {
-    console.log("OSCILLATOR ERROR");
-    return;
-  }
-  var ROOT = this;
-  this.min0 = parseFloat(min2);
-  this.max0 = parseFloat(max2);
-  this.min = this.min0;
-  this.max = this.max0;
-  this.step = parseFloat(step);
-  this.value_ = this.min;
-  this.status = 0;
-  options2 = options2 || {};
-  this.regime = options2.regime || "pingpong";
-  this.resist = parseFloat(options2.resist) || 0;
-  this.resistMode = options2.resistMode || "linear";
-  this.stopEpsilon = options2.stopEpsilon || 0;
-  this.useDelta = options2.useDelta || false;
-  this.on_maximum_value = function() {
-  };
-  this.on_minimum_value = function() {
-  };
-  this.on_stop = function() {
-  };
-  this._applyResist = function() {
-    if (this.resist <= 0) return;
-    var range = this.max - this.min;
-    if (range <= 0) return;
-    var shrink;
-    if (this.resistMode === "exp") {
-      shrink = range * this.resist;
-    } else {
-      shrink = (this.max0 - this.min0) * this.resist;
-    }
-    this.min += shrink;
-    this.max -= shrink;
-    if (this.min > this.max) {
-      var c = (this.min + this.max) * 0.5;
-      this.min = this.max = c;
-    }
-  };
-  this.UPDATE = function(delta) {
-    var s = this.step;
-    if (this.useDelta && delta !== void 0) {
-      s = s * delta;
-    }
-    switch (this.regime) {
-      // ===== PING-PONG =====
-      case "pingpong":
-        if (this.status === 0) {
-          this.value_ += s;
-          if (this.value_ >= this.max) {
-            this.value_ = this.max;
-            this.status = 1;
-            ROOT.on_maximum_value();
-          }
-        } else {
-          this.value_ -= s;
-          if (this.value_ <= this.min) {
-            this.value_ = this.min;
-            this.status = 0;
-            this._applyResist();
-            ROOT.on_minimum_value();
-          }
-        }
-        break;
-      // ===== ONLY MIN → MAX =====
-      case "onlyFromMinToMax":
-        this.value_ += s;
-        if (this.value_ >= this.max) {
-          this.value_ = this.min;
-          this._applyResist();
-          ROOT.on_maximum_value();
-        }
-        break;
-      // ===== MAX → MIN =====
-      case "fromMaxToMin":
-        this.value_ -= s;
-        if (this.value_ <= this.min) {
-          this.value_ = this.max;
-          this._applyResist();
-          ROOT.on_minimum_value();
-        }
-        break;
-      // ===== ONE SHOT =====
-      case "oneShot":
-        this.value_ += s;
-        if (this.value_ >= this.max) {
-          this.value_ = this.max;
-          ROOT.on_stop();
-        }
-        break;
-      // ===== SPRING TO CENTER =====
-      case "springCenter":
-        var center = (this.min + this.max) * 0.5;
-        var force = (center - this.value_) * this.resist;
-        this.value_ += force + s;
-        if (Math.abs(center - this.value_) < this.stopEpsilon) {
-          this.value_ = center;
-          ROOT.on_stop();
-        }
-        break;
-    }
-    if (this.stopEpsilon > 0) {
-      if (this.max - this.min < this.stopEpsilon) {
-        ROOT.on_stop();
-      }
-    }
-    return this.value_;
-  };
-}
-var byId = function(id2) {
-  return document.getElementById(id2);
-};
-function randomFloatFromTo(min2, max2) {
-  return Math.random() * (max2 - min2) + min2;
-}
-function randomIntFromTo(min2, max2) {
-  if (typeof min2 === "object" || typeof max2 === "object") {
-    console.log(
-      "SYS : warning Desciption : Replace object with string , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
-    );
-  } else if (typeof min2 === "undefined" || typeof max2 === "undefined") {
-    console.log(
-      "SYS : warning Desciption : arguments (min, max) cant be undefined , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
-    );
-  } else {
-    return Math.floor(Math.random() * (max2 - min2 + 1) + min2);
-  }
-}
-var urlQuery = (function() {
-  var query_string = {};
-  var query = window.location.search.substring(1);
-  var vars = query.split("&");
-  for (var i = 0; i < vars.length; i++) {
-    var pair = vars[i].split("=");
-    if (typeof query_string[pair[0]] === "undefined") {
-      query_string[pair[0]] = decodeURIComponent(pair[1]);
-    } else if (typeof query_string[pair[0]] === "string") {
-      var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
-      query_string[pair[0]] = arr;
-    } else {
-      query_string[pair[0]].push(decodeURIComponent(pair[1]));
-    }
-  }
-  return query_string;
-})();
-var LOG_WARN = "background: gray; color: yellow; font-size:10px";
-var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
-var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
-var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
-var LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
-var LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
-var LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
-function genName(length2) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result2 = "";
-  for (let i = 0; i < length2; i++) {
-    result2 += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result2;
-}
-var mb = {
-  root: () => byId("msgBox"),
-  pContent: () => byId("not-content"),
-  copy: function() {
-    navigator.clipboard.writeText(mb.root().children[0].innerText);
-  },
-  c: 0,
-  ic: 0,
-  t: {},
-  setContent: function(content, t) {
-    var iMsg = document.createElement("div");
-    iMsg.innerHTML = content;
-    iMsg.id = `msgbox-loc-${mb.c}`;
-    mb.root().appendChild(iMsg);
-    iMsg.classList.add("animate1");
-    if (t == "ok") {
-      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
-    } else {
-      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
-    }
-  },
-  kill: function() {
-    mb.root().remove();
-  },
-  show: function(content, t) {
-    mb.setContent(content, t);
-    mb.root().style.display = "block";
-    var loc2 = mb.c;
-    setTimeout(function() {
-      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
-      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
-      setTimeout(function() {
-        byId(`msgbox-loc-${loc2}`).style.display = "none";
-        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
-        byId(`msgbox-loc-${loc2}`).remove();
-        mb.ic++;
-        if (mb.c == mb.ic) {
-          mb.root().style.display = "none";
-        }
-      }, 1e3);
-    }, 3e3);
-    mb.c++;
-  },
-  error: function(content) {
-    if (mb.root() == null) return;
-    mb.root().classList.remove("success");
-    mb.root().classList.add("error");
-    mb.root().classList.add("fadeInDown");
-    mb.show(content, "err");
-  },
-  success: function(content) {
-    if (mb.root() == null) return;
-    mb.root().classList.remove("error");
-    mb.root().classList.add("success");
-    mb.root().classList.add("fadeInDown");
-    mb.show(content, "ok");
-  }
-};
-var jsonHeaders = new Headers({
-  "Content-Type": "application/json",
-  "Accept": "application/json"
-});
-var htmlHeader = new Headers({
-  "Content-Type": "text/html",
-  "Accept": "text/plain"
-});
-var FullScreenManagerElement = class {
-  constructor(targetElement = document.documentElement) {
-    this.target = targetElement;
-  }
-  isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-  }
-  request() {
-    const el2 = this.target;
-    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
-  }
-  exit() {
-    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
-  }
-  toggle() {
-    if (this.isFullscreen()) return this.exit();
-    return this.request();
-  }
-  onChange(callback) {
-    [
-      "fullscreenchange",
-      "webkitfullscreenchange",
-      "mozfullscreenchange",
-      "MSFullscreenChange"
-    ].forEach(
-      (evt) => document.addEventListener(evt, () => {
-        callback(this.isFullscreen(), this.target);
-      })
-    );
-  }
-};
-var FullscreenManager = class {
-  constructor() {
-    this.target = document.documentElement;
-  }
-  isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-  }
-  request() {
-    const el2 = this.target;
-    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
-  }
-  exit() {
-    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
-  }
-  toggle() {
-    return this.isFullscreen() ? this.exit() : this.request();
-  }
-  onChange(callback) {
-    [
-      "fullscreenchange",
-      "webkitfullscreenchange",
-      "mozfullscreenchange",
-      "MSFullscreenChange"
-    ].forEach(
-      (evt) => document.addEventListener(evt, () => {
-        callback(this.isFullscreen());
-      })
-    );
-  }
-};
-function alignTo256(n2) {
-  return Math.ceil(n2 / 256) * 256;
-}
-
 // ../../../engine/cameras.js
 var WASDCamera = class _WASDCamera {
   pitch = 0;
@@ -2133,7 +2253,6 @@ var WASDCamera = class _WASDCamera {
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
-      console.log("CONTROLER MOBILE WASDCAMERA");
       MobileDOM.createWASD(this, { marginR: 0, marginD: 0 });
     }
   }
@@ -2528,7 +2647,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
     if (options2.yaw) this.yaw = options2.yaw;
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 100);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
@@ -2817,6 +2936,7 @@ var MobileDOM = {
     return wrap;
   },
   addButton(label, onClick, onRelease, options2 = {}) {
+    document.body.style.touchAction = "none";
     const size2 = options2.size ?? 56;
     const bottom = options2.bottom ?? 0;
     const left2 = options2.left ?? 0;
@@ -2843,15 +2963,14 @@ var MobileDOM = {
       touchAction: "none"
     });
     btn.textContent = label;
-    btn.addEventListener("pointerdown", (e2) => {
+    btn.addEventListener("touchstart", (e2) => {
       e2.stopPropagation();
-      btn.style.background = `rgba(255,255,255,${opacity})`;
       onClick(e2);
     }, { passive: true });
-    btn.addEventListener("pointerup", (e2) => {
+    btn.addEventListener("touchend", (e2) => {
       onRelease(e2);
     }, { passive: true });
-    btn.addEventListener("pointercancel", () => {
+    btn.addEventListener("touchcancel", () => {
       onRelease(e);
     }, { passive: true });
     document.body.appendChild(btn);
@@ -2866,7 +2985,7 @@ var Position = class {
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 3;
+    this.netTolerance = 2;
     this.netTolerance__ = 0;
     if (typeof x2 == "undefined") x2 = 0;
     if (typeof y2 == "undefined") y2 = 0;
@@ -3169,7 +3288,7 @@ var Rotation = class {
       }
       return this._cachedRotY;
     } else {
-      this.y = this.y + this.rotationSpeed.y * 0.01;
+      this.y = this.y + this.rotationSpeed.y;
       this._cachedRotY = degToRad(this.y);
       this._lastY = this.y;
       return this._cachedRotY;
@@ -3191,7 +3310,7 @@ var Rotation = class {
       }
       return this._cachedRotZ;
     } else {
-      this.z = this.z + this.rotationSpeed.z * 0.01;
+      this.z = this.z + this.rotationSpeed.z;
       this._cachedRotZ = degToRad(this.z);
       this._lastZ = this.z;
       return this._cachedRotZ;
@@ -3206,69 +3325,8 @@ var PVector = class {
   }
 };
 
-// ../../../me-config.js
-window.urlQ = urlQuery;
-var MEConfig = {
-  fsManager: new FullScreenManagerElement(),
-  SHADOW_RES: isMobile() == true ? 128 : 512,
-  MAX_BONES: isMobile() == true ? 80 : 100,
-  MAX_LIGHTS: isMobile() == true ? 20 : 40,
-  PHYSICS_GROUND_Y: -1,
-  PHYSICS_GROUND_BYX: 100,
-  PHYSICS_GROUND_BYZ: 100,
-  GRAVITY_Y_AXIS: -10,
-  FORCE_FULL_SCREEN: false,
-  construct: function() {
-    if (urlQ["GRAVITY_Y_AXIS"]) {
-      this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
-      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
-    }
-    if (urlQ["PHYSICS_GROUND_BYX"]) {
-      this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
-      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
-    }
-    if (urlQ["PHYSICS_GROUND_BYZ"]) {
-      this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
-      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
-    }
-    if (urlQ["SHADOW_RES"]) {
-      this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
-      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
-    }
-    if (urlQ["MAX_LIGHTS"]) {
-      this.MAX_LIGHTS = parseInt(urlQ["MAX_LIGHTS"]);
-      console.log(`%cMAX_LIGHTS : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
-    }
-    if (urlQ["MAX_BONES"]) {
-      this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
-      console.log(`%cMAX_BONES : ${this.MAX_LIGHTS}`, LOG_FUNNY_ARCADE);
-    }
-    if (urlQ["fs"]) {
-      this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
-      console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
-      this.fsManager.request();
-      this._fs = () => {
-        this.fsManager.request();
-        window.removeEventListener("click", this._fs);
-      };
-      window.addEventListener("click", this._fs);
-    }
-    if (urlQ["PHYSICS_GROUND_Y"] != null) {
-      this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
-      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
-    }
-  },
-  checkOffScreen: function() {
-    if ("OffscreenCanvas" in window) {
-      console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
-    } else {
-      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
-    }
-  }
-};
-
 // ../../../shaders/vertex.wgsl.js
-var vertexWGSL = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
+var vertexWGSL = () => `const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -3539,7 +3597,7 @@ fn main(
 }`;
 
 // ../../../shaders/fragment.wgsl.js
-var fragmentWGSL = `
+var fragmentWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -3592,7 +3650,8 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -3773,12 +3832,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // var ambientTerm = material.ambientColor + scene.globalAmbient;
     // var finalColor = ambientTerm + texColor.rgb * lightContribution;
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+    // let alpha = mix(materialData.alpha, 1.0 , 0.5);
+    let alpha = texColor.a * material.baseColorFactor.a;
+    // let alpha = material.baseColorFactor.a;
     return vec4f(finalColor, alpha);
 }`;
 
 // ../../../shaders/fragment.wgsl.metal.js
-var fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+var fragmentWGSLMetal = () => `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -3830,7 +3891,7 @@ struct PBRMaterialData {
     alpha     : f32,  // \u2705 Added alpha
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -3984,7 +4045,7 @@ let validLight = select(0.0, 1.0, NdotL > 0.0);
 `;
 
 // ../../../shaders/fragment.wgsl.normalmap.js
-var fragmentWGSLNormalMap = `
+var fragmentWGSLNormalMap = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -4036,7 +4097,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -4226,7 +4287,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 
 // ../../../shaders/fragment.wgsl.pong.js
-var fragmentWGSLPong = `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+var fragmentWGSLPong = () => `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -4277,7 +4338,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -4445,7 +4506,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 
 // ../../../shaders/fragment.wgsl.power.js
-var fragmentWGSLPower = `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+var fragmentWGSLPower = () => `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -4496,7 +4557,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -4606,7 +4667,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/mixed/fragmentMix1.wgsl.js
-var fragmentWGSLMix1 = `override shadowDepthTextureSize: f32 = 512.0;
+var fragmentWGSLMix1 = () => `
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -4655,7 +4717,7 @@ struct PBRMaterialData {
     roughness : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -4820,8 +4882,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/water/water-c.wgls.js
-var fragmentWaterWGSL = `
-const MAX_SPOTLIGHTS = 20u;
+var fragmentWaterWGSL = () => `
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 const PI: f32 = 3.141592653589793;
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
@@ -5008,7 +5070,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 
 // ../../../shaders/fragment.mirror.wgsl.js
-var mirrorIlluminateFragmentWGSL = `
+var mirrorIlluminateFragmentWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -5074,7 +5136,7 @@ struct MirrorIlluminateParams {
     _pad2              : vec3f,  // \u2705 Padding to maintain alignment
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -5310,7 +5372,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/fragment.gpt.wgsl.js
-var fragmentWGSLGPT = `
+var fragmentWGSLGPT = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -5363,7 +5425,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -5507,7 +5569,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/fragment.wgsl.noCut.js
-var fragmentWGSLDark = `
+var fragmentWGSLDark = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -5560,7 +5622,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -5746,10 +5808,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 
 // ../../../shaders/minimalist/mini.wgsl.js
-var miniWGSL = `
-
+var miniWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
-
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -5764,13 +5824,11 @@ struct Scene {
     padding4             : vec2f,
 };
 
-// minimal dummy spotlight (kept for layout compatibility)
 struct SpotLight {
     position : vec3f,
     _pad1    : f32,
 };
 
-// minimal material (layout compatibility)
 struct MaterialPBR {
     baseColorFactor : vec4f,
     metallicFactor  : f32,
@@ -5781,7 +5839,7 @@ struct MaterialPBR {
     _pad            : f32,    // alignment padding
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 
@@ -5821,7 +5879,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/minimalist/mini-a.wgsl.js
-var miniaWGSL2 = `
+var miniaWGSL2 = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
 struct Scene {
@@ -5866,7 +5924,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -5916,7 +5974,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/minimalist/mid-a.wgsl.js
-var midaWGSL2 = `
+var midaWGSL2 = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
 struct Scene {
@@ -5961,7 +6019,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -6023,7 +6081,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/minimalist/hybrid.wgsl.js
-var hybridWGSL2 = `
+var hybridWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
 struct Scene {
@@ -6068,7 +6126,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
@@ -6142,7 +6200,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/minimalist/color-a.wgsl.js
-var coloraWGSL = `
+var coloraWGSL = () => `
 override shadowDepthTextureSize: f32;
 
 struct Scene {
@@ -6227,7 +6285,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 
 // ../../../shaders/minimalist/color-b.wgsl.js
-var colorbWGSL = `
+var colorbWGSL = () => `
 override shadowDepthTextureSize: f32;
 
 struct Scene {
@@ -6250,8 +6308,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 struct SpotLight {
@@ -6272,7 +6330,7 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // KEEP LAYOUT
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -6295,24 +6353,19 @@ struct FragmentInput {
 fn main(input: FragmentInput) -> @location(0) vec4f {
 
 let uv = fract(input.fragUV);
-
     // distance to nearest edge 0 or 1
     let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-
     let edgeWidth = 0.05;  // tweak thickness
     let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
-
     let neonColor = vec3f(0.0, 1.0, 1.0);
     let coreColor = vec3f(0.0, 0.0, 0.0);
-
     let color = mix(coreColor, neonColor, edgeFactor);
-
     return vec4f(color, 1);
 }`;
 
 // ../../../shaders/fontana/fontana.wgsl.js
 var SHARED = `
-override shadowDepthTextureSize : f32 = 512.0;
+override shadowDepthTextureSize : f32 = ${MEConfig.SHADOW_RES};
 const PI  : f32 = 3.141592653589793;
 const TAU : f32 = 6.283185307179586;
 
@@ -6351,7 +6404,7 @@ struct PBRMaterialData {
     roughness : f32,
     alpha     : f32,
 };
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -6462,7 +6515,7 @@ fn sss_lights(fragPos: vec3f, N: vec3f, V: vec3f, fresnel: f32) -> vec3f {
     return vec3f(0.08, 0.62, 0.94) * acc * 0.45;
 }
 `;
-var fountainCapFragmentWGSL = SHARED + `
+var fountainCapFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -6528,7 +6581,7 @@ fn pb_shadows(fragPos: vec3f, N: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f
     return pbr_shadows(fragPos, N, V, mat);
 }
 `;
-var fountainCurtainFragmentWGSL = SHARED + `
+var fountainCurtainFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -6585,7 +6638,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(col, alpha);
 }
 `;
-var fountainBasinFragmentWGSL = SHARED + `
+var fountainBasinFragmentWGSL = () => SHARED + `
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let t  = scene.time;
@@ -6650,9 +6703,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(col, alpha);
 }
 `;
-var fountainWaterVertexWGSL = (
-  /* wgsl */
-  `
+var fountainWaterVertexWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
@@ -6821,8 +6872,7 @@ fn main(input: VertexInput) -> VertexOutput {
 
   return output;
 }
-`
-);
+`;
 
 // ../../../engine/pipelineManager.js
 function buildPipelineKey({
@@ -6908,6 +6958,242 @@ var MaterialBindGroupCache = class _MaterialBindGroupCache {
   }
 };
 
+// ../../../shaders/fragment.dark.wgsl.js
+console.log("TEST MAX_SPOTLIGHTS FROM SHADER", MEConfig.MAX_SPOTLIGHTS);
+var fragmentDarkWGSL = () => `
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+const PI: f32 = 3.14159;
+
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+struct SpotLight {
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
+};
+
+struct PBRMaterialData {
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
+};
+
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
+
+struct FragmentInput {
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+  return material.baseColor * light.color * light.intensity * NdotL;
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
+
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
+
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
+
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  var weight: f32 = 0.0;
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      let sampleUV = shadowUV + offsets[i] * oneOverSize;
+      let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                      sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+      let s = textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          sampleUV, layer, depthRef - bias
+      );
+      // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+      visibility += select(1.0, s, inBounds);
+      weight += 1.0;
+  }
+  return visibility / weight;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  // if (materialData.alpha < 0.01) {
+  //     discard;
+  // }
+
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      // let inFrustum =
+      //     p.z >= 0.0 && p.z <= 1.0 &&
+      //     p.x >= -1.0 && p.x <= 1.0 &&
+      //     p.y >= -1.0 && p.y <= 1.0;
+      let inDepth = p.z >= 0.0 && p.z <= 1.0;
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      let shadowFactor = select(1.0, visibility, inDepth);
+      let contrib = computeSpotLight(
+          spotlights[i],
+          norm,
+          input.fragPos,
+          viewDir,
+          materialData
+      );
+      lightContribution += contrib * shadowFactor;
+  }
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  // -- from dark next feature
+  var ambientTerm = material.ambientColor * materialData.baseColor;
+  var finalColor = ambientTerm + texColor.rgb * lightContribution;
+  // like fog interest
+  // var ambientTerm = material.ambientColor + scene.globalAmbient;
+  // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+  let alpha = texColor.a * material.baseColorFactor.a;
+  return vec4f(finalColor, alpha);
+}`;
+
 // ../../../engine/materials.js
 var Materials = class {
   constructor(device2, material, glb, textureCache, isVideo) {
@@ -6917,7 +7203,6 @@ var Materials = class {
     this.glb = glb;
     this.material = material;
     if (typeof isVideo !== "undefined") {
-      console.log("WHAT IS isvideo ", this.isVideo);
       this.isVideo = true;
     } else {
       this.isVideo = false;
@@ -7244,44 +7529,47 @@ var Materials = class {
   }
   getMaterial() {
     if (this.material.type == "standard") {
-      return fragmentWGSL;
+      return fragmentWGSL();
+    } else if (this.material.type == "dark") {
+      return fragmentDarkWGSL();
     } else if (this.material.type == "pong") {
-      return fragmentWGSLPong;
+      return fragmentWGSLPong();
     } else if (this.material.type == "power") {
-      return fragmentWGSLPower;
+      return fragmentWGSLPower();
     } else if (this.material.type == "metal") {
-      return fragmentWGSLMetal;
+      return fragmentWGSLMetal();
     } else if (this.material.type == "normalmap") {
-      return fragmentWGSLNormalMap;
+      return fragmentWGSLNormalMap();
     } else if (this.material.type == "gpt") {
-      return fragmentWGSLGPT;
+      return fragmentWGSLGPT();
     } else if (this.material.type == "water") {
-      return fragmentWaterWGSL;
+      return fragmentWaterWGSL();
     } else if (this.material.type == "graph") {
+      console.info("Material from graph :", this.material?.type);
       return this.material.fromGraph;
     } else if (this.material.type == "mix1") {
       return fragmentWGSLMix1;
     } else if (this.material.type === "mirror") {
-      return mirrorIlluminateFragmentWGSL;
+      return mirrorIlluminateFragmentWGSL();
     } else if (this.material.type === "dark" || this.material.type === "free") {
-      return fragmentWGSLDark;
+      return fragmentWGSLDark();
     } else if (this.material.type === "fontana") {
-      return fountainBasinFragmentWGSL;
+      return fountainBasinFragmentWGSL();
     } else if (this.material.type === "mini") {
-      return miniWGSL;
+      return miniWGSL();
     } else if (this.material.type === "minia") {
-      return miniaWGSL2;
+      return miniaWGSL2();
     } else if (this.material.type === "mida") {
-      return midaWGSL2;
+      return midaWGSL2();
     } else if (this.material.type === "hybrid") {
-      return hybridWGSL2;
+      return hybridWGSL();
     } else if (this.material.type === "colora") {
-      return coloraWGSL;
+      return coloraWGSL();
     } else if (this.material.type === "colorb") {
-      return colorbWGSL;
+      return colorbWGSL();
     }
     console.warn("Unknown material type:", this.material?.type);
-    return fragmentWGSL;
+    return fragmentWGSL();
   }
   getFormat() {
     if (this.material?.format == "darker") {
@@ -7354,17 +7642,17 @@ var Materials = class {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-  async loadTex0(texturesPaths2) {
+  async loadTex0(texturesPaths) {
     return new Promise(async (resolve) => {
-      const path2 = texturesPaths2[0];
+      const path2 = texturesPaths[0];
       const { texture, sampler } = await this.textureCache.get(path2, this.getFormat());
       this.texture0 = texture;
       this.sampler = sampler;
       resolve(this);
     });
   }
-  async loadEnvMap(texturesPaths2, isEnvMap = false) {
-    const path2 = texturesPaths2[1] || texturesPaths2[0];
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path2 = texturesPaths[1] || texturesPaths[0];
     const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
     return {
       texture,
@@ -7465,12 +7753,13 @@ var Materials = class {
       canvas.height = arg.height || 256;
       canvas.style.position = "absolute";
       canvas.style.left = "0px";
-      canvas.style.top = "-225px";
+      canvas.style.top = "-325px";
+      canvas.id = arg.id ? arg.id : this.name + "ci1";
       document.body.appendChild(canvas);
       const ctx = canvas.getContext("2d");
       if (typeof arg.canvaInlineProgram === "function") {
         let drawLoop;
-        if (typeof arg.specialCanvas2dArg.middle !== "undefined") {
+        if (arg.specialCanvas2dArg && arg.specialCanvas2dArg.middle) {
           drawLoop = () => {
             ctx.save();
             ctx.translate(canvas.width, 0);
@@ -7490,23 +7779,29 @@ var Materials = class {
         ctx.fillStyle = "#0ce325ff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      this.video = document.createElement("video");
-      this.video.style.position = "absolute";
-      this.video.style.left = "-600px";
-      this.video.style.top = "0";
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.srcObject = canvas.captureStream(24);
-      document.body.append(this.video);
-      this.video.play();
+      this.sourceCanvas = canvas;
+      this.gpuTexture = this.device.createTexture({
+        size: [this.sourceCanvas.width, this.sourceCanvas.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.video = null;
     }
-    await new Promise((resolve) => {
+    if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
-        this.updateVideoTexture();
-        this.createMaterialBindGroupVideo();
-        this.setupPipeline();
-        resolve();
+        setTimeout(() => {
+          this.updateVideoTexture();
+          this.createMaterialBindGroupVideo();
+          this.setupPipeline();
+          resolve();
+          const ci1 = document.getElementById("ci1");
+          if (ci1) {
+            document.body.removeChild(ci1);
+          } else {
+            const ci2 = document.getElementById(this.name + "ci1");
+            if (ci2) document.body.removeChild(ci2);
+          }
+        }, 200);
       });
     });
   }
@@ -7514,6 +7809,14 @@ var Materials = class {
     if (!this.video || this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({ source: this.video });
     if (!this.externalTexture) return;
+    this.createMaterialBindGroupVideo();
+  }
+  updateCanvasInlineTexture() {
+    this.externalTexture = this.device.queue.copyExternalImageToTexture(
+      { source: this.sourceCanvas },
+      { texture: this.gpuTexture, premultipliedAlpha: false },
+      [this.sourceCanvas.width, this.sourceCanvas.height]
+    );
     this.createMaterialBindGroupVideo();
   }
   getMaterialTexture(glb, materialIndex) {
@@ -7582,20 +7885,32 @@ var Materials = class {
     }
   }
   createMaterialBindGroupVideo() {
-    this.materialBindGroup = this.device.createBindGroup({
-      label: "materialVideoBGL",
-      layout: this.materialVideoBGL,
-      entries: [
-        { binding: 0, resource: this.externalTexture },
-        { binding: 1, resource: this.videoSampler },
-        { binding: 2, resource: { buffer: this.postFXModeBuffer } }
-      ]
-    });
+    if (this.video == null) {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: "materialVideoBGL",
+        layout: this.materialVideoBGL,
+        entries: [
+          { binding: 0, resource: this.gpuTexture.createView() },
+          { binding: 1, resource: this.videoSampler },
+          { binding: 2, resource: { buffer: this.postFXModeBuffer } }
+        ]
+      });
+    } else {
+      this.materialBindGroup = this.device.createBindGroup({
+        label: "materialVideoBGL",
+        layout: this.materialVideoBGL,
+        entries: [
+          { binding: 0, resource: this.externalTexture },
+          { binding: 1, resource: this.videoSampler },
+          { binding: 2, resource: { buffer: this.postFXModeBuffer } }
+        ]
+      });
+    }
   }
 };
 
 // ../../../shaders/fragment.video.wgsl.js
-var fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1.0;
+var fragmentVideoWGSL = () => `override shadowDepthTextureSize: f32 = 1.0;
 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
@@ -7616,34 +7931,17 @@ struct FragmentInput {
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.7;
+const ambientFactor = 1.2;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
-  // Shadow filtering
-  // var visibility = 0.0;
-  // let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
-  // for (var y = -1; y <= 1; y++) {
-  //   for (var x = -1; x <= 1; x++) {
-  //     let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-  //     visibility += textureSampleCompare(
-  //       shadowMap, shadowSampler,
-  //       input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-  //     );
-  //   }
-  // }
-  // visibility /= 9.0;
-
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
-
-  // \u2705 Sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
-
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
+  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
    switch (postFXMode) {
     case 0: {
-      // Default
       return color;
     }
     case 1: {
@@ -7669,13 +7967,11 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
       return color;
     }
   }
-
-  // return color;
 }
 `;
 
 // ../../../shaders/vertex.wgsl.normalmap.js
-var vertexWGSL_NM = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
+var vertexWGSL_NM = () => `const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -10963,7 +11259,7 @@ var FlameEmitter = class {
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S);
     this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
+    console.info(`%cCrazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([
       memory1,
       memory2,
@@ -10976,6 +11272,26 @@ var FlameEmitter = class {
       0,
       memory13,
       memory23,
+      0
+    ]);
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    return vertexData;
+  }
+  recreateVertexDataFromData(data) {
+    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} 
+  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
+    const vertexData = new Float32Array([
+      data[0],
+      data[4],
+      0,
+      data[1],
+      data[5],
+      0,
+      data[2],
+      data[6],
+      0,
+      data[3],
+      data[7],
       0
     ]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
@@ -11809,7 +12125,6 @@ var MEMeshObj = class extends Materials {
       this.indexCount = indexCount;
       let glbInfo = {
         arrayStride: 4 * 4,
-        // vec4<f32> = 4 * 4 bytes
         attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
       };
       this.vertexBuffers = [
@@ -12150,6 +12465,8 @@ var MEMeshObj = class extends Materials {
             return;
           }
           this.mirrorBindGroup = this.createMirrorIlluminateBindGroup(this.mirrorBindGroupLayout, this.envMapParams).bindGroup;
+          console.warn(`%cMIRROR ${this.mirrorBindGroup} `, LOG_FUNNY_ARCADE);
+          this.setupPipeline();
         });
         this.setupPipeline();
       } else {
@@ -12175,17 +12492,17 @@ var MEMeshObj = class extends Materials {
     const isWater = this.material.type === "water";
     const isVideo = this.isVideo === true;
     const isNormalMap = this.material.type === "normalmap";
-    const vertexCode = isNormalMap ? vertexWGSL_NM : vertexWGSL;
-    const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = isNormalMap ? vertexWGSL_NM() : vertexWGSL();
+    const fragmentCode = isVideo ? fragmentVideoWGSL() : this.getMaterial();
     const vertexModule = this.device.createShaderModule({ code: vertexCode });
     const fragmentModule = this.device.createShaderModule({ code: fragmentCode });
     let baseKey = {
       vertexId: isNormalMap ? "mesh_nm" : "mesh_basic",
       fragmentId: isVideo ? "video" : this.material.type,
       type: "mesh",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : "triangle-list",
+      cullMode: this.primitive ? this.primitive.cullMode : "none",
+      frontFace: this.primitive ? this.primitive.frontFace : "ccw",
       format: "rgba16float",
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
@@ -12373,30 +12690,22 @@ var MEMeshObj = class extends Materials {
     pass.drawIndexed(this.indexCount);
   };
   drawElementsAnim = (renderPass) => {
-    if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
-      console.log("NULL2");
-      return;
-    }
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    renderPass.setBindGroup(3, this.waterBindGroup);
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, "uint16");
     renderPass.drawIndexed(mesh.indexCount);
-    if (this.objAnim.playing == true) {
-      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
-        this.objAnim.currentAni++;
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
-      } else {
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
-      }
-      if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
-        this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
-      }
+    if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+      this.objAnim.currentAni++;
+      this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+    } else {
+      this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
+    }
+    if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
+      this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
     }
   };
   drawShadows = (shadowPass) => {
@@ -12460,12 +12769,14 @@ var MEMeshObj = class extends Materials {
     };
     this.drawShadows = () => {
     };
-    let testPB = app.matrixPhysics.getBodyByName(this.name);
-    if (testPB !== null) {
-      try {
-        app.matrixPhysics.removeRigidBody(testPB);
-      } catch (e2) {
-        console.warn("Physics cleanup err:", e2);
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if (testPB !== null) {
+        try {
+          app.matrixPhysics.removeRigidBody(testPB);
+        } catch (e2) {
+          console.warn("Physics cleanup err:", e2);
+        }
       }
     }
   };
@@ -12772,7 +13083,7 @@ function play(nameAni) {
 }
 
 // ../../../shaders/vertexShadow.wgsl.js
-var vertexShadowWGSL = `
+var vertexShadowWGSL = () => `
 const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {
@@ -13055,7 +13366,7 @@ var Behavior = class {
 };
 
 // ../../../shaders/instanced/vertexShadow.instanced.wgsl.js
-var vertexShadowWGSLInstanced = `
+var vertexShadowWGSLInstanced = () => `
 const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {
@@ -13242,7 +13553,7 @@ fn main(
 `;
 
 // ../../../shaders/vertex.procedural.wgsl.js
-var vertexMorphWGSL = `
+var vertexMorphWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
@@ -13413,9 +13724,7 @@ fn main(input: VertexInput) -> VertexOutput {
   return output;
 }
 `;
-var vertexMorphShadowWGSL = (
-  /* wgsl */
-  `
+var vertexMorphShadowWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
@@ -13585,8 +13894,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   return scene.lightViewProjMatrix * worldPos;
 }
-`
-);
+`;
 
 // ../../../engine/lights.js
 var SpotLight = class {
@@ -13607,21 +13915,15 @@ var SpotLight = class {
   far;
   innerCutoff;
   outerCutoff;
-  spotlightUniformBuffer;
+  // spotlightUniformBuffer;
   // Dirty flags
   _dirty = true;
   // VP matrix needs recompute (position/target changed)
   _lightBufferDirty = true;
   // _lightBuffer array needs rebuild before next upload
-  // ─── Getters / Setters ────────────────────────────────────────────────────
   get position() {
     return this._position;
   }
-  // set position(v) {
-  //   vec3.copy(v, this._position);
-  //   this._dirty = true;
-  //   this._lightBufferDirty = true;
-  // }
   setPosition(x2, y2, z) {
     this._position[0] = x2;
     this._position[1] = y2;
@@ -13668,7 +13970,7 @@ var SpotLight = class {
     aspect = 1;
     this.name = "light" + indexx;
     this.getName = () => {
-      return "light" + indexx;
+      return this.name;
     };
     this.fov = fov;
     this.aspect = 1;
@@ -13797,7 +14099,7 @@ var SpotLight = class {
         ]
       }),
       vertex: {
-        module: this.device.createShaderModule({ code: vertexShadowWGSL }),
+        module: this.device.createShaderModule({ code: vertexShadowWGSL() }),
         buffers: [
           { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
           // pos
@@ -13831,7 +14133,7 @@ var SpotLight = class {
         ]
       }),
       vertex: {
-        module: this.device.createShaderModule({ code: vertexShadowWGSLInstanced }),
+        module: this.device.createShaderModule({ code: vertexShadowWGSLInstanced() }),
         buffers: [
           { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
           // pos
@@ -13865,7 +14167,7 @@ var SpotLight = class {
         ]
       }),
       vertex: {
-        module: this.device.createShaderModule({ code: vertexMorphShadowWGSL }),
+        module: this.device.createShaderModule({ code: vertexMorphShadowWGSL() }),
         buffers: [
           { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
           // posA
@@ -13924,7 +14226,6 @@ var SpotLight = class {
     this._lightBufferDirty = true;
     return true;
   }
-  // ─── Light data buffer ────────────────────────────────────────────────────
   /**
    * Returns the packed Float32Array for the spotlight uniform array.
    * Rebuilds only when _lightBufferDirty is true.
@@ -13951,8 +14252,6 @@ var SpotLight = class {
     this._lightBufferDirty = false;
     return b;
   }
-  // ─── Setters ──────────────────────────────────────────────────────────────
-  // Position components — mutate vec3 in place, mark both dirty flags
   setPosX = (x2) => {
     if (this._position[0] === x2) return;
     this._position[0] = x2;
@@ -17934,7 +18233,7 @@ var BVHPlayer = class extends MEMeshObj {
 };
 
 // ../../../shaders/instanced/fragment.instanced.wgsl.js
-var fragmentWGSLInstanced = `
+var fragmentWGSLInstanced = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -17984,7 +18283,7 @@ struct PBRMaterialData {
     alpha     : f32,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -18144,7 +18443,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 
 // ../../../shaders/instanced/fragment.mirror.instanced.wgsl.js
-var fragmentMirrorWGSLInstanced = `
+var fragmentMirrorWGSLInstanced = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
@@ -18210,7 +18509,7 @@ struct MirrorIlluminateParams {
     _pad2              : vec3f,
 };
 
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -18706,38 +19005,38 @@ var MaterialsInstanced = class {
   };
   getMaterial() {
     if (this.material.type == "standard") {
-      return fragmentWGSLInstanced;
+      return fragmentWGSLInstanced();
     } else if (this.material.type == "pong") {
-      return fragmentWGSLPong;
+      return fragmentWGSLPong();
     } else if (this.material.type == "power") {
-      return fragmentWGSLPower;
+      return fragmentWGSLPower();
     } else if (this.material.type == "metal") {
-      return fragmentWGSLMetal;
+      return fragmentWGSLMetal();
     } else if (this.material.type == "normalmap") {
-      return fragmentWGSLNormalMap;
+      return fragmentWGSLNormalMap();
     } else if (this.material.type == "water") {
-      return fragmentWaterWGSL;
+      return fragmentWaterWGSL();
     } else if (this.material.type == "graph") {
       return this.material.fromGraph;
     } else if (this.material.type === "mirror") {
-      return fragmentMirrorWGSLInstanced;
+      return fragmentMirrorWGSLInstanced();
     } else if (this.material.type === "dark" || this.material.type === "free") {
-      return fragmentWGSLDark;
+      return fragmentWGSLDark();
     } else if (this.material.type === "mini") {
-      return miniWGSL;
+      return miniWGSL();
     } else if (this.material.type === "minia") {
-      return miniaWGSL;
+      return miniaWGSL();
     } else if (this.material.type === "mida") {
-      return midaWGSL;
+      return midaWGSL();
     } else if (this.material.type === "hybrid") {
-      return hybridWGSL;
+      return hybridWGSL();
     } else if (this.material.type === "colora") {
-      return coloraWGSL;
+      return coloraWGSL();
     } else if (this.material.type === "colorb") {
-      return colorbWGSL;
+      return colorbWGSL();
     }
     console.warn("Unknown material type use standard:", this.material?.type);
-    return fragmentWGSL;
+    return fragmentWGSL();
   }
   getFormat() {
     if (this.material?.format == "darker") {
@@ -18780,13 +19079,13 @@ var MaterialsInstanced = class {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-  async loadTex0(texturesPaths2) {
+  async loadTex0(texturesPaths) {
     this.sampler = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear"
     });
     return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths2[0]);
+      const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.texture0 = this.device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -18802,8 +19101,8 @@ var MaterialsInstanced = class {
       resolve();
     });
   }
-  async loadEnvMap(texturesPaths2, isEnvMap = false) {
-    const path2 = texturesPaths2[1] || texturesPaths2[0];
+  async loadEnvMap(texturesPaths, isEnvMap = false) {
+    const path2 = texturesPaths[1] || texturesPaths[0];
     const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
     return {
       texture,
@@ -19004,7 +19303,7 @@ var MaterialsInstanced = class {
 };
 
 // ../../../shaders/instanced/vertex.instanced.wgsl.js
-var vertexWGSLInstanced = `const MAX_BONES = ${MEConfig.MAX_BONES}u;
+var vertexWGSLInstanced = () => `const MAX_BONES = ${MEConfig.MAX_BONES}u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -20985,17 +21284,16 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
     const isVideo = this.isVideo === true;
-    const vertexCode = vertexWGSLInstanced;
-    const fragmentCode = isVideo ? fragmentVideoWGSL : this.getMaterial();
+    const vertexCode = vertexWGSLInstanced();
+    const fragmentCode = isVideo ? fragmentVideoWGSL() : this.getMaterial();
     const isNormalMap = this.material.type === "normalmap";
-    console.log(">>>>>>>>>>>>>INSTANCED >>>>>>>>>>>>");
     const baseKey = {
       vertexId: isNormalMap ? "mesh_nm" : "mesh_basic",
       fragmentId: isVideo ? "video" : this.material.type,
       type: "instanced",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
+      topology: this.primitive ? this.primitive.topology : "triangle-list",
+      cullMode: this.primitive ? this.primitive.cullMode : "none",
+      frontFace: this.primitive ? this.primitive.frontFace : "ccw",
       format: "rgba16float",
       mirror: isMirror ? 1 : 0,
       normalMap: isNormalMap ? 1 : 0,
@@ -22012,7 +22310,7 @@ var MEEditorClient = class {
       console.info("%cSave graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-graph",
-        graphData: e2.detail
+        graphData: e2.detail.data
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -22190,12 +22488,12 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addCube", (e2) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: "" + e2.detail.index,
           mesh: m.cube,
@@ -22209,12 +22507,12 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addSphere", (e2) => {
       downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.mesh,
@@ -22243,12 +22541,12 @@ var EditorProvider = class {
       e2.detail.path = e2.detail.path.replace("\\res", "res");
       e2.detail.path = e2.detail.path.replace(/\\/g, "/");
       downloadMeshes({ objMesh: `${e2.detail.path}` }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.objMesh,
@@ -22408,7 +22706,7 @@ struct PBRMaterialData {
 };
 
 // PREDEFINED
-const MAX_SPOTLIGHTS = 20u;
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // // PREDEFINED
 // @group(0) @binding(0) var<uniform> scene : Scene;
@@ -24858,8 +25156,14 @@ var FluxCodexVertex = class {
     this.state = {
       draggingNode: null,
       dragOffset: [0, 0],
+      // offset for the PRIMARY dragged node
       connecting: null,
       selectedNode: null,
+      // keep for backward compat (single-select APIs)
+      selectedNodes: /* @__PURE__ */ new Set(),
+      // NEW: multi-select set of node IDs
+      rubberBand: null,
+      // NEW: { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
@@ -24868,6 +25172,8 @@ var FluxCodexVertex = class {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: { nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null }
     });
+    this.saveGraphEvent = new CustomEvent("save-graph", { detail: { data: "payload" }, bubbles: true, cancelable: true });
+    this.updateSceneContainerEvent = new CustomEvent("updateSceneContainer", { detail: {} });
     this.clearRuntime = () => {
       app.graphUpdate = () => {
       };
@@ -24884,7 +25190,7 @@ var FluxCodexVertex = class {
       for (let x3 = 0; x3 < runtimeCacheObjs.length; x3++) {
         app.removeSceneObjectByName(runtimeCacheObjs[x3].name);
       }
-      document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} }));
+      document.dispatchEvent(this.updateSceneContainerEvent);
       byId("graph-status").innerHTML = "\u26AB";
     };
     this.setZoom = (z) => {
@@ -24924,10 +25230,9 @@ var FluxCodexVertex = class {
         e2.preventDefault();
         this.runGraph();
       } else if (e2.key === "Delete") {
-        if (this.state.selectedNode) {
-          this.deleteNode(this.state.selectedNode);
-          this.state.selectedNode = null;
-        }
+        const toDelete = this.state.selectedNodes.size > 0 ? [...this.state.selectedNodes] : this.state.selectedNode ? [this.state.selectedNode] : [];
+        toDelete.forEach((id2) => this.deleteNode(id2));
+        this._selectClear();
       }
     });
     this.createContextMenu();
@@ -25284,7 +25589,7 @@ var FluxCodexVertex = class {
           console.info("gen ai tool call PREVENT ");
           return;
         } else {
-          console.info("gen ai tool call !!!!!!!!!!!!!!!! else ");
+          console.info("gen ai tool call else ");
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
@@ -25592,8 +25897,8 @@ var FluxCodexVertex = class {
     node2.inputs = [{ name: "exec", type: "action" }];
     node2.outputs = [{ name: "execOut", type: "action" }];
     const args2 = this.getArgNames(fn);
-    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "value" }));
-    if (this.hasReturn(fn)) node2.outputs.push({ name: "return", type: "value" });
+    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "any" }));
+    if (this.hasReturn(fn)) node2.outputs.push({ name: "return", type: "any" });
     node2.outputs.push({ name: "reference", type: "function" });
     node2.attachedMethod = methodItem.name;
     node2.fn = fn;
@@ -25969,10 +26274,15 @@ var FluxCodexVertex = class {
       textarea.style.backgroundColor = "gray";
       textarea.style.color = "black";
       textarea.value = spec.fields.find((f) => f.key === "text").value;
+      const commentLabel = document.createElement("div");
+      commentLabel.className = "comment-label";
+      commentLabel.textContent = textarea.value || "Comment";
+      commentLabel.style.cssText = "padding:4px;opacity:0.8;pointer-events:none;white-space:pre-wrap;word-break:break-word;";
       textarea.oninput = () => {
         spec.fields.find((f) => f.key === "text").value = textarea.value;
-        row.textContent = textarea.value || "Comment";
+        commentLabel.textContent = textarea.value || "Comment";
       };
+      body.appendChild(commentLabel);
       body.appendChild(textarea);
     }
     if (spec.fields?.length && !spec.comment && spec.title != "GenRandInt") {
@@ -26112,6 +26422,10 @@ var FluxCodexVertex = class {
     el.appendChild(body);
     header.addEventListener("mousedown", (e2) => {
       e2.preventDefault();
+      if (!this.state.selectedNodes.has(spec.id)) {
+        this._selectClear();
+        this._selectAdd(spec.id);
+      }
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
@@ -26119,11 +26433,20 @@ var FluxCodexVertex = class {
         e2.clientX - rect.left + bx.left,
         e2.clientY - rect.top + bx.top
       ];
+      this.state.dragStartPositions = {};
+      this.state.selectedNodes.forEach((nid) => {
+        const n2 = this.nodes[nid];
+        if (n2) this.state.dragStartPositions[nid] = { x: n2.x, y: n2.y };
+      });
+      this.state.dragPrimaryStart = {
+        x: rect.left - bx.left,
+        y: rect.top - bx.top
+      };
       document.body.style.cursor = "grabbing";
     });
     el.addEventListener("click", (e2) => {
       e2.stopPropagation();
-      this.selectNode(spec.id);
+      this._selectToggle(spec.id, e2.shiftKey);
       this.updateNodeDOM(spec.id);
     });
     el.addEventListener("dblclick", (e2) => {
@@ -26137,8 +26460,14 @@ var FluxCodexVertex = class {
     if (this.state.selectedNode) {
       document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove("selected");
     }
+    if (!this.state.selectedNodes.has(id2)) {
+      this._selectClear();
+    }
     this.state.selectedNode = id2;
-    document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
+    if (id2) {
+      this.state.selectedNodes.add(id2);
+      document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
+    }
   }
   populateDynamicFunctionSelect(select2, spec2) {
     select2.innerHTML = "";
@@ -26332,6 +26661,7 @@ var FluxCodexVertex = class {
           { name: "material", type: "string" },
           { name: "pos", type: "object" },
           { name: "rot", type: "object" },
+          { name: "rotSpeed", type: "object" },
           { name: "texturePath", type: "string" },
           { name: "name", type: "string" },
           { name: "raycast", type: "boolean" },
@@ -26349,8 +26679,52 @@ var FluxCodexVertex = class {
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
+          { key: "rotSpeed", value: "{x:0, y:0, z:0}" },
           { key: "texturePath", value: "res/textures/star1.png" },
           { key: "name", value: "TEST" },
+          { key: "raycast", value: true },
+          { key: "scale", value: [1, 1, 1] },
+          { key: "isPhysicsBody", type: false },
+          { key: "isInstancedObj", type: false },
+          { key: "created", value: false }
+        ],
+        noselfExec: "true"
+      }),
+      addProceduralMesh: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Add Procedural Mesh",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "meshA", type: "string" },
+          { name: "meshB", type: "string" },
+          { name: "material", type: "string" },
+          { name: "pos", type: "object" },
+          { name: "rot", type: "object" },
+          { name: "rotSpeed", type: "object" },
+          { name: "texturePath", type: "string" },
+          { name: "name", type: "string" },
+          { name: "raycast", type: "boolean" },
+          { name: "scale", type: "object" },
+          { name: "isPhysicsBody", type: "boolean" },
+          { name: "isInstancedObj", type: "boolean" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" },
+          { name: "complete", type: "action" },
+          { name: "error", type: "action" }
+        ],
+        fields: [
+          { key: "meshA", value: "cube" },
+          { key: "meshB", value: "sphere" },
+          { key: "material", value: "standard" },
+          { key: "pos", value: "{x:0, y:0, z:-20}" },
+          { key: "rot", value: "{x:0, y:0, z:0}" },
+          { key: "rotSpeed", value: "{x:0, y:0, z:0}" },
+          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "name", value: "editorGen1" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
           { key: "isPhysicsBody", type: false },
@@ -27719,6 +28093,7 @@ LIST OF INTEREST OBJECT:
   }
   setVariable(type2, key, value) {
     if (!this.variables[type2][key]) return;
+    console.log("Test -setVariable  value", value);
     this.variables[type2][key].value = value;
     this.notifyVariableChanged(type2, key);
   }
@@ -27790,7 +28165,7 @@ LIST OF INTEREST OBJECT:
       this.fluxcodexFieldChange.detail.fieldKey = field.key;
       this.fluxcodexFieldChange.detail.fieldType = field.type;
       this.fluxcodexFieldChange.detail.value = field.value;
-      document.dispatchEvent(this, this.fluxcodexFieldChange);
+      document.dispatchEvent(this.fluxcodexFieldChange);
     };
     input.onkeydown = (e2) => {
       if (e2.key === "Enter") {
@@ -28433,7 +28808,6 @@ LIST OF INTEREST OBJECT:
         return;
       }
       const detail = this.getValue(nodeId, "detail");
-      console.log("*************window.dispatchEvent****************", name2);
       window.dispatchEvent(
         new CustomEvent(name2, {
           detail: detail ?? {}
@@ -28718,6 +29092,56 @@ LIST OF INTEREST OBJECT:
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
             console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            n._returnCache = null;
+            this.enqueueOutputs(n, "error");
+          });
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Add Procedural Mesh") {
+        const meshA = this.getValue(nodeId, "meshA");
+        const meshB = this.getValue(nodeId, "meshB");
+        const rotationSpeed = this.getValue(nodeId, "rotationSpeed");
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
+        let rot = this.getValue(nodeId, "rot");
+        let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (isInstancedObj == "true") {
+          isInstancedObj = true;
+        } else {
+          isInstancedObj = false;
+        }
+        if (isPhysicsBody == "true") {
+          isPhysicsBody = true;
+        } else {
+          isPhysicsBody = false;
+        }
+        if (typeof pos == "string") eval("pos = " + pos);
+        if (typeof rot == "string") eval("rot = " + rot);
+        if (typeof scale == "string") eval("scale = " + scale);
+        if (!texturePath || !meshA) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find((f) => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+            object._GRAPH_CACHE = true;
+            n._returnCache = object;
+            this.enqueueOutputs(n, "complete");
+          }).catch((err) => {
+            console.log(`%cADD PROC-OBJ ERROR GRAPH: ${err}`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           });
@@ -29341,16 +29765,27 @@ LIST OF INTEREST OBJECT:
       const el2 = this.state.draggingNode;
       const newX = e2.clientX - this.state.dragOffset[0];
       const newY = e2.clientY - this.state.dragOffset[1];
-      el2.style.left = newX + "px";
-      el2.style.top = newY + "px";
-      const id2 = el2.dataset.id;
-      if (this.nodes[id2]) {
-        this.nodes[id2].x = newX;
-        this.nodes[id2].y = newY;
-      }
+      const dx = newX - this.state.dragPrimaryStart.x;
+      const dy = newY - this.state.dragPrimaryStart.y;
+      this.state.selectedNodes.forEach((nid) => {
+        const n2 = this.nodes[nid];
+        const domEl = document.querySelector(`.node[data-id="${nid}"]`);
+        if (!n2 || !domEl) return;
+        const start = this.state.dragStartPositions[nid];
+        if (!start) return;
+        const nx = start.x + dx;
+        const ny = start.y + dy;
+        domEl.style.left = nx + "px";
+        domEl.style.top = ny + "px";
+        n2.x = nx;
+        n2.y = ny;
+      });
       this.updateLinks();
+    } else if (this.state.rubberBand) {
+      this._updateRubberBand(e2);
     } else if (this.state.panning) {
-      const dx = e2.clientX - this.state.panStart[0], dy = e2.clientY - this.state.panStart[1];
+      const dx = e2.clientX - this.state.panStart[0];
+      const dy = e2.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
       this.state.pan[1] += dy;
       this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
@@ -29358,17 +29793,31 @@ LIST OF INTEREST OBJECT:
       this.updateLinks();
     }
   }
-  handleMouseUp() {
+  handleMouseUp(e2) {
+    if (this.state.rubberBand) {
+      const rb = this.state.rubberBand;
+      const r2 = rb.rect;
+      const isRealDrag = r2 && (r2.w > 6 || r2.h > 6);
+      if (isRealDrag) this.state.panning = false;
+      this._commitRubberBand(e2.shiftKey);
+    }
     this.state.draggingNode = null;
+    this.state.dragStartPositions = null;
+    this.state.dragPrimaryStart = null;
     this.state.panning = false;
     document.body.style.cursor = "default";
   }
   handleBoardWrapMouseDown(e2) {
     if (!e2.target.closest(".node")) {
-      this.state.panning = true;
-      this.state.panStart = [e2.clientX, e2.clientY];
-      document.body.style.cursor = "grabbing";
-      this.selectNode(null);
+      if (e2.shiftKey) {
+        this._startRubberBand(e2);
+        document.body.style.cursor = "crosshair";
+      } else {
+        if (!e2.shiftKey) this._selectClear();
+        this.state.panning = true;
+        this.state.panStart = [e2.clientX, e2.clientY];
+        document.body.style.cursor = "grabbing";
+      }
     }
   }
   updateLinks() {
@@ -29407,7 +29856,6 @@ LIST OF INTEREST OBJECT:
     byId("graph-status").innerHTML = "\u{1F534}";
   }
   compileGraph() {
-    console.log(">>>>>SAVE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -29429,7 +29877,8 @@ LIST OF INTEREST OBJECT:
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    document.dispatchEvent(new CustomEvent("save-graph", { detail: d }));
+    this.saveGraphEvent.detail.data = d;
+    document.dispatchEvent(this.saveGraphEvent);
   }
   clearStorage() {
     let ask = confirm("\u26A0\uFE0F This will delete all nodes. Are you sure?");
@@ -29638,11 +30087,102 @@ LIST OF INTEREST OBJECT:
       this.updateNodeDOM(nodeIdMap[oldId]);
     });
     this.updateLinks();
-    if (this.restoreConnectionsRuntime) {
-      this.restoreConnectionsRuntime();
-    }
+    if (this.restoreConnectionsRuntime) this.restoreConnectionsRuntime();
     this.log(`Merged ${Object.keys(nodeIdMap).length} nodes with links.`);
     this.compileGraph();
+  }
+  // Multi-select helpers
+  _selectAdd(id2) {
+    this.state.selectedNodes.add(id2);
+    this.state.selectedNode = id2;
+    document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
+  }
+  _selectRemove(id2) {
+    this.state.selectedNodes.delete(id2);
+    document.querySelector(`.node[data-id="${id2}"]`)?.classList.remove("selected");
+    this.state.selectedNode = this.state.selectedNodes.size ? [...this.state.selectedNodes].at(-1) : null;
+  }
+  _selectClear() {
+    this.state.selectedNodes.forEach((id2) => {
+      document.querySelector(`.node[data-id="${id2}"]`)?.classList.remove("selected");
+    });
+    this.state.selectedNodes.clear();
+    this.state.selectedNode = null;
+  }
+  _selectToggle(id2, additive) {
+    if (additive) {
+      if (this.state.selectedNodes.has(id2)) {
+        this._selectRemove(id2);
+      } else {
+        this._selectAdd(id2);
+      }
+    } else {
+      if (!this.state.selectedNodes.has(id2)) {
+        this._selectClear();
+      }
+      this._selectAdd(id2);
+    }
+  }
+  _startRubberBand(e2) {
+    const pos2 = this._getBoardPos(e2.clientX, e2.clientY);
+    const el2 = document.createElement("div");
+    el2.id = "fc-rubber-band";
+    Object.assign(el2.style, {
+      position: "absolute",
+      border: "1px dashed var(--color-text-info, #4a9eff)",
+      background: "rgba(74,158,255,0.06)",
+      pointerEvents: "none",
+      zIndex: 999,
+      left: pos2.x + "px",
+      top: pos2.y + "px",
+      width: "0px",
+      height: "0px"
+    });
+    this.board.appendChild(el2);
+    this.state.rubberBand = { startX: pos2.x, startY: pos2.y, el: el2 };
+  }
+  _updateRubberBand(e2) {
+    const rb = this.state.rubberBand;
+    if (!rb) return;
+    const pos2 = this._getBoardPos(e2.clientX, e2.clientY);
+    const x2 = Math.min(rb.startX, pos2.x);
+    const y2 = Math.min(rb.startY, pos2.y);
+    const w = Math.abs(pos2.x - rb.startX);
+    const h = Math.abs(pos2.y - rb.startY);
+    Object.assign(rb.el.style, {
+      left: x2 + "px",
+      top: y2 + "px",
+      width: w + "px",
+      height: h + "px"
+    });
+    rb.rect = { x: x2, y: y2, w, h };
+  }
+  _commitRubberBand(additive) {
+    const rb = this.state.rubberBand;
+    if (!rb) return;
+    rb.el.remove();
+    const r2 = rb.rect;
+    if (!r2 || r2.w < 4 && r2.h < 4) {
+      if (!additive) this._selectClear();
+      this.state.rubberBand = null;
+      return;
+    }
+    if (!additive) this._selectClear();
+    for (const id2 in this.nodes) {
+      const n2 = this.nodes[id2];
+      const nx = n2.x, ny = n2.y;
+      const nw = 180, nh = 80;
+      const overlaps = nx < r2.x + r2.w && nx + nw > r2.x && ny < r2.y + r2.h && ny + nh > r2.y;
+      if (overlaps) this._selectAdd(id2);
+    }
+    this.state.rubberBand = null;
+  }
+  _getBoardPos(clientX, clientY) {
+    const bRect = this.board.getBoundingClientRect();
+    return {
+      x: (clientX - bRect.left) / this.state.zoom,
+      y: (clientY - bRect.top) / this.state.zoom
+    };
   }
 };
 
@@ -30596,6 +31136,7 @@ var SceneObjectProperty = class {
           }
         });
       } else if (propName == "itIsPhysicsBody") {
+        if (!this.core.matrixPhysics) return;
         let body2 = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for (let key in body2) {
           if (typeof body2[key] === "string") {
@@ -31036,7 +31577,7 @@ var MethodsManager = class {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:30%;
+      width:50%;
       height: 75%;
       z-index:999;
     `;
@@ -31202,7 +31743,6 @@ var Editor = class {
       this.client = new MEEditorClient(this.check(a), projName);
       this.createFluxCodexVertexDOM();
       setTimeout(() => {
-        console.log("123 MOMENT BEFORE COSTRUCT MAIN FLUXCODEXVERTEX GRAPH");
         this.fluxCodexVertex = new FluxCodexVertex("board", "boardWrap", "log", this.methodsManager, projName, this.toolTip);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
@@ -31243,7 +31783,8 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add OBJ</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
@@ -31743,7 +32284,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
   }
   canvas.addEventListener(eventName, (event) => {
     const camera = app.cameras[app.mainCameraParams.type];
-    const { rayOrigin, rayDirection, screen } = getRayFromMouse(event, canvas, camera);
+    const { rayOrigin, rayDirection, screen: screen2 } = getRayFromMouse(event, canvas, camera);
     let closestHit = null;
     for (const object of app.mainRenderBundle) {
       if (!object.raycast?.enabled) continue;
@@ -31765,7 +32306,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
         hitDistance: closestHit.t,
         rayOrigin,
         rayDirection,
-        screenCoords: screen,
+        screenCoords: screen2,
         camera,
         timestamp: performance.now(),
         button: event.button,
@@ -31774,6 +32315,1292 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
     }
   });
 }
+
+// ../../../engine/procedural-mesh.js
+var ProceduralMeshObj = class extends Materials {
+  constructor(canvas, device2, context, o2, inputHandler, globalAmbient) {
+    super(device2, o2.material, null, o2.textureCache);
+    this.name = o2.name || genName(3);
+    this.done = false;
+    this.canvas = canvas;
+    this.device = device2;
+    this.context = context;
+    this.globalAmbient = [...globalAmbient];
+    if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
+      o2.material.useBlend = false;
+    }
+    this.mType = MeshType.PROCEDURAL;
+    this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
+    this._scaleVec = new Float32Array(3);
+    this._camVP = mat4Impl.create();
+    this.meshA = null;
+    this.meshB = null;
+    this.morphBlend = 0;
+    this.buildPipelineBucketsEvent = new CustomEvent("update-pipeine-buckets", {});
+    this.shadowsCast = true;
+    this.sceneBGL = o2.sceneBGL;
+    this.materialBGL = o2.materialBGL;
+    this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
+    if (o2.meshA && o2.meshB) {
+      const pair = MeshMorpher.createMatchedPair(o2.meshA, o2.meshB, o2.resolutionU || 32, o2.resolutionV || 32);
+      this.meshA = pair.meshA;
+      this.meshB = pair.meshB;
+      this.vertexCount = pair.vertexCount;
+      this._validateMorphCompatibility();
+    } else if (o2.geometryA) {
+      console.warn(`%cPlease use meshA, meshB not geometryA.`, LOG_WARN);
+      this.meshA = this._loadGeometry(o2.geometryA);
+      this.meshB = o2.geometryB ? this._loadGeometry(o2.geometryB) : this._loadGeometry(o2.geometryA);
+      this._validateMorphCompatibility();
+    }
+    this.morphBlend = o2.morphBlend ?? 0;
+    this.morphAnimation = {
+      active: false,
+      startBlend: this.morphBlend,
+      targetBlend: 1,
+      duration: 1e3,
+      elapsed: 0,
+      onComplete: null
+    };
+    this.pointerEffect = o2.pointerEffect;
+    this._modelMatrix = mat4Impl.create();
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
+    this.inputHandler = inputHandler;
+    this.cameras = o2.cameras;
+    this.mainCameraParams = {
+      type: o2.mainCameraParams.type,
+      responseCoef: o2.mainCameraParams.responseCoef
+    };
+    this.lastFrameMS = 0;
+    this.position = new Position(o2.position.x, o2.position.y, o2.position.z);
+    this.rotation = new Rotation(o2.rotation.x, o2.rotation.y, o2.rotation.z);
+    this.rotation.rotationSpeed.x = o2.rotationSpeed?.x || 0;
+    this.rotation.rotationSpeed.y = o2.rotationSpeed?.y || 0;
+    this.rotation.rotationSpeed.z = o2.rotationSpeed?.z || 0;
+    this.scale = o2.scale || [1, 1, 1];
+    this.useScale = o2.useScale || false;
+    this.time = 0;
+    this.deltaTimeAdapter = 1;
+    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.raycast = o2.raycast || { enabled: false, radius: 2 };
+    this.pointerEffect = o2.pointerEffect || { enabled: false };
+    if (typeof o2.vertexWGSL !== "undefined") {
+      this.vertexWGSL = o2.vertexWGSL;
+    }
+    if (typeof o2.fragmentWGSL !== "undefined") {
+      this.fragmentWGSL = o2.fragmentWGSL;
+    }
+    this.runProgram = () => {
+      return new Promise(async (resolve) => {
+        this.shadowDepthTextureSize = 512;
+        this.modelViewProjectionMatrix = mat4Impl.create();
+        if (o2.texturesPaths && o2.texturesPaths.length > 0 && o2.textureCache) {
+          this.texturesPaths = [...o2.texturesPaths];
+          try {
+            await this.loadTex0(this.texturesPaths);
+          } catch (err) {
+            console.warn(`Failed to load texture, using default: ${err.message}`);
+            await this._createDefaultTexture();
+          }
+        } else {
+          await this._createDefaultTexture();
+        }
+        resolve();
+      });
+    };
+    this.runProgram().then(() => {
+      this._setupBuffers();
+      this._setupUniforms();
+      this.setupPipeline();
+      this.done = true;
+    });
+  }
+  // GEOMETRY LOADING old
+  _loadGeometry(spec2) {
+    const { type: type2, size: size2, segments, options: options2 } = spec2;
+    const geo2 = GeometryFactory.create(type2, size2, segments, options2);
+    return {
+      vertices: geo2.positions,
+      normals: this._generateNormals(geo2.positions, geo2.indices),
+      uvs: geo2.uvs,
+      indices: geo2.indices,
+      vertexCount: geo2.positions.length / 3
+    };
+  }
+  _generateNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    for (let i = 0; i < indices.length; i += 3) {
+      const i0 = indices[i] * 3;
+      const i1 = indices[i + 1] * 3;
+      const i2 = indices[i + 2] * 3;
+      const v0 = [positions[i0], positions[i0 + 1], positions[i0 + 2]];
+      const v1 = [positions[i1], positions[i1 + 1], positions[i1 + 2]];
+      const v2 = [positions[i2], positions[i2 + 1], positions[i2 + 2]];
+      const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
+      const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
+      let normal = [
+        edge1[1] * edge2[2] - edge1[2] * edge2[1],
+        edge1[2] * edge2[0] - edge1[0] * edge2[2],
+        edge1[0] * edge2[1] - edge1[1] * edge2[0]
+      ];
+      const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
+      if (len2 > 0) {
+        normal = normal.map((n2) => n2 / len2);
+      }
+      normals[i0] = normal[0];
+      normals[i0 + 1] = normal[1];
+      normals[i0 + 2] = normal[2];
+      normals[i1] = normal[0];
+      normals[i1 + 1] = normal[1];
+      normals[i1 + 2] = normal[2];
+      normals[i2] = normal[0];
+      normals[i2 + 1] = normal[1];
+      normals[i2 + 2] = normal[2];
+    }
+    return normals;
+  }
+  _validateMorphCompatibility() {
+    if (this.meshA.vertexCount !== this.meshB.vertexCount) {
+      console.warn(
+        `\u26A0\uFE0F Morph vertex count mismatch: A=${this.meshA.vertexCount}, B=${this.meshB.vertexCount}. Padding will be applied but results may be incorrect.`
+      );
+      this._padMeshesToMatch();
+    }
+  }
+  _padMeshesToMatch() {
+    const maxCount = Math.max(this.meshA.vertexCount, this.meshB.vertexCount);
+    if (this.meshA.vertexCount < maxCount) {
+      this.meshA = this._padMesh(this.meshA, maxCount);
+    }
+    if (this.meshB.vertexCount < maxCount) {
+      this.meshB = this._padMesh(this.meshB, maxCount);
+    }
+  }
+  _padMesh(mesh, targetCount) {
+    const padCount = targetCount - mesh.vertexCount;
+    const lastVertIdx = (mesh.vertexCount - 1) * 3;
+    const paddedVertices = new Float32Array(targetCount * 3);
+    paddedVertices.set(mesh.vertices);
+    for (let i = 0; i < padCount; i++) {
+      paddedVertices.set(
+        mesh.vertices.slice(lastVertIdx, lastVertIdx + 3),
+        (mesh.vertexCount + i) * 3
+      );
+    }
+    const paddedNormals = new Float32Array(targetCount * 3);
+    paddedNormals.set(mesh.normals);
+    for (let i = 0; i < padCount; i++) {
+      paddedNormals.set(
+        mesh.normals.slice(lastVertIdx, lastVertIdx + 3),
+        (mesh.vertexCount + i) * 3
+      );
+    }
+    const paddedUVs = new Float32Array(targetCount * 2);
+    paddedUVs.set(mesh.uvs);
+    const lastUVIdx = (mesh.vertexCount - 1) * 2;
+    for (let i = 0; i < padCount; i++) {
+      paddedUVs.set(
+        mesh.uvs.slice(lastUVIdx, lastUVIdx + 2),
+        (mesh.vertexCount + i) * 2
+      );
+    }
+    return {
+      vertices: paddedVertices,
+      normals: paddedNormals,
+      uvs: paddedUVs,
+      indices: mesh.indices,
+      vertexCount: targetCount
+    };
+  }
+  async _createDefaultTexture() {
+    const textureData = new Uint8Array([255, 255, 255, 255]);
+    const texture = this.device.createTexture({
+      size: [1, 1, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.device.queue.writeTexture(
+      { texture },
+      textureData,
+      { bytesPerRow: 4 },
+      { width: 1, height: 1 }
+    );
+    this.texture0 = texture;
+    this.meshTexture = texture;
+    this.meshTextureView = texture.createView();
+  }
+  _setupShadowDepthTexture() {
+    this.shadowDepthTexture = this.device.createTexture({
+      size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 20],
+      format: "depth32float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _setupBuffers() {
+    this.context.configure({ device: this.device, format: this.presentationFormat, alphaMode: "premultiplied" });
+    const createBuffer = (data, usage = GPUBufferUsage.VERTEX) => {
+      const buf = this.device.createBuffer({ size: data.byteLength, usage, mappedAtCreation: true });
+      new data.constructor(buf.getMappedRange()).set(data);
+      buf.unmap();
+      return buf;
+    };
+    this.vertexBufferA = createBuffer(this.meshA.vertices);
+    this.vertexBufferB = createBuffer(this.meshB.vertices);
+    this.normalBufferA = createBuffer(this.meshA.normals);
+    this.normalBufferB = createBuffer(this.meshB.normals);
+    this.uvBuffer = createBuffer(this.meshA.uvs);
+    this.indexCount = this.meshA.indices.length;
+    this.indexBuffer = createBuffer(this.meshA.indices, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST);
+    const dummyJoints = new Uint32Array(this.vertexCount * 4).fill(0);
+    this.dummyJointsBuffer = createBuffer(dummyJoints);
+    const dummyWeights = new Float32Array(this.vertexCount * 4);
+    for (let i = 0; i < this.vertexCount; i++) dummyWeights.set([1, 0, 0, 0], i * 4);
+    this.dummyWeightsBuffer = createBuffer(dummyWeights);
+    this.vertexBuffers = [
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+      // posA
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] },
+      // normalA
+      { arrayStride: 2 * 4, attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }] },
+      // uv
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 6, offset: 0, format: "float32x3" }] },
+      // posB
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 7, offset: 0, format: "float32x3" }] }
+      // normalB
+    ];
+    this.primitive = { topology: "triangle-list", cullMode: "none", frontFace: "ccw" };
+  }
+  _setupUniforms() {
+    this.effects = {};
+    if (this.pointerEffect && this.pointerEffect.enabled === true) {
+      let pf = navigator.gpu.getPreferredCanvasFormat();
+      if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
+        this.effects.flameEmitter = new FlameEmitter(this.device, "rgba16float");
+      }
+      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
+        this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float");
+      }
+      if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
+        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", "torch");
+      }
+    }
+    this.modelUniformBuffer = this.device.createBuffer({ size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.bonesBuffer = this.device.createBuffer({ size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.morphBlendBuffer = this.device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
+    this.vertexAnimParams = new Float32Array([
+      0,
+      0,
+      0,
+      0,
+      2,
+      0.1,
+      2,
+      0,
+      1.5,
+      0.3,
+      2,
+      0.5,
+      1,
+      0.1,
+      0,
+      0,
+      1,
+      0.5,
+      0,
+      0,
+      1,
+      0.05,
+      0.5,
+      0,
+      1,
+      0.05,
+      2,
+      0,
+      1,
+      0.1,
+      0,
+      0
+    ]);
+    this.vertexAnimBuffer = this.device.createBuffer({
+      label: "Vertex Animation Params",
+      size: this.vertexAnimParams.byteLength,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // model
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // bones
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // vertexAnim
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        // morphBlend
+      ]
+    });
+    this.modelBindGroup = this.device.createBindGroup({
+      layout: this.uniformBufferBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.modelUniformBuffer } },
+        { binding: 1, resource: { buffer: this.bonesBuffer } },
+        { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
+        { binding: 3, resource: { buffer: this.morphBlendBuffer } }
+      ]
+    });
+    this.shadowBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // model
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // bones
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // vertexAnim
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        // morphBlend
+      ]
+    });
+    this.vertexAnim = {
+      active: false,
+      enableWave: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      disableWave: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      enableWind: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      disableWind: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      enablePulse: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      disablePulse: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      enableTwist: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      disableTwist: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      enableNoise: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      disableNoise: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      enableOcean: () => {
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      disableOcean: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      enable: (...effects) => {
+        effects.forEach((effect) => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disable: (...effects) => {
+        effects.forEach((effect) => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disableAll: () => {
+        this.vertexAnimParams[1] = 0;
+        this.updateVertexAnimBuffer();
+      },
+      isEnabled: (effect) => {
+        return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
+      },
+      setWaveParams: (speed, amplitude, frequency) => {
+        this.vertexAnimParams[4] = speed;
+        this.vertexAnimParams[5] = amplitude;
+        this.vertexAnimParams[6] = frequency;
+        this.updateVertexAnimBuffer();
+      },
+      setWindParams: (speed, strength, heightInfluence, turbulence) => {
+        this.vertexAnimParams[8] = speed;
+        this.vertexAnimParams[9] = strength;
+        this.vertexAnimParams[10] = heightInfluence;
+        this.vertexAnimParams[11] = turbulence;
+        this.updateVertexAnimBuffer();
+      },
+      setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
+        this.vertexAnimParams[12] = speed;
+        this.vertexAnimParams[13] = amount;
+        this.vertexAnimParams[14] = centerX;
+        this.vertexAnimParams[15] = centerY;
+        this.updateVertexAnimBuffer();
+      },
+      setTwistParams: (speed, amount) => {
+        this.vertexAnimParams[16] = speed;
+        this.vertexAnimParams[17] = amount;
+        this.updateVertexAnimBuffer();
+      },
+      setNoiseParams: (scale4, strength, speed) => {
+        this.vertexAnimParams[20] = scale4;
+        this.vertexAnimParams[21] = strength;
+        this.vertexAnimParams[22] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setOceanParams: (scale4, height, speed) => {
+        this.vertexAnimParams[24] = scale4;
+        this.vertexAnimParams[25] = height;
+        this.vertexAnimParams[26] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setIntensity: (value) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        this.updateVertexAnimBuffer();
+      },
+      getIntensity: () => {
+        return this.vertexAnimParams[2];
+      }
+    };
+    this.updateVertexAnimBuffer = () => {
+      this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+    };
+    this.vertexAnimParams[2] = 1;
+    this.updateVertexAnimBuffer();
+  }
+  setupPipeline() {
+    const pm = PipelineManager.get();
+    const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL() : this.getMaterial();
+    const vertexId = this.vertexWGSL ? "custom_proc" : "proc_morph";
+    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.isVideo == true ? "video" : this.material.type;
+    const isMirror = this.material.type === "mirror";
+    const isWater = this.material.type === "water";
+    const isNormalMap = this.material.type === "normalmap";
+    const isVideo = this.isVideo === true;
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "procedural",
+      topology: this.primitive ? this.primitive.topology : "triangle-list",
+      cullMode: this.primitive ? this.primitive.cullMode : "none",
+      frontFace: this.primitive ? this.primitive.frontFace : "ccw",
+      format: "rgba16float",
+      morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    this.createBindGroupForRender(MKEY);
+    const layout = this.device.createPipelineLayout({
+      bindGroupLayouts: [
+        this.sceneBGL,
+        isVideo ? this.materialVideoBGL : this.materialBGL,
+        this.uniformBufferBindGroupLayout,
+        isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null
+      ]
+    });
+    const vertexState = {
+      entryPoint: "main",
+      module: this.device.createShaderModule({ code: vertexCode }),
+      buffers: this.vertexBuffers
+    };
+    const fragmentConstants = { shadowDepthTextureSize: this.shadowDepthTextureSize };
+    this.pipeline = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: false,
+        depthWrite: true
+      }),
+      pipeline: {
+        label: "Procedural Opaque Cached",
+        layout,
+        vertex: vertexState,
+        fragment: {
+          entryPoint: "main",
+          module: this.device.createShaderModule({ code: fragmentCode }),
+          targets: [{ format: "rgba16float" }],
+          constants: fragmentConstants
+        },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: "less",
+          format: "depth24plus"
+        },
+        primitive: this.primitive
+      }
+    });
+    this.pipelineTransparent = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: true,
+        depthWrite: false
+      }),
+      pipeline: {
+        label: "Procedural Transparent Cached",
+        layout,
+        vertex: vertexState,
+        fragment: {
+          entryPoint: "main",
+          module: this.device.createShaderModule({ code: fragmentCode }),
+          targets: [{
+            format: "rgba16float",
+            blend: {
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              },
+              alpha: {
+                srcFactor: "one",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              }
+            }
+          }],
+          constants: fragmentConstants
+        },
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "less",
+          format: "depth24plus"
+        },
+        primitive: this.primitive
+      }
+    });
+    dispatchEvent(this.buildPipelineBucketsEvent);
+  }
+  setMorphBlend(t) {
+    this.morphBlend = Math.max(0, Math.min(1, t));
+    if (this.morphBlendBuffer) {
+      this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
+    } else {
+      console.error("\u274C NO BUFFER in setMorphBlend.");
+    }
+  }
+  morphTo(targetBlend, duration = 1e3, onComplete) {
+    const safeDuration = Math.max(duration, 100);
+    this.morphAnimation.active = true;
+    this.morphAnimation.startBlend = this.morphBlend;
+    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
+    this.morphAnimation.duration = Math.max(duration, 100);
+    this.morphAnimation.elapsed = 0;
+    if (onComplete) this.morphAnimation.onComplete = onComplete;
+    this.morphAnimation.active = true;
+    this.morphAnimation.startBlend = this.morphBlend;
+    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
+    this.morphAnimation.duration = safeDuration;
+    this.morphAnimation.elapsed = 0;
+    if (this.morphAnimation.debug) {
+      console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
+    }
+  }
+  switchMesh(specA, specB) {
+    this.meshA = this._loadGeometry(specA);
+    this.meshB = this._loadGeometry(specB);
+    this._validateMorphCompatibility();
+    this.vertexBufferA?.destroy();
+    this.vertexBufferB?.destroy();
+    this.normalBufferA?.destroy();
+    this.normalBufferB?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this._setupBuffers();
+    this.setMorphBlend(0);
+  }
+  updateMorphAnimation(deltaTime) {
+    if (!this.morphAnimation.active) return;
+    this.morphAnimation.elapsed += deltaTime;
+    const t = Math.min(1, this.morphAnimation.elapsed / this.morphAnimation.duration);
+    const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
+    this.setMorphBlend(blend);
+    if (t >= 1) {
+      this.morphAnimation.active = false;
+      if (this.morphAnimation.onComplete) {
+        this.morphAnimation.onComplete(blend);
+      }
+    }
+  }
+  getModelMatrix(pos2, useScale = false) {
+    if (!this.itIsPhysicsBody) {
+      let modelMatrix = mat4Impl.identity(this._modelMatrix);
+      this._translateVec[0] = pos2.x;
+      this._translateVec[1] = pos2.y;
+      this._translateVec[2] = pos2.z;
+      mat4Impl.translate(modelMatrix, this._translateVec, modelMatrix);
+      mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+      mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+      mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+      if (useScale == true) {
+        this._scaleVec[0] = this.scale[0];
+        this._scaleVec[1] = this.scale[1];
+        this._scaleVec[2] = this.scale[2];
+        mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
+      }
+      this.modelMatrix = modelMatrix;
+      return this.modelMatrix;
+    }
+    if (!this.modelMatrix) {
+      let modelMatrix = mat4Impl.identity(this._modelMatrix);
+      this.modelMatrix = modelMatrix;
+    }
+    return this.modelMatrix;
+  }
+  updateModelUniformBuffer() {
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+  }
+  updateTime(time) {
+    this.time += time * this.deltaTimeAdapter;
+    this.vertexAnimParams[0] = this.time;
+    this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+  }
+  drawElements(pass, lightContainer) {
+    pass.setVertexBuffer(0, this.vertexBufferA);
+    pass.setVertexBuffer(1, this.normalBufferA);
+    pass.setVertexBuffer(2, this.uvBuffer);
+    pass.setVertexBuffer(3, this.vertexBufferB);
+    pass.setVertexBuffer(4, this.normalBufferB);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount);
+  }
+  drawShadows(shadowPass) {
+    shadowPass.setVertexBuffer(0, this.vertexBufferA);
+    shadowPass.setVertexBuffer(1, this.normalBufferA);
+    shadowPass.setVertexBuffer(2, this.uvBuffer);
+    shadowPass.setVertexBuffer(3, this.vertexBufferB);
+    shadowPass.setVertexBuffer(4, this.normalBufferB);
+    shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
+    shadowPass.drawIndexed(this.indexCount);
+  }
+  getMainPipeline() {
+    return this.pipeline;
+  }
+  destroy() {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    this.vertexBufferA?.destroy();
+    this.vertexBufferB?.destroy();
+    this.normalBufferA?.destroy();
+    this.normalBufferB?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.modelUniformBuffer?.destroy();
+    this.sceneUniformBuffer?.destroy();
+    this.morphBlendBuffer?.destroy();
+    this.vertexAnimBuffer?.destroy();
+    this.shadowDepthTexture?.destroy();
+    this.pipeline = null;
+    this.pipelineTransparent = null;
+    this.modelBindGroup = null;
+    this.sceneBindGroupForRender = null;
+    console.info(`\u{1F9F9} Destroyed ProceduralMesh: ${this.name}`);
+  }
+};
+var MeshMorpher = class {
+  static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
+    const shapeAObj = typeof shapeA === "function" ? { func: shapeA } : shapeA;
+    const shapeBObj = typeof shapeB === "function" ? { func: shapeB } : shapeB;
+    const meshA2 = this._generateFromFunction(shapeAObj.func, resolutionU, resolutionV);
+    const meshB2 = this._generateFromFunction(shapeBObj.func, resolutionU, resolutionV);
+    if (!shapeAObj.flat)
+      meshA2.normals = this.computeSmoothNormals(meshA2.vertices, meshA2.indices);
+    if (!shapeBObj.flat)
+      meshB2.normals = this.computeSmoothNormals(meshB2.vertices, meshB2.indices);
+    return {
+      meshA: meshA2,
+      meshB: meshB2,
+      vertexCount: (resolutionU + 1) * (resolutionV + 1)
+    };
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MULTI-PART GEOMETRY
+  // Combines N shape functions into a single UV-partitioned mesh.
+  // Each part gets an equal slice of V-space. Bridge rows between parts
+  // are collapsed to a hidden point so no connecting triangles are visible.
+  //
+  // Usage:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.cube(1),   offset: [-2, 0, 0] },
+  //     { shape: MeshMorpher.cube(1),   offset: [ 2, 0, 0] },
+  //   )
+  //
+  //   // With rotation too:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.sphere(1), offset: [0, 0, 0], rotation: [0, 0, 0] },
+  //     { shape: MeshMorpher.torus(),   offset: [3, 0, 0], rotation: [Math.PI/2, 0, 0] },
+  //   )
+  //
+  // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
+  // ─────────────────────────────────────────────────────────────────────────────
+  static compose(...parts) {
+    const n2 = parts.length;
+    const normalised = parts.map((p) => {
+      const raw = p.shape ?? p.func ?? p;
+      const func = typeof raw === "function" ? raw : raw.func;
+      const flat = p.flat ?? (typeof raw === "object" ? raw.flat : false) ?? false;
+      const offset = p.offset ?? [0, 0, 0];
+      const rotation3 = p.rotation ?? [0, 0, 0];
+      const scale4 = p.scale ?? [1, 1, 1];
+      return { func, flat, offset, rotation: rotation3, scale: scale4 };
+    });
+    const applyTransform = (pos2, part) => {
+      let [x2, y2, z] = pos2;
+      x2 *= part.scale[0];
+      y2 *= part.scale[1];
+      z *= part.scale[2];
+      const [rx, ry, rz] = part.rotation;
+      if (rx !== 0) {
+        const cy = Math.cos(rx), sy = Math.sin(rx);
+        const ny = cy * y2 - sy * z, nz = sy * y2 + cy * z;
+        y2 = ny;
+        z = nz;
+      }
+      if (ry !== 0) {
+        const cx = Math.cos(ry), sx = Math.sin(ry);
+        const nx = cx * x2 + sx * z, nz = -sx * x2 + cx * z;
+        x2 = nx;
+        z = nz;
+      }
+      if (rz !== 0) {
+        const cz = Math.cos(rz), sz = Math.sin(rz);
+        const nx = cz * x2 - sz * y2, ny = sz * x2 + cz * y2;
+        x2 = nx;
+        y2 = ny;
+      }
+      x2 += part.offset[0];
+      y2 += part.offset[1];
+      z += part.offset[2];
+      return [x2, y2, z];
+    };
+    const composed = (u, vGlobal) => {
+      const sliceSize = 1 / n2;
+      const partIndex = Math.min(Math.floor(vGlobal / sliceSize), n2 - 1);
+      const part = normalised[partIndex];
+      const vLocal = (vGlobal - partIndex * sliceSize) / sliceSize;
+      const DEAD = 0.1;
+      if (vLocal < DEAD) {
+        return applyTransform(part.func(0, 0), part);
+      }
+      if (vLocal > 1 - DEAD) {
+        return applyTransform(part.func(0, 0), part);
+      }
+      const vMapped = (vLocal - DEAD) / (1 - DEAD * 2);
+      return applyTransform(part.func(u, vMapped), part);
+    };
+    const allFlat = normalised.every((p) => p.flat);
+    return allFlat ? { func: composed, flat: true } : composed;
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // All original methods below — completely unchanged
+  // ─────────────────────────────────────────────────────────────────────────────
+  static computeSmoothNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    const counts = new Uint16Array(positions.length / 3);
+    for (let i = 0; i < indices.length; i += 3) {
+      const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+      const ax = positions[ia * 3], ay = positions[ia * 3 + 1], az = positions[ia * 3 + 2];
+      const bx = positions[ib * 3], by = positions[ib * 3 + 1], bz = positions[ib * 3 + 2];
+      const cx = positions[ic * 3], cy = positions[ic * 3 + 1], cz = positions[ic * 3 + 2];
+      const ux = bx - ax, uy = by - ay, uz = bz - az;
+      const vx = cx - ax, vy = cy - ay, vz = cz - az;
+      let nx = uy * vz - uz * vy;
+      let ny = uz * vx - ux * vz;
+      let nz = ux * vy - uy * vx;
+      const len2 = Math.hypot(nx, ny, nz) || 1;
+      nx /= len2;
+      ny /= len2;
+      nz /= len2;
+      for (const idx of [ia, ib, ic]) {
+        normals[idx * 3] += nx;
+        normals[idx * 3 + 1] += ny;
+        normals[idx * 3 + 2] += nz;
+        counts[idx]++;
+      }
+    }
+    for (let i = 0; i < counts.length; i++) {
+      const len2 = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
+      normals[i * 3] /= len2;
+      normals[i * 3 + 1] /= len2;
+      normals[i * 3 + 2] /= len2;
+    }
+    return normals;
+  }
+  static _generateFromFunction(shapeFunc, resU, resV) {
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const indices = [];
+    for (let v = 0; v <= resV; v++) {
+      for (let u = 0; u <= resU; u++) {
+        const uNorm = u / resU;
+        const vNorm = v / resV;
+        const pos2 = shapeFunc(uNorm, vNorm);
+        positions.push(pos2[0], pos2[1], pos2[2]);
+        const eps = 0.01;
+        const posU = shapeFunc(Math.min(uNorm + eps, 1), vNorm);
+        const posV = shapeFunc(uNorm, Math.min(vNorm + eps, 1));
+        const tangentU = [posU[0] - pos2[0], posU[1] - pos2[1], posU[2] - pos2[2]];
+        const tangentV = [posV[0] - pos2[0], posV[1] - pos2[1], posV[2] - pos2[2]];
+        const normal = [
+          tangentU[1] * tangentV[2] - tangentU[2] * tangentV[1],
+          tangentU[2] * tangentV[0] - tangentU[0] * tangentV[2],
+          tangentU[0] * tangentV[1] - tangentU[1] * tangentV[0]
+        ];
+        const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
+        if (len2 > 0) {
+          normal[0] /= len2;
+          normal[1] /= len2;
+          normal[2] /= len2;
+        }
+        if (Math.abs(pos2[1]) < 0.01 && Math.abs(posU[1]) < 0.01 && Math.abs(posV[1]) < 0.01) {
+          normal[0] = 0;
+          normal[1] = 1;
+          normal[2] = 0;
+        }
+        normals.push(normal[0], normal[1], normal[2]);
+        uvs.push(uNorm, vNorm);
+      }
+    }
+    for (let v = 0; v < resV; v++) {
+      for (let u = 0; u < resU; u++) {
+        const i0 = v * (resU + 1) + u;
+        const i1 = i0 + 1;
+        const i2 = i0 + (resU + 1);
+        const i3 = i2 + 1;
+        indices.push(i0, i2, i1);
+        indices.push(i1, i2, i3);
+      }
+    }
+    return {
+      vertices: new Float32Array(positions),
+      normals: new Float32Array(normals),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices),
+      vertexCount: positions.length / 3,
+      flat: this.flat === true
+    };
+  }
+  static sphere(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      return [
+        radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static cube(size2 = 1) {
+    const s = size2 * 0.5;
+    return (u, v) => {
+      let x2, y2, z;
+      const unitU = u * 4 % 1;
+      const side = Math.floor(u * 4) % 4;
+      let sx, sz;
+      if (side === 0) {
+        sx = s;
+        sz = (unitU - 0.5) * size2;
+      } else if (side === 1) {
+        sx = (0.5 - unitU) * size2;
+        sz = s;
+      } else if (side === 2) {
+        sx = -s;
+        sz = (0.5 - unitU) * size2;
+      } else {
+        sx = (unitU - 0.5) * size2;
+        sz = -s;
+      }
+      if (v < 0.2) {
+        const lerp2 = v / 0.2;
+        x2 = sx * lerp2;
+        y2 = -s;
+        z = sz * lerp2;
+      } else if (v > 0.8) {
+        const lerp2 = (1 - v) / 0.2;
+        x2 = sx * lerp2;
+        y2 = s;
+        z = sz * lerp2;
+      } else {
+        const lerpY = (v - 0.2) / 0.6;
+        x2 = sx;
+        y2 = (lerpY - 0.5) * size2;
+        z = sz;
+      }
+      return [x2, y2, z];
+    };
+  }
+  static cylinder(radius = 1, height = 2) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = (v - 0.5) * height;
+      return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
+    };
+  }
+  static torus(majorRadius = 1, minorRadius = 0.3) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      const r2 = majorRadius + minorRadius * Math.cos(phi);
+      return [r2 * Math.cos(theta), minorRadius * Math.sin(phi), r2 * Math.sin(theta)];
+    };
+  }
+  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
+    if (fromZeroY == true) return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r2 = baseRadius * (1 - v);
+      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
+    };
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;
+      const r2 = baseRadius * (1 - v);
+      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
+    };
+  }
+  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
+    if (fromZeroX == true) return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r2 = baseRadius * (1 - v);
+      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
+    };
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;
+      const r2 = baseRadius * (1 - v);
+      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
+    };
+  }
+  // static capsule(radius = 0.5, height = 1) {
+  //   const halfH = height / 2;
+  //   return (u, v) => {
+  //     if(v < 0.25) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) - halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else if(v > 0.75) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) + halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else {
+  //       const theta = u * Math.PI * 2;
+  //       const y = ((v - 0.25) / 0.5) * height - halfH;
+  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+  //     }
+  //   };
+  // }
+  static capsule(radius = 1, height = 1, fromZeroY = true) {
+    const halfH = height / 2;
+    const yOffset = fromZeroY ? halfH + radius : 0;
+    return (u, v) => {
+      if (v < 0.25) {
+        const theta = -u * Math.PI * 2;
+        const phi = v / 0.25 * (Math.PI / 2) + Math.PI / 2;
+        return [
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.cos(phi) - halfH + yOffset,
+          radius * Math.sin(phi) * Math.sin(theta)
+        ];
+      } else if (v > 0.75) {
+        const theta = -u * Math.PI * 2;
+        const phi = (v - 0.75) / 0.25 * (Math.PI / 2);
+        return [
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.cos(phi) + halfH + yOffset,
+          radius * Math.sin(phi) * Math.sin(theta)
+        ];
+      } else {
+        const theta = u * Math.PI * 2;
+        const y2 = (v - 0.25) / 0.5 * height - halfH;
+        return [
+          radius * Math.cos(theta),
+          y2 + yOffset,
+          radius * Math.sin(theta)
+        ];
+      }
+    };
+  }
+  static plane(size2 = 1) {
+    return (u, v) => [(u - 0.5) * size2, 0, (v - 0.5) * size2];
+  }
+  static mobius(radius = 1, width = 0.5) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const t = (v - 0.5) * width;
+      const halfTheta = theta / 2;
+      return [
+        (radius + t * Math.cos(halfTheta)) * Math.cos(theta),
+        t * Math.sin(halfTheta),
+        (radius + t * Math.cos(halfTheta)) * Math.sin(theta)
+      ];
+    };
+  }
+  static pyramid(size2 = 1) {
+    return (u, v) => {
+      const angle = u * Math.PI * 2;
+      const r2 = (1 - v) * size2;
+      return [r2 * Math.cos(angle), v * size2, r2 * Math.sin(angle)];
+    };
+  }
+  static supershape(size2 = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r2 = size2 * (0.5 + 0.5 * Math.sin(5 * theta) * Math.sin(3 * phi));
+      return [
+        r2 * Math.sin(phi) * Math.cos(theta),
+        r2 * Math.cos(phi),
+        r2 * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static star(radius = 1, innerRadius = 0.4, depth = 0.3) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const r2 = radius * (0.7 + 0.3 * Math.cos(5 * theta));
+      let x2, y2, z;
+      if (v < 0.5) {
+        const lerp2 = v / 0.5;
+        x2 = r2 * Math.cos(theta) * lerp2;
+        z = r2 * Math.sin(theta) * lerp2;
+        y2 = depth * (1 - lerp2);
+      } else {
+        const lerp2 = (1 - v) / 0.5;
+        x2 = r2 * Math.cos(theta) * lerp2;
+        z = r2 * Math.sin(theta) * lerp2;
+        y2 = -depth * (1 - lerp2);
+      }
+      return [x2, y2, z];
+    };
+  }
+  static wavePlane(size2 = 2) {
+    return (u, v) => {
+      const x2 = (u - 0.5) * size2;
+      const z = (v - 0.5) * size2;
+      const y2 = Math.sin(x2 * 3) * Math.cos(z * 3) * 0.3;
+      return [x2, y2, z];
+    };
+  }
+  static circlePlane(radius = 1) {
+    return (u, v) => {
+      const angle = -u * Math.PI * 2;
+      const r2 = -v * radius;
+      return [r2 * Math.cos(angle), 0, r2 * Math.sin(angle)];
+    };
+  }
+  static icosahedron(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x2 = Math.sin(phi) * Math.cos(theta);
+      let y2 = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const f = Math.abs(x2) + Math.abs(y2) + Math.abs(z);
+      x2 /= f;
+      y2 /= f;
+      z /= f;
+      return [x2 * radius, y2 * radius, z * radius];
+    };
+  }
+  static diamond(size2 = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const y2 = (v - 0.5) * 2 * size2;
+      const r2 = size2 * (1 - Math.abs(v - 0.5) * 2);
+      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
+    };
+  }
+  static rock(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x2 = Math.sin(phi) * Math.cos(theta);
+      let y2 = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const noise = 0.2 * Math.sin(theta * 7) * Math.cos(phi * 5);
+      const r2 = radius + noise;
+      return [x2 * r2, y2 * r2, z * r2];
+    };
+  }
+  static star3d(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI;
+      const spike = 1 + 0.3 * Math.sin(theta * 5);
+      const r2 = radius * spike;
+      return [
+        r2 * Math.sin(phi) * Math.cos(theta),
+        r2 * Math.cos(phi),
+        r2 * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static galaxySpiral(scale4 = 10, arms = 3, twist = 2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radius = v;
+      const armOffset = theta * arms % (Math.PI * 2);
+      const r2 = radius * (1 + 0.2 * Math.sin(armOffset * twist));
+      const x2 = r2 * Math.cos(theta);
+      const y2 = 0.1 * radius * Math.sin(5 * theta);
+      const z = r2 * Math.sin(theta);
+      return [x2 * scale4, y2 * scale4, z * scale4];
+    };
+  }
+  static littleStar(radius = 1, innerRadius = 0.4, depth = 0.2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const sector = u * 10 % 2;
+      const lerp2 = sector > 1 ? 2 - sector : sector;
+      const r2 = innerRadius + (radius - innerRadius) * lerp2;
+      const posX = r2 * Math.cos(theta);
+      const posZ = r2 * Math.sin(theta);
+      let x2, y2, z;
+      if (v < 0.5) {
+        const f = v / 0.5;
+        x2 = posX * f;
+        z = posZ * f;
+        y2 = depth * (1 - f);
+      } else {
+        const f = (1 - v) / 0.5;
+        x2 = posX * f;
+        z = posZ * f;
+        y2 = -depth * (1 - f);
+      }
+      return [x2, y2, z];
+    };
+  }
+  static flatStar(radius = 1, innerRadius = 0.2, thickness = 0.1) {
+    const func = (u, v) => {
+      const spikes = 5;
+      const theta = -u * Math.PI * 2;
+      const star = Math.cos(spikes * theta);
+      const r2 = innerRadius + (radius - innerRadius) * (star * 0.5 + 0.5);
+      const finalR = r2 * v;
+      return [finalR * Math.cos(theta), 0, finalR * Math.sin(theta)];
+    };
+    return { func, flat: true };
+  }
+  static klein(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      let x2, y2, z;
+      if (theta < Math.PI) {
+        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(theta) * Math.cos(phi);
+        z = -8 * Math.sin(theta) - 2 * (1 - Math.cos(theta) / 2) * Math.sin(theta) * Math.cos(phi);
+      } else {
+        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(phi + Math.PI);
+        z = -8 * Math.sin(theta);
+      }
+      y2 = 2 * (1 - Math.cos(theta) / 2) * Math.sin(phi);
+      return [x2 * 0.1 * radius, y2 * 0.1 * radius, z * 0.1 * radius];
+    };
+  }
+  static shell(scale4 = 1) {
+    scale4 = scale4 / 4;
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const phi = -v * Math.PI * 2;
+      const r2 = 0.4 + Math.exp(-theta * 0.12);
+      const x2 = r2 * Math.cos(theta) * (1 + 0.3 * Math.cos(phi));
+      const y2 = r2 * Math.sin(theta) * (1 + 0.3 * Math.cos(phi));
+      const z = 0.3 * r2 * Math.sin(phi);
+      return [x2 * scale4, z * scale4, y2 * scale4];
+    };
+  }
+  static rippleSphere(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const ripple = 1 + 0.2 * Math.sin(10 * theta) * Math.sin(6 * phi);
+      const r2 = radius * ripple;
+      return [
+        r2 * Math.sin(phi) * Math.cos(theta),
+        r2 * Math.cos(phi),
+        r2 * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static twistedTorus(R = 1, r2 = 0.3, twists = 3) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      const twist = phi + theta * twists;
+      return [
+        (R + r2 * Math.cos(twist)) * Math.cos(theta),
+        r2 * Math.sin(twist),
+        (R + r2 * Math.cos(twist)) * Math.sin(theta)
+      ];
+    };
+  }
+  static tornado(height = 2, radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const y2 = (v - 0.5) * height;
+      const r2 = Math.pow(v, 1.5) * radius;
+      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
+    };
+  }
+  static brain(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x2 = Math.sin(phi) * Math.cos(theta);
+      let y2 = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const wrinkle = 0.25 * Math.sin(theta * 6) * Math.sin(phi * 4);
+      const r2 = radius + wrinkle;
+      return [x2 * r2, y2 * r2, z * r2];
+    };
+  }
+  static galaxyComposite(numStars = 500, arms = 4, twist = 2, scale4 = 20) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radial = v;
+      const arm = Math.floor(radial * arms);
+      const armOffset = arm / arms * Math.PI * 2;
+      const r2 = radial * (1 + 0.2 * Math.sin(theta * 5 + armOffset));
+      const y2 = 0.1 * radial * Math.sin(theta * 8);
+      const clusterOffsetX = 0.05 * Math.sin(armOffset + v * 12);
+      const clusterOffsetZ = 0.05 * Math.cos(armOffset + u * 12);
+      const x2 = (r2 * Math.cos(theta) + clusterOffsetX) * scale4;
+      const z = (r2 * Math.sin(theta) + clusterOffsetZ) * scale4;
+      return [x2, y2 * scale4, z];
+    };
+  }
+};
 
 // ../../../engine/generators/generator.js
 var local = [];
@@ -32012,7 +33839,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
-function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = { mesh: path2 };
@@ -32026,7 +33853,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, i
           z: pos2.z
         },
         rotation: rot2,
-        rotationSpeed: { x: 0, y: 0, z: 0 },
+        rotationSpeed: rotationSpeed2,
         texturesPaths: [texturePath2],
         name: name2,
         mesh: m.mesh,
@@ -32038,11 +33865,41 @@ function addOBJ(path2, material = "standard", pos2, rot2, texturePath2, name2, i
         raycast: RAY
       });
       const o2 = app.getSceneObjectByName(name2);
-      console.log(o2.name);
       runtimeCacheObjs.push(o2);
       resolve(o2);
     }
     downloadMeshes(inputCube, handler, { scale: scale4 });
+  });
+}
+function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const RAY = { enabled: !!raycast2, radius: 1 };
+    console.info("add cube form graph..");
+    engine.addProceduralMeshObj({
+      material: { type: material },
+      position: {
+        x: pos2.x,
+        y: pos2.y,
+        z: pos2.z
+      },
+      rotation: rot2,
+      rotationSpeed: rotationSpeed2,
+      texturesPaths: [texturePath2],
+      name: name2,
+      meshA: MeshMorpher[meshTypeA](1),
+      meshB: MeshMorpher[meshTypeB](1),
+      physics: {
+        scale: scale4,
+        enabled: isPhysicsBody2,
+        geometry: "Cube"
+      },
+      raycast: RAY
+    });
+    const o2 = app.getSceneObjectByName(name2);
+    console.log(o2.name);
+    runtimeCacheObjs.push(o2);
+    resolve(o2);
   });
 }
 function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["./res/textures/slot/reel1.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
@@ -32053,7 +33910,7 @@ function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 
     for (let y2 = 0; y2 < size2; y2++) {
       const cubeName = `${name2}_${y2}`;
       engine.addMeshObj({
-        material: { type: material },
+        material: { type: material, share: true },
         position: {
           x: pos2.x,
           y: pos2.y + y2 * spacing2,
@@ -32646,1292 +34503,6 @@ function compositeFragWGSL() {
   );
 }
 
-// ../../../engine/procedural-mesh.js
-var ProceduralMeshObj = class extends Materials {
-  constructor(canvas, device2, context, o2, inputHandler, globalAmbient) {
-    super(device2, o2.material, null, o2.textureCache);
-    this.name = o2.name || genName(3);
-    this.done = false;
-    this.canvas = canvas;
-    this.device = device2;
-    this.context = context;
-    this.globalAmbient = [...globalAmbient];
-    if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
-      o2.material.useBlend = false;
-    }
-    this.mType = MeshType.PROCEDURAL;
-    this._translateVec = new Float32Array(3);
-    this._rotAxisVec = new Float32Array(3);
-    this._scaleVec = new Float32Array(3);
-    this._camVP = mat4Impl.create();
-    this.meshA = null;
-    this.meshB = null;
-    this.morphBlend = 0;
-    this.buildPipelineBucketsEvent = new CustomEvent("update-pipeine-buckets", {});
-    this.shadowsCast = true;
-    this.sceneBGL = o2.sceneBGL;
-    this.materialBGL = o2.materialBGL;
-    this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
-    if (o2.meshA && o2.meshB) {
-      const pair = MeshMorpher.createMatchedPair(o2.meshA, o2.meshB, o2.resolutionU || 32, o2.resolutionV || 32);
-      this.meshA = pair.meshA;
-      this.meshB = pair.meshB;
-      this.vertexCount = pair.vertexCount;
-      this._validateMorphCompatibility();
-    } else if (o2.geometryA) {
-      console.warn(`%cPlease use meshA, meshB not geometryA.`, LOG_WARN);
-      this.meshA = this._loadGeometry(o2.geometryA);
-      this.meshB = o2.geometryB ? this._loadGeometry(o2.geometryB) : this._loadGeometry(o2.geometryA);
-      this._validateMorphCompatibility();
-    }
-    this.morphBlend = o2.morphBlend ?? 0;
-    this.morphAnimation = {
-      active: false,
-      startBlend: this.morphBlend,
-      targetBlend: 1,
-      duration: 1e3,
-      elapsed: 0,
-      onComplete: null
-    };
-    this.pointerEffect = o2.pointerEffect;
-    this._modelMatrix = mat4Impl.create();
-    this._posArray = new Float32Array(3);
-    this._scaleArray = new Float32Array(3);
-    this._rotAxisVec = new Float32Array(3);
-    this.inputHandler = inputHandler;
-    this.cameras = o2.cameras;
-    this.mainCameraParams = {
-      type: o2.mainCameraParams.type,
-      responseCoef: o2.mainCameraParams.responseCoef
-    };
-    this.lastFrameMS = 0;
-    this.position = new Position(o2.position.x, o2.position.y, o2.position.z);
-    this.rotation = new Rotation(o2.rotation.x, o2.rotation.y, o2.rotation.z);
-    this.rotation.rotationSpeed.x = o2.rotationSpeed?.x || 0;
-    this.rotation.rotationSpeed.y = o2.rotationSpeed?.y || 0;
-    this.rotation.rotationSpeed.z = o2.rotationSpeed?.z || 0;
-    this.scale = o2.scale || [1, 1, 1];
-    this.useScale = o2.useScale || false;
-    this.time = 0;
-    this.deltaTimeAdapter = 1;
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.raycast = o2.raycast || { enabled: false, radius: 2 };
-    this.pointerEffect = o2.pointerEffect || { enabled: false };
-    if (typeof o2.vertexWGSL !== "undefined") {
-      this.vertexWGSL = o2.vertexWGSL;
-    }
-    if (typeof o2.fragmentWGSL !== "undefined") {
-      this.fragmentWGSL = o2.fragmentWGSL;
-    }
-    this.runProgram = () => {
-      return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 512;
-        this.modelViewProjectionMatrix = mat4Impl.create();
-        if (o2.texturesPaths && o2.texturesPaths.length > 0 && o2.textureCache) {
-          this.texturesPaths = [...o2.texturesPaths];
-          try {
-            await this.loadTex0(this.texturesPaths);
-          } catch (err) {
-            console.warn(`Failed to load texture, using default: ${err.message}`);
-            await this._createDefaultTexture();
-          }
-        } else {
-          await this._createDefaultTexture();
-        }
-        resolve();
-      });
-    };
-    this.runProgram().then(() => {
-      this._setupBuffers();
-      this._setupUniforms();
-      this.setupPipeline();
-      this.done = true;
-    });
-  }
-  // GEOMETRY LOADING old
-  _loadGeometry(spec2) {
-    const { type: type2, size: size2, segments, options: options2 } = spec2;
-    const geo2 = GeometryFactory.create(type2, size2, segments, options2);
-    return {
-      vertices: geo2.positions,
-      normals: this._generateNormals(geo2.positions, geo2.indices),
-      uvs: geo2.uvs,
-      indices: geo2.indices,
-      vertexCount: geo2.positions.length / 3
-    };
-  }
-  _generateNormals(positions, indices) {
-    const normals = new Float32Array(positions.length);
-    for (let i = 0; i < indices.length; i += 3) {
-      const i0 = indices[i] * 3;
-      const i1 = indices[i + 1] * 3;
-      const i2 = indices[i + 2] * 3;
-      const v0 = [positions[i0], positions[i0 + 1], positions[i0 + 2]];
-      const v1 = [positions[i1], positions[i1 + 1], positions[i1 + 2]];
-      const v2 = [positions[i2], positions[i2 + 1], positions[i2 + 2]];
-      const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
-      const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
-      let normal = [
-        edge1[1] * edge2[2] - edge1[2] * edge2[1],
-        edge1[2] * edge2[0] - edge1[0] * edge2[2],
-        edge1[0] * edge2[1] - edge1[1] * edge2[0]
-      ];
-      const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
-      if (len2 > 0) {
-        normal = normal.map((n2) => n2 / len2);
-      }
-      normals[i0] = normal[0];
-      normals[i0 + 1] = normal[1];
-      normals[i0 + 2] = normal[2];
-      normals[i1] = normal[0];
-      normals[i1 + 1] = normal[1];
-      normals[i1 + 2] = normal[2];
-      normals[i2] = normal[0];
-      normals[i2 + 1] = normal[1];
-      normals[i2 + 2] = normal[2];
-    }
-    return normals;
-  }
-  _validateMorphCompatibility() {
-    if (this.meshA.vertexCount !== this.meshB.vertexCount) {
-      console.warn(
-        `\u26A0\uFE0F Morph vertex count mismatch: A=${this.meshA.vertexCount}, B=${this.meshB.vertexCount}. Padding will be applied but results may be incorrect.`
-      );
-      this._padMeshesToMatch();
-    }
-  }
-  _padMeshesToMatch() {
-    const maxCount = Math.max(this.meshA.vertexCount, this.meshB.vertexCount);
-    if (this.meshA.vertexCount < maxCount) {
-      this.meshA = this._padMesh(this.meshA, maxCount);
-    }
-    if (this.meshB.vertexCount < maxCount) {
-      this.meshB = this._padMesh(this.meshB, maxCount);
-    }
-  }
-  _padMesh(mesh, targetCount) {
-    const padCount = targetCount - mesh.vertexCount;
-    const lastVertIdx = (mesh.vertexCount - 1) * 3;
-    const paddedVertices = new Float32Array(targetCount * 3);
-    paddedVertices.set(mesh.vertices);
-    for (let i = 0; i < padCount; i++) {
-      paddedVertices.set(
-        mesh.vertices.slice(lastVertIdx, lastVertIdx + 3),
-        (mesh.vertexCount + i) * 3
-      );
-    }
-    const paddedNormals = new Float32Array(targetCount * 3);
-    paddedNormals.set(mesh.normals);
-    for (let i = 0; i < padCount; i++) {
-      paddedNormals.set(
-        mesh.normals.slice(lastVertIdx, lastVertIdx + 3),
-        (mesh.vertexCount + i) * 3
-      );
-    }
-    const paddedUVs = new Float32Array(targetCount * 2);
-    paddedUVs.set(mesh.uvs);
-    const lastUVIdx = (mesh.vertexCount - 1) * 2;
-    for (let i = 0; i < padCount; i++) {
-      paddedUVs.set(
-        mesh.uvs.slice(lastUVIdx, lastUVIdx + 2),
-        (mesh.vertexCount + i) * 2
-      );
-    }
-    return {
-      vertices: paddedVertices,
-      normals: paddedNormals,
-      uvs: paddedUVs,
-      indices: mesh.indices,
-      vertexCount: targetCount
-    };
-  }
-  async _createDefaultTexture() {
-    const textureData = new Uint8Array([255, 255, 255, 255]);
-    const texture = this.device.createTexture({
-      size: [1, 1, 1],
-      format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.device.queue.writeTexture(
-      { texture },
-      textureData,
-      { bytesPerRow: 4 },
-      { width: 1, height: 1 }
-    );
-    this.texture0 = texture;
-    this.meshTexture = texture;
-    this.meshTextureView = texture.createView();
-  }
-  _setupShadowDepthTexture() {
-    this.shadowDepthTexture = this.device.createTexture({
-      size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 20],
-      format: "depth32float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-    });
-  }
-  _setupBuffers() {
-    this.context.configure({ device: this.device, format: this.presentationFormat, alphaMode: "premultiplied" });
-    const createBuffer = (data, usage = GPUBufferUsage.VERTEX) => {
-      const buf = this.device.createBuffer({ size: data.byteLength, usage, mappedAtCreation: true });
-      new data.constructor(buf.getMappedRange()).set(data);
-      buf.unmap();
-      return buf;
-    };
-    this.vertexBufferA = createBuffer(this.meshA.vertices);
-    this.vertexBufferB = createBuffer(this.meshB.vertices);
-    this.normalBufferA = createBuffer(this.meshA.normals);
-    this.normalBufferB = createBuffer(this.meshB.normals);
-    this.uvBuffer = createBuffer(this.meshA.uvs);
-    this.indexCount = this.meshA.indices.length;
-    this.indexBuffer = createBuffer(this.meshA.indices, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST);
-    const dummyJoints = new Uint32Array(this.vertexCount * 4).fill(0);
-    this.dummyJointsBuffer = createBuffer(dummyJoints);
-    const dummyWeights = new Float32Array(this.vertexCount * 4);
-    for (let i = 0; i < this.vertexCount; i++) dummyWeights.set([1, 0, 0, 0], i * 4);
-    this.dummyWeightsBuffer = createBuffer(dummyWeights);
-    this.vertexBuffers = [
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-      // posA
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] },
-      // normalA
-      { arrayStride: 2 * 4, attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }] },
-      // uv
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 6, offset: 0, format: "float32x3" }] },
-      // posB
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 7, offset: 0, format: "float32x3" }] }
-      // normalB
-    ];
-    this.primitive = { topology: "triangle-list", cullMode: "none", frontFace: "ccw" };
-  }
-  _setupUniforms() {
-    this.effects = {};
-    if (this.pointerEffect && this.pointerEffect.enabled === true) {
-      let pf = navigator.gpu.getPreferredCanvasFormat();
-      if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
-        this.effects.flameEmitter = new FlameEmitter(this.device, "rgba16float");
-      }
-      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
-        this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float");
-      }
-      if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", "torch");
-      }
-    }
-    this.modelUniformBuffer = this.device.createBuffer({ size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.bonesBuffer = this.device.createBuffer({ size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.morphBlendBuffer = this.device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
-    this.vertexAnimParams = new Float32Array([
-      0,
-      0,
-      0,
-      0,
-      2,
-      0.1,
-      2,
-      0,
-      1.5,
-      0.3,
-      2,
-      0.5,
-      1,
-      0.1,
-      0,
-      0,
-      1,
-      0.5,
-      0,
-      0,
-      1,
-      0.05,
-      0.5,
-      0,
-      1,
-      0.05,
-      2,
-      0,
-      1,
-      0.1,
-      0,
-      0
-    ]);
-    this.vertexAnimBuffer = this.device.createBuffer({
-      label: "Vertex Animation Params",
-      size: this.vertexAnimParams.byteLength,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // model
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // bones
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // vertexAnim
-        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-        // morphBlend
-      ]
-    });
-    this.modelBindGroup = this.device.createBindGroup({
-      layout: this.uniformBufferBindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.modelUniformBuffer } },
-        { binding: 1, resource: { buffer: this.bonesBuffer } },
-        { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
-        { binding: 3, resource: { buffer: this.morphBlendBuffer } }
-      ]
-    });
-    this.shadowBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // model
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // bones
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // vertexAnim
-        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-        // morphBlend
-      ]
-    });
-    this.vertexAnim = {
-      active: false,
-      enableWave: () => {
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
-        this.updateVertexAnimBuffer();
-      },
-      disableWave: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
-        this.updateVertexAnimBuffer();
-      },
-      enableWind: () => {
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
-        this.updateVertexAnimBuffer();
-      },
-      disableWind: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
-        this.updateVertexAnimBuffer();
-      },
-      enablePulse: () => {
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
-        this.updateVertexAnimBuffer();
-      },
-      disablePulse: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
-        this.updateVertexAnimBuffer();
-      },
-      enableTwist: () => {
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
-        this.updateVertexAnimBuffer();
-      },
-      disableTwist: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
-        this.updateVertexAnimBuffer();
-      },
-      enableNoise: () => {
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
-        this.updateVertexAnimBuffer();
-      },
-      disableNoise: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
-        this.updateVertexAnimBuffer();
-      },
-      enableOcean: () => {
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
-        this.updateVertexAnimBuffer();
-      },
-      disableOcean: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
-        this.updateVertexAnimBuffer();
-      },
-      enable: (...effects) => {
-        effects.forEach((effect) => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
-        });
-        this.updateVertexAnimBuffer();
-      },
-      disable: (...effects) => {
-        effects.forEach((effect) => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
-        });
-        this.updateVertexAnimBuffer();
-      },
-      disableAll: () => {
-        this.vertexAnimParams[1] = 0;
-        this.updateVertexAnimBuffer();
-      },
-      isEnabled: (effect) => {
-        return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
-      },
-      setWaveParams: (speed, amplitude, frequency) => {
-        this.vertexAnimParams[4] = speed;
-        this.vertexAnimParams[5] = amplitude;
-        this.vertexAnimParams[6] = frequency;
-        this.updateVertexAnimBuffer();
-      },
-      setWindParams: (speed, strength, heightInfluence, turbulence) => {
-        this.vertexAnimParams[8] = speed;
-        this.vertexAnimParams[9] = strength;
-        this.vertexAnimParams[10] = heightInfluence;
-        this.vertexAnimParams[11] = turbulence;
-        this.updateVertexAnimBuffer();
-      },
-      setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
-        this.vertexAnimParams[12] = speed;
-        this.vertexAnimParams[13] = amount;
-        this.vertexAnimParams[14] = centerX;
-        this.vertexAnimParams[15] = centerY;
-        this.updateVertexAnimBuffer();
-      },
-      setTwistParams: (speed, amount) => {
-        this.vertexAnimParams[16] = speed;
-        this.vertexAnimParams[17] = amount;
-        this.updateVertexAnimBuffer();
-      },
-      setNoiseParams: (scale4, strength, speed) => {
-        this.vertexAnimParams[20] = scale4;
-        this.vertexAnimParams[21] = strength;
-        this.vertexAnimParams[22] = speed;
-        this.updateVertexAnimBuffer();
-      },
-      setOceanParams: (scale4, height, speed) => {
-        this.vertexAnimParams[24] = scale4;
-        this.vertexAnimParams[25] = height;
-        this.vertexAnimParams[26] = speed;
-        this.updateVertexAnimBuffer();
-      },
-      setIntensity: (value) => {
-        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
-        this.updateVertexAnimBuffer();
-      },
-      getIntensity: () => {
-        return this.vertexAnimParams[2];
-      }
-    };
-    this.updateVertexAnimBuffer = () => {
-      this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-    };
-    this.vertexAnimParams[2] = 1;
-    this.updateVertexAnimBuffer();
-  }
-  setupPipeline() {
-    const pm = PipelineManager.get();
-    const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL;
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL : this.getMaterial();
-    const vertexId = this.vertexWGSL ? "custom_proc" : "proc_morph";
-    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.isVideo == true ? "video" : this.material.type;
-    const isMirror = this.material.type === "mirror";
-    const isWater = this.material.type === "water";
-    const isNormalMap = this.material.type === "normalmap";
-    const isVideo = this.isVideo === true;
-    const baseKey = {
-      vertexId,
-      fragmentId,
-      type: "procedural",
-      topology: this.primitive.topology,
-      cullMode: this.primitive.cullMode,
-      frontFace: this.primitive.frontFace,
-      format: "rgba16float",
-      morph: !this.vertexWGSL ? 1 : 0,
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
-    let MKEY = structuredClone(baseKey);
-    MKEY.texturesPaths = this.texturesPaths.join();
-    this.material.pipelineKey = baseKey;
-    this.material.matKey = MKEY;
-    this.createBindGroupForRender(MKEY);
-    const layout = this.device.createPipelineLayout({
-      bindGroupLayouts: [
-        this.sceneBGL,
-        isVideo ? this.materialVideoBGL : this.materialBGL,
-        this.uniformBufferBindGroupLayout,
-        isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null
-      ]
-    });
-    const vertexState = {
-      entryPoint: "main",
-      module: this.device.createShaderModule({ code: vertexCode }),
-      buffers: this.vertexBuffers
-    };
-    const fragmentConstants = { shadowDepthTextureSize: this.shadowDepthTextureSize };
-    this.pipeline = pm.getPipeline({
-      key: buildPipelineKey({
-        ...baseKey,
-        transparent: false,
-        depthWrite: true
-      }),
-      pipeline: {
-        label: "Procedural Opaque Cached",
-        layout,
-        vertex: vertexState,
-        fragment: {
-          entryPoint: "main",
-          module: this.device.createShaderModule({ code: fragmentCode }),
-          targets: [{ format: "rgba16float" }],
-          constants: fragmentConstants
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: "less",
-          format: "depth24plus"
-        },
-        primitive: this.primitive
-      }
-    });
-    this.pipelineTransparent = pm.getPipeline({
-      key: buildPipelineKey({
-        ...baseKey,
-        transparent: true,
-        depthWrite: false
-      }),
-      pipeline: {
-        label: "Procedural Transparent Cached",
-        layout,
-        vertex: vertexState,
-        fragment: {
-          entryPoint: "main",
-          module: this.device.createShaderModule({ code: fragmentCode }),
-          targets: [{
-            format: "rgba16float",
-            blend: {
-              color: {
-                srcFactor: "src-alpha",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              },
-              alpha: {
-                srcFactor: "one",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              }
-            }
-          }],
-          constants: fragmentConstants
-        },
-        depthStencil: {
-          depthWriteEnabled: false,
-          depthCompare: "less",
-          format: "depth24plus"
-        },
-        primitive: this.primitive
-      }
-    });
-    dispatchEvent(this.buildPipelineBucketsEvent);
-  }
-  setMorphBlend(t) {
-    this.morphBlend = Math.max(0, Math.min(1, t));
-    if (this.morphBlendBuffer) {
-      this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
-    } else {
-      console.error("\u274C NO BUFFER in setMorphBlend.");
-    }
-  }
-  morphTo(targetBlend, duration = 1e3, onComplete) {
-    const safeDuration = Math.max(duration, 100);
-    this.morphAnimation.active = true;
-    this.morphAnimation.startBlend = this.morphBlend;
-    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = Math.max(duration, 100);
-    this.morphAnimation.elapsed = 0;
-    if (onComplete) this.morphAnimation.onComplete = onComplete;
-    this.morphAnimation.active = true;
-    this.morphAnimation.startBlend = this.morphBlend;
-    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = safeDuration;
-    this.morphAnimation.elapsed = 0;
-    if (this.morphAnimation.debug) {
-      console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
-    }
-  }
-  switchMesh(specA, specB) {
-    this.meshA = this._loadGeometry(specA);
-    this.meshB = this._loadGeometry(specB);
-    this._validateMorphCompatibility();
-    this.vertexBufferA?.destroy();
-    this.vertexBufferB?.destroy();
-    this.normalBufferA?.destroy();
-    this.normalBufferB?.destroy();
-    this.uvBuffer?.destroy();
-    this.indexBuffer?.destroy();
-    this._setupBuffers();
-    this.setMorphBlend(0);
-  }
-  updateMorphAnimation(deltaTime) {
-    if (!this.morphAnimation.active) return;
-    this.morphAnimation.elapsed += deltaTime;
-    const t = Math.min(1, this.morphAnimation.elapsed / this.morphAnimation.duration);
-    const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
-    this.setMorphBlend(blend);
-    if (t >= 1) {
-      this.morphAnimation.active = false;
-      if (this.morphAnimation.onComplete) {
-        this.morphAnimation.onComplete(blend);
-      }
-    }
-  }
-  getModelMatrix(pos2, useScale = false) {
-    if (!this.itIsPhysicsBody) {
-      let modelMatrix = mat4Impl.identity(this._modelMatrix);
-      this._translateVec[0] = pos2.x;
-      this._translateVec[1] = pos2.y;
-      this._translateVec[2] = pos2.z;
-      mat4Impl.translate(modelMatrix, this._translateVec, modelMatrix);
-      mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-      mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-      mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-      if (useScale == true) {
-        this._scaleVec[0] = this.scale[0];
-        this._scaleVec[1] = this.scale[1];
-        this._scaleVec[2] = this.scale[2];
-        mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
-      }
-      this.modelMatrix = modelMatrix;
-      return this.modelMatrix;
-    }
-    if (!this.modelMatrix) {
-      let modelMatrix = mat4Impl.identity(this._modelMatrix);
-      this.modelMatrix = modelMatrix;
-    }
-    return this.modelMatrix;
-  }
-  updateModelUniformBuffer() {
-    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-  }
-  updateTime(time) {
-    this.time += time * this.deltaTimeAdapter;
-    this.vertexAnimParams[0] = this.time;
-    this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-  }
-  drawElements(pass, lightContainer) {
-    pass.setVertexBuffer(0, this.vertexBufferA);
-    pass.setVertexBuffer(1, this.normalBufferA);
-    pass.setVertexBuffer(2, this.uvBuffer);
-    pass.setVertexBuffer(3, this.vertexBufferB);
-    pass.setVertexBuffer(4, this.normalBufferB);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
-  }
-  drawShadows(shadowPass) {
-    shadowPass.setVertexBuffer(0, this.vertexBufferA);
-    shadowPass.setVertexBuffer(1, this.normalBufferA);
-    shadowPass.setVertexBuffer(2, this.uvBuffer);
-    shadowPass.setVertexBuffer(3, this.vertexBufferB);
-    shadowPass.setVertexBuffer(4, this.normalBufferB);
-    shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
-    shadowPass.drawIndexed(this.indexCount);
-  }
-  getMainPipeline() {
-    return this.pipeline;
-  }
-  destroy() {
-    if (this._destroyed) return;
-    this._destroyed = true;
-    this.vertexBufferA?.destroy();
-    this.vertexBufferB?.destroy();
-    this.normalBufferA?.destroy();
-    this.normalBufferB?.destroy();
-    this.uvBuffer?.destroy();
-    this.indexBuffer?.destroy();
-    this.modelUniformBuffer?.destroy();
-    this.sceneUniformBuffer?.destroy();
-    this.morphBlendBuffer?.destroy();
-    this.vertexAnimBuffer?.destroy();
-    this.shadowDepthTexture?.destroy();
-    this.pipeline = null;
-    this.pipelineTransparent = null;
-    this.modelBindGroup = null;
-    this.sceneBindGroupForRender = null;
-    console.info(`\u{1F9F9} Destroyed ProceduralMesh: ${this.name}`);
-  }
-};
-var MeshMorpher = class {
-  static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
-    const shapeAObj = typeof shapeA === "function" ? { func: shapeA } : shapeA;
-    const shapeBObj = typeof shapeB === "function" ? { func: shapeB } : shapeB;
-    const meshA = this._generateFromFunction(shapeAObj.func, resolutionU, resolutionV);
-    const meshB = this._generateFromFunction(shapeBObj.func, resolutionU, resolutionV);
-    if (!shapeAObj.flat)
-      meshA.normals = this.computeSmoothNormals(meshA.vertices, meshA.indices);
-    if (!shapeBObj.flat)
-      meshB.normals = this.computeSmoothNormals(meshB.vertices, meshB.indices);
-    return {
-      meshA,
-      meshB,
-      vertexCount: (resolutionU + 1) * (resolutionV + 1)
-    };
-  }
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MULTI-PART GEOMETRY
-  // Combines N shape functions into a single UV-partitioned mesh.
-  // Each part gets an equal slice of V-space. Bridge rows between parts
-  // are collapsed to a hidden point so no connecting triangles are visible.
-  //
-  // Usage:
-  //   MeshMorpher.compose(
-  //     { shape: MeshMorpher.cube(1),   offset: [-2, 0, 0] },
-  //     { shape: MeshMorpher.cube(1),   offset: [ 2, 0, 0] },
-  //   )
-  //
-  //   // With rotation too:
-  //   MeshMorpher.compose(
-  //     { shape: MeshMorpher.sphere(1), offset: [0, 0, 0], rotation: [0, 0, 0] },
-  //     { shape: MeshMorpher.torus(),   offset: [3, 0, 0], rotation: [Math.PI/2, 0, 0] },
-  //   )
-  //
-  // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
-  // ─────────────────────────────────────────────────────────────────────────────
-  static compose(...parts) {
-    const n2 = parts.length;
-    const normalised = parts.map((p) => {
-      const raw = p.shape ?? p.func ?? p;
-      const func = typeof raw === "function" ? raw : raw.func;
-      const flat = p.flat ?? (typeof raw === "object" ? raw.flat : false) ?? false;
-      const offset = p.offset ?? [0, 0, 0];
-      const rotation3 = p.rotation ?? [0, 0, 0];
-      const scale4 = p.scale ?? [1, 1, 1];
-      return { func, flat, offset, rotation: rotation3, scale: scale4 };
-    });
-    const applyTransform = (pos2, part) => {
-      let [x2, y2, z] = pos2;
-      x2 *= part.scale[0];
-      y2 *= part.scale[1];
-      z *= part.scale[2];
-      const [rx, ry, rz] = part.rotation;
-      if (rx !== 0) {
-        const cy = Math.cos(rx), sy = Math.sin(rx);
-        const ny = cy * y2 - sy * z, nz = sy * y2 + cy * z;
-        y2 = ny;
-        z = nz;
-      }
-      if (ry !== 0) {
-        const cx = Math.cos(ry), sx = Math.sin(ry);
-        const nx = cx * x2 + sx * z, nz = -sx * x2 + cx * z;
-        x2 = nx;
-        z = nz;
-      }
-      if (rz !== 0) {
-        const cz = Math.cos(rz), sz = Math.sin(rz);
-        const nx = cz * x2 - sz * y2, ny = sz * x2 + cz * y2;
-        x2 = nx;
-        y2 = ny;
-      }
-      x2 += part.offset[0];
-      y2 += part.offset[1];
-      z += part.offset[2];
-      return [x2, y2, z];
-    };
-    const composed = (u, vGlobal) => {
-      const sliceSize = 1 / n2;
-      const partIndex = Math.min(Math.floor(vGlobal / sliceSize), n2 - 1);
-      const part = normalised[partIndex];
-      const vLocal = (vGlobal - partIndex * sliceSize) / sliceSize;
-      const DEAD = 0.1;
-      if (vLocal < DEAD) {
-        return applyTransform(part.func(0, 0), part);
-      }
-      if (vLocal > 1 - DEAD) {
-        return applyTransform(part.func(0, 0), part);
-      }
-      const vMapped = (vLocal - DEAD) / (1 - DEAD * 2);
-      return applyTransform(part.func(u, vMapped), part);
-    };
-    const allFlat = normalised.every((p) => p.flat);
-    return allFlat ? { func: composed, flat: true } : composed;
-  }
-  // ─────────────────────────────────────────────────────────────────────────────
-  // All original methods below — completely unchanged
-  // ─────────────────────────────────────────────────────────────────────────────
-  static computeSmoothNormals(positions, indices) {
-    const normals = new Float32Array(positions.length);
-    const counts = new Uint16Array(positions.length / 3);
-    for (let i = 0; i < indices.length; i += 3) {
-      const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
-      const ax = positions[ia * 3], ay = positions[ia * 3 + 1], az = positions[ia * 3 + 2];
-      const bx = positions[ib * 3], by = positions[ib * 3 + 1], bz = positions[ib * 3 + 2];
-      const cx = positions[ic * 3], cy = positions[ic * 3 + 1], cz = positions[ic * 3 + 2];
-      const ux = bx - ax, uy = by - ay, uz = bz - az;
-      const vx = cx - ax, vy = cy - ay, vz = cz - az;
-      let nx = uy * vz - uz * vy;
-      let ny = uz * vx - ux * vz;
-      let nz = ux * vy - uy * vx;
-      const len2 = Math.hypot(nx, ny, nz) || 1;
-      nx /= len2;
-      ny /= len2;
-      nz /= len2;
-      for (const idx of [ia, ib, ic]) {
-        normals[idx * 3] += nx;
-        normals[idx * 3 + 1] += ny;
-        normals[idx * 3 + 2] += nz;
-        counts[idx]++;
-      }
-    }
-    for (let i = 0; i < counts.length; i++) {
-      const len2 = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
-      normals[i * 3] /= len2;
-      normals[i * 3 + 1] /= len2;
-      normals[i * 3 + 2] /= len2;
-    }
-    return normals;
-  }
-  static _generateFromFunction(shapeFunc, resU, resV) {
-    const positions = [];
-    const normals = [];
-    const uvs = [];
-    const indices = [];
-    for (let v = 0; v <= resV; v++) {
-      for (let u = 0; u <= resU; u++) {
-        const uNorm = u / resU;
-        const vNorm = v / resV;
-        const pos2 = shapeFunc(uNorm, vNorm);
-        positions.push(pos2[0], pos2[1], pos2[2]);
-        const eps = 0.01;
-        const posU = shapeFunc(Math.min(uNorm + eps, 1), vNorm);
-        const posV = shapeFunc(uNorm, Math.min(vNorm + eps, 1));
-        const tangentU = [posU[0] - pos2[0], posU[1] - pos2[1], posU[2] - pos2[2]];
-        const tangentV = [posV[0] - pos2[0], posV[1] - pos2[1], posV[2] - pos2[2]];
-        const normal = [
-          tangentU[1] * tangentV[2] - tangentU[2] * tangentV[1],
-          tangentU[2] * tangentV[0] - tangentU[0] * tangentV[2],
-          tangentU[0] * tangentV[1] - tangentU[1] * tangentV[0]
-        ];
-        const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
-        if (len2 > 0) {
-          normal[0] /= len2;
-          normal[1] /= len2;
-          normal[2] /= len2;
-        }
-        if (Math.abs(pos2[1]) < 0.01 && Math.abs(posU[1]) < 0.01 && Math.abs(posV[1]) < 0.01) {
-          normal[0] = 0;
-          normal[1] = 1;
-          normal[2] = 0;
-        }
-        normals.push(normal[0], normal[1], normal[2]);
-        uvs.push(uNorm, vNorm);
-      }
-    }
-    for (let v = 0; v < resV; v++) {
-      for (let u = 0; u < resU; u++) {
-        const i0 = v * (resU + 1) + u;
-        const i1 = i0 + 1;
-        const i2 = i0 + (resU + 1);
-        const i3 = i2 + 1;
-        indices.push(i0, i2, i1);
-        indices.push(i1, i2, i3);
-      }
-    }
-    return {
-      vertices: new Float32Array(positions),
-      normals: new Float32Array(normals),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices),
-      vertexCount: positions.length / 3,
-      flat: this.flat === true
-    };
-  }
-  static sphere(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      return [
-        radius * Math.sin(phi) * Math.cos(theta),
-        radius * Math.cos(phi),
-        radius * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static cube(size2 = 1) {
-    const s = size2 * 0.5;
-    return (u, v) => {
-      let x2, y2, z;
-      const unitU = u * 4 % 1;
-      const side = Math.floor(u * 4) % 4;
-      let sx, sz;
-      if (side === 0) {
-        sx = s;
-        sz = (unitU - 0.5) * size2;
-      } else if (side === 1) {
-        sx = (0.5 - unitU) * size2;
-        sz = s;
-      } else if (side === 2) {
-        sx = -s;
-        sz = (0.5 - unitU) * size2;
-      } else {
-        sx = (unitU - 0.5) * size2;
-        sz = -s;
-      }
-      if (v < 0.2) {
-        const lerp2 = v / 0.2;
-        x2 = sx * lerp2;
-        y2 = -s;
-        z = sz * lerp2;
-      } else if (v > 0.8) {
-        const lerp2 = (1 - v) / 0.2;
-        x2 = sx * lerp2;
-        y2 = s;
-        z = sz * lerp2;
-      } else {
-        const lerpY = (v - 0.2) / 0.6;
-        x2 = sx;
-        y2 = (lerpY - 0.5) * size2;
-        z = sz;
-      }
-      return [x2, y2, z];
-    };
-  }
-  static cylinder(radius = 1, height = 2) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = (v - 0.5) * height;
-      return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
-    };
-  }
-  static torus(majorRadius = 1, minorRadius = 0.3) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI * 2;
-      const r2 = majorRadius + minorRadius * Math.cos(phi);
-      return [r2 * Math.cos(theta), minorRadius * Math.sin(phi), r2 * Math.sin(theta)];
-    };
-  }
-  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
-    if (fromZeroY == true) return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height;
-      const r2 = baseRadius * (1 - v);
-      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
-    };
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height - height / 2;
-      const r2 = baseRadius * (1 - v);
-      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
-    };
-  }
-  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
-    if (fromZeroX == true) return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height;
-      const r2 = baseRadius * (1 - v);
-      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
-    };
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height - height / 2;
-      const r2 = baseRadius * (1 - v);
-      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
-    };
-  }
-  // static capsule(radius = 0.5, height = 1) {
-  //   const halfH = height / 2;
-  //   return (u, v) => {
-  //     if(v < 0.25) {
-  //       const theta = -u * Math.PI * 2;
-  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
-  //       return [
-  //         radius * Math.sin(phi) * Math.cos(theta),
-  //         radius * Math.cos(phi) - halfH,
-  //         radius * Math.sin(phi) * Math.sin(theta)
-  //       ];
-  //     } else if(v > 0.75) {
-  //       const theta = -u * Math.PI * 2;
-  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
-  //       return [
-  //         radius * Math.sin(phi) * Math.cos(theta),
-  //         radius * Math.cos(phi) + halfH,
-  //         radius * Math.sin(phi) * Math.sin(theta)
-  //       ];
-  //     } else {
-  //       const theta = u * Math.PI * 2;
-  //       const y = ((v - 0.25) / 0.5) * height - halfH;
-  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
-  //     }
-  //   };
-  // }
-  static capsule(radius = 1, height = 1, fromZeroY = true) {
-    const halfH = height / 2;
-    const yOffset = fromZeroY ? halfH + radius : 0;
-    return (u, v) => {
-      if (v < 0.25) {
-        const theta = -u * Math.PI * 2;
-        const phi = v / 0.25 * (Math.PI / 2) + Math.PI / 2;
-        return [
-          radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) - halfH + yOffset,
-          radius * Math.sin(phi) * Math.sin(theta)
-        ];
-      } else if (v > 0.75) {
-        const theta = -u * Math.PI * 2;
-        const phi = (v - 0.75) / 0.25 * (Math.PI / 2);
-        return [
-          radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) + halfH + yOffset,
-          radius * Math.sin(phi) * Math.sin(theta)
-        ];
-      } else {
-        const theta = u * Math.PI * 2;
-        const y2 = (v - 0.25) / 0.5 * height - halfH;
-        return [
-          radius * Math.cos(theta),
-          y2 + yOffset,
-          radius * Math.sin(theta)
-        ];
-      }
-    };
-  }
-  static plane(size2 = 1) {
-    return (u, v) => [(u - 0.5) * size2, 0, (v - 0.5) * size2];
-  }
-  static mobius(radius = 1, width = 0.5) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const t = (v - 0.5) * width;
-      const halfTheta = theta / 2;
-      return [
-        (radius + t * Math.cos(halfTheta)) * Math.cos(theta),
-        t * Math.sin(halfTheta),
-        (radius + t * Math.cos(halfTheta)) * Math.sin(theta)
-      ];
-    };
-  }
-  static pyramid(size2 = 1) {
-    return (u, v) => {
-      const angle = u * Math.PI * 2;
-      const r2 = (1 - v) * size2;
-      return [r2 * Math.cos(angle), v * size2, r2 * Math.sin(angle)];
-    };
-  }
-  static supershape(size2 = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = v * Math.PI;
-      const r2 = size2 * (0.5 + 0.5 * Math.sin(5 * theta) * Math.sin(3 * phi));
-      return [
-        r2 * Math.sin(phi) * Math.cos(theta),
-        r2 * Math.cos(phi),
-        r2 * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static star(radius = 1, innerRadius = 0.4, depth = 0.3) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const r2 = radius * (0.7 + 0.3 * Math.cos(5 * theta));
-      let x2, y2, z;
-      if (v < 0.5) {
-        const lerp2 = v / 0.5;
-        x2 = r2 * Math.cos(theta) * lerp2;
-        z = r2 * Math.sin(theta) * lerp2;
-        y2 = depth * (1 - lerp2);
-      } else {
-        const lerp2 = (1 - v) / 0.5;
-        x2 = r2 * Math.cos(theta) * lerp2;
-        z = r2 * Math.sin(theta) * lerp2;
-        y2 = -depth * (1 - lerp2);
-      }
-      return [x2, y2, z];
-    };
-  }
-  static wavePlane(size2 = 2) {
-    return (u, v) => {
-      const x2 = (u - 0.5) * size2;
-      const z = (v - 0.5) * size2;
-      const y2 = Math.sin(x2 * 3) * Math.cos(z * 3) * 0.3;
-      return [x2, y2, z];
-    };
-  }
-  static circlePlane(radius = 1) {
-    return (u, v) => {
-      const angle = -u * Math.PI * 2;
-      const r2 = -v * radius;
-      return [r2 * Math.cos(angle), 0, r2 * Math.sin(angle)];
-    };
-  }
-  static icosahedron(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      let x2 = Math.sin(phi) * Math.cos(theta);
-      let y2 = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
-      const f = Math.abs(x2) + Math.abs(y2) + Math.abs(z);
-      x2 /= f;
-      y2 /= f;
-      z /= f;
-      return [x2 * radius, y2 * radius, z * radius];
-    };
-  }
-  static diamond(size2 = 1) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const y2 = (v - 0.5) * 2 * size2;
-      const r2 = size2 * (1 - Math.abs(v - 0.5) * 2);
-      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
-    };
-  }
-  static rock(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      let x2 = Math.sin(phi) * Math.cos(theta);
-      let y2 = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
-      const noise = 0.2 * Math.sin(theta * 7) * Math.cos(phi * 5);
-      const r2 = radius + noise;
-      return [x2 * r2, y2 * r2, z * r2];
-    };
-  }
-  static star3d(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = v * Math.PI;
-      const spike = 1 + 0.3 * Math.sin(theta * 5);
-      const r2 = radius * spike;
-      return [
-        r2 * Math.sin(phi) * Math.cos(theta),
-        r2 * Math.cos(phi),
-        r2 * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static galaxySpiral(scale4 = 10, arms = 3, twist = 2) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const radius = v;
-      const armOffset = theta * arms % (Math.PI * 2);
-      const r2 = radius * (1 + 0.2 * Math.sin(armOffset * twist));
-      const x2 = r2 * Math.cos(theta);
-      const y2 = 0.1 * radius * Math.sin(5 * theta);
-      const z = r2 * Math.sin(theta);
-      return [x2 * scale4, y2 * scale4, z * scale4];
-    };
-  }
-  static littleStar(radius = 1, innerRadius = 0.4, depth = 0.2) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const sector = u * 10 % 2;
-      const lerp2 = sector > 1 ? 2 - sector : sector;
-      const r2 = innerRadius + (radius - innerRadius) * lerp2;
-      const posX = r2 * Math.cos(theta);
-      const posZ = r2 * Math.sin(theta);
-      let x2, y2, z;
-      if (v < 0.5) {
-        const f = v / 0.5;
-        x2 = posX * f;
-        z = posZ * f;
-        y2 = depth * (1 - f);
-      } else {
-        const f = (1 - v) / 0.5;
-        x2 = posX * f;
-        z = posZ * f;
-        y2 = -depth * (1 - f);
-      }
-      return [x2, y2, z];
-    };
-  }
-  static flatStar(radius = 1, innerRadius = 0.2, thickness = 0.1) {
-    const func = (u, v) => {
-      const spikes = 5;
-      const theta = -u * Math.PI * 2;
-      const star = Math.cos(spikes * theta);
-      const r2 = innerRadius + (radius - innerRadius) * (star * 0.5 + 0.5);
-      const finalR = r2 * v;
-      return [finalR * Math.cos(theta), 0, finalR * Math.sin(theta)];
-    };
-    return { func, flat: true };
-  }
-  static klein(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = v * Math.PI * 2;
-      let x2, y2, z;
-      if (theta < Math.PI) {
-        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(theta) * Math.cos(phi);
-        z = -8 * Math.sin(theta) - 2 * (1 - Math.cos(theta) / 2) * Math.sin(theta) * Math.cos(phi);
-      } else {
-        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(phi + Math.PI);
-        z = -8 * Math.sin(theta);
-      }
-      y2 = 2 * (1 - Math.cos(theta) / 2) * Math.sin(phi);
-      return [x2 * 0.1 * radius, y2 * 0.1 * radius, z * 0.1 * radius];
-    };
-  }
-  static shell(scale4 = 1) {
-    scale4 = scale4 / 4;
-    return (u, v) => {
-      const theta = -u * Math.PI * 4;
-      const phi = -v * Math.PI * 2;
-      const r2 = 0.4 + Math.exp(-theta * 0.12);
-      const x2 = r2 * Math.cos(theta) * (1 + 0.3 * Math.cos(phi));
-      const y2 = r2 * Math.sin(theta) * (1 + 0.3 * Math.cos(phi));
-      const z = 0.3 * r2 * Math.sin(phi);
-      return [x2 * scale4, z * scale4, y2 * scale4];
-    };
-  }
-  static rippleSphere(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      const ripple = 1 + 0.2 * Math.sin(10 * theta) * Math.sin(6 * phi);
-      const r2 = radius * ripple;
-      return [
-        r2 * Math.sin(phi) * Math.cos(theta),
-        r2 * Math.cos(phi),
-        r2 * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static twistedTorus(R = 1, r2 = 0.3, twists = 3) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI * 2;
-      const twist = phi + theta * twists;
-      return [
-        (R + r2 * Math.cos(twist)) * Math.cos(theta),
-        r2 * Math.sin(twist),
-        (R + r2 * Math.cos(twist)) * Math.sin(theta)
-      ];
-    };
-  }
-  static tornado(height = 2, radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 4;
-      const y2 = (v - 0.5) * height;
-      const r2 = Math.pow(v, 1.5) * radius;
-      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
-    };
-  }
-  static brain(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      let x2 = Math.sin(phi) * Math.cos(theta);
-      let y2 = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
-      const wrinkle = 0.25 * Math.sin(theta * 6) * Math.sin(phi * 4);
-      const r2 = radius + wrinkle;
-      return [x2 * r2, y2 * r2, z * r2];
-    };
-  }
-  static galaxyComposite(numStars = 500, arms = 4, twist = 2, scale4 = 20) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const radial = v;
-      const arm = Math.floor(radial * arms);
-      const armOffset = arm / arms * Math.PI * 2;
-      const r2 = radial * (1 + 0.2 * Math.sin(theta * 5 + armOffset));
-      const y2 = 0.1 * radial * Math.sin(theta * 8);
-      const clusterOffsetX = 0.05 * Math.sin(armOffset + v * 12);
-      const clusterOffsetZ = 0.05 * Math.cos(armOffset + u * 12);
-      const x2 = (r2 * Math.cos(theta) + clusterOffsetX) * scale4;
-      const z = (r2 * Math.sin(theta) + clusterOffsetZ) * scale4;
-      return [x2, y2 * scale4, z];
-    };
-  }
-};
-
 // ../../../engine/procedures/fontana.js
 function fountainStructureConfig(MeshMorpher2) {
   return { meshA: MeshMorpher2.cylinder(0.15, 2.5), meshB: MeshMorpher2.cylinder(0.15, 2.5), resolutionU: 32, resolutionV: 1 };
@@ -34038,7 +34609,7 @@ var nanoPass = function() {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+    this.getTransformationMatrix(camera, now2);
     camera.update();
     const len2 = this.mainRenderBundle.length;
     for (let i = 0; i < len2; i++) {
@@ -34132,7 +34703,7 @@ var PhysicsBridge = class {
     this._queue = [];
     setTimeout(() => {
       dispatchEvent(new CustomEvent("PhysicsReady", {}));
-    }, 50);
+    }, 100);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -34164,8 +34735,7 @@ var PhysicsBridge = class {
     if (count > 0) {
       this._worker.postMessage({ cmd: "setKinematicTransform", count, idx: idxArr, pos: posArr });
     }
-    if (this.c % 2 === 0) this._worker.postMessage({ cmd: "step" });
-    this.c++;
+    this._worker.postMessage({ cmd: "step" });
   }
   // MatrixJolt public API
   setGravity(x2, y2, z) {
@@ -34377,10 +34947,15 @@ var mobile1 = function() {
     pass.setBindGroup(0, this.sceneBindGroup);
     for (const [pipeline, meshes] of this.opaqueBuckets) {
       pass.setPipeline(pipeline);
+      let l = null;
       for (const mesh of meshes) {
-        pass.setBindGroup(1, mesh.materialBindGroup);
+        if (mesh.materialBindGroup !== l) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          l = mesh.materialBindGroup;
+        }
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass, this.lightContainer);
       }
     }
@@ -34500,8 +35075,9 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.editorAddOBJ = addOBJ.bind(this);
+    this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
-    this.MEConfig.construct();
+    this.MEConfig.construct(options2);
     this.label = new MultiLang();
     this.now = 0;
     this.logLoopError = true;
@@ -34610,7 +35186,15 @@ var MatrixEngineWGPU = class {
     this.canvas = canvas;
     if (this.options.canvasSize == "fullscreen") {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-        this.applyCanvasSize(this.options.fastRender);
+        console.log("FastRender : ", this.options.fastRender);
+        if (isMobile() == false) {
+          this.applyCanvasSize(this.options.fastRender);
+        } else {
+          this.applyCanvasSizeMobile(this.options.fastRender);
+        }
+      } else if (isMobile() == true) {
+        canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
+        canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if (this.options.fastRenderAlternative) {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth * 0.5;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight * 0.5;
@@ -34620,6 +35204,7 @@ var MatrixEngineWGPU = class {
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
       }
     } else {
+      console.log("Apply custom W H");
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
@@ -34648,7 +35233,32 @@ var MatrixEngineWGPU = class {
         this.label.get = r2;
       });
     }
-    this.init({ canvas, callback });
+    if (this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
+      if (byId("msgBox")) byId("msgBox").style.left = "30%";
+      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
+      meLoader.create();
+      this.MEConfig.fsManager.onChange((isFS, target2) => {
+        console.log("GOT BACK FROM FS", isFS);
+        this.applyCanvasSizeMobile(this.options.fastRender);
+      });
+      addEventListener("run_mobile_fs", () => {
+        if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+          console.log("FastRender : ", this.options.fastRender);
+          if (isMobile() == false) {
+            this.applyCanvasSize(this.options.fastRender);
+          } else {
+            this.applyCanvasSizeMobile(this.options.fastRender);
+          }
+        }
+        this.init({ canvas, callback });
+        meLoader.destroy();
+        setTimeout(() => {
+          if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
+        }, 500);
+      });
+    } else {
+      this.init({ canvas, callback });
+    }
   }
   createGlobalsForEntities() {
     this.materialBGL = this.device.createBindGroupLayout({
@@ -34698,6 +35308,14 @@ var MatrixEngineWGPU = class {
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
+  applyCanvasSizeMobile(scale4) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scale4;
+    this.canvas.height = screenHeight * scale4;
+    this.canvas.style.width = screenWidth + "px";
+    this.canvas.style.height = screenHeight + "px";
+  }
   getCamera() {
     return this.cameras[this.mainCameraParams.type];
   }
@@ -34710,7 +35328,7 @@ var MatrixEngineWGPU = class {
       this.context = canvas.getContext("webgpu");
     } else if (this.options.alphaMode == "opaque") {
       this.context = canvas.getContext("webgpu", { alphaMode: "opaque" });
-    } else if (this.options.alphaMode == "opaque") {
+    } else {
       this.context = canvas.getContext("webgpu", { alphaMode: "premultiplied" });
     }
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -34720,7 +35338,12 @@ var MatrixEngineWGPU = class {
       alphaMode: "premultiplied"
     });
     this.globalAmbient = vec3Impl.create(1, 1, 1);
-    this.MAX_SPOTLIGHTS = 20;
+    if (this.options.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
+      MEConfig.MAX_SPOTLIGHTS = this.MAX_SPOTLIGHTS;
+    } else {
+      this.MAX_SPOTLIGHTS = MEConfig.MAX_SPOTLIGHTS;
+    }
     this.inputHandler = null;
     this.createGlobalStuff(callback);
     this.createGlobalsForEntities();
@@ -34730,14 +35353,14 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.11.0 [FasterThanARabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.11.2 [FasterThanARabbit] ", LOG_FUNNY);
     console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNo tracking. No hype. Just solutions and high performance. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
-      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
+      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE
     );
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
@@ -34957,7 +35580,7 @@ var MatrixEngineWGPU = class {
   createTexArrayForShadows() {
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      let numberOfLights = 20;
+      let numberOfLights = this.MAX_SPOTLIGHTS;
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -35039,12 +35662,14 @@ var MatrixEngineWGPU = class {
       return false;
     }
     const obj2 = this.mainRenderBundle[index];
-    let testPB = app.matrixPhysics.getBodyByName(obj2.name);
-    if (testPB !== null) {
-      try {
-        this.matrixPhysics.removeRigidBody(testPB);
-      } catch (e2) {
-        console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(obj2.name);
+      if (testPB !== null) {
+        try {
+          this.matrixPhysics.removeRigidBody(testPB);
+        } catch (e2) {
+          console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
+        }
       }
     }
     obj2.destroy();
@@ -35282,8 +35907,8 @@ var MatrixEngineWGPU = class {
       meshB: geo1.meshB,
       resolutionU: geo1.resolutionU,
       resolutionV: geo1.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL,
-      vertexWGSL: fountainWaterVertexWGSL
+      fragmentWGSL: fountainCurtainFragmentWGSL(),
+      vertexWGSL: fountainWaterVertexWGSL()
       // pointerEffect: {
       //   enabled: true,
       //   flameEmitter: true,
@@ -35304,8 +35929,8 @@ var MatrixEngineWGPU = class {
       meshB: geo2.meshB,
       resolutionU: geo2.resolutionU,
       resolutionV: geo2.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL,
-      vertexWGSL: fountainWaterVertexWGSL
+      fragmentWGSL: fountainCapFragmentWGSL(),
+      vertexWGSL: fountainWaterVertexWGSL()
     });
     const geo3 = fountainCapConfig(MeshMorpher);
     let m3 = this.addProceduralMeshObj({
@@ -35323,8 +35948,8 @@ var MatrixEngineWGPU = class {
       meshB: geo3.meshB,
       resolutionU: geo3.resolutionU,
       resolutionV: geo3.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL,
-      vertexWGSL: fountainWaterVertexWGSL
+      fragmentWGSL: fountainCapFragmentWGSL(),
+      vertexWGSL: fountainWaterVertexWGSL()
     });
     const geo4 = fountainCurtainConfig(MeshMorpher);
     let m4 = this.addProceduralMeshObj({
@@ -35342,8 +35967,8 @@ var MatrixEngineWGPU = class {
       meshB: geo4.meshB,
       resolutionU: geo4.resolutionU,
       resolutionV: geo4.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL,
-      vertexWGSL: fountainWaterVertexWGSL
+      fragmentWGSL: fountainCurtainFragmentWGSL(),
+      vertexWGSL: fountainWaterVertexWGSL()
     });
     const geo5 = fountainBasinWaterConfig(MeshMorpher);
     let m5 = this.addProceduralMeshObj({
@@ -35361,15 +35986,12 @@ var MatrixEngineWGPU = class {
       meshB: geo5.meshB,
       resolutionU: geo5.resolutionU,
       resolutionV: geo5.resolutionV,
-      fragmentWGSL: fountainBasinFragmentWGSL,
-      vertexWGSL: fountainWaterVertexWGSL
+      fragmentWGSL: fountainBasinFragmentWGSL(),
+      vertexWGSL: fountainWaterVertexWGSL()
     });
     m1.rotation.setRotateY(1e3);
     m4.setBlend(0.1);
     setTimeout(() => {
-      m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-        i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-      });
     }, 1e3);
   };
   createBloomBindGroup() {
@@ -35467,6 +36089,7 @@ var MatrixEngineWGPU = class {
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
+      this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
@@ -35508,6 +36131,7 @@ var MatrixEngineWGPU = class {
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();
+        if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -35527,15 +36151,6 @@ var MatrixEngineWGPU = class {
         }
       }
       for (const [pipeline, meshes] of this.transparentBuckets) {
-        meshes.sort((a, b) => {
-          const dx1 = camera.position[0] - a.position[0];
-          const dz1 = camera.position[2] - a.position[2];
-          const da = dx1 * dx1 + dz1 * dz1;
-          const dx2 = camera.position[0] - b.position[0];
-          const dz2 = camera.position[2] - b.position[2];
-          const db = dx2 * dx2 + dz2 * dz2;
-          return db - da;
-        });
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
@@ -35545,9 +36160,6 @@ var MatrixEngineWGPU = class {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      pass.end();
-      const transPass = commandEncoder.beginRenderPass(this._transPassDesc);
-      const viewProjMatrix = camera.VP;
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
         if (mesh.effects) {
@@ -35555,25 +36167,27 @@ var MatrixEngineWGPU = class {
             const effect = mesh.effects[effectName];
             if (effect == null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-            effect.render(transPass, mesh, viewProjMatrix);
+            effect.render(pass, mesh, camera.VP);
           }
         }
       }
-      transPass.end();
+      pass.end();
       if (this.volumetricPass.enabled === true) {
         mat4Impl.invert(camera.VP, this._invViewProj);
-        const light = this.lightContainer[0];
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
-        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
-        this._volumetricLightUniforms.direction = light.direction;
-        this.volumetricPass.render(
-          commandEncoder,
-          this.sceneTextureView,
-          this.mainDepthView,
-          this.shadowArrayView,
-          this._volumetricUniforms,
-          this._volumetricLightUniforms
-        );
+        for (let i = 0; i < this.lightContainer.length; i++) {
+          const light = this.lightContainer[i];
+          this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+          this._volumetricLightUniforms.direction = light.direction;
+          this.volumetricPass.render(
+            commandEncoder,
+            this.sceneTextureView,
+            this.mainDepthView,
+            this.shadowArrayView,
+            this._volumetricUniforms,
+            this._volumetricLightUniforms
+          );
+        }
       }
       const canvasTexture = this.context.getCurrentTexture();
       if (this._lastCanvasTex !== canvasTexture) {
@@ -35874,24 +36488,58 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/Test2/graph.js
-var graph_default = { "nodes": { "node_28": { "id": "node_28", "x": 476.82293701171875, "y": 523.388916015625, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "alpha", "value": "0.5" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_29": { "id": "node_29", "x": 483.357666015625, "y": 749.3264465332031, "title": "Set Material", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "materialType", "semantic": "string", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "materialType", "value": "water", "placeholder": "standard|power|water" }] }, "node_30": { "id": "node_30", "x": 481.3958740234375, "y": 968.3402862548828, "title": "Set Blend", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "alpha", "type": "value" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "fields": [{ "key": "sceneObjectName", "value": "monster_MutantMesh" }, { "key": "alpha", "value": 0.5 }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_31": { "id": "node_31", "x": 722.8785247802734, "y": 1185.9445190429688, "title": "Set Vertex Ocean", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableOcean", "type": "boolean" }, { "name": "Ocean Scale", "type": "value" }, { "name": "Ocean Height", "type": "value" }, { "name": "Ocean speed", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableOcean", "value": "true" }, { "key": "Ocean Scale", "value": "1" }, { "key": "Ocean Height", "value": "0.02" }, { "key": "Ocean speed", "value": "0.5" }] }, "node_34": { "id": "node_34", "title": "functions", "x": 279.02435302734375, "y": 263.8055648803711, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_35": { "id": "node_35", "title": "onLoad", "x": 33.9862060546875, "y": 212.0382080078125, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_36": { "noExec": true, "id": "node_36", "title": "Get Scene Object", "x": 843.8507232666016, "y": 354.1458740234375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_37": { "id": "node_37", "title": "Print", "x": 1146.6979675292969, "y": 417.09375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} } }, "links": [{ "id": "link_26", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_29", "pin": "exec" }, "type": "action" }, { "id": "link_27", "from": { "node": "node_29", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_30", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_30", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_31", "pin": "exec" }, "type": "action" }, { "id": "link_31", "from": { "node": "node_35", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_34", "pin": "exec" }, "type": "action" }, { "id": "link_32", "from": { "node": "node_34", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }, { "id": "link_33", "from": { "node": "node_37", "pin": "value" }, "to": { "node": "node_28", "pin": "sceneObjectName", "type": "any", "out": false }, "type": "any" }, { "id": "link_34", "from": { "node": "node_36", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_37", "pin": "value" }, "type": "any" }], "nodeCounter": 38, "linkCounter": 35, "pan": [-695, -172], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+// ../../../../projects/Tutorial_1/graph.js
+var graph_default = {
+  nodes: {
+    node_1: {
+      id: "node_1",
+      title: "onLoad",
+      x: 299.34460239409304,
+      y: 127.5731482201762,
+      category: "event",
+      inputs: [],
+      outputs: [{ name: "exec", type: "action" }]
+    }
+  },
+  links: [],
+  nodeCounter: 2,
+  linkCounter: 1,
+  pan: [0, 0],
+  variables: {
+    number: {},
+    boolean: {},
+    string: {},
+    object: {}
+  }
+};
 
-// ../../../../projects/Test2/shader-graphs.js
+// ../../../../projects/Tutorial_1/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
     "content": '{"nodes":[{"id":"N0","type":"FragmentOutput","x":347,"y":321,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[]}'
+  },
+  {
+    "name": "ScrollTex",
+    "content": '{"nodes":[{"id":"N3","type":"Time","x":-573,"y":481,"inputs":{}},{"id":"N4","type":"Float","x":-576,"y":308,"value":0.01,"inputs":{}},{"id":"N5","type":"Multiply","x":-320,"y":419,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N7","type":"MultiplyVec2","x":-153,"y":519,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N12","type":"TextureSampler","x":351,"y":604,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N17","type":"Vec2","x":-492,"y":627,"inputs":{},"valueX":0,"valueY":1},{"id":"N18","type":"AddVec2","x":75,"y":516,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"UV","x":-159,"y":711,"inputs":{}},{"id":"N30","type":"LightShadowNode","x":194,"y":269,"inputs":{"intensity":{"default":"1"}}},{"id":"N32","type":"LightToColor","x":384,"y":268,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N34","type":"FragmentOutput","x":722,"y":539,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N35","type":"MultiplyColor","x":524,"y":427,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}}],"connections":[{"from":"N4","fromPin":"out","to":"N5","toPin":"a"},{"from":"N3","fromPin":"out","to":"N5","toPin":"b"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N17","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N18","toPin":"a"},{"from":"N18","fromPin":"out","to":"N12","toPin":"uv"},{"from":"N11","fromPin":"out","to":"N18","toPin":"b"},{"from":"N30","fromPin":"out","to":"N32","toPin":"light"},{"from":"N32","fromPin":"out","to":"N35","toPin":"a"},{"from":"N12","fromPin":"out","to":"N35","toPin":"b"},{"from":"N35","fromPin":"out","to":"N34","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 512.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = 0.01 * scene.time;\\n  let t2: vec2f = t1 * vec2f(0, 1);\\n  let t3: vec2f = t2 + input.uv;\\n  let t4: vec4f = textureSample(meshTexture, meshSampler, t3);\\n  let t5: vec4f = t0 * t4;\\n  \\n  return t5;\\n}\\n"}'
+  },
+  {
+    "name": "Pulsing",
+    "content": '{"nodes":[{"id":"N1","type":"Time","x":-400,"y":100,"inputs":{}},{"id":"N2","type":"Sin","x":-200,"y":100,"inputs":{"value":{"default":"0.0"}}},{"id":"N3","type":"Float","x":-200,"y":200,"value":0.3,"inputs":{}},{"id":"N4","type":"Multiply","x":0,"y":150,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Float","x":0,"y":250,"value":0.8,"inputs":{}},{"id":"N6","type":"Add","x":200,"y":200,"inputs":{"a":{"default":"0.0"},"b":{"default":"0.0"}}},{"id":"N7","type":"CombineVec4","x":400,"y":200,"inputs":{"x":{"default":"0.0"},"y":{"default":"0.0"},"z":{"default":"0.0"},"w":{"default":"1.0"}}},{"id":"N8","type":"UV","x":0,"y":450,"inputs":{}},{"id":"N9","type":"TextureSampler","x":200,"y":450,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N10","type":"LightShadowNode","x":200,"y":-100,"inputs":{"intensity":{"default":"1"}}},{"id":"N11","type":"LightToColor","x":400,"y":-100,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N12","type":"MultiplyColor","x":600,"y":50,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N13","type":"MultiplyColor","x":800,"y":250,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N14","type":"FragmentOutput","x":1000,"y":250,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N2","toPin":"value"},{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N5","fromPin":"out","to":"N6","toPin":"a"},{"from":"N4","fromPin":"out","to":"N6","toPin":"b"},{"from":"N6","fromPin":"out","to":"N7","toPin":"x"},{"from":"N6","fromPin":"out","to":"N7","toPin":"y"},{"from":"N6","fromPin":"out","to":"N7","toPin":"z"},{"from":"N8","fromPin":"out","to":"N9","toPin":"uv"},{"from":"N10","fromPin":"out","to":"N11","toPin":"light"},{"from":"N11","fromPin":"out","to":"N12","toPin":"a"},{"from":"N7","fromPin":"out","to":"N12","toPin":"b"},{"from":"N12","fromPin":"out","to":"N13","toPin":"a"},{"from":"N9","fromPin":"out","to":"N13","toPin":"b"},{"from":"N13","fromPin":"out","to":"N14","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 512.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = sin(scene.time);\\n  let t2: f32 = t1 * 0.3;\\n  let t3: f32 = 0.8 + t2;\\n  let t4: vec4f = vec4f(t3, t3, t3, 1.0);\\n  let t5: vec4f = t0 * t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, input.uv);\\n  let t7: vec4f = t5 * t6;\\n  \\n  return t7;\\n}\\n"}'
+  },
+  {
+    "name": "leftRightUV",
+    "content": '{"nodes":[{"id":"N1","type":"UV","x":152,"y":236,"inputs":{}},{"id":"N2","type":"Time","x":152,"y":436,"inputs":{}},{"id":"N3","type":"Float","x":152,"y":536,"value":0.05,"inputs":{}},{"id":"N4","type":"Multiply","x":352,"y":486,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Sin","x":552,"y":486,"inputs":{"value":{"default":"0.0"}}},{"id":"N6","type":"Float","x":552,"y":586,"value":0.08,"inputs":{}},{"id":"N7","type":"Multiply","x":752,"y":536,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N8","type":"Vec2","x":752,"y":636,"inputs":{},"valueX":1,"valueY":0},{"id":"N9","type":"MultiplyVec2","x":952,"y":586,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N10","type":"AddVec2","x":1079,"y":350,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"TextureSampler","x":1352,"y":411,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N12","type":"LightShadowNode","x":1152,"y":86,"inputs":{"intensity":{"default":"1"}}},{"id":"N13","type":"LightToColor","x":1352,"y":86,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N14","type":"MultiplyColor","x":1552,"y":248,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N15","type":"FragmentOutput","x":1752,"y":248,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N4","fromPin":"out","to":"N5","toPin":"value"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N6","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N9","toPin":"a"},{"from":"N8","fromPin":"out","to":"N9","toPin":"b"},{"from":"N1","fromPin":"out","to":"N10","toPin":"a"},{"from":"N9","fromPin":"out","to":"N10","toPin":"b"},{"from":"N10","fromPin":"out","to":"N11","toPin":"uv"},{"from":"N12","fromPin":"out","to":"N13","toPin":"light"},{"from":"N13","fromPin":"out","to":"N14","toPin":"a"},{"from":"N11","fromPin":"out","to":"N14","toPin":"b"},{"from":"N14","fromPin":"out","to":"N15","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 512.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = scene.time * 0.05;\\n  let t2: f32 = sin(t1);\\n  let t3: f32 = t2 * 0.08;\\n  let t4: vec2f = t3 * vec2f(1, 0);\\n  let t5: vec2f = input.uv + t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, t5);\\n  let t7: vec4f = t0 * t6;\\n  \\n  return t7;\\n}\\n"}'
   }
 ];
 
-// ../../../../projects/Test2/app-gen.js
+// ../../../../projects/Tutorial_1/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
+    dontUsePhysics: true,
     useEditor: true,
     projectType: "created from editor",
-    projectName: "Test2",
-    useSingleRenderPass: true,
+    projectName: "Tutorial_1",
     canvasSize: "fullscreen",
     mainCameraParams: {
       type: "WASD",
@@ -35900,73 +36548,33 @@ var app2 = new MatrixEngineWGPU(
     clearColor: { r: 0, b: 0.1, g: 0.1, a: 1 }
   },
   (app3) => {
-    addEventListener("PhysicsReady", async () => {
-      addRaycastsListener("canvas1", "mousedown");
-      app3.graph = graph_default;
-      shaderGraphsProdc.forEach((gShader) => {
-        let shaderReady = JSON.parse(gShader.content);
-        app3.shadersPack[gShader.name] = shaderReady.final;
-        if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
-      });
-      app3.addLight();
-      downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
-        let texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: -1, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "FLOOR",
-          pointerEffect: {
-            enabled: true,
-            // pointEffect: true,
-            gizmoEffect: true
-            // destructionEffect: true
-          },
-          mesh: m.mesh,
-          raycast: { enabled: true, radius: 1 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [25, 1, 25] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").useScale = true;
-      }, 800);
-      var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
-      texturesPaths = ["./res/meshes/blender/cube.png"];
-      app3.addGlbObjInctance({
+    app3.graph = graph_default;
+    shaderGraphsProdc.forEach((gShader) => {
+      let shaderReady = JSON.parse(gShader.content);
+      app3.shadersPack[gShader.name] = shaderReady.final;
+      if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
+    });
+    addRaycastsListener("canvas1", "mousedown");
+    app3.cameras.WASD.setPosition(0, 4, 0);
+    app3.addLight();
+    downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
+      let texturesPaths = ["./res/textures/floor1.webp"];
+      app3.addMeshObj({
+        material: { type: "standard" },
         position: { x: 0, y: 0, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: [texturesPaths],
-        scale: [2, 2, 2],
-        name: app3.getNameFromPath("res/meshes/glb/monster.glb"),
-        material: { type: "standard", useTextureFromGlb: true },
-        raycast: { enabled: true, radius: 3 },
-        pointerEffect: { enabled: true },
-        physics: { enabled: true, geometry: "Cube" }
-      }, null, glbFile01);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").useScale = true;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetX(-0.029999999999988973);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetZ(-12.003727183092838);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-4.881266945378257);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetX(-1.0099999999999918);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-2.9300000000000024);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("monster_MutantMesh").position.SetY(1.520000000000026);
-      }, 800);
-    });
+        texturesPaths,
+        name: "FLOOR",
+        mesh: m.mesh,
+        raycast: { enabled: true, radius: 2 },
+        physics: { enabled: false, geometry: "Cube" },
+        pointerEffect: {
+          enabled: true,
+          gizmoEffect: true
+        }
+      });
+    }, { scale: [25, 1, 25] });
   }
 );
 window.app = app2;
@@ -35980,4 +36588,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=Test2.js.map
+//# sourceMappingURL=Tutorial_1.js.map

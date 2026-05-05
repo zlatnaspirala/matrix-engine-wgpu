@@ -91,7 +91,7 @@ export default class FluxCodexVertex {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
     });
-    this.saveGraphEvent = new CustomEvent('save-graph', {detail: {}});
+    this.saveGraphEvent = new CustomEvent('save-graph', {detail: { data: "payload" }, bubbles: true, cancelable: true});
     this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {detail: {}});
 
     this.clearRuntime = () => {
@@ -359,9 +359,13 @@ export default class FluxCodexVertex {
             const val = n._returnCache;
             if(type === "object")
               n.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if(type === "number")
-              n.displayEl.textContent = val.toFixed(3);
-            else n.displayEl.textContent = String(val);
+            else if(type === "number") {
+              if (val) n.displayEl.textContent = val.toFixed(3);
+              else n.displayEl.textContent = this.variables[type][key];
+            } else {
+              if (val) n.displayEl.textContent = String(val);
+              else n.displayEl.textContent = this.variables[type][key];
+            }
           }
         }
       }
@@ -918,9 +922,9 @@ export default class FluxCodexVertex {
     node.outputs = [{name: "execOut", type: "action"}];
     // Dynamic input pins
     const args = this.getArgNames(fn);
-    args.forEach(arg => node.inputs.push({name: arg, type: "value"}));
+    args.forEach(arg => node.inputs.push({name: arg, type: "any"}));
     // Dynamic return pin
-    if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "value"});
+    if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "any"});
 
     // test 
     node.outputs.push({name: "reference", type: "function"});
@@ -1838,6 +1842,7 @@ export default class FluxCodexVertex {
           {name: "material", type: "string"},
           {name: "pos", type: "object"},
           {name: "rot", type: "object"},
+          {name: "rotSpeed", type: "object"},
           {name: "texturePath", type: "string"},
           {name: "name", type: "string"},
           {name: "raycast", type: "boolean"},
@@ -1855,6 +1860,7 @@ export default class FluxCodexVertex {
           {key: "material", value: "standard"},
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "rotSpeed", value: '{x:0, y:0, z:0}'},
           {key: "texturePath", value: "res/textures/star1.png"},
           {key: "name", value: "TEST"},
           {key: "raycast", value: true},
@@ -1871,10 +1877,12 @@ export default class FluxCodexVertex {
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
-          {name: "path", type: "string"},
+          {name: "meshA", type: "string"},
+          {name: "meshB", type: "string"},
           {name: "material", type: "string"},
           {name: "pos", type: "object"},
           {name: "rot", type: "object"},
+          {name: "rotSpeed", type: "object"},
           {name: "texturePath", type: "string"},
           {name: "name", type: "string"},
           {name: "raycast", type: "boolean"},
@@ -1888,12 +1896,14 @@ export default class FluxCodexVertex {
           {name: "error", type: "action"}
         ],
         fields: [
-          {key: "path", value: "res/meshes/blender/cube.obj"},
+          {key: "meshA", value: "cube"},
+          {key: "meshB", value: "sphere"},
           {key: "material", value: "standard"},
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "rotSpeed", value: '{x:0, y:0, z:0}'},
           {key: "texturePath", value: "res/textures/star1.png"},
-          {key: "name", value: "TEST"},
+          {key: "name", value: "editorGen1"},
           {key: "raycast", value: true},
           {key: "scale", value: [1, 1, 1]},
           {key: "isPhysicsBody", type: false},
@@ -3127,6 +3137,8 @@ LIST OF INTEREST OBJECT:
   setVariable(type, key, value) {
     if(!this.variables[type][key]) return;
 
+    console.log('Test -setVariable  value', value);
+
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
   }
@@ -4286,7 +4298,9 @@ LIST OF INTEREST OBJECT:
         return;
       }
       else if(n.title === "Add Procedural Mesh") {
-        const path = this.getValue(nodeId, "path");
+        const meshA = this.getValue(nodeId, "meshA");
+        const meshB = this.getValue(nodeId, "meshB");
+        const rotationSpeed = this.getValue(nodeId, "rotationSpeed");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -4303,19 +4317,31 @@ LIST OF INTEREST OBJECT:
         if(typeof pos == 'string') eval("pos = " + pos);
         if(typeof rot == 'string') eval("rot = " + rot);
         if(typeof scale == 'string') eval("scale = " + scale);
-        if(!texturePath || !path) {
+        if(!texturePath || !meshA) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
           return;
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          app.editorAddProceduralMesh(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+            // material = "standard",
+  // pos,
+  // rot,
+  // rotationSpeed = {x: 0, y: 0, z: 0},
+  // texturePath,
+  // name,
+  // meshTypeA = 'cube',
+  // meshTypeB = 'sphere',
+  // isPhysicsBody = false,
+  // raycast = false,
+  // scale = [1, 1, 1],
+  // isInstancedObj = false
+          app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
           }).catch((err) => {
-            console.log(`%cADD OBJ ERROR GRAPH!`, LOG_FUNNY_ARCADE);
+            console.log(`%cADD PROC-OBJ ERROR GRAPH: ${err}`, LOG_FUNNY_ARCADE);
             n._returnCache = null;
             this.enqueueOutputs(n, "error");
           })
@@ -5119,7 +5145,8 @@ LIST OF INTEREST OBJECT:
 
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    this.saveGraphEvent.detail = d;
+    // ?
+    this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
     // this.log("Graph saved to LocalStorage and final script");
   }

@@ -13,7 +13,7 @@ import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
-import {addOBJ, addProceduralMesh, addProceduralOBJ, physicsBodiesChain, physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/generator.js";
+import {addOBJ, addProceduralOBJ, physicsBodiesChain, physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/generator.js";
 import {TextureCache} from "./engine/core-cache.js";
 import {AudioAssetManager} from "./sounds/audioAsset.js";
 import {graphAdapter} from "./tools/editor/flexCodexShaderAdapter.js";
@@ -224,17 +224,14 @@ export default class MatrixEngineWGPU {
     this.canvas = canvas;
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-        // this.applyCanvasSize(this.options.fastRender);
         console.log('FastRender : ', this.options.fastRender)
         if(isMobile() == false) {
           this.applyCanvasSize(this.options.fastRender)
         } else {
           this.applyCanvasSizeMobile(this.options.fastRender);
-          // canvas.width = screen.availWidth * this.options.fastRender;
-          // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
         }
       } else if(isMobile() == true) {
-        console.log('Just Apply screen or inner...', this.options.fastRender)
+        // console.log('Just Apply screen or inner...', this.options.fastRender)
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
         canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if(this.options.fastRenderAlternative) {
@@ -244,7 +241,7 @@ export default class MatrixEngineWGPU {
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
-        console.log('Just INNER...');
+        // console.log('Just INNER...');
       }
     } else {
       console.log('Apply custom W H');
@@ -284,20 +281,21 @@ export default class MatrixEngineWGPU {
       if(byId('msgBox')) byId('msgBox').style.left = '30%';
       mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
-      addEventListener("run_mobile_fs", () => {
 
+      this.MEConfig.fsManager.onChange((isFS, target) => {
+        console.log('GOT BACK FROM FS', isFS)
+        this.applyCanvasSizeMobile(this.options.fastRender);
+      })
+
+      addEventListener("run_mobile_fs", () => {
         if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-          // this.applyCanvasSize(this.options.fastRender);
           console.log('FastRender : ', this.options.fastRender)
           if(isMobile() == false) {
             this.applyCanvasSize(this.options.fastRender)
           } else {
             this.applyCanvasSizeMobile(this.options.fastRender);
-            // canvas.width = screen.availWidth * this.options.fastRender;
-            // canvas.height = screen.availHeight * 0.98 * this.options.fastRender;
           }
         }
-
         // console.log('what iscallback ', callback)
         this.init({canvas, callback});
         meLoader.destroy();

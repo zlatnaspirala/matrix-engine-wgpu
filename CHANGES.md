@@ -1,53 +1,60 @@
 ## CHANGES [Started from feb 2026]
 
 [1.11.2]
-  - Added support for all lights VOLUMETRIC EFFECT postproccesing
-  - MAX_SPOTLIGHTS controlled from URL PARAMS or from MECONFIG
-  - Remove pipeline pas for effect used  already exist pass for transparent objs... [OPTIMISATION]
-  - MAke better looks for the examples...
+Added support for Volumetric Effects post-processing on all light types.
+
+MAX_SPOTLIGHTS is now controlled via URL parameters or MECONFIG (arguments will override both if provided).
+
+Optimized performance by removing the dedicated effect pipeline pass; it now utilizes the existing pass for transparent objects.
+
+Improved visual aesthetics for all example scenes.
 
 [1.11.0]
-  [MOBILE OPTIMISATION]
-  Physics added JOLT support.
-  Added bridge for physics -> physics worker.
-  Physics from 1.11.0 running intro worker by default.
-  Added multi-select node graphs for app graph(FluxCodexVertex)
-  Added new examples PinBall demo fot jolt.
-  All examples are portable on mobile devices now.
+[Mobile Optimization]
+
+Added Jolt Physics support.
+
+Implemented a bridge for the Physics-to-Physics Worker communication.
+
+Physics engine now runs in a Web Worker by default as of version 1.11.0.
+
+Added multi-select node graph support for the App Graph (FluxCodexVertex).
+
+Added Pinball demo to showcase Jolt physics integration.
+
+Portable performance: All examples are now fully optimized for mobile devices.
 
 [1.10.0]
-  New main loop logic
-  Not any more per mesh operation.
+New main loop logic
+Not any more per mesh operation.
 
 ```js
-      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
-      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      for(const [pipeline, meshes] of this.opaqueBuckets) {
-        pass.setPipeline(pipeline);
-        for(const mesh of meshes) {
-          mesh.drawElements(pass, this.lightContainer);
-        }
-      }
-      for(const [pipeline, meshes] of this.transparentBuckets) {
-        meshes.sort((a, b) => {
-          const cam = this.getCamera();
-          const da = vec3.distance(cam.position, a.position);
-          const db = vec3.distance(cam.position, b.position);
-          return db - da;
-        });
-        pass.setPipeline(pipeline);
-        for(const mesh of meshes) {
-          mesh.drawElements(pass, this.lightContainer);
-        }
-      }
-      pass.end();
-
+this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+for (const [pipeline, meshes] of this.opaqueBuckets) {
+  pass.setPipeline(pipeline);
+  for (const mesh of meshes) {
+    mesh.drawElements(pass, this.lightContainer);
+  }
+}
+for (const [pipeline, meshes] of this.transparentBuckets) {
+  meshes.sort((a, b) => {
+    const cam = this.getCamera();
+    const da = vec3.distance(cam.position, a.position);
+    const db = vec3.distance(cam.position, b.position);
+    return db - da;
+  });
+  pass.setPipeline(pipeline);
+  for (const mesh of meshes) {
+    mesh.drawElements(pass, this.lightContainer);
+  }
+}
+pass.end();
 ```
 
-
 [1.9.12]
- Ambient per mesh uniform added:
-   app.mainRenderBundle[1].setAmbient(0,10,10)
+Ambient per mesh uniform added:
+app.mainRenderBundle[1].setAmbient(0,10,10)
 
 [1.9.11]
 
@@ -80,17 +87,16 @@
 - added MEConfig with default values and checking url params.
   Engine in future will be fully scaled from url params.
   For now working params:
-
   - PHYSICS_GROUND_Y
-  - fs                  (force fullscreen only on first click/touch)
+  - fs (force fullscreen only on first click/touch)
   - shadowSize
 
 - BIG win for performance, from now all examples will be worked also on mobile devices.
-   scene uniform buffer is global now.
-   adding new input arg for main instance:
-
+  scene uniform buffer is global now.
+  adding new input arg for main instance:
 
 - Added overiride render variants
+
 ```js
 this.overrideRender = null;
 if (typeof options.render !== "undefined") {
@@ -99,8 +105,6 @@ if (typeof options.render !== "undefined") {
   }
 }
 ```
-
-
 
 [1.9.10] More optimisation in main loop!
 
