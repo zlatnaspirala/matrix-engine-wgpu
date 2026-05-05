@@ -515,6 +515,7 @@ export default class MEMeshObj extends Materials {
       this.vertexAnim = {
         active: false,
         enableWave: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
@@ -523,6 +524,7 @@ export default class MEMeshObj extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableWind: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
@@ -531,6 +533,7 @@ export default class MEMeshObj extends Materials {
           this.updateVertexAnimBuffer();
         },
         enablePulse: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
@@ -539,6 +542,7 @@ export default class MEMeshObj extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableTwist: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
@@ -547,6 +551,7 @@ export default class MEMeshObj extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableNoise: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
@@ -555,6 +560,7 @@ export default class MEMeshObj extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableOcean: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
@@ -631,7 +637,7 @@ export default class MEMeshObj extends Materials {
 
       this.updateTime = (time) => {
         this.time += time * this.deltaTimeAdapter;
-        this.vertexAnimParams[0] = this.time;
+        this.vertexAnimParams[0] = this.time * 0.01;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       }
 

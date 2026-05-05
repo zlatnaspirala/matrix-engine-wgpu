@@ -35,7 +35,7 @@ let app = new MatrixEngineWGPU(
       // ME START Cube_0 addCube
       downloadMeshes({cube: "./res/meshes/blender/plane.obj"}, (m) => {
         // downloadMeshes({cube: "./res/meshes/shapes/plane-water.obj"}, (m) => {
-        let texturesPaths = ['./res/meshes/blender/cube.png'];
+        let texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -53,7 +53,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START L_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
-        let texturesPaths = ['./res/meshes/blender/cube.png'];
+        let texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -67,7 +67,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START R_BOX addCube
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
-        let texturesPaths = ['./res/meshes/blender/cube.png'];
+        let texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -88,7 +88,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START REEL_1
       downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => {
-        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -127,7 +127,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START REEL_2
       downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => {
-        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -160,7 +160,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START REEL_3
       downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => {
-        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -243,7 +243,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START BANNER1
       downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => {
-        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -270,7 +270,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START BANNER2
       downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => {
-        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -345,7 +345,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START BANNER3
       downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => {
-        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
@@ -479,7 +479,7 @@ let app = new MatrixEngineWGPU(
 
       // ME START REEL_TOP
       downloadMeshes({cube: "res/meshes/obj/reel-top.obj"}, (m) => {
-        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
         app.addMeshObj({
           position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],

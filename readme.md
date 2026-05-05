@@ -617,7 +617,7 @@ export let application = new MatrixEngineWGPU(
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ["./res/meshes/blender/cube.png"],
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
         name: "CubePhysics",
         mesh: meshes.cube,
         physics: {
@@ -630,7 +630,7 @@ export let application = new MatrixEngineWGPU(
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ["./res/meshes/blender/cube.png"],
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
         name: "SpherePhysics",
         mesh: meshes.sphere,
         physics: {
@@ -696,7 +696,7 @@ export var loadObjsSequence = function () {
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           scale: [100, 100, 100],
-          texturesPaths: ["./res/meshes/blender/cube.png"],
+          texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
           name: "swat",
           mesh: m["swat-walk-pistol"],
           physics: {

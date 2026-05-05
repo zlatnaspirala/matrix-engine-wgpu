@@ -81,7 +81,7 @@ export default class EditorProvider {
       // console.log("[web.editor.addCube]: ", e.detail);
       // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
-        const texturesPaths = './res/meshes/blender/cube.png';
+        const texturesPaths = './res/textures/cube-g1-extra_low.png';
         this.core.addMeshObj({
           position: {x: 0, y: 0, z: -20},
           rotation: {x: 0, y: 0, z: 0},
@@ -102,7 +102,7 @@ export default class EditorProvider {
     document.addEventListener('web.editor.addSphere', (e) => {
       // console.log("[web.editor.addCube]: ", e.detail);
       downloadMeshes({mesh: "./res/meshes/shapes/sphere.obj"}, (m) => {
-        const texturesPaths = './res/meshes/blender/cube.png';
+        const texturesPaths = './res/textures/cube-g1-extra_low.png';
         this.core.addMeshObj({
           position: {x: 0, y: 0, z: -20},
           rotation: {x: 0, y: 0, z: 0},
@@ -140,7 +140,7 @@ export default class EditorProvider {
       e.detail.path = e.detail.path.replace(/\\/g, '/');
       // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       downloadMeshes({objMesh: `${e.detail.path}`}, (m) => {
-        const texturesPaths = './res/meshes/blender/cube.png';
+        const texturesPaths = './res/textures/cube-g1-extra_low.png';
         this.core.addMeshObj({
           position: {x: 0, y: 0, z: -20},
           rotation: {x: 0, y: 0, z: 0},

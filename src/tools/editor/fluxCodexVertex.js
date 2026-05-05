@@ -3625,7 +3625,6 @@ LIST OF INTEREST OBJECT:
       let result;
       switch(node.title) {
         case "Starts With [string]":
-          console.log('test startsWith');
           result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
           break;
         case "Ends With [string]":
@@ -4633,6 +4632,7 @@ LIST OF INTEREST OBJECT:
         if(enableWave == true || enableWave == "true") {
           let obj = app.getSceneObjectByName(sceneObjectName);
           obj.vertexAnim.enableWave();
+          console.log('XXXXXXXXXXXXXXX')
           obj.vertexAnim.setWaveParams(waveSpeed, waveAmplitude, waveFrequency);
         } else {
           obj.vertexAnim.disableWave();
@@ -4681,9 +4681,7 @@ LIST OF INTEREST OBJECT:
       let enableTwist = this.getValue(nodeId, "enableTwist");
       let twistSpeed = this.getValue(nodeId, "Twist speed");
       let twistAmount = this.getValue(nodeId, "Twist amount");
-      // setTwistParams: (speed, amount)");
       if(sceneObjectName) {
-        console.log(' TEST VERTEX ANIMATION !Twist ', enableTwist);
         let obj = app.getSceneObjectByName(sceneObjectName);
         if(enableTwist == true || enableTwist == "true") {
           obj.vertexAnim.enableTwist();
@@ -4698,9 +4696,7 @@ LIST OF INTEREST OBJECT:
       let noiseScale = this.getValue(nodeId, "Noise Scale");
       let noiseStrength = this.getValue(nodeId, "Noise Strength");
       let noiseSpeed = this.getValue(nodeId, "Noise Speed");
-      // setNoiseParams: (scale, strength, speed)
       if(sceneObjectName) {
-        console.log(' TEST VERTEX ANIMATION !enableNoise ', enableNoise);
         let obj = app.getSceneObjectByName(sceneObjectName);
         if(enableNoise == true || enableNoise == "true") {
           obj.vertexAnim.enableNoise();
@@ -4847,7 +4843,6 @@ LIST OF INTEREST OBJECT:
       let result;
       switch(n.title) {
         case "Starts With [string]":
-          // console.log('test startsWith');
           result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
           break;
         case "Add":

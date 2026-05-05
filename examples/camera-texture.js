@@ -34,7 +34,7 @@ export var loadCameraTexture = function() {
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
         scale: [6,6,6],
         name: 'MyVideoTex',
         meshA: MeshMorpher.sphere(1, 2),

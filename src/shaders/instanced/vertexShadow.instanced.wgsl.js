@@ -147,17 +147,36 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + w1 + w2 + w3, pos.z);
 }
 
-fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
   var p = pos;
-  let flags = u32(vertexAnim.flags);
-  if ((flags & ANIM_WAVE)  != 0u) { p = applyWave(p); }
-  if ((flags & ANIM_WIND)  != 0u) { p = applyWind(p, normal); }
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
   if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
   if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
   if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
   if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
-  p = mix(pos, p, vertexAnim.globalIntensity);
-  return SkinResult(vec4f(p, 1.0), normal);
+  return p;
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+  let flags = u32(vertexAnim.flags);
+  var animatedPos = applyAllEffects(pos, normal, flags);
+
+  // Intensity blend
+  animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
+
+  // Normal recalc via finite differences — sample from ORIGINAL pos
+  var animatedNorm = normal;
+  if (flags != 0u) {
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
+    animatedNorm = normalize(cross(tangentZ, tangentX));
+  }
+
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
 @vertex

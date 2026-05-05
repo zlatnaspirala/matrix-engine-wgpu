@@ -387,6 +387,7 @@ export default class ProceduralMeshObj extends Materials {
     this.vertexAnim = {
       active: false,
       enableWave: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
         this.updateVertexAnimBuffer();
       },
@@ -395,6 +396,7 @@ export default class ProceduralMeshObj extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableWind: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
         this.updateVertexAnimBuffer();
       },
@@ -403,6 +405,7 @@ export default class ProceduralMeshObj extends Materials {
         this.updateVertexAnimBuffer();
       },
       enablePulse: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
         this.updateVertexAnimBuffer();
       },
@@ -411,6 +414,7 @@ export default class ProceduralMeshObj extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableTwist: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
         this.updateVertexAnimBuffer();
       },
@@ -419,6 +423,7 @@ export default class ProceduralMeshObj extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableNoise: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
         this.updateVertexAnimBuffer();
       },
@@ -427,6 +432,7 @@ export default class ProceduralMeshObj extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableOcean: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
         this.updateVertexAnimBuffer();
       },
@@ -435,6 +441,7 @@ export default class ProceduralMeshObj extends Materials {
         this.updateVertexAnimBuffer();
       },
       enable: (...effects) => {
+        this.vertexAnim.active = true;
         effects.forEach(effect => {
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
         });

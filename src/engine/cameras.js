@@ -106,10 +106,6 @@ export class WASDCamera {
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
     canvas.addEventListener('pointerdown', e => {
-      // e.preventDefault();
-
-      // check gizmo drag
-
       this._mouseDown = true;
       this._lastX = e.clientX;
       this._lastY = e.clientY;
@@ -119,12 +115,10 @@ export class WASDCamera {
     canvas.addEventListener('pointerup', pointerUp, {passive: true});
     canvas.addEventListener('pointercancel', pointerUp, {passive: true});
     canvas.addEventListener('pointermove', e => {
-      
+      // this must be removed for prodc
       const activeBundle = app.mainRenderBundle.find(o => o.effects?.gizmoEffect != null);
-      console.log('GIZMO CHECK activeBundle.isDragging ', activeBundle.effects.gizmoEffect.isDragging)
-      if (activeBundle.effects.gizmoEffect.isDragging == true) return;
+      if (activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
 
-      // e.preventDefault();
       const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       for(const ce of events) {
         let dx = 0, dy = 0;

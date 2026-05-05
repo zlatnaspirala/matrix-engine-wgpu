@@ -2333,6 +2333,8 @@ var WASDCamera = class _WASDCamera {
     canvas.addEventListener("pointerup", pointerUp, { passive: true });
     canvas.addEventListener("pointercancel", pointerUp, { passive: true });
     canvas.addEventListener("pointermove", (e2) => {
+      const activeBundle = app.mainRenderBundle.find((o2) => o2.effects?.gizmoEffect != null);
+      if (activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
       const events = e2.getCoalescedEvents ? e2.getCoalescedEvents() : [e2];
       for (const ce of events) {
         let dx = 0, dy = 0;
@@ -3520,40 +3522,35 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
+  var p = pos;
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  return p;
+}
+
 fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
-  var animatedPos = pos;
-  var animatedNorm = normal;
   let flags = u32(vertexAnim.flags);
-  // Apply effects in order
-  if ((flags & ANIM_WAVE) != 0u) {
-    animatedPos = applyWave(animatedPos);
-  }
-  if ((flags & ANIM_WIND) != 0u) {
-    animatedPos = applyWind(animatedPos, animatedNorm);
-  }
-  if ((flags & ANIM_NOISE) != 0u) {
-    animatedPos = applyNoiseDisplacement(animatedPos);
-  }
-  if ((flags & ANIM_OCEAN) != 0u) {
-    animatedPos = applyOcean(animatedPos);
-  }
-  if ((flags & ANIM_PULSE) != 0u) {
-    animatedPos = applyPulse(animatedPos);
-  }
-  if ((flags & ANIM_TWIST) != 0u) {
-    animatedPos = applyTwist(animatedPos);
-  }
-  // Apply global intensity (master volume control)
+  var animatedPos = applyAllEffects(pos, normal, flags);
+
+  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
-  // Recalculate normal
+
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
   if (flags != 0u) {
-    let offset = 0.01;
-    let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0)));
-    let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset)));
-    let tangentX = normalize(posX - animatedPos);
-    let tangentZ = normalize(posZ - animatedPos);
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
     animatedNorm = normalize(cross(tangentZ, tangentX));
   }
+
   return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
@@ -8369,7 +8366,7 @@ var GizmoEffect = class {
     this.mode = 0;
     this.size = 3;
     this.selectedAxis = 0;
-    this.movementScale = 0.01;
+    this.movementScale = 0.035;
     this.isDragging = false;
     this.dragStartPoint = null;
     this.dragAxis = 0;
@@ -8729,8 +8726,8 @@ var GizmoEffect = class {
       [0, 0, 1]
       // Z
     ][axisIndex];
-    const viewMatrix = app.cameras.WASD.matrix_;
-    const projMatrix = app.cameras.WASD.projectionMatrix;
+    const viewMatrix = app.getCamera().view;
+    const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
     const p2 = {
       x: p1.x + worldAxis[0],
@@ -12253,6 +12250,7 @@ var MEMeshObj = class extends Materials {
       this.vertexAnim = {
         active: false,
         enableWave: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
@@ -12261,6 +12259,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableWind: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
@@ -12269,6 +12268,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enablePulse: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
@@ -12277,6 +12277,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableTwist: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
@@ -12285,6 +12286,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableNoise: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
@@ -12293,6 +12295,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableOcean: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
@@ -12371,7 +12374,7 @@ var MEMeshObj = class extends Materials {
       this.updateVertexAnimBuffer();
       this.updateTime = (time) => {
         this.time += time * this.deltaTimeAdapter;
-        this.vertexAnimParams[0] = this.time;
+        this.vertexAnimParams[0] = this.time * 0.01;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       };
       this.modelBindGroup = this.device.createBindGroup({
@@ -13275,44 +13278,35 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
-// Combined vertex animation
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
+  var p = pos;
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  return p;
+}
+
 fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
-  var animatedPos = pos;
-  var animatedNorm = normal;
-  
   let flags = u32(vertexAnim.flags);
-  
-  // Apply effects in order
-  if ((flags & ANIM_WAVE) != 0u) {
-    animatedPos = applyWave(animatedPos);
-  }
-  
-  if ((flags & ANIM_WIND) != 0u) {
-    animatedPos = applyWind(animatedPos, animatedNorm);
-  }
-  
-  if ((flags & ANIM_NOISE) != 0u) {
-    animatedPos = applyNoiseDisplacement(animatedPos);
-  }
-  
-  if ((flags & ANIM_OCEAN) != 0u) {
-    animatedPos = applyOcean(animatedPos);
-  }
-  
-  if ((flags & ANIM_PULSE) != 0u) {
-    animatedPos = applyPulse(animatedPos);
-  }
-  
-  if ((flags & ANIM_TWIST) != 0u) {
-    animatedPos = applyTwist(animatedPos);
-  }
-  
-  // Apply global intensity
+  var animatedPos = applyAllEffects(pos, normal, flags);
+
+  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
-  
-  // For shadows, we can skip expensive normal recalculation
-  // Shadows don't need perfect normals
-  
+
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
+  if (flags != 0u) {
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
+    animatedNorm = normalize(cross(tangentZ, tangentX));
+  }
+
   return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
@@ -13513,17 +13507,36 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + w1 + w2 + w3, pos.z);
 }
 
-fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
   var p = pos;
-  let flags = u32(vertexAnim.flags);
-  if ((flags & ANIM_WAVE)  != 0u) { p = applyWave(p); }
-  if ((flags & ANIM_WIND)  != 0u) { p = applyWind(p, normal); }
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
   if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
   if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
   if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
   if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
-  p = mix(pos, p, vertexAnim.globalIntensity);
-  return SkinResult(vec4f(p, 1.0), normal);
+  return p;
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+  let flags = u32(vertexAnim.flags);
+  var animatedPos = applyAllEffects(pos, normal, flags);
+
+  // Intensity blend
+  animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
+
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
+  if (flags != 0u) {
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
+    animatedNorm = normalize(cross(tangentZ, tangentX));
+  }
+
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
 @vertex
@@ -19478,26 +19491,32 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
+  var p = pos;
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  return p;
+}
+
 fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
-  var animatedPos  = pos;
-  var animatedNorm = normal;
   let flags = u32(vertexAnim.flags);
+  var animatedPos = applyAllEffects(pos, normal, flags);
 
-  if ((flags & ANIM_WAVE)  != 0u) { animatedPos = applyWave(animatedPos); }
-  if ((flags & ANIM_WIND)  != 0u) { animatedPos = applyWind(animatedPos, animatedNorm); }
-  if ((flags & ANIM_NOISE) != 0u) { animatedPos = applyNoiseDisplacement(animatedPos); }
-  if ((flags & ANIM_OCEAN) != 0u) { animatedPos = applyOcean(animatedPos); }
-  if ((flags & ANIM_PULSE) != 0u) { animatedPos = applyPulse(animatedPos); }
-  if ((flags & ANIM_TWIST) != 0u) { animatedPos = applyTwist(animatedPos); }
-
+  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
 
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
   if (flags != 0u) {
-    let offset  = 0.01;
-    let posX    = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0)));
-    let posZ    = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset)));
-    let tangentX = normalize(posX - animatedPos);
-    let tangentZ = normalize(posZ - animatedPos);
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
     animatedNorm = normalize(cross(tangentZ, tangentX));
   }
 
@@ -21050,6 +21069,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       this.vertexAnim = {
         active: false,
         enableWave: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
@@ -21058,6 +21078,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableWind: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
@@ -21066,6 +21087,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enablePulse: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
@@ -21074,6 +21096,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableTwist: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
@@ -21082,6 +21105,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableNoise: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
@@ -21090,6 +21114,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableOcean: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
@@ -21098,6 +21123,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enable: (...effects) => {
+          this.vertexAnim.active = true;
           effects.forEach((effect) => {
             this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
           });
@@ -22488,7 +22514,7 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addCube", (e2) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -22507,7 +22533,7 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addSphere", (e2) => {
       downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -22541,7 +22567,7 @@ var EditorProvider = class {
       e2.detail.path = e2.detail.path.replace("\\res", "res");
       e2.detail.path = e2.detail.path.replace(/\\/g, "/");
       downloadMeshes({ objMesh: `${e2.detail.path}` }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -29414,6 +29440,7 @@ LIST OF INTEREST OBJECT:
         if (enableWave == true || enableWave == "true") {
           let obj2 = app.getSceneObjectByName(sceneObjectName);
           obj2.vertexAnim.enableWave();
+          console.log("XXXXXXXXXXXXXXX");
           obj2.vertexAnim.setWaveParams(waveSpeed, waveAmplitude, waveFrequency);
         } else {
           obj.vertexAnim.disableWave();
@@ -29463,7 +29490,7 @@ LIST OF INTEREST OBJECT:
       let twistSpeed = this.getValue(nodeId, "Twist speed");
       let twistAmount = this.getValue(nodeId, "Twist amount");
       if (sceneObjectName) {
-        console.log(" TEST VERTEX ANIMATION !Twist ", enableTwist);
+        console.log(" TEST VERTEX ANIMATION !Twist twistSpeed ", twistSpeed);
         let obj2 = app.getSceneObjectByName(sceneObjectName);
         if (enableTwist == true || enableTwist == "true") {
           obj2.vertexAnim.enableTwist();
@@ -32670,6 +32697,7 @@ var ProceduralMeshObj = class extends Materials {
     this.vertexAnim = {
       active: false,
       enableWave: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
         this.updateVertexAnimBuffer();
       },
@@ -32678,6 +32706,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableWind: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
         this.updateVertexAnimBuffer();
       },
@@ -32686,6 +32715,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enablePulse: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
         this.updateVertexAnimBuffer();
       },
@@ -32694,6 +32724,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableTwist: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
         this.updateVertexAnimBuffer();
       },
@@ -32702,6 +32733,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableNoise: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
         this.updateVertexAnimBuffer();
       },
@@ -32710,6 +32742,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableOcean: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
         this.updateVertexAnimBuffer();
       },
@@ -32718,6 +32751,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enable: (...effects) => {
+        this.vertexAnim.active = true;
         effects.forEach((effect) => {
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
         });
@@ -36556,7 +36590,7 @@ var app2 = new MatrixEngineWGPU(
       addRaycastsListener("canvas1", "mousedown");
       app3.addLight();
       downloadMeshes({ cube: "./res/meshes/blender/plane.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36573,7 +36607,7 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36586,7 +36620,7 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36602,7 +36636,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("L_BOX").position.SetX(-4);
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36627,7 +36661,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("R_BOX").position.SetX(4);
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36649,7 +36683,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_2").scale[1] = 2;
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36695,7 +36729,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_1").position.SetY(3);
       }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36714,7 +36748,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER1").position.SetX(0);
       }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36757,7 +36791,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER2").scale[0] = 4;
       }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36827,7 +36861,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER1").useScale = true;
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel-top.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },

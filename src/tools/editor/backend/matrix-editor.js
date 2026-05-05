@@ -481,7 +481,7 @@ async function addCube(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
-  content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
@@ -680,7 +680,7 @@ async function addGlb(msg, ws) {
   msg.options.path = msg.options.path.replace(/\\/g, '/');
   content.addLine(` // ME START ${getNameFromPath(msg.options.path)}`);
   content.addLine(` var glbFile01 = await fetch('${msg.options.path}').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));`);
-  content.addLine(`   texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`    app.addGlbObjInctance({ `);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
@@ -710,7 +710,7 @@ async function addObj(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.options.index}`);
   content.addLine(` downloadMeshes({cube: "${msg.options.path}"}, (m) => { `);
-  content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   const texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
@@ -738,7 +738,7 @@ async function addSphere(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({sphere: "./res/meshes/shapes/sphere.obj"}, (m) => { `);
-  content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
