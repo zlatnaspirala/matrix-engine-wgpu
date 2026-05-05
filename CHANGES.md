@@ -2,7 +2,7 @@
 
 [1.11.3]
  - Choose physics lib from editor (Create new project procedure)
- 
+ - Gizmo fixed for z axis
 
 
 [1.11.2]
