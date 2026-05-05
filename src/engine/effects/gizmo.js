@@ -8,7 +8,7 @@ export class GizmoEffect {
     this.mode = 0;
     this.size = 3;
     this.selectedAxis = 0;
-    this.movementScale = 0.01;
+    this.movementScale = 0.035;
     this.isDragging = false;
     this.dragStartPoint = null;
     this.dragAxis = 0;
@@ -163,7 +163,7 @@ export class GizmoEffect {
         // console.log('Gizmo: Stopped dragging:', this.parentMesh.name);
         // console.log('What is selectedAxis: ', this.selectedAxis)
         // console.log('What is operation: ', this.mode)
-        if (this.parentMesh._GRAPH_CACHE) return;
+        if(this.parentMesh._GRAPH_CACHE) return;
         if(this.mode == 0) {
           // 1 x  2 y  3 z
           // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
@@ -190,16 +190,16 @@ export class GizmoEffect {
           }));
         } else if(this.mode == 2) {
           // if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
-            document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-              detail: {
-                inputFor: this.parentMesh.name,
-                propertyId: "scale",
-                property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ?
-                  "1" : "2",
-                value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ?
-                  this.parentMesh.rotation.y : this.parentMesh.rotation.z
-              }
-            }));
+          document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+            detail: {
+              inputFor: this.parentMesh.name,
+              propertyId: "scale",
+              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ?
+                "1" : "2",
+              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ?
+                this.parentMesh.rotation.y : this.parentMesh.rotation.z
+            }
+          }));
         }
         // finish job
         this.isDragging = false;
@@ -239,8 +239,8 @@ export class GizmoEffect {
       [0, 0, 1]  // Z
     ][axisIndex];
     // Transform axis to camera space
-    const viewMatrix = app.cameras.WASD.matrix_;
-    const projMatrix = app.cameras.WASD.projectionMatrix;
+    const viewMatrix = app.getCamera().view;
+    const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
     // Point 2: Object position + axis direction
     const p2 = {

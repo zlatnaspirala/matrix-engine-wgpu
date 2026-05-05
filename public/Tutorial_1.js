@@ -30862,12 +30862,8 @@ var EditorHud = class {
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
-        detail: {
-          name: name2,
-          features
-        }
+        detail: { name: name2, features }
       }));
     });
     this.showAboutModal = () => {

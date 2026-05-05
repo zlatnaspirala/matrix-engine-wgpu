@@ -1,0 +1,10 @@
+{
+  "redirect": true,
+  "id": "test-vert-anim",
+  "name": "test-vert-anim",
+  "absolutePath": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects\\test-vert-anim\\test-vert-anim.json",
+  "PROJECTS_DIR": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects",
+  "projectData": "test-vert-anim\\test-vert-anim.json",
+  "physics": false,
+  "networking": false
+}
