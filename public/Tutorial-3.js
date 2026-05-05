@@ -36496,10 +36496,32 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/Tutorial-2/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 299.34460239409304, "y": 127.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_3": { "id": "node_3", "x": 882.2244984552017, "y": 284.98070127641563, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_13": { "id": "node_13", "title": "Comment", "x": 922.1295655868328, "y": 132.0697712845146, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "RAYCAST must be enabled for specific object ..." }] }, "node_17": { "id": "node_17", "title": "Get Number", "x": 1000.3062009050564, "y": 649.3769260669634, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "if", "x": 1820.9859398846945, "y": 430.63190512342896, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 1322.19644410629, "y": 795.0117303758767, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_23": { "id": "node_23", "title": "Set Number", "x": 2098.4344941219106, "y": 481.461054422977, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }, { "key": "literal", "value": "1" }], "finished": true }, "node_24": { "id": "node_24", "title": "Print", "x": 2409.522025912863, "y": 295.4257749090538, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_25": { "id": "node_25", "title": "Print", "x": 2410.459612965746, "y": 490.40465614326183, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_26": { "id": "node_26", "title": "Get Number", "x": 2095.783994191486, "y": 684.8209549448108, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }], "isGetterNode": true, "displayEl": {} }, "node_27": { "id": "node_27", "title": "A != B", "x": 1565.0492131585943, "y": 639.8307308004491, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_28": { "id": "node_28", "title": "Set Number", "x": 2099.049150231602, "y": 287.67773765419605, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "STATUS_MORPH" }, { "key": "literal", "value": 0 }], "finished": true }, "node_40": { "id": "node_40", "x": 569.9516534175535, "y": 131.618448386289, "title": "Add Procedural Mesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "meshA", "type": "string" }, { "name": "meshB", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "meshA", "value": "cube" }, { "key": "meshB", "value": "sphere" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "editorGen1" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "[5,5,5]" }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_42": { "id": "node_42", "title": "Function", "x": 1290.4128620900835, "y": 340.4624292864835, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objName", "type": "any" }, { "name": "status", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "MyFirstFunc" } }, "links": [{ "id": "link_15", "from": { "node": "node_20", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_23", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_23", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_25", "pin": "exec" }, "type": "action" }, { "id": "link_18", "from": { "node": "node_26", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_24", "pin": "value" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_26", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_25", "pin": "value" }, "type": "any" }, { "id": "link_20", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_27", "pin": "B" }, "type": "any" }, { "id": "link_21", "from": { "node": "node_17", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_27", "pin": "A" }, "type": "any" }, { "id": "link_22", "from": { "node": "node_27", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_20", "pin": "condition" }, "type": "boolean" }, { "id": "link_23", "from": { "node": "node_20", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_28", "pin": "exec" }, "type": "action" }, { "id": "link_24", "from": { "node": "node_28", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_33", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_40", "pin": "exec" }, "type": "action" }, { "id": "link_34", "from": { "node": "node_3", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_42", "pin": "exec" }, "type": "action" }, { "id": "link_35", "from": { "node": "node_17", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_42", "pin": "status" }, "type": "any" }, { "id": "link_36", "from": { "node": "node_3", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_42", "pin": "objName" }, "type": "any" }, { "id": "link_37", "from": { "node": "node_42", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }], "nodeCounter": 44, "linkCounter": 38, "pan": [-1332, -148], "variables": { "number": { "STATUS_MORPH": 1, "ZERO": 0 }, "boolean": { "NEW_BOOL": false }, "string": { "NEW_STR": "" }, "object": { "NEW_OBJ": {} } } };
+// ../../../../projects/Tutorial-3/graph.js
+var graph_default = {
+  nodes: {
+    node_1: {
+      id: "node_1",
+      title: "onLoad",
+      x: 299.34460239409304,
+      y: 127.5731482201762,
+      category: "event",
+      inputs: [],
+      outputs: [{ name: "exec", type: "action" }]
+    }
+  },
+  links: [],
+  nodeCounter: 2,
+  linkCounter: 1,
+  pan: [0, 0],
+  variables: {
+    number: {},
+    boolean: {},
+    string: {},
+    object: {}
+  }
+};
 
-// ../../../../projects/Tutorial-2/shader-graphs.js
+// ../../../../projects/Tutorial-3/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
@@ -36519,57 +36541,50 @@ var shaderGraphsProdc = [
   }
 ];
 
-// ../../../../projects/Tutorial-2/app-gen.js
+// ../../../../projects/Tutorial-3/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
-    dontUsePhysics: true,
+    useJolt: true,
     useEditor: true,
     projectType: "created from editor",
-    projectName: "Tutorial-2",
+    projectName: "Tutorial-3",
     canvasSize: "fullscreen",
     mainCameraParams: {
       type: "WASD",
       responseCoef: 1e3
     },
-    clearColor: { r: 0, b: 0.1, g: 0.1, a: 1 }
+    clearColor: { r: 0, b: 0, g: 0, a: 1 }
   },
   (app3) => {
-    app3.graph = graph_default;
-    shaderGraphsProdc.forEach((gShader) => {
-      let shaderReady = JSON.parse(gShader.content);
-      app3.shadersPack[gShader.name] = shaderReady.final;
-      if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
-    });
-    addRaycastsListener("canvas1", "mousedown");
-    app3.cameras.WASD.setPosition(0, 4, 0);
-    app3.addLight();
-    downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
-      let texturesPaths = ["./res/textures/floor1.webp"];
-      app3.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 0, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths,
-        name: "FLOOR",
-        mesh: m.mesh,
-        raycast: { enabled: true, radius: 2 },
-        physics: { enabled: false, geometry: "Cube" },
-        pointerEffect: {
-          enabled: true,
-          gizmoEffect: true
-        }
+    addEventListener("PhysicsReady", async () => {
+      app3.graph = graph_default;
+      shaderGraphsProdc.forEach((gShader) => {
+        let shaderReady = JSON.parse(gShader.content);
+        app3.shadersPack[gShader.name] = shaderReady.final;
+        if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
       });
-    }, { scale: [25, 1, 25] });
-    setTimeout(() => {
-      app3.getSceneObjectByName("FLOOR").position.SetZ(-20);
-    }, 800);
-    setTimeout(() => {
-      app3.getSceneObjectByName("FLOOR").position.SetY(0);
-    }, 800);
-    setTimeout(() => {
-      app3.getSceneObjectByName("FLOOR").position.SetX(0);
-    }, 800);
+      addRaycastsListener("canvas1", "mousedown");
+      app3.cameras.WASD.setPosition(0, 4, 0);
+      app3.addLight();
+      downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
+        let texturesPaths = ["./res/textures/floor1.webp"];
+        app3.addMeshObj({
+          material: { type: "standard" },
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths,
+          name: "FLOOR",
+          mesh: m.mesh,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" },
+          pointerEffect: {
+            enabled: true,
+            gizmoEffect: true
+          }
+        });
+      }, { scale: [25, 1, 25] });
+    });
   }
 );
 window.app = app2;
@@ -36583,4 +36598,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=Tutorial-2.js.map
+//# sourceMappingURL=Tutorial-3.js.map
