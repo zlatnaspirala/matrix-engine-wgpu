@@ -28479,7 +28479,7 @@ function addOBJ(path, material = "standard", pos, rot, rotationSpeed = {
       });
       // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
-      // console.log(o.name);
+      console.log(o.name);
       _fluxCodexVertex.runtimeCacheObjs.push(o);
       resolve(o);
     }
@@ -50065,6 +50065,7 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
@@ -50095,6 +50096,7 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
       <span>Data mod</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('curveTimeline')">Curve Timeline</button>
@@ -58115,6 +58117,7 @@ LIST OF INTEREST OBJECT:
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
+        let rotSpeed = this.getValue(nodeId, "rotSpeed");
         let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
@@ -58139,7 +58142,9 @@ LIST OF INTEREST OBJECT:
         }
         if (typeof pos == 'string') eval("pos = " + pos);
         if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof rotSpeed == 'string') eval("rotSpeed = " + rotSpeed);
         if (typeof scale == 'string') eval("scale = " + scale);
+        // console.warn("[Generator] SCALE...", scale);
         if (!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
@@ -58147,7 +58152,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then(object => {
+          app.editorAddOBJ(path, mat, pos, rot, rotSpeed, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj, isPhysicsBody).then(object => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
@@ -58158,7 +58163,6 @@ LIST OF INTEREST OBJECT:
           });
           // createdField.value = true;
         }
-        // sync
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Add Procedural Mesh") {
