@@ -549,7 +549,7 @@ async function saveGraph(msg, ws) {
     ";\n";
   fs.writeFile(file, content, "utf8").then((e) => {
     ws.send(JSON.stringify({ok: true, methodSaves: 'OK'}));
-    console.log("Saved graph.js");
+    console.log("Saved app graph.js");
   });
 }
 
@@ -570,7 +570,7 @@ async function saveShaderGraph(msg, ws) {
   }
   // const newGraph = JSON.parse(msg.graphData);
   const newGraph = msg.graphData;
-  console.log("No existing shader-graphs.js, creating new");
+  // console.log("No existing shader-graphs.js, creating new");
   // Find and update, or add new
   const existingIndex = graphs.findIndex(g => g.name === newGraph.name);
   if(existingIndex !== -1) {
