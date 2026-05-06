@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.11.0 2026
+📅 Version: 1.11.3 2026 `The beast`
 
 ---
 
@@ -26,7 +26,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 Backend editor (works in local env - desktop browsers) support list:
 - Chrome, Edge, Opera
 
-HOT: For 1.1x.0 Firefox not FIXED Render
+HOT: For 1.1x.0 Firefox render not FIXED yet.
 
 ---
 
@@ -49,9 +49,9 @@ HOT: For 1.1x.0 Firefox not FIXED Render
 ## Roadmap
 
 - (Preparing API DOCs)[https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API]
-- 🎯 Test linux OS -> Editor creates and manages files internally (Windows tested only!)
-- 🎯 Improve gizmo feature
-- 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`
+- 🎯 Test linux OS -> Editor creates and manages files internally.
+- 🎯 Improve gizmo feature.
+- 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`.
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
 - Add fully physics options. soft bodies etc...
 
@@ -617,7 +617,7 @@ export let application = new MatrixEngineWGPU(
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ["./res/meshes/blender/cube.png"],
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
         name: "CubePhysics",
         mesh: meshes.cube,
         physics: {
@@ -630,7 +630,7 @@ export let application = new MatrixEngineWGPU(
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ["./res/meshes/blender/cube.png"],
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
         name: "SpherePhysics",
         mesh: meshes.sphere,
         physics: {
@@ -696,7 +696,7 @@ export var loadObjsSequence = function () {
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           scale: [100, 100, 100],
-          texturesPaths: ["./res/meshes/blender/cube.png"],
+          texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
           name: "swat",
           mesh: m["swat-walk-pistol"],
           physics: {

@@ -5,6 +5,7 @@ import {isMobile, ORBIT} from '../src/engine/utils.js';
 
 export var myLights = function() {
   let myLights = new MatrixEngineWGPU({
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {

@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadVideoTexture = function() {
   let videoTexture = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -54,7 +54,7 @@ export var loadVideoTexture = function() {
         position: {x: 0, y: -1, z: -15},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
         scale: [4, 3, 0.1],
         name: 'MyVideoTex',
         mesh: m.cube,
@@ -73,7 +73,7 @@ export var loadVideoTexture = function() {
         position: {x: 0, y: 7, z: -20},
         rotation: {x: 90, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
         name: 'MyVideoTex',
         mesh: m.piramyd,
         scale: [5, 5, 5],

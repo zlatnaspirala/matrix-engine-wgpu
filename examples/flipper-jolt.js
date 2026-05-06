@@ -757,7 +757,7 @@ export var flipperJolt = function() {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
-            if(pos.x > 5 && pos.z < -6) {
+            if(pos.x > 5 && pos.z > -6) {
               if(MYFLIPPER.BALLS == 0) {
                 mb.show('No more balls...')
                 return;

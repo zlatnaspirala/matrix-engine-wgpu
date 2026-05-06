@@ -3,7 +3,7 @@ import {openFragmentShaderEditor} from "./flexCodexShader.js";
 /**
  * @Author NIkola Lukic
  * @description
- * Web Editor for matrix-engine-wgpu
+ * Web Editor for matrix-engine-wgpu alias EditorX
  * Using "file protocol" in direct way no virtual/syntetic assets
  */
 export default class EditorHud {
@@ -40,7 +40,7 @@ export default class EditorHud {
         // let name = prompt("📦 GLB file : ", getPATH);
         // instanced is standard - top level sceneobj CLASS ...
         let objName = prompt(`Path: ${getPATH} \n 📦 Enter Uniq Name: `);
-        if(confirm("⚛ Enable physics (Ammo)?")) {
+        if(confirm("⚛ Enable physics for current body ?")) {
           // infly
           let o = {
             physics: true,
@@ -59,7 +59,7 @@ export default class EditorHud {
         }
       } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
         let objName = prompt("📦 Enter uniq name: ");
-        if(confirm("⚛ Enable physics (Ammo)?")) {
+        if(confirm("⚛ Enable physics for currect object?")) {
           // infly 
           let o = {
             physics: true,
@@ -353,16 +353,18 @@ export default class EditorHud {
         networking: false
       };
 
-      if(confirm("⚛ Enable physics (Ammo)?")) {
+      if(confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
 
       if(confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       console.log(features);
-
       document.dispatchEvent(new CustomEvent('cnp', {
         detail: {
           name: name,
@@ -381,7 +383,7 @@ export default class EditorHud {
       console.log("Go to editorX landing page...");
       location.href = 'matrix-engine.html';
     };
-    
+
 
     // byId('start-prod-build').onclick = () => {
     //   //
@@ -436,31 +438,6 @@ export default class EditorHud {
       }));
     });
 
-    // // settings
-    // setTimeout(() => {
-    //   this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
-    //   this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
-    // }, 1500);
-    //     <!--div id="cameraBox" class="drop-item">
-    //    <p>📽️Camera</p>
-    //    <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
-    //    <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-    //    <!--div> Position :  </br>
-    //     \n 
-    //     X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
-    //     Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
-    //     Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-    //    </div-->
-    // </div-->
-    // byId('camera-settings-pitch').addEventListener('change', (e) => {
-    //   console.log('setting camera pitch ', e);
-    //   this.core.cameras.WASD.pitch = e.target.value;
-    // })
-    // byId('camera-settings-yaw').addEventListener('change', (e) => {
-    //   console.log('setting camera', e)
-    //   this.core.cameras.WASD.yaw = e.target.value;
-    // })
-
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
@@ -509,12 +486,12 @@ export default class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
   🎯 Adding Visual Scripting System called 
-     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F6 key)
   🎯 Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
@@ -574,7 +551,7 @@ export default class EditorHud {
       document.head.appendChild(style);
     }
     const setMode = (e) => {
-      if (byId('graph-status'). innerHTML !== "⚫") return;
+      if(byId('graph-status').innerHTML !== "⚫") return;
       let m = parseInt(e.target.getAttribute("data-mode"));
       dispatchEvent(new CustomEvent('editor-set-gizmo-mode', {detail: {mode: m}}))
       if(m == 0) {
@@ -782,26 +759,29 @@ export default class EditorHud {
         networking: false
       };
 
-      if(confirm("⚛ Enable physics (Ammo)?")) {
+      if(confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
 
       if(confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      console.log(features);
+
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
+
+      // console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
-        detail: {
-          name: name,
-          features: features
-        }
+        detail: {name: name, features: features}
       }));
     });
 
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
@@ -870,7 +850,7 @@ export default class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
@@ -1104,7 +1084,7 @@ class SceneObjectProperty {
           }
         })
       } else if(propName == "itIsPhysicsBody") {
-        if (!this.core.matrixPhysics) return;
+        if(!this.core.matrixPhysics) return;
         let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
         for(let key in body) {
           if(typeof body[key] === 'string') {

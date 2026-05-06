@@ -9,7 +9,7 @@ import {PVector} from "../src/engine/matrix-class.js";
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 1, // must be 1 for now
+    fastRender: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -234,7 +234,7 @@ export var physicsPlayground = function() {
         position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
         name: 'cube1',
         mesh: m.cube,
         physics: {
@@ -249,7 +249,7 @@ export var physicsPlayground = function() {
         position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
         name: 'cube2',
         mesh: m.cube,
         physics: {

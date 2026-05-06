@@ -6,7 +6,7 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var fontana = function() {
   let fontana = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',

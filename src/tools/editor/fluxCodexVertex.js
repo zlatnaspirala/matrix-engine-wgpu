@@ -91,7 +91,7 @@ export default class FluxCodexVertex {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
     });
-    this.saveGraphEvent = new CustomEvent('save-graph', {detail: { data: "payload" }, bubbles: true, cancelable: true});
+    this.saveGraphEvent = new CustomEvent('save-graph', {detail: {data: "payload"}, bubbles: true, cancelable: true});
     this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {detail: {}});
 
     this.clearRuntime = () => {
@@ -360,10 +360,10 @@ export default class FluxCodexVertex {
             if(type === "object")
               n.displayEl.textContent = JSON.stringify(val, null, 2);
             else if(type === "number") {
-              if (val) n.displayEl.textContent = val.toFixed(3);
+              if(val) n.displayEl.textContent = val.toFixed(3);
               else n.displayEl.textContent = this.variables[type][key];
             } else {
-              if (val) n.displayEl.textContent = String(val);
+              if(val) n.displayEl.textContent = String(val);
               else n.displayEl.textContent = this.variables[type][key];
             }
           }
@@ -1749,7 +1749,7 @@ export default class FluxCodexVertex {
           {key: "material", value: "standard"},
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
-          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "texturePath", value: "res/textures/default.png"},
           {key: "name", value: "TEST"},
           {key: "geometry", value: "Cube"},
           {key: "raycast", value: true},
@@ -1784,7 +1784,7 @@ export default class FluxCodexVertex {
           {key: "material", value: "standard"},
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
-          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "texturePath", value: "res/textures/default.png"},
           {key: "name", value: "TEST"},
           {key: "size", value: "10x3"},
           {key: "raycast", value: true},
@@ -1821,7 +1821,7 @@ export default class FluxCodexVertex {
           {key: "material", value: "standard"},
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
-          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "texturePath", value: "res/textures/default.png"},
           {key: "name", value: "TEST"},
           {key: "levels", value: "5"},
           {key: "raycast", value: true},
@@ -1861,7 +1861,7 @@ export default class FluxCodexVertex {
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
           {key: "rotSpeed", value: '{x:0, y:0, z:0}'},
-          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "texturePath", value: "res/textures/default.png"},
           {key: "name", value: "TEST"},
           {key: "raycast", value: true},
           {key: "scale", value: [1, 1, 1]},
@@ -1902,7 +1902,7 @@ export default class FluxCodexVertex {
           {key: "pos", value: '{x:0, y:0, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
           {key: "rotSpeed", value: '{x:0, y:0, z:0}'},
-          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "texturePath", value: "res/textures/default.png"},
           {key: "name", value: "editorGen1"},
           {key: "raycast", value: true},
           {key: "scale", value: [1, 1, 1]},
@@ -3625,7 +3625,6 @@ LIST OF INTEREST OBJECT:
       let result;
       switch(node.title) {
         case "Starts With [string]":
-          console.log('test startsWith');
           result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
           break;
         case "Ends With [string]":
@@ -4262,6 +4261,7 @@ LIST OF INTEREST OBJECT:
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
+        let rotSpeed = this.getValue(nodeId, "rotSpeed");        
         let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
@@ -4274,7 +4274,9 @@ LIST OF INTEREST OBJECT:
         if(isPhysicsBody == "true") {isPhysicsBody = true} else {isPhysicsBody = false;}
         if(typeof pos == 'string') eval("pos = " + pos);
         if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof rotSpeed == 'string') eval("rotSpeed = " + rotSpeed);
         if(typeof scale == 'string') eval("scale = " + scale);
+        // console.warn("[Generator] SCALE...", scale);
         if(!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
@@ -4282,7 +4284,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+          app.editorAddOBJ(path, mat, pos, rot, rotSpeed, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj, isPhysicsBody).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
@@ -4293,7 +4295,6 @@ LIST OF INTEREST OBJECT:
           })
           // createdField.value = true;
         }
-        // sync
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -4324,18 +4325,18 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-            // material = "standard",
-  // pos,
-  // rot,
-  // rotationSpeed = {x: 0, y: 0, z: 0},
-  // texturePath,
-  // name,
-  // meshTypeA = 'cube',
-  // meshTypeB = 'sphere',
-  // isPhysicsBody = false,
-  // raycast = false,
-  // scale = [1, 1, 1],
-  // isInstancedObj = false
+          // material = "standard",
+          // pos,
+          // rot,
+          // rotationSpeed = {x: 0, y: 0, z: 0},
+          // texturePath,
+          // name,
+          // meshTypeA = 'cube',
+          // meshTypeB = 'sphere',
+          // isPhysicsBody = false,
+          // raycast = false,
+          // scale = [1, 1, 1],
+          // isInstancedObj = false
           app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
@@ -4633,6 +4634,7 @@ LIST OF INTEREST OBJECT:
         if(enableWave == true || enableWave == "true") {
           let obj = app.getSceneObjectByName(sceneObjectName);
           obj.vertexAnim.enableWave();
+          console.log('XXXXXXXXXXXXXXX')
           obj.vertexAnim.setWaveParams(waveSpeed, waveAmplitude, waveFrequency);
         } else {
           obj.vertexAnim.disableWave();
@@ -4681,9 +4683,7 @@ LIST OF INTEREST OBJECT:
       let enableTwist = this.getValue(nodeId, "enableTwist");
       let twistSpeed = this.getValue(nodeId, "Twist speed");
       let twistAmount = this.getValue(nodeId, "Twist amount");
-      // setTwistParams: (speed, amount)");
       if(sceneObjectName) {
-        console.log(' TEST VERTEX ANIMATION !Twist ', enableTwist);
         let obj = app.getSceneObjectByName(sceneObjectName);
         if(enableTwist == true || enableTwist == "true") {
           obj.vertexAnim.enableTwist();
@@ -4698,9 +4698,7 @@ LIST OF INTEREST OBJECT:
       let noiseScale = this.getValue(nodeId, "Noise Scale");
       let noiseStrength = this.getValue(nodeId, "Noise Strength");
       let noiseSpeed = this.getValue(nodeId, "Noise Speed");
-      // setNoiseParams: (scale, strength, speed)
       if(sceneObjectName) {
-        console.log(' TEST VERTEX ANIMATION !enableNoise ', enableNoise);
         let obj = app.getSceneObjectByName(sceneObjectName);
         if(enableNoise == true || enableNoise == "true") {
           obj.vertexAnim.enableNoise();
@@ -4847,7 +4845,6 @@ LIST OF INTEREST OBJECT:
       let result;
       switch(n.title) {
         case "Starts With [string]":
-          // console.log('test startsWith');
           result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
           break;
         case "Add":

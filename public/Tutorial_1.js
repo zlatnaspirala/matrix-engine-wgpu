@@ -2333,6 +2333,8 @@ var WASDCamera = class _WASDCamera {
     canvas.addEventListener("pointerup", pointerUp, { passive: true });
     canvas.addEventListener("pointercancel", pointerUp, { passive: true });
     canvas.addEventListener("pointermove", (e2) => {
+      const activeBundle = app.mainRenderBundle.find((o2) => o2.effects?.gizmoEffect != null);
+      if (activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
       const events = e2.getCoalescedEvents ? e2.getCoalescedEvents() : [e2];
       for (const ce of events) {
         let dx = 0, dy = 0;
@@ -3520,40 +3522,35 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
+  var p = pos;
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  return p;
+}
+
 fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
-  var animatedPos = pos;
-  var animatedNorm = normal;
   let flags = u32(vertexAnim.flags);
-  // Apply effects in order
-  if ((flags & ANIM_WAVE) != 0u) {
-    animatedPos = applyWave(animatedPos);
-  }
-  if ((flags & ANIM_WIND) != 0u) {
-    animatedPos = applyWind(animatedPos, animatedNorm);
-  }
-  if ((flags & ANIM_NOISE) != 0u) {
-    animatedPos = applyNoiseDisplacement(animatedPos);
-  }
-  if ((flags & ANIM_OCEAN) != 0u) {
-    animatedPos = applyOcean(animatedPos);
-  }
-  if ((flags & ANIM_PULSE) != 0u) {
-    animatedPos = applyPulse(animatedPos);
-  }
-  if ((flags & ANIM_TWIST) != 0u) {
-    animatedPos = applyTwist(animatedPos);
-  }
-  // Apply global intensity (master volume control)
+  var animatedPos = applyAllEffects(pos, normal, flags);
+
+  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
-  // Recalculate normal
+
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
   if (flags != 0u) {
-    let offset = 0.01;
-    let posX = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0)));
-    let posZ = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset)));
-    let tangentX = normalize(posX - animatedPos);
-    let tangentZ = normalize(posZ - animatedPos);
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
     animatedNorm = normalize(cross(tangentZ, tangentX));
   }
+
   return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
@@ -8369,7 +8366,7 @@ var GizmoEffect = class {
     this.mode = 0;
     this.size = 3;
     this.selectedAxis = 0;
-    this.movementScale = 0.01;
+    this.movementScale = 0.035;
     this.isDragging = false;
     this.dragStartPoint = null;
     this.dragAxis = 0;
@@ -8729,8 +8726,8 @@ var GizmoEffect = class {
       [0, 0, 1]
       // Z
     ][axisIndex];
-    const viewMatrix = app.cameras.WASD.matrix_;
-    const projMatrix = app.cameras.WASD.projectionMatrix;
+    const viewMatrix = app.getCamera().view;
+    const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
     const p2 = {
       x: p1.x + worldAxis[0],
@@ -8795,16 +8792,16 @@ var GizmoEffect = class {
         }
         break;
       case 1:
-        const rotSpeed = 0.1;
+        const rotSpeed2 = 0.1;
         switch (this.dragAxis) {
           case 1:
-            this.parentMesh.rotation.x += deltaY * rotSpeed;
+            this.parentMesh.rotation.x += deltaY * rotSpeed2;
             break;
           case 2:
-            this.parentMesh.rotation.y += deltaX * rotSpeed;
+            this.parentMesh.rotation.y += deltaX * rotSpeed2;
             break;
           case 3:
-            this.parentMesh.rotation.z += direction * rotSpeed;
+            this.parentMesh.rotation.z += direction * rotSpeed2;
             break;
         }
         break;
@@ -12253,6 +12250,7 @@ var MEMeshObj = class extends Materials {
       this.vertexAnim = {
         active: false,
         enableWave: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
@@ -12261,6 +12259,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableWind: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
@@ -12269,6 +12268,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enablePulse: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
@@ -12277,6 +12277,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableTwist: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
@@ -12285,6 +12286,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableNoise: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
@@ -12293,6 +12295,7 @@ var MEMeshObj = class extends Materials {
           this.updateVertexAnimBuffer();
         },
         enableOcean: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
@@ -12371,7 +12374,7 @@ var MEMeshObj = class extends Materials {
       this.updateVertexAnimBuffer();
       this.updateTime = (time) => {
         this.time += time * this.deltaTimeAdapter;
-        this.vertexAnimParams[0] = this.time;
+        this.vertexAnimParams[0] = this.time * 0.01;
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       };
       this.modelBindGroup = this.device.createBindGroup({
@@ -13275,44 +13278,35 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
-// Combined vertex animation
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
+  var p = pos;
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  return p;
+}
+
 fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
-  var animatedPos = pos;
-  var animatedNorm = normal;
-  
   let flags = u32(vertexAnim.flags);
-  
-  // Apply effects in order
-  if ((flags & ANIM_WAVE) != 0u) {
-    animatedPos = applyWave(animatedPos);
-  }
-  
-  if ((flags & ANIM_WIND) != 0u) {
-    animatedPos = applyWind(animatedPos, animatedNorm);
-  }
-  
-  if ((flags & ANIM_NOISE) != 0u) {
-    animatedPos = applyNoiseDisplacement(animatedPos);
-  }
-  
-  if ((flags & ANIM_OCEAN) != 0u) {
-    animatedPos = applyOcean(animatedPos);
-  }
-  
-  if ((flags & ANIM_PULSE) != 0u) {
-    animatedPos = applyPulse(animatedPos);
-  }
-  
-  if ((flags & ANIM_TWIST) != 0u) {
-    animatedPos = applyTwist(animatedPos);
-  }
-  
-  // Apply global intensity
+  var animatedPos = applyAllEffects(pos, normal, flags);
+
+  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
-  
-  // For shadows, we can skip expensive normal recalculation
-  // Shadows don't need perfect normals
-  
+
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
+  if (flags != 0u) {
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
+    animatedNorm = normalize(cross(tangentZ, tangentX));
+  }
+
   return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
@@ -13513,17 +13507,36 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + w1 + w2 + w3, pos.z);
 }
 
-fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
   var p = pos;
-  let flags = u32(vertexAnim.flags);
-  if ((flags & ANIM_WAVE)  != 0u) { p = applyWave(p); }
-  if ((flags & ANIM_WIND)  != 0u) { p = applyWind(p, normal); }
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
   if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
   if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
   if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
   if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
-  p = mix(pos, p, vertexAnim.globalIntensity);
-  return SkinResult(vec4f(p, 1.0), normal);
+  return p;
+}
+
+fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
+  let flags = u32(vertexAnim.flags);
+  var animatedPos = applyAllEffects(pos, normal, flags);
+
+  // Intensity blend
+  animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
+
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
+  if (flags != 0u) {
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
+    animatedNorm = normalize(cross(tangentZ, tangentX));
+  }
+
+  return SkinResult(vec4f(animatedPos, 1.0), animatedNorm);
 }
 
 @vertex
@@ -19478,26 +19491,32 @@ fn applyOcean(pos: vec3f) -> vec3f {
   return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
+fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
+  var p = pos;
+  if ((flags & ANIM_WAVE) != 0u)  { p = applyWave(p); }
+  if ((flags & ANIM_WIND) != 0u)  { p = applyWind(p, normal); }
+  if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
+  if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
+  if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
+  if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
+  return p;
+}
+
 fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
-  var animatedPos  = pos;
-  var animatedNorm = normal;
   let flags = u32(vertexAnim.flags);
+  var animatedPos = applyAllEffects(pos, normal, flags);
 
-  if ((flags & ANIM_WAVE)  != 0u) { animatedPos = applyWave(animatedPos); }
-  if ((flags & ANIM_WIND)  != 0u) { animatedPos = applyWind(animatedPos, animatedNorm); }
-  if ((flags & ANIM_NOISE) != 0u) { animatedPos = applyNoiseDisplacement(animatedPos); }
-  if ((flags & ANIM_OCEAN) != 0u) { animatedPos = applyOcean(animatedPos); }
-  if ((flags & ANIM_PULSE) != 0u) { animatedPos = applyPulse(animatedPos); }
-  if ((flags & ANIM_TWIST) != 0u) { animatedPos = applyTwist(animatedPos); }
-
+  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
 
+  // Normal recalc via finite differences \u2014 sample from ORIGINAL pos
+  var animatedNorm = normal;
   if (flags != 0u) {
-    let offset  = 0.01;
-    let posX    = applyWave(applyNoiseDisplacement(pos + vec3f(offset, 0.0, 0.0)));
-    let posZ    = applyWave(applyNoiseDisplacement(pos + vec3f(0.0, 0.0, offset)));
-    let tangentX = normalize(posX - animatedPos);
-    let tangentZ = normalize(posZ - animatedPos);
+    let offset = 0.005;
+    let pX = mix(pos + vec3f(offset, 0.0, 0.0), applyAllEffects(pos + vec3f(offset, 0.0, 0.0), normal, flags), vertexAnim.globalIntensity);
+    let pZ = mix(pos + vec3f(0.0, 0.0, offset), applyAllEffects(pos + vec3f(0.0, 0.0, offset), normal, flags), vertexAnim.globalIntensity);
+    let tangentX = pX - animatedPos;
+    let tangentZ = pZ - animatedPos;
     animatedNorm = normalize(cross(tangentZ, tangentX));
   }
 
@@ -21050,6 +21069,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       this.vertexAnim = {
         active: false,
         enableWave: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
           this.updateVertexAnimBuffer();
         },
@@ -21058,6 +21078,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableWind: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
           this.updateVertexAnimBuffer();
         },
@@ -21066,6 +21087,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enablePulse: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
           this.updateVertexAnimBuffer();
         },
@@ -21074,6 +21096,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableTwist: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
           this.updateVertexAnimBuffer();
         },
@@ -21082,6 +21105,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableNoise: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
           this.updateVertexAnimBuffer();
         },
@@ -21090,6 +21114,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enableOcean: () => {
+          this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
           this.updateVertexAnimBuffer();
         },
@@ -21098,6 +21123,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.updateVertexAnimBuffer();
         },
         enable: (...effects) => {
+          this.vertexAnim.active = true;
           effects.forEach((effect) => {
             this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
           });
@@ -22488,7 +22514,7 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addCube", (e2) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -22507,7 +22533,7 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addSphere", (e2) => {
       downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -22541,7 +22567,7 @@ var EditorProvider = class {
       e2.detail.path = e2.detail.path.replace("\\res", "res");
       e2.detail.path = e2.detail.path.replace(/\\/g, "/");
       downloadMeshes({ objMesh: `${e2.detail.path}` }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -25392,9 +25418,13 @@ var FluxCodexVertex = class {
             const val = n2._returnCache;
             if (type2 === "object")
               n2.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if (type2 === "number")
-              n2.displayEl.textContent = val.toFixed(3);
-            else n2.displayEl.textContent = String(val);
+            else if (type2 === "number") {
+              if (val) n2.displayEl.textContent = val.toFixed(3);
+              else n2.displayEl.textContent = this.variables[type2][key];
+            } else {
+              if (val) n2.displayEl.textContent = String(val);
+              else n2.displayEl.textContent = this.variables[type2][key];
+            }
           }
         }
       }
@@ -26562,7 +26592,7 @@ var FluxCodexVertex = class {
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "geometry", value: "Cube" },
           { key: "raycast", value: true },
@@ -26599,7 +26629,7 @@ var FluxCodexVertex = class {
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "size", value: "10x3" },
           { key: "raycast", value: true },
@@ -26638,7 +26668,7 @@ var FluxCodexVertex = class {
           { key: "material", value: "standard" },
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "levels", value: "5" },
           { key: "raycast", value: true },
@@ -26680,7 +26710,7 @@ var FluxCodexVertex = class {
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "rotSpeed", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
@@ -26723,7 +26753,7 @@ var FluxCodexVertex = class {
           { key: "pos", value: "{x:0, y:0, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "rotSpeed", value: "{x:0, y:0, z:0}" },
-          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "editorGen1" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
@@ -28515,7 +28545,6 @@ LIST OF INTEREST OBJECT:
       let result2;
       switch (node2.title) {
         case "Starts With [string]":
-          console.log("test startsWith");
           result2 = this.getValue(nodeId2, "input").startsWith(this.getValue(nodeId2, "prefix"));
           break;
         case "Ends With [string]":
@@ -29055,6 +29084,7 @@ LIST OF INTEREST OBJECT:
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
+        let rotSpeed = this.getValue(nodeId, "rotSpeed");
         let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
@@ -29078,6 +29108,7 @@ LIST OF INTEREST OBJECT:
         }
         if (typeof pos == "string") eval("pos = " + pos);
         if (typeof rot == "string") eval("rot = " + rot);
+        if (typeof rotSpeed == "string") eval("rotSpeed = " + rotSpeed);
         if (typeof scale == "string") eval("scale = " + scale);
         if (!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
@@ -29086,7 +29117,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+          app.editorAddOBJ(path, mat, pos, rot, rotSpeed, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj, isPhysicsBody).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
@@ -29410,6 +29441,7 @@ LIST OF INTEREST OBJECT:
         if (enableWave == true || enableWave == "true") {
           let obj2 = app.getSceneObjectByName(sceneObjectName);
           obj2.vertexAnim.enableWave();
+          console.log("XXXXXXXXXXXXXXX");
           obj2.vertexAnim.setWaveParams(waveSpeed, waveAmplitude, waveFrequency);
         } else {
           obj.vertexAnim.disableWave();
@@ -29459,7 +29491,6 @@ LIST OF INTEREST OBJECT:
       let twistSpeed = this.getValue(nodeId, "Twist speed");
       let twistAmount = this.getValue(nodeId, "Twist amount");
       if (sceneObjectName) {
-        console.log(" TEST VERTEX ANIMATION !Twist ", enableTwist);
         let obj2 = app.getSceneObjectByName(sceneObjectName);
         if (enableTwist == true || enableTwist == "true") {
           obj2.vertexAnim.enableTwist();
@@ -29475,7 +29506,6 @@ LIST OF INTEREST OBJECT:
       let noiseStrength = this.getValue(nodeId, "Noise Strength");
       let noiseSpeed = this.getValue(nodeId, "Noise Speed");
       if (sceneObjectName) {
-        console.log(" TEST VERTEX ANIMATION !enableNoise ", enableNoise);
         let obj2 = app.getSceneObjectByName(sceneObjectName);
         if (enableNoise == true || enableNoise == "true") {
           obj2.vertexAnim.enableNoise();
@@ -30217,7 +30247,7 @@ var EditorHud = class {
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt(`Path: ${getPATH} 
  \u{1F4E6} Enter Uniq Name: `);
-        if (confirm("\u269B Enable physics (Ammo)?")) {
+        if (confirm("\u269B Enable physics for current body ?")) {
           let o2 = {
             physics: true,
             path: getPATH,
@@ -30234,7 +30264,7 @@ var EditorHud = class {
         }
       } else if (ext == "obj" && confirm("OBJ FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt("\u{1F4E6} Enter uniq name: ");
-        if (confirm("\u269B Enable physics (Ammo)?")) {
+        if (confirm("\u269B Enable physics for currect object?")) {
           let o2 = {
             physics: true,
             path: getPATH,
@@ -30494,12 +30524,16 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
+      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: {
@@ -30600,12 +30634,12 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
   \u{1F3AF} Adding Visual Scripting System called 
-     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F6 key)
   \u{1F3AF} Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
@@ -30848,24 +30882,24 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
+      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
+        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      console.log(features);
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       document.dispatchEvent(new CustomEvent("cnp", {
-        detail: {
-          name: name2,
-          features
-        }
+        detail: { name: name2, features }
       }));
     });
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
@@ -30926,7 +30960,7 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
@@ -31783,6 +31817,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
@@ -31813,6 +31848,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
       <span>Data mod</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('curveTimeline')">Curve Timeline</button>
@@ -32666,6 +32702,7 @@ var ProceduralMeshObj = class extends Materials {
     this.vertexAnim = {
       active: false,
       enableWave: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
         this.updateVertexAnimBuffer();
       },
@@ -32674,6 +32711,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableWind: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
         this.updateVertexAnimBuffer();
       },
@@ -32682,6 +32720,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enablePulse: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
         this.updateVertexAnimBuffer();
       },
@@ -32690,6 +32729,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableTwist: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
         this.updateVertexAnimBuffer();
       },
@@ -32698,6 +32738,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableNoise: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
         this.updateVertexAnimBuffer();
       },
@@ -32706,6 +32747,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enableOcean: () => {
+        this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
         this.updateVertexAnimBuffer();
       },
@@ -32714,6 +32756,7 @@ var ProceduralMeshObj = class extends Materials {
         this.updateVertexAnimBuffer();
       },
       enable: (...effects) => {
+        this.vertexAnim.active = true;
         effects.forEach((effect) => {
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
         });
@@ -32898,7 +32941,6 @@ var ProceduralMeshObj = class extends Materials {
     }
   }
   morphTo(targetBlend, duration = 1e3, onComplete) {
-    const safeDuration = Math.max(duration, 100);
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
@@ -32908,7 +32950,7 @@ var ProceduralMeshObj = class extends Materials {
     this.morphAnimation.active = true;
     this.morphAnimation.startBlend = this.morphBlend;
     this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = safeDuration;
+    this.morphAnimation.duration = duration;
     this.morphAnimation.elapsed = 0;
     if (this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
@@ -33865,6 +33907,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed2 = { x: 
         raycast: RAY
       });
       const o2 = app.getSceneObjectByName(name2);
+      console.log(o2.name);
       runtimeCacheObjs.push(o2);
       resolve(o2);
     }
@@ -33889,6 +33932,7 @@ function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { 
       name: name2,
       meshA: MeshMorpher[meshTypeA](1),
       meshB: MeshMorpher[meshTypeB](1),
+      scale: scale4,
       physics: {
         scale: scale4,
         enabled: isPhysicsBody2,
@@ -36489,29 +36533,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Tutorial_1/graph.js
-var graph_default = {
-  nodes: {
-    node_1: {
-      id: "node_1",
-      title: "onLoad",
-      x: 299.34460239409304,
-      y: 127.5731482201762,
-      category: "event",
-      inputs: [],
-      outputs: [{ name: "exec", type: "action" }]
-    }
-  },
-  links: [],
-  nodeCounter: 2,
-  linkCounter: 1,
-  pan: [0, 0],
-  variables: {
-    number: {},
-    boolean: {},
-    string: {},
-    object: {}
-  }
-};
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 111.34460239409304, "y": 151.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_3": { "id": "node_3", "x": 409.2449686151557, "y": 151.23179063099917, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:5, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[4,4,4]" }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_4": { "id": "node_4", "title": "Print", "x": 781.2378658351643, "y": 170.53335737021334, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_5": { "id": "node_5", "title": "Print", "x": 779.772748715537, "y": 338.2745790864247, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_6": { "id": "node_6", "title": "Print", "x": 776.892030604125, "y": 500.25836457598473, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 1483.1886210086245, "y": 352.4480251632207, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_8": { "noExec": true, "id": "node_8", "title": "Get Scene Light", "x": 1079.862192356106, "y": 422.075797854348, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_9": { "id": "node_9", "title": "Get Number", "x": 1409.1241237034733, "y": 507.58684168469074, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAM_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_10": { "id": "node_10", "title": "Comment", "x": 1186.5671219143487, "y": 134.93199732692628, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Use ref function, it is adaptive.\n" }] }, "node_12": { "id": "node_12", "title": "Get Number", "x": 1192.3482888687995, "y": 920.9111122091491, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT0_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_13": { "id": "node_13", "title": "Get Number", "x": 1865.8681563478744, "y": 874.7854156647544, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_15": { "id": "node_15", "title": "functions", "x": 1815.1874948180982, "y": 584.2013952633589, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_16": { "id": "node_16", "title": "functions", "x": 2231.1231962711518, "y": 680.8921456156629, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_17": { "id": "node_17", "title": "functions", "x": 2225.0642199214044, "y": 898.8209562022419, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_18": { "id": "node_18", "title": "Get Number", "x": 1864.0640164886966, "y": 1123.2611737303173, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_BLUR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_19": { "id": "node_19", "title": "functions", "x": 2577.39603201294, "y": 794.9479675255649, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "arg", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "" }], "accessObjectLiteral": "app", "fnName": "activateVolumetricEffect", "descFunc": "activateVolumetricEffect" }, "node_20": { "id": "node_20", "title": "reffunctions", "x": 1409.5298934589264, "y": 689.5262847825221, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] } }, "links": [{ "id": "link_2", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_4", "from": { "node": "node_3", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_5", "from": { "node": "node_3", "pin": "error", "type": "action", "out": true }, "to": { "node": "node_6", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_4", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_7", "from": { "node": "node_8", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_8", "from": { "node": "node_9", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_13", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_16", "pin": "v" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_15", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_16", "pin": "exec" }, "type": "action" }, { "id": "link_15", "from": { "node": "node_18", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_17", "pin": "v" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_16", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_19", "pin": "exec" }, "type": "action" }, { "id": "link_18", "from": { "node": "node_8", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_20", "pin": "reference" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_12", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_20", "pin": "intensity" }, "type": "value" }, { "id": "link_20", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_21", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_15", "pin": "exec" }, "type": "action" }], "nodeCounter": 21, "linkCounter": 22, "pan": [-1274, -408], "variables": { "number": { "CAM_Y": 18, "LIGHT0_POWER": 350, "BLOOM_POWER": 10, "BLOOM_BLUR": 1555 }, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Tutorial_1/shader-graphs.js
 var shaderGraphsProdc = [
@@ -36575,6 +36597,9 @@ var app2 = new MatrixEngineWGPU(
         }
       });
     }, { scale: [25, 1, 25] });
+    setTimeout(() => {
+      app3.getSceneObjectByName("FLOOR").position.SetY(-0.17500000000000002);
+    }, 800);
   }
 );
 window.app = app2;

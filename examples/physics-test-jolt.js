@@ -9,7 +9,7 @@ import {isMobile} from "../src/engine/utils.js";
 export var testJolt = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    useJolt: true, // Or ammojs by default...
+    useJolt: true,
     fastRender: 1,
     mainCameraParams: {
       type: 'WASD',

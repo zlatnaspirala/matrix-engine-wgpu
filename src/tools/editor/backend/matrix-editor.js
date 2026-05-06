@@ -46,7 +46,7 @@ async function buildAllProjectsOnStartup() {
     if(!dir.isDirectory()) continue;
     const projectName = dir.name;
     const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
-    // GRAPH
+    // app graph
     const graphFile = path.join(PROJECTS_DIR, projectName, "graph.js");
     try {
       await fs.access(graphFile);
@@ -224,19 +224,20 @@ import {addRaycastsListener} from "../../src/engine/raycast.js";
 `;
 }
 
-function CBoptions(p, n, pName) {
+// ammo is default
+function CBoptions(p, n, pName, physicsLib, camera) {
   return `
   {
-  ${p ? '' : 'dontUsePhysics: true,'}
+  ${p ? physicsLib == 1 ? 'useJolt: true,' : physicsLib == 3 ? 'useCannon: true,' : '' : 'dontUsePhysics: true,'}
   useEditor: true,
   projectType: "created from editor",
   ${pName ? `projectName: '${pName}',` : ""}
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type: 'WASD',
+    type:  ${ camera == 1 ? 'WASD' : camera == 2 ? "firstPersonCamera" : camera == 3 ? "RPG" : "WASD"},
     responseCoef: 1000
   },
-  clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
+  clearColor: {r: 0, b: 0, g: 0, a: 1}
 }
   `;
 }
@@ -269,7 +270,7 @@ async function cnp(ws, msg) {
   }
 
   content.addLine(`let app = new MatrixEngineWGPU(`);
-  content.addLine(CBoptions(p, n, msg.name));
+  content.addLine(CBoptions(p, n, msg.name, msg.features.physicsLib, msg.features.camera));
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('PhysicsReady', async () => { `);
 
@@ -285,7 +286,7 @@ async function cnp(ws, msg) {
   content.addLine(`addRaycastsListener("canvas1", "mousedown");`);
 
   content.addLine(`// Avoid position y 0 vs floor zero !`);
-  content.addLine(`app.cameras.WASD.setPosition(0,4,0)`);
+  content.addLine(`app.getCamera().setPosition(0,4,0)`);
   
   // graph
   content.addLine(`// [light]`);
@@ -480,7 +481,7 @@ async function addCube(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
-  content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
@@ -548,7 +549,7 @@ async function saveGraph(msg, ws) {
     ";\n";
   fs.writeFile(file, content, "utf8").then((e) => {
     ws.send(JSON.stringify({ok: true, methodSaves: 'OK'}));
-    console.log("Saved graph.js");
+    console.log("Saved app graph.js");
   });
 }
 
@@ -569,7 +570,7 @@ async function saveShaderGraph(msg, ws) {
   }
   // const newGraph = JSON.parse(msg.graphData);
   const newGraph = msg.graphData;
-  console.log("No existing shader-graphs.js, creating new");
+  // console.log("No existing shader-graphs.js, creating new");
   // Find and update, or add new
   const existingIndex = graphs.findIndex(g => g.name === newGraph.name);
   if(existingIndex !== -1) {
@@ -679,7 +680,7 @@ async function addGlb(msg, ws) {
   msg.options.path = msg.options.path.replace(/\\/g, '/');
   content.addLine(` // ME START ${getNameFromPath(msg.options.path)}`);
   content.addLine(` var glbFile01 = await fetch('${msg.options.path}').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));`);
-  content.addLine(`   texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`    app.addGlbObjInctance({ `);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
@@ -709,7 +710,7 @@ async function addObj(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.options.index}`);
   content.addLine(` downloadMeshes({cube: "${msg.options.path}"}, (m) => { `);
-  content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   const texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
@@ -737,7 +738,7 @@ async function addSphere(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({sphere: "./res/meshes/shapes/sphere.obj"}, (m) => { `);
-  content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);

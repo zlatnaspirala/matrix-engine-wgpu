@@ -412,7 +412,8 @@ export function addOBJ(
       });
       // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
-      // console.log(o.name);
+      console.log(o.name);
+      
       runtimeCacheObjs.push(o);
       resolve(o);
     }
@@ -452,6 +453,7 @@ export function addProceduralOBJ(
         name: name,
         meshA: MeshMorpher[meshTypeA](1),
         meshB: MeshMorpher[meshTypeB](1),
+        scale: scale,
         physics: {
           scale: scale,
           enabled: isPhysicsBody,

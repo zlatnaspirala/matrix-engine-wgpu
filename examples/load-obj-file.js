@@ -8,7 +8,7 @@ export var loadObjFile = function() {
 
   let loadObjFile = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 1,
+    fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {

@@ -12,11 +12,13 @@ let app = new MatrixEngineWGPU({
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
-}, 
-   (app) => {
+},
+  (app) => {
+    // it is symbolic
     console.log("AUTOGEN NORMAL MAIN !");
-  addEventListener('PhysicsReady', async () => {
-    console.log("AUTOGEN START UP");
+    // app.addLight()
+    addEventListener('PhysicsReady', async () => {
+      console.log("AUTOGEN START UP");
+    })
   })
-})
 window.app = app;

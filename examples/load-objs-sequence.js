@@ -4,6 +4,7 @@ import {LOG_MATRIX} from "../src/engine/utils.js";
 
 export var loadObjsSequence = function() {
   let loadObjFile = new MatrixEngineWGPU({
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -85,7 +86,7 @@ export var loadObjsSequence = function() {
         position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
         name: 'ground',
         mesh: m.cube,
         physics: {

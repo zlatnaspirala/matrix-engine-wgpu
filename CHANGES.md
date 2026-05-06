@@ -1,5 +1,10 @@
 ## CHANGES [Started from feb 2026]
 
+[1.11.3]
+ - Choose physics lib from editor (Create new project procedure)
+ - Gizmo fixed for z axis
+
+
 [1.11.2]
 Added support for Volumetric Effects post-processing on all light types.
 
