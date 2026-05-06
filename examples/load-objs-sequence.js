@@ -4,6 +4,7 @@ import {LOG_MATRIX} from "../src/engine/utils.js";
 
 export var loadObjsSequence = function() {
   let loadObjFile = new MatrixEngineWGPU({
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {

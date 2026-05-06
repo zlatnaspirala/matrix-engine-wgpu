@@ -4,7 +4,7 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var snakeLights = function() {
   let app = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {

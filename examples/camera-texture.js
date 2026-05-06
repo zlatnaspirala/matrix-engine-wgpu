@@ -7,7 +7,7 @@ import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 export var loadCameraTexture = function() {
 
   let cameraTexture = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',

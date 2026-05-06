@@ -9,7 +9,7 @@ import {PVector} from "../src/engine/matrix-class.js";
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 1, // must be 1 for now
+    fastRender: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

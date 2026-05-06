@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadVideoTexture = function() {
   let videoTexture = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',

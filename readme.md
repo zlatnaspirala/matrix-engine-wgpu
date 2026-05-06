@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.11.3 2026
+📅 Version: 1.11.3 2026 `The beast`
 
 ---
 
@@ -26,7 +26,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 Backend editor (works in local env - desktop browsers) support list:
 - Chrome, Edge, Opera
 
-HOT: For 1.1x.0 Firefox not FIXED Render
+HOT: For 1.1x.0 Firefox render not FIXED yet.
 
 ---
 

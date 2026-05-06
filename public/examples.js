@@ -117,7 +117,7 @@ var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadCameraTexture = function () {
   let cameraTexture = new _world.default({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -506,7 +506,7 @@ var flipperAmmo = function () {
   };
   let flipper = new _world.default({
     render: (0, _utils.isMobile)() == true ? 'mobile1' : undefined,
-    fastRender: (0, _utils.isMobile)() == true ? 1 : 0.9,
+    fastRender: (0, _utils.isMobile)() == true ? 0.85 : 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -2520,7 +2520,7 @@ var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var fontana = function () {
   let fontana = new _world.default({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -3230,6 +3230,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  **/
 function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
@@ -3459,7 +3460,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 1,
+    fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
@@ -3666,6 +3667,7 @@ var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjsSequence = function () {
   let loadObjFile = new _world.default({
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -3929,6 +3931,7 @@ var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var myLights = function () {
   let myLights = new _world.default({
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -4088,7 +4091,6 @@ var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
     fastRender: 1,
-    // must be 1 for now
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -4787,7 +4789,6 @@ var testJolt = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
     useJolt: true,
-    // Or ammojs by default...
     fastRender: 1,
     mainCameraParams: {
       type: 'WASD',
@@ -5060,6 +5061,7 @@ var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var procMesh = function () {
   let procMesh = new _world.default({
+    fastRender: 0.9,
     dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -5260,6 +5262,7 @@ var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var snakeLightsInstanced = function () {
   let app = new _world.default({
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -5390,7 +5393,7 @@ var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var snakeLights = function () {
   let app = new _world.default({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -5628,7 +5631,7 @@ var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadVideoTexture = function () {
   let videoTexture = new _world.default({
-    useSingleRenderPass: true,
+    fastRender: 0.9,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -59449,7 +59452,7 @@ var _flexCodexShader = require("./flexCodexShader.js");
 /**
  * @Author NIkola Lukic
  * @description
- * Web Editor for matrix-engine-wgpu
+ * Web Editor for matrix-engine-wgpu alias EditorX
  * Using "file protocol" in direct way no virtual/syntetic assets
  */
 class EditorHud {
@@ -59852,32 +59855,6 @@ class EditorHud {
         detail: o
       }));
     });
-
-    // // settings
-    // setTimeout(() => {
-    //   this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
-    //   this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
-    // }, 1500);
-    //     <!--div id="cameraBox" class="drop-item">
-    //    <p>📽️Camera</p>
-    //    <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
-    //    <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-    //    <!--div> Position :  </br>
-    //     \n 
-    //     X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
-    //     Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
-    //     Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-    //    </div-->
-    // </div-->
-    // byId('camera-settings-pitch').addEventListener('change', (e) => {
-    //   console.log('setting camera pitch ', e);
-    //   this.core.cameras.WASD.pitch = e.target.value;
-    // })
-    // byId('camera-settings-yaw').addEventListener('change', (e) => {
-    //   console.log('setting camera', e)
-    //   this.core.cameras.WASD.yaw = e.target.value;
-    // })
-
     (0, _utils.byId)('showCodeEditorBtn').addEventListener('click', e => {
       document.dispatchEvent(new CustomEvent('show-method-editor', {
         detail: {}
@@ -59925,12 +59902,12 @@ class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
   🎯 Adding Visual Scripting System called 
-     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F6 key)
   🎯 Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
@@ -60197,7 +60174,7 @@ class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
@@ -60262,7 +60239,7 @@ class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]

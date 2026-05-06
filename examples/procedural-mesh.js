@@ -6,6 +6,7 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var procMesh = function() {
   let procMesh = new MatrixEngineWGPU({
+    fastRender: 0.9,
     dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {

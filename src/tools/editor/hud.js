@@ -3,7 +3,7 @@ import {openFragmentShaderEditor} from "./flexCodexShader.js";
 /**
  * @Author NIkola Lukic
  * @description
- * Web Editor for matrix-engine-wgpu
+ * Web Editor for matrix-engine-wgpu alias EditorX
  * Using "file protocol" in direct way no virtual/syntetic assets
  */
 export default class EditorHud {
@@ -438,31 +438,6 @@ export default class EditorHud {
       }));
     });
 
-    // // settings
-    // setTimeout(() => {
-    //   this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
-    //   this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
-    // }, 1500);
-    //     <!--div id="cameraBox" class="drop-item">
-    //    <p>📽️Camera</p>
-    //    <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
-    //    <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-    //    <!--div> Position :  </br>
-    //     \n 
-    //     X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
-    //     Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
-    //     Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-    //    </div-->
-    // </div-->
-    // byId('camera-settings-pitch').addEventListener('change', (e) => {
-    //   console.log('setting camera pitch ', e);
-    //   this.core.cameras.WASD.pitch = e.target.value;
-    // })
-    // byId('camera-settings-yaw').addEventListener('change', (e) => {
-    //   console.log('setting camera', e)
-    //   this.core.cameras.WASD.yaw = e.target.value;
-    // })
-
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
@@ -511,12 +486,12 @@ export default class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
   🎯 Adding Visual Scripting System called 
-     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F6 key)
   🎯 Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
@@ -802,7 +777,7 @@ export default class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
@@ -871,7 +846,7 @@ export default class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Jolt.js , cannones and ammo.js physics worker integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
