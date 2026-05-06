@@ -55,7 +55,13 @@ app.addLight();
 
       // ME END FLOOR addCube
 
-  
-// [MAIN_REPLACE2]
+
+  // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-0.17500000000000002);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+ // [MAIN_REPLACE2]
 })
 window.app = app;

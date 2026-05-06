@@ -91,7 +91,7 @@ export default class FluxCodexVertex {
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
     });
-    this.saveGraphEvent = new CustomEvent('save-graph', {detail: { data: "payload" }, bubbles: true, cancelable: true});
+    this.saveGraphEvent = new CustomEvent('save-graph', {detail: {data: "payload"}, bubbles: true, cancelable: true});
     this.updateSceneContainerEvent = new CustomEvent('updateSceneContainer', {detail: {}});
 
     this.clearRuntime = () => {
@@ -360,10 +360,10 @@ export default class FluxCodexVertex {
             if(type === "object")
               n.displayEl.textContent = JSON.stringify(val, null, 2);
             else if(type === "number") {
-              if (val) n.displayEl.textContent = val.toFixed(3);
+              if(val) n.displayEl.textContent = val.toFixed(3);
               else n.displayEl.textContent = this.variables[type][key];
             } else {
-              if (val) n.displayEl.textContent = String(val);
+              if(val) n.displayEl.textContent = String(val);
               else n.displayEl.textContent = this.variables[type][key];
             }
           }
@@ -4261,6 +4261,7 @@ LIST OF INTEREST OBJECT:
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
+        let rotSpeed = this.getValue(nodeId, "rotSpeed");        
         let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
@@ -4273,7 +4274,9 @@ LIST OF INTEREST OBJECT:
         if(isPhysicsBody == "true") {isPhysicsBody = true} else {isPhysicsBody = false;}
         if(typeof pos == 'string') eval("pos = " + pos);
         if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof rotSpeed == 'string') eval("rotSpeed = " + rotSpeed);
         if(typeof scale == 'string') eval("scale = " + scale);
+        // console.warn("[Generator] SCALE...", scale);
         if(!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
@@ -4281,7 +4284,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+          app.editorAddOBJ(path, mat, pos, rot, rotSpeed, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj, isPhysicsBody).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
@@ -4292,7 +4295,6 @@ LIST OF INTEREST OBJECT:
           })
           // createdField.value = true;
         }
-        // sync
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -4323,18 +4325,18 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-            // material = "standard",
-  // pos,
-  // rot,
-  // rotationSpeed = {x: 0, y: 0, z: 0},
-  // texturePath,
-  // name,
-  // meshTypeA = 'cube',
-  // meshTypeB = 'sphere',
-  // isPhysicsBody = false,
-  // raycast = false,
-  // scale = [1, 1, 1],
-  // isInstancedObj = false
+          // material = "standard",
+          // pos,
+          // rot,
+          // rotationSpeed = {x: 0, y: 0, z: 0},
+          // texturePath,
+          // name,
+          // meshTypeA = 'cube',
+          // meshTypeB = 'sphere',
+          // isPhysicsBody = false,
+          // raycast = false,
+          // scale = [1, 1, 1],
+          // isInstancedObj = false
           app.editorAddProceduralMesh(mat, pos, rot, rotationSpeed, texturePath, name, meshA, meshB, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;

@@ -412,7 +412,8 @@ export function addOBJ(
       });
       // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
-      // console.log(o.name);
+      console.log(o.name);
+      
       runtimeCacheObjs.push(o);
       resolve(o);
     }
