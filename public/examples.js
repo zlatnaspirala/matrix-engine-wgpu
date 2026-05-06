@@ -59782,12 +59782,14 @@ class EditorHud {
       };
       if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
         features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
         detail: {
@@ -60163,6 +60165,9 @@ class EditorHud {
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
+
       // console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
         detail: {

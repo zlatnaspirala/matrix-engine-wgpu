@@ -30524,12 +30524,14 @@ var EditorHud = class {
       };
       if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: {
@@ -30630,12 +30632,12 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
   \u{1F3AF} Adding Visual Scripting System called 
-     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F6 key)
   \u{1F3AF} Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
@@ -30886,6 +30888,8 @@ var EditorHud = class {
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: { name: name2, features }
       }));
@@ -30893,7 +30897,7 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
@@ -30954,7 +30958,7 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]

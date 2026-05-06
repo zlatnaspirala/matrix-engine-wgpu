@@ -46,7 +46,7 @@ async function buildAllProjectsOnStartup() {
     if(!dir.isDirectory()) continue;
     const projectName = dir.name;
     const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
-    // GRAPH
+    // app graph
     const graphFile = path.join(PROJECTS_DIR, projectName, "graph.js");
     try {
       await fs.access(graphFile);
@@ -225,7 +225,7 @@ import {addRaycastsListener} from "../../src/engine/raycast.js";
 }
 
 // ammo is default
-function CBoptions(p, n, pName, physicsLib) {
+function CBoptions(p, n, pName, physicsLib, camera) {
   return `
   {
   ${p ? physicsLib == 1 ? 'useJolt: true,' : physicsLib == 3 ? 'useCannon: true,' : '' : 'dontUsePhysics: true,'}
@@ -234,7 +234,7 @@ function CBoptions(p, n, pName, physicsLib) {
   ${pName ? `projectName: '${pName}',` : ""}
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type: 'WASD',
+    type:  ${ camera == 1 ? 'WASD' : camera == 2 ? "firstPersonCamera" : camera == 3 ? "RPG" : "WASD"},
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0, g: 0, a: 1}
@@ -270,7 +270,7 @@ async function cnp(ws, msg) {
   }
 
   content.addLine(`let app = new MatrixEngineWGPU(`);
-  content.addLine(CBoptions(p, n, msg.name, msg.features.physicsLib));
+  content.addLine(CBoptions(p, n, msg.name, msg.features.physicsLib, msg.features.camera));
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('PhysicsReady', async () => { `);
 
@@ -286,7 +286,7 @@ async function cnp(ws, msg) {
   content.addLine(`addRaycastsListener("canvas1", "mousedown");`);
 
   content.addLine(`// Avoid position y 0 vs floor zero !`);
-  content.addLine(`app.cameras.WASD.setPosition(0,4,0)`);
+  content.addLine(`app.getCamera().setPosition(0,4,0)`);
   
   // graph
   content.addLine(`// [light]`);

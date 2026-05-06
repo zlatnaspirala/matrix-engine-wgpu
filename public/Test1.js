@@ -22514,7 +22514,7 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addCube", (e2) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube-g1-extra_low.png";
+        const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -22533,7 +22533,7 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addSphere", (e2) => {
       downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube-g1-extra_low.png";
+        const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -22567,7 +22567,7 @@ var EditorProvider = class {
       e2.detail.path = e2.detail.path.replace("\\res", "res");
       e2.detail.path = e2.detail.path.replace(/\\/g, "/");
       downloadMeshes({ objMesh: `${e2.detail.path}` }, (m) => {
-        const texturesPaths = "./res/meshes/blender/cube-g1-extra_low.png";
+        const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -28545,7 +28545,6 @@ LIST OF INTEREST OBJECT:
       let result2;
       switch (node2.title) {
         case "Starts With [string]":
-          console.log("test startsWith");
           result2 = this.getValue(nodeId2, "input").startsWith(this.getValue(nodeId2, "prefix"));
           break;
         case "Ends With [string]":
@@ -29490,7 +29489,6 @@ LIST OF INTEREST OBJECT:
       let twistSpeed = this.getValue(nodeId, "Twist speed");
       let twistAmount = this.getValue(nodeId, "Twist amount");
       if (sceneObjectName) {
-        console.log(" TEST VERTEX ANIMATION !Twist twistSpeed ", twistSpeed);
         let obj2 = app.getSceneObjectByName(sceneObjectName);
         if (enableTwist == true || enableTwist == "true") {
           obj2.vertexAnim.enableTwist();
@@ -29506,7 +29504,6 @@ LIST OF INTEREST OBJECT:
       let noiseStrength = this.getValue(nodeId, "Noise Strength");
       let noiseSpeed = this.getValue(nodeId, "Noise Speed");
       if (sceneObjectName) {
-        console.log(" TEST VERTEX ANIMATION !enableNoise ", enableNoise);
         let obj2 = app.getSceneObjectByName(sceneObjectName);
         if (enableNoise == true || enableNoise == "true") {
           obj2.vertexAnim.enableNoise();
@@ -30527,12 +30524,14 @@ var EditorHud = class {
       };
       if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: {
@@ -30633,12 +30632,12 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
   \u{1F3AF} Adding Visual Scripting System called 
-     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F6 key)
   \u{1F3AF} Adding Visual Scripting graph for shaders - FlowCodexShader.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
@@ -30889,6 +30888,8 @@ var EditorHud = class {
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      features.camera = typeOfCamera;
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: { name: name2, features }
       }));
@@ -30896,7 +30897,7 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
@@ -30957,7 +30958,7 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics integration
+  \u2714\uFE0F Jolt.js , cannones and ammo.js physics worker integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
@@ -36590,7 +36591,7 @@ var app2 = new MatrixEngineWGPU(
       addRaycastsListener("canvas1", "mousedown");
       app3.addLight();
       downloadMeshes({ cube: "./res/meshes/blender/plane.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        let texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36607,7 +36608,7 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        let texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36620,7 +36621,7 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        let texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36636,7 +36637,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("L_BOX").position.SetX(-4);
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36661,7 +36662,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("R_BOX").position.SetX(4);
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36683,7 +36684,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_2").scale[1] = 2;
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36729,7 +36730,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_1").position.SetY(3);
       }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36748,7 +36749,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER1").position.SetX(0);
       }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36791,7 +36792,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER2").scale[0] = 4;
       }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
@@ -36861,7 +36862,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER1").useScale = true;
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel-top.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+        const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
