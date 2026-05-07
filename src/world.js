@@ -1,6 +1,6 @@
 import {MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
-import {ArcballCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
+import {ArcballCamera, CinematicCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
@@ -73,15 +73,10 @@ export default class MatrixEngineWGPU {
   autoUpdate = [];
   matrixSounds = new MatrixSounds();
   audioManager = new AudioAssetManager();
-
   flagPreventRebuildMap = false;
   opaqueBuckets = new Map();
   transparentBuckets = new Map();
-  shadowBuckets = {
-    default: [],
-    instanced: [],
-    procedural: []
-  };
+  shadowBuckets = {default: [], instanced: [], procedural: []};
 
   constructor(options, callback) {
     if(typeof options == 'undefined' || typeof options == "function") {
@@ -114,7 +109,7 @@ export default class MatrixEngineWGPU {
     this.label = new MultiLang();
     this.now = 0;
     this.logLoopError = true;
-    // context select options
+
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
     } else if(options.alphaMode != 'opaque' && options.alphaMode != 'premultiplied') {
@@ -123,7 +118,7 @@ export default class MatrixEngineWGPU {
     }
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {
-      // check jolt
+
       if(typeof options.useJolt !== 'undefined') {
         this.matrixPhysics = new PhysicsBridge('./joltjs/matrix-jolt-worker.js');
         this.matrixPhysics.init({gravity: 10, groundY: -1});
@@ -225,13 +220,8 @@ export default class MatrixEngineWGPU {
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
         console.log('FastRender : ', this.options.fastRender)
-        if(isMobile() == false) {
-          this.applyCanvasSize(this.options.fastRender)
-        } else {
-          this.applyCanvasSizeMobile(this.options.fastRender);
-        }
+        this.applyCanvasSize(this.options.fastRender)
       } else if(isMobile() == true) {
-        // console.log('Just Apply screen or inner...', this.options.fastRender)
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
         canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
       } else if(this.options.fastRenderAlternative) {
@@ -241,7 +231,6 @@ export default class MatrixEngineWGPU {
       } else {
         canvas.width = isMobile() == false ? window.innerWidth : window.innerWidth;
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
-        // console.log('Just INNER...');
       }
     } else {
       console.log('Apply custom W H');
@@ -257,11 +246,33 @@ export default class MatrixEngineWGPU {
       responseCoef: this.options.mainCameraParams.responseCoef
     };
 
-    this.cameras = {
-      firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
-      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null}),
-      RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
-    };
+    if(MEConfig.SINGLE_CAMERA == true) {
+      if('firstPersonCamera' == this.options.mainCameraParams.type) {
+        this.cameras = {
+          firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+        };
+      } else if('WASD' == this.options.mainCameraParams.type) {
+        this.cameras = {
+          WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+        };
+      } else if('RPG' == this.options.mainCameraParams.type) {
+        this.cameras = {
+          RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+
+        };
+      } else if('cinematicCamera' == this.options.mainCameraParams.type) {
+        this.cameras = {
+          cinematicCamera: new CinematicCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'cinematicCamera' == this.options.mainCameraParams.type ? 'init active cam' : null})
+        };
+      }
+    } else {
+      this.cameras = {
+        firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+        WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+        RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+        cinematicCamera: new CinematicCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'cinematicCamera' == this.options.mainCameraParams.type ? 'init active cam' : null})
+      };
+    }
 
     if(urlQuery.lang != null) {
       this.label.loadMultilang(urlQuery.lang).then((r) => {
@@ -279,22 +290,38 @@ export default class MatrixEngineWGPU {
 
     if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if(byId('msgBox')) byId('msgBox').style.left = '30%';
+
+      if(MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+        console.log('GOT DIRECT WHAT EVER')
+        this.applyCanvasSize(this.options.fastRender)
+        this.init({canvas, callback});
+        this.MEConfig.fsManager.onChange((isFS, target) => {
+          console.log('GOT to FS', isFS)
+          if(isFS == false) {
+            setTimeout(() => this.applyCanvasSize(this.options.fastRender), 100);
+          }
+        })
+        addEventListener("run_mobile_fs", () => {
+          if(this.options.fastRender && !isNaN(this.options.fastRender)) {
+            console.log('got to first in fs : ', this.options.fastRender)
+            this.applyCanvasSizeMobile(this.options.fastRender)
+          }
+        })
+        return;
+      }
+
       mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
 
       this.MEConfig.fsManager.onChange((isFS, target) => {
         console.log('GOT BACK FROM FS', isFS)
-        this.applyCanvasSizeMobile(this.options.fastRender);
+        setTimeout(() => this.applyCanvasSizeMobile(this.options.fastRender), 100);
       })
 
       addEventListener("run_mobile_fs", () => {
         if(this.options.fastRender && !isNaN(this.options.fastRender)) {
           console.log('FastRender : ', this.options.fastRender)
-          if(isMobile() == false) {
-            this.applyCanvasSize(this.options.fastRender)
-          } else {
-            this.applyCanvasSizeMobile(this.options.fastRender);
-          }
+          this.applyCanvasSize(this.options.fastRender)
         }
         // console.log('what iscallback ', callback)
         this.init({canvas, callback});
@@ -339,8 +366,7 @@ export default class MatrixEngineWGPU {
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ],
     });
-    // TYPE "MESH"
-    // type GLBINSsTANCED
+    // GLB INSTANCED
     this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout in mesh [instanced]',
       entries: [
@@ -350,7 +376,6 @@ export default class MatrixEngineWGPU {
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ],
     });
-
   }
 
   applyCanvasSize(scale) {
@@ -365,8 +390,8 @@ export default class MatrixEngineWGPU {
   applyCanvasSizeMobile(scale) {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    this.canvas.width = screenWidth * scale;
-    this.canvas.height = screenHeight * scale;
+    // this.canvas.width = screenWidth * scale;
+    // this.canvas.height = screenHeight * scale;
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
@@ -412,7 +437,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.11.2 [FasterThanARabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.12.0 [The beast] ", LOG_FUNNY);
     console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +

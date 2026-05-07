@@ -1,5 +1,9 @@
 ## CHANGES [Started from feb 2026]
 
+[1.12.0]
+ - CinematicCamera
+ 
+
 [1.11.3]
  - Choose physics lib from editor (Create new project procedure)
  - Gizmo fixed for z axis

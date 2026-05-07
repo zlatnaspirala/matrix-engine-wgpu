@@ -9,13 +9,17 @@
  * for `cacheVersion`.
  * @param cacheVersion
  */
-var cacheVersion = 182;
+var cacheVersion = 5;
 // var prefix = 'matrix-engine-fohb';
 var prefix = 'matrix-engine-examples';
 var cacheName = prefix + cacheVersion;
 
 try {
   for(var j = 0;j < cacheVersion;j++) {
+    var oldCacheName = prefix + j;
+    caches.delete(oldCacheName);
+  }
+  for(var j = 200;j > cacheVersion;j--) {
     var oldCacheName = prefix + j;
     caches.delete(oldCacheName);
   }

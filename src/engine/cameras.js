@@ -117,7 +117,7 @@ export class WASDCamera {
     canvas.addEventListener('pointermove', e => {
       // this must be removed for prodc
       const activeBundle = app.mainRenderBundle.find(o => o.effects?.gizmoEffect != null);
-      if (activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
+      if(activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
 
       const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       for(const ce of events) {
@@ -761,6 +761,261 @@ export class FirstPersonCamera {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CinematicCamera — no input, pure programmatic control
+// Drop-in replacement alongside FirstPersonCamera — same .view / .VP / .projectionMatrix API
+// ─────────────────────────────────────────────────────────────────────────────
+export class CinematicCamera {
+  position = new Float32Array(3);   // world-space eye position
+  target = new Float32Array(3);   // world-space look-at point
+  up = new Float32Array([0, 1, 0]);
+
+  view = new Float32Array(16);
+  VP = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+
+  // path playback state
+  _path = null;
+  _t = 0;          // current path parameter
+  _playing = false;
+  _speed = 1;          // multiplier on dt
+  _loop = false;
+  _onEnd = null;
+
+  // shake state
+  _shake = {active: false, amplitude: 0, frequency: 10, elapsed: 0, duration: 0};
+  _shakeOffset = new Float32Array(3);
+
+  // smoothing / lag
+  _smoothPos = null;   // Float32Array(3) lazy-init
+  _smoothTarget = null;
+  _posLag = 0;         // 0 = instant, 0–1 = lerp factor applied per frame
+  _targetLag = 0;
+
+  constructor(options = {}) {
+    const p = options.position ?? [0, 0, 5];
+    const tg = options.target ?? [0, 0, 0];
+    this.position[0] = p[0]; this.position[1] = p[1]; this.position[2] = p[2];
+    this.target[0] = tg[0]; this.target[1] = tg[1]; this.target[2] = tg[2];
+    this.canvas = options.canvas ?? null;
+    const aspect = this.canvas
+      ? this.canvas.width / this.canvas.height
+      : (options.aspect ?? 16 / 9);
+    this.setProjection(options.fov ?? (2 * Math.PI) / 5, aspect, options.near ?? 0.3, options.far ?? 1000);
+    this._rebuild();
+  }
+
+  // ── Projection ───────────────────────────────────────────────────────────────
+  setProjection(fov = (2 * Math.PI) / 5, aspect = 16 / 9, near = 0.3, far = 1000) {
+    mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._dirty = true;
+  }
+
+  // ── Direct setters ───────────────────────────────────────────────────────────
+  setPosition(x, y, z) {this.position[0] = x; this.position[1] = y; this.position[2] = z; this._dirty = true;}
+  setTarget(x, y, z) {this.target[0] = x; this.target[1] = y; this.target[2] = z; this._dirty = true;}
+  setUp(x, y, z) {this.up[0] = x; this.up[1] = y; this.up[2] = z; this._dirty = true;}
+
+  // ── Lag / smoothing ──────────────────────────────────────────────────────────
+  /**
+   * @param {number} posLag    0 = instant follow, 0.9 = very laggy
+   * @param {number} targetLag same scale
+   */
+  setLag(posLag = 0, targetLag = 0) {
+    this._posLag = posLag;
+    this._targetLag = targetLag;
+    if(!this._smoothPos) {
+      this._smoothPos = new Float32Array(this.position);
+      this._smoothTarget = new Float32Array(this.target);
+    }
+  }
+
+  // ── Camera shake ─────────────────────────────────────────────────────────────
+  /**
+   * @param {number} amplitude  world-units
+   * @param {number} duration   seconds
+   * @param {number} frequency  oscillations/second
+   */
+  shake(amplitude, duration, frequency = 15) {
+    this._shake = {active: true, amplitude, frequency, duration, elapsed: 0};
+  }
+
+  // ── Path control ─────────────────────────────────────────────────────────────
+  /**
+   * Attach a CameraPath.  Does NOT auto-play.
+   * @param {CameraPath} path
+   */
+  setPath(path) {
+    this._path = path;
+    this._t = 0;
+    return this;
+  }
+
+  /**
+   * @param {Object} options
+   * @param {number}   [options.speed=1]
+   * @param {boolean}  [options.loop=false]
+   * @param {Function} [options.onEnd]       called when path finishes (non-looping)
+   * @param {number}   [options.startT=0]
+   */
+  play(options = {}) {
+    if(!this._path) {console.warn('CinematicCamera.play(): no path set'); return this;}
+    this._speed = options.speed ?? 1;
+    this._loop = options.loop ?? false;
+    this._onEnd = options.onEnd ?? null;
+    this._t = options.startT ?? 0;
+    this._playing = true;
+    return this;
+  }
+
+  pause() {this._playing = false; return this;}
+  resume() {this._playing = true; return this;}
+
+  /** Jump to normalised t without affecting play state */
+  seekT(t) {this._t = t; return this;}
+
+  /** Snap camera immediately to path sample at current _t */
+  applyPathSample(sample) {
+    const s = sample ?? this._path.sample(this._t);
+    this.setPosition(s.position[0], s.position[1], s.position[2]);
+    this.setTarget(s.target[0], s.target[1], s.target[2]);
+    if(s.fov !== undefined) {
+      const aspect = this.canvas
+        ? this.canvas.width / this.canvas.height
+        : 16 / 9;
+      this.setProjection(s.fov, aspect);
+    }
+    // roll is baked into the up vector
+    if(s.roll !== undefined && s.roll !== 0) {
+      const cr = Math.cos(s.roll), sr = Math.sin(s.roll);
+      this.up[0] = -sr; this.up[1] = cr; this.up[2] = 0;
+    } else {
+      this.up[0] = 0; this.up[1] = 1; this.up[2] = 0;
+    }
+  }
+
+  // ── Per-frame update ─────────────────────────────────────────────────────────
+  /**
+   * Call once per frame from your render loop.
+   * @param {number} dt  delta time in seconds
+   */
+  update(dt = 0.016) {
+
+    // ── 1. advance path ──────────────────────────────────────────────────────
+    if(this._playing && this._path) {
+      const totalT = this._path.totalTime;
+      this._t += (dt * this._speed) / totalT;
+      if(this._t >= 1) {
+        if(this._loop) {
+          this._t %= 1;
+        } else {
+          this._t = 1;
+          this._playing = false;
+          this.applyPathSample();
+          if(this._onEnd) this._onEnd(this);
+        }
+      }
+      if(this._playing) this.applyPathSample();
+    }
+
+    // ── 2. position / target smoothing (lag) ────────────────────────────────
+    if(this._posLag > 0 && this._smoothPos) {
+      const a = 1 - this._posLag;
+      this._smoothPos[0] += (this.position[0] - this._smoothPos[0]) * a;
+      this._smoothPos[1] += (this.position[1] - this._smoothPos[1]) * a;
+      this._smoothPos[2] += (this.position[2] - this._smoothPos[2]) * a;
+    }
+    if(this._targetLag > 0 && this._smoothTarget) {
+      const a = 1 - this._targetLag;
+      this._smoothTarget[0] += (this.target[0] - this._smoothTarget[0]) * a;
+      this._smoothTarget[1] += (this.target[1] - this._smoothTarget[1]) * a;
+      this._smoothTarget[2] += (this.target[2] - this._smoothTarget[2]) * a;
+    }
+
+    // ── 3. shake ─────────────────────────────────────────────────────────────
+    const sk = this._shake;
+    if(sk.active) {
+      sk.elapsed += dt;
+      const decay = Math.max(0, 1 - sk.elapsed / sk.duration);
+      const amp = sk.amplitude * decay;
+      const freq = sk.frequency * sk.elapsed;
+      // pseudo-random offsets via sin with incommensurable frequencies
+      this._shakeOffset[0] = Math.sin(freq * 2.1731 + 1.23) * amp;
+      this._shakeOffset[1] = Math.sin(freq * 1.7319 + 0.77) * amp;
+      this._shakeOffset[2] = Math.sin(freq * 2.4721 + 2.11) * amp;
+      if(sk.elapsed >= sk.duration) {
+        sk.active = false;
+        this._shakeOffset[0] = this._shakeOffset[1] = this._shakeOffset[2] = 0;
+      }
+    }
+
+    if(this._dirty) this._rebuild();
+  }
+
+  // ── View / VP build (lookAt) ─────────────────────────────────────────────────
+  _rebuild() {
+    const ep = this._posLag > 0 && this._smoothPos ? this._smoothPos : this.position;
+    const et = this._targetLag > 0 && this._smoothTarget ? this._smoothTarget : this.target;
+    const sk = this._shakeOffset;
+
+    const ex = ep[0] + sk[0], ey = ep[1] + sk[1], ez = ep[2] + sk[2];
+    const tx = et[0], ty = et[1], tz = et[2];
+
+    // forward
+    let fx = tx - ex, fy = ty - ey, fz = tz - ez;
+    const fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
+    if(fl < 1e-7) {this._dirty = false; return;} // degenerate
+    fx /= fl; fy /= fl; fz /= fl;
+
+    // right = forward × up
+    const ux = this.up[0], uy = this.up[1], uz = this.up[2];
+    let rx = fy * uz - fz * uy, ry = fz * ux - fx * uz, rz = fx * uy - fy * ux;
+    const rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
+    if(rl < 1e-7) {this._dirty = false; return;}
+    rx /= rl; ry /= rl; rz /= rl;
+
+    // recomputed up = right × forward (orthogonalise)
+    const upx = ry * fz - rz * fy, upy = rz * fx - rx * fz, upz = rx * fy - ry * fx;
+
+    const v = this.view;
+    v[0] = rx; v[4] = ry; v[8] = rz; v[12] = -(rx * ex + ry * ey + rz * ez);
+    v[1] = upx; v[5] = upy; v[9] = upz; v[13] = -(upx * ex + upy * ey + upz * ez);
+    v[2] = -fx; v[6] = -fy; v[10] = -fz; v[14] = -(-fx * ex + -fy * ey + -fz * ez);
+    v[3] = 0; v[7] = 0; v[11] = 0; v[15] = 1;
+
+    CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    this._dirty = false;
+  }
+
+   static mat4MultiplySafe(a, b, out) {
+    const a00 = a[0], a01 = a[4], a02 = a[8],  a03 = a[12];
+    const a10 = a[1], a11 = a[5], a12 = a[9],  a13 = a[13];
+    const a20 = a[2], a21 = a[6], a22 = a[10], a23 = a[14];
+    const a30 = a[3], a31 = a[7], a32 = a[11], a33 = a[15];
+    const b00 = b[0], b01 = b[4], b02 = b[8],  b03 = b[12];
+    const b10 = b[1], b11 = b[5], b12 = b[9],  b13 = b[13];
+    const b20 = b[2], b21 = b[6], b22 = b[10], b23 = b[14];
+    const b30 = b[3], b31 = b[7], b32 = b[11], b33 = b[15];
+    out[0]  = a00*b00 + a01*b10 + a02*b20 + a03*b30;
+    out[1]  = a10*b00 + a11*b10 + a12*b20 + a13*b30;
+    out[2]  = a20*b00 + a21*b10 + a22*b20 + a23*b30;
+    out[3]  = a30*b00 + a31*b10 + a32*b20 + a33*b30;
+    out[4]  = a00*b01 + a01*b11 + a02*b21 + a03*b31;
+    out[5]  = a10*b01 + a11*b11 + a12*b21 + a13*b31;
+    out[6]  = a20*b01 + a21*b11 + a22*b21 + a23*b31;
+    out[7]  = a30*b01 + a31*b11 + a32*b21 + a33*b31;
+    out[8]  = a00*b02 + a01*b12 + a02*b22 + a03*b32;
+    out[9]  = a10*b02 + a11*b12 + a12*b22 + a13*b32;
+    out[10] = a20*b02 + a21*b12 + a22*b22 + a23*b32;
+    out[11] = a30*b02 + a31*b12 + a32*b22 + a33*b32;
+    out[12] = a00*b03 + a01*b13 + a02*b23 + a03*b33;
+    out[13] = a10*b03 + a11*b13 + a12*b23 + a13*b33;
+    out[14] = a20*b03 + a21*b13 + a22*b23 + a23*b33;
+    out[15] = a30*b03 + a31*b13 + a32*b23 + a33*b33;
+    return out;
+  }
+}
+
 export const MobileDOM = {
 
   createWASD(camera, options = {}) {
@@ -902,5 +1157,5 @@ export const MobileDOM = {
     }, {passive: true});
     document.body.appendChild(btn);
     return btn;
-  },
+  }
 };

@@ -8,6 +8,8 @@
  *  - shadowSize
  *  - fs
  *  - PHYSICS_GROUND_Y
+ *  - MAX_SPOTLIGHTS
+ *  - LOAD_AFTER_CLICK_MOBILE
  */
 import {FullScreenManagerElement, isMobile, LOG_FUNNY_ARCADE, urlQuery} from "./engine/utils.js";
 window.urlQ = urlQuery;
@@ -22,10 +24,11 @@ export const MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
+  SINGLE_CAMERA: true,
 
   construct: function(options = {}) {
-
     if(urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
       console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
@@ -49,22 +52,23 @@ export const MEConfig = {
       this.MAX_SPOTLIGHTS = options.MAX_SPOTLIGHTS;
     }
     console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
-
     if(urlQ['MAX_BONES']) {
       this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
-      console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
     }
-
+    if(options.MAX_BONES) {
+      this.MAX_BONES = options.MAX_BONES;
+    }
+    console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    if(urlQ['LOAD_AFTER_CLICK_MOBILE']) {
+      this.LOAD_AFTER_CLICK_MOBILE = urlQ['LOAD_AFTER_CLICK_MOBILE'];
+    }
     if(urlQ['fs'] || isMobile()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
-        // console.log(',FS,')
-        setTimeout(() => {
-          dispatchEvent(new CustomEvent('run_mobile_fs', {}))
-        }, 300)
+        setTimeout(() => {dispatchEvent(new CustomEvent('run_mobile_fs', {}))}, 300)
         window.removeEventListener('click', this._fs);
       }
       window.addEventListener('click', this._fs);
@@ -78,8 +82,10 @@ export const MEConfig = {
   checkOffScreen: function() {
     if('OffscreenCanvas' in window) {
       console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+      return true;
     } else {
       console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+      return false;
     }
   }
 }
