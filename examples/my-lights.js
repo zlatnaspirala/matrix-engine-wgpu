@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {isMobile, ORBIT} from '../src/engine/utils.js';
+import {CameraPath, isMobile, ORBIT} from '../src/engine/utils.js';
 
 export var myLights = function() {
   let myLights = new MatrixEngineWGPU({
@@ -9,7 +9,7 @@ export var myLights = function() {
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -114,9 +114,24 @@ export var myLights = function() {
       monster.updateInstances(4);
       monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
-      myLights.cameras.WASD.setYaw(-0.03);
-      myLights.cameras.WASD.setPitch(-0.35);
-      myLights.cameras.WASD.setPosition(0, 8, 5);
+
+      myLights.getCamera().setYaw(-0.03);
+      myLights.getCamera().setPitch(-0.35);
+      myLights.getCamera().setPosition(0, 8, 5);
+
+      const frames = [];
+      for(let i = 0;i <= 16;i++) {
+        const a = (i / 16) * Math.PI * 2;
+        frames.push({
+          position: [Math.sin(a) * 15, 5, -10 + Math.cos(a) * 15],
+          target: [0, 0, -10],
+        });
+      }
+
+      const cam = myLights.getCamera();
+      const orbit = new CameraPath(frames, {loop: true, parameterization: 'arc'});
+      cam.setPath(orbit).play({speed: 0.1, loop: true});
+
     }, 800);
   });
   window.app = myLights;

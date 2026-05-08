@@ -1,20 +1,22 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
+import {CameraPath} from "../src/engine/utils.js";
 
 export var snakeLights = function() {
   let app = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 12,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0.01, b: 0.01, g: 0.01, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 20;
+    const NUM_LIGHTS = 12;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
     const LIGHT_HEIGHT = 20;
@@ -220,9 +222,25 @@ export var snakeLights = function() {
     app.activateBloomEffect();
 
     setTimeout(() => {
-      app.cameras.WASD.setYaw(0);
-      app.cameras.WASD.setPitch(-0.55);
-      app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
+      const cam = app.getCamera();
+      // app.cameras.WASD.setYaw(0);
+      // app.cameras.WASD.setPitch(-0.55);
+      // app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
+      const introCam = new CameraPath([
+        {position: [0, 25, 10], target: [0, 0, -10]},
+        {position: [0, 23, 18], target: [0, 0, -10]},
+      ], {parameterization: 'arc'});
+
+      const gameplayCam = new CameraPath([
+        {position: [0, 27, 18], target: [0, 0, -10]},
+        {position: [5, 25, 15], target: [2, 0, -10]},
+      ], {parameterization: 'arc'});
+
+      cam.setPath(introCam).play({
+        speed: 0.4,
+        onEnd: () => cam.setPath(gameplayCam).play({speed: 0.2, loop: true}),
+      });
+
     }, 800);
 
   });
