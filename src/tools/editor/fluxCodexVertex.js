@@ -79,15 +79,14 @@ export default class FluxCodexVertex {
       dragOffset: [0, 0],      // offset for the PRIMARY dragged node
       connecting: null,
       selectedNode: null,       // keep for backward compat (single-select APIs)
-      selectedNodes: new Set(), // NEW: multi-select set of node IDs
-      rubberBand: null,         // NEW: { startX, startY, el } while rubber-banding
+      selectedNodes: new Set(), // multi-select set of node IDs
+      rubberBand: null,         // { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
       zoom: 1
     };
 
-    // cache
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {nodeId: null, nodeType: null, fieldKey: null, fieldType: null, value: null}
     });
@@ -3093,7 +3092,7 @@ LIST OF INTEREST OBJECT:
  - app.cameras.WASD (Access camera methods)
         `);
       if(AO) {
-        console.warn("Adding AO ", eval(AO));
+        // console.warn("Adding AO ", eval(AO));
         options.accessObject = eval(AO);
       } else {
         console.warn("Adding global access object failed...");

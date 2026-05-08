@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {randomIntFromTo} from "../src/engine/utils.js";
+import {CameraPath, randomIntFromTo} from "../src/engine/utils.js";
 // import {MEConfig} from "../src/me-config.js";
 
 export var loadCinematicCamera = function() {
@@ -121,15 +121,27 @@ export var loadCinematicCamera = function() {
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
-        cam.setZ(0);
-        cam.setY(10);
+        cam.setZ(10);
+        cam.setY(20);
+
+        const introPath = new CameraPath([
+          {position: [0, 5, 20], target: [0, 0, 0]},
+          {position: [10, 12, 10], target: [0, 1, 0]},
+          {position: [0, 15, -22], target: [0, 0, 0]},
+        ], {parameterization: 'arc'});
+
+        cam.setPath(introPath).play({
+          speed: 0.3,
+          onEnd: () => console.log('done'),
+        });
+
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
       }, 700);
     }
 
     cinematicCamera.canvas.addEventListener("ray.hit.event", (e) => {
-       console.log('ray.hit.event detected');
+      console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));

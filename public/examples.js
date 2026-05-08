@@ -680,8 +680,24 @@ var loadCinematicCamera = function () {
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
-        cam.setZ(0);
-        cam.setY(10);
+        cam.setZ(10);
+        cam.setY(20);
+        const introPath = new _utils.CameraPath([{
+          position: [0, 5, 20],
+          target: [0, 0, 0]
+        }, {
+          position: [10, 12, 10],
+          target: [0, 1, 0]
+        }, {
+          position: [0, 15, -22],
+          target: [0, 0, 0]
+        }], {
+          parameterization: 'arc'
+        });
+        cam.setPath(introPath).play({
+          speed: 0.3,
+          onEnd: () => console.log('done')
+        });
         app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
       }, 700);
@@ -3433,6 +3449,7 @@ exports.loadGLBLoader = loadGLBLoader;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @Note
@@ -3449,7 +3466,7 @@ function loadGLBLoader() {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -3465,11 +3482,36 @@ function loadGLBLoader() {
       scale: [120, 0.5, 120]
     });
     setTimeout(() => {
-      app.cameras.WASD.setYaw(-0.03);
-      app.cameras.WASD.setPitch(-0.49);
-      app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(35);
-      app.cameras.WASD._dirtyAngle = true;
+      const cam = app.getCamera();
+      // cam.setYaw(-0.03);
+      // cam.setPitch(-0.49);
+      // cam.setZ(0);
+      // cam.setY(33);
+      cam._dirtyAngle = true;
+      const bankTurn = new _utils.CameraPath([{
+        position: [-40, 33, -15],
+        target: [0, 0, -10],
+        roll: 0
+      }, {
+        position: [0, 35, -10],
+        target: [0, 0, -10],
+        roll: 0.4
+      },
+      // bank into turn
+      {
+        position: [40, 33, 10],
+        target: [0, 0, -10],
+        roll: -0.2
+      }, {
+        position: [0, 5, 10],
+        target: [0, 10, -20],
+        roll: 0
+      }], {
+        parameterization: 'arc'
+      });
+      cam.setPath(bankTurn).play({
+        speed: 0.25
+      });
     }, 1000);
 
     // Monster1
@@ -3658,7 +3700,7 @@ function loadGLBLoader() {
   window.app = TEST_ANIM;
 }
 
-},{"../src/engine/loader-obj.js":59,"../src/engine/loaders/webgpu-gltf.js":62,"../src/world.js":130}],10:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":59,"../src/engine/loaders/webgpu-gltf.js":62,"../src/engine/utils.js":79,"../src/world.js":130}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4149,7 +4191,7 @@ var myLights = function () {
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -4276,9 +4318,26 @@ var myLights = function () {
       monster.updateInstances(4);
       monster.trailAnimation.delay = 50;
       monster.playAnimationByIndex(3);
-      myLights.cameras.WASD.setYaw(-0.03);
-      myLights.cameras.WASD.setPitch(-0.35);
-      myLights.cameras.WASD.setPosition(0, 8, 5);
+      myLights.getCamera().setYaw(-0.03);
+      myLights.getCamera().setPitch(-0.35);
+      myLights.getCamera().setPosition(0, 8, 5);
+      const frames = [];
+      for (let i = 0; i <= 16; i++) {
+        const a = i / 16 * Math.PI * 2;
+        frames.push({
+          position: [Math.sin(a) * 15, 5, -10 + Math.cos(a) * 15],
+          target: [0, 0, -10]
+        });
+      }
+      const cam = myLights.getCamera();
+      const orbit = new _utils.CameraPath(frames, {
+        loop: true,
+        parameterization: 'arc'
+      });
+      cam.setPath(orbit).play({
+        speed: 0.1,
+        loop: true
+      });
     }, 800);
   });
   window.app = myLights;
@@ -5604,14 +5663,16 @@ exports.snakeLights = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var snakeLights = function () {
   let app = new _world.default({
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 12,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -5621,7 +5682,7 @@ var snakeLights = function () {
       a: 1
     }
   }, async () => {
-    const NUM_LIGHTS = 20;
+    const NUM_LIGHTS = 12;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
     const LIGHT_HEIGHT = 20;
@@ -5823,16 +5884,42 @@ var snakeLights = function () {
     }, null, glbFile);
     app.activateBloomEffect();
     setTimeout(() => {
-      app.cameras.WASD.setYaw(0);
-      app.cameras.WASD.setPitch(-0.55);
-      app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
+      const cam = app.getCamera();
+      // app.cameras.WASD.setYaw(0);
+      // app.cameras.WASD.setPitch(-0.55);
+      // app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
+      const introCam = new _utils.CameraPath([{
+        position: [0, 25, 10],
+        target: [0, 0, -10]
+      }, {
+        position: [0, 23, 18],
+        target: [0, 0, -10]
+      }], {
+        parameterization: 'arc'
+      });
+      const gameplayCam = new _utils.CameraPath([{
+        position: [0, 27, 18],
+        target: [0, 0, -10]
+      }, {
+        position: [5, 25, 15],
+        target: [2, 0, -10]
+      }], {
+        parameterization: 'arc'
+      });
+      cam.setPath(introCam).play({
+        speed: 0.4,
+        onEnd: () => cam.setPath(gameplayCam).play({
+          speed: 0.2,
+          loop: true
+        })
+      });
     }, 800);
   });
   window.app = app;
 };
 exports.snakeLights = snakeLights;
 
-},{"../src/engine/loader-obj.js":59,"../src/engine/loaders/webgpu-gltf.js":62,"../src/world.js":130}],20:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":59,"../src/engine/loaders/webgpu-gltf.js":62,"../src/engine/utils.js":79,"../src/world.js":130}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42547,31 +42634,18 @@ const geoTypesForMorph = exports.geoTypesForMorph = {
   galaxySpiral: "galaxySpiral"
 };
 class CameraPath {
-  /**
-   * @param {Array<{position:[x,y,z], target:[x,y,z], roll?:number, fov?:number, time?:number}>} keyframes
-   * @param {Object} options
-   * @param {boolean} [options.loop=false]       — close the spline back to start
-   * @param {'uniform'|'arc'|'timed'} [options.parameterization='uniform']
-   *   uniform  — t ∈ [0,1] distributed evenly across keyframe indices
-   *   arc      — t ∈ [0,1] distributed by estimated arc-length (more even speed)
-   *   timed    — t = real seconds, keyframe.time must be set
-   */
   constructor(keyframes, options = {}) {
     this.keyframes = keyframes;
     this.loop = options.loop ?? false;
     this.param = options.parameterization ?? 'uniform';
-    this._tension = options.tension ?? 0.5; // 0.5 = standard Catmull-Rom
+    this._tension = options.tension ?? 0.5;
     if (this.param === 'arc') this._buildArcTable();
   }
-
-  // ── Catmull-Rom scalar interpolation ────────────────────────────────────────
   static _cr(p0, p1, p2, p3, t, tension = 0.5) {
     const t2 = t * t,
       t3 = t2 * t;
     return tension * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
   }
-
-  // ── Get the 4 control-point indices (with loop / clamp) ─────────────────────
   _indices(i) {
     const n = this.keyframes.length;
     if (this.loop) {
@@ -42579,13 +42653,11 @@ class CameraPath {
     }
     return [Math.max(0, i - 1), Math.max(0, Math.min(n - 1, i)), Math.max(0, Math.min(n - 1, i + 1)), Math.max(0, Math.min(n - 1, i + 2))];
   }
-
-  // ── Interpolate a vec3 field ('position' | 'target') at segment i, local t ─
   _interpVec3(field, i, lt) {
     const [i0, i1, i2, i3] = this._indices(i);
-    const k = this.keyframes;
-    const cr = CameraPath._cr;
-    const T = this._tension;
+    const k = this.keyframes,
+      T = this._tension,
+      cr = CameraPath._cr;
     return [cr(k[i0][field][0], k[i1][field][0], k[i2][field][0], k[i3][field][0], lt, T), cr(k[i0][field][1], k[i1][field][1], k[i2][field][1], k[i3][field][1], lt, T), cr(k[i0][field][2], k[i1][field][2], k[i2][field][2], k[i3][field][2], lt, T)];
   }
   _interpScalar(field, fallback, i, lt) {
@@ -42593,8 +42665,6 @@ class CameraPath {
     const k = this.keyframes;
     return CameraPath._cr(k[i0][field] ?? fallback, k[i1][field] ?? fallback, k[i2][field] ?? fallback, k[i3][field] ?? fallback, lt, this._tension);
   }
-
-  // ── Arc-length reparameterization table ─────────────────────────────────────
   _buildArcTable(samples = 200) {
     const n = this.keyframes.length - (this.loop ? 0 : 1);
     this._arcTable = [{
@@ -42617,10 +42687,8 @@ class CameraPath {
       prev = cur;
     }
     this._totalArcLength = totalLen;
-    this._arcTable.forEach(e => e.arc /= totalLen); // normalise to [0,1]
+    this._arcTable.forEach(e => e.arc /= totalLen);
   }
-
-  // ── Convert arc-length t → raw spline t ─────────────────────────────────────
   _arcToRaw(t) {
     const tbl = this._arcTable;
     let lo = 0,
@@ -42634,8 +42702,6 @@ class CameraPath {
     const f = (t - tbl[lo].arc) / span;
     return tbl[lo].raw + f * (tbl[hi].raw - tbl[lo].raw);
   }
-
-  // ── Sample by raw spline t ∈ [0,1] ──────────────────────────────────────────
   _sampleRaw(t) {
     const n = this.keyframes.length;
     const segments = this.loop ? n : n - 1;
@@ -42650,16 +42716,8 @@ class CameraPath {
       fov: this._interpScalar('fov', 2 * Math.PI / 5, i, lt)
     };
   }
-
-  /**
-   * Public sample — t meaning depends on parameterization:
-   *   uniform / arc  → t ∈ [0,1]
-   *   timed          → t in seconds
-   */
   sample(t) {
-    if (this.param === 'arc') {
-      return this._sampleRaw(this._arcToRaw(t));
-    }
+    if (this.param === 'arc') return this._sampleRaw(this._arcToRaw(t));
     if (this.param === 'timed') {
       const times = this.keyframes.map(k => k.time ?? 0);
       const total = times[times.length - 1];
@@ -42669,8 +42727,7 @@ class CameraPath {
   }
   get totalTime() {
     if (this.param === 'timed') {
-      const times = this.keyframes.map(k => k.time ?? 0);
-      return times[times.length - 1];
+      return this.keyframes[this.keyframes.length - 1].time ?? 0;
     }
     return 1;
   }
@@ -53669,16 +53726,14 @@ class FluxCodexVertex {
       selectedNode: null,
       // keep for backward compat (single-select APIs)
       selectedNodes: new Set(),
-      // NEW: multi-select set of node IDs
+      // multi-select set of node IDs
       rubberBand: null,
-      // NEW: { startX, startY, el } while rubber-banding
+      // { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
       zoom: 1
     };
-
-    // cache
     this.fluxcodexFieldChange = new CustomEvent("fluxcodex.field.change", {
       detail: {
         nodeId: null,
@@ -57810,7 +57865,7 @@ LIST OF INTEREST OBJECT:
  - app.cameras.WASD (Access camera methods)
         `);
       if (AO) {
-        console.warn("Adding AO ", eval(AO));
+        // console.warn("Adding AO ", eval(AO));
         options.accessObject = eval(AO);
       } else {
         console.warn("Adding global access object failed...");

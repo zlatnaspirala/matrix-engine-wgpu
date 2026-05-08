@@ -1,6 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
+import {CameraPath} from "../src/engine/utils.js";
 /**
  * @Note
  * “Character and animation assets from Mixamo,
@@ -16,7 +17,7 @@ export function loadGLBLoader() {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -25,11 +26,24 @@ export function loadGLBLoader() {
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
     setTimeout(() => {
-      app.cameras.WASD.setYaw(-0.03);
-      app.cameras.WASD.setPitch(-0.49);
-      app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(35);
-      app.cameras.WASD._dirtyAngle = true;
+
+      const cam = app.getCamera();
+      // cam.setYaw(-0.03);
+      // cam.setPitch(-0.49);
+      // cam.setZ(0);
+      // cam.setY(33);
+      cam._dirtyAngle = true;
+
+      const bankTurn = new CameraPath([
+        {position: [-40, 33, -15], target: [0, 0, -10], roll: 0},
+        {position: [0, 35, -10], target: [0, 0, -10], roll: 0.4}, // bank into turn
+        {position: [40, 33, 10], target: [0, 0, -10], roll: -0.2},
+        {position: [0, 5, 10], target: [0, 10, -20], roll: 0},
+      ], {parameterization: 'arc'});
+
+      cam.setPath(bankTurn).play({speed: 0.25});
+
+
     }, 1000);
 
     // Monster1

@@ -362,7 +362,7 @@ export default class EditorHud {
       if(confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
@@ -769,7 +769,7 @@ export default class EditorHud {
         features.networking = true;
       }
 
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
       features.camera = typeOfCamera;
 
       // console.log(features);
