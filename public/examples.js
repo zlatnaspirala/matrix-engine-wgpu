@@ -24834,22 +24834,26 @@ class FirstPersonCamera {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.FirstPersonCamera = FirstPersonCamera;
 class CinematicCamera {
-  position = new Float32Array(3); // world-space eye position
-  target = new Float32Array(3); // world-space look-at point
-  up = new Float32Array([0, 1, 0]);
+  // ── same public fields as FirstPersonCamera ──────────────────────────────────
+  pitch = 0;
+  yaw = 0;
+  position = new Float32Array(3);
+  velocity = new Float32Array(3);
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
+  up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
+  back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
+  _dirtyAngle = false;
 
-  // path playback state
+  // ── cinematic-only state ─────────────────────────────────────────────────────
   _path = null;
-  _t = 0; // current path parameter
+  _t = 0;
   _playing = false;
-  _speed = 1; // multiplier on dt
+  _speed = 1;
   _loop = false;
   _onEnd = null;
-
-  // shake state
   _shake = {
     active: false,
     amplitude: 0,
@@ -24859,271 +24863,31 @@ class CinematicCamera {
   };
   _shakeOffset = new Float32Array(3);
 
-  // smoothing / lag
-  _smoothPos = null; // Float32Array(3) lazy-init
-  _smoothTarget = null;
-  _posLag = 0; // 0 = instant, 0–1 = lerp factor applied per frame
-  _targetLag = 0;
+  // ── "look-at target" helpers (optional, used by path playback) ───────────────
+  // When _useTarget is true, view is built from position+_target instead of pitch/yaw
+  _useTarget = false;
+  _target = new Float32Array(3);
   constructor(options = {}) {
-    const p = options.position ?? [0, 0, 5];
-    const tg = options.target ?? [0, 0, 0];
-    this.position[0] = p[0];
-    this.position[1] = p[1];
-    this.position[2] = p[2];
-    this.target[0] = tg[0];
-    this.target[1] = tg[1];
-    this.target[2] = tg[2];
+    if (options.position) {
+      this.position[0] = options.position[0];
+      this.position[1] = options.position[1];
+      this.position[2] = options.position[2];
+    }
+    if (options.pitch) this.pitch = options.pitch;
+    if (options.yaw) this.yaw = options.yaw;
+    if (options.target) {
+      this._target[0] = options.target[0];
+      this._target[1] = options.target[1];
+      this._target[2] = options.target[2];
+      this._useTarget = true;
+    }
     this.canvas = options.canvas ?? null;
     const aspect = this.canvas ? this.canvas.width / this.canvas.height : options.aspect ?? 16 / 9;
-    this.setProjection(options.fov ?? 2 * Math.PI / 5, aspect, options.near ?? 0.3, options.far ?? 1000);
-    this._rebuild();
+    this.setProjection(options.fov ?? 2 * Math.PI / 5, aspect, options.near ?? 0.3, options.far ?? 200);
+    this._recalculateViewVP();
   }
 
-  // ── Projection ───────────────────────────────────────────────────────────────
-  setProjection(fov = 2 * Math.PI / 5, aspect = 16 / 9, near = 0.3, far = 1000) {
-    _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
-    this._dirty = true;
-  }
-
-  // ── Direct setters ───────────────────────────────────────────────────────────
-  setPosition(x, y, z) {
-    this.position[0] = x;
-    this.position[1] = y;
-    this.position[2] = z;
-    this._dirty = true;
-  }
-  setTarget(x, y, z) {
-    this.target[0] = x;
-    this.target[1] = y;
-    this.target[2] = z;
-    this._dirty = true;
-  }
-  setUp(x, y, z) {
-    this.up[0] = x;
-    this.up[1] = y;
-    this.up[2] = z;
-    this._dirty = true;
-  }
-
-  // ── Lag / smoothing ──────────────────────────────────────────────────────────
-  /**
-   * @param {number} posLag    0 = instant follow, 0.9 = very laggy
-   * @param {number} targetLag same scale
-   */
-  setLag(posLag = 0, targetLag = 0) {
-    this._posLag = posLag;
-    this._targetLag = targetLag;
-    if (!this._smoothPos) {
-      this._smoothPos = new Float32Array(this.position);
-      this._smoothTarget = new Float32Array(this.target);
-    }
-  }
-
-  // ── Camera shake ─────────────────────────────────────────────────────────────
-  /**
-   * @param {number} amplitude  world-units
-   * @param {number} duration   seconds
-   * @param {number} frequency  oscillations/second
-   */
-  shake(amplitude, duration, frequency = 15) {
-    this._shake = {
-      active: true,
-      amplitude,
-      frequency,
-      duration,
-      elapsed: 0
-    };
-  }
-
-  // ── Path control ─────────────────────────────────────────────────────────────
-  /**
-   * Attach a CameraPath.  Does NOT auto-play.
-   * @param {CameraPath} path
-   */
-  setPath(path) {
-    this._path = path;
-    this._t = 0;
-    return this;
-  }
-
-  /**
-   * @param {Object} options
-   * @param {number}   [options.speed=1]
-   * @param {boolean}  [options.loop=false]
-   * @param {Function} [options.onEnd]       called when path finishes (non-looping)
-   * @param {number}   [options.startT=0]
-   */
-  play(options = {}) {
-    if (!this._path) {
-      console.warn('CinematicCamera.play(): no path set');
-      return this;
-    }
-    this._speed = options.speed ?? 1;
-    this._loop = options.loop ?? false;
-    this._onEnd = options.onEnd ?? null;
-    this._t = options.startT ?? 0;
-    this._playing = true;
-    return this;
-  }
-  pause() {
-    this._playing = false;
-    return this;
-  }
-  resume() {
-    this._playing = true;
-    return this;
-  }
-
-  /** Jump to normalised t without affecting play state */
-  seekT(t) {
-    this._t = t;
-    return this;
-  }
-
-  /** Snap camera immediately to path sample at current _t */
-  applyPathSample(sample) {
-    const s = sample ?? this._path.sample(this._t);
-    this.setPosition(s.position[0], s.position[1], s.position[2]);
-    this.setTarget(s.target[0], s.target[1], s.target[2]);
-    if (s.fov !== undefined) {
-      const aspect = this.canvas ? this.canvas.width / this.canvas.height : 16 / 9;
-      this.setProjection(s.fov, aspect);
-    }
-    // roll is baked into the up vector
-    if (s.roll !== undefined && s.roll !== 0) {
-      const cr = Math.cos(s.roll),
-        sr = Math.sin(s.roll);
-      this.up[0] = -sr;
-      this.up[1] = cr;
-      this.up[2] = 0;
-    } else {
-      this.up[0] = 0;
-      this.up[1] = 1;
-      this.up[2] = 0;
-    }
-  }
-
-  // ── Per-frame update ─────────────────────────────────────────────────────────
-  /**
-   * Call once per frame from your render loop.
-   * @param {number} dt  delta time in seconds
-   */
-  update(dt = 0.016) {
-    // ── 1. advance path ──────────────────────────────────────────────────────
-    if (this._playing && this._path) {
-      const totalT = this._path.totalTime;
-      this._t += dt * this._speed / totalT;
-      if (this._t >= 1) {
-        if (this._loop) {
-          this._t %= 1;
-        } else {
-          this._t = 1;
-          this._playing = false;
-          this.applyPathSample();
-          if (this._onEnd) this._onEnd(this);
-        }
-      }
-      if (this._playing) this.applyPathSample();
-    }
-
-    // ── 2. position / target smoothing (lag) ────────────────────────────────
-    if (this._posLag > 0 && this._smoothPos) {
-      const a = 1 - this._posLag;
-      this._smoothPos[0] += (this.position[0] - this._smoothPos[0]) * a;
-      this._smoothPos[1] += (this.position[1] - this._smoothPos[1]) * a;
-      this._smoothPos[2] += (this.position[2] - this._smoothPos[2]) * a;
-    }
-    if (this._targetLag > 0 && this._smoothTarget) {
-      const a = 1 - this._targetLag;
-      this._smoothTarget[0] += (this.target[0] - this._smoothTarget[0]) * a;
-      this._smoothTarget[1] += (this.target[1] - this._smoothTarget[1]) * a;
-      this._smoothTarget[2] += (this.target[2] - this._smoothTarget[2]) * a;
-    }
-
-    // ── 3. shake ─────────────────────────────────────────────────────────────
-    const sk = this._shake;
-    if (sk.active) {
-      sk.elapsed += dt;
-      const decay = Math.max(0, 1 - sk.elapsed / sk.duration);
-      const amp = sk.amplitude * decay;
-      const freq = sk.frequency * sk.elapsed;
-      // pseudo-random offsets via sin with incommensurable frequencies
-      this._shakeOffset[0] = Math.sin(freq * 2.1731 + 1.23) * amp;
-      this._shakeOffset[1] = Math.sin(freq * 1.7319 + 0.77) * amp;
-      this._shakeOffset[2] = Math.sin(freq * 2.4721 + 2.11) * amp;
-      if (sk.elapsed >= sk.duration) {
-        sk.active = false;
-        this._shakeOffset[0] = this._shakeOffset[1] = this._shakeOffset[2] = 0;
-      }
-    }
-    if (this._dirty) this._rebuild();
-  }
-
-  // ── View / VP build (lookAt) ─────────────────────────────────────────────────
-  _rebuild() {
-    const ep = this._posLag > 0 && this._smoothPos ? this._smoothPos : this.position;
-    const et = this._targetLag > 0 && this._smoothTarget ? this._smoothTarget : this.target;
-    const sk = this._shakeOffset;
-    const ex = ep[0] + sk[0],
-      ey = ep[1] + sk[1],
-      ez = ep[2] + sk[2];
-    const tx = et[0],
-      ty = et[1],
-      tz = et[2];
-
-    // forward
-    let fx = tx - ex,
-      fy = ty - ey,
-      fz = tz - ez;
-    const fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
-    if (fl < 1e-7) {
-      this._dirty = false;
-      return;
-    } // degenerate
-    fx /= fl;
-    fy /= fl;
-    fz /= fl;
-
-    // right = forward × up
-    const ux = this.up[0],
-      uy = this.up[1],
-      uz = this.up[2];
-    let rx = fy * uz - fz * uy,
-      ry = fz * ux - fx * uz,
-      rz = fx * uy - fy * ux;
-    const rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
-    if (rl < 1e-7) {
-      this._dirty = false;
-      return;
-    }
-    rx /= rl;
-    ry /= rl;
-    rz /= rl;
-
-    // recomputed up = right × forward (orthogonalise)
-    const upx = ry * fz - rz * fy,
-      upy = rz * fx - rx * fz,
-      upz = rx * fy - ry * fx;
-    const v = this.view;
-    v[0] = rx;
-    v[4] = ry;
-    v[8] = rz;
-    v[12] = -(rx * ex + ry * ey + rz * ez);
-    v[1] = upx;
-    v[5] = upy;
-    v[9] = upz;
-    v[13] = -(upx * ex + upy * ey + upz * ez);
-    v[2] = -fx;
-    v[6] = -fy;
-    v[10] = -fz;
-    v[14] = -(-fx * ex + -fy * ey + -fz * ez);
-    v[3] = 0;
-    v[7] = 0;
-    v[11] = 0;
-    v[15] = 1;
-    CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
-    this._dirty = false;
-  }
+  // ── same static helper as FirstPersonCamera ──────────────────────────────────
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0],
       a01 = a[4],
@@ -25174,6 +24938,303 @@ class CinematicCamera {
     out[14] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
     return out;
+  }
+
+  // ── same setters as FirstPersonCamera ────────────────────────────────────────
+  setPitch = p => {
+    this.pitch = p;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setYaw = y => {
+    this.yaw = y;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setPosition = (x, y, z) => {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setX = x => {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  };
+  setY = y => {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  };
+  setZ = z => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setProjection = (fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) => {
+    _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._recalculateViewVP();
+  };
+
+  // ── cinematic-only setters ───────────────────────────────────────────────────
+  setTarget = (x, y, z) => {
+    this._target[0] = x;
+    this._target[1] = y;
+    this._target[2] = z;
+    this._useTarget = true;
+    this._dirtyAngle = true;
+  };
+  setRoll = r => {
+    // roll tilts the up vector around the forward axis
+    this._roll = r;
+    this._dirtyAngle = true;
+  };
+
+  // ── path control ─────────────────────────────────────────────────────────────
+  setPath = path => {
+    this._path = path;
+    this._t = 0;
+    return this;
+  };
+  play = (options = {}) => {
+    if (!this._path) {
+      console.warn('CinematicCamera.play(): no path set');
+      return this;
+    }
+    this._speed = options.speed ?? 1;
+    this._loop = options.loop ?? false;
+    this._onEnd = options.onEnd ?? null;
+    this._t = options.startT ?? 0;
+    this._playing = true;
+    return this;
+  };
+  pause = () => {
+    this._playing = false;
+    return this;
+  };
+  resume = () => {
+    this._playing = true;
+    return this;
+  };
+  seekT = t => {
+    this._t = t;
+    return this;
+  };
+
+  // ── shake ────────────────────────────────────────────────────────────────────
+  shake = (amplitude, duration, frequency = 15) => {
+    this._shake = {
+      active: true,
+      amplitude,
+      frequency,
+      duration,
+      elapsed: 0
+    };
+  };
+
+  // ── _recalculateViewVP — mirrors FirstPersonCamera exactly when not using target
+  _recalculateViewVP() {
+    if (this._useTarget) {
+      this._buildViewFromTarget();
+    } else {
+      this._buildViewFromPitchYaw();
+    }
+  }
+  _buildViewFromPitchYaw() {
+    const cy = Math.cos(this.yaw),
+      sy = Math.sin(this.yaw);
+    const cp = Math.cos(this.pitch),
+      sp = Math.sin(this.pitch);
+    this.right[0] = cy;
+    this.right[1] = 0;
+    this.right[2] = -sy;
+    this.up[0] = sy * sp;
+    this.up[1] = cp;
+    this.up[2] = cy * sp;
+    this.back[0] = sy * cp;
+    this.back[1] = -sp;
+    this.back[2] = cy * cp;
+
+    // apply roll if set
+    if (this._roll) {
+      const cr = Math.cos(this._roll),
+        sr = Math.sin(this._roll);
+      const rx = this.right,
+        uy = this.up;
+      const nx = cr * rx[0] + sr * uy[0];
+      const ny = cr * rx[1] + sr * uy[1];
+      const nz = cr * rx[2] + sr * uy[2];
+      const ux = -sr * rx[0] + cr * uy[0];
+      const uyy = -sr * rx[1] + cr * uy[1];
+      const uz = -sr * rx[2] + cr * uy[2];
+      this.right[0] = nx;
+      this.right[1] = ny;
+      this.right[2] = nz;
+      this.up[0] = ux;
+      this.up[1] = uyy;
+      this.up[2] = uz;
+    }
+    const rx = this.right,
+      uy = this.up,
+      bz = this.back,
+      p = this.position;
+    const vs = this.view;
+    vs[0] = rx[0];
+    vs[4] = rx[1];
+    vs[8] = rx[2];
+    vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0];
+    vs[5] = uy[1];
+    vs[9] = uy[2];
+    vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0];
+    vs[6] = bz[1];
+    vs[10] = bz[2];
+    vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
+    vs[15] = 1;
+    CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+  }
+  _buildViewFromTarget() {
+    const p = this.position;
+    const sk = this._shakeOffset;
+    const ex = p[0] + sk[0],
+      ey = p[1] + sk[1],
+      ez = p[2] + sk[2];
+    const tx = this._target[0],
+      ty = this._target[1],
+      tz = this._target[2];
+
+    // forward
+    let fx = tx - ex,
+      fy = ty - ey,
+      fz = tz - ez;
+    const fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
+    if (fl < 1e-7) return;
+    fx /= fl;
+    fy /= fl;
+    fz /= fl;
+
+    // world up with optional roll
+    let wux = 0,
+      wuy = 1,
+      wuz = 0;
+    if (this._roll) {
+      const cr = Math.cos(this._roll),
+        sr = Math.sin(this._roll);
+      // right of a non-rolled camera
+      let rx0 = fy * 0 - fz * 1,
+        ry0 = fz * 0 - fx * 0,
+        rz0 = fx * 1 - fy * 0;
+      const rl = Math.sqrt(rx0 * rx0 + ry0 * ry0 + rz0 * rz0);
+      if (rl > 1e-7) {
+        rx0 /= rl;
+        ry0 /= rl;
+        rz0 /= rl;
+      }
+      wux = cr * 0 - sr * rx0;
+      wuy = cr * 1 - sr * ry0;
+      wuz = cr * 0 - sr * rz0;
+    }
+
+    // right = forward × up
+    let rx = fy * wuz - fz * wuy,
+      ry = fz * wux - fx * wuz,
+      rz = fx * wuy - fy * wux;
+    const rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
+    if (rl < 1e-7) return;
+    rx /= rl;
+    ry /= rl;
+    rz /= rl;
+
+    // reorthogonalised up
+    const upx = ry * fz - rz * fy,
+      upy = rz * fx - rx * fz,
+      upz = rx * fy - ry * fx;
+
+    // sync pitch/yaw back so getters are consistent
+    this.back[0] = -fx;
+    this.back[1] = -fy;
+    this.back[2] = -fz;
+    this.right[0] = rx;
+    this.right[1] = ry;
+    this.right[2] = rz;
+    this.up[0] = upx;
+    this.up[1] = upy;
+    this.up[2] = upz;
+    this.yaw = Math.atan2(-fx, -fz);
+    this.pitch = Math.asin(Math.max(-1, Math.min(1, fy)));
+    const vs = this.view;
+    vs[0] = rx;
+    vs[4] = ry;
+    vs[8] = rz;
+    vs[12] = -(rx * ex + ry * ey + rz * ez);
+    vs[1] = upx;
+    vs[5] = upy;
+    vs[9] = upz;
+    vs[13] = -(upx * ex + upy * ey + upz * ez);
+    vs[2] = -fx;
+    vs[6] = -fy;
+    vs[10] = -fz;
+    vs[14] = -(-fx * ex - fy * ey - fz * ez);
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
+    vs[15] = 1;
+    CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+  }
+
+  // ── update — same signature as FirstPersonCamera ─────────────────────────────
+  update(dt = 0.016) {
+    // 1. advance path
+    if (this._playing && this._path) {
+      const totalT = this._path.totalTime;
+      this._t += dt * this._speed / totalT;
+      if (this._t >= 1) {
+        if (this._loop) {
+          this._t %= 1;
+        } else {
+          this._t = 1;
+          this._playing = false;
+          this._applyPathSample();
+          if (this._onEnd) this._onEnd(this);
+        }
+      }
+      if (this._playing || this._t === 1) this._applyPathSample();
+    }
+
+    // 2. shake
+    const sk = this._shake;
+    if (sk.active) {
+      sk.elapsed += dt;
+      const decay = Math.max(0, 1 - sk.elapsed / sk.duration);
+      const amp = sk.amplitude * decay;
+      const freq = sk.frequency * sk.elapsed;
+      this._shakeOffset[0] = Math.sin(freq * 2.1731 + 1.23) * amp;
+      this._shakeOffset[1] = Math.sin(freq * 1.7319 + 0.77) * amp;
+      this._shakeOffset[2] = Math.sin(freq * 2.4721 + 2.11) * amp;
+      if (sk.elapsed >= sk.duration) {
+        sk.active = false;
+        this._shakeOffset[0] = this._shakeOffset[1] = this._shakeOffset[2] = 0;
+      }
+      this._dirtyAngle = true;
+    }
+
+    // 3. rebuild if dirty
+    if (!this._dirtyAngle) return;
+    this._recalculateViewVP();
+    this._dirtyAngle = false;
+  }
+  _applyPathSample() {
+    const s = this._path.sample(this._t);
+    this.setPosition(s.position[0], s.position[1], s.position[2]);
+    this.setTarget(s.target[0], s.target[1], s.target[2]);
+    if (s.roll !== undefined) this.setRoll(s.roll);
+    if (s.fov !== undefined) {
+      const aspect = this.canvas ? this.canvas.width / this.canvas.height : 16 / 9;
+      this.setProjection(s.fov, aspect);
+    }
+    this._dirtyAngle = true;
   }
 }
 exports.CinematicCamera = CinematicCamera;
@@ -60496,7 +60557,7 @@ class EditorHud {
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
@@ -60873,7 +60934,7 @@ class EditorHud {
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
       features.camera = typeOfCamera;
 
       // console.log(features);
