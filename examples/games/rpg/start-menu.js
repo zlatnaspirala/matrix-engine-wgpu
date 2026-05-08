@@ -53,6 +53,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   dontUsePhysics: true,
   canvasSize: 'fullscreen',
   MAX_BONES: 100,
+  lock: 'portrait', //'landscape',
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
@@ -142,13 +143,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       name = 'slayzer';
     } else if(selectHeroIndex == 2) {
       name = 'steelborn';
+    } else if(selectHeroIndex == 100) {
+      name = 'warrok'; // disabled - not optimismed 3d obj
     } else if(selectHeroIndex == 3) {
-      name = 'warrok';
-    } else if(selectHeroIndex == 4) {
       name = 'skeletonz';
-    } else if(selectHeroIndex == 5) {
+    } else if(selectHeroIndex == 4) {
       name = 'erika';
-    } else if(selectHeroIndex == 6) {
+    } else if(selectHeroIndex == 5) {
       name = 'arissa';
     }
     return name;
@@ -498,7 +499,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
     {type: "Ranger", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
     {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
-    {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
+    // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
     {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
     {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
     {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
@@ -559,7 +560,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         if(x == 3 || x == 5) {
           hero0.forEach((p, i, array) => {
             array[i].globalAmbient = [10, 10, 10];
-            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+            // array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
           })
         }
         if(x == 6) {
@@ -756,10 +757,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
 
     const startBtn = document.createElement("button");
+    startBtn.id = 'startBtn';
     Object.assign(startBtn.style, {
       position: "fixed",
-      bottom: '40px',
-      right: '120px',
+      bottom: isMobile() == true ? "34%" : '40px',
+      right: isMobile() == true ? "16%" : '120px',
+      opacity: isMobile() == true ? "0.8" : '1',
       width: "250px",
       height: "54px",
       textAlign: "center",
@@ -862,30 +865,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     hud.appendChild(aboutBtn);
 
     const LBBtn = document.createElement("button");
-    Object.assign(LBBtn.style, {
-      position: "fixed",
-      bottom: '220px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // LBBtn.classList.add('buttonMatrix');
-    // LBBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
 
     LBBtn.innerHTML = `
           <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
@@ -903,50 +882,115 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       }
     });
 
-    Object.assign(sendMsgInput.style, {
-      position: "fixed",
-      bottom: '282px',
-      left: '20px',
-      width: "134px",
-      height: "17px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      // textShadow: "0 0 2px black",
-      color: 'black',
-      // background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
     hud.appendChild(sendMsgInput);
-
     const sendMsgBtn = document.createElement("button");
-    Object.assign(sendMsgBtn.style, {
-      position: "fixed",
-      bottom: '253px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // sendMsgBtn.classList.add('buttonMatrix');
-    // sendMsgBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
-    sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
+
+    // suntetise later
+    if(isMobile() == true) {
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        top: '10%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        top: '3%',
+        opacity: 0.5,
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        // background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        top: '6.5%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    } else {
+
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        bottom: '220px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        bottom: '282px',
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        bottom: '253px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    }
+
+    sendMsgBtn.innerHTML = `<span data-label='sendmsg'>${app.label.get.sendmsg}</span>    `;
     sendMsgBtn.addEventListener('click', () => {
       sendMsgBtn.disabled = true;
       sendMsgBtn.style.color = 'gray';

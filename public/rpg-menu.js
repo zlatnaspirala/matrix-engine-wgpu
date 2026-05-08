@@ -1205,6 +1205,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
   dontUsePhysics: true,
   canvasSize: 'fullscreen',
   MAX_BONES: 100,
+  lock: 'portrait',
+  //'landscape',
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
@@ -1289,13 +1291,13 @@ let forestOfHollowBloodStartSceen = new _world.default({
       name = 'slayzer';
     } else if (selectHeroIndex == 2) {
       name = 'steelborn';
+    } else if (selectHeroIndex == 100) {
+      name = 'warrok'; // disabled - not optimismed 3d obj
     } else if (selectHeroIndex == 3) {
-      name = 'warrok';
-    } else if (selectHeroIndex == 4) {
       name = 'skeletonz';
-    } else if (selectHeroIndex == 5) {
+    } else if (selectHeroIndex == 4) {
       name = 'erika';
-    } else if (selectHeroIndex == 6) {
+    } else if (selectHeroIndex == 5) {
       name = 'arissa';
     }
     return name;
@@ -1642,12 +1644,9 @@ let forestOfHollowBloodStartSceen = new _world.default({
     name: 'Steelborn',
     path: "res/meshes/glb/bot.glb",
     desc: forestOfHollowBloodStartSceen.label.get.steelborn
-  }, {
-    type: "Mage",
-    name: 'Warrok',
-    path: "res/meshes/glb/warrok.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.warrok
-  }, {
+  },
+  // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
+  {
     type: "Necromancer",
     name: 'Skeletonz',
     path: "res/meshes/glb/skeletonz.glb",
@@ -1727,7 +1726,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         if (x == 3 || x == 5) {
           hero0.forEach((p, i, array) => {
             array[i].globalAmbient = [10, 10, 10];
-            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+            // array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
           });
         }
         if (x == 6) {
@@ -1904,10 +1903,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }
     }
     const startBtn = document.createElement("button");
+    startBtn.id = 'startBtn';
     Object.assign(startBtn.style, {
       position: "fixed",
-      bottom: '40px',
-      right: '120px',
+      bottom: (0, _utils.isMobile)() == true ? "34%" : '40px',
+      right: (0, _utils.isMobile)() == true ? "16%" : '120px',
+      opacity: (0, _utils.isMobile)() == true ? "0.8" : '1',
       width: "250px",
       height: "54px",
       textAlign: "center",
@@ -2001,31 +2002,6 @@ let forestOfHollowBloodStartSceen = new _world.default({
     aboutBtn.addEventListener('click', e => app.showAbout());
     hud.appendChild(aboutBtn);
     const LBBtn = document.createElement("button");
-    Object.assign(LBBtn.style, {
-      position: "fixed",
-      bottom: '220px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // LBBtn.classList.add('buttonMatrix');
-    // LBBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
-
     LBBtn.innerHTML = `
           <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
     `;
@@ -2041,49 +2017,108 @@ let forestOfHollowBloodStartSceen = new _world.default({
         e.target.value = e.target.value.slice(0, 120);
       }
     });
-    Object.assign(sendMsgInput.style, {
-      position: "fixed",
-      bottom: '282px',
-      left: '20px',
-      width: "134px",
-      height: "17px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      // textShadow: "0 0 2px black",
-      color: 'black',
-      // background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
     hud.appendChild(sendMsgInput);
     const sendMsgBtn = document.createElement("button");
-    Object.assign(sendMsgBtn.style, {
-      position: "fixed",
-      bottom: '253px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // sendMsgBtn.classList.add('buttonMatrix');
-    // sendMsgBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
-    sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
+
+    // suntetise later
+    if ((0, _utils.isMobile)() == true) {
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        top: '10%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        top: '3%',
+        opacity: 0.5,
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        // background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        top: '6.5%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    } else {
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        bottom: '220px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        bottom: '282px',
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        bottom: '253px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    }
+    sendMsgBtn.innerHTML = `<span data-label='sendmsg'>${app.label.get.sendmsg}</span>    `;
     sendMsgBtn.addEventListener('click', () => {
       sendMsgBtn.disabled = true;
       sendMsgBtn.style.color = 'gray';
@@ -38397,6 +38432,7 @@ exports.SS = void 0;
 exports.SWITCHER = SWITCHER;
 exports.alignTo256 = alignTo256;
 exports.byId = void 0;
+exports.checkLock = checkLock;
 exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
 exports.genName = genName;
@@ -38409,6 +38445,8 @@ exports.isEven = isEven;
 exports.isMobile = isMobile;
 exports.isOdd = isOdd;
 exports.meLoader = exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
+exports.mobileLock = mobileLock;
+exports.preventZoom = preventZoom;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -38425,6 +38463,42 @@ const MeshType = exports.MeshType = {
   PROCEDURAL: 2,
   BVHANIM: 3
 };
+function preventZoom() {
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, {
+    passive: false
+  });
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, {
+    passive: false
+  });
+  document.addEventListener('gesturestart', function (e) {
+    e.preventDefault();
+  });
+}
+function checkLock() {
+  if (screen.orientation && screen.orientation.lock) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function mobileLock(o) {
+  if (screen.orientation && screen.orientation.lock) {
+    // Lock to landscape
+    screen.orientation.lock(o).then(function () {
+      console.log(`%cOrientation locked to ${o}`, LOG_FUNNY_ARCADE);
+    }).catch(function (error) {
+      console.error("Orientation lock failed: ", error);
+    });
+  }
+}
 function isMobile() {
   if (supportsTouch == true) return true;
   const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
@@ -59188,6 +59262,7 @@ class MatrixEngineWGPU {
     }, {
       passive: true
     });
+    if ((0, _utils.isMobile)() == true) (0, _utils.preventZoom)();
     this.activateEditor = () => {
       if (this.editor == null || typeof this.editor === 'undefined') {
         if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -59542,6 +59617,22 @@ class MatrixEngineWGPU {
       format: presentationFormat,
       alphaMode: 'premultiplied'
     });
+
+    // only for mobile
+    if (typeof this.options.lock !== 'undefined') {
+      if (this.options.lock != 'landscape' && this.options.lock != 'portrait') {
+        this.options.lock = 'portrait';
+      }
+      if ((0, _utils.checkLock)()) {
+        // mobileLock(this.options.lock);
+        screen.orientation.lock(this.options.lock).then(() => {
+          console.log(`%cOrientation locked to ${this.options.lock}`, _utils.LOG_FUNNY_ARCADE);
+          this.applyCanvasSize(this.options.fastRender);
+        }).catch(function (error) {
+          console.error("Orientation lock failed: ", error);
+        });
+      }
+    }
     this.globalAmbient = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
     if (this.options.MAX_SPOTLIGHTS) {
       this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
