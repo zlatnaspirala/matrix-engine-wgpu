@@ -21792,6 +21792,7 @@ const MobileDOM = exports.MobileDOM = {
     return wrap; // caller can hide/remove later
   },
   destroyWASD() {
+    if ((0, _utils.byId)('mobileControls') == null) return;
     (0, _utils.byId)('▲').removeEventListener('pointerdown', MobileDOM.eventDown);
     (0, _utils.byId)('▲').removeEventListener('pointerup', MobileDOM.eventUp);
     (0, _utils.byId)('▲').removeEventListener('pointercancel', MobileDOM.eventCancel);
@@ -28325,7 +28326,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     });
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
-  updateModelUniformBuffer = () => {};
+  updateModelUniformBuffer = () => {
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+  };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid array passed to createGPUBuffer');
@@ -60497,8 +60501,8 @@ class MatrixEngineWGPU {
         if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
         // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
-        mesh.updateModelUniformBuffer(i);
         mesh.position.update();
+        mesh.updateModelUniformBuffer(i);
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();

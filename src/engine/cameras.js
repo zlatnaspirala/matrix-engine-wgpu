@@ -1164,6 +1164,7 @@ export const MobileDOM = {
   },
 
   destroyWASD() {
+    if (byId('mobileControls') == null) return;
     byId('▲').removeEventListener('pointerdown', MobileDOM.eventDown);
     byId('▲').removeEventListener('pointerup', MobileDOM.eventUp);
     byId('▲').removeEventListener('pointercancel', MobileDOM.eventCancel);

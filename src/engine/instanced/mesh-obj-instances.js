@@ -941,7 +941,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
 
-  updateModelUniformBuffer = () => {}
+  updateModelUniformBuffer = () => {
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+  }
 
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {throw new Error('Invalid array passed to createGPUBuffer')}
