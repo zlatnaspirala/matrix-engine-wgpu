@@ -9,6 +9,7 @@ import {RCSAccount} from "./rocket-crafting-account.js";
 import {en} from "../../../public/res/multilang/en-backup.js";
 import {MatrixTTS} from "./tts.js";
 import {Editor} from "../../../src/tools/editor/editor.js";
+import {MobileDOM} from "../../../src/engine/cameras.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -46,17 +47,20 @@ import {Editor} from "../../../src/tools/editor/editor.js";
 LS.clear();
 SS.clear();
 
+// {w: window.visualViewport.width, h: window.visualViewport.height }
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
+  fastRender: isMobile() == true ? 0.85 : 0.95,
   dontUsePhysics: true,
-  // useEditor: true,
-  useSingleRenderPass: true,
-  canvasSize: 'fullscreen', // {w: window.visualViewport.width, h: window.visualViewport.height }
+  canvasSize: 'fullscreen',
+  MAX_BONES: 100,
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
+
+  MobileDOM.destroyWASD()
 
   if('serviceWorker' in navigator) {
     if(location.hostname.indexOf('localhost') == -1) {

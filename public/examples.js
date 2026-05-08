@@ -42766,7 +42766,7 @@ const MEConfig = exports.MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
-  LOAD_AFTER_CLICK_MOBILE: false,
+  LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
   construct: function (options = {}) {
