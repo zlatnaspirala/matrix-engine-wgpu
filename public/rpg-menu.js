@@ -1289,15 +1289,15 @@ let forestOfHollowBloodStartSceen = new _world.default({
       name = 'mariasword';
     } else if (selectHeroIndex == 1) {
       name = 'slayzer';
-    } else if (selectHeroIndex == 2) {
-      name = 'steelborn';
+    } else if (selectHeroIndex == 100) {
+      name = 'steelborn'; // disabled - not optimismed 3d obj
     } else if (selectHeroIndex == 100) {
       name = 'warrok'; // disabled - not optimismed 3d obj
-    } else if (selectHeroIndex == 3) {
+    } else if (selectHeroIndex == 2) {
       name = 'skeletonz';
-    } else if (selectHeroIndex == 4) {
-      name = 'erika';
-    } else if (selectHeroIndex == 5) {
+    } else if (selectHeroIndex == 100) {
+      name = 'erika'; // disabled - not optimismed 3d obj
+    } else if (selectHeroIndex == 3) {
       name = 'arissa';
     }
     return name;
@@ -1639,24 +1639,17 @@ let forestOfHollowBloodStartSceen = new _world.default({
     name: 'Slayzer',
     path: "res/meshes/glb/monster.glb",
     desc: forestOfHollowBloodStartSceen.label.get.slayzer
-  }, {
-    type: "Tank",
-    name: 'Steelborn',
-    path: "res/meshes/glb/bot.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.steelborn
   },
+  // {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
   // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
   {
     type: "Necromancer",
     name: 'Skeletonz',
     path: "res/meshes/glb/skeletonz.glb",
     desc: forestOfHollowBloodStartSceen.label.get.skeletonz
-  }, {
-    type: "Assassin",
-    name: 'Erika',
-    path: "res/meshes/glb/erika.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.erika
-  }, {
+  },
+  // {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
+  {
     type: "Support",
     name: 'Arissa',
     path: "res/meshes/glb/arissa.glb",
@@ -1715,7 +1708,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         if (x == 0) {
           hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
         }
-        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+        if (hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 1, 0, 0.7];
         });
         if (x == 2) {
@@ -1735,7 +1728,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
           });
         }
       }
-    }, 4000);
+    }, 3000);
   }
   loadHeros();
   createHUDMenu();
@@ -1780,6 +1773,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const nextBtn = document.createElement("button");
     Object.assign(nextBtn.style, {
       // position: "absolute",
+      marginTop: (0, _utils.isMobile)() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -1842,6 +1836,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     desc.textContent = "HERO INFO";
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
+      marginTop: (0, _utils.isMobile)() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -1961,14 +1956,25 @@ let forestOfHollowBloodStartSceen = new _world.default({
     };
     var helpBox = document.createElement('div');
     helpBox.id = 'helpBox';
-    helpBox.style.position = 'fixed';
-    helpBox.style.right = '20%';
-    helpBox.style.display = 'none';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '15%';
-    helpBox.style.width = '60%';
-    helpBox.style.height = '50%';
-    helpBox.style.fontSize = '100%';
+    if ((0, _utils.isMobile)()) {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '0%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '0%';
+      helpBox.style.width = '90%';
+      helpBox.style.height = '100%';
+      helpBox.style.fontSize = '100%';
+    } else {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '20%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '15%';
+      helpBox.style.width = '60%';
+      helpBox.style.height = '50%';
+      helpBox.style.fontSize = '100%';
+    }
     helpBox.classList.add('btn');
     helpBox.addEventListener('click', () => {
       (0, _utils.byId)('helpBox').style.display = 'none';
@@ -1979,8 +1985,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
       position: "fixed",
       bottom: '40px',
       left: '20px',
-      width: "150px",
-      height: "54px",
+      width: "50px",
+      height: "25px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -1992,13 +1998,24 @@ let forestOfHollowBloodStartSceen = new _world.default({
       pointerEvents: 'auto'
     });
     aboutBtn.classList.add('buttonMatrix');
-    aboutBtn.innerHTML = `
+    if ((0, _utils.isMobile)() == false) {
+      aboutBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
           <span data-label='aboutword'>${app.label.get.about_}</span>
         </div>
       </div>
     `;
+    } else {
+      // 
+      aboutBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span>ℹ️</span>
+        </div>
+      </div>
+    `;
+    }
     aboutBtn.addEventListener('click', e => app.showAbout());
     hud.appendChild(aboutBtn);
     const LBBtn = document.createElement("button");
@@ -2182,7 +2199,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         setTimeout(() => {
           loader.style.display = 'none';
           // loader.remove();
-        }, 250);
+        }, (0, _utils.isMobile)() ? 10000 : 1250);
       }
     }
     setTimeout(() => {
@@ -20892,6 +20909,34 @@ class RPGCamera {
     _wgpuMatrix.mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._dirty = true;
   }
+  setPitch = p => {
+    this.pitch = p;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setYaw = y => {
+    this.yaw = y;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setPosition = (x, y, z) => {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setX = x => {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  };
+  setY = y => {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  };
+  setZ = z => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0],
       a01 = a[4],

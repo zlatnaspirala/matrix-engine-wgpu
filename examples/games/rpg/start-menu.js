@@ -141,15 +141,15 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       name = 'mariasword';
     } else if(selectHeroIndex == 1) {
       name = 'slayzer';
-    } else if(selectHeroIndex == 2) {
-      name = 'steelborn';
+    } else if(selectHeroIndex == 100) {
+      name = 'steelborn';// disabled - not optimismed 3d obj
     } else if(selectHeroIndex == 100) {
       name = 'warrok'; // disabled - not optimismed 3d obj
-    } else if(selectHeroIndex == 3) {
+    } else if(selectHeroIndex == 2) {
       name = 'skeletonz';
-    } else if(selectHeroIndex == 4) {
-      name = 'erika';
-    } else if(selectHeroIndex == 5) {
+    } else if(selectHeroIndex == 100) {
+      name = 'erika';// disabled - not optimismed 3d obj
+    } else if(selectHeroIndex == 3) {
       name = 'arissa';
     }
     return name;
@@ -498,10 +498,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   heros = [
     {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
     {type: "Ranger", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
-    {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
+    // {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
     // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
     {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
-    {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
+    // {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
     {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
   ];
 
@@ -548,7 +548,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         if(x == 0) {
           hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
         }
-        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+        if (hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 1, 0, 0.7];
         })
 
@@ -569,7 +569,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           })
         }
       }
-    }, 4000);
+    }, 3000);
   }
   loadHeros();
   createHUDMenu();
@@ -618,6 +618,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     const nextBtn = document.createElement("button");
     Object.assign(nextBtn.style, {
       // position: "absolute",
+      marginTop : isMobile() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -686,6 +687,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
+      marginTop : isMobile() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -821,6 +823,16 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     var helpBox = document.createElement('div')
     helpBox.id = 'helpBox';
+    if (isMobile()) {
+       helpBox.style.position = 'fixed';
+    helpBox.style.right = '0%';
+    helpBox.style.display = 'none';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '0%';
+    helpBox.style.width = '90%';
+    helpBox.style.height = '100%';
+    helpBox.style.fontSize = '100%';
+    } else { 
     helpBox.style.position = 'fixed';
     helpBox.style.right = '20%';
     helpBox.style.display = 'none';
@@ -829,6 +841,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     helpBox.style.width = '60%';
     helpBox.style.height = '50%';
     helpBox.style.fontSize = '100%';
+    }
+
     helpBox.classList.add('btn');
     helpBox.addEventListener('click', () => {
       byId('helpBox').style.display = 'none';
@@ -840,8 +854,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       position: "fixed",
       bottom: '40px',
       left: '20px',
-      width: "150px",
-      height: "54px",
+      width: "50px",
+      height: "25px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -854,13 +868,24 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     });
     aboutBtn.classList.add('buttonMatrix');
 
-    aboutBtn.innerHTML = `
+    if(isMobile() == false) {
+      aboutBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
           <span data-label='aboutword'>${app.label.get.about_}</span>
         </div>
       </div>
     `;
+    } else { // 
+      aboutBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span>ℹ️</span>
+        </div>
+      </div>
+    `;
+    }
+
     aboutBtn.addEventListener('click', (e) => app.showAbout());
     hud.appendChild(aboutBtn);
 
@@ -1053,7 +1078,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         setTimeout(() => {
           loader.style.display = 'none';
           // loader.remove();
-        }, 250)
+        }, isMobile() ? 10000 : 1250)
       }
     }
 
@@ -1069,7 +1094,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     hud.appendChild(startBtn);
     document.body.appendChild(hud);
     updateDesc();
-
 
     document.querySelectorAll('.buttonMatrix').forEach(el => {
       el.addEventListener('mouseenter', () => {

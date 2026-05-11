@@ -5,7 +5,7 @@ import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./character-base.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
-import {LS, mb, SS, urlQuery} from "../../../src/engine/utils.js";
+import {isMobile, LS, mb, SS, urlQuery} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
 import {startUpPositions} from "./static.js";
@@ -32,6 +32,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   dontUsePhysics: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
+  MAX_BONES: 100,
+  MAX_SPOTLIGHTS: isMobile() ? 2 : 4,
   mainCameraParams: {
     type: 'RPG',
     responseCoef: 1000
@@ -435,10 +437,12 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   })
 
   addEventListener('local-hero-bodies-ready', () => {
-    app.cameras.RPG.setY(130);
-    app.cameras.RPG.movementSpeed = 100;
-    app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
-    app.cameras.RPG.mousRollInAction = true;
+
+    const cam = app.getCamera();
+    cam.setY(130);
+    cam.movementSpeed = 100;
+    cam.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
+    cam.mousRollInAction = true;
 
     // diiff heros can MAGIC CASES LEVEL
     if(app.localHero.name == "MariaSword") {

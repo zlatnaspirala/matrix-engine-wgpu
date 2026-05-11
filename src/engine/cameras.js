@@ -435,6 +435,29 @@ export class RPGCamera {
     this._dirty = true;
   }
 
+  setPitch = (p) => {
+    this.pitch = p;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  }
+
+  setYaw = (y) => {
+    this.yaw = y;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  }
+
+  setPosition = (x, y, z) => {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
+
+  setX = (x) => {this.position[0] = x; this._dirtyAngle = true;}
+  setY = (y) => {this.position[1] = y; this._dirtyAngle = true;}
+  setZ = (z) => {this.position[2] = z; this._dirtyAngle = true;}
+
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
@@ -1164,7 +1187,7 @@ export const MobileDOM = {
   },
 
   destroyWASD() {
-    if (byId('mobileControls') == null) return;
+    if(byId('mobileControls') == null) return;
     byId('▲').removeEventListener('pointerdown', MobileDOM.eventDown);
     byId('▲').removeEventListener('pointerup', MobileDOM.eventUp);
     byId('▲').removeEventListener('pointercancel', MobileDOM.eventCancel);

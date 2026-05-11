@@ -223,7 +223,7 @@ export class Character extends Hero {
             if(app.localHero.name == "MariaSword") {
               console.log("Cast only for long distance attackers...");
               subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
-              subMesh.fireballSystem.fireballMesh.effects.flameEmitter.recreateVertexDataRND(10);
+              subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(10);
               this.core.autoUpdate.push(subMesh.fireballSystem);
             }
           }
