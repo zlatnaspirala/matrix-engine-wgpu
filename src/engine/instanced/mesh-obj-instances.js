@@ -509,6 +509,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
+
+        dispatchEvent(this.buildPipelineBucketsEvent);
       };
 
       this.updateMaxInstances = (newMax) => {
@@ -558,17 +560,22 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.MAX_BONES = MEConfig.MAX_BONES;
       // your total instance count
       const TRAIL_INSTANCES = 10;
+      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4; // 1600 
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
-        size: 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        size: 64000, // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
+      // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for(let i = 0;i < this.MAX_BONES * TRAIL_INSTANCES;i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
+      // for(let i = 0;i < this.MAX_BONES;i++) {
+      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      // }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
       // vertex Anim
       this.vertexAnimParams = new Float32Array([

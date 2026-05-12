@@ -52,6 +52,7 @@ export class Character extends Hero {
       e.data = JSON.parse(e.data);
       try {
         if(e.data.netPos) {
+          //  console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" )
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if(e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
@@ -522,74 +523,74 @@ export class Character extends Hero {
     })
 
     addEventListener('close-distance', (e) => {
-      if((e.detail.A.id.indexOf('friendly') != -1 && e.detail.B.id.indexOf('friendly') != -1) ||
-        (e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('friendly') != -1) ||
-        (e.detail.A.group == "friendly" && e.detail.B.group == "local_hero")) {
+      if((e.detail.data.A.id.indexOf('friendly') != -1 && e.detail.data.B.id.indexOf('friendly') != -1) ||
+        (e.detail.data.A.group == "local_hero" && e.detail.data.B.id.indexOf('friendly') != -1) ||
+        (e.detail.data.A.group == "friendly" && e.detail.data.B.group == "local_hero")) {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
       // core.net.virtualEmiter != null no emiter only for local hero corespondes
-      if(e.detail.A.group == "enemy" && this.core.net.virtualEmiter != null) {
-        if(e.detail.B.group == "friendly" && e.detail.B.id.indexOf('friendlytron') == -1) {
+      if(e.detail.data.A.group == "enemy" && this.core.net.virtualEmiter != null) {
+        if(e.detail.data.B.group == "friendly" && e.detail.data.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
-          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.B.id)[0];
+          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.data.B.id)[0];
           console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
 
           if(lc === undefined) {return;}
-          lc.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
+          lc.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.A.id)[0];
 
           if(lc.creepFocusAttackOn === undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
+            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.A.id)[0];
             // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
           }
 
-          if(lc.creepFocusAttackOn === undefined && e.detail.A.id.indexOf('enemytron') != -1) {
+          if(lc.creepFocusAttackOn === undefined && e.detail.data.A.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
 
           if(lc.creepFocusAttackOn === undefined) {return;}
-          app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
+          app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
 
         }
-      } else if(e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
-        if(e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
-          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
+      } else if(e.detail.data.A.group == "friendly" && e.detail.data.A.id.indexOf('friendlytron') == -1) {
+        if(e.detail.data.B.group == "enemy" && this.core.net.virtualEmiter != null) {
+          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.data.A.id)[0];
           if(lc === undefined) {return;}
           lc.creepFocusAttackOn =
-            app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
+            app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.B.id)[0];
           if(lc.creepFocusAttackOn == undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.B.id)[0];
           }
-          if(lc.creepFocusAttackOn === undefined && e.detail.B.id.indexOf('enemytron') != -1) {
+          if(lc.creepFocusAttackOn === undefined && e.detail.data.B.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if(lc.creepFocusAttackOn === undefined) {
             return;
           }
-          app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
+          app.localHero.setAttackCreep(e.detail.data.A.id[e.detail.data.A.id.length - 1]);
         }
       }
       // LOCAL
-      if(e.detail.A.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
+      if(e.detail.data.A.group == 'local_hero') {
+        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.B.id)[0];
         if(this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.B.id)[0];
           if(this.heroFocusAttackOn == undefined) {
-            if(e.detail.B.id.indexOf('enemytron') != -1) {
+            if(e.detail.data.B.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
               // console.info('<generate game event> LOCALHERO attack enemy home.', this.heroFocusAttackOn);
             }
           }
         }
         this.setAttack(this.heroFocusAttackOn);
-      } else if(e.detail.B.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
+      } else if(e.detail.data.B.group == 'local_hero') {
+        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.A.id)[0];
         if(this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
+          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.A.id)[0];
           if(this.heroFocusAttackOn == undefined) {
-            if(e.detail.A.id.indexOf('enemytron') != -1) {
+            if(e.detail.data.A.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
               // console.info('<generate game event here2> creeps attack enemy home.', this.heroFocusAttackOn);
             }

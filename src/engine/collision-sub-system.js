@@ -11,7 +11,7 @@ export class CollisionSystem {
     this._grid = new Map();
     this._staticGrid = new Map(); // built once, never rebuilt
 
-    this._event1 = new CustomEvent('close-distance', {});
+    this._event1 = new CustomEvent('close-distance', {data: ""});
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
@@ -96,7 +96,7 @@ export class CollisionSystem {
         if (testCollide) {
           this._eventDetail.A = A;
           this._eventDetail.B = B;
-          this._event1.detail = this._eventDetail;
+          this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
         }
       }

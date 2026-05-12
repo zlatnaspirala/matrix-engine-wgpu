@@ -492,15 +492,45 @@ export class RPGCamera {
     return out;
   }
 
+  _pinchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
+
   _setupEvents() {
-    addEventListener('wheel', (e) => {
-      this.mousRollInAction = true;
+    if(isMobile() == false) {
+      addEventListener('wheel', (e) => {
+        this.mousRollInAction = true;
 
-      this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
-      this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
 
-      this._dirty = true;
-    });
+        this._dirty = true;
+      });
+    } else {
+      let lastPinchDist;
+      addEventListener('touchmove', (e) => {
+        if(e.touches.length !== 2) return;
+
+        const dist = this._pinchDist(e.touches);
+        if(lastPinchDist === null) {
+          lastPinchDist = dist;
+          return;
+        }
+
+        const delta = lastPinchDist - dist; // pinch in = positive = zoom out
+        this.scrollY -= delta * this.scrollSpeed * 0.5;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+
+        lastPinchDist = dist;
+      }, {passive: true});
+
+      addEventListener('touchend', (e) => {
+        if(e.touches.length < 2) lastPinchDist = null;
+      }, {passive: true});
+    }
   }
 
   _updateOrientation() {

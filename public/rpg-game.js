@@ -51,6 +51,7 @@ class Character extends _hero.Hero {
       e.data = JSON.parse(e.data);
       try {
         if (e.data.netPos) {
+          //  console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" )
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
@@ -530,72 +531,72 @@ class Character extends _hero.Hero {
       this.setSalute();
     });
     addEventListener('close-distance', e => {
-      if (e.detail.A.id.indexOf('friendly') != -1 && e.detail.B.id.indexOf('friendly') != -1 || e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('friendly') != -1 || e.detail.A.group == "friendly" && e.detail.B.group == "local_hero") {
+      if (e.detail.data.A.id.indexOf('friendly') != -1 && e.detail.data.B.id.indexOf('friendly') != -1 || e.detail.data.A.group == "local_hero" && e.detail.data.B.id.indexOf('friendly') != -1 || e.detail.data.A.group == "friendly" && e.detail.data.B.group == "local_hero") {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
       // core.net.virtualEmiter != null no emiter only for local hero corespondes
-      if (e.detail.A.group == "enemy" && this.core.net.virtualEmiter != null) {
-        if (e.detail.B.group == "friendly" && e.detail.B.id.indexOf('friendlytron') == -1) {
+      if (e.detail.data.A.group == "enemy" && this.core.net.virtualEmiter != null) {
+        if (e.detail.data.B.group == "friendly" && e.detail.data.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
-          let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.B.id)[0];
+          let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.data.B.id)[0];
           console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
           if (lc === undefined) {
             return;
           }
-          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.A.id)[0];
+          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.A.id)[0];
           if (lc.creepFocusAttackOn === undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.A.id)[0];
+            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.A.id)[0];
             // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
           }
-          if (lc.creepFocusAttackOn === undefined && e.detail.A.id.indexOf('enemytron') != -1) {
+          if (lc.creepFocusAttackOn === undefined && e.detail.data.A.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined) {
             return;
           }
-          app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
+          app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
         }
-      } else if (e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
-        if (e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
-          let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.A.id)[0];
+      } else if (e.detail.data.A.group == "friendly" && e.detail.data.A.id.indexOf('friendlytron') == -1) {
+        if (e.detail.data.B.group == "enemy" && this.core.net.virtualEmiter != null) {
+          let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.data.A.id)[0];
           if (lc === undefined) {
             return;
           }
-          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.B.id)[0];
+          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.B.id)[0];
           if (lc.creepFocusAttackOn == undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
+            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.B.id)[0];
           }
-          if (lc.creepFocusAttackOn === undefined && e.detail.B.id.indexOf('enemytron') != -1) {
+          if (lc.creepFocusAttackOn === undefined && e.detail.data.B.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined) {
             return;
           }
-          app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
+          app.localHero.setAttackCreep(e.detail.data.A.id[e.detail.data.A.id.length - 1]);
         }
       }
       // LOCAL
-      if (e.detail.A.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.B.id)[0];
+      if (e.detail.data.A.group == 'local_hero') {
+        this.heroFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.B.id)[0];
         if (this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
+          this.heroFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.B.id)[0];
           if (this.heroFocusAttackOn == undefined) {
-            if (e.detail.B.id.indexOf('enemytron') != -1) {
+            if (e.detail.data.B.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
               // console.info('<generate game event> LOCALHERO attack enemy home.', this.heroFocusAttackOn);
             }
           }
         }
         this.setAttack(this.heroFocusAttackOn);
-      } else if (e.detail.B.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.A.id)[0];
+      } else if (e.detail.data.B.group == 'local_hero') {
+        this.heroFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.A.id)[0];
         if (this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.A.id)[0];
+          this.heroFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.A.id)[0];
           if (this.heroFocusAttackOn == undefined) {
-            if (e.detail.A.id.indexOf('enemytron') != -1) {
+            if (e.detail.data.A.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
               // console.info('<generate game event here2> creeps attack enemy home.', this.heroFocusAttackOn);
             }
@@ -797,7 +798,9 @@ class Controller {
     });
     this.setWalkEvent = new CustomEvent('set-walk');
     this.onSelectCharacterEvent = new CustomEvent("onSelectCharacter", {
-      detail: 'floor'
+      detail: {
+        data: 'floor'
+      }
     });
     this.canvas.addEventListener('mousedown', e => {
       if (e.button === 2) {
@@ -866,6 +869,13 @@ class Controller {
           dispatchEvent(this.navigateFriendlyCreepsEvent);
         }
         // must be friendly objs
+
+        // oNLY MOB
+        if ((0, _utils.isMobile)() == true) {
+          this.selected.push(e.detail.hitObject);
+          this.onSelectCharacterEvent.detail.data = e.detail.hitObject.name;
+          (0, _utils.byId)('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
+        }
         return;
       }
       if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name) {
@@ -1014,7 +1024,7 @@ class Controller {
         // deplaced
         // object.setSelectedEffect(true);
         this.selected.push(object);
-        this.onSelectCharacterEvent.detail = object.name;
+        this.onSelectCharacterEvent.detail.data = object.name;
         (0, _utils.byId)('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
       } else {
         if (this.selected.indexOf(object) !== -1) {
@@ -3193,10 +3203,10 @@ class HUD {
     selectedCharacters.textContent = "HERO";
     hudLeftBox.appendChild(selectedCharacters);
     hud.addEventListener("onSelectCharacter", e => {
-      console.log('onSelectCharacter : ', e);
+      console.log('onSelectCharacter : ', e.data);
       let n = '';
-      if (e.detail.indexOf('_') != -1) {
-        n = e.detail.split('_')[0];
+      if (e.detail.data.indexOf('_') != -1) {
+        n = e.detail.data.split('_')[0];
       }
       selectedCharacters.textContent = `${n}`;
     });
@@ -3799,6 +3809,9 @@ class MEMapLoader {
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.addInstancingRock();
+      this.collectionOfRocks.forEach(rock => {
+        console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
+      });
 
       // trons 
       app.enemytron = this.core.mainRenderBundle.filter(item => item.name.indexOf('enemytron') != -1)[0];
@@ -3954,6 +3967,7 @@ class MEMapLoader {
     const spacing = 150;
     const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
     this.collectionOfTree1.forEach(partOftree => {
+      partOftree.sharedBones = true;
       partOftree.globalAmbient = [(0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15)];
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
@@ -3978,10 +3992,12 @@ class MEMapLoader {
     });
   }
   addInstancingRock() {
-    const NUM = 16;
+    const NUM = 10;
     this.collectionOfRocks.forEach(rock => {
+      rock.sharedBones = true;
       rock.updateMaxInstances(NUM);
       rock.updateInstances(NUM);
+      console.log("TEST rock ", rock);
       for (var x = 0; x < NUM; x++) {
         let instance;
         if (x == 0) {
@@ -4006,7 +4022,7 @@ class MEMapLoader {
         instance.color[2] = (0, _utils.randomIntFromTo)(1, 1.5);
       }
     });
-    const NUM2 = 16;
+    const NUM2 = 10;
     this.collectionOfRocks2.forEach(rock => {
       rock.updateMaxInstances(NUM2);
       rock.updateInstances(NUM2);
@@ -24389,13 +24405,42 @@ class RPGCamera {
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
     return out;
   }
+  _pinchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
   _setupEvents() {
-    addEventListener('wheel', e => {
-      this.mousRollInAction = true;
-      this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
-      this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-      this._dirty = true;
-    });
+    if ((0, _utils.isMobile)() == false) {
+      addEventListener('wheel', e => {
+        this.mousRollInAction = true;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+      });
+    } else {
+      let lastPinchDist;
+      addEventListener('touchmove', e => {
+        if (e.touches.length !== 2) return;
+        const dist = this._pinchDist(e.touches);
+        if (lastPinchDist === null) {
+          lastPinchDist = dist;
+          return;
+        }
+        const delta = lastPinchDist - dist; // pinch in = positive = zoom out
+        this.scrollY -= delta * this.scrollSpeed * 0.5;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+        lastPinchDist = dist;
+      }, {
+        passive: true
+      });
+      addEventListener('touchend', e => {
+        if (e.touches.length < 2) lastPinchDist = null;
+      }, {
+        passive: true
+      });
+    }
   }
   _updateOrientation() {
     const cy = Math.cos(this.yaw),
@@ -25362,7 +25407,9 @@ class CollisionSystem {
     this._grid = new Map();
     this._staticGrid = new Map(); // built once, never rebuilt
 
-    this._event1 = new CustomEvent('close-distance', {});
+    this._event1 = new CustomEvent('close-distance', {
+      data: ""
+    });
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
@@ -25462,7 +25509,7 @@ class CollisionSystem {
         if (testCollide) {
           this._eventDetail.A = A;
           this._eventDetail.B = B;
-          this._event1.detail = this._eventDetail;
+          this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
         }
       }
@@ -31488,6 +31535,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
+        dispatchEvent(this.buildPipelineBucketsEvent);
       };
       this.updateMaxInstances = newMax => {
         let isBigger = false;
@@ -31549,17 +31597,23 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
       // your total instance count
       const TRAIL_INSTANCES = 10;
+      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4; // 1600 
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
         size: 64000,
-        //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+
+      // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
+      // for(let i = 0;i < this.MAX_BONES;i++) {
+      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      // }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
       // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
@@ -33240,6 +33294,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this.sharedBones = false;
     this.trailAnimation = {
       enabled: false,
       // deplaced
@@ -33492,10 +33547,16 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       }, inTime * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      for (let i = 0; i < this.instanceCount; i++) {
-        const timeOffsetMs = i * this.trailAnimation.delay;
-        const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, i);
+      if (this.sharedBones) {
+        // Forest/rocks: all instances share same skeleton pose
+        const currentTime = now / this.animationSpeed - this.startTime;
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
+      } else {
+        for (let i = 0; i < this.instanceCount; i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, i);
+        }
       }
     }
   }
@@ -33861,7 +33922,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
 
     /* ── WRITE TO GPU BUFFER ── */
-    const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
+    const byteOffset = this.sharedBones ? 0 : (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
@@ -38219,6 +38280,7 @@ class MatrixStream {
       e.data = JSON.parse(e.data);
       try {
         if (e.data.netPos) {
+          // console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><<>" )
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
@@ -47482,7 +47544,7 @@ struct Model {
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, 1000u>
+  boneMatrices : array<mat4x4f, MAX_BONES>
 }
 
 struct SkinResult {
@@ -47552,6 +47614,26 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+//     var skinnedPos  = vec4f(0.0);
+//     var skinnedNorm = vec3f(0.0);
+//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+//         let jointIndex = joints[i];
+//         let w = weights[i];
+//         if (w > 0.0) {
+//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
+//             skinnedPos  += (boneMat * pos) * w;
+//             let boneMat3 = mat3x3f(
+//                 boneMat[0].xyz,
+//                 boneMat[1].xyz,
+//                 boneMat[2].xyz
+//             );
+//             skinnedNorm += (boneMat3 * nrm) * w;
+//         }
+//     }
+//     return SkinResult(skinnedPos, skinnedNorm);
+// }
+
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
@@ -47559,7 +47641,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
         let jointIndex = joints[i];
         let w = weights[i];
         if (w > 0.0) {
-            let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
+            let boneMat = bones.boneMatrices[jointIndex]; // ← no instId offset
             skinnedPos  += (boneMat * pos) * w;
             let boneMat3 = mat3x3f(
                 boneMat[0].xyz,
@@ -47571,7 +47653,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
     }
     return SkinResult(skinnedPos, skinnedNorm);
 }
-
+    
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);

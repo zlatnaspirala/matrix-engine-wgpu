@@ -406,10 +406,10 @@ export class HUD {
     selectedCharacters.textContent = "HERO";
     hudLeftBox.appendChild(selectedCharacters);
     hud.addEventListener("onSelectCharacter", (e) => {
-      console.log('onSelectCharacter : ', e)
+      console.log('onSelectCharacter : ', e.data)
       let n = '';
-      if(e.detail.indexOf('_') != -1) {
-        n = e.detail.split('_')[0];
+      if(e.detail.data.indexOf('_') != -1) {
+        n = e.detail.data.split('_')[0];
       }
       selectedCharacters.textContent = `${n}`;
     });

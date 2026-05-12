@@ -13,7 +13,7 @@ struct Model {
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, 1000u>
+  boneMatrices : array<mat4x4f, MAX_BONES>
 }
 
 struct SkinResult {
@@ -83,6 +83,26 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+//     var skinnedPos  = vec4f(0.0);
+//     var skinnedNorm = vec3f(0.0);
+//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+//         let jointIndex = joints[i];
+//         let w = weights[i];
+//         if (w > 0.0) {
+//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
+//             skinnedPos  += (boneMat * pos) * w;
+//             let boneMat3 = mat3x3f(
+//                 boneMat[0].xyz,
+//                 boneMat[1].xyz,
+//                 boneMat[2].xyz
+//             );
+//             skinnedNorm += (boneMat3 * nrm) * w;
+//         }
+//     }
+//     return SkinResult(skinnedPos, skinnedNorm);
+// }
+
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
@@ -90,7 +110,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
         let jointIndex = joints[i];
         let w = weights[i];
         if (w > 0.0) {
-            let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
+            let boneMat = bones.boneMatrices[jointIndex]; // ← no instId offset
             skinnedPos  += (boneMat * pos) * w;
             let boneMat3 = mat3x3f(
                 boneMat[0].xyz,
@@ -102,7 +122,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
     }
     return SkinResult(skinnedPos, skinnedNorm);
 }
-
+    
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);

@@ -152,6 +152,10 @@ export class MEMapLoader {
       })
       this.addInstancingRock();
 
+      this.collectionOfRocks.forEach(rock => {
+  console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
+});
+
       // trons 
       app.enemytron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('enemytron') != -1)[0];
       app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('friendlytron') != -1)[0];
@@ -286,6 +290,7 @@ export class MEMapLoader {
 
     this.collectionOfTree1.forEach((partOftree) => {
 
+      partOftree.sharedBones = true;
       partOftree.globalAmbient = [randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15)];
 
       const treesPerCluster = 9;
@@ -317,10 +322,13 @@ export class MEMapLoader {
   }
 
   addInstancingRock() {
-    const NUM = 16;
+    const NUM = 10;
     this.collectionOfRocks.forEach((rock) => {
+      rock.sharedBones = true;
       rock.updateMaxInstances(NUM);
       rock.updateInstances(NUM);
+
+      console.log("TEST rock ", rock)
       for(var x = 0;x < NUM;x++) {
         let instance;
         if(x == 0) {
@@ -348,7 +356,7 @@ export class MEMapLoader {
     });
 
 
-    const NUM2 = 16;
+    const NUM2 = 10;
     this.collectionOfRocks2.forEach((rock) => {
       rock.updateMaxInstances(NUM2);
       rock.updateInstances(NUM2);
