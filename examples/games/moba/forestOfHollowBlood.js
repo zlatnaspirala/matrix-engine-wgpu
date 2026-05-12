@@ -107,7 +107,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   addEventListener('net-ready', () => {
     byId('join-btn').click();
     forestOfHollowBlood.loadEnemyCreeps();
-    byId('buttonLeaveSession').addEventListener('click', () => {location.assign("rpg-menu.html")});
+    byId('buttonLeaveSession').addEventListener('click', () => {location.assign("moba-menu.html")});
   });
 
   forestOfHollowBlood.loadEnemyCreeps = () => {
@@ -146,7 +146,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     setTimeout(() => {
       // app.net.closeSession();
       app.net.buttonLeaveSession.click();
-      location.assign("rpg-menu.html");
+      location.assign("moba-menu.html");
     }, 4000);
   });
 
@@ -278,7 +278,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
-            location.assign("rpg-menu.html");
+            location.assign("moba-menu.html");
           }, 15000);
         }
       } else {
@@ -288,7 +288,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {
-            location.assign("rpg-menu.html",);
+            location.assign("moba-menu.html",);
           }, 15000);
         }
       }
@@ -396,7 +396,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
-            location.assign("rpg-menu.html");
+            location.assign("moba-menu.html");
           }, 15000);
         }
       } else {
@@ -406,7 +406,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {
-            location.assign("rpg-menu.html",);
+            location.assign("moba-menu.html",);
           }, 15000);
         }
       }

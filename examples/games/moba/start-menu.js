@@ -275,7 +275,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         type: 'start'
       })
 
-      location.assign('rpg-game.html');
+      location.assign('moba-game.html');
     }, 1000);
   }
 

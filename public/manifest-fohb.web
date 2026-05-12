@@ -1,7 +1,7 @@
 {
   "name": "Forest of Hollow Blood RPG MMO OG",
   "short_name": "Forest of Hollow Blood",
-  "start_url": "rpg-menu.html",
+  "start_url": "moba-menu.html",
   "orientation": "landscape",
   "theme_color": "gray",
   "background_color": "black",

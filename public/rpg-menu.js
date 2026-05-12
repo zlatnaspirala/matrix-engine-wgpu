@@ -1410,7 +1410,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
         type: 'start'
       });
-      location.assign('rpg-game.html');
+      location.assign('moba-game.html');
     }, 1000);
   };
   if ('connection' in navigator && navigator.connection) {
@@ -20988,13 +20988,42 @@ class RPGCamera {
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
     return out;
   }
+  _pinchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
   _setupEvents() {
-    addEventListener('wheel', e => {
-      this.mousRollInAction = true;
-      this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
-      this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-      this._dirty = true;
-    });
+    if ((0, _utils.isMobile)() == false) {
+      addEventListener('wheel', e => {
+        this.mousRollInAction = true;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+      });
+    } else {
+      let lastPinchDist;
+      addEventListener('touchmove', e => {
+        if (e.touches.length !== 2) return;
+        const dist = this._pinchDist(e.touches);
+        if (lastPinchDist === null) {
+          lastPinchDist = dist;
+          return;
+        }
+        const delta = lastPinchDist - dist; // pinch in = positive = zoom out
+        this.scrollY -= delta * this.scrollSpeed * 0.5;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+        lastPinchDist = dist;
+      }, {
+        passive: true
+      });
+      addEventListener('touchend', e => {
+        if (e.touches.length < 2) lastPinchDist = null;
+      }, {
+        passive: true
+      });
+    }
   }
   _updateOrientation() {
     const cy = Math.cos(this.yaw),
@@ -27945,6 +27974,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
+        dispatchEvent(this.buildPipelineBucketsEvent);
       };
       this.updateMaxInstances = newMax => {
         let isBigger = false;
@@ -28006,17 +28036,23 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
       // your total instance count
       const TRAIL_INSTANCES = 10;
+      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4; // 1600 
       const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
         size: 64000,
-        //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+
+      // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
       for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
+      // for(let i = 0;i < this.MAX_BONES;i++) {
+      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      // }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
       // vertex Anim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
@@ -29697,6 +29733,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this.sharedBones = false;
     this.trailAnimation = {
       enabled: false,
       // deplaced
@@ -29949,10 +29986,16 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       }, inTime * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      for (let i = 0; i < this.instanceCount; i++) {
-        const timeOffsetMs = i * this.trailAnimation.delay;
-        const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, i);
+      if (this.sharedBones) {
+        // Forest/rocks: all instances share same skeleton pose
+        const currentTime = now / this.animationSpeed - this.startTime;
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
+      } else {
+        for (let i = 0; i < this.instanceCount; i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, i);
+        }
       }
     }
   }
@@ -30318,7 +30361,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
 
     /* ── WRITE TO GPU BUFFER ── */
-    const byteOffset = (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
+    const byteOffset = this.sharedBones ? 0 : (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
@@ -34676,6 +34719,7 @@ class MatrixStream {
       e.data = JSON.parse(e.data);
       try {
         if (e.data.netPos) {
+          // console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><<>" )
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
@@ -43852,7 +43896,7 @@ struct Model {
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, 1000u>
+  boneMatrices : array<mat4x4f, MAX_BONES>
 }
 
 struct SkinResult {
@@ -43922,6 +43966,26 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+//     var skinnedPos  = vec4f(0.0);
+//     var skinnedNorm = vec3f(0.0);
+//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+//         let jointIndex = joints[i];
+//         let w = weights[i];
+//         if (w > 0.0) {
+//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
+//             skinnedPos  += (boneMat * pos) * w;
+//             let boneMat3 = mat3x3f(
+//                 boneMat[0].xyz,
+//                 boneMat[1].xyz,
+//                 boneMat[2].xyz
+//             );
+//             skinnedNorm += (boneMat3 * nrm) * w;
+//         }
+//     }
+//     return SkinResult(skinnedPos, skinnedNorm);
+// }
+
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
@@ -43929,7 +43993,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
         let jointIndex = joints[i];
         let w = weights[i];
         if (w > 0.0) {
-            let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
+            let boneMat = bones.boneMatrices[jointIndex]; // ← no instId offset
             skinnedPos  += (boneMat * pos) * w;
             let boneMat3 = mat3x3f(
                 boneMat[0].xyz,
@@ -43941,7 +44005,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
     }
     return SkinResult(skinnedPos, skinnedNorm);
 }
-
+    
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);

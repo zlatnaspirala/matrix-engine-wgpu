@@ -409,6 +409,11 @@ export class RPGCamera {
   maxY = 135.0;
   scrollSpeed = 1;
 
+  _detachedFromFollow = false;
+  _digital = {forward: false, backward: false, left: false, right: false};
+  _keyInterval = null;
+  KEYBOARD_SPEED = 1.5;
+
   mousRollInAction = false;
 
   _dirty = true;
@@ -492,6 +497,50 @@ export class RPGCamera {
     return out;
   }
 
+  _applyDigitalMovement() {
+    const d = this._digital;
+    let vx = 0, vz = 0;
+
+    if(d.forward) {vx -= this.back[0]; vz -= this.back[2];}
+    if(d.backward) {vx += this.back[0]; vz += this.back[2];}
+    if(d.right) {vx += this.right[0]; vz += this.right[2];}
+    if(d.left) {vx -= this.right[0]; vz -= this.right[2];}
+
+    const len = Math.sqrt(vx * vx + vz * vz);
+    if(len < 0.0001) return;
+
+    const s = this.KEYBOARD_SPEED / len;
+    this.position[0] += vx * s;
+    this.position[2] += vz * s;
+
+    this._dirty = true;
+  }
+
+  _setupKeyboard() {
+    const setDigital = (e, value) => {
+      switch(e.code) {
+        case 'KeyW': this._digital.forward = value; break;
+        case 'KeyS': this._digital.backward = value; break;
+        case 'KeyA': this._digital.left = value; break;
+        case 'KeyD': this._digital.right = value; break;
+      }
+
+      if(value && this._keyInterval === null) {
+        this._detachedFromFollow = true;
+        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
+      } else {
+        const d = this._digital;
+        if(!d.forward && !d.backward && !d.left && !d.right) {
+          clearInterval(this._keyInterval);
+          this._keyInterval = null;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
+    window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+  }
+
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
@@ -508,27 +557,60 @@ export class RPGCamera {
 
         this._dirty = true;
       });
+      this._setupKeyboard();
     } else {
       let lastPinchDist;
-      addEventListener('touchmove', (e) => {
-        if(e.touches.length !== 2) return;
+      let lastTouchX = null, lastTouchY = null;
 
-        const dist = this._pinchDist(e.touches);
-        if(lastPinchDist === null) {
+      addEventListener('touchmove', (e) => {
+        // --- 2 fingers: pinch zoom ---
+        if(e.touches.length === 2) {
+          const dist = this._pinchDist(e.touches);
+          if(lastPinchDist === null) {
+            lastPinchDist = dist;
+            return;
+          }
+          const delta = lastPinchDist - dist;
+          this.scrollY -= delta * this.scrollSpeed * 0.5;
+          this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+          this._dirty = true;
           lastPinchDist = dist;
           return;
         }
 
-        const delta = lastPinchDist - dist; // pinch in = positive = zoom out
-        this.scrollY -= delta * this.scrollSpeed * 0.5;
-        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-        this._dirty = true;
+        // --- 1 finger: pan camera ---
+        if(e.touches.length === 1) {
+          const tx = e.touches[0].clientX;
+          const tz = e.touches[0].clientY;
 
-        lastPinchDist = dist;
+          if(lastTouchX === null) {
+            lastTouchX = tx;
+            lastTouchY = tz;
+            return;
+          }
+
+          const dx = tx - lastTouchX;
+          const dz = tz - lastTouchY;
+          lastTouchX = tx;
+          lastTouchY = tz;
+
+          const s = this.KEYBOARD_SPEED * 0.3;
+          this.position[0] -= this.right[0] * dx * s;
+          this.position[2] -= this.right[2] * dx * s;
+          this.position[0] += this.back[0] * dz * s;
+          this.position[2] += this.back[2] * dz * s;
+
+          this._detachedFromFollow = true;
+          this._dirty = true;
+        }
       }, {passive: true});
 
       addEventListener('touchend', (e) => {
         if(e.touches.length < 2) lastPinchDist = null;
+        if(e.touches.length === 0) {
+          lastTouchX = null;
+          lastTouchY = null;
+        }
       }, {passive: true});
     }
   }
@@ -544,6 +626,13 @@ export class RPGCamera {
 
   _updateFollow() {
     if(!this.followMe) return;
+
+    if(this.followMe.inMove === true) {
+      this._detachedFromFollow = false; // player moved → re-attach
+    }
+
+    if(this._detachedFromFollow) return; // WASD mode, skip follow
+
     if(this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;

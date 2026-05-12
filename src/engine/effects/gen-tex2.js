@@ -170,6 +170,7 @@ export class GenGeoTexture2 {
   }
 
   updateInstanceData = (baseModelMatrix) => {
+     if (!this.instanceData) return;
     if(this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
       if(this.rotateAngle >= 360) {
