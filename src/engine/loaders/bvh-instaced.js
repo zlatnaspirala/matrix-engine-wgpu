@@ -300,7 +300,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         this.sharedState.animationStarted = false;
         if(this.animationIndex == null) this.animationIndex = 0;
         window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
-      }, inTime * 1000)
+      }, inTime * 1200)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
 

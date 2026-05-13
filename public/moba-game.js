@@ -1278,9 +1278,8 @@ class Creep extends _hero.Hero {
     });
     if (this.group != 'enemy') {
       addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
-        // CHECK DISTANCE
         if (e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
-          console.log('animationEnd BLOCK1');
+          // console.log('animationEnd BLOCK1')
           return;
         }
         console.info('animationEnd :', e.detail);
@@ -1294,7 +1293,6 @@ class Creep extends _hero.Hero {
                 // console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
                 isEnemiesClose = true;
                 this.calcDamage(this, enemy);
-                // no need ?? this.creepFocusAttackOn = null;
                 return;
               }
             });
@@ -25652,7 +25650,10 @@ class CollisionSystem {
       for (let j = 0; j < neighbors.length; j++) {
         const B = neighbors[j];
         if (A === B) continue;
-        if (A.group === B.group) continue;
+        if (A.group === B.group) {
+          resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+          continue;
+        }
         if (A.id >= B.id) continue;
         const minDist = (A.radius + B.radius) * 0.5;
         const dx = A.pos.x - B.pos.x;
@@ -25664,6 +25665,7 @@ class CollisionSystem {
           this._eventDetail.B = B;
           this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
+          return;
         }
       }
     }
@@ -33702,7 +33704,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         this.sharedState.animationStarted = false;
         if (this.animationIndex == null) this.animationIndex = 0;
         window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
-      }, inTime * 1000);
+      }, inTime * 1200);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.sharedBones) {

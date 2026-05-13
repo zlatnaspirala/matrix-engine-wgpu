@@ -121,7 +121,10 @@ export class CollisionSystem {
       for(let j = 0;j < neighbors.length;j++) {
         const B = neighbors[j];
         if(A === B) continue;
-        if(A.group === B.group) continue;
+        if(A.group === B.group) {
+          resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+          continue;
+        }
         if(A.id >= B.id) continue;
         const minDist = (A.radius + B.radius) * 0.5;
         const dx = A.pos.x - B.pos.x;
@@ -133,6 +136,7 @@ export class CollisionSystem {
           this._eventDetail.B = B;
           this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
+          return;
         }
       }
     }
