@@ -258,7 +258,7 @@ export class MEMapLoader {
   async loadMainMap() {
     downloadMeshes({
       cube: "./res/meshes/maps-objs/map-1.obj",
-      tower: "./res/meshes/env/tower.obj"
+      // tower: "./res/meshes/env/tower.obj"
     }, this.onGround.bind(this), {scale: [10, 10, 10]});
 
     var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
@@ -276,7 +276,7 @@ export class MEMapLoader {
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
       this.addInstancing();
-    }, 4000);
+    }, 6000);
   }
 
   addInstancing() {
@@ -322,7 +322,7 @@ export class MEMapLoader {
   }
 
   addInstancingRock() {
-    const NUM = 10;
+    const NUM = 16;
     this.collectionOfRocks.forEach((rock) => {
       rock.sharedBones = true;
       rock.updateMaxInstances(NUM);

@@ -1,3 +1,5 @@
+import {isMobile} from "../../../src/engine/utils";
+
 export class Marketplace {
   constructor(hero) {
     this.hero = hero;
@@ -22,7 +24,6 @@ export class Marketplace {
     box.style.overflowY = 'scroll';
     box.classList.add('btn');
     box.classList.add('btn3');
-
 
     var boxRightTitleBar = document.createElement('div')
     boxRightTitleBar.id = 'marketplace-boxRightTitleBar';
@@ -71,7 +72,7 @@ export class Marketplace {
     document.body.appendChild(box);
   }
 
-  // --- Player buys an item if it’s purchasable
+  // Player buys an item if it’s purchasable
   buy(itemName) {
     const item = this.items.find(i => i.name === itemName);
     if(!item) return console.warn("Item not found in market!");
@@ -88,7 +89,7 @@ export class Marketplace {
     console.log(`💰 ${this.hero.name} bought ${item.name} for ${item.price} gold.`);
   }
 
-  // --- Sell item for half price
+  // Sell item for half price
   sell(itemName) {
     const item = this.items.find(i => i.name === itemName);
     if(!item) return console.warn("Item not found in market!");
@@ -98,7 +99,7 @@ export class Marketplace {
     console.log(`📦 ${this.hero.name} sold ${item.name} for ${Math.floor(item.price / 2)} gold.`);
   }
 
-  // --- Print shop table
+  // Print shop table
   showMarket() {
     console.table(
       this.items.map(i => ({

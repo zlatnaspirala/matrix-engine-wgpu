@@ -227,10 +227,11 @@ export class Creep extends Hero {
           return;
         }
 
+        console.info('animationEnd :', e.detail)
         if(this.group == "friendly") {
 
           if(this.creepFocusAttackOn == null) {
-            // console.info('setIdle:', e.detail.animationName)
+            
             let isEnemiesClose = false;
             this.core.enemies.enemies.forEach((enemy) => {
               if(typeof enemy.heroe_bodies === 'undefined') return;

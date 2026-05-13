@@ -549,7 +549,9 @@ export class Character extends Hero {
             console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
 
-          if(lc.creepFocusAttackOn === undefined) {return;}
+          if(lc.creepFocusAttackOn === undefined) {
+            return;
+          }
           app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
 
         }

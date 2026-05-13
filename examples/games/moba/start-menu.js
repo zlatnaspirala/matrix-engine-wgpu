@@ -548,7 +548,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         if(x == 0) {
           hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
         }
-        if (hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+        if(hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 1, 0, 0.7];
         })
 
@@ -618,7 +618,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     const nextBtn = document.createElement("button");
     Object.assign(nextBtn.style, {
       // position: "absolute",
-      marginTop : isMobile() ? "-100px" : "0",
+      marginTop: isMobile() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -687,7 +687,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
-      marginTop : isMobile() ? "-100px" : "0",
+      marginTop: isMobile() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -823,24 +823,24 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     var helpBox = document.createElement('div')
     helpBox.id = 'helpBox';
-    if (isMobile()) {
-       helpBox.style.position = 'fixed';
-    helpBox.style.right = '0%';
-    helpBox.style.display = 'none';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '0%';
-    helpBox.style.width = '90%';
-    helpBox.style.height = '100%';
-    helpBox.style.fontSize = '100%';
-    } else { 
-    helpBox.style.position = 'fixed';
-    helpBox.style.right = '20%';
-    helpBox.style.display = 'none';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '15%';
-    helpBox.style.width = '60%';
-    helpBox.style.height = '50%';
-    helpBox.style.fontSize = '100%';
+    if(isMobile()) {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '0%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '0%';
+      helpBox.style.width = '89%';
+      helpBox.style.height = '100%';
+      helpBox.style.fontSize = '100%';
+    } else {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '20%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '15%';
+      helpBox.style.width = '60%';
+      helpBox.style.height = '50%';
+      helpBox.style.fontSize = '100%';
     }
 
     helpBox.classList.add('btn');

@@ -108,6 +108,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     byId('join-btn').click();
     forestOfHollowBlood.loadEnemyCreeps();
     byId('buttonLeaveSession').addEventListener('click', () => {location.assign("moba-menu.html")});
+
+    // test
+    byId('netHeaderTitle').click();
   });
 
   forestOfHollowBlood.loadEnemyCreeps = () => {

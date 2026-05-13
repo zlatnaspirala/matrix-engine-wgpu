@@ -412,7 +412,7 @@ export class RPGCamera {
   _detachedFromFollow = false;
   _digital = {forward: false, backward: false, left: false, right: false};
   _keyInterval = null;
-  KEYBOARD_SPEED = 1.5;
+  KEYBOARD_SPEED = 2.5;
 
   mousRollInAction = false;
 

@@ -1283,9 +1283,9 @@ class Creep extends _hero.Hero {
           // && this.creepFocusAttackOn == null) {
           return;
         }
+        console.info('animationEnd :', e.detail);
         if (this.group == "friendly") {
           if (this.creepFocusAttackOn == null) {
-            // console.info('setIdle:', e.detail.animationName)
             let isEnemiesClose = false;
             this.core.enemies.enemies.forEach(enemy => {
               if (typeof enemy.heroe_bodies === 'undefined') return;
@@ -1683,6 +1683,9 @@ let forestOfHollowBlood = new _world.default({
     (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
       location.assign("moba-menu.html");
     });
+
+    // test
+    (0, _matrixStream.byId)('netHeaderTitle').click();
   });
   forestOfHollowBlood.loadEnemyCreeps = () => {
     if (forestOfHollowBlood.player.data.team == 'south') {
@@ -3931,8 +3934,8 @@ class MEMapLoader {
   }
   async loadMainMap() {
     (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/maps-objs/map-1.obj",
-      tower: "./res/meshes/env/tower.obj"
+      cube: "./res/meshes/maps-objs/map-1.obj"
+      // tower: "./res/meshes/env/tower.obj"
     }, this.onGround.bind(this), {
       scale: [10, 10, 10]
     });
@@ -3961,7 +3964,7 @@ class MEMapLoader {
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
       this.addInstancing();
-    }, 4000);
+    }, 6000);
   }
   addInstancing() {
     const spacing = 150;
@@ -3992,7 +3995,7 @@ class MEMapLoader {
     });
   }
   addInstancingRock() {
-    const NUM = 10;
+    const NUM = 16;
     this.collectionOfRocks.forEach(rock => {
       rock.sharedBones = true;
       rock.updateMaxInstances(NUM);
@@ -4056,6 +4059,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Marketplace = void 0;
+var _utils = require("../../../src/engine/utils");
 class Marketplace {
   constructor(hero) {
     this.hero = hero;
@@ -4122,7 +4126,7 @@ class Marketplace {
     document.body.appendChild(box);
   }
 
-  // --- Player buys an item if it’s purchasable
+  // Player buys an item if it’s purchasable
   buy(itemName) {
     const item = this.items.find(i => i.name === itemName);
     if (!item) return console.warn("Item not found in market!");
@@ -4141,7 +4145,7 @@ class Marketplace {
     console.log(`💰 ${this.hero.name} bought ${item.name} for ${item.price} gold.`);
   }
 
-  // --- Sell item for half price
+  // Sell item for half price
   sell(itemName) {
     const item = this.items.find(i => i.name === itemName);
     if (!item) return console.warn("Item not found in market!");
@@ -4150,7 +4154,7 @@ class Marketplace {
     console.log(`📦 ${this.hero.name} sold ${item.name} for ${Math.floor(item.price / 2)} gold.`);
   }
 
-  // --- Print shop table
+  // Print shop table
   showMarket() {
     console.table(this.items.map(i => ({
       Name: i.name,
@@ -4615,7 +4619,7 @@ class Marketplace {
 }
 exports.Marketplace = Marketplace;
 
-},{}],13:[function(require,module,exports){
+},{"../../../src/engine/utils":78}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24314,7 +24318,7 @@ class RPGCamera {
     right: false
   };
   _keyInterval = null;
-  KEYBOARD_SPEED = 1.5;
+  KEYBOARD_SPEED = 2.5;
   mousRollInAction = false;
   _dirty = true;
   constructor(options = {}) {
@@ -25549,7 +25553,9 @@ class CollisionSystem {
     this._staticGrid = new Map(); // built once, never rebuilt
 
     this._event1 = new CustomEvent('close-distance', {
-      data: ""
+      detail: {
+        data: ""
+      }
     });
     this._eventDetail = {};
     this._neighbors = [];
@@ -33454,9 +33460,12 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     };
     this.animationIndex = 0;
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${anim.name}`, {
+      console.log('CREATE ANIMATION-END BY ACCESS animEndEvent+index ', 'animEndEvent' + index);
+      console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ', `animationEnd-${anim.name}`);
+      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
-          animationName: this.glb.glbJsonData.animations[index].name
+          animationName: this.glb.glbJsonData.animations[index].name,
+          targetObject: this.name
         }
       });
     });
@@ -33682,10 +33691,12 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
+      const capturedIndex = this.animationIndex ?? 0; // capture NOW
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if (this.animationIndex == null) this.animationIndex = 0;
-        dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + this.animationIndex]);
+        console.log('dispatchEvent ::: ' + this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex]);
+        window.dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex]);
       }, inTime * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {

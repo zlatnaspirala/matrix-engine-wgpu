@@ -22,7 +22,7 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
     // Apos.targetZ = Apos.z;
     // Bpos.targetX = Bpos.x;
     // Bpos.targetZ = Bpos.z;
- 
+
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate
@@ -46,7 +46,7 @@ export class CollisionSystem {
     this._grid = new Map();
     this._staticGrid = new Map(); // built once, never rebuilt
 
-    this._event1 = new CustomEvent('close-distance', {data: ""});
+    this._event1 = new CustomEvent('close-distance', {detail: {data: ""}});
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
@@ -64,17 +64,17 @@ export class CollisionSystem {
     // insert directly into static grid
     const key = this._cellKey(positionInstance.x, positionInstance.z);
     let cell = this._staticGrid.get(key);
-    if (!cell) { cell = []; this._staticGrid.set(key, cell); }
+    if(!cell) {cell = []; this._staticGrid.set(key, cell);}
     cell.push(entry);
   }
 
   unregister(id) {
     this.entries = this.entries.filter(e => e.id !== id);
-    if (this.cameraEntry && this.cameraEntry.id === id) this.cameraEntry = null;
+    if(this.cameraEntry && this.cameraEntry.id === id) this.cameraEntry = null;
   }
 
   registerCamera(cameraInstance, radius = 1.0) {
-    this.cameraEntry = { id: "camera", pos: cameraInstance, radius, group: "camera" };
+    this.cameraEntry = {id: "camera", pos: cameraInstance, radius, group: "camera"};
   }
 
   _cellKey(x, z) {
@@ -86,11 +86,11 @@ export class CollisionSystem {
   _buildGrid() {
     const grid = this._grid;
     grid.clear();
-    for (let i = 0; i < this.entries.length; i++) {
+    for(let i = 0;i < this.entries.length;i++) {
       const e = this.entries[i];
       const key = this._cellKey(e.pos.x, e.pos.z);
       let cell = grid.get(key);
-      if (!cell) { cell = []; grid.set(key, cell); }
+      if(!cell) {cell = []; grid.set(key, cell);}
       cell.push(e);
     }
   }
@@ -99,12 +99,12 @@ export class CollisionSystem {
     out.length = 0;
     const cx = Math.floor(x / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
+    for(let dx = -1;dx <= 1;dx++) {
+      for(let dz = -1;dz <= 1;dz++) {
         const key = ((cx + dx) << 16) ^ (cz + dz);
         const cell = grid.get(key);
-        if (cell) {
-          for (let i = 0; i < cell.length; i++) out.push(cell[i]);
+        if(cell) {
+          for(let i = 0;i < cell.length;i++) out.push(cell[i]);
         }
       }
     }
@@ -115,20 +115,20 @@ export class CollisionSystem {
     // dynamic vs dynamic (enemies vs enemies) — your existing MOBA logic untouched
     this._buildGrid();
     const n = this.entries.length;
-    for (let i = 0; i < n; i++) {
+    for(let i = 0;i < n;i++) {
       const A = this.entries[i];
       const neighbors = this._getNeighborCells(A.pos.x, A.pos.z, this._grid, this._neighbors);
-      for (let j = 0; j < neighbors.length; j++) {
+      for(let j = 0;j < neighbors.length;j++) {
         const B = neighbors[j];
-        if (A === B) continue;
-        if (A.group === B.group) continue;
-        if (A.id >= B.id) continue;
+        if(A === B) continue;
+        if(A.group === B.group) continue;
+        if(A.id >= B.id) continue;
         const minDist = (A.radius + B.radius) * 0.5;
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
-        if (dx * dx + dz * dz > minDist * minDist) continue;
+        if(dx * dx + dz * dz > minDist * minDist) continue;
         const testCollide = resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
-        if (testCollide) {
+        if(testCollide) {
           this._eventDetail.A = A;
           this._eventDetail.B = B;
           this._event1.detail.data = this._eventDetail;
@@ -138,15 +138,15 @@ export class CollisionSystem {
     }
 
     // camera vs static walls — query _staticGrid only
-    if (this.cameraEntry) {
+    if(this.cameraEntry) {
       const cam = this.cameraEntry;
       const camX = cam.pos[0];
       const camZ = cam.pos[2];
-      if (camX !== this._lastCamX || camZ !== this._lastCamZ) {
+      if(camX !== this._lastCamX || camZ !== this._lastCamZ) {
         this._lastCamX = camX;
         this._lastCamZ = camZ;
         const neighbors = this._getNeighborCells(camX, camZ, this._staticGrid, this._staticNeighbors);
-        for (let i = 0; i < neighbors.length; i++) {
+        for(let i = 0;i < neighbors.length;i++) {
           pairRepulsion(cam.pos, neighbors[i].pos, 1 + 0.5, 1.1);
         }
       }
