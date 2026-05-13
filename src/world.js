@@ -313,7 +313,6 @@ export default class MatrixEngineWGPU {
         return;
       }
 
-      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
 
       this.MEConfig.fsManager.onChange((isFS, target) => {
@@ -422,13 +421,12 @@ export default class MatrixEngineWGPU {
       alphaMode: 'premultiplied',
     });
 
-    // only for mobile
+    // Only for mobile
     if(typeof this.options.lock !== 'undefined') {
       if(this.options.lock != 'landscape' && this.options.lock != 'portrait') {
         this.options.lock = 'portrait';
       }
-      if(checkLock()) {
-        // mobileLock(this.options.lock);
+      if(checkLock() && isMobile() == true) {
         screen.orientation.lock(this.options.lock).then(() => {
           console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
           this.applyCanvasSize(this.options.fastRender)

@@ -17,8 +17,8 @@ export class Marketplace {
     box.style.flexWrap = 'wrap';
     box.style.zIndex = '2';
     box.style.top = '0';
-    box.style.width = '50%';
-    box.style.height = '80%';
+    box.style.width = '49.5%';
+    box.style.height = '78%';
     box.style.fontSize = '50%';
     box.style.paddingLeft = '30px';
     box.style.overflowY = 'scroll';

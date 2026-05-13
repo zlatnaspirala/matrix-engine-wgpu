@@ -62,13 +62,13 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       animationFinished: false
     };
     this.animationIndex = 0;
+    this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      console.log('CREATE ANIMATION-END BY ACCESS animEndEvent+index ' , 'animEndEvent' + index )
-      console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
-      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
+      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
+      this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
           animationName: this.glb.glbJsonData.animations[index].name,
-          targetObject: this.name
+          targetName: this.name
         }
       });
     });
@@ -295,12 +295,11 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     var inTime = this._animationLength;
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
-      const capturedIndex = this.animationIndex ?? 0;  // capture NOW
+      const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if(this.animationIndex == null) this.animationIndex = 0;
-        console.log('dispatchEvent ::: ' +  this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex])
-        window.dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex]);
+        window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
       }, inTime * 1000)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {

@@ -1,6 +1,6 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
-import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager, isMobile} from "../../../src/engine/utils.js";
+import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager, isMobile, CameraPath} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
 import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
@@ -55,7 +55,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   MAX_BONES: 100,
   lock: 'portrait', //'landscape',
   mainCameraParams: {
-    type: 'WASD',
+    type: 'cinematicCamera',
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
@@ -533,9 +533,22 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
 
     setTimeout(() => {
-      forestOfHollowBloodStartSceen.cameras.WASD.setPosition(0, 14, 52);
-      app.cameras.WASD.pitch = -0.13;
-      app.cameras.WASD.yaw = 0;
+      let cam = app.getCamera();
+      const introPath = new CameraPath([
+        {position: [0, 15, -30], target: [0, 0, 0]},
+        {position: [13, 17, 10], target: [0, 10, 0]},
+        {position: [0, 19, 42], target: [0, 14, 0]},
+      ], {parameterization: 'arc'});
+      cam.setPath(introPath).play({
+        speed: 0.3,
+        onEnd: () => {},
+      });
+
+      forestOfHollowBloodStartSceen.buildRenderBuckets(forestOfHollowBloodStartSceen.mainRenderBundle);
+      cam._dirtyAngle = true;
+      cam.setPosition(0, 14, 52);
+      cam.setPitch(-0.13);
+      cam.setYaw(0);
       app.mainRenderBundle.forEach((sceneObj) => {
         sceneObj.position.thrust = 1;
         if(sceneObj.effects) if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
@@ -569,7 +582,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           })
         }
       }
-    }, 3000);
+    }, isMobile() == true ? 2000 : 1000);
   }
   loadHeros();
   createHUDMenu();
@@ -601,6 +614,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       position: "fixed",
       bottom: "0",
       left: "0",
+      opacity: "0.9",
       width: "100%",
       height: "35%",
       backgroundColor: "rgba(60, 60, 60, 1)",

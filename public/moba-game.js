@@ -51,7 +51,7 @@ class Character extends _hero.Hero {
       e.data = JSON.parse(e.data);
       try {
         if (e.data.netPos) {
-          //  console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" )
+          // console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" , e.data)
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
@@ -109,18 +109,15 @@ class Character extends _hero.Hero {
       },
       data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'friendly_creeps2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 100,
-        y: -23,
-        z: 0
-      },
-      data: glbFile01
-    }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: 0},
+    //   data: glbFile01
+    // }, ['creep'], 'friendly', app.player.data.team));
+
     setTimeout(() => {
       app.localHero.setAllCreepsAtStartPos().then(() => {}).catch(() => {
         setTimeout(() => {
@@ -540,20 +537,20 @@ class Character extends _hero.Hero {
         if (e.detail.data.B.group == "friendly" && e.detail.data.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.data.B.id)[0];
-          console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
           if (lc === undefined) {
             return;
           }
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.A.id)[0];
           if (lc.creepFocusAttackOn === undefined) {
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.A.id)[0];
-            // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
+            console.info('A = enemy vs B = friendly  <close-distance> is there creap here ', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined && e.detail.data.A.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined) {
+            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
             return;
           }
           app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
@@ -567,12 +564,14 @@ class Character extends _hero.Hero {
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.B.id)[0];
           if (lc.creepFocusAttackOn == undefined) {
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.B.id)[0];
+            console.info('A = friendly vs B = enemy   <close-distance> prevent attach', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined && e.detail.data.B.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined) {
+            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
             return;
           }
           app.localHero.setAttackCreep(e.detail.data.A.id[e.detail.data.A.id.length - 1]);
@@ -1156,9 +1155,10 @@ class Creep extends _hero.Hero {
           // adapt
           subMesh.globalAmbient = [1, 1, 1, 1];
           if (this.name.indexOf('friendly_creeps') != -1) {
-            subMesh.globalAmbient = [12, 12, 12, 1];
+            subMesh.setAmbient(10, 10, 5);
           } else if (this.name.indexOf('enemy_creep') != -1) {
-            subMesh.globalAmbient = [12, 1, 1, 1];
+            // subMesh.globalAmbient = [12, 1, 1, 1];
+            subMesh.setAmbient(50, 10, 5);
           }
           if (this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
             if (idx == 0) {
@@ -1279,8 +1279,8 @@ class Creep extends _hero.Hero {
     if (this.group != 'enemy') {
       addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
         // CHECK DISTANCE
-        if (e.detail.animationName != 'attack') {
-          // && this.creepFocusAttackOn == null) {
+        if (e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+          console.log('animationEnd BLOCK1');
           return;
         }
         console.info('animationEnd :', e.detail);
@@ -1403,18 +1403,14 @@ class EnemiesManager {
       },
       data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
-    this.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'enemy_creep2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 150,
-        y: -23,
-        z: -0
-      },
-      data: glbFile01
-    }, ['creep'], 'enemy', app.player.data.enemyTeam));
+    // this.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'enemy_creep2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 150, y: -23, z: -0},
+    //   data: glbFile01
+    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
   }
   isEnemy(name) {
     let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
@@ -1604,10 +1600,10 @@ if (!_utils.SS.has('player') || !_utils.LS.has('player')) {
 }
 let forestOfHollowBlood = new _world.default({
   dontUsePhysics: true,
-  useSingleRenderPass: true,
+  fastRender: (0, _utils.isMobile)() == true ? 0.85 : 0.95,
   canvasSize: 'fullscreen',
   MAX_BONES: 100,
-  MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 2 : 4,
+  MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 2 : 2,
   mainCameraParams: {
     type: 'RPG',
     responseCoef: 1000
@@ -1677,16 +1673,6 @@ let forestOfHollowBlood = new _world.default({
     north: []
   };
   app.matrixSounds.audios.music.loop = true;
-  addEventListener('net-ready', () => {
-    (0, _matrixStream.byId)('join-btn').click();
-    forestOfHollowBlood.loadEnemyCreeps();
-    (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
-      location.assign("moba-menu.html");
-    });
-
-    // test
-    (0, _matrixStream.byId)('netHeaderTitle').click();
-  });
   forestOfHollowBlood.loadEnemyCreeps = () => {
     if (forestOfHollowBlood.player.data.team == 'south') {
       forestOfHollowBlood.player.data.enemyTeam = 'north';
@@ -1696,6 +1682,15 @@ let forestOfHollowBlood = new _world.default({
       forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
     }
   };
+  addEventListener('net-ready', () => {
+    (0, _matrixStream.byId)('join-btn').click();
+    (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
+      location.assign("moba-menu.html");
+    });
+
+    // test
+    (0, _matrixStream.byId)('netHeaderTitle').click();
+  });
   addEventListener('connectionDestroyed', e => {
     console.log('connectionDestroyed - end of game.');
     /**
@@ -1994,6 +1989,7 @@ let forestOfHollowBlood = new _world.default({
       }
     }
   });
+  forestOfHollowBlood.loadEnemyCreeps();
   addEventListener('local-hero-bodies-ready', () => {
     const cam = app.getCamera();
     cam.setY(130);
@@ -2005,7 +2001,10 @@ let forestOfHollowBlood = new _world.default({
     if (app.localHero.name == "MariaSword") {
       app.RPG.distanceForLongAction = 150;
     }
-    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
+
+    // app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
+    forestOfHollowBlood.buildRenderBuckets(forestOfHollowBlood.mainRenderBundle);
+    forestOfHollowBlood.buildLightShadowBuckets();
   });
   forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
   forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
@@ -3963,6 +3962,13 @@ class MEMapLoader {
     }, null, glbFile01);
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
+      if (this.collectionOfTree1.length == 0) {
+        console.log('BAD NOT TREE YET, try again bad');
+        setTimeout(() => {
+          this.addInstancing();
+        }, 2000);
+        return;
+      }
       this.addInstancing();
     }, 6000);
   }
@@ -4076,8 +4082,8 @@ class Marketplace {
     box.style.flexWrap = 'wrap';
     box.style.zIndex = '2';
     box.style.top = '0';
-    box.style.width = '50%';
-    box.style.height = '80%';
+    box.style.width = '49.5%';
+    box.style.height = '78%';
     box.style.fontSize = '50%';
     box.style.paddingLeft = '30px';
     box.style.overflowY = 'scroll';
@@ -24318,7 +24324,7 @@ class RPGCamera {
     right: false
   };
   _keyInterval = null;
-  KEYBOARD_SPEED = 2.5;
+  KEYBOARD_SPEED = 4.5;
   mousRollInAction = false;
   _dirty = true;
   constructor(options = {}) {
@@ -24329,7 +24335,7 @@ class RPGCamera {
     }
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
     this._setupEvents();
     this._recalculateViewVP();
   }
@@ -33459,13 +33465,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       animationFinished: false
     };
     this.animationIndex = 0;
+    this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      console.log('CREATE ANIMATION-END BY ACCESS animEndEvent+index ', 'animEndEvent' + index);
-      console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ', `animationEnd-${anim.name}`);
-      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
+      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
+      this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
           animationName: this.glb.glbJsonData.animations[index].name,
-          targetObject: this.name
+          targetName: this.name
         }
       });
     });
@@ -33691,12 +33697,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
-      const capturedIndex = this.animationIndex ?? 0; // capture NOW
+      const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if (this.animationIndex == null) this.animationIndex = 0;
-        console.log('dispatchEvent ::: ' + this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex]);
-        window.dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex]);
+        window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
       }, inTime * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
@@ -63329,7 +63334,6 @@ class MatrixEngineWGPU {
         });
         return;
       }
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       _utils.meLoader.create();
       this.MEConfig.fsManager.onChange((isFS, target) => {
         console.log('GOT BACK FROM FS', isFS);
@@ -63528,13 +63532,12 @@ class MatrixEngineWGPU {
       alphaMode: 'premultiplied'
     });
 
-    // only for mobile
+    // Only for mobile
     if (typeof this.options.lock !== 'undefined') {
       if (this.options.lock != 'landscape' && this.options.lock != 'portrait') {
         this.options.lock = 'portrait';
       }
-      if ((0, _utils.checkLock)()) {
-        // mobileLock(this.options.lock);
+      if ((0, _utils.checkLock)() && (0, _utils.isMobile)() == true) {
         screen.orientation.lock(this.options.lock).then(() => {
           console.log(`%cOrientation locked to ${this.options.lock}`, _utils.LOG_FUNNY_ARCADE);
           this.applyCanvasSize(this.options.fastRender);

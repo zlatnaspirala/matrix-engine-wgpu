@@ -52,7 +52,7 @@ export class Character extends Hero {
       e.data = JSON.parse(e.data);
       try {
         if(e.data.netPos) {
-          //  console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" )
+          // console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" , e.data)
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if(e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
@@ -88,9 +88,7 @@ export class Character extends Hero {
   }
 
   async loadfriendlyCreeps() {
-
     var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -107,14 +105,14 @@ export class Character extends Hero {
       position: {x: 150, y: -23, z: 0},
       data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new Creep({
-      core: this.core,
-      name: 'friendly_creeps2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: 0},
-      data: glbFile01
-    }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: 0},
+    //   data: glbFile01
+    // }, ['creep'], 'friendly', app.player.data.team));
 
 
     setTimeout(() => {
@@ -534,14 +532,13 @@ export class Character extends Hero {
         if(e.detail.data.B.group == "friendly" && e.detail.data.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.data.B.id)[0];
-          console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
 
           if(lc === undefined) {return;}
           lc.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.A.id)[0];
 
           if(lc.creepFocusAttackOn === undefined) {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.A.id)[0];
-            // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
+            console.info('A = enemy vs B = friendly  <close-distance> is there creap here ', lc.creepFocusAttackOn);
           }
 
           if(lc.creepFocusAttackOn === undefined && e.detail.data.A.id.indexOf('enemytron') != -1) {
@@ -550,6 +547,7 @@ export class Character extends Hero {
           }
 
           if(lc.creepFocusAttackOn === undefined) {
+            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
             return;
           }
           app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
@@ -563,12 +561,14 @@ export class Character extends Hero {
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.B.id)[0];
           if(lc.creepFocusAttackOn == undefined) {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.B.id)[0];
+            console.info('A = friendly vs B = enemy   <close-distance> prevent attach', lc.creepFocusAttackOn);
           }
           if(lc.creepFocusAttackOn === undefined && e.detail.data.B.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if(lc.creepFocusAttackOn === undefined) {
+            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
             return;
           }
           app.localHero.setAttackCreep(e.detail.data.A.id[e.detail.data.A.id.length - 1]);

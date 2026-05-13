@@ -41,14 +41,14 @@ export class EnemiesManager {
       position: {x: 100, y: -23, z: -0},
       data: glbFile01
     }, ['creep'], 'enemy', app.player.data.enemyTeam))
-    this.creeps.push(new Creep({
-      core: this.core,
-      name: 'enemy_creep2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: -0},
-      data: glbFile01
-    }, ['creep'], 'enemy', app.player.data.enemyTeam))
+    // this.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'enemy_creep2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 150, y: -23, z: -0},
+    //   data: glbFile01
+    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
   }
 
   isEnemy(name) {

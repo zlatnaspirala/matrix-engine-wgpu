@@ -153,8 +153,8 @@ export class MEMapLoader {
       this.addInstancingRock();
 
       this.collectionOfRocks.forEach(rock => {
-  console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
-});
+        console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
+      });
 
       // trons 
       app.enemytron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('enemytron') != -1)[0];
@@ -275,6 +275,11 @@ export class MEMapLoader {
     }, null, glbFile01);
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
+      if(this.collectionOfTree1.length == 0) {
+        console.log('BAD NOT TREE YET, try again bad')
+        setTimeout(() => {this.addInstancing()}, 2000);
+        return;
+      }
       this.addInstancing();
     }, 6000);
   }

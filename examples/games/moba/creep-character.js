@@ -76,9 +76,10 @@ export class Creep extends Hero {
           // adapt
           subMesh.globalAmbient = [1, 1, 1, 1];
           if(this.name.indexOf('friendly_creeps') != -1) {
-            subMesh.globalAmbient = [12, 12, 12, 1];
+            subMesh.setAmbient(10,10,5)
           } else if(this.name.indexOf('enemy_creep') != -1) {
-            subMesh.globalAmbient = [12, 1, 1, 1];
+            // subMesh.globalAmbient = [12, 1, 1, 1];
+            subMesh.setAmbient(50,10,5)
           }
 
           if(this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
@@ -223,15 +224,14 @@ export class Creep extends Hero {
     if(this.group != 'enemy') {
       addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
         // CHECK DISTANCE
-        if(e.detail.animationName != 'attack') { // && this.creepFocusAttackOn == null) {
+        if(e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+          console.log('animationEnd BLOCK1')
           return;
         }
 
         console.info('animationEnd :', e.detail)
         if(this.group == "friendly") {
-
           if(this.creepFocusAttackOn == null) {
-            
             let isEnemiesClose = false;
             this.core.enemies.enemies.forEach((enemy) => {
               if(typeof enemy.heroe_bodies === 'undefined') return;

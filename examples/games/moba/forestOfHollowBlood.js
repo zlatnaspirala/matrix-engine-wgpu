@@ -30,10 +30,10 @@ if(!SS.has('player') || !LS.has('player')) {
 
 let forestOfHollowBlood = new MatrixEngineWGPU({
   dontUsePhysics: true,
-  useSingleRenderPass: true,
+  fastRender: isMobile() == true ? 0.85 : 0.95,
   canvasSize: 'fullscreen',
   MAX_BONES: 100,
-  MAX_SPOTLIGHTS: isMobile() ? 2 : 4,
+  MAX_SPOTLIGHTS: isMobile() ? 2 : 2,
   mainCameraParams: {
     type: 'RPG',
     responseCoef: 1000
@@ -104,15 +104,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   app.matrixSounds.audios.music.loop = true;
 
-  addEventListener('net-ready', () => {
-    byId('join-btn').click();
-    forestOfHollowBlood.loadEnemyCreeps();
-    byId('buttonLeaveSession').addEventListener('click', () => {location.assign("moba-menu.html")});
-
-    // test
-    byId('netHeaderTitle').click();
-  });
-
   forestOfHollowBlood.loadEnemyCreeps = () => {
     if(forestOfHollowBlood.player.data.team == 'south') {
       forestOfHollowBlood.player.data.enemyTeam = 'north';
@@ -122,6 +113,15 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
     }
   }
+
+  addEventListener('net-ready', () => {
+    byId('join-btn').click();
+
+    byId('buttonLeaveSession').addEventListener('click', () => {location.assign("moba-menu.html")});
+
+    // test
+    byId('netHeaderTitle').click();
+  });
 
   addEventListener('connectionDestroyed', (e) => {
     console.log('connectionDestroyed - end of game.');
@@ -439,6 +439,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     }
   })
 
+  forestOfHollowBlood.loadEnemyCreeps();
+
   addEventListener('local-hero-bodies-ready', () => {
 
     const cam = app.getCamera();
@@ -452,7 +454,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       app.RPG.distanceForLongAction = 150;
     }
 
-    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
+    // app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
+    forestOfHollowBlood.buildRenderBuckets(forestOfHollowBlood.mainRenderBundle);
+    forestOfHollowBlood.buildLightShadowBuckets()
+
   });
 
   forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);

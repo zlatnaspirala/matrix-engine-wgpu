@@ -1208,7 +1208,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   lock: 'portrait',
   //'landscape',
   mainCameraParams: {
-    type: 'WASD',
+    type: 'cinematicCamera',
     responseCoef: 1000
   },
   clearColor: {
@@ -1694,9 +1694,28 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }, null, glbFile01);
     }
     setTimeout(() => {
-      forestOfHollowBloodStartSceen.cameras.WASD.setPosition(0, 14, 52);
-      app.cameras.WASD.pitch = -0.13;
-      app.cameras.WASD.yaw = 0;
+      let cam = app.getCamera();
+      const introPath = new _utils.CameraPath([{
+        position: [0, 15, -30],
+        target: [0, 0, 0]
+      }, {
+        position: [13, 17, 10],
+        target: [0, 10, 0]
+      }, {
+        position: [0, 19, 42],
+        target: [0, 14, 0]
+      }], {
+        parameterization: 'arc'
+      });
+      cam.setPath(introPath).play({
+        speed: 0.3,
+        onEnd: () => {}
+      });
+      forestOfHollowBloodStartSceen.buildRenderBuckets(forestOfHollowBloodStartSceen.mainRenderBundle);
+      cam._dirtyAngle = true;
+      cam.setPosition(0, 14, 52);
+      cam.setPitch(-0.13);
+      cam.setYaw(0);
       app.mainRenderBundle.forEach(sceneObj => {
         sceneObj.position.thrust = 1;
         if (sceneObj.effects) if (sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
@@ -1728,7 +1747,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
           });
         }
       }
-    }, 3000);
+    }, (0, _utils.isMobile)() == true ? 2000 : 1000);
   }
   loadHeros();
   createHUDMenu();
@@ -1757,6 +1776,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       position: "fixed",
       bottom: "0",
       left: "0",
+      opacity: "0.9",
       width: "100%",
       height: "35%",
       backgroundColor: "rgba(60, 60, 60, 1)",
@@ -20899,7 +20919,7 @@ class RPGCamera {
     right: false
   };
   _keyInterval = null;
-  KEYBOARD_SPEED = 2.5;
+  KEYBOARD_SPEED = 4.5;
   mousRollInAction = false;
   _dirty = true;
   constructor(options = {}) {
@@ -20910,7 +20930,7 @@ class RPGCamera {
     }
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
     this._setupEvents();
     this._recalculateViewVP();
   }
@@ -29858,13 +29878,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       animationFinished: false
     };
     this.animationIndex = 0;
+    this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      console.log('CREATE ANIMATION-END BY ACCESS animEndEvent+index ', 'animEndEvent' + index);
-      console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ', `animationEnd-${anim.name}`);
-      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
+      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
+      this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
           animationName: this.glb.glbJsonData.animations[index].name,
-          targetObject: this.name
+          targetName: this.name
         }
       });
     });
@@ -30090,12 +30110,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
-      const capturedIndex = this.animationIndex ?? 0; // capture NOW
+      const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if (this.animationIndex == null) this.animationIndex = 0;
-        console.log('dispatchEvent ::: ' + this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex]);
-        window.dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + capturedIndex]);
+        window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
       }, inTime * 1000);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
@@ -59641,7 +59660,6 @@ class MatrixEngineWGPU {
         });
         return;
       }
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       _utils.meLoader.create();
       this.MEConfig.fsManager.onChange((isFS, target) => {
         console.log('GOT BACK FROM FS', isFS);
@@ -59840,13 +59858,12 @@ class MatrixEngineWGPU {
       alphaMode: 'premultiplied'
     });
 
-    // only for mobile
+    // Only for mobile
     if (typeof this.options.lock !== 'undefined') {
       if (this.options.lock != 'landscape' && this.options.lock != 'portrait') {
         this.options.lock = 'portrait';
       }
-      if ((0, _utils.checkLock)()) {
-        // mobileLock(this.options.lock);
+      if ((0, _utils.checkLock)() && (0, _utils.isMobile)() == true) {
         screen.orientation.lock(this.options.lock).then(() => {
           console.log(`%cOrientation locked to ${this.options.lock}`, _utils.LOG_FUNNY_ARCADE);
           this.applyCanvasSize(this.options.fastRender);

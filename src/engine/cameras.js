@@ -412,7 +412,7 @@ export class RPGCamera {
   _detachedFromFollow = false;
   _digital = {forward: false, backward: false, left: false, right: false};
   _keyInterval = null;
-  KEYBOARD_SPEED = 2.5;
+  KEYBOARD_SPEED = 4.5;
 
   mousRollInAction = false;
 
@@ -428,7 +428,7 @@ export class RPGCamera {
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
 
-    this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
+    this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
 
     this._setupEvents();
 
