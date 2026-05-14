@@ -25,8 +25,9 @@ export class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   async loadCreeps() {
-    console.log('ENEMY ++++++++++++++++++++++++++++++++')
-    var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    console.log('ENEMY ++++++++++++++++++++++++++++++++ this.core._CREEP_DATA', this.core._CREEP_DATA)
+    // var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+     var glbFile01 =  this.core._CREEP_DATA;
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy_creep0',

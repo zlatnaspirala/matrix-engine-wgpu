@@ -90,6 +90,7 @@ export class Character extends Hero {
   async loadfriendlyCreeps() {
     console.log('FRINDLY ++++++++++++++++++++++++++++++++')
     var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    this.core._CREEP_DATA = glbFile01;
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps0',
