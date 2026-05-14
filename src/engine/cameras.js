@@ -595,9 +595,9 @@ export class RPGCamera {
           lastTouchY = tz;
 
           const s = this.KEYBOARD_SPEED * 0.3;
-          this.position[0] -= this.right[0] * dx * s;
+          this.position[0] += this.right[0] * dx * s;
           this.position[2] -= this.right[2] * dx * s;
-          this.position[0] += this.back[0] * dz * s;
+          this.position[0] -= this.back[0] * dz * s;
           this.position[2] += this.back[2] * dz * s;
 
           this._detachedFromFollow = true;

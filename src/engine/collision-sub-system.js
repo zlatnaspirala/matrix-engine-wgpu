@@ -121,12 +121,12 @@ export class CollisionSystem {
       for(let j = 0;j < neighbors.length;j++) {
         const B = neighbors[j];
         if(A === B) continue;
+        const minDist = (A.radius + B.radius) * 0.5;
         if(A.group === B.group) {
           resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
           continue;
         }
         if(A.id >= B.id) continue;
-        const minDist = (A.radius + B.radius) * 0.5;
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
         if(dx * dx + dz * dz > minDist * minDist) continue;
