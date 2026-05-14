@@ -1351,6 +1351,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.EnemiesManager = void 0;
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
+var _utils = require("../../../src/engine/utils");
 var _creepCharacter = require("./creep-character");
 var _enemyCharacter = require("./enemy-character");
 class EnemiesManager {
@@ -1366,7 +1367,7 @@ class EnemiesManager {
       core: this.core,
       name: o.hero,
       archetypes: o.archetypes,
-      path: o.path,
+      path: (0, _utils.isMobile)() == true ? o.pathMobile : o.path,
       position: {
         x: 0,
         y: -23,
@@ -1421,7 +1422,7 @@ class EnemiesManager {
 }
 exports.EnemiesManager = EnemiesManager;
 
-},{"../../../src/engine/loaders/webgpu-gltf":58,"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":78,"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1687,6 +1688,8 @@ let forestOfHollowBlood = new _world.default({
     });
 
     // test
+    // forestOfHollowBlood.loadEnemyCreeps();
+    app.loadEnemyCreeps();
     (0, _matrixStream.byId)('netHeaderTitle').click();
   });
   addEventListener('connectionDestroyed', e => {
@@ -1721,8 +1724,8 @@ let forestOfHollowBlood = new _world.default({
     }
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if (e.detail.connection.session.remoteConnections.size == 0) {
-      if (forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+      if (app.net.virtualEmiter == null && isLocal) {
+        app.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
       }
     } else {
@@ -1730,19 +1733,19 @@ let forestOfHollowBlood = new _world.default({
       let isSameTeamAlready = false;
       for (var x = 0; x < remoteCons.length; x++) {
         let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
-        if (forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
+        if (app.player.data.team == currentRemoteConn.team) {
           isSameTeamAlready = true;
-          if (forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][1]);
+          if (app.player.remoteByTeam[app.player.data.team].indexOf(remoteCons[x][1]) == -1) {
+            app.player.remoteByTeam[app.player.data.team].push(remoteCons[x][1]);
           }
         } else {
-          if (forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
+          if (app.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
+            app.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
           }
         }
       }
       if (isSameTeamAlready == false && isLocal == true) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        app.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
       }
     }
@@ -1769,6 +1772,7 @@ let forestOfHollowBlood = new _world.default({
         if (testIfExistAlready.length > 0) {
           console.log('[new enemy hero already exist do nothing]', d);
         } else {
+          console.log('[new enemy HERO]', d);
           app.enemies.loadEnemyHero(d);
         }
       }
@@ -1987,7 +1991,6 @@ let forestOfHollowBlood = new _world.default({
       }
     }
   });
-  forestOfHollowBlood.loadEnemyCreeps();
   addEventListener('local-hero-bodies-ready', () => {
     const cam = app.getCamera();
     cam.setY(130);
@@ -2006,7 +2009,7 @@ let forestOfHollowBlood = new _world.default({
   });
   forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
   forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-  forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
+  forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, (0, _utils.isMobile)() == true ? forestOfHollowBlood.player.data.pathMobile : forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
   forestOfHollowBlood.localHero.inventory = new _invertoryManager.Inventory(forestOfHollowBlood.localHero);
   forestOfHollowBlood.marketPlace = new _marketplace.Marketplace(forestOfHollowBlood.localHero);
   forestOfHollowBlood.marketPlace.mb = _utils.mb;
@@ -3683,6 +3686,7 @@ class MEMapLoader {
     //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
     var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.core.addGlbObjInctance({
+      shadowsCast: false,
       material: {
         type: 'standard',
         useTextureFromGlb: true
@@ -3707,6 +3711,7 @@ class MEMapLoader {
     // on engine level must be upgraded "add rotation for instanced objs... on meshObjInstanced class..."
     // FOr now i will use another scene obj but same loaded data - that ok
     this.core.addGlbObjInctance({
+      shadowsCast: false,
       material: {
         type: 'standard',
         useTextureFromGlb: true
@@ -3748,6 +3753,7 @@ class MEMapLoader {
         useTextureFromGlb: true
       },
       scale: [15, 15, 15],
+      shadowsCast: false,
       rotation: {
         x: 0,
         y: 90,
@@ -3769,7 +3775,8 @@ class MEMapLoader {
         energyBar: true
       }
     }, null, glbFile02);
-    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+
+    // var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {
         type: 'standard',
@@ -3781,6 +3788,7 @@ class MEMapLoader {
         y: 90,
         z: 0
       },
+      shadowsCast: false,
       position: {
         x: _static.creepPoints[getEnemyName__].finalPoint[0],
         y: _static.creepPoints[getEnemyName__].finalPoint[1],
@@ -3796,7 +3804,7 @@ class MEMapLoader {
         enabled: true,
         energyBar: true
       }
-    }, null, glbFile03);
+    }, null, glbFile02);
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach(item => {
@@ -24529,9 +24537,9 @@ class RPGCamera {
           lastTouchX = tx;
           lastTouchY = tz;
           const s = this.KEYBOARD_SPEED * 0.3;
-          this.position[0] -= this.right[0] * dx * s;
+          this.position[0] += this.right[0] * dx * s;
           this.position[2] -= this.right[2] * dx * s;
-          this.position[0] += this.back[0] * dz * s;
+          this.position[0] -= this.back[0] * dz * s;
           this.position[2] += this.back[2] * dz * s;
           this._detachedFromFollow = true;
           this._dirty = true;
@@ -25650,12 +25658,12 @@ class CollisionSystem {
       for (let j = 0; j < neighbors.length; j++) {
         const B = neighbors[j];
         if (A === B) continue;
+        const minDist = (A.radius + B.radius) * 0.5;
         if (A.group === B.group) {
           resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
           continue;
         }
         if (A.id >= B.id) continue;
-        const minDist = (A.radius + B.radius) * 0.5;
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
         if (dx * dx + dz * dz > minDist * minDist) continue;

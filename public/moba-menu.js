@@ -1205,6 +1205,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   dontUsePhysics: true,
   canvasSize: 'fullscreen',
   MAX_BONES: 100,
+  MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 2 : 2,
   lock: 'portrait',
   //'landscape',
   mainCameraParams: {
@@ -1391,6 +1392,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         mesh: heros[app.selectedHero].meshName,
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
@@ -1401,6 +1403,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         mesh: heros[app.selectedHero].meshName,
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
@@ -1629,14 +1632,17 @@ let forestOfHollowBloodStartSceen = new _world.default({
     app.label.get = _enBackup.en;
   }
   app.matrixSounds.play('music');
+  console.log('test !!!!!!!!!!!!!!!!');
   heros = [{
     type: "Warrior",
     name: 'MariaSword',
+    pathMobile: "res/meshes/glb/woman-mobile.glb",
     path: "res/meshes/glb/woman1.glb",
     desc: forestOfHollowBloodStartSceen.label.get.mariasword
   }, {
     type: "Ranger",
     name: 'Slayzer',
+    pathMobile: "res/meshes/glb/monster.glb",
     path: "res/meshes/glb/monster.glb",
     desc: forestOfHollowBloodStartSceen.label.get.slayzer
   },
@@ -1645,6 +1651,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   {
     type: "Necromancer",
     name: 'Skeletonz',
+    pathMobile: "res/meshes/glb/skeletonz.glb",
     path: "res/meshes/glb/skeletonz.glb",
     desc: forestOfHollowBloodStartSceen.label.get.skeletonz
   },
@@ -1652,6 +1659,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   {
     type: "Support",
     name: 'Arissa',
+    pathMobile: "res/meshes/glb/arissa.glb",
     path: "res/meshes/glb/arissa.glb",
     desc: forestOfHollowBloodStartSceen.label.get.arissa
   }];
@@ -1724,26 +1732,32 @@ let forestOfHollowBloodStartSceen = new _world.default({
         let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
         app.heroByBody.push(hero0);
         heros[x].meshName = hero0[0].name;
+        hero0[0].playAnimationByIndex(2);
         if (x == 0) {
           hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+          console.log('>>>>>>>>>>>>>>', hero0[1]);
+          // hero0[1].playAnimationByIndex(2);
+        }
+        if (hero0.length == 2) {
+          hero0[1].playAnimationByIndex(2);
         }
         if (hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 1, 0, 0.7];
         });
         if (x == 2) {
           hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [11, 11, 1];
+            array[i].setAmbient(11, 11, 1);
           });
         }
         if (x == 3 || x == 5) {
           hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [10, 10, 10];
+            array[i].setAmbient(10, 10, 10);
             // array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
           });
         }
         if (x == 6) {
           hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [21, 11, 11];
+            array[i].setAmbient(21, 11, 11);
           });
         }
       }
@@ -1754,9 +1768,14 @@ let forestOfHollowBloodStartSceen = new _world.default({
   forestOfHollowBloodStartSceen.addLight();
   app.lightContainer[0].setPosition(0, 50, 1);
   app.lightContainer[0].setTarget(0, 0, -10);
-  app.lightContainer[0].setIntensity(40);
   app.activateBloomEffect();
-  app.bloomPass.setBlurRadius(3);
+  if ((0, _utils.isMobile)() == true) {
+    app.lightContainer[0].setIntensity(40);
+    app.bloomPass.setBlurRadius(3);
+  } else {
+    app.lightContainer[0].setIntensity(40);
+    app.bloomPass.setBlurRadius(1);
+  }
   function createHUDMenu() {
     // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
     //   path: "./res/icons/seq1/",
@@ -21126,9 +21145,9 @@ class RPGCamera {
           lastTouchX = tx;
           lastTouchY = tz;
           const s = this.KEYBOARD_SPEED * 0.3;
-          this.position[0] -= this.right[0] * dx * s;
+          this.position[0] += this.right[0] * dx * s;
           this.position[2] -= this.right[2] * dx * s;
-          this.position[0] += this.back[0] * dz * s;
+          this.position[0] -= this.back[0] * dz * s;
           this.position[2] += this.back[2] * dz * s;
           this._detachedFromFollow = true;
           this._dirty = true;

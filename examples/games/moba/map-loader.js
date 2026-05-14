@@ -57,6 +57,7 @@ export class MEMapLoader {
     //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
     var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
+      shadowsCast: false,
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [14, 13, 14],
       position: {
@@ -75,6 +76,7 @@ export class MEMapLoader {
     // on engine level must be upgraded "add rotation for instanced objs... on meshObjInstanced class..."
     // FOr now i will use another scene obj but same loaded data - that ok
     this.core.addGlbObjInctance({
+      shadowsCast: false,
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [14, 13, 14],
       rotation: {x: 0, y: 90, z: 0},
@@ -105,6 +107,7 @@ export class MEMapLoader {
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [15, 15, 15],
+      shadowsCast: false,
       rotation: {x: 0, y: 90, z: 0},
       position: {
         x: creepPoints[app.player.data.team].finalPoint[0],
@@ -120,11 +123,12 @@ export class MEMapLoader {
       }
     }, null, glbFile02);
 
-    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    // var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [15, 15, 15],
       rotation: {x: 0, y: 90, z: 0},
+      shadowsCast: false,
       position: {
         x: creepPoints[getEnemyName__].finalPoint[0],
         y: creepPoints[getEnemyName__].finalPoint[1],
@@ -137,7 +141,7 @@ export class MEMapLoader {
         enabled: true,
         energyBar: true,
       }
-    }, null, glbFile03);
+    }, null, glbFile02);
 
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks1') != -1);

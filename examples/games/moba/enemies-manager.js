@@ -1,4 +1,5 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
+import {isMobile} from "../../../src/engine/utils";
 import {Creep} from "./creep-character";
 import {Enemie} from "./enemy-character";
 
@@ -17,7 +18,7 @@ export class EnemiesManager {
         core: this.core,
         name: o.hero,
         archetypes: o.archetypes,
-        path: o.path,
+        path: isMobile() == true ? o.pathMobile : o.path,
         position: {x: 0, y: -23, z: 0}
       }
     ));

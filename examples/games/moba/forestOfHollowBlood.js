@@ -120,6 +120,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     byId('buttonLeaveSession').addEventListener('click', () => {location.assign("moba-menu.html")});
 
     // test
+    // forestOfHollowBlood.loadEnemyCreeps();
+    app.loadEnemyCreeps();
+
     byId('netHeaderTitle').click();
   });
 
@@ -160,8 +163,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     }
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if(e.detail.connection.session.remoteConnections.size == 0) {
-      if(forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+      if(app.net.virtualEmiter == null && isLocal) {
+        app.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
       }
     }
@@ -170,19 +173,19 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       let isSameTeamAlready = false;
       for(var x = 0;x < remoteCons.length;x++) {
         let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
-        if(forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
+        if(app.player.data.team == currentRemoteConn.team) {
           isSameTeamAlready = true;
-          if(forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][1]);
+          if(app.player.remoteByTeam[app.player.data.team].indexOf(remoteCons[x][1]) == -1) {
+            app.player.remoteByTeam[app.player.data.team].push(remoteCons[x][1]);
           }
         } else {
-          if(forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
+          if(app.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
+            app.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
           }
         }
       }
       if(isSameTeamAlready == false && isLocal == true) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        app.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
 
       }
@@ -213,6 +216,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         if(testIfExistAlready.length > 0) {
           console.log('[new enemy hero already exist do nothing]', d);
         } else {
+
+          console.log('[new enemy HERO]', d);
           app.enemies.loadEnemyHero(d);
         }
       }
@@ -439,7 +444,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     }
   })
 
-  forestOfHollowBlood.loadEnemyCreeps();
 
   addEventListener('local-hero-bodies-ready', () => {
 
@@ -464,7 +468,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
 
   forestOfHollowBlood.localHero = new Character(
-    forestOfHollowBlood, forestOfHollowBlood.player.data.path,
+    forestOfHollowBlood, isMobile() == true ? forestOfHollowBlood.player.data.pathMobile : forestOfHollowBlood.player.data.path,
     forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
 
   forestOfHollowBlood.localHero.inventory = new Inventory(forestOfHollowBlood.localHero);

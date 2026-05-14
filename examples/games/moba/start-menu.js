@@ -254,6 +254,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         mesh: heros[app.selectedHero].meshName,
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
@@ -265,6 +266,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         mesh: heros[app.selectedHero].meshName,
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
@@ -499,13 +501,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   console.log('test !!!!!!!!!!!!!!!!')
   heros = [
-    {type: "Warrior", name: 'MariaSword', path: isMobile() == true ? "res/meshes/glb/woman-mobile.glb" : "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
-    {type: "Ranger", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
+    {type: "Warrior", name: 'MariaSword', pathMobile: "res/meshes/glb/woman-mobile.glb", path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
+    {type: "Ranger", name: 'Slayzer',  pathMobile: "res/meshes/glb/monster.glb",  path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
     // {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
     // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
-    {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+    {type: "Necromancer", name: 'Skeletonz', pathMobile: "res/meshes/glb/skeletonz.glb", path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
     // {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
-    {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
+    {type: "Support", name: 'Arissa', pathMobile: "res/meshes/glb/arissa.glb",  path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
   ];
 
   forestOfHollowBloodStartSceen.heros = heros;
