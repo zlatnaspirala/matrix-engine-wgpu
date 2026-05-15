@@ -650,6 +650,79 @@ export default class ProceduralMeshObj extends Materials {
     }
   }
 
+  async destroy(destructionType = "shatter", duration = 0.8, options = {}) {
+    const {onComplete = null, physics = null, debris = null, velocity = 1, lifetime = 3} = options;
+
+    // Get destruction function from MeshMorpher
+    const destructionFunc = this._getDestructionFunction(destructionType);
+
+    // Use MeshMorpher to create a matched pair (current -> destruction)
+    const pair = MeshMorpher.createMatchedPair(
+      this.currentShape || MeshMorpher.sphere(this.size),
+      destructionFunc,
+      32, 32
+    );
+
+    // Morph from current to destruction state
+    await this.morphTo(destructionFunc, duration);
+
+    // Optionally spawn physics debris
+    if(debris) {
+      this.spawnDebris(null, destructionType, {velocity, lifetime});
+    }
+
+    // Cleanup callback
+    if(onComplete) onComplete();
+  }
+
+  /**
+   * Get destruction preset function from MeshMorpher (now parametric)
+   */
+  _getDestructionFunction(type) {
+    const presets = {
+      shatter: () => MeshMorpher.shatter(this.size, 8),
+      crumble: () => MeshMorpher.crumble(this.size, 4),
+      splinter: () => MeshMorpher.splinter(this.size, 12),
+      implode: () => MeshMorpher.implode(this.size, 0.1),
+      scatter: () => MeshMorpher.scatter(this.size, 0.3)
+    };
+
+    if(!presets[type]) throw new Error(`Unknown destruction type: ${type}`);
+    return presets[type]();
+  }
+
+  /**
+   * Spawn individual physics chunks after morph
+   */
+  spawnDebris(physicsEngine, type, options = {}) {
+    // const {velocity = 1, lifetime = 3} = options;
+
+    // const debrisCount = {
+    //   shatter: 8,
+    //   crumble: 16,
+    //   splinter: 12,
+    //   implode: 0,    // implode absorbs, no debris
+    //   scatter: 20
+    // }[type] || 8;
+
+    // for(let i = 0;i < debrisCount;i++) {
+    //   const vx = (Math.random() - 0.5) * velocity * 2;
+    //   const vy = (Math.random() - 0.5) * velocity * 2 + (type === "shatter" ? 1 : 0);
+    //   const vz = (Math.random() - 0.5) * velocity * 2;
+
+    //   const body = physicsEngine.createRigidBody({
+    //     shape: "sphere",
+    //     size: this.size * 0.1,
+    //     mass: 1,
+    //     linearVelocity: [vx, vy, vz],
+    //     angularVelocity: [Math.random() * 5, Math.random() * 5, Math.random() * 5]
+    //   });
+
+    //   // Auto-despawn after lifetime
+    //   setTimeout(() => body.destroy(), lifetime * 1000);
+    // }
+  }
+
   switchMesh(specA, specB) {
     this.meshA = this._loadGeometry(specA);
     this.meshB = this._loadGeometry(specB);
@@ -1398,6 +1471,178 @@ export class MeshMorpher {
       const x = (r * Math.cos(theta) + clusterOffsetX) * scale;
       const z = (r * Math.sin(theta) + clusterOffsetZ) * scale;
       return [x, y * scale, z];
+    };
+  }
+
+
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    // Pre-compute random offsets for determinism
+    const offsets = [];
+    for(let p = 0;p < pieces;p++) {
+      const angle = (p / pieces) * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+
+      // Base sphere surface
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    // Pre-compute chunk grid with random jitter
+    const chunks = [];
+    for(let ix = 0;ix < detail;ix++) {
+      for(let iy = 0;iy < detail;iy++) {
+        for(let iz = 0;iz < detail;iz++) {
+          chunks.push({
+            x: (ix - detail / 2) + (Math.random() - 0.5) * 0.3,
+            y: (iy - detail / 2) + (Math.random() - 0.5) * 0.3,
+            z: (iz - detail / 2) + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+
+    const chunkSize = 2 / detail;
+
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+
+      // Small cube for each chunk
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+
+      const x = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+
+      return [x * S * 0.5, y * S * 0.5, z * S * 0.5];
+    };
+  }
+
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    // Pre-compute shard directions
+    const shards = [];
+    for(let i = 0;i < count;i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+
+      // Shard as elongated quad
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+
+      // Taper from base to tip
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+
+      const x = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x = scale * S * Math.sin(phi) * Math.cos(theta);
+      const y = scale * S * Math.cos(phi);
+      const z = scale * S * Math.sin(phi) * Math.sin(theta);
+
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+
+    for(let p = 0;p < particleCount;p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+
+      // Small sphere for each particle
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = particle.size;
+
+      const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
+      const y = (particle.y + r * Math.cos(phi)) * S;
+      const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
+
+      return [x, y, z];
     };
   }
 }

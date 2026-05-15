@@ -25,6 +25,7 @@ import {testJolt} from "./examples/physics-test-jolt.js";
 import {testCannonES} from "./examples/physics-test-cannones.js";
 import {canvasInline} from "./examples/canvas-inline.js";
 import {loadCinematicCamera} from "./examples/cinematic-camera.js";
+import {loadDestructionProcedural} from "./examples/destruction-procedural.js";
 
 window.urlQ = urlQuery;
 
@@ -62,6 +63,7 @@ byId('test-jolt').addEventListener("click", () => switchDemo('15'));
 byId('test-cannones').addEventListener("click", () => switchDemo('16'));
 byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
 byId('cinematicCamera').addEventListener("click", () => switchDemo('18'));
+byId('destruction-procedure').addEventListener("click", () => switchDemo('19'));
 
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
@@ -105,6 +107,8 @@ if(urlQ['demo'] === '1') {
   canvasInline();
 } else if (urlQ['demo'] === '18') {
   loadCinematicCamera();
+} else if (urlQ['demo'] === '19') {
+  loadDestructionProcedural();
 } else {
   flipperJolt();
 }

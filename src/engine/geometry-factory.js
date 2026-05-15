@@ -819,38 +819,38 @@ export class GeometryFactory {
     };
   }
 
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
   static shatter(S = 1, pieces = 8) {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    let vertexCount = 0;
-
-    const baseGeo = GeometryFactory.icosahedron(S);
-    const centerX = 0, centerY = 0, centerZ = 0;
-
+    // Pre-compute random offsets for determinism
+    const offsets = [];
     for(let p = 0;p < pieces;p++) {
       const angle = (p / pieces) * Math.PI * 2;
-      const offsetX = Math.cos(angle) * S * 0.6;
-      const offsetY = (Math.random() - 0.5) * S * 0.4;
-      const offsetZ = Math.sin(angle) * S * 0.6;
-
-      // Copy base geo, offset outward
-      for(let i = 0;i < baseGeo.positions.length;i += 3) {
-        const x = baseGeo.positions[i] * 0.3 + offsetX;
-        const y = baseGeo.positions[i + 1] * 0.3 + offsetY;
-        const z = baseGeo.positions[i + 2] * 0.3 + offsetZ;
-        positions.push(x, y, z);
-        uvs.push(baseGeo.uvs[i / 3 * 2], baseGeo.uvs[i / 3 * 2 + 1]);
-      }
-
-      // Offset indices
-      for(let i = 0;i < baseGeo.indices.length;i++) {
-        indices.push(baseGeo.indices[i] + vertexCount);
-      }
-      vertexCount += baseGeo.positions.length / 3;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
     }
 
-    return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+
+      // Base sphere surface
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+
+      return [x, y, z];
+    };
   }
 
   /**
@@ -858,42 +858,38 @@ export class GeometryFactory {
    * Good for: stone/brick crumbling, dust formations
    */
   static crumble(S = 1, detail = 4) {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    let vertexCount = 0;
-
-    const chunkCount = detail * detail * detail;
-    const chunkSize = (S * 2) / detail;
-
+    // Pre-compute chunk grid with random jitter
+    const chunks = [];
     for(let ix = 0;ix < detail;ix++) {
       for(let iy = 0;iy < detail;iy++) {
         for(let iz = 0;iz < detail;iz++) {
-          // Random perturbation within chunk
-          const offsetX = (ix - detail / 2) * chunkSize + (Math.random() - 0.5) * chunkSize * 0.3;
-          const offsetY = (iy - detail / 2) * chunkSize + (Math.random() - 0.5) * chunkSize * 0.3;
-          const offsetZ = (iz - detail / 2) * chunkSize + (Math.random() - 0.5) * chunkSize * 0.3;
-
-          // Small cube or sphere for each chunk
-          const chunkGeo = GeometryFactory.cube(chunkSize * 0.4);
-
-          for(let i = 0;i < chunkGeo.positions.length;i += 3) {
-            positions.push(
-              chunkGeo.positions[i] + offsetX,
-              chunkGeo.positions[i + 1] + offsetY,
-              chunkGeo.positions[i + 2] + offsetZ
-            );
-            uvs.push(chunkGeo.uvs[i / 3 * 2], chunkGeo.uvs[i / 3 * 2 + 1]);
-          }
-
-          for(let i = 0;i < chunkGeo.indices.length;i++) {
-            indices.push(chunkGeo.indices[i] + vertexCount);
-          }
-          vertexCount += chunkGeo.positions.length / 3;
+          chunks.push({
+            x: (ix - detail / 2) + (Math.random() - 0.5) * 0.3,
+            y: (iy - detail / 2) + (Math.random() - 0.5) * 0.3,
+            z: (iz - detail / 2) + (Math.random() - 0.5) * 0.3
+          });
         }
       }
     }
-    return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
+
+    const chunkSize = 2 / detail;
+
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+
+      // Small cube for each chunk
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+
+      const x = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+
+      return [x * S * 0.5, y * S * 0.5, z * S * 0.5];
+    };
   }
 
   /**
@@ -901,38 +897,46 @@ export class GeometryFactory {
    * Good for: ice/glass shattering, crystalline breaks
    */
   static splinter(S = 1, count = 12) {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    let vertexCount = 0;
+    // Pre-compute shard directions
+    const shards = [];
     for(let i = 0;i < count;i++) {
       const angle = (i / count) * Math.PI * 2;
       const phi = Math.random() * Math.PI;
-      const dirX = Math.sin(phi) * Math.cos(angle);
-      const dirY = Math.sin(phi) * Math.sin(angle);
-      const dirZ = Math.cos(phi);
-      const length = S * (0.5 + Math.random() * 0.5);
-      const width = S * 0.08;
-      // Shard endpoint
-      const tipX = dirX * length;
-      const tipY = dirY * length;
-      const tipZ = dirZ * length;
-      // Flat quad shard
-      const perpX = -dirY;
-      const perpY = dirX;
-      const perpZ = 0;
-      positions.push(
-        perpX * width, perpY * width, perpZ * width,
-        -perpX * width, -perpY * width, -perpZ * width,
-        tipX + perpX * width * 0.5, tipY + perpY * width * 0.5, tipZ + perpZ * width * 0.5,
-        tipX - perpX * width * 0.5, tipY - perpY * width * 0.5, tipZ - perpZ * width * 0.5
-      );
-      uvs.push(0, 0, 1, 0, 0.5, 1, 0.5, 1);
-      const base = vertexCount;
-      indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
-      vertexCount += 4;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
     }
-    return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
+
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+
+      // Shard as elongated quad
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+
+      // Taper from base to tip
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+
+      const x = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+
+      return [x, y, z];
+    };
   }
 
   /**
@@ -940,19 +944,14 @@ export class GeometryFactory {
    * Good for: magic absorption, black hole, vortex
    */
   static implode(S = 1, scale = 0.1) {
-    // Start with a sphere or icosahedron
-    const basGeo = GeometryFactory.sphere(S, 12);
-    const positions = new Float32Array(basGeo.positions.length);
-    // Scale all positions toward center by small factor
-    for(let i = 0;i < basGeo.positions.length;i += 3) {
-      positions[i] = basGeo.positions[i] * scale;
-      positions[i + 1] = basGeo.positions[i + 1] * scale;
-      positions[i + 2] = basGeo.positions[i + 2] * scale;
-    }
-    return {
-      positions,
-      uvs: basGeo.uvs,
-      indices: basGeo.indices
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x = scale * S * Math.sin(phi) * Math.cos(theta);
+      const y = scale * S * Math.cos(phi);
+      const z = scale * S * Math.sin(phi) * Math.sin(theta);
+
+      return [x, y, z];
     };
   }
 
@@ -961,31 +960,34 @@ export class GeometryFactory {
    * Good for: dust, particle explosion, disintegration
    */
   static scatter(S = 1, spread = 0.3) {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    let vertexCount = 0;
-    const particleCount = 20 + Math.floor(Math.random() * 20);
+    const particleCount = 20;
+    const particles = [];
+
     for(let p = 0;p < particleCount;p++) {
-      const offsetX = (Math.random() - 0.5) * S * spread;
-      const offsetY = (Math.random() - 0.5) * S * spread;
-      const offsetZ = (Math.random() - 0.5) * S * spread;
-      const particleSize = S * (0.05 + Math.random() * 0.15);
-      const particle = GeometryFactory.sphere(particleSize, 4);
-      for(let i = 0;i < particle.positions.length;i += 3) {
-        positions.push(
-          particle.positions[i] + offsetX,
-          particle.positions[i + 1] + offsetY,
-          particle.positions[i + 2] + offsetZ
-        );
-        uvs.push(particle.uvs[i / 3 * 2], particle.uvs[i / 3 * 2 + 1]);
-      }
-      for(let i = 0;i < particle.indices.length;i++) {
-        indices.push(particle.indices[i] + vertexCount);
-      }
-      vertexCount += particle.positions.length / 3;
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
     }
-    return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
+
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+
+      // Small sphere for each particle
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = particle.size;
+
+      const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
+      const y = (particle.y + r * Math.cos(phi)) * S;
+      const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
+
+      return [x, y, z];
+    };
   }
 
   static icosahedronSubdivided(R = 1, subdivisions = 1) {
