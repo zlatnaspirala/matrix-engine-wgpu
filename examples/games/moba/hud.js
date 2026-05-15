@@ -82,6 +82,8 @@ export class HUD {
       boxSizing: "border-box"
     });
 
+    hud.style["-webkit-text-stroke-width"] = "0.1px !important";
+
     const hudLeftBox = document.createElement("div");
     hudLeftBox.id = "hudLeftBox";
     Object.assign(hudLeftBox.style, {
@@ -106,11 +108,10 @@ export class HUD {
     // - Stats
     const statsDom = document.createElement("div");
     statsDom.id = "statsDom";
-
     Object.assign(statsDom.style, {
       display: "flex",
       flexDirection: "column",
-      width: isMobile() == true ? "100%" : "12%",
+      width: isMobile() == true ? "58%" : "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       alignItems: "center",
@@ -133,7 +134,7 @@ export class HUD {
     Object.assign(statsDomValue.style, {
       display: "flex",
       flexDirection: "column",
-      width: "12%",
+      width: isMobile() === true ? "33%" : "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       alignItems: "center",

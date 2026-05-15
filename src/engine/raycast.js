@@ -206,7 +206,7 @@ export function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click
     let closestHit = null;
 
     for(const object of app.mainRenderBundle) {
-      if(!object.raycast?.enabled) continue;
+      if(!object.raycast?.enabled || !object.getModelMatrix) continue;
       const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
       if(!hitAABB) continue;

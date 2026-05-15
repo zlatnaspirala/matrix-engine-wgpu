@@ -214,9 +214,9 @@ export class MEMapLoader {
         app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
         app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
         app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-      }, 1000);
+      }, 500);
 
-    }, 6500);
+    }, 7500);
 
     this.core.lightContainer[0].setPosY(175);
     this.core.lightContainer[0].setIntensity(1);
