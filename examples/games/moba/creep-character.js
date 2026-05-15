@@ -12,6 +12,8 @@ export class Creep extends Hero {
     idle: null
   }
 
+  creepHPReset = 300;
+
   creepFocusAttackOn = null;
 
   constructor(o, archetypes = ["creep"], group = "enemy", team) {
@@ -43,7 +45,7 @@ export class Creep extends Hero {
       }, null, o.data);
       // make small async - cooking glbs files
       this.asyncHelper(this.o).then(() => {
-        console.log('creeps loaded in scene...')
+        // console.log('creeps loaded in scene...')
       }).catch(() => {
         console.log('catch')
         setTimeout(() => {this.asyncHelper(this.o);}, 2000);
@@ -111,7 +113,7 @@ export class Creep extends Hero {
             app.localHero.navigateCreeps();
           }
         }, 3000);
-      }, 9000);
+      }, 6000);
     })
   }
 

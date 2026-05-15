@@ -652,26 +652,17 @@ export default class ProceduralMeshObj extends Materials {
 
   async destroy(destructionType = "shatter", duration = 0.8, options = {}) {
     const {onComplete = null, physics = null, debris = null, velocity = 1, lifetime = 3} = options;
-
-    // Get destruction function from MeshMorpher
     const destructionFunc = this._getDestructionFunction(destructionType);
-
-    // Use MeshMorpher to create a matched pair (current -> destruction)
     const pair = MeshMorpher.createMatchedPair(
       this.currentShape || MeshMorpher.sphere(this.size),
       destructionFunc,
       32, 32
     );
-
-    // Morph from current to destruction state
     await this.morphTo(destructionFunc, duration);
-
-    // Optionally spawn physics debris
     if(debris) {
       this.spawnDebris(null, destructionType, {velocity, lifetime});
     }
-
-    // Cleanup callback
+    // Cleanup
     if(onComplete) onComplete();
   }
 

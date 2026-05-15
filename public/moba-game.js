@@ -252,13 +252,13 @@ class Character extends _hero.Hero {
         }
 
         // adapt
-        app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
+        app.localHero.heroe_bodies[0].setAmbient(1, 1, 1, 1);
         if (app.localHero.name == 'Slayzer') {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
+          app.localHero.heroe_bodies[0].setAmbient(2, 2, 3, 1);
         } else if (app.localHero.name == 'Steelborn') {
-          app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
+          app.localHero.heroe_bodies[0].setAmbient(12, 12, 12, 1);
         } else {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
+          app.localHero.heroe_bodies[0].setAmbient(2, 2, 3, 1);
         }
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
         this.attachEvents();
@@ -1089,6 +1089,7 @@ class Creep extends _hero.Hero {
     attack: null,
     idle: null
   };
+  creepHPReset = 300;
   creepFocusAttackOn = null;
   constructor(o, archetypes = ["creep"], group = "enemy", team) {
     super(o.name, archetypes);
@@ -1108,7 +1109,8 @@ class Creep extends _hero.Hero {
           type: 'standard',
           useTextureFromGlb: true
         },
-        scale: [20, 20, 20],
+        shadowsCast: false,
+        scale: [22, 22, 22],
         position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
@@ -1123,12 +1125,12 @@ class Creep extends _hero.Hero {
       }, null, o.data);
       // make small async - cooking glbs files
       this.asyncHelper(this.o).then(() => {
-        console.log('good');
+        // console.log('creeps loaded in scene...')
       }).catch(() => {
         console.log('catch');
         setTimeout(() => {
           this.asyncHelper(this.o);
-        }, 3000);
+        }, 2000);
       });
     } catch (err) {
       throw err;
@@ -1155,11 +1157,10 @@ class Creep extends _hero.Hero {
             if (a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
           // adapt
-          subMesh.globalAmbient = [1, 1, 1, 1];
+          subMesh.setAmbient(1, 1, 1, 1);
           if (this.name.indexOf('friendly_creeps') != -1) {
             subMesh.setAmbient(10, 10, 5);
           } else if (this.name.indexOf('enemy_creep') != -1) {
-            // subMesh.globalAmbient = [12, 1, 1, 1];
             subMesh.setAmbient(50, 10, 5);
           }
           if (this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
@@ -1189,7 +1190,7 @@ class Creep extends _hero.Hero {
             app.localHero.navigateCreeps();
           }
         }, 3000);
-      }, 9000);
+      }, 6000);
     });
   };
   setWalk() {
@@ -1493,7 +1494,7 @@ class Enemie extends _hero.Hero {
           });
           // adapt
           if (this.name == 'Slayzer') {
-            subMesh.globalAmbient = [2, 2, 3, 1];
+            subMesh.setAmbient(2, 2, 3, 1);
           }
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemy');
         });
@@ -1787,7 +1788,7 @@ let forestOfHollowBlood = new _world.default({
     // console.log('<data-receive self>', d);
     if (d.type == "damage") {
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
-      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
+      // let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
       if (IsEnemyHeroObj) {
         // console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
         const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
@@ -1828,6 +1829,7 @@ let forestOfHollowBlood = new _world.default({
         app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
         if (d.progress <= 0.09) {
           app.enemies.creeps[getCreepByIndex].setDead();
+          app.localHero.killEnemy(1);
           setTimeout(() => {
             app.enemies.creeps[getCreepByIndex].setStartUpPosition();
             app.enemies.creeps[getCreepByIndex].gotoFinal = false;
@@ -1840,7 +1842,7 @@ let forestOfHollowBlood = new _world.default({
       if (app.player.data.team == d.defenderTeam) {
         app.tron.effects.energyBar.setProgress(d.progress);
         if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(12, 1, 1);
           _utils.mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           _utils.mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
@@ -1850,7 +1852,7 @@ let forestOfHollowBlood = new _world.default({
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           _utils.mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {
@@ -1953,7 +1955,7 @@ let forestOfHollowBlood = new _world.default({
       if (app.player.data.team == d.defenderTeam) {
         app.tron.effects.energyBar.setProgress(d.progress);
         if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           _utils.mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           _utils.mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
@@ -1963,7 +1965,7 @@ let forestOfHollowBlood = new _world.default({
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           _utils.mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {
@@ -2098,7 +2100,7 @@ class FriendlyHero extends _hero.Hero {
           });
           // adapt part
           if (this.name == 'Slayzer') {
-            subMesh.globalAmbient = [2, 2, 3, 1];
+            subMesh.setAmbient(2, 2, 3);
           }
           // this is optimisation very important - no emit per sub mesh - calc on client part.
           if (idx > 0) {
@@ -2903,6 +2905,7 @@ class HUD {
     hud.id = "hud-menu";
     Object.assign(hud.style, {
       position: "absolute",
+      webkitTextStrokeWidth: "0.5px",
       bottom: "0",
       left: "0",
       width: "100%",
@@ -2914,13 +2917,13 @@ class HUD {
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
-      padding: "10px",
+      padding: (0, _utils.isMobile)() == true ? "0px" : "10px",
       boxSizing: "border-box"
     });
     const hudLeftBox = document.createElement("div");
     hudLeftBox.id = "hudLeftBox";
     Object.assign(hudLeftBox.style, {
-      width: "30%",
+      width: (0, _utils.isMobile)() == true ? "53%" : "30%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       border: "1px solid #353535",
@@ -2933,6 +2936,7 @@ class HUD {
       boxSizing: "border-box",
       overflow: 'hidden'
     });
+    if ((0, _utils.isMobile)() == true) hudLeftBox.style.display = "flex";
     hud.appendChild(hudLeftBox);
 
     // - Stats
@@ -2941,7 +2945,7 @@ class HUD {
     Object.assign(statsDom.style, {
       display: "flex",
       flexDirection: "column",
-      width: "12%",
+      width: (0, _utils.isMobile)() == true ? "100%" : "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       alignItems: "center",
@@ -2955,7 +2959,7 @@ class HUD {
       overflow: 'hidden',
       fontSize: '10px'
     });
-    hud.appendChild(statsDom);
+    hudLeftBox.appendChild(statsDom);
     const statsDomValue = document.createElement("div");
     statsDomValue.id = "statsDomValue";
     Object.assign(statsDomValue.style, {
@@ -2975,7 +2979,7 @@ class HUD {
       overflow: 'hidden',
       fontSize: '10px'
     });
-    hud.appendChild(statsDomValue);
+    hudLeftBox.appendChild(statsDomValue);
     let props = ["currentLevel", "hp", "mana", "gold", "mpRegen", "hpRegen", "moveSpeed", "attackSpeed", "armor", "attack"];
     addEventListener('stats-localhero', e => {
       // console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
@@ -2989,7 +2993,7 @@ class HUD {
       statsDomItem.innerHTML = props[x] + ":";
       Object.assign(statsDomItem.style, {
         background: "rgba(0,0,0,0.5)",
-        border: "1px solid #353535",
+        border: (0, _utils.isMobile)() == true ? "none" : "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
@@ -3025,7 +3029,7 @@ class HUD {
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
       flexDirection: "column",
-      border: "1px solid #353535",
+      border: (0, _utils.isMobile)() == true ? 'none' : "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -3044,7 +3048,7 @@ class HUD {
       backgroundColor: "rgba(0, 0, 0, 0.4)",
       display: "grid",
       gridTemplateColumns: "repeat(4, 1fr)",
-      gap: "12px",
+      gap: (0, _utils.isMobile)() == true ? '0px' : "12px",
       border: "1px solid #353535",
       borderRadius: "10px",
       padding: "2px",
@@ -3108,7 +3112,7 @@ class HUD {
     const hudHP = document.createElement("div");
     hudHP.id = "hudHP";
     Object.assign(hudHP.style, {
-      width: "40%",
+      width: (0, _utils.isMobile)() == true ? "100%" : "40%",
       height: "10%",
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
@@ -3158,7 +3162,7 @@ class HUD {
     const hudMANA = document.createElement("div");
     hudMANA.id = "hudMANA";
     Object.assign(hudMANA.style, {
-      width: "40%",
+      width: (0, _utils.isMobile)() == true ? "100%" : "40%",
       height: "10%",
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
@@ -3205,18 +3209,20 @@ class HUD {
       hpText.textContent = `MANA: ${clamped}%`;
     });
     hud.appendChild(hudCenter);
-    // left box
-    const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "HERO";
-    hudLeftBox.appendChild(selectedCharacters);
-    hud.addEventListener("onSelectCharacter", e => {
-      console.log('onSelectCharacter : ', e.data);
-      let n = '';
-      if (e.detail.data.indexOf('_') != -1) {
-        n = e.detail.data.split('_')[0];
-      }
-      selectedCharacters.textContent = `${n}`;
-    });
+    if ((0, _utils.isMobile)() == false) {
+      // left box
+      const selectedCharacters = document.createElement("span");
+      selectedCharacters.textContent = "HERO";
+      hudLeftBox.appendChild(selectedCharacters);
+      hud.addEventListener("onSelectCharacter", e => {
+        console.log('onSelectCharacter : ', e.data);
+        let n = '';
+        if (e.detail.data.indexOf('_') != -1) {
+          n = e.detail.data.split('_')[0];
+        }
+        selectedCharacters.textContent = `${n}`;
+      });
+    }
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
     Object.assign(hudDesription.style, {
@@ -3256,6 +3262,7 @@ class HUD {
       backgroundPosition: "center"
     });
     hudDesription.appendChild(hudDesriptionText);
+    if ((0, _utils.isMobile)() == true) hudDesription.style.display = 'none';
     hud.appendChild(hudDesription);
     // right
     const hudItems = document.createElement("div");
@@ -3268,7 +3275,7 @@ class HUD {
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'auto',
       display: "flex",
-      border: "1px solid #353535",
+      border: (0, _utils.isMobile)() == true ? "none" : "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -3281,12 +3288,11 @@ class HUD {
     inventoryGrid.id = "inventoryGrid";
     Object.assign(inventoryGrid.style, {
       display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)",
-      gridTemplateRows: "repeat(2, 1fr)",
-      // gap: "10px",
+      gridTemplateColumns: (0, _utils.isMobile)() == true ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
+      gridTemplateRows: (0, _utils.isMobile)() == true ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
       width: "100%",
       height: "100%",
-      padding: "5px",
+      padding: (0, _utils.isMobile)() == true ? "0" : "5px",
       boxSizing: "border-box"
     });
     for (let i = 0; i < 6; i++) {
@@ -3812,12 +3818,12 @@ class MEMapLoader {
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach(item => {
-        item.globalAmbient = [10, 10, 10];
+        item.setAmbient(10, 10, 10);
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.collectionOfRocks2 = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks2') != -1);
       this.collectionOfRocks2.forEach(item => {
-        item.globalAmbient = [10, 10, 10];
+        item.setAmbient(10, 10, 10);
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.addInstancingRock();
@@ -3828,7 +3834,7 @@ class MEMapLoader {
       // trons 
       app.enemytron = this.core.mainRenderBundle.filter(item => item.name.indexOf('enemytron') != -1)[0];
       app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('friendlytron') != -1)[0];
-      app.tron.globalAmbient = [2, 2, 2];
+      app.tron.setAmbient(2, 2, 2);
 
       // no need to extend whole Hero class 
       // Fiktive
@@ -3987,7 +3993,7 @@ class MEMapLoader {
     const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
     this.collectionOfTree1.forEach(partOftree => {
       partOftree.sharedBones = true;
-      partOftree.globalAmbient = [(0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15)];
+      partOftree.setAmbient((0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15));
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
       const totalInstances = treesPerCluster * clusterOffsets.length;
@@ -29411,7 +29417,7 @@ exports.GeometryFactory = void 0;
 /**
  * @description
  * GeometryFactory - can be reused for any level of pipeline integration.
- * It is already integrated with level of 'me effects'.
+ * It is already integrated with level of 'mewgpu effects subsystem'.
  */
 class GeometryFactory {
   static create(type, size = 1, segments = 16, options = {}) {
@@ -29460,12 +29466,21 @@ class GeometryFactory {
         return GeometryFactory.crescent(size, options.innerRatio || 0.5, segments);
       case "pyramidFractal":
         return GeometryFactory.pyramidFractal(size, options.levels || 2);
+      // DESTRUCTION
+      case "shatter":
+        return GeometryFactory.shatter(size, options.pieces || 8);
+      case "crumble":
+        return GeometryFactory.crumble(size, options.detail || 4);
+      case "splinter":
+        return GeometryFactory.splinter(size, options.count || 12);
+      case "implode":
+        return GeometryFactory.implode(size, options.scale || 0.1);
+      case "scatter":
+        return GeometryFactory.scatter(size, options.spread || 0.3);
       default:
         throw new Error(`Unknown geometry: ${type}`);
     }
   }
-
-  // --- Flat normals for faceted shapes ---
   static computeFlatNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     for (let i = 0; i < indices.length; i += 3) {
@@ -29497,8 +29512,6 @@ class GeometryFactory {
     }
     return normals;
   }
-
-  // --- Smooth normals for rounded shapes ---
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -29679,17 +29692,13 @@ class GeometryFactory {
     };
   }
   static pyramidFractal(S = 1, levels = 2) {
-    // ✅ Use arrays that get properly filled, not mutated references
     const positions = [];
     const uvs = [];
     const indices = [];
-    let vertexIndex = 0; // Track current vertex count
-
+    let vertexIndex = 0;
     const generate = (x = 0, y = 0, z = 0, s = S, level = levels) => {
       if (level <= 0) return;
       const halfS = s / 2;
-
-      // 5 vertices: 4 base corners + 1 apex
       const verts = [x - halfS, y, z - halfS,
       // 0: bottom-left
       x + halfS, y, z - halfS,
@@ -29700,8 +29709,6 @@ class GeometryFactory {
       // 3: top-left
       x, y + s, z // 4: apex
       ];
-
-      // ✅ Proper UVs for each vertex (not just one pair!)
       const vertUVs = [0, 0,
       // 0: bottom-left corner
       1, 0,
@@ -29712,8 +29719,6 @@ class GeometryFactory {
       // 3: top-left corner
       0.5, 0.5 // 4: apex (center)
       ];
-
-      // Triangle indices (relative to current base)
       const baseIdx = vertexIndex;
       const tris = [baseIdx + 0, baseIdx + 1, baseIdx + 4,
       // Front face
@@ -29723,14 +29728,10 @@ class GeometryFactory {
       // Back face
       baseIdx + 3, baseIdx + 0, baseIdx + 4 // Left face
       ];
-
-      // ✅ Push to arrays (not mutate references)
       positions.push(...verts);
       uvs.push(...vertUVs);
       indices.push(...tris);
-      vertexIndex += 5; // 5 vertices added
-
-      // Recurse: smaller pyramid on top
+      vertexIndex += 5;
       if (level > 1) {
         generate(x, y + s, z, halfS, level - 1);
       }
@@ -29749,7 +29750,6 @@ class GeometryFactory {
     let vertexIndex = 0;
     const generate = (x = 0, y = 0, z = 0, s = S, level = levels) => {
       if (level <= 0) {
-        // Base case: draw a single pyramid
         const halfS = s / 2;
         const verts = [x - halfS, y, z - halfS, x + halfS, y, z - halfS, x + halfS, y, z + halfS, x - halfS, y, z + halfS, x, y + s, z];
         const vertUVs = [0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0.5];
@@ -29763,18 +29763,14 @@ class GeometryFactory {
         vertexIndex += 5;
         return;
       }
-
-      // Recursive case: 4 smaller pyramids (Sierpiński pattern)
       const halfS = s / 2;
       const quarterS = s / 4;
-
-      // Bottom 4 corners
+      // Bottom 4
       generate(x - quarterS, y, z - quarterS, halfS, level - 1); // Front-left
       generate(x + quarterS, y, z - quarterS, halfS, level - 1); // Front-right
       generate(x + quarterS, y, z + quarterS, halfS, level - 1); // Back-right
       generate(x - quarterS, y, z + quarterS, halfS, level - 1); // Back-left
-
-      // Top pyramid
+      // Top
       generate(x, y + halfS, z, halfS, level - 1);
     };
     generate();
@@ -29786,8 +29782,6 @@ class GeometryFactory {
   }
   static dodecahedronFlat(R = 1) {
     const geo = GeometryFactory.dodecahedron(R);
-
-    // Duplicate vertices so each triangle has its own (for flat shading)
     const positions = [];
     const uvs = [];
     const indices = [];
@@ -29795,10 +29789,8 @@ class GeometryFactory {
       const i0 = geo.indices[i] * 3;
       const i1 = geo.indices[i + 1] * 3;
       const i2 = geo.indices[i + 2] * 3;
-
       // Add 3 vertices for this triangle
       positions.push(geo.positions[i0], geo.positions[i0 + 1], geo.positions[i0 + 2], geo.positions[i1], geo.positions[i1 + 1], geo.positions[i1 + 2], geo.positions[i2], geo.positions[i2 + 1], geo.positions[i2 + 2]);
-
       // Add UVs
       const u0 = geo.uvs[geo.indices[i] * 2];
       const v0 = geo.uvs[geo.indices[i] * 2 + 1];
@@ -29807,8 +29799,6 @@ class GeometryFactory {
       const u2 = geo.uvs[geo.indices[i + 2] * 2];
       const v2 = geo.uvs[geo.indices[i + 2] * 2 + 1];
       uvs.push(u0, v0, u1, v1, u2, v2);
-
-      // New indices (each triangle is independent)
       const baseIdx = i / 3 * 3;
       indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
     }
@@ -29819,7 +29809,7 @@ class GeometryFactory {
     };
   }
   static cone(radius = 1, height = 2, segments = 32) {
-    const positions = [0, height, 0]; // top
+    const positions = [0, height, 0];
     const uvs = [0.5, 1];
     const indices = [];
     for (let i = 0; i <= segments; i++) {
@@ -29832,10 +29822,8 @@ class GeometryFactory {
     for (let i = 1; i <= segments; i++) {
       indices.push(0, i, i + 1 <= segments ? i + 1 : 1); // triangles to top
     }
-
-    // Base
     const baseIndex = positions.length / 3;
-    positions.push(0, 0, 0); // center
+    positions.push(0, 0, 0);
     uvs.push(0.5, 0.5);
     for (let i = 1; i <= segments; i++) {
       const next = i + 1 <= segments ? i + 1 : 1;
@@ -29864,9 +29852,8 @@ class GeometryFactory {
         b = a + 1,
         c = a + 2,
         d = a + 3;
-      indices.push(a, b, c, b, d, c); // side faces
+      indices.push(a, b, c, b, d, c);
     }
-
     // Caps
     const baseIndex = positions.length / 3;
     positions.push(0, -halfH, 0, 0, halfH, 0);
@@ -29886,7 +29873,6 @@ class GeometryFactory {
     const positions = [],
       uvs = [],
       indices = [];
-
     // Generate top hemisphere
     for (let y = 0; y <= segments; y++) {
       const theta = y / segments * Math.PI / 2;
@@ -29899,8 +29885,7 @@ class GeometryFactory {
         uvs.push(x / segments, y / segments);
       }
     }
-
-    // Bottom hemisphere (mirror top)
+    // Bottom mirror top
     const offset = positions.length / 3;
     for (let y = 0; y <= segments; y++) {
       const theta = y / segments * Math.PI / 2;
@@ -29913,8 +29898,6 @@ class GeometryFactory {
         uvs.push(x / segments, y / segments);
       }
     }
-
-    // TODO: connect indices (complex, but I can provide if needed)
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
@@ -29922,12 +29905,8 @@ class GeometryFactory {
     };
   }
   static icosahedron(R = 1) {
-    const t = (1 + Math.sqrt(5)) / 2; // Golden ratio
-
-    // 12 vertices of icosahedron
+    const t = (1 + Math.sqrt(5)) / 2;
     const verts = [-1, t, 0, 1, t, 0, -1, -t, 0, 1, -t, 0, 0, -1, t, 0, 1, t, 0, -1, -t, 0, 1, -t, t, 0, -1, t, 0, 1, -t, 0, -1, -t, 0, 1];
-
-    // Normalize vertices to radius R
     for (let i = 0; i < verts.length; i += 3) {
       const len = Math.sqrt(verts[i] * verts[i] + verts[i + 1] * verts[i + 1] + verts[i + 2] * verts[i + 2]);
       verts[i] = verts[i] / len * R;
@@ -29935,17 +29914,11 @@ class GeometryFactory {
       verts[i + 2] = verts[i + 2] / len * R;
     }
     const indices = [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1];
-
-    // Generate spherical UVs based on position
     const uvs = [];
     for (let i = 0; i < verts.length; i += 3) {
       const x = verts[i];
       const y = verts[i + 1];
       const z = verts[i + 2];
-
-      // Spherical UV mapping
-      // u = 0.5 + atan2(z, x) / (2π)
-      // v = 0.5 - asin(y / R) / π
       const u = 0.5 + Math.atan2(z, x) / (2 * Math.PI);
       const v = 0.5 - Math.asin(y / R) / Math.PI;
       uvs.push(u, v);
@@ -29978,8 +29951,6 @@ class GeometryFactory {
       verts[i + 2] = verts[i + 2] / len * R;
     }
     const uvs = new Float32Array(verts.length / 3 * 2).fill(0);
-    // indices: manually computed pentagons -> triangles
-    // TODO: could generate automatically
     return {
       positions: new Float32Array(verts),
       uvs,
@@ -30039,7 +30010,6 @@ class GeometryFactory {
       indices: new Uint16Array(indices)
     };
   }
-  // --- BASIC SHAPES ---------------------------------------------------------
   static quad(S = 1) {
     const positions = new Float32Array([-S, S, 0, S, S, 0, -S, -S, 0, S, -S, 0]);
     const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
@@ -30065,8 +30035,6 @@ class GeometryFactory {
     p, -p, -p, p, p, -p, p, p, p, p, -p, p,
     // Left
     -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p]);
-
-    // Proper UVs (same layout per face)
     const uvs = new Float32Array([
     // Front
     0, 0, 1, 0, 1, 1, 0, 1,
@@ -30082,7 +30050,6 @@ class GeometryFactory {
     0, 0, 1, 0, 1, 1, 0, 1]);
     const indices = new Uint16Array([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23]);
     const normals = this.computeSmoothNormals(positions, indices);
-    // return { positions, indices, normals };
     return {
       positions,
       uvs,
@@ -30131,11 +30098,9 @@ class GeometryFactory {
   static star(S = 1) {
     const outer = S;
     const inner = S * 0.4;
-    const positions = [0, 0, 0]; // center vertex
-    const uvs = [0.5, 0.5]; // center UV
+    const positions = [0, 0, 0];
+    const uvs = [0.5, 0.5];
     const indices = [];
-
-    // Generate 10 points (outer and inner)
     for (let i = 0; i < 10; i++) {
       const angle = i / 10 * Math.PI * 2;
       const radius = i % 2 === 0 ? outer : inner;
@@ -30144,8 +30109,6 @@ class GeometryFactory {
       positions.push(x, y, 0);
       uvs.push((x / outer + 1) / 2, (y / outer + 1) / 2);
     }
-
-    // Triangles from center to each outer/inner vertex
     for (let i = 1; i <= 10; i++) {
       const next = i < 10 ? i + 1 : 1; // wrap last to first
       indices.push(0, i, next);
@@ -30173,11 +30136,9 @@ class GeometryFactory {
     };
   }
   static circle2(radius = 1, segments = 64) {
-    const positions = [0, 0, 0]; // center
-    const uvs = [0.5, 0.5]; // center UV
+    const positions = [0, 0, 0];
+    const uvs = [0.5, 0.5];
     const indices = [];
-
-    // create outer vertices
     for (let i = 0; i <= segments; i++) {
       const angle = i / segments * Math.PI * 2;
       const x = Math.cos(angle) * radius;
@@ -30190,7 +30151,6 @@ class GeometryFactory {
         indices.push(0, i, i + 1);
       }
     }
-
     // close the circle (last triangle connects to first outer vertex)
     // we already pushed (segments + 1) outer vertices, so last index = segments + 1
     // but first outer vertex is index 1
@@ -30205,7 +30165,6 @@ class GeometryFactory {
   static diamond(S = 1) {
     const h = S,
       p = S / 2;
-    // 6 Vertices
     const pos = new Float32Array([0, h, 0,
     // 0: Top
     -p, 0, -p,
@@ -30218,8 +30177,6 @@ class GeometryFactory {
     // 4: Mid Left-Front
     0, -h, 0 // 5: Bottom
     ]);
-
-    // Added simple UVs so the texture actually shows up
     const uv = new Float32Array([0.5, 1,
     // Top
     0, 0.5,
@@ -30236,10 +30193,7 @@ class GeometryFactory {
       indices: idx
     };
   }
-
-  // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
   static thunder(S = 1) {
-    // jagged lightning bolt made of zig-zag quads
     const pts = [0, 0, 0];
     for (let i = 1; i < 8; i++) {
       const x = (Math.random() - 0.5) * 0.2 * S;
@@ -30270,10 +30224,7 @@ class GeometryFactory {
     };
   }
   static rock(S = 1, detail = 4) {
-    // randomly perturbed sphere for organic shape
     const sphere = GeometryFactory.sphere(S, detail);
-
-    // CLONE positions
     const positions = new Float32Array(sphere.positions);
     for (let i = 0; i < positions.length; i += 3) {
       const n = Math.random() * 0.3 + 0.85;
@@ -30288,12 +30239,9 @@ class GeometryFactory {
     };
   }
   static meteor(S = 1, detail = 6) {
-    // 1. Start with a sphere (or icosahedron)
     const sphere = GeometryFactory.sphere(S, detail);
     const positions = new Float32Array(sphere.positions.length);
     const normals = new Float32Array(sphere.positions.length);
-
-    // 2. Compute normals (centered at origin)
     for (let i = 0; i < sphere.positions.length; i += 3) {
       const x = sphere.positions[i];
       const y = sphere.positions[i + 1];
@@ -30303,18 +30251,14 @@ class GeometryFactory {
       normals[i + 1] = y / len;
       normals[i + 2] = z / len;
     }
-
-    // 3. Perturb vertices outward along normal
     for (let i = 0; i < positions.length; i += 3) {
-      const offset = 0.05 + Math.random() * 0.1; // adjust roughness
+      const offset = 0.05 + Math.random() * 0.1;
       positions[i] = sphere.positions[i] + normals[i] * offset;
       positions[i + 1] = sphere.positions[i + 1] + normals[i + 1] * offset;
       positions[i + 2] = sphere.positions[i + 2] + normals[i + 2] * offset;
     }
-
-    // 4. Stretch Y slightly along normal
     for (let i = 0; i < positions.length; i += 3) {
-      positions[i + 1] *= 1.5; // Y-stretch
+      positions[i + 1] *= 1.5;
     }
     return {
       positions,
@@ -30336,11 +30280,8 @@ class GeometryFactory {
     const positions = [];
     const uvs = [];
     const indices = [];
-
-    // Center vertex
     positions.push(0, 0, 0);
     uvs.push(0.5, 0.5);
-
     // Outer ring vertices
     for (let i = 0; i <= segments; i++) {
       const angle = i / segments * Math.PI * 2;
@@ -30350,8 +30291,6 @@ class GeometryFactory {
       positions.push(x, y, z);
       uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
     }
-
-    // Triangles (fan)
     for (let i = 1; i <= segments; i++) {
       indices.push(0, i, i + 1);
     }
@@ -30389,6 +30328,162 @@ class GeometryFactory {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
       indices: new Uint16Array(indices)
+    };
+  }
+
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    // Pre-compute random offsets for determinism
+    const offsets = [];
+    for (let p = 0; p < pieces; p++) {
+      const angle = p / pieces * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+
+      // Base sphere surface
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    // Pre-compute chunk grid with random jitter
+    const chunks = [];
+    for (let ix = 0; ix < detail; ix++) {
+      for (let iy = 0; iy < detail; iy++) {
+        for (let iz = 0; iz < detail; iz++) {
+          chunks.push({
+            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
+            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
+            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+    const chunkSize = 2 / detail;
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+
+      // Small cube for each chunk
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+      return [x * S * 0.5, y * S * 0.5, z * S * 0.5];
+    };
+  }
+
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    // Pre-compute shard directions
+    const shards = [];
+    for (let i = 0; i < count; i++) {
+      const angle = i / count * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+
+      // Shard as elongated quad
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+
+      // Taper from base to tip
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+      const x = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x = scale * S * Math.sin(phi) * Math.cos(theta);
+      const y = scale * S * Math.cos(phi);
+      const z = scale * S * Math.sin(phi) * Math.sin(theta);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+    for (let p = 0; p < particleCount; p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+
+      // Small sphere for each particle
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = particle.size;
+      const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
+      const y = (particle.y + r * Math.cos(phi)) * S;
+      const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
+      return [x, y, z];
     };
   }
   static icosahedronSubdivided(R = 1, subdivisions = 1) {
@@ -41136,6 +41231,73 @@ class ProceduralMeshObj extends _materials.default {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
   }
+  async destroy(destructionType = "shatter", duration = 0.8, options = {}) {
+    const {
+      onComplete = null,
+      physics = null,
+      debris = null,
+      velocity = 1,
+      lifetime = 3
+    } = options;
+    const destructionFunc = this._getDestructionFunction(destructionType);
+    const pair = MeshMorpher.createMatchedPair(this.currentShape || MeshMorpher.sphere(this.size), destructionFunc, 32, 32);
+    await this.morphTo(destructionFunc, duration);
+    if (debris) {
+      this.spawnDebris(null, destructionType, {
+        velocity,
+        lifetime
+      });
+    }
+    // Cleanup
+    if (onComplete) onComplete();
+  }
+
+  /**
+   * Get destruction preset function from MeshMorpher (now parametric)
+   */
+  _getDestructionFunction(type) {
+    const presets = {
+      shatter: () => MeshMorpher.shatter(this.size, 8),
+      crumble: () => MeshMorpher.crumble(this.size, 4),
+      splinter: () => MeshMorpher.splinter(this.size, 12),
+      implode: () => MeshMorpher.implode(this.size, 0.1),
+      scatter: () => MeshMorpher.scatter(this.size, 0.3)
+    };
+    if (!presets[type]) throw new Error(`Unknown destruction type: ${type}`);
+    return presets[type]();
+  }
+
+  /**
+   * Spawn individual physics chunks after morph
+   */
+  spawnDebris(physicsEngine, type, options = {}) {
+    // const {velocity = 1, lifetime = 3} = options;
+
+    // const debrisCount = {
+    //   shatter: 8,
+    //   crumble: 16,
+    //   splinter: 12,
+    //   implode: 0,    // implode absorbs, no debris
+    //   scatter: 20
+    // }[type] || 8;
+
+    // for(let i = 0;i < debrisCount;i++) {
+    //   const vx = (Math.random() - 0.5) * velocity * 2;
+    //   const vy = (Math.random() - 0.5) * velocity * 2 + (type === "shatter" ? 1 : 0);
+    //   const vz = (Math.random() - 0.5) * velocity * 2;
+
+    //   const body = physicsEngine.createRigidBody({
+    //     shape: "sphere",
+    //     size: this.size * 0.1,
+    //     mass: 1,
+    //     linearVelocity: [vx, vy, vz],
+    //     angularVelocity: [Math.random() * 5, Math.random() * 5, Math.random() * 5]
+    //   });
+
+    //   // Auto-despawn after lifetime
+    //   setTimeout(() => body.destroy(), lifetime * 1000);
+    // }
+  }
   switchMesh(specA, specB) {
     this.meshA = this._loadGeometry(specA);
     this.meshB = this._loadGeometry(specB);
@@ -41825,6 +41987,162 @@ class MeshMorpher {
       const x = (r * Math.cos(theta) + clusterOffsetX) * scale;
       const z = (r * Math.sin(theta) + clusterOffsetZ) * scale;
       return [x, y * scale, z];
+    };
+  }
+
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    // Pre-compute random offsets for determinism
+    const offsets = [];
+    for (let p = 0; p < pieces; p++) {
+      const angle = p / pieces * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+
+      // Base sphere surface
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    // Pre-compute chunk grid with random jitter
+    const chunks = [];
+    for (let ix = 0; ix < detail; ix++) {
+      for (let iy = 0; iy < detail; iy++) {
+        for (let iz = 0; iz < detail; iz++) {
+          chunks.push({
+            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
+            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
+            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+    const chunkSize = 2 / detail;
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+
+      // Small cube for each chunk
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+      return [x * S * 0.5, y * S * 0.5, z * S * 0.5];
+    };
+  }
+
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    // Pre-compute shard directions
+    const shards = [];
+    for (let i = 0; i < count; i++) {
+      const angle = i / count * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+
+      // Shard as elongated quad
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+
+      // Taper from base to tip
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+      const x = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x = scale * S * Math.sin(phi) * Math.cos(theta);
+      const y = scale * S * Math.cos(phi);
+      const z = scale * S * Math.sin(phi) * Math.sin(theta);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+    for (let p = 0; p < particleCount; p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+
+      // Small sphere for each particle
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = particle.size;
+      const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
+      const y = (particle.y + r * Math.cos(phi)) * S;
+      const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
+      return [x, y, z];
     };
   }
 }

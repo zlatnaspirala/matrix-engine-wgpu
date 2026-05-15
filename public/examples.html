@@ -42,7 +42,6 @@
     <button class="btn" id="canvas-inline">Canvas inline</button>
     <button class="btn" id="cinematicCamera">Cinematic camera</button>
     <button class="btn" id="destruction-procedure">Destruction ProceduralMesh</button>
-    
     <button class="btn" id="jamb">Jamb game</button>
     <button class="btn" id="moba">MOBA game</button>
   </div>
@@ -50,19 +49,15 @@
   <script src="examples.js"></script>
   <script>
     document.addEventListener('touchstart', function(e) {
-      if(e.touches.length > 1) {
-        e.preventDefault();
-      }
+      if(e.touches.length > 1) e.preventDefault()
     }, {passive: false});
 
     document.addEventListener('touchmove', function(e) {
-      if(e.touches.length > 1) {
-        e.preventDefault();
-      }
+      if(e.touches.length > 1) e.preventDefault()
     }, {passive: false});
 
     document.addEventListener('gesturestart', function(e) {
-      e.preventDefault();
+      e.preventDefault()
     });
 
     let lastTouchEnd = 0;

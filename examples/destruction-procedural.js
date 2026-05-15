@@ -74,19 +74,17 @@ export var loadDestructionProcedural = function() {
         // meshB: MeshMorpher.crumble(1),
         // meshB: MeshMorpher.scatter(1, 100),
         meshB: MeshMorpher.crumble(100, 1),
-        
-        
-        envMapParams: {
-          baseColorMix: 0.1,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.75,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 1.5,          // Gentle rim
-          illuminatePulse: 0.1,             // No pulse (static)
-          fresnelPower: 5,                  // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        // envMapParams: {
+        //   baseColorMix: 0.1,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.75,               // 25% reflection blend
+        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        //   illuminateStrength: 1.5,          // Gentle rim
+        //   illuminatePulse: 0.1,             // No pulse (static)
+        //   fresnelPower: 5,                  // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,

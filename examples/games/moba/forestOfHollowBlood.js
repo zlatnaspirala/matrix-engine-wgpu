@@ -229,7 +229,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     // console.log('<data-receive self>', d);
     if(d.type == "damage") {
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName);
-      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
+      // let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
       if(IsEnemyHeroObj) {
         // console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
         const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
@@ -252,6 +252,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         if(d.progress <= 0.09) {
           app.localHero.friendlyLocal.creeps[getCreepByIndex].creepFocusAttackOn = null;
           app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
+
           setTimeout(() => {
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
@@ -270,6 +271,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
         if(d.progress <= 0.09) {
           app.enemies.creeps[getCreepByIndex].setDead();
+          app.localHero.killEnemy(1);
           setTimeout(() => {
             app.enemies.creeps[getCreepByIndex].setStartUpPosition();
             app.enemies.creeps[getCreepByIndex].gotoFinal = false;
