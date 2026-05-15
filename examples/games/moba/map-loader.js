@@ -146,12 +146,12 @@ export class MEMapLoader {
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach((item) => {
-        item.globalAmbient = [10, 10, 10];
+        item.setAmbient(10, 10, 10);
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.collectionOfRocks2 = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks2') != -1);
       this.collectionOfRocks2.forEach((item) => {
-        item.globalAmbient = [10, 10, 10];
+        item.setAmbient(10, 10, 10);
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       })
       this.addInstancingRock();
@@ -163,7 +163,7 @@ export class MEMapLoader {
       // trons 
       app.enemytron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('enemytron') != -1)[0];
       app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('friendlytron') != -1)[0];
-      app.tron.globalAmbient = [2, 2, 2];
+      app.tron.setAmbient(2, 2, 2);
 
       // no need to extend whole Hero class 
       // Fiktive
@@ -300,7 +300,7 @@ export class MEMapLoader {
     this.collectionOfTree1.forEach((partOftree) => {
 
       partOftree.sharedBones = true;
-      partOftree.globalAmbient = [randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15)];
+      partOftree.setAmbient(randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15));
 
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));

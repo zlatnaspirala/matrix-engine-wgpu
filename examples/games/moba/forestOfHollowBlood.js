@@ -282,7 +282,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(app.player.data.team == d.defenderTeam) {
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(12, 1, 1);
           mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
@@ -292,7 +292,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {
@@ -400,7 +400,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(app.player.data.team == d.defenderTeam) {
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
@@ -410,7 +410,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {

@@ -57,7 +57,7 @@ export class FriendlyHero extends Hero {
           });
           // adapt part
           if(this.name == 'Slayzer') {
-            subMesh.globalAmbient = [2, 2, 3, 1];
+            subMesh.setAmbient(2, 2, 3);
           }
           // this is optimisation very important - no emit per sub mesh - calc on client part.
           if(idx > 0) {

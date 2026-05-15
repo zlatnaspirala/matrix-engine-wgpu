@@ -239,13 +239,13 @@ export class Character extends Hero {
         }
 
         // adapt
-        app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
+        app.localHero.heroe_bodies[0].setAmbient(1, 1, 1, 1);
         if(app.localHero.name == 'Slayzer') {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
+          app.localHero.heroe_bodies[0].setAmbient(2, 2, 3, 1);
         } else if(app.localHero.name == 'Steelborn') {
-          app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1]
+          app.localHero.heroe_bodies[0].setAmbient(12, 12, 12, 1)
         } else {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
+          app.localHero.heroe_bodies[0].setAmbient(2, 2, 3, 1);
         }
 
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;

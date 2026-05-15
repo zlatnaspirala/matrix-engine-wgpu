@@ -30,7 +30,8 @@ export class Creep extends Hero {
       // var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
-        scale: [20, 20, 20],
+        shadowsCast: false,
+        scale: [22, 22, 22],
         position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
@@ -42,10 +43,10 @@ export class Creep extends Hero {
       }, null, o.data);
       // make small async - cooking glbs files
       this.asyncHelper(this.o).then(() => {
-        console.log('good')
+        console.log('creeps loaded in scene...')
       }).catch(() => {
         console.log('catch')
-        setTimeout(() => {this.asyncHelper(this.o);}, 3000);
+        setTimeout(() => {this.asyncHelper(this.o);}, 2000);
       });
 
     } catch(err) {throw err;}
@@ -74,11 +75,10 @@ export class Creep extends Hero {
             if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
           // adapt
-          subMesh.globalAmbient = [1, 1, 1, 1];
+          subMesh.setAmbient(1, 1, 1, 1);
           if(this.name.indexOf('friendly_creeps') != -1) {
             subMesh.setAmbient(10,10,5)
           } else if(this.name.indexOf('enemy_creep') != -1) {
-            // subMesh.globalAmbient = [12, 1, 1, 1];
             subMesh.setAmbient(50,10,5)
           }
 
