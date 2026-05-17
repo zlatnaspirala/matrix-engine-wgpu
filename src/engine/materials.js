@@ -290,6 +290,8 @@ export default class Materials {
     this.material.useBlend = true;
     // this.setupMaterialPBR([1, 1, 1, alpha]);
     this.setupMaterialPBR([1, 0, 0, alpha]);
+    // fast fix
+    if(app) app.buildLightShadowBuckets();
     // this.setupPipeline()
   }
 

@@ -26,6 +26,7 @@ import {testCannonES} from "./examples/physics-test-cannones.js";
 import {canvasInline} from "./examples/canvas-inline.js";
 import {loadCinematicCamera} from "./examples/cinematic-camera.js";
 import {loadDestructionProcedural} from "./examples/destruction-procedural.js";
+import {loadKale} from "./examples/kale.js";
 
 window.urlQ = urlQuery;
 
@@ -64,13 +65,13 @@ byId('test-cannones').addEventListener("click", () => switchDemo('16'));
 byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
 byId('cinematicCamera').addEventListener("click", () => switchDemo('18'));
 byId('destruction-procedure').addEventListener("click", () => switchDemo('19'));
-
+byId('loadkale').addEventListener("click", () => switchDemo('20'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 
 window.loadObjFile = loadObjFile;
-    
+
 if(urlQ['demo'] === '1') {
   loadObjFile();
 } else if(urlQ['demo'] === '2') {
@@ -105,10 +106,12 @@ if(urlQ['demo'] === '1') {
   testCannonES();
 } else if(urlQ['demo'] === '17') {
   canvasInline();
-} else if (urlQ['demo'] === '18') {
+} else if(urlQ['demo'] === '18') {
   loadCinematicCamera();
-} else if (urlQ['demo'] === '19') {
+} else if(urlQ['demo'] === '19') {
   loadDestructionProcedural();
+} else if(urlQ['demo'] === '20') {
+  loadKale();
 } else {
   flipperJolt();
 }
