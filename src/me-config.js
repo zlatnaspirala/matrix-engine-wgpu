@@ -27,6 +27,7 @@ export const MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  logLoopError: false,
 
   construct: function(options = {}) {
     if(urlQ['GRAVITY_Y_AXIS']) {

@@ -1,6 +1,6 @@
 import {vec3} from "wgpu-matrix";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
-import {byId, LOG_MATRIX} from "../../../src/engine/utils";
+import {byId, isMobile, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
 import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
@@ -203,7 +203,7 @@ export class Character extends Hero {
         );
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id, array) => {
-          subMesh.position.thrust = this.moveSpeed;
+          subMesh.position.thrust = isMobile() == false ? this.moveSpeed* 0.5 : this.moveSpeed;
           subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
@@ -224,7 +224,7 @@ export class Character extends Hero {
             if(app.localHero.name == "MariaSword") {
               console.log("Cast only for long distance attackers...");
               subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
-              subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(10);
+              subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(30);
               this.core.autoUpdate.push(subMesh.fireballSystem);
             }
           }
@@ -681,6 +681,16 @@ export class Character extends Hero {
           return;
         }
       }
+    })
+
+    addEventListener('fireball-hit', (e) => {
+      // console.log(" SET ATTACK", e.detail.target.name)
+      let enemy = this.core.enemies.enemies.find( x => x.heroe_bodies[0].name == e.detail.target.name)
+      if (!enemy) enemy = this.core.enemies.creeps.find( x => x.heroe_bodies[0].name == e.detail.target.name)
+      if (typeof enemy === 'undefined') return;
+      console.log(`%cATTACK LONGRANGE DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX);
+      // abilityMultiplier
+      this.calcDamage(this, enemy, 0.3);
     })
 
     // This is common for all kineamtic bodies

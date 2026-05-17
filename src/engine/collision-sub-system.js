@@ -39,13 +39,11 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
 export class CollisionSystem {
   constructor() {
     this.entries = [];
-    this.staticEntries = []; // walls go here
+    this.staticEntries = [];
     this.cameraEntry = null;
-
     this.cellSize = 100;
     this._grid = new Map();
-    this._staticGrid = new Map(); // built once, never rebuilt
-
+    this._staticGrid = new Map();
     this._event1 = new CustomEvent('close-distance', {detail: {data: ""}});
     this._eventDetail = {};
     this._neighbors = [];

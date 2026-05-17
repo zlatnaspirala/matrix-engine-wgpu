@@ -172,7 +172,7 @@ export default class Materials {
       0.0                  // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
-    console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>')
+    // console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>')
     this.waterBindGroup = this.device.createBindGroup({
       label: 'waterBG',
       layout: this.waterBindGroupLayout,

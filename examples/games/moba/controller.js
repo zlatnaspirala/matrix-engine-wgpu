@@ -10,11 +10,9 @@ export class Controller {
   nav = null;
   heroe_bodies = null;
 
-  // Must be same init !!!
+  // Must be same init !
   // incorporate with automated 'close-distance'
   distanceForAction = 36;
-  distanceForLongAction = 36;
-
   distanceForLongAction = 36;
 
   constructor(core) {

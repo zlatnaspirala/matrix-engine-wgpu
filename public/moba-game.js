@@ -216,7 +216,7 @@ class Character extends _hero.Hero {
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id, array) => {
-          subMesh.position.thrust = this.moveSpeed;
+          subMesh.position.thrust = (0, _utils.isMobile)() == false ? this.moveSpeed * 0.5 : this.moveSpeed;
           subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
@@ -237,7 +237,7 @@ class Character extends _hero.Hero {
             if (app.localHero.name == "MariaSword") {
               console.log("Cast only for long distance attackers...");
               subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
-              subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(10);
+              subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(30);
               this.core.autoUpdate.push(subMesh.fireballSystem);
             }
           }
@@ -671,6 +671,15 @@ class Character extends _hero.Hero {
         }
       }
     });
+    addEventListener('fireball-hit', e => {
+      // console.log(" SET ATTACK", e.detail.target.name)
+      let enemy = this.core.enemies.enemies.find(x => x.heroe_bodies[0].name == e.detail.target.name);
+      if (!enemy) enemy = this.core.enemies.creeps.find(x => x.heroe_bodies[0].name == e.detail.target.name);
+      if (typeof enemy === 'undefined') return;
+      console.log(`%cATTACK LONGRANGE DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+      // abilityMultiplier
+      this.calcDamage(this, enemy, 0.3);
+    });
 
     // This is common for all kineamtic bodies
     addEventListener('onTargetPositionReach', e => {
@@ -775,10 +784,9 @@ class Controller {
   nav = null;
   heroe_bodies = null;
 
-  // Must be same init !!!
+  // Must be same init !
   // incorporate with automated 'close-distance'
   distanceForAction = 36;
-  distanceForLongAction = 36;
   distanceForLongAction = 36;
   constructor(core) {
     this.core = core;
@@ -1691,9 +1699,6 @@ let forestOfHollowBlood = new _world.default({
     (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
       location.assign("moba-menu.html");
     });
-
-    // test
-    // forestOfHollowBlood.loadEnemyCreeps();
     app.loadEnemyCreeps();
     (0, _matrixStream.byId)('netHeaderTitle').click();
   });
@@ -2920,6 +2925,7 @@ class HUD {
       padding: (0, _utils.isMobile)() == true ? "0px" : "10px",
       boxSizing: "border-box"
     });
+    hud.style["-webkit-text-stroke-width"] = "0.1px !important";
     const hudLeftBox = document.createElement("div");
     hudLeftBox.id = "hudLeftBox";
     Object.assign(hudLeftBox.style, {
@@ -2945,7 +2951,7 @@ class HUD {
     Object.assign(statsDom.style, {
       display: "flex",
       flexDirection: "column",
-      width: (0, _utils.isMobile)() == true ? "100%" : "12%",
+      width: (0, _utils.isMobile)() == true ? "58%" : "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       alignItems: "center",
@@ -2959,13 +2965,17 @@ class HUD {
       overflow: 'hidden',
       fontSize: '10px'
     });
-    hudLeftBox.appendChild(statsDom);
+    if ((0, _utils.isMobile)() == true) {
+      hudLeftBox.appendChild(statsDom);
+    } else {
+      hud.appendChild(statsDom);
+    }
     const statsDomValue = document.createElement("div");
     statsDomValue.id = "statsDomValue";
     Object.assign(statsDomValue.style, {
       display: "flex",
       flexDirection: "column",
-      width: "12%",
+      width: (0, _utils.isMobile)() === true ? "33%" : "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       alignItems: "center",
@@ -2979,7 +2989,11 @@ class HUD {
       overflow: 'hidden',
       fontSize: '10px'
     });
-    hudLeftBox.appendChild(statsDomValue);
+    if ((0, _utils.isMobile)() == true) {
+      hudLeftBox.appendChild(statsDomValue);
+    } else {
+      hud.appendChild(statsDomValue);
+    }
     let props = ["currentLevel", "hp", "mana", "gold", "mpRegen", "hpRegen", "moveSpeed", "attackSpeed", "armor", "attack"];
     addEventListener('stats-localhero', e => {
       // console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
@@ -3879,8 +3893,8 @@ class MEMapLoader {
         app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
         app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
         app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-      }, 1000);
-    }, 6500);
+      }, 500);
+    }, 7500);
     this.core.lightContainer[0].setPosY(175);
     this.core.lightContainer[0].setIntensity(1);
   }
@@ -25568,12 +25582,11 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
 class CollisionSystem {
   constructor() {
     this.entries = [];
-    this.staticEntries = []; // walls go here
+    this.staticEntries = [];
     this.cameraEntry = null;
     this.cellSize = 100;
     this._grid = new Map();
-    this._staticGrid = new Map(); // built once, never rebuilt
-
+    this._staticGrid = new Map();
     this._event1 = new CustomEvent('close-distance', {
       detail: {
         data: ""
@@ -35637,7 +35650,7 @@ class Materials {
     0.0 // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
-    console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>');
+    // console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>')
     this.waterBindGroup = this.device.createBindGroup({
       label: 'waterBG',
       layout: this.waterBindGroupLayout,
@@ -42200,6 +42213,12 @@ class FireballSystem {
   constructor(parent, core) {
     this.core = core;
     this.parent = parent;
+    this.FBHitEvent = new CustomEvent('fireball-hit', {
+      detail: {
+        target: null,
+        damage: 0
+      }
+    });
     this.loadBallAnim('./res/meshes/glb/ring1.glb');
     this.projectiles = [];
   }
@@ -42267,22 +42286,22 @@ class FireballSystem {
     }
   }
   _onHit(p) {
+    console.log('_ FireballSystem.CONFIG.damage', FireballSystem.CONFIG.damage);
     p.target.hp -= FireballSystem.CONFIG.damage;
-    dispatchEvent(new CustomEvent('fireball-hit', {
-      detail: {
-        target: p.target,
-        damage: FireballSystem.CONFIG.damage
-      }
-    }));
+    // new CustomEvent('fireball-hit', {
+    //     detail: {target: p.target, damage: FireballSystem.CONFIG.damage}
+    //   })
+    this.FBHitEvent.detail.target = p.target;
+    this.FBHitEvent.detail.damage = FireballSystem.CONFIG.damage;
+    dispatchEvent(this.FBHitEvent);
     this._kill(p);
   }
   _kill(p) {
     p.mesh.position.setPosition(this.parent.position.x, this.parent.position.y, this.parent.position.z);
     // p.alive = false;
-    // // Remove from scene
+    // Remove from scene
     // const idx = app.mainRenderBundle.indexOf(p.mesh);
     // if(idx !== -1) app.mainRenderBundle.splice(idx, 1);
-
     // // Cleanup GPU resources if needed
     // p.mesh.destroy?.();
   }
@@ -42611,7 +42630,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
     } = getRayFromMouse(event, canvas, camera);
     let closestHit = null;
     for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled) continue;
+      if (!object.raycast?.enabled || !object.getModelMatrix) continue;
       const {
         boxMin,
         boxMax
@@ -44088,6 +44107,7 @@ const MEConfig = exports.MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  logLoopError: false,
   construct: function (options = {}) {
     if (urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
@@ -63407,7 +63427,7 @@ class MatrixEngineWGPU {
     this.MEConfig.construct(options);
     this.label = new _lang.MultiLang();
     this.now = 0;
-    this.logLoopError = true;
+    this.logLoopError = this.MEConfig.logLoopError;
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
     } else if (options.alphaMode != 'opaque' && options.alphaMode != 'premultiplied') {

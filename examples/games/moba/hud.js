@@ -125,12 +125,14 @@ export class HUD {
       overflow: 'hidden',
       fontSize: '10px',
     });
-
+    if (isMobile() == true) { 
     hudLeftBox.appendChild(statsDom);
+    } else {
+      hud.appendChild(statsDom);
+    }
 
     const statsDomValue = document.createElement("div");
     statsDomValue.id = "statsDomValue";
-
     Object.assign(statsDomValue.style, {
       display: "flex",
       flexDirection: "column",
@@ -149,7 +151,11 @@ export class HUD {
       fontSize: '10px',
     });
 
+    if (isMobile() == true) { 
     hudLeftBox.appendChild(statsDomValue);
+    } else {
+      hud.appendChild(statsDomValue);
+    }
 
     let props = [
       "currentLevel",

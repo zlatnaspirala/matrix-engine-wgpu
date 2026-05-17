@@ -108,7 +108,7 @@ export default class MatrixEngineWGPU {
     this.MEConfig.construct(options);
     this.label = new MultiLang();
     this.now = 0;
-    this.logLoopError = true;
+    this.logLoopError = this.MEConfig.logLoopError;
 
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";

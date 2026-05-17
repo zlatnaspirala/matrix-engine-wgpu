@@ -490,8 +490,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  // addEventListener('PhysicsReady', async () => {
-  // catch
   if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
     if(typeof app.label == 'undefined') app.label = {get: {}};
     app.label.get = en;
@@ -499,7 +497,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   app.matrixSounds.play('music');
 
-  console.log('test !!!!!!!!!!!!!!!!')
   heros = [
     {type: "Warrior", name: 'MariaSword', pathMobile: "res/meshes/glb/woman-mobile.glb", path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
     {type: "Ranger", name: 'Slayzer',  pathMobile: "res/meshes/glb/monster.glb",  path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
@@ -568,7 +565,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
         if(x == 0) {
           hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
-          console.log('>>>>>>>>>>>>>>', hero0[1])
           // hero0[1].playAnimationByIndex(2);
         }
 
@@ -894,7 +890,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       position: "fixed",
       bottom: '40px',
       left: '20px',
-      width: "50px",
+      width: isMobile() == true ? "50px" : "72px",
       height: "25px",
       textAlign: "center",
       color: "white",
